@@ -1,29 +1,51 @@
 part of '../ack_base.dart';
 
-typedef StringSchema = Schema<String>;
+final class StringSchema extends Schema<StringSchema, String> {
+  const StringSchema({super.nullable, super.constraints});
 
-extension StringSchemaExt<S extends Schema<String>> on S {
-  S isEmail() => constraint(const EmailValidator());
+  @override
+  String? _tryParse(Object value) {
+    if (value is String) return value;
+    return null;
+  }
 
-  S isHexColor() => constraint(const HexColorValidator());
+  @override
+  StringSchema copyWith({
+    bool? nullable,
+    List<ConstraintsValidator<String>>? constraints,
+  }) {
+    return StringSchema(
+      nullable: nullable ?? _nullable,
+      constraints: constraints ?? _constraints,
+    );
+  }
+}
 
-  S isEmpty() => constraint(const IsEmptyValidator());
+extension StringSchemaExt on StringSchema {
+  StringSchema isEmail() => withConstraints([const EmailValidator()]);
 
-  S minLength(int min) => constraint(MinLengthValidator(min));
+  StringSchema isHexColor() => withConstraints([const HexColorValidator()]);
 
-  S maxLength(int max) => constraint(MaxLengthValidator(max));
+  StringSchema isEmpty() => withConstraints([const IsEmptyValidator()]);
 
-  S oneOf(List<String> values) => constraint(OneOfValidator(values));
+  StringSchema minLength(int min) => withConstraints([MinLengthValidator(min)]);
 
-  S notOneOf(List<String> values) => constraint(NotOneOfValidator(values));
+  StringSchema maxLength(int max) => withConstraints([MaxLengthValidator(max)]);
 
-  S isEnum(List<String> values) => constraint(EnumValidator(values));
+  StringSchema oneOf(List<String> values) =>
+      withConstraints([OneOfValidator(values)]);
 
-  S isUri() => constraint(const UriValidator());
+  StringSchema notOneOf(List<String> values) =>
+      withConstraints([NotOneOfValidator(values)]);
 
-  S isNotEmpty() => constraint(const NotEmptyValidator());
+  StringSchema isEnum(List<String> values) =>
+      withConstraints([EnumValidator(values)]);
 
-  S isDateTime() => constraint(const DateTimeValidator());
+  StringSchema isUri() => withConstraints([const UriValidator()]);
+
+  StringSchema isNotEmpty() => withConstraints([const NotEmptyValidator()]);
+
+  StringSchema isDateTime() => withConstraints([const DateTimeValidator()]);
 }
 
 /// Validates that the input string can be parsed into a [DateTime] object.
@@ -73,6 +95,7 @@ class EnumValidator extends ConstraintsValidator<String> {
           'Value "$value" is not a valid enum value. Must be one of: ${enumValues.join(', ')}',
       context: {
         'value': value,
+        'closest_match': findClosestStringMatch(value, enumValues),
         'enumValues': enumValues,
         'total_allowed_values': enumValues.length
       },
@@ -84,7 +107,7 @@ class EmailValidator extends RegexValidator {
   const EmailValidator()
       : super(
           name: 'email',
-          pattern: r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$',
+          pattern: r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
           example: 'example@domain.com',
         );
 }
@@ -98,16 +121,13 @@ class UriValidator extends ConstraintsValidator<String> {
 
   @override
   ConstraintsValidationError? validate(String value) {
-    try {
-      Uri.parse(value);
-    } on Exception catch (e) {
+    if (Uri.tryParse(value) == null) {
       return ConstraintsValidationError(
         type: type,
         message:
             'Invalid URI format for $value, expected a valid URI string https://example.com',
         context: {
           'value': value,
-          'error': e.toString(),
         },
       );
     }
@@ -214,12 +234,17 @@ class RegexValidator extends ConstraintsValidator<String> {
           type: 'regex',
           description: 'Must match the pattern: $name. Example $example',
         );
-
   @override
   ConstraintsValidationError? validate(String value) {
-    if (!RegExp(pattern).hasMatch(value)) {
+    try {
+      final regex = RegExp(pattern);
+      if (!regex.hasMatch(value)) {
+        throw Exception('Invalid regex pattern: $pattern');
+      }
+      return null;
+    } catch (e) {
       return ConstraintsValidationError(
-        type: 'regex',
+        type: type,
         message:
             'Invalid $name format. The string must match the pattern: $pattern',
         context: {
@@ -228,13 +253,11 @@ class RegexValidator extends ConstraintsValidator<String> {
           'validator_name': name,
           'example': example,
           'value_length': value.length,
-          'matches_partially':
-              RegExp(pattern.substring(0, pattern.length ~/ 2)).hasMatch(value)
+          'matches_partially': false,
+          'error': e is FormatException ? e.toString() : null
         },
       );
     }
-
-    return null;
   }
 }
 

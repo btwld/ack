@@ -10,14 +10,14 @@ part 'schemas/schema.dart';
 part 'schemas/string_schema.dart';
 part 'validation.dart';
 
-final class Ack<S extends Schema<T>, T extends Object> {
+final class Ack<S extends Schema<S, T>, T extends Object> {
   final S _schema;
   const Ack(this._schema);
 
-  S nullable() => _schema.copyWith(nullable: true) as S;
+  S nullable() => _schema.copyWith(nullable: true);
 
   S withConstraints(List<ConstraintsValidator<T>> constraints) {
-    return _schema.copyWith(constraints: constraints) as S;
+    return _schema.copyWith(constraints: constraints);
   }
 
   S call() => _schema;
@@ -71,11 +71,11 @@ final class Ack<S extends Schema<T>, T extends Object> {
     );
   }
 
-  static Ack<Schema<String>, String> enumString(List<String> values) {
+  static Ack<StringSchema, String> enumString(List<String> values) {
     return Ack(Ack.string.withConstraints([EnumValidator(values)]));
   }
 
-  static Ack<Schema<String>, String> enumValues(List<Enum> values) {
+  static Ack<StringSchema, String> enumValues(List<Enum> values) {
     return enumString(values.map((e) => e.name).toList());
   }
 

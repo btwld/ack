@@ -1,7 +1,7 @@
 part of '../ack_base.dart';
 
-final class ListSchema<T extends Schema<V>, V extends Object>
-    extends Schema<List<V>> {
+final class ListSchema<T extends Schema<T, V>, V extends Object>
+    extends Schema<ListSchema<T, V>, List<V>> {
   final T itemSchema;
   const ListSchema(
     this.itemSchema, {
@@ -51,12 +51,17 @@ final class ListSchema<T extends Schema<V>, V extends Object>
   }
 }
 
-extension ListSchemaExt<S extends Schema<List<T>>, T extends Object> on S {
-  S uniqueItems() => constraint(const UniqueItemsValidator());
+extension ListSchemaExt<T extends Object, S extends Schema<S, T>>
+    on ListSchema<S, T> {
+  ListSchema<S, T> constraints(
+          List<ConstraintsValidator<List<T>>> constraints) =>
+      copyWith(constraints: constraints);
 
-  S minItems(int min) => constraint(MinItemsValidator(min));
+  ListSchema<S, T> uniqueItems() => constraints([const UniqueItemsValidator()]);
 
-  S maxItems(int max) => constraint(MaxItemsValidator(max));
+  ListSchema<S, T> minItems(int min) => constraints([MinItemsValidator(min)]);
+
+  ListSchema<S, T> maxItems(int max) => constraints([MaxItemsValidator(max)]);
 }
 
 // unique item list validator

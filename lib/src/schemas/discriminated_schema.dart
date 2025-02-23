@@ -1,6 +1,7 @@
 part of '../ack_base.dart';
 
-final class DiscriminatedMapSchema extends Schema<MapValue> {
+final class DiscriminatedMapSchema
+    extends Schema<DiscriminatedMapSchema, MapValue> {
   final String _discriminatorKey;
   final Map<String, ObjectSchema> _schemas;
 

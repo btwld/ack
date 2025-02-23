@@ -1,14 +1,63 @@
 part of '../ack_base.dart';
 
-typedef DoubleSchema = Schema<double>;
-typedef IntSchema = Schema<int>;
+final class DoubleSchema extends Schema<DoubleSchema, double> {
+  const DoubleSchema({super.nullable, super.constraints});
 
-extension NumberSchemaExt<S extends Schema<num>> on S {
-  S minValue(num min) => constraint(MinValueValidator(min));
+  @override
+  double? _tryParse(Object value) {
+    if (value is double) return value;
+    if (value is String) return double.tryParse(value);
 
-  S maxValue(num max) => constraint(MaxValueValidator(max));
+    return null;
+  }
 
-  S range(num min, num max) => constraint(RangeValidator(min, max));
+  @override
+  DoubleSchema copyWith({
+    bool? nullable,
+    List<ConstraintsValidator<double>>? constraints,
+  }) {
+    return DoubleSchema(
+      nullable: nullable ?? _nullable,
+      constraints: constraints ?? _constraints,
+    );
+  }
+}
+
+final class IntSchema extends Schema<IntSchema, int> {
+  const IntSchema({super.nullable, super.constraints});
+
+  @override
+  int? _tryParse(Object value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+
+    return null;
+  }
+
+  @override
+  IntSchema copyWith({
+    bool? nullable,
+    List<ConstraintsValidator<int>>? constraints,
+  }) {
+    return IntSchema(
+      nullable: nullable ?? _nullable,
+      constraints: constraints ?? _constraints,
+    );
+  }
+}
+
+extension DoubleSchemaExt on DoubleSchema {
+  DoubleSchema maxValue(num max) => withConstraints([MaxValueValidator(max)]);
+
+  DoubleSchema range(num min, num max) =>
+      withConstraints([RangeValidator(min, max)]);
+}
+
+extension IntSchemaExt on IntSchema {
+  IntSchema maxValue(num max) => withConstraints([MaxValueValidator(max)]);
+
+  IntSchema range(num min, num max) =>
+      withConstraints([RangeValidator(min, max)]);
 }
 
 class MinValueValidator extends ConstraintsValidator<num> {
@@ -38,7 +87,7 @@ class MinValueValidator extends ConstraintsValidator<num> {
   }
 }
 
-class MaxValueValidator extends ConstraintsValidator<num> {
+class MaxValueValidator<T extends num> extends ConstraintsValidator<T> {
   final num max;
   const MaxValueValidator(this.max)
       : super(
@@ -64,7 +113,7 @@ class MaxValueValidator extends ConstraintsValidator<num> {
   }
 }
 
-class RangeValidator extends ConstraintsValidator<num> {
+class RangeValidator<T extends num> extends ConstraintsValidator<T> {
   final num min;
   final num max;
   const RangeValidator(this.min, this.max)

@@ -2,7 +2,7 @@ part of '../ack_base.dart';
 
 typedef MapValue = Map<String, Object?>;
 
-final class ObjectSchema extends Schema<MapValue> {
+final class ObjectSchema extends Schema<ObjectSchema, MapValue> {
   final Map<String, Schema> _properties;
   final bool additionalProperties;
   final List<String> required;

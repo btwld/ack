@@ -1,6 +1,6 @@
 part of '../ack_base.dart';
 
-final class Schema<T extends Object> {
+abstract class Schema<Self extends Schema<Self, T>, T extends Object> {
   final bool _nullable;
 
   final List<ConstraintsValidator<T>> _constraints;
@@ -10,25 +10,16 @@ final class Schema<T extends Object> {
   })  : _nullable = nullable,
         _constraints = constraints ?? const [];
 
-  Schema<T> copyWith({
+  Self copyWith({
     bool? nullable,
     List<ConstraintsValidator<T>>? constraints,
-  }) {
-    return Schema<T>(
-      nullable: nullable ?? _nullable,
-      constraints: constraints ?? _constraints,
-    );
+  });
+
+  Self withConstraints(List<ConstraintsValidator<T>> constraints) {
+    return copyWith(constraints: constraints);
   }
 
-  T? _tryParse(Object value) {
-    if (value is T) return value;
-    if (value is! String) return null;
-    if (T == bool) return bool.tryParse(value) as T?;
-    if (T == int) return int.tryParse(value) as T?;
-    if (T == double) return double.tryParse(value) as T?;
-    if (T == num) return num.tryParse(value) as T?;
-    return null;
-  }
+  T? _tryParse(Object value);
 
   List<ConstraintsValidationError> _validateParsed(T value) {
     return _constraints
@@ -69,14 +60,6 @@ final class Schema<T extends Object> {
   }
 }
 
-extension SchemaExt<S extends Schema<T>, T extends Object> on S {
-  S constraint(ConstraintsValidator<T> validator) {
-    return copyWith(
-      constraints: [..._constraints, validator],
-    ) as S;
-  }
-}
-
 final class SchemaValidationError extends ValidationError {
   const SchemaValidationError._({
     required super.type,
@@ -99,16 +82,10 @@ final class SchemaValidationError extends ValidationError {
   }
 
   // constraints
-  factory SchemaValidationError.constraints({
+  static SchemaValidationConstraintsError constraints({
     required List<ConstraintsValidationError> errors,
   }) {
-    return SchemaValidationError._(
-      type: 'constraints',
-      message: 'Constraints validation failed',
-      context: {
-        'errors': errors,
-      },
-    );
+    return SchemaValidationConstraintsError(errors);
   }
 
   factory SchemaValidationError.nonNullableValue() {
@@ -130,5 +107,25 @@ final class SchemaValidationError extends ValidationError {
         'stackTrace': stackTrace,
       },
     );
+  }
+}
+
+final class SchemaValidationConstraintsError extends SchemaValidationError {
+  final List<ConstraintsValidationError> errors;
+  SchemaValidationConstraintsError(this.errors)
+      : super._(
+          type: 'constraints',
+          message: 'Constraints validation failed',
+          context: {
+            'errors': errors.map((e) => e.toMap()).toList(),
+          },
+        );
+
+  ConstraintsValidationError? getError(String type) {
+    return _errorsMap()[type];
+  }
+
+  Map<String, ConstraintsValidationError> _errorsMap() {
+    return {for (final error in errors) error.type: error};
   }
 }
