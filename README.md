@@ -71,6 +71,7 @@ void main() {
     },
   );
 }
+```
 ### Object Validation
 
 Validate a user object with required fields and nested structures:
@@ -149,22 +150,6 @@ try {
   print('Validation failed: $e');
 }
 ```
-
-API Overview
-- Ack: The primary interface to create and modify schemas. Access types via static members:
-- Ack.string, Ack.int, Ack.boolean, Ack.double
-- Ack.object for maps/objects
-- Ack.discriminated for polymorphic validations
-- Ack.string.list (and similar) for lists of values
-- Schema: The underlying class representing a validation schema.
-- ObjectSchema & ListSchema: Specialized schemas for validating maps and lists.
-- Validators: A suite of built-in constraint validators (e.g., EmailValidator, MinValueValidator) that can be added via extension methods.
-
-Use Cases
-- Form Validation: Ensure user inputs meet required formats and constraints in Flutter forms.
-- API Data Validation: Validate JSON responses to safeguard data integrity.
-- Configuration Validation: Enforce structure and rules in configuration files.
-- Business Logic Enforcement: Apply custom rules to maintain consistency and correctness in data processing.
 
 ## Contributing
 
