@@ -46,20 +46,22 @@ final class IntSchema extends Schema<int> {
   }
 }
 
-extension DoubleSchemaExt on DoubleSchema {
-  DoubleSchema maxValue(num max) =>
-      copyWith(constraints: [MaxValueValidator(max)]);
+extension DoubleSchemaExt<S extends Schema<double>> on S {
+  S maxValue(num max) => copyWith(constraints: [MaxValueValidator(max)]) as S;
 
-  DoubleSchema range(num min, num max) =>
-      copyWith(constraints: [RangeValidator(min, max)]);
+  S minValue(num min) => copyWith(constraints: [MinValueValidator(min)]) as S;
+
+  S range(num min, num max) =>
+      copyWith(constraints: [RangeValidator(min, max)]) as S;
 }
 
-extension IntSchemaExt on IntSchema {
-  IntSchema maxValue(num max) =>
-      copyWith(constraints: [MaxValueValidator(max)]);
+extension IntSchemaExt<S extends Schema<int>> on S {
+  S maxValue(num max) => copyWith(constraints: [MaxValueValidator(max)]) as S;
 
-  IntSchema range(num min, num max) =>
-      copyWith(constraints: [RangeValidator(min, max)]);
+  S minValue(num min) => copyWith(constraints: [MinValueValidator(min)]) as S;
+
+  S range(num min, num max) =>
+      copyWith(constraints: [RangeValidator(min, max)]) as S;
 }
 
 class MinValueValidator<T extends num> extends ConstraintsValidator<T> {

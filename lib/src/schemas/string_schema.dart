@@ -21,34 +21,29 @@ final class StringSchema extends Schema<String> {
   }
 }
 
-extension StringSchemaExt on StringSchema {
-  StringSchema isEmail() => copyWith(constraints: [const EmailValidator()]);
+extension StringSchemaExt<S extends Schema<String>> on S {
+  S isEmail() => copyWith(constraints: [const EmailValidator()]) as S;
 
-  StringSchema isHexColor() =>
-      copyWith(constraints: [const HexColorValidator()]);
+  S isHexColor() => copyWith(constraints: [const HexColorValidator()]) as S;
 
-  StringSchema isEmpty() => copyWith(constraints: [const IsEmptyValidator()]);
+  S isEmpty() => copyWith(constraints: [const IsEmptyValidator()]) as S;
 
-  StringSchema minLength(int min) =>
-      copyWith(constraints: [MinLengthValidator(min)]);
+  S minLength(int min) => copyWith(constraints: [MinLengthValidator(min)]) as S;
 
-  StringSchema maxLength(int max) =>
-      copyWith(constraints: [MaxLengthValidator(max)]);
+  S maxLength(int max) => copyWith(constraints: [MaxLengthValidator(max)]) as S;
 
-  StringSchema oneOf(List<String> values) =>
-      copyWith(constraints: [OneOfValidator(values)]);
+  S oneOf(List<String> values) =>
+      copyWith(constraints: [OneOfValidator(values)]) as S;
 
-  StringSchema notOneOf(List<String> values) =>
-      copyWith(constraints: [NotOneOfValidator(values)]);
+  S notOneOf(List<String> values) =>
+      copyWith(constraints: [NotOneOfValidator(values)]) as S;
 
-  StringSchema isEnum(List<String> values) =>
-      copyWith(constraints: [EnumValidator(values)]);
+  S isEnum(List<String> values) =>
+      copyWith(constraints: [EnumValidator(values)]) as S;
 
-  StringSchema isNotEmpty() =>
-      copyWith(constraints: [const NotEmptyValidator()]);
+  S isNotEmpty() => copyWith(constraints: [const NotEmptyValidator()]) as S;
 
-  StringSchema isDateTime() =>
-      copyWith(constraints: [const DateTimeValidator()]);
+  S isDateTime() => copyWith(constraints: [const DateTimeValidator()]) as S;
 }
 
 /// Validates that the input string can be parsed into a [DateTime] object.

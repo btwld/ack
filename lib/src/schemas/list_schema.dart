@@ -13,7 +13,7 @@ final class ListSchema<V extends Object> extends Schema<List<V>> {
     List<ConstraintsValidator<List<V>>>? constraints,
     bool? nullable,
   }) {
-    return ListSchema<V>(
+    return ListSchema(
       itemSchema,
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
@@ -55,15 +55,15 @@ final class ListSchema<V extends Object> extends Schema<List<V>> {
   }
 }
 
-extension ListSchemaExt<T extends Object> on ListSchema<T> {
-  ListSchema<T> _consraint(ConstraintsValidator<List<T>> validator) =>
+extension ListSchemaExt<T extends Object> on Schema<List<T>> {
+  Schema<List<T>> _consraint(ConstraintsValidator<List<T>> validator) =>
       copyWith(constraints: [validator]);
 
-  ListSchema<T> uniqueItems() => _consraint(UniqueItemsValidator());
+  Schema<List<T>> uniqueItems() => _consraint(UniqueItemsValidator());
 
-  ListSchema<T> minItems(int min) => _consraint(MinItemsValidator(min));
+  Schema<List<T>> minItems(int min) => _consraint(MinItemsValidator(min));
 
-  ListSchema<T> maxItems(int max) => _consraint(MaxItemsValidator(max));
+  Schema<List<T>> maxItems(int max) => _consraint(MaxItemsValidator(max));
 }
 
 // unique item list validator

@@ -13,24 +13,37 @@ With ack you can:
 This library is designed for developers who need a clear, concise way to validate data in their Dart and Flutter applications.
 
 ## Features
+- **Type-Safe Schema Definitions**
+  - Use static members like `Ack.string`, `Ack.int`, and `Ack.boolean` to define schemas
 
-- **Type-Safe Schema Definitions:** Use static members like `Ack.string`, `Ack.int`, and `Ack.boolean` to define schemas.
-- **Built-In Validators:** Out-of-the-box validators for common patterns such as:
+- **Built-In Validators** 
   - Email addresses (`isEmail`)
-  - URLs (`isUrl`)
+  - URLs (`isUrl`) 
   - Hex colors (`isHexColor`)
-  - POSIX paths (`isPosixPath`)
-  - String length and emptiness checks (`minLength`, `maxLength`, `isNotEmpty`, `isEmpty`)
-  - Numeric range checks (`minValue`, `maxValue`, `range`)
-  - List validations (e.g., `uniqueItems`, `minItems`, `maxItems`)
-- **Composite Schemas:** Validate complex data structures with `ObjectSchema` and `ListSchema`.
-- **Discriminated Schemas:** Handle polymorphic data using discriminator keys with `DiscriminatedMapSchema`.
-- **Custom Constraint Support:** Easily extend functionality by adding your own constraints.
+  - String validations:
+    - Length checks (`minLength`, `maxLength`)
+    - Empty checks (`isEmpty`, `isNotEmpty`)
+  - Numeric validations:
+    - Range checks (`minValue`, `maxValue`, `range`)
+  - List validations:
+    - Uniqueness (`uniqueItems`)
+    - Size constraints (`minItems`, `maxItems`)
+
+- **Composite Schemas**
+  - Validate complex data structures with `ObjectSchema`
+  - Handle arrays and lists with `ListSchema`
+
+- **Discriminated Schemas**
+  - Support polymorphic data validation using discriminator keys
+  - Implemented via `DiscriminatedMapSchema`
+
+- **Custom Constraint Support**
+  - Easily extend functionality by adding custom constraints
+  - Build your own validation rules
 
 ## Installation
 
 Add ack to your `pubspec.yaml`:
-
 ```bash
 dart pub add ack
 ```
@@ -48,37 +61,34 @@ void main() {
   final emailSchema = Ack.string.isEmail();
   const email = 'test@example.com';
 
-  final errors = emailSchema.validate(email);
-  if (errors.isEmpty) {
-    print('Valid email!');
-  } else {
-    print('Validation errors:');
-    for (final error in errors) {
-      print(error.message);
-    }
-  }
+  final result = emailSchema.validate(email);
+  result.match(
+    onOk: (data) {
+      print('Valid email!');
+    },
+    onFail: (error) {
+      print('Validation errors: ${error.toMap()}');
+    },
+  );
 }
-```
 ### Object Validation
 
 Validate a user object with required fields and nested structures:
 
 ```dart
-import 'package:ack/ack.dart';
-
-void main() {
-  final userSchema = Ack.object({
+  final addressSchema = Ack.object(properties: {
+    'street': Ack.string(),
+    'city': Ack.string(),
+    'zip': Ack.string(),
+  });
+  final userSchema = Ack.object(properties: {
     'name': Ack.string.isNotEmpty(),
     'email': Ack.string.isEmail(),
-    'age': Ack.int.constraints([MinValueValidator(18)]),
+    'age': Ack.int.minValue(18),
     'roles': Ack.string.list.minItems(1),
-  }).extend({
-    'address': Ack.object({
-      'street': Ack.string,
-      'city': Ack.string,
-      'zip': Ack.string,
-    }),
-  }, additionalProperties: true);
+  });
+
+  final userWithAddressSchema = userSchema.extend({'address': addressSchema()});
 
   final userData = {
     'name': 'John Doe',
@@ -92,16 +102,16 @@ void main() {
     },
   };
 
-  final errors = userSchema.validate(userData);
-  if (errors.isEmpty) {
-    print('User data is valid!');
-  } else {
-    print('Validation errors:');
-    for (final error in errors) {
-      print(error.message);
-    }
-  }
-}
+  final result = userWithAddressSchema.validate(userData);
+
+  result.match(
+    onOk: (data) {
+      print('User data is valid!');
+    },
+    onFail: (error) {
+      print('Validation errors: ${error.toMap()}');
+    },
+  );
 ```
 
 ### List Validation
@@ -112,18 +122,19 @@ Validate a list of numbers ensuring that each value adheres to specific constrai
 import 'package:ack/ack.dart';
 
 void main() {
-  final numbersSchema = Ack.double.list.constraints([UniqueItemsValidator()]);
+  final numbersSchema = Ack.double.list.uniqueItems();
   final numbers = [1.1, 2.2, 3.3];
 
-  final errors = numbersSchema.validate(numbers);
-  if (errors.isEmpty) {
-    print('Numbers are valid!');
-  } else {
-    print('Validation errors:');
-    for (final error in errors) {
-      print(error.message);
-    }
-  }
+  final result = numbersSchema.validate(numbers);
+
+  result.match(
+    onOk: (data) {
+      print('Numbers are valid!');
+    },
+    onFail: (error) {
+      print('Validation errors: ${error.toMap()}');
+    },
+  );
 }
 ```
 
