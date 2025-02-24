@@ -75,19 +75,22 @@ void main() {
 ### Object Validation
 
 Validate a user object with required fields and nested structures:
-
 ```dart
-  final addressSchema = Ack.object(properties: {
-    'street': Ack.string(),
-    'city': Ack.string(),
-    'zip': Ack.string(),
-  });
-  final userSchema = Ack.object(properties: {
-    'name': Ack.string.isNotEmpty(),
-    'email': Ack.string.isEmail(),
-    'age': Ack.int.minValue(18),
-    'roles': Ack.string.list.minItems(1),
-  });
+  final addressSchema = Ack.object(
+    properties: {
+      'street': Ack.string(),
+      'city': Ack.string(),
+      'zip': Ack.string(),
+    },
+  );
+  final userSchema = Ack.object(
+    properties: {
+      'name': Ack.string.isNotEmpty(),
+      'email': Ack.string.isEmail(),
+      'age': Ack.int.minValue(18),
+      'roles': Ack.string.list.minItems(1),
+    }
+  );
 
   final userWithAddressSchema = userSchema.extend({'address': addressSchema()});
 
