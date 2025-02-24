@@ -1,4 +1,5 @@
 import 'package:ack/src/helpers.dart';
+import 'package:meta/meta.dart';
 
 part 'constraint.dart';
 part 'schemas/boolean_schema.dart';
@@ -10,14 +11,14 @@ part 'schemas/schema.dart';
 part 'schemas/string_schema.dart';
 part 'validation.dart';
 
-final class Ack<S extends Schema<S, T>, T extends Object> {
+final class Ack<S extends Schema<T>, T extends Object> {
   final S _schema;
   const Ack(this._schema);
 
-  S nullable() => _schema.copyWith(nullable: true);
+  S nullable() => _schema.copyWith(nullable: true) as S;
 
   S withConstraints(List<ConstraintsValidator<T>> constraints) {
-    return _schema.copyWith(constraints: constraints);
+    return _schema.copyWith(constraints: constraints) as S;
   }
 
   S call() => _schema;
@@ -43,7 +44,7 @@ final class Ack<S extends Schema<S, T>, T extends Object> {
     }
   }
 
-  Ack<ListSchema<S, T>, List<T>> get list => Ack(ListSchema(_schema));
+  Ack<ListSchema<T>, List<T>> get list => Ack(ListSchema(_schema));
 
   factory Ack.discriminated({
     required String discriminatorKey,

@@ -1,11 +1,11 @@
 part of '../ack_base.dart';
 
-final class DoubleSchema extends Schema<DoubleSchema, double> {
+final class DoubleSchema extends Schema<double> {
   const DoubleSchema({super.nullable, super.constraints});
 
   @override
   double? _tryParse(Object value) {
-    if (value is double) return value;
+    if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value);
 
     return null;
@@ -23,12 +23,12 @@ final class DoubleSchema extends Schema<DoubleSchema, double> {
   }
 }
 
-final class IntSchema extends Schema<IntSchema, int> {
+final class IntSchema extends Schema<int> {
   const IntSchema({super.nullable, super.constraints});
 
   @override
   int? _tryParse(Object value) {
-    if (value is int) return value;
+    if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
 
     return null;
@@ -47,20 +47,22 @@ final class IntSchema extends Schema<IntSchema, int> {
 }
 
 extension DoubleSchemaExt on DoubleSchema {
-  DoubleSchema maxValue(num max) => withConstraints([MaxValueValidator(max)]);
+  DoubleSchema maxValue(num max) =>
+      copyWith(constraints: [MaxValueValidator(max)]);
 
   DoubleSchema range(num min, num max) =>
-      withConstraints([RangeValidator(min, max)]);
+      copyWith(constraints: [RangeValidator(min, max)]);
 }
 
 extension IntSchemaExt on IntSchema {
-  IntSchema maxValue(num max) => withConstraints([MaxValueValidator(max)]);
+  IntSchema maxValue(num max) =>
+      copyWith(constraints: [MaxValueValidator(max)]);
 
   IntSchema range(num min, num max) =>
-      withConstraints([RangeValidator(min, max)]);
+      copyWith(constraints: [RangeValidator(min, max)]);
 }
 
-class MinValueValidator extends ConstraintsValidator<num> {
+class MinValueValidator<T extends num> extends ConstraintsValidator<T> {
   final num min;
   const MinValueValidator(this.min)
       : super(
@@ -73,7 +75,7 @@ class MinValueValidator extends ConstraintsValidator<num> {
     return value >= min
         ? null
         : ConstraintsValidationError(
-            type: 'num_min_value',
+            type: type,
             message:
                 'Value $value is less than the minimum required value of $min. '
                 'Please provide a number greater than or equal to $min.',
@@ -100,7 +102,7 @@ class MaxValueValidator<T extends num> extends ConstraintsValidator<T> {
     return value <= max
         ? null
         : ConstraintsValidationError(
-            type: 'num_max_value',
+            type: type,
             message: 'Value $value exceeds the maximum allowed value of $max. '
                 'Please provide a number less than or equal to $max.',
             context: {
@@ -116,8 +118,10 @@ class MaxValueValidator<T extends num> extends ConstraintsValidator<T> {
 class RangeValidator<T extends num> extends ConstraintsValidator<T> {
   final num min;
   final num max;
-  const RangeValidator(this.min, this.max)
-      : super(
+  const RangeValidator(
+    this.min,
+    this.max,
+  ) : super(
           type: 'num_range',
           description: 'Must be between $min and $max (inclusive)',
         );
@@ -127,7 +131,7 @@ class RangeValidator<T extends num> extends ConstraintsValidator<T> {
     return value >= min && value <= max
         ? null
         : ConstraintsValidationError(
-            type: 'num_range',
+            type: type,
             message:
                 'Value $value is outside the required range of $min to $max. '
                 'Please provide a number between $min and $max (inclusive).',

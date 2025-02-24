@@ -1,8 +1,7 @@
 part of '../ack_base.dart';
 
-final class ListSchema<T extends Schema<T, V>, V extends Object>
-    extends Schema<ListSchema<T, V>, List<V>> {
-  final T itemSchema;
+final class ListSchema<V extends Object> extends Schema<List<V>> {
+  final Schema<V> itemSchema;
   const ListSchema(
     this.itemSchema, {
     super.constraints = const [],
@@ -10,11 +9,11 @@ final class ListSchema<T extends Schema<T, V>, V extends Object>
   });
 
   @override
-  ListSchema<T, V> copyWith({
+  ListSchema<V> copyWith({
     List<ConstraintsValidator<List<V>>>? constraints,
     bool? nullable,
   }) {
-    return ListSchema(
+    return ListSchema<V>(
       itemSchema,
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
@@ -38,7 +37,12 @@ final class ListSchema<T extends Schema<T, V>, V extends Object>
   }
 
   @override
-  List<ListConstraintsValidationError> _validateParsed(List<V> value) {
+  List<ConstraintsValidationError> _validateParsed(List<V> value) {
+    final constraintsErrors = _constraints
+        .map((e) => e.validate(value))
+        .whereType<ConstraintsValidationError>()
+        .toList();
+
     final errors = <ListConstraintsValidationError>[];
     for (var i = 0; i < value.length; i++) {
       final result = itemSchema.validate(value[i]);
@@ -47,25 +51,24 @@ final class ListSchema<T extends Schema<T, V>, V extends Object>
         errors.add(ListConstraintsValidationError.index(i, error));
       });
     }
-    return errors;
+    return [...constraintsErrors, ...errors];
   }
 }
 
-extension ListSchemaExt<T extends Object, S extends Schema<S, T>>
-    on ListSchema<S, T> {
-  ListSchema<S, T> constraints(
-          List<ConstraintsValidator<List<T>>> constraints) =>
-      copyWith(constraints: constraints);
+extension ListSchemaExt<T extends Object> on ListSchema<T> {
+  ListSchema<T> _consraint(ConstraintsValidator<List<T>> validator) =>
+      copyWith(constraints: [validator]);
 
-  ListSchema<S, T> uniqueItems() => constraints([const UniqueItemsValidator()]);
+  ListSchema<T> uniqueItems() => _consraint(UniqueItemsValidator());
 
-  ListSchema<S, T> minItems(int min) => constraints([MinItemsValidator(min)]);
+  ListSchema<T> minItems(int min) => _consraint(MinItemsValidator(min));
 
-  ListSchema<S, T> maxItems(int max) => constraints([MaxItemsValidator(max)]);
+  ListSchema<T> maxItems(int max) => _consraint(MaxItemsValidator(max));
 }
 
 // unique item list validator
-class UniqueItemsValidator<T> extends ConstraintsValidator<List<T>> {
+class UniqueItemsValidator<T extends Object>
+    extends ConstraintsValidator<List<T>> {
   const UniqueItemsValidator()
       : super(
           type: 'list_unique_items',
@@ -97,7 +100,8 @@ class UniqueItemsValidator<T> extends ConstraintsValidator<List<T>> {
 }
 
 // min length of list validator
-class MinItemsValidator<T> extends ConstraintsValidator<List<T>> {
+class MinItemsValidator<T extends Object>
+    extends ConstraintsValidator<List<T>> {
   final int min;
   const MinItemsValidator(this.min)
       : super(

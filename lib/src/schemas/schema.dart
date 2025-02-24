@@ -1,6 +1,6 @@
 part of '../ack_base.dart';
 
-abstract class Schema<Self extends Schema<Self, T>, T extends Object> {
+abstract class Schema<T extends Object> {
   final bool _nullable;
 
   final List<ConstraintsValidator<T>> _constraints;
@@ -10,14 +10,20 @@ abstract class Schema<Self extends Schema<Self, T>, T extends Object> {
   })  : _nullable = nullable,
         _constraints = constraints ?? const [];
 
-  Self copyWith({
+  Schema<T> copyWith({
     bool? nullable,
     List<ConstraintsValidator<T>>? constraints,
   });
 
-  Self withConstraints(List<ConstraintsValidator<T>> constraints) {
-    return copyWith(constraints: constraints);
-  }
+  @visibleForTesting
+  List<ConstraintsValidator<T>> getConstraints() => _constraints;
+
+  @visibleForTesting
+  bool getNullable() => _nullable;
+
+  // Schema<T> withConstraints(List<ConstraintsValidator<T>> constraints) {
+  //   return copyWith(constraints: constraints);
+  // }
 
   T? _tryParse(Object value);
 
@@ -54,8 +60,8 @@ abstract class Schema<Self extends Schema<Self, T>, T extends Object> {
 
   Map<String, Object?> toMap() {
     return {
-      'type': 'schema',
       'constraints': _constraints.map((e) => e.toMap()),
+      'nullable': _nullable,
     };
   }
 }

@@ -1,6 +1,6 @@
 part of '../ack_base.dart';
 
-final class StringSchema extends Schema<StringSchema, String> {
+final class StringSchema extends Schema<String> {
   const StringSchema({super.nullable, super.constraints});
 
   @override
@@ -22,30 +22,33 @@ final class StringSchema extends Schema<StringSchema, String> {
 }
 
 extension StringSchemaExt on StringSchema {
-  StringSchema isEmail() => withConstraints([const EmailValidator()]);
+  StringSchema isEmail() => copyWith(constraints: [const EmailValidator()]);
 
-  StringSchema isHexColor() => withConstraints([const HexColorValidator()]);
+  StringSchema isHexColor() =>
+      copyWith(constraints: [const HexColorValidator()]);
 
-  StringSchema isEmpty() => withConstraints([const IsEmptyValidator()]);
+  StringSchema isEmpty() => copyWith(constraints: [const IsEmptyValidator()]);
 
-  StringSchema minLength(int min) => withConstraints([MinLengthValidator(min)]);
+  StringSchema minLength(int min) =>
+      copyWith(constraints: [MinLengthValidator(min)]);
 
-  StringSchema maxLength(int max) => withConstraints([MaxLengthValidator(max)]);
+  StringSchema maxLength(int max) =>
+      copyWith(constraints: [MaxLengthValidator(max)]);
 
   StringSchema oneOf(List<String> values) =>
-      withConstraints([OneOfValidator(values)]);
+      copyWith(constraints: [OneOfValidator(values)]);
 
   StringSchema notOneOf(List<String> values) =>
-      withConstraints([NotOneOfValidator(values)]);
+      copyWith(constraints: [NotOneOfValidator(values)]);
 
   StringSchema isEnum(List<String> values) =>
-      withConstraints([EnumValidator(values)]);
+      copyWith(constraints: [EnumValidator(values)]);
 
-  StringSchema isUri() => withConstraints([const UriValidator()]);
+  StringSchema isNotEmpty() =>
+      copyWith(constraints: [const NotEmptyValidator()]);
 
-  StringSchema isNotEmpty() => withConstraints([const NotEmptyValidator()]);
-
-  StringSchema isDateTime() => withConstraints([const DateTimeValidator()]);
+  StringSchema isDateTime() =>
+      copyWith(constraints: [const DateTimeValidator()]);
 }
 
 /// Validates that the input string can be parsed into a [DateTime] object.
@@ -110,29 +113,6 @@ class EmailValidator extends RegexValidator {
           pattern: r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
           example: 'example@domain.com',
         );
-}
-
-class UriValidator extends ConstraintsValidator<String> {
-  const UriValidator()
-      : super(
-          type: 'string_uri',
-          description: 'Must be a valid URI',
-        );
-
-  @override
-  ConstraintsValidationError? validate(String value) {
-    if (Uri.tryParse(value) == null) {
-      return ConstraintsValidationError(
-        type: type,
-        message:
-            'Invalid URI format for $value, expected a valid URI string https://example.com',
-        context: {
-          'value': value,
-        },
-      );
-    }
-    return null;
-  }
 }
 
 class HexColorValidator extends RegexValidator {

@@ -8,9 +8,8 @@ class TestHelpers {
     return result as Fail<T, E>;
   }
 
-  static SchemaValidationConstraintsError
-      isSchemaConstraintError<T extends Object>(
-          SchemaResult<T, SchemaValidationError> result) {
+  static SchemaValidationConstraintsError isConstraintError<T extends Object>(
+      SchemaResult<T, SchemaValidationError> result) {
     final failResult = isFail(result);
 
     expect(failResult.error, isA<SchemaValidationConstraintsError>());
@@ -21,7 +20,7 @@ class TestHelpers {
     SchemaResult<T, SchemaValidationError> result,
     String type,
   ) {
-    final constraintError = isSchemaConstraintError(result);
+    final constraintError = isConstraintError(result);
     expect(constraintError.getError(type), isA<ConstraintsValidationError>(),
         reason: 'Expected constraint error of type "$type"');
     return constraintError.getError(type) as ConstraintsValidationError;
@@ -31,7 +30,7 @@ class TestHelpers {
     SchemaResult<T, SchemaValidationError> result,
     String type,
   ) {
-    final constraintError = isSchemaConstraintError(result);
+    final constraintError = isConstraintError(result);
     expect(
       constraintError.getError(type),
       isA<ConstraintsValidationError>(),
