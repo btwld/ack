@@ -12,11 +12,10 @@ void main() {
           },
           additionalProperties: false,
           required: ['age']);
-      final newSchema =
-          schema.copyWith(additionalProperties: true, required: []);
+      final newSchema = schema.copyWith(additionalProperties: true);
       // With additionalProperties set to true, extra keys should be allowed.
       final result = newSchema.validate({'age': 30, 'extra': 'value'});
-      expect(result, isA<Ok>());
+      expect(result.isOk, isTrue);
     });
 
     test('Non-nullable schema fails on null', () {
@@ -24,9 +23,8 @@ void main() {
         'age': IntSchema(),
       });
       final result = schema.validate(null);
-      expect(result, isA<Fail>());
-      expect(
-          TestHelpers.isFail(result).error.type, equals('non_nullable_value'));
+      expect(result.isFail, isTrue);
+      expect(result, hasOneSchemaError('non_nullable_value'));
     });
 
     test('Nullable schema passes on null', () {
@@ -34,7 +32,7 @@ void main() {
         'age': IntSchema(),
       }, nullable: true);
       final result = schema.validate(null);
-      expect(result, isA<Ok>());
+      expect(result.isOk, isTrue);
     });
 
     test('Invalid type returns invalid type error', () {
@@ -42,8 +40,8 @@ void main() {
         'age': IntSchema(),
       });
       final result = schema.validate('not a map');
-      expect(result, isA<Fail>());
-      expect(TestHelpers.isFail(result).error.type, equals('invalid_type'));
+      expect(result.isFail, isTrue);
+      expect(result, hasOneSchemaError('invalid_type'));
     });
 
     test('Valid object passes with correct properties', () {
@@ -54,8 +52,7 @@ void main() {
           additionalProperties: false,
           required: ['age']);
       final result = schema.validate({'age': 25});
-      expect(result, isA<Ok>());
-      expect(TestHelpers.isOk(result).value, equals({'age': 25}));
+      expect(result.isOk, isTrue);
     });
 
     test('Fails on additional unallowed property', () {
@@ -66,24 +63,21 @@ void main() {
           additionalProperties: false,
           required: ['age']);
       final result = schema.validate({'age': 25, 'name': 'John'});
-      expect(result, isA<Fail>());
-      // Expect an error indicating an unallowed additional property.
-      final error = TestHelpers.isConstraintError(result);
-      expect(error.getError('unallowed_additional_property'), isNotNull);
+      expect(result.isFail, isTrue);
+      expect(result, hasOneConstraintError('object_property_unallowed'));
     });
 
     test('Fails on missing required property', () {
       final schema = ObjectSchema(
           {
             'age': IntSchema(),
+            'name': StringSchema(),
           },
           additionalProperties: true,
           required: ['age']);
       final result = schema.validate({'name': 'John'});
-      expect(result, isA<Fail>());
-      // Expect an error indicating a required property is missing.
-      final error = TestHelpers.isConstraintError(result);
-      expect(error.getError('required_property_missing'), isNotNull);
+      expect(result.isFail, isTrue);
+      expect(result, hasOneConstraintError('object_property_required'));
     });
 
     test('Fails on property schema error', () {
@@ -95,11 +89,12 @@ void main() {
           additionalProperties: true,
           required: ['age']);
       final result = schema.validate({'age': 'not an int'});
-      expect(result, isA<Fail>());
-      final error = TestHelpers.isConstraintError(result);
-      // key matches
+      expect(result, hasOneSchemaError(PathSchemaError.key));
 
-      expect(error.getError('property_schema_error'), isNotNull);
+      final failResult = result as Fail;
+      final nestedSchemaError = failResult.nestedSchemaErrors.first;
+      expect(nestedSchemaError.path, 'age');
+      expect(nestedSchemaError.errors, hasOneSchemaError('invalid_type'));
     });
 
     test('extend merges properties correctly', () {
@@ -114,7 +109,7 @@ void main() {
           additionalProperties: false,
           required: ['score']);
       final result = extendedSchema.validate({'age': 30, 'score': 100});
-      expect(result, isA<Ok>());
+      expect(result.isOk, isTrue);
     });
   });
 }

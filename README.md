@@ -63,12 +63,8 @@ void main() {
 
   final result = emailSchema.validate(email);
   result.match(
-    onOk: (data) {
-      print('Valid email!');
-    },
-    onFail: (error) {
-      print('Validation errors: ${error.toMap()}');
-    },
+    onOk: (data) => print('Valid email!'),
+    onFail: (error) => print('Validation errors: ${error.toMap()}'),
   );
 }
 ```
@@ -76,21 +72,17 @@ void main() {
 
 Validate a user object with required fields and nested structures:
 ```dart
-  final addressSchema = Ack.object(
-    properties: {
-      'street': Ack.string(),
-      'city': Ack.string(),
-      'zip': Ack.string(),
-    },
-  );
-  final userSchema = Ack.object(
-    properties: {
-      'name': Ack.string.isNotEmpty(),
-      'email': Ack.string.isEmail(),
-      'age': Ack.int.minValue(18),
-      'roles': Ack.string.list.minItems(1),
-    }
-  );
+  final addressSchema = Ack.object({
+    'street': Ack.string(),
+    'city': Ack.string(),
+    'zip': Ack.string(),
+  });
+  final userSchema = Ack.object({
+    'name': Ack.string.isNotEmpty(),
+    'email': Ack.string.isEmail(),
+    'age': Ack.int.minValue(18),
+    'roles': Ack.string.list.minItems(1),
+  });
 
   final userWithAddressSchema = userSchema.extend({'address': addressSchema()});
 
@@ -109,12 +101,9 @@ Validate a user object with required fields and nested structures:
   final result = userWithAddressSchema.validate(userData);
 
   result.match(
-    onOk: (data) {
-      print('User data is valid!');
-    },
-    onFail: (error) {
-      print('Validation errors: ${error.toMap()}');
-    },
+    onOk: (data) => print('User data is valid!'),
+    onFail: (errors) =>
+        print('Validation errors: ${errors.map((e) => e.toMap()).toList()}'),
   );
 ```
 

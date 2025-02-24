@@ -1,7 +1,6 @@
 import 'package:ack/src/helpers.dart';
 import 'package:meta/meta.dart';
 
-part 'constraint.dart';
 part 'schemas/boolean_schema.dart';
 part 'schemas/discriminated_schema.dart';
 part 'schemas/list_schema.dart';
@@ -16,9 +15,15 @@ typedef DoubleType = double;
 
 final class Ack<S extends Schema<T>, T extends Object> extends Schema<T> {
   final S _schema;
+
   const Ack._(this._schema);
 
   S nullable() => _schema.copyWith(nullable: true) as S;
+
+  Ack<S, T> strict() => copyWith(strict: true);
+
+  @override
+  bool get isStrict => _schema.isStrict;
 
   @override
   T? _tryParse(Object value) => _schema._tryParse(value);
@@ -26,14 +31,16 @@ final class Ack<S extends Schema<T>, T extends Object> extends Schema<T> {
   @override
   Ack<S, T> copyWith({
     bool? nullable,
-    List<ConstraintsValidator<T>>? constraints,
+    List<ConstraintValidator<T>>? constraints,
+    bool? strict,
   }) =>
       Ack._(_schema.copyWith(
         nullable: nullable,
         constraints: constraints,
+        strict: strict,
       ) as S);
 
-  S withConstraints(List<ConstraintsValidator<T>> constraints) {
+  S withConstraints(List<ConstraintValidator<T>> constraints) {
     return _schema.copyWith(constraints: constraints) as S;
   }
 
@@ -42,8 +49,8 @@ final class Ack<S extends Schema<T>, T extends Object> extends Schema<T> {
   void validateOrThrow(Object value) {
     final result = validate(value);
 
-    result.onFail((error) {
-      throw AckException(error);
+    result.onFail((errors) {
+      throw AckException(errors);
     });
   }
 
@@ -53,30 +60,32 @@ final class Ack<S extends Schema<T>, T extends Object> extends Schema<T> {
       return _schema.validate(value);
     } catch (e, stackTrace) {
       return Fail(
-        SchemaValidationError.unknownException(
-          error: e,
-          stackTrace: stackTrace,
-        ),
+        [
+          SchemaError.unknownException(
+            error: e,
+            stackTrace: stackTrace,
+          ),
+        ],
       );
     }
   }
 
   Ack<ListSchema<T>, List<T>> get list => Ack._(ListSchema(_schema));
 
-  static Ack<DiscriminatedMapSchema, MapValue> discriminated({
+  static Ack<DiscriminatedObjectSchema, MapValue> discriminated({
     required String discriminatorKey,
     required Map<String, ObjectSchema> schemas,
   }) {
     return Ack._(
-      DiscriminatedMapSchema(
+      DiscriminatedObjectSchema(
         discriminatorKey: discriminatorKey,
         schemas: schemas,
       ),
     );
   }
 
-  static Ack<ObjectSchema, MapValue> object({
-    required Map<String, Schema> properties,
+  static Ack<ObjectSchema, MapValue> object(
+    Map<String, Schema> properties, {
     bool additionalProperties = false,
     List<String> required = const [],
   }) {
@@ -110,7 +119,7 @@ extension OkMapExt on Ack<ObjectSchema, MapValue> {
     Map<String, Schema> properties, {
     bool? additionalProperties,
     List<String>? required,
-    List<ConstraintsValidator<MapValue>>? constraints,
+    List<ConstraintValidator<MapValue>>? constraints,
   }) {
     return Ack._(
       _schema.extend(

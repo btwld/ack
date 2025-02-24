@@ -1,24 +1,18 @@
 part of '../ack_base.dart';
 
 final class BooleanSchema extends Schema<bool> {
-  const BooleanSchema({super.nullable, super.constraints});
-
-  @override
-  bool? _tryParse(Object value) {
-    if (value is bool) return value;
-    if (value is String) return bool.tryParse(value);
-
-    return null;
-  }
+  const BooleanSchema({super.nullable, super.constraints, super.strict});
 
   @override
   BooleanSchema copyWith({
     bool? nullable,
-    List<ConstraintsValidator<bool>>? constraints,
+    List<ConstraintValidator<bool>>? constraints,
+    bool? strict,
   }) {
     return BooleanSchema(
       nullable: nullable ?? _nullable,
       constraints: constraints ?? _constraints,
+      strict: strict ?? _strict,
     );
   }
 }

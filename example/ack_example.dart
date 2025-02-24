@@ -1,12 +1,12 @@
 import 'package:ack/ack.dart';
 
 void main() {
-  final addressSchema = Ack.object(properties: {
+  final addressSchema = Ack.object({
     'street': Ack.string(),
     'city': Ack.string(),
     'zip': Ack.string(),
   });
-  final userSchema = Ack.object(properties: {
+  final userSchema = Ack.object({
     'name': Ack.string.isNotEmpty(),
     'email': Ack.string.isEmail(),
     'age': Ack.int.minValue(18),
@@ -30,11 +30,8 @@ void main() {
   final result = userWithAddressSchema.validate(userData);
 
   result.match(
-    onOk: (data) {
-      print('User data is valid!');
-    },
-    onFail: (error) {
-      print('Validation errors: ${error.toMap()}');
-    },
+    onOk: (data) => print('User data is valid!'),
+    onFail: (errors) =>
+        print('Validation errors: ${errors.map((e) => e.toMap()).toList()}'),
   );
 }

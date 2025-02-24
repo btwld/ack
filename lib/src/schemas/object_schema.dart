@@ -10,30 +10,20 @@ final class ObjectSchema extends Schema<MapValue> {
   ObjectSchema(
     this._properties, {
     this.additionalProperties = false,
-    List<ConstraintsValidator<MapValue>>? constraints,
+    super.constraints,
     this.required = const [],
     super.nullable,
-  }) : super(
-          constraints: [
-            if (!additionalProperties)
-              UnallowedAdditionalPropertyValidator(
-                _properties.keys.toSet(),
-              ),
-            if (required.isNotEmpty)
-              RequiredPropertyMissingValidator(
-                required.toSet(),
-              ),
-            // ...?constraints,
-          ],
-        );
+    super.strict,
+  });
 
   @override
   ObjectSchema copyWith({
     bool? additionalProperties,
     List<String>? required,
     Map<String, Schema>? properties,
-    List<ConstraintsValidator<MapValue>>? constraints,
+    List<ConstraintValidator<MapValue>>? constraints,
     bool? nullable,
+    bool? strict,
   }) {
     return ObjectSchema(
       properties ?? _properties,
@@ -41,19 +31,15 @@ final class ObjectSchema extends Schema<MapValue> {
       required: required ?? this.required,
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
+      strict: strict ?? _strict,
     );
-  }
-
-  @override
-  MapValue? _tryParse(Object value) {
-    return value is MapValue ? value : null;
   }
 
   ObjectSchema extend(
     Map<String, Schema> properties, {
     bool? additionalProperties,
     List<String>? required,
-    List<ConstraintsValidator<MapValue>>? constraints,
+    List<ConstraintValidator<MapValue>>? constraints,
   }) {
     // if property SchemaValue is of SchemaMap, we need to merge them
     final mergedProperties = {..._properties};
@@ -91,8 +77,20 @@ final class ObjectSchema extends Schema<MapValue> {
   }
 
   @override
-  List<ConstraintsValidationError> _validateParsed(MapValue value) {
-    final constraintErrors = super._validateParsed(value);
+  List<SchemaError> validateAsType(MapValue value) {
+    final constraintErrors = super.validateAsType(value);
+
+    constraintErrors.addAll([
+      ..._validateRequiredProperties(
+        value,
+        required,
+      ),
+      if (!additionalProperties)
+        ..._validateUnallowedProperties(
+          value,
+          _properties.keys,
+        ),
+    ]);
 
     // Validate properties
     for (final key in _properties.keys) {
@@ -100,8 +98,13 @@ final class ObjectSchema extends Schema<MapValue> {
       final propResult = schemaProp.validate(value[key]);
 
       propResult.onFail(
-        (e) => constraintErrors.add(
-          ObjectConstraintsValidationError.propertySchema(key, e),
+        (errors) => constraintErrors.addAll(
+          SchemaError.pathSchemas(
+            path: key,
+            errors: errors,
+            message: 'Property $key schema validation failed',
+            schema: schemaProp,
+          ),
         ),
       );
     }
@@ -115,83 +118,57 @@ final class ObjectSchema extends Schema<MapValue> {
       'type': 'object',
       'properties':
           _properties.map((key, value) => MapEntry(key, value.toMap())),
+      'additionalProperties': additionalProperties,
+      'required': required,
+      'nullable': _nullable,
+      'strict': _strict,
     };
   }
 }
 
-final class RequiredPropertyMissingValidator
-    extends ConstraintsValidator<MapValue> {
-  final Set<String> requiredKeys;
-  RequiredPropertyMissingValidator(this.requiredKeys)
-      : super(
-          type: 'required_property_missing',
-          description: 'Properties are required',
-        );
-
-  @override
-  ConstraintsValidationError? validate(MapValue value) {
-    final valueKeys = value.keys.toSet();
-    final missingKeys = requiredKeys.difference(valueKeys);
-    if (missingKeys.isEmpty) {
-      return null;
-    }
-    return ConstraintsValidationError(
-      type: type,
-      message: 'Properties are required: ${missingKeys.join(', ')}',
-      context: {
-        'missingKeys': missingKeys,
-      },
-    );
-  }
+List<ObjectSchemaError> _validateRequiredProperties(
+  MapValue value,
+  Iterable<String> requiredKeys,
+) {
+  return requiredKeys
+      .toSet()
+      .difference(value.keys.toSet())
+      .map(ObjectSchemaError.requiredProperty)
+      .toList();
 }
 
-final class UnallowedAdditionalPropertyValidator
-    extends ConstraintsValidator<MapValue> {
-  final Set<String> allowedKeys;
-  UnallowedAdditionalPropertyValidator(this.allowedKeys)
-      : super(
-          type: 'unallowed_additional_property',
-          description: 'Additional properties are not allowed',
-        );
-
-  @override
-  ConstraintsValidationError? validate(MapValue value) {
-    final valueKeys = value.keys.toSet();
-    final allowedKeys = this.allowedKeys;
-    final unallowedKeys = valueKeys.difference(allowedKeys);
-    if (unallowedKeys.isEmpty) {
-      return null;
-    }
-    return ConstraintsValidationError(
-      type: type,
-      message:
-          'Only the following properties are allowed: ${allowedKeys.join(', ')}',
-      context: {
-        'unallowedKeys': unallowedKeys,
-      },
-    );
-  }
+List<ObjectSchemaError> _validateUnallowedProperties(
+  MapValue value,
+  Iterable<String> allowedKeys,
+) {
+  return value.keys
+      .toSet()
+      .difference(allowedKeys.toSet())
+      .map(ObjectSchemaError.unallowedProperty)
+      .toList();
 }
 
-final class ObjectConstraintsValidationError
-    extends ConstraintsValidationError {
-  const ObjectConstraintsValidationError._({
-    required super.type,
+final class ObjectSchemaError extends ConstraintError {
+  ObjectSchemaError({
     required super.message,
     required super.context,
-  });
+    required String name,
+  }) : super(name: 'object_$name');
 
-  factory ObjectConstraintsValidationError.propertySchema(
-    String propertyKey,
-    SchemaValidationError error,
-  ) {
-    return ObjectConstraintsValidationError._(
-      type: 'property_schema_error',
-      message: 'Property $propertyKey schema validation failed',
-      context: {
-        'propertyKey': propertyKey,
-        'error': error.toMap(),
-      },
+  factory ObjectSchemaError.unallowedProperty(String property) {
+    return ObjectSchemaError(
+      name: 'property_unallowed',
+      message: 'Unallowed additional property: $property',
+      context: {'property': property},
+    );
+  }
+
+  // Required
+  factory ObjectSchemaError.requiredProperty(String property) {
+    return ObjectSchemaError(
+      name: 'property_required',
+      message: 'Required property: $property',
+      context: {'property': property},
     );
   }
 }

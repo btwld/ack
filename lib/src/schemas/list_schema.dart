@@ -1,62 +1,80 @@
 part of '../ack_base.dart';
 
 final class ListSchema<V extends Object> extends Schema<List<V>> {
-  final Schema<V> itemSchema;
-  const ListSchema(
-    this.itemSchema, {
+  final Schema<V> _itemSchema;
+  ListSchema(
+    Schema<V> itemSchema, {
     super.constraints = const [],
     super.nullable,
-  });
+    super.strict,
+  }) : _itemSchema = itemSchema.copyWith(strict: strict);
 
   @override
   ListSchema<V> copyWith({
-    List<ConstraintsValidator<List<V>>>? constraints,
+    List<ConstraintValidator<List<V>>>? constraints,
     bool? nullable,
+    bool? strict,
   }) {
     return ListSchema(
-      itemSchema,
+      _itemSchema,
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
+      strict: strict ?? _strict,
     );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      'type': 'list',
+      'itemSchema': _itemSchema.toMap(),
+      'nullable': _nullable,
+      'constraints': _constraints.map((e) => e.toMap()).toList(),
+    };
   }
 
   @override
   List<V>? _tryParse(Object value) {
     if (value is! List) return null;
 
-    final parsedList = <V>[];
+    List<V>? parsedList = <V>[];
     for (final v in value) {
-      final parsed = itemSchema._tryParse(v);
+      final parsed = _itemSchema._tryParse(v);
       if (parsed == null) {
-        parsedList.clear();
+        parsedList = null;
         break;
       }
-      parsedList.add(parsed);
+      parsedList!.add(parsed);
     }
     return parsedList;
   }
 
   @override
-  List<ConstraintsValidationError> _validateParsed(List<V> value) {
-    final constraintsErrors = _constraints
-        .map((e) => e.validate(value))
-        .whereType<ConstraintsValidationError>()
-        .toList();
+  List<SchemaError> validateAsType(List<V> value) {
+    final errors = [
+      ..._constraints.map((e) => e.validate(value)).whereType<SchemaError>()
+    ];
 
-    final errors = <ListConstraintsValidationError>[];
     for (var i = 0; i < value.length; i++) {
-      final result = itemSchema.validate(value[i]);
+      final result = _itemSchema.validate(value[i]);
 
-      result.onFail((error) {
-        errors.add(ListConstraintsValidationError.index(i, error));
+      result.onFail((errors) {
+        errors.addAll(
+          SchemaError.pathSchemas(
+            path: '[$i]',
+            errors: errors,
+            message: 'Item in index [$i] schema validation failed',
+            schema: _itemSchema,
+          ),
+        );
       });
     }
-    return [...constraintsErrors, ...errors];
+    return errors;
   }
 }
 
 extension ListSchemaExt<T extends Object> on Schema<List<T>> {
-  Schema<List<T>> _consraint(ConstraintsValidator<List<T>> validator) =>
+  Schema<List<T>> _consraint(ConstraintValidator<List<T>> validator) =>
       copyWith(constraints: [validator]);
 
   Schema<List<T>> uniqueItems() => _consraint(UniqueItemsValidator());
@@ -68,12 +86,14 @@ extension ListSchemaExt<T extends Object> on Schema<List<T>> {
 
 // unique item list validator
 class UniqueItemsValidator<T extends Object>
-    extends ConstraintsValidator<List<T>> {
-  const UniqueItemsValidator()
-      : super(
-          type: 'list_unique_items',
-          description: 'List items must be unique',
-        );
+    extends ConstraintValidator<List<T>> {
+  const UniqueItemsValidator();
+
+  @override
+  String get name => 'list_unique_items';
+
+  @override
+  String get description => 'List items must be unique';
 
   List<T> _notUnique(List<T> value) {
     final unique = value.toSet();
@@ -83,91 +103,72 @@ class UniqueItemsValidator<T extends Object>
   }
 
   @override
-  ConstraintsValidationError? validate(List<T> value) {
+  bool check(List<T> value) {
     final unique = value.toSet();
-    return unique.length == value.length
-        ? null
-        : ConstraintsValidationError(
-            type: type,
-            message:
-                'List items are not unique ${_notUnique(value).map((e) => e.toString()).join(', ')}',
-            context: {
-              'value': value,
-              'unique': unique,
-            },
-          );
+    return unique.length == value.length;
+  }
+
+  @override
+  ConstraintError onError(List<T> value) {
+    final notUnique = _notUnique(value);
+    return buildError(
+      message:
+          'List items are not unique ${notUnique.map((e) => e.toString()).join(', ')}',
+      context: {
+        'value': value,
+        'notUnique': notUnique,
+      },
+    );
   }
 }
 
 // min length of list validator
-class MinItemsValidator<T extends Object>
-    extends ConstraintsValidator<List<T>> {
+class MinItemsValidator<T extends Object> extends ConstraintValidator<List<T>> {
   final int min;
-  const MinItemsValidator(this.min)
-      : super(
-          type: 'list_min_items',
-          description: 'List must have at least $min items',
-        );
+  const MinItemsValidator(this.min);
 
   @override
-  ConstraintsValidationError? validate(List<T> value) {
-    return value.length >= min
-        ? null
-        : ConstraintsValidationError(
-            type: type,
-            message:
-                'List length is less than the minimum required length: $min',
-            context: {
-              'value': value,
-              'min': min,
-            },
-          );
+  String get name => 'list_min_items';
+
+  @override
+  String get description => 'List must have at least $min items';
+
+  @override
+  bool check(List<T> value) => value.length >= min;
+
+  @override
+  ConstraintError onError(List<T> value) {
+    return buildError(
+      message: 'List length is less than the minimum required length: $min',
+      context: {
+        'value': value,
+        'min': min,
+      },
+    );
   }
 }
 
 // max length of list validator
-class MaxItemsValidator<T> extends ConstraintsValidator<List<T>> {
+class MaxItemsValidator<T> extends ConstraintValidator<List<T>> {
   final int max;
-  const MaxItemsValidator(this.max)
-      : super(
-          type: 'list_max_items',
-          description: 'List must have at most $max items',
-        );
+  const MaxItemsValidator(this.max);
 
   @override
-  ConstraintsValidationError? validate(List<T> value) {
-    return value.length <= max
-        ? null
-        : ConstraintsValidationError(
-            type: type,
-            message:
-                'List length is greater than the maximum required length: $max',
-            context: {
-              'value': value,
-              'max': max,
-            },
-          );
-  }
-}
+  String get name => 'list_max_items';
 
-final class ListConstraintsValidationError extends ConstraintsValidationError {
-  const ListConstraintsValidationError._({
-    required super.type,
-    required super.message,
-    required super.context,
-  });
+  @override
+  String get description => 'List must have at most $max items';
 
-  // Index error
-  factory ListConstraintsValidationError.index(
-    int index,
-    SchemaValidationError error,
-  ) {
-    return ListConstraintsValidationError._(
-      type: 'list_index_error',
-      message: 'List index $index has errors: ${error.message}',
+  @override
+  bool check(List<T> value) => value.length <= max;
+
+  @override
+  ConstraintError onError(List<T> value) {
+    return buildError(
+      message: 'List length is greater than the maximum required length: $max',
       context: {
-        'index': index,
-        'error': error.toMap(),
+        'value': value,
+        'max': max,
       },
     );
   }

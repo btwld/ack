@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 extension IterableExtensions<T> on Iterable<T> {
   T? firstWhereOrNull(bool Function(T) test) {
     for (final element in this) {
@@ -6,6 +8,13 @@ extension IterableExtensions<T> on Iterable<T> {
 
     return null;
   }
+}
+
+String prettyJson(dynamic json) {
+  var spaces = ' ' * 2;
+  var encoder = JsonEncoder.withIndent(spaces);
+
+  return encoder.convert(json);
 }
 
 String? findClosestStringMatch(String value, List<String> allowedValues) {

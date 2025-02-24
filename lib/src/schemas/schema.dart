@@ -2,136 +2,86 @@ part of '../ack_base.dart';
 
 abstract class Schema<T extends Object> {
   final bool _nullable;
+  final bool _strict;
 
-  final List<ConstraintsValidator<T>> _constraints;
+  final List<ConstraintValidator<T>> _constraints;
   const Schema({
     bool nullable = false,
-    List<ConstraintsValidator<T>>? constraints,
+    bool strict = false,
+    List<ConstraintValidator<T>>? constraints,
   })  : _nullable = nullable,
+        _strict = strict,
         _constraints = constraints ?? const [];
 
   Schema<T> copyWith({
     bool? nullable,
-    List<ConstraintsValidator<T>>? constraints,
+    bool? strict,
+    List<ConstraintValidator<T>>? constraints,
   });
 
   @visibleForTesting
-  List<ConstraintsValidator<T>> getConstraints() => _constraints;
+  List<ConstraintValidator<T>> getConstraints() => _constraints;
+
+  bool get isNullable => _nullable;
+
+  bool get isStrict => _strict;
+
+  T? _tryParse(Object value) {
+    if (value is T) return value;
+    if (!_strict) {
+      if (value is String) return _tryParseString(value);
+      if (value is num) {
+        if (T == int) return value.toInt() as T?;
+        if (T == double) return value.toDouble() as T?;
+        if (T == String) return value.toString() as T?;
+      }
+    }
+    return null;
+  }
+
+  T? _tryParseString(String value) {
+    if (T == int) return int.tryParse(value) as T?;
+    if (T == double) return double.tryParse(value) as T?;
+    if (T == bool) return bool.tryParse(value) as T?;
+    return null;
+  }
 
   @visibleForTesting
-  bool getNullable() => _nullable;
-
-  // Schema<T> withConstraints(List<ConstraintsValidator<T>> constraints) {
-  //   return copyWith(constraints: constraints);
-  // }
-
-  T? _tryParse(Object value);
-
-  List<ConstraintsValidationError> _validateParsed(T value) {
+  List<SchemaError> validateAsType(T value) {
     return _constraints
         .map((e) => e.validate(value))
-        .whereType<ConstraintsValidationError>()
+        .whereType<SchemaError>()
         .toList();
   }
 
   SchemaResult validate(Object? value) {
     if (value == null) {
-      return _nullable
-          ? Ok.unit()
-          : Fail(SchemaValidationError.nonNullableValue());
+      return _nullable ? Ok.unit() : Fail([SchemaError.nonNullableValue()]);
     }
 
     final typedValue = _tryParse(value);
     if (typedValue == null) {
       return Fail(
-        SchemaValidationError.invalidType(
-          invalidType: value.runtimeType,
-          expectedType: T,
-        ),
+        [
+          SchemaError.invalidType(
+            valueType: value.runtimeType,
+            expectedType: T,
+          ),
+        ],
       );
     }
 
-    final errors = _validateParsed(typedValue);
-    if (errors.isEmpty) {
-      return Ok(typedValue);
-    }
-    return Fail(SchemaValidationError.constraints(errors: errors));
+    final errors = validateAsType(typedValue);
+    return errors.isEmpty ? Ok(typedValue) : Fail(errors);
   }
 
   Map<String, Object?> toMap() {
     return {
-      'constraints': _constraints.map((e) => e.toMap()),
+      'type': T.toString(),
+      'constraints': _constraints.map((e) => e.toMap()).toList(),
       'nullable': _nullable,
     };
   }
-}
 
-final class SchemaValidationError extends ValidationError {
-  const SchemaValidationError._({
-    required super.type,
-    required super.message,
-    super.context = const {},
-  });
-
-  factory SchemaValidationError.invalidType({
-    required Type invalidType,
-    required Type expectedType,
-  }) {
-    return SchemaValidationError._(
-      type: 'invalid_type',
-      message: 'Invalid Type $invalidType, expected $expectedType',
-      context: {
-        'invalidType': invalidType,
-        'expectedType': expectedType,
-      },
-    );
-  }
-
-  // constraints
-  static SchemaValidationConstraintsError constraints({
-    required List<ConstraintsValidationError> errors,
-  }) {
-    return SchemaValidationConstraintsError(errors);
-  }
-
-  factory SchemaValidationError.nonNullableValue() {
-    return SchemaValidationError._(
-      type: 'non_nullable_value',
-      message: 'Non nullable value is null',
-    );
-  }
-
-  factory SchemaValidationError.unknownException({
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    return SchemaValidationError._(
-      type: 'unknown_exception',
-      message: 'Unknown Exception when validating schema',
-      context: {
-        'error': error,
-        'stackTrace': stackTrace,
-      },
-    );
-  }
-}
-
-final class SchemaValidationConstraintsError extends SchemaValidationError {
-  final List<ConstraintsValidationError> errors;
-  SchemaValidationConstraintsError(this.errors)
-      : super._(
-          type: 'constraints',
-          message: 'Constraints validation failed',
-          context: {
-            'errors': errors.map((e) => e.toMap()).toList(),
-          },
-        );
-
-  ConstraintsValidationError? getError(String type) {
-    return _errorsMap()[type];
-  }
-
-  Map<String, ConstraintsValidationError> _errorsMap() {
-    return {for (final error in errors) error.type: error};
-  }
+  String toJson() => prettyJson(toMap());
 }
