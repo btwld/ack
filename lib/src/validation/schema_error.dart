@@ -1,4 +1,4 @@
-part of 'ack_base.dart';
+part of '../ack_base.dart';
 
 sealed class SchemaError {
   final String _message;
@@ -94,88 +94,6 @@ sealed class SchemaError {
   }
 }
 
-class AckException implements Exception {
-  final List<SchemaError> errors;
-  final StackTrace? stackTrace;
-
-  const AckException(this.errors, {this.stackTrace});
-
-  Map<String, dynamic> toMap() {
-    return {
-      'errors': errors.map((e) => e.toMap()).toList(),
-    };
-  }
-
-  String toJson() => prettyJson(toMap());
-
-  @override
-  String toString() {
-    return 'AckException: ${toJson()}';
-  }
-}
-
-/// A class representing a Result which can be either `Ok` (success) or `Fail` (failure).
-class SchemaResult<T extends Object> {
-  const SchemaResult();
-
-  /// Returns `true` if the result is `Ok`
-  bool get isOk => this is Ok<T>;
-
-  /// Returns `true` if the result is `Fail`
-  bool get isFail => this is Fail<T>;
-
-  static SchemaResult<T> ok<T extends Object>(T value) {
-    return Ok(value);
-  }
-
-  static SchemaResult<T> fail<T extends Object>(List<SchemaError> errors) {
-    return Fail(errors);
-  }
-
-  R match<R>({
-    required R Function(T value) onOk,
-    required R Function(List<SchemaError> errors) onFail,
-  }) {
-    if (this is Ok<T>) return onOk((this as Ok<T>).value);
-    return onFail((this as Fail<T>).errors);
-  }
-
-  void onFail(void Function(List<SchemaError> errors) onFail) {
-    match(
-      onOk: (_) {},
-      onFail: (error) => onFail(error),
-    );
-  }
-
-  void onOk(void Function(T value) onOk) {
-    match(
-      onOk: (value) => onOk(value),
-      onFail: (_) {},
-    );
-  }
-}
-
-/// Represents a successful result.
-final class Ok<T extends Object> extends SchemaResult<T> {
-  final T value;
-  const Ok(this.value);
-
-  const Ok.unit() : value = _unit as T;
-}
-
-/// Represents an error result.
-/// Represents an error result.
-class Fail<T extends Object> extends SchemaResult<T> {
-  final List<SchemaError> errors;
-  const Fail(this.errors);
-}
-
-const _unit = Null._();
-
-class Null {
-  const Null._();
-}
-
 final class InvalidTypeSchemaError extends SchemaError {
   static const String key = 'invalid_type';
 
@@ -218,53 +136,6 @@ final class UnknownExceptionSchemaError extends SchemaError {
             'stackTrace': stackTrace,
           },
         );
-}
-
-sealed class ConstraintValidator<T> {
-  String get name;
-  String get description;
-
-  const ConstraintValidator();
-
-  bool check(T value);
-
-  ConstraintError? validate(T value) => check(value) ? null : onError(value);
-
-  ConstraintError onError(T value);
-
-  Map<String, Object?> toMap() {
-    return {
-      'name': name,
-      'description': description,
-    };
-  }
-
-  String toJson() => prettyJson(toMap());
-
-  @protected
-  ConstraintError buildError({
-    required String message,
-    required Map<String, Object?> context,
-  }) {
-    return ConstraintError(
-      name: name,
-      message: message,
-      context: context,
-    );
-  }
-
-  @override
-  String toString() => toJson();
-}
-
-final class ConstraintError extends SchemaError {
-  static const String key = 'constraint_error';
-  final String name;
-  const ConstraintError({
-    required this.name,
-    required super.message,
-    required super.context,
-  }) : super(type: key);
 }
 
 final class PathSchemaError extends SchemaError {

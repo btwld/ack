@@ -1,4 +1,4 @@
-part of '../ack_base.dart';
+part of '../../ack_base.dart';
 
 final class DiscriminatedObjectSchema extends Schema<MapValue> {
   final String _discriminatorKey;
@@ -134,70 +134,4 @@ final class DiscriminatedObjectSchema extends Schema<MapValue> {
   return errors.isEmpty
       ? (errors, schemas[discriminatorValue])
       : (errors, null);
-}
-
-final class DiscriminatedValidationError extends ConstraintError {
-  const DiscriminatedValidationError._({
-    required String name,
-    required super.message,
-    required super.context,
-  }) : super(name: 'discriminated_$name');
-
-  // schema error
-
-  factory DiscriminatedValidationError.missingDiscriminatorKeyInSchema(
-      String discriminatorKey, String discriminatorValue) {
-    return DiscriminatedValidationError._(
-      name: 'missing_discriminator_key_in_schema',
-      message:
-          'Missing discriminator key: $discriminatorKey in schema: $discriminatorValue',
-      context: {
-        'discriminatorKey': discriminatorKey,
-        'discriminatorValue': discriminatorValue,
-      },
-    );
-  }
-
-  factory DiscriminatedValidationError.noSchemaForDiscriminatorValue(
-      String discriminatorKey, String discriminatorValue) {
-    return DiscriminatedValidationError._(
-      name: 'no_schema_for_discriminator_value',
-      message:
-          'No schema found for discriminator value: $discriminatorValue for discriminator key: $discriminatorKey',
-      context: {
-        'discriminatorKey': discriminatorKey,
-        'discriminatorValue': discriminatorValue,
-      },
-    );
-  }
-
-  factory DiscriminatedValidationError.keyMustBeRequiredInSchema(
-    String discriminatorKey,
-    ObjectSchema schema,
-  ) {
-    return DiscriminatedValidationError._(
-      name: 'key_must_be_required_in_schema',
-      message:
-          'Key is required in schema: $discriminatorKey for schema: $schema',
-      context: {
-        'discriminatorKey': discriminatorKey,
-        'schema': schema,
-      },
-    );
-  }
-
-  //Missing discriminator key in value
-  factory DiscriminatedValidationError.missingDiscriminatorKeyInValue(
-    String discriminatorKey,
-    MapValue value,
-  ) {
-    return DiscriminatedValidationError._(
-      name: 'missing_discriminator_key',
-      message: 'Missing discriminator key: $discriminatorKey in value: $value',
-      context: {
-        'discriminatorKey': discriminatorKey,
-        'value': value,
-      },
-    );
-  }
 }

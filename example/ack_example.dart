@@ -31,7 +31,6 @@ void main() {
 
   result.match(
     onOk: (data) => print('User data is valid!'),
-    onFail: (errors) =>
-        print('Validation errors: ${errors.map((e) => e.toMap()).toList()}'),
+    onFail: (errors) => print('Validation errors: $errors'),
   );
 }

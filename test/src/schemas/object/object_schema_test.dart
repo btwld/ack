@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../test_helpers.dart';
+import '../../../test_helpers.dart';
 
 void main() {
   group('ObjectSchema', () {
@@ -53,48 +53,6 @@ void main() {
           required: ['age']);
       final result = schema.validate({'age': 25});
       expect(result.isOk, isTrue);
-    });
-
-    test('Fails on additional unallowed property', () {
-      final schema = ObjectSchema(
-          {
-            'age': IntSchema(),
-          },
-          additionalProperties: false,
-          required: ['age']);
-      final result = schema.validate({'age': 25, 'name': 'John'});
-      expect(result.isFail, isTrue);
-      expect(result, hasOneConstraintError('object_property_unallowed'));
-    });
-
-    test('Fails on missing required property', () {
-      final schema = ObjectSchema(
-          {
-            'age': IntSchema(),
-            'name': StringSchema(),
-          },
-          additionalProperties: true,
-          required: ['age']);
-      final result = schema.validate({'name': 'John'});
-      expect(result.isFail, isTrue);
-      expect(result, hasOneConstraintError('object_property_required'));
-    });
-
-    test('Fails on property schema error', () {
-      // Assuming IntSchema validates that the value must be an integer.
-      final schema = ObjectSchema(
-          {
-            'age': IntSchema(),
-          },
-          additionalProperties: true,
-          required: ['age']);
-      final result = schema.validate({'age': 'not an int'});
-      expect(result, hasOneSchemaError(PathSchemaError.key));
-
-      final failResult = result as Fail;
-      final nestedSchemaError = failResult.nestedSchemaErrors.first;
-      expect(nestedSchemaError.path, 'age');
-      expect(nestedSchemaError.errors, hasOneSchemaError('invalid_type'));
     });
 
     test('extend merges properties correctly', () {

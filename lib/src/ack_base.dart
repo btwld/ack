@@ -1,14 +1,24 @@
 import 'package:ack/src/helpers.dart';
 import 'package:meta/meta.dart';
 
-part 'schemas/boolean_schema.dart';
-part 'schemas/discriminated_schema.dart';
-part 'schemas/list_schema.dart';
-part 'schemas/num_schema.dart';
-part 'schemas/object_schema.dart';
+part 'schemas/boolean/boolean_schema.dart';
+part 'schemas/boolean/boolean_validators.dart';
+part 'schemas/discriminated/discriminated_schema.dart';
+part 'schemas/discriminated/discriminated_validators.dart';
+part 'schemas/list/list_schema.dart';
+part 'schemas/list/list_validators.dart';
+part 'schemas/num/num_schema.dart';
+part 'schemas/num/num_validators.dart';
+part 'schemas/object/object_schema.dart';
+part 'schemas/object/object_validators.dart';
 part 'schemas/schema.dart';
-part 'schemas/string_schema.dart';
-part 'validation.dart';
+part 'schemas/string/string_schema.dart';
+part 'schemas/string/string_validators.dart';
+part 'validation/ack_exception.dart';
+part 'validation/constraint_error.dart';
+part 'validation/constraint_validator.dart';
+part 'validation/schema_error.dart';
+part 'validation/schema_result.dart';
 
 typedef IntType = int;
 typedef DoubleType = double;
@@ -52,6 +62,24 @@ final class Ack<S extends Schema<T>, T extends Object> extends Schema<T> {
     result.onFail((errors) {
       throw AckException(errors);
     });
+  }
+
+  T transformOrThrow(T Function(Object value) mapper, Object value) {
+    final result = validate(value);
+
+    return result.match(
+      onOk: mapper,
+      onFail: (errors) => throw AckException(errors),
+    );
+  }
+
+  T? transform(T Function(Object value) mapper, Object value) {
+    final result = validate(value);
+
+    return result.match(
+      onOk: mapper,
+      onFail: (_) => null,
+    );
   }
 
   @override

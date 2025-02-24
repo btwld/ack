@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../test_helpers.dart';
+import '../../../test_helpers.dart';
 
 void main() {
   group('DoubleSchema', () {
