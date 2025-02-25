@@ -6,19 +6,19 @@ import '../../../test_helpers.dart';
 void main() {
   group('String Validators', () {
     group('EmailValidator', () {
-      const validator = EmailValidator();
+      final validator = EmailStringValidator();
 
       test('Valid emails pass validation', () {
-        expect(validator.check('test@example.com'), isTrue);
-        expect(validator.check('user.name@domain.com'), isTrue);
-        expect(validator.check('user+tag@domain.com'), isTrue);
+        expect(validator.isValid('test@example.com'), isTrue);
+        expect(validator.isValid('user.name@domain.com'), isTrue);
+        expect(validator.isValid('user+tag@domain.com'), isTrue);
       });
 
       test('Invalid emails fail validation', () {
-        expect(validator.check('not-an-email'), isFalse);
-        expect(validator.check('missing@domain'), isFalse);
-        expect(validator.check('@domain.com'), isFalse);
-        expect(validator.check(''), isFalse);
+        expect(validator.isValid('not-an-email'), isFalse);
+        expect(validator.isValid('missing@domain'), isFalse);
+        expect(validator.isValid('@domain.com'), isFalse);
+        expect(validator.isValid(''), isFalse);
       });
 
       test('schema validation works with email validator', () {
@@ -26,25 +26,25 @@ void main() {
         expect(schema.validate('test@example.com').isOk, isTrue);
 
         final result = schema.validate('not-an-email');
-        expect(result, hasOneConstraintError('is_email'));
+        expect(result, hasOneConstraintError('email'));
       });
     });
 
     group('HexColorValidator', () {
-      const validator = HexColorValidator();
+      final validator = HexColorStringValidator();
 
       test('Valid hex colors pass validation', () {
-        expect(validator.check('#fff'), isTrue);
-        expect(validator.check('#ffffff'), isTrue);
-        expect(validator.check('fff'), isTrue);
-        expect(validator.check('ffffff'), isTrue);
+        expect(validator.isValid('#fff'), isTrue);
+        expect(validator.isValid('#ffffff'), isTrue);
+        expect(validator.isValid('fff'), isTrue);
+        expect(validator.isValid('ffffff'), isTrue);
       });
 
       test('Invalid hex colors fail validation', () {
-        expect(validator.check('#ff'), isFalse);
-        expect(validator.check('red'), isFalse);
-        expect(validator.check('#ggg'), isFalse);
-        expect(validator.check(''), isFalse);
+        expect(validator.isValid('#ff'), isFalse);
+        expect(validator.isValid('red'), isFalse);
+        expect(validator.isValid('#ggg'), isFalse);
+        expect(validator.isValid(''), isFalse);
       });
 
       test('schema validation works with hex color validator', () {
@@ -52,21 +52,21 @@ void main() {
         expect(schema.validate('#00ff55').isOk, isTrue);
 
         final result = schema.validate('not-a-color');
-        expect(result, hasOneConstraintError('is_hex_color'));
+        expect(result, hasOneConstraintError('hex_color'));
       });
     });
 
     group('IsEmptyValidator', () {
-      final validator = IsEmptyValidator();
+      final validator = IsEmptyStringValidator();
 
       test('Empty string passes validation', () {
-        expect(validator.check(''), isTrue);
+        expect(validator.isValid(''), isTrue);
       });
 
       test('Non-empty strings fail validation', () {
-        expect(validator.check('not empty'), isFalse);
-        expect(validator.check(' '), isFalse);
-        expect(validator.check('a'), isFalse);
+        expect(validator.isValid('not empty'), isFalse);
+        expect(validator.isValid(' '), isFalse);
+        expect(validator.isValid('a'), isFalse);
       });
 
       test('schema validation works with isEmpty validator', () {
@@ -79,18 +79,18 @@ void main() {
     });
 
     group('MinLengthValidator', () {
-      final validator = MinLengthValidator(3);
+      final validator = MinLengthStringValidator(3);
 
       test('Strings meeting minimum length pass validation', () {
-        expect(validator.check('abc'), isTrue);
-        expect(validator.check('abcd'), isTrue);
-        expect(validator.check('12345'), isTrue);
+        expect(validator.isValid('abc'), isTrue);
+        expect(validator.isValid('abcd'), isTrue);
+        expect(validator.isValid('12345'), isTrue);
       });
 
       test('Strings below minimum length fail validation', () {
-        expect(validator.check('a'), isFalse);
-        expect(validator.check('ab'), isFalse);
-        expect(validator.check(''), isFalse);
+        expect(validator.isValid('a'), isFalse);
+        expect(validator.isValid('ab'), isFalse);
+        expect(validator.isValid(''), isFalse);
       });
 
       test('schema validation works with minLength validator', () {
@@ -103,18 +103,18 @@ void main() {
     });
 
     group('MaxLengthValidator', () {
-      final validator = MaxLengthValidator(3);
+      final validator = MaxLengthStringValidator(3);
 
       test('Strings within maximum length pass validation', () {
-        expect(validator.check(''), isTrue);
-        expect(validator.check('a'), isTrue);
-        expect(validator.check('ab'), isTrue);
-        expect(validator.check('abc'), isTrue);
+        expect(validator.isValid(''), isTrue);
+        expect(validator.isValid('a'), isTrue);
+        expect(validator.isValid('ab'), isTrue);
+        expect(validator.isValid('abc'), isTrue);
       });
 
       test('Strings exceeding maximum length fail validation', () {
-        expect(validator.check('abcd'), isFalse);
-        expect(validator.check('12345'), isFalse);
+        expect(validator.isValid('abcd'), isFalse);
+        expect(validator.isValid('12345'), isFalse);
       });
 
       test('schema validation works with maxLength validator', () {
@@ -127,17 +127,17 @@ void main() {
     });
 
     group('OneOfValidator', () {
-      final validator = OneOfValidator(['apple', 'banana']);
+      final validator = OneOfStringValidator(['apple', 'banana']);
 
       test('Strings in allowed values pass validation', () {
-        expect(validator.check('apple'), isTrue);
-        expect(validator.check('banana'), isTrue);
+        expect(validator.isValid('apple'), isTrue);
+        expect(validator.isValid('banana'), isTrue);
       });
 
       test('Strings not in allowed values fail validation', () {
-        expect(validator.check('orange'), isFalse);
-        expect(validator.check(''), isFalse);
-        expect(validator.check('APPLE'), isFalse);
+        expect(validator.isValid('orange'), isFalse);
+        expect(validator.isValid(''), isFalse);
+        expect(validator.isValid('APPLE'), isFalse);
       });
 
       test('schema validation works with oneOf validator', () {
@@ -150,17 +150,17 @@ void main() {
     });
 
     group('NotOneOfValidator', () {
-      final validator = NotOneOfValidator(['apple', 'banana']);
+      final validator = NotOneOfStringValidator(['apple', 'banana']);
 
       test('Strings not in disallowed values pass validation', () {
-        expect(validator.check('orange'), isTrue);
-        expect(validator.check(''), isTrue);
-        expect(validator.check('APPLE'), isTrue);
+        expect(validator.isValid('orange'), isTrue);
+        expect(validator.isValid(''), isTrue);
+        expect(validator.isValid('APPLE'), isTrue);
       });
 
       test('Strings in disallowed values fail validation', () {
-        expect(validator.check('apple'), isFalse);
-        expect(validator.check('banana'), isFalse);
+        expect(validator.isValid('apple'), isFalse);
+        expect(validator.isValid('banana'), isFalse);
       });
 
       test('schema validation works with notOneOf validator', () {
@@ -173,18 +173,18 @@ void main() {
     });
 
     group('EnumValidator', () {
-      final validator = EnumValidator(['red', 'green', 'blue']);
+      final validator = EnumStringValidator(['red', 'green', 'blue']);
 
       test('Strings in enum pass validation', () {
-        expect(validator.check('red'), isTrue);
-        expect(validator.check('green'), isTrue);
-        expect(validator.check('blue'), isTrue);
+        expect(validator.isValid('red'), isTrue);
+        expect(validator.isValid('green'), isTrue);
+        expect(validator.isValid('blue'), isTrue);
       });
 
       test('Strings not in enum fail validation', () {
-        expect(validator.check('yellow'), isFalse);
-        expect(validator.check(''), isFalse);
-        expect(validator.check('RED'), isFalse);
+        expect(validator.isValid('yellow'), isFalse);
+        expect(validator.isValid(''), isFalse);
+        expect(validator.isValid('RED'), isFalse);
       });
 
       test('schema validation works with enum validator', () {
@@ -197,16 +197,16 @@ void main() {
     });
 
     group('NotEmptyValidator', () {
-      final validator = NotEmptyValidator();
+      final validator = NotEmptyStringValidator();
 
       test('Non-empty strings pass validation', () {
-        expect(validator.check('hello'), isTrue);
-        expect(validator.check(' '), isTrue);
-        expect(validator.check('a'), isTrue);
+        expect(validator.isValid('hello'), isTrue);
+        expect(validator.isValid(' '), isTrue);
+        expect(validator.isValid('a'), isTrue);
       });
 
       test('Empty string fails validation', () {
-        expect(validator.check(''), isFalse);
+        expect(validator.isValid(''), isFalse);
       });
 
       test('schema validation works with notEmpty validator', () {
@@ -219,18 +219,18 @@ void main() {
     });
 
     group('DateTimeValidator', () {
-      final validator = DateTimeValidator();
+      final validator = DateTimeStringValidator();
 
       test('Valid datetime strings pass validation', () {
-        expect(validator.check('2023-01-01T00:00:00.000Z'), isTrue);
-        expect(validator.check('2023-12-31T23:59:59.999Z'), isTrue);
-        expect(validator.check('2023-06-15T12:30:45Z'), isTrue);
+        expect(validator.isValid('2023-01-01T00:00:00.000Z'), isTrue);
+        expect(validator.isValid('2023-12-31T23:59:59.999Z'), isTrue);
+        expect(validator.isValid('2023-06-15T12:30:45Z'), isTrue);
       });
 
       test('Invalid datetime strings fail validation', () {
-        expect(validator.check('not a datetime'), isFalse);
-        expect(validator.check('32'), isFalse);
-        expect(validator.check(''), isFalse);
+        expect(validator.isValid('not a datetime'), isFalse);
+        expect(validator.isValid('32'), isFalse);
+        expect(validator.isValid(''), isFalse);
       });
 
       test('schema validation works with datetime validator', () {

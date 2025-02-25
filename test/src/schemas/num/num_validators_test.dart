@@ -7,14 +7,14 @@ void main() {
   group('Number Validators', () {
     group('MinValueValidator', () {
       test('Values above min pass validation', () {
-        final validator = MinValueValidator(5);
-        expect(validator.check(6), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = MinNumValidator(5);
+        expect(validator.isValid(6), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values below min fail validation', () {
-        final validator = MinValueValidator(5);
-        expect(validator.check(4), isFalse);
+        final validator = MinNumValidator(5);
+        expect(validator.isValid(4), isFalse);
       });
 
       test('schema validation works with min value', () {
@@ -29,31 +29,31 @@ void main() {
 
     group('MaxValueValidator', () {
       test('Values below max pass validation', () {
-        final validator = MaxValueValidator(5);
-        expect(validator.check(4), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = MaxNumValidator(5);
+        expect(validator.isValid(4), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values above max fail validation', () {
-        final validator = MaxValueValidator(5);
-        expect(validator.check(6), isFalse);
+        final validator = MaxNumValidator(5);
+        expect(validator.isValid(6), isFalse);
       });
     });
 
     group('RangeValidator', () {
       test('Values in range pass validation', () {
-        final validator = RangeValidator(1, 5);
-        expect(validator.check(1), isTrue);
-        expect(validator.check(3), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = RangeNumValidator(1, 5);
+        expect(validator.isValid(1), isTrue);
+        expect(validator.isValid(3), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values outside range fail validation', () {
-        final validator = RangeValidator(1, 5);
-        expect(validator.check(0), isFalse);
-        expect(validator.check(6), isFalse);
-        expect(validator.check(1), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = RangeNumValidator(1, 5);
+        expect(validator.isValid(0), isFalse);
+        expect(validator.isValid(6), isFalse);
+        expect(validator.isValid(1), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('schema validation works with range', () {

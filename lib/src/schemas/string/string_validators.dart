@@ -1,11 +1,58 @@
-part of '../../ack_base.dart';
+part of '../../ack.dart';
 
+/// Provides validation methods for [StringSchema].
+extension StringSchemaValidatorExt on StringSchema {
+  /// {@macro string_email_validator}
+  StringSchema isEmail() => withConstraints([EmailStringValidator()]);
+
+  /// {@macro string_hex_color_validator}
+  StringSchema isHexColor() => withConstraints([HexColorStringValidator()]);
+
+  /// {@macro string_is_empty_validator}
+  StringSchema isEmpty() => withConstraints([const IsEmptyStringValidator()]);
+
+  /// {@macro string_min_length_validator}
+  StringSchema minLength(int min) =>
+      withConstraints([MinLengthStringValidator(min)]);
+
+  /// {@macro string_max_length_validator}
+  StringSchema maxLength(int max) =>
+      withConstraints([MaxLengthStringValidator(max)]);
+
+  /// {@macro string_one_of_validator}
+  StringSchema oneOf(List<String> values) =>
+      withConstraints([OneOfStringValidator(values)]);
+
+  /// {@macro string_not_one_of_validator}
+  StringSchema notOneOf(List<String> values) =>
+      withConstraints([NotOneOfStringValidator(values)]);
+
+  /// {@macro enum_string_validator}
+  StringSchema isEnum(List<String> values) =>
+      withConstraints([EnumStringValidator(values)]);
+
+  /// {@macro string_not_empty_validator}
+  StringSchema isNotEmpty() =>
+      withConstraints([const NotEmptyStringValidator()]);
+
+  /// {@macro date_time_string_validator}
+  StringSchema isDateTime() =>
+      withConstraints([const DateTimeStringValidator()]);
+
+  /// {@macro date_string_validator}
+  StringSchema isDate() => withConstraints([const DateStringValidator()]);
+}
+
+/// {@template date_time_string_validator}
 /// Validates that the input string can be parsed into a [DateTime] object.
-class DateTimeValidator extends ConstraintValidator<String> {
-  const DateTimeValidator();
+///
+/// Equivalent of calling `DateTime.tryParse(value) != null`
+/// {@endtemplate}
+class DateTimeStringValidator extends OpenApiConstraintValidator<String> {
+  const DateTimeStringValidator();
 
   @override
-  bool check(String value) {
+  bool isValid(String value) {
     final dateTime = DateTime.tryParse(value);
 
     return dateTime != null;
@@ -25,18 +72,70 @@ class DateTimeValidator extends ConstraintValidator<String> {
   }
 
   @override
+  Map<String, Object?> toSchema() => {'format': 'date-time'};
+  @override
   String get name => 'datetime';
 
   @override
   String get description => 'Must be a valid date time string';
 }
 
-class EnumValidator extends ConstraintValidator<String> {
-  final List<String> enumValues;
-  const EnumValidator(this.enumValues);
+/// {@template date_string_validator}
+/// Validates that the input string can be parsed into a `2017-07-21
+/// {@endtemplate}
+class DateStringValidator extends OpenApiConstraintValidator<String> {
+  const DateStringValidator();
 
   @override
-  bool check(String value) => enumValues.contains(value);
+  bool isValid(String value) {
+    // Attempt to parse the input string using DateTime.tryParse
+    final date = DateTime.tryParse(value);
+    if (date == null) {
+      // Parsing failed (invalid date or format)
+      return false;
+    }
+    // Reconstruct the date in 'yyyy-MM-dd' format
+    final formatted = '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+
+    // Check if the reconstructed string matches the input
+    return formatted == value;
+  }
+
+  @override
+  ConstraintError onError(String value) {
+    return buildError(
+      message: 'Invalid date format. Expected a valid YYYY-MM-DD date string',
+      context: {
+        'value': value,
+        'expected_format': 'YYYY-MM-DD',
+        'example': '2017-07-21',
+      },
+    );
+  }
+
+  @override
+  Map<String, Object?> toSchema() => {'format': 'date'};
+
+  @override
+  String get name => 'date';
+
+  @override
+  String get description => 'Must be a valid date string in YYYY-MM-DD format';
+}
+
+/// {@template enum_string_validator}
+/// Validates that the input string is one of the allowed enum values
+///
+/// Equivalent of calling `enumValues.contains(value)`
+/// {@endtemplate}
+class EnumStringValidator extends OpenApiConstraintValidator<String> {
+  final List<String> enumValues;
+  const EnumStringValidator(this.enumValues);
+
+  @override
+  bool isValid(String value) => enumValues.contains(value);
 
   @override
   ConstraintError onError(String value) {
@@ -53,36 +152,60 @@ class EnumValidator extends ConstraintValidator<String> {
   }
 
   @override
+  Map<String, Object?> toSchema() => {'enum': enumValues};
+
+  @override
   String get name => 'string_enum';
 
   @override
   String get description => 'Must be one of: ${enumValues.join(', ')}';
 }
 
-class EmailValidator extends RegexValidator {
-  const EmailValidator()
+/// {@template string_email_validator}
+/// Validates that the input string matches an email pattern
+///
+/// Uses regex pattern: `^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$`
+/// {@endtemplate}
+class EmailStringValidator extends RegexPatternStringValidator {
+  EmailStringValidator()
       : super(
-          patternName: 'is_email',
+          patternName: 'email',
           pattern: r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
           example: 'example@domain.com',
         );
 }
 
-class HexColorValidator extends RegexValidator {
-  const HexColorValidator()
+/// {@template string_hex_color_validator}
+/// Validates that the input string matches a hex color pattern
+///
+/// Uses regex pattern: `^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
+/// {@endtemplate}
+class HexColorStringValidator extends RegexPatternStringValidator {
+  HexColorStringValidator()
       : super(
-          patternName: 'is_hex_color',
+          patternName: 'hex_color',
           example: '#f0f0f0',
           pattern: r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$',
         );
 }
 
-class OneOfValidator extends ConstraintValidator<String> {
+/// {@template string_one_of_validator}
+/// Validates that the input string exactly matches one of the allowed values
+///
+/// Uses a regex pattern to match the exact string against the allowed values
+/// Example: For values ['a', 'b', 'c'], pattern will be '^(a|b|c)$'
+/// {@endtemplate}
+class OneOfStringValidator extends RegexPatternStringValidator {
   final List<String> values;
-  const OneOfValidator(this.values);
+  OneOfStringValidator(this.values)
+      : super(
+          patternName: 'one_of_values',
+          pattern: '^(${values.map((e) => RegExp.escape(e)).join('|')})\$',
+          example: values.first,
+        );
 
   @override
-  bool check(String value) => values.contains(value);
+  bool isValid(String value) => values.contains(value);
 
   @override
   ConstraintError onError(String value) {
@@ -105,12 +228,23 @@ class OneOfValidator extends ConstraintValidator<String> {
   String get description => 'Must be one of: ${values.join(', ')}';
 }
 
-class NotOneOfValidator extends ConstraintValidator<String> {
+/// {@template string_not_one_of_validator}
+/// Validates that the input string is not one of the disallowed values
+///
+/// Uses a regex pattern to match the exact string against the disallowed values
+/// Example: For values ['a', 'b', 'c'], pattern will be '^(?!a|b|c).*$'
+/// {@endtemplate}
+class NotOneOfStringValidator extends RegexPatternStringValidator {
   final List<String> values;
-  const NotOneOfValidator(this.values);
+  NotOneOfStringValidator(this.values)
+      : super(
+          patternName: 'not_one_of_values',
+          pattern: '^(?!${values.map((e) => RegExp.escape(e)).join('|')}).*\$',
+          example: 'any_value_except_${values.first}',
+        );
 
   @override
-  bool check(String value) => !values.contains(value);
+  bool isValid(String value) => !values.contains(value);
 
   @override
   ConstraintError onError(String value) {
@@ -121,8 +255,7 @@ class NotOneOfValidator extends ConstraintValidator<String> {
         'value': value,
         'disallowed_values': values,
         'total_disallowed_values': values.length,
-        'suggestion':
-            'Please choose a value that is not in the disallowed list',
+        'closest_match': findClosestStringMatch(value, values),
       },
     );
   }
@@ -134,11 +267,16 @@ class NotOneOfValidator extends ConstraintValidator<String> {
   String get description => 'Must NOT be one of: ${values.join(', ')}';
 }
 
-class NotEmptyValidator extends ConstraintValidator<String> {
-  const NotEmptyValidator();
+/// {@template string_not_empty_validator}
+/// Validates that the input string is not empty
+///
+/// Equivalent of calling `value.isNotEmpty`
+/// {@endtemplate}
+class NotEmptyStringValidator extends ConstraintValidator<String> {
+  const NotEmptyStringValidator();
 
   @override
-  bool check(String value) => value.isNotEmpty;
+  bool isValid(String value) => value.isNotEmpty;
 
   @override
   ConstraintError onError(String value) {
@@ -159,18 +297,28 @@ class NotEmptyValidator extends ConstraintValidator<String> {
   String get description => 'String cannot be empty';
 }
 
-class RegexValidator extends ConstraintValidator<String> {
+/// Base class for regex-based string validators
+class RegexPatternStringValidator extends OpenApiConstraintValidator<String> {
   final String patternName;
   final String pattern;
   final String example;
-  const RegexValidator({
+  RegexPatternStringValidator({
     required this.patternName,
     required this.pattern,
     required this.example,
-  });
+  }) {
+    // Assert that string is not empty
+    // and taht it starts with ^ and ends with $ for a complete match
+    if (pattern.isEmpty) {
+      throw ArgumentError('Pattern cannot be empty');
+    }
+    if (!pattern.startsWith('^') || !pattern.endsWith(r'$')) {
+      throw ArgumentError(r'Pattern must start with ^ and end with $');
+    }
+  }
 
   @override
-  bool check(String value) {
+  bool isValid(String value) {
     try {
       final regex = RegExp(pattern);
 
@@ -195,6 +343,9 @@ class RegexValidator extends ConstraintValidator<String> {
   }
 
   @override
+  Map<String, Object?> toSchema() => {'pattern': pattern, 'format': name};
+
+  @override
   String get name => patternName;
 
   @override
@@ -202,11 +353,16 @@ class RegexValidator extends ConstraintValidator<String> {
       'Must match the pattern: $patternName. Example $example';
 }
 
-class IsEmptyValidator extends ConstraintValidator<String> {
-  const IsEmptyValidator();
+/// {@template string_is_empty_validator}
+/// Validates that the input string is empty
+///
+/// Equivalent of calling `value.isEmpty`
+/// {@endtemplate}
+class IsEmptyStringValidator extends ConstraintValidator<String> {
+  const IsEmptyStringValidator();
 
   @override
-  bool check(String value) => value.isEmpty;
+  bool isValid(String value) => value.isEmpty;
 
   @override
   ConstraintError onError(String value) {
@@ -227,12 +383,17 @@ class IsEmptyValidator extends ConstraintValidator<String> {
   String get description => 'String must be empty';
 }
 
-class MinLengthValidator extends ConstraintValidator<String> {
+/// {@template string_min_length_validator}
+/// Validates that the input string length is at least a certain value
+///
+/// Equivalent of calling `value.length >= min`
+/// {@endtemplate}
+class MinLengthStringValidator extends OpenApiConstraintValidator<String> {
   final int min;
-  const MinLengthValidator(this.min);
+  const MinLengthStringValidator(this.min);
 
   @override
-  bool check(String value) => value.length >= min;
+  bool isValid(String value) => value.length >= min;
 
   @override
   ConstraintError onError(String value) {
@@ -248,18 +409,26 @@ class MinLengthValidator extends ConstraintValidator<String> {
   }
 
   @override
+  Map<String, Object?> toSchema() => {'minLength': min};
+
+  @override
   String get name => 'string_min_length';
 
   @override
   String get description => 'String must be at least $min characters long';
 }
 
-class MaxLengthValidator extends ConstraintValidator<String> {
+/// {@template string_max_length_validator}
+/// Validates that the input string length is at most a certain value
+///
+/// Equivalent of calling `value.length <= max`
+/// {@endtemplate}
+class MaxLengthStringValidator extends OpenApiConstraintValidator<String> {
   final int max;
-  const MaxLengthValidator(this.max);
+  const MaxLengthStringValidator(this.max);
 
   @override
-  bool check(String value) => value.length <= max;
+  bool isValid(String value) => value.length <= max;
 
   @override
   ConstraintError onError(String value) {
@@ -274,6 +443,9 @@ class MaxLengthValidator extends ConstraintValidator<String> {
       },
     );
   }
+
+  @override
+  Map<String, Object?> toSchema() => {'maxLength': max};
 
   @override
   String get name => 'string_max_length';

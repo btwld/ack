@@ -13,13 +13,13 @@ void main() {
     });
 
     test('copyWith changes constraints', () {
-      final schema = DoubleSchema(constraints: [MaxValueValidator(5.0)]);
+      final schema = DoubleSchema(constraints: [MaxNumValidator(5.0)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<MaxValueValidator>());
+      expect(schema.getConstraints()[0], isA<MaxNumValidator>());
 
-      final newSchema = schema.copyWith(constraints: [MinValueValidator(1.0)]);
+      final newSchema = schema.copyWith(constraints: [MinNumValidator(1.0)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<MinValueValidator>());
+      expect(newSchema.getConstraints()[0], isA<MinNumValidator>());
     });
 
     group('DoubleSchema Basic Validation', () {
@@ -58,14 +58,14 @@ void main() {
 
     group('MinValueValidator', () {
       test('Values above min pass validation', () {
-        final validator = MinValueValidator(5);
-        expect(validator.check(6), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = MinNumValidator(5);
+        expect(validator.isValid(6), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values below min fail validation', () {
-        final validator = MinValueValidator(5);
-        expect(validator.check(4), isFalse);
+        final validator = MinNumValidator(5);
+        expect(validator.isValid(4), isFalse);
       });
 
       test('schema validation works with min value', () {
@@ -80,31 +80,31 @@ void main() {
 
     group('MaxValueValidator', () {
       test('Values below max pass validation', () {
-        final validator = MaxValueValidator(5);
-        expect(validator.check(4), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = MaxNumValidator(5);
+        expect(validator.isValid(4), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values above max fail validation', () {
-        final validator = MaxValueValidator(5);
-        expect(validator.check(6), isFalse);
+        final validator = MaxNumValidator(5);
+        expect(validator.isValid(6), isFalse);
       });
     });
 
     group('RangeValidator', () {
       test('Values in range pass validation', () {
-        final validator = RangeValidator(1, 5);
-        expect(validator.check(1), isTrue);
-        expect(validator.check(3), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = RangeNumValidator(1, 5);
+        expect(validator.isValid(1), isTrue);
+        expect(validator.isValid(3), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values outside range fail validation', () {
-        final validator = RangeValidator(1, 5);
-        expect(validator.check(0), isFalse);
-        expect(validator.check(6), isFalse);
-        expect(validator.check(1), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = RangeNumValidator(1, 5);
+        expect(validator.isValid(0), isFalse);
+        expect(validator.isValid(6), isFalse);
+        expect(validator.isValid(1), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('schema validation works with range', () {
@@ -120,51 +120,51 @@ void main() {
 
   group('IntSchema', () {
     test('copyWith changes nullable property', () {
-      final schema = IntSchema(nullable: false);
+      final schema = IntegerSchema(nullable: false);
       final newSchema = schema.copyWith(nullable: true);
       final result = newSchema.validate(null);
       expect(result.isOk, isTrue);
     });
 
     test('copyWith changes constraints', () {
-      final schema = IntSchema(constraints: [MaxValueValidator(5)]);
+      final schema = IntegerSchema(constraints: [MaxNumValidator(5)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<MaxValueValidator>());
+      expect(schema.getConstraints()[0], isA<MaxNumValidator>());
 
-      final newSchema = schema.copyWith(constraints: [MinValueValidator(1)]);
+      final newSchema = schema.copyWith(constraints: [MinNumValidator(1)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<MinValueValidator>());
+      expect(newSchema.getConstraints()[0], isA<MinNumValidator>());
     });
 
     group('IntSchema Basic Validation', () {
       test('Non-nullable schema fails on null', () {
-        final schema = IntSchema();
+        final schema = IntegerSchema();
         final result = schema.validate(null);
         expect(result.isFail, isTrue);
         expect(result, hasOneSchemaError('non_nullable_value'));
       });
 
       test('Nullable schema passes on null', () {
-        final schema = IntSchema(nullable: true);
+        final schema = IntegerSchema(nullable: true);
         final result = schema.validate(null);
         expect(result.isOk, isTrue);
       });
 
       test('Invalid type returns invalid type error', () {
-        final schema = IntSchema();
+        final schema = IntegerSchema();
         final result = schema.validate('not an int');
         expect(result.isFail, isTrue);
         expect(result, hasOneSchemaError('invalid_type'));
       });
 
       test('Valid int passes with no constraints', () {
-        final schema = IntSchema();
+        final schema = IntegerSchema();
         final result = schema.validate(42);
         expect(result.isOk, isTrue);
       });
 
       test('String parses to int', () {
-        final schema = IntSchema();
+        final schema = IntegerSchema();
         final result = schema.validate('42');
         expect(result.isOk, isTrue);
       });
@@ -172,18 +172,18 @@ void main() {
 
     group('MinValueValidator', () {
       test('Values above min pass validation', () {
-        final validator = MinValueValidator(5);
-        expect(validator.check(6), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = MinNumValidator(5);
+        expect(validator.isValid(6), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values below min fail validation', () {
-        final validator = MinValueValidator(5);
-        expect(validator.check(4), isFalse);
+        final validator = MinNumValidator(5);
+        expect(validator.isValid(4), isFalse);
       });
 
       test('schema validation works with min value', () {
-        final schema = IntSchema().maxValue(5);
+        final schema = IntegerSchema().maxValue(5);
         expect(schema.validate(4).isOk, isTrue);
 
         final result = schema.validate(6);
@@ -193,35 +193,35 @@ void main() {
 
     group('MaxValueValidator', () {
       test('Values below max pass validation', () {
-        final validator = MaxValueValidator(5);
-        expect(validator.check(4), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = MaxNumValidator(5);
+        expect(validator.isValid(4), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values above max fail validation', () {
-        final validator = MaxValueValidator(5);
-        expect(validator.check(6), isFalse);
+        final validator = MaxNumValidator(5);
+        expect(validator.isValid(6), isFalse);
       });
     });
 
     group('RangeValidator', () {
       test('Values in range pass validation', () {
-        final validator = RangeValidator(1, 5);
-        expect(validator.check(1), isTrue);
-        expect(validator.check(3), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = RangeNumValidator(1, 5);
+        expect(validator.isValid(1), isTrue);
+        expect(validator.isValid(3), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('Values outside range fail validation', () {
-        final validator = RangeValidator(1, 5);
-        expect(validator.check(0), isFalse);
-        expect(validator.check(6), isFalse);
-        expect(validator.check(1), isTrue);
-        expect(validator.check(5), isTrue);
+        final validator = RangeNumValidator(1, 5);
+        expect(validator.isValid(0), isFalse);
+        expect(validator.isValid(6), isFalse);
+        expect(validator.isValid(1), isTrue);
+        expect(validator.isValid(5), isTrue);
       });
 
       test('schema validation works with range', () {
-        final schema = IntSchema().range(1, 5);
+        final schema = IntegerSchema().range(1, 5);
         final result = schema.validate(3);
         expect(result.isOk, isTrue);
 

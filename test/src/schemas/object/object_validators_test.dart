@@ -8,7 +8,7 @@ void main() {
     test('Fails on additional unallowed property', () {
       final schema = ObjectSchema(
           {
-            'age': IntSchema(),
+            'age': IntegerSchema(),
           },
           additionalProperties: false,
           required: ['age']);
@@ -20,7 +20,7 @@ void main() {
     test('Fails on missing required property', () {
       final schema = ObjectSchema(
           {
-            'age': IntSchema(),
+            'age': IntegerSchema(),
             'name': StringSchema(),
           },
           additionalProperties: true,
@@ -34,7 +34,7 @@ void main() {
       // Assuming IntSchema validates that the value must be an integer.
       final schema = ObjectSchema(
           {
-            'age': IntSchema(),
+            'age': IntegerSchema(),
           },
           additionalProperties: true,
           required: ['age']);

@@ -1,14 +1,14 @@
-part of '../ack_base.dart';
+part of '../ack.dart';
 
-sealed class ConstraintValidator<T> {
+abstract class ConstraintValidator<T> {
   const ConstraintValidator();
 
   String get name;
   String get description;
 
-  bool check(T value);
+  bool isValid(T value);
 
-  ConstraintError? validate(T value) => check(value) ? null : onError(value);
+  ConstraintError? validate(T value) => isValid(value) ? null : onError(value);
 
   ConstraintError onError(T value);
 
@@ -28,4 +28,10 @@ sealed class ConstraintValidator<T> {
 
   @override
   String toString() => toJson();
+}
+
+abstract class OpenApiConstraintValidator<T> extends ConstraintValidator<T> {
+  const OpenApiConstraintValidator();
+
+  Map<String, Object?> toSchema();
 }

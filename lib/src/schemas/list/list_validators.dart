@@ -1,35 +1,58 @@
-part of '../../ack_base.dart';
+part of '../../ack.dart';
 
-class UniqueItemsValidator<T extends Object>
-    extends ConstraintValidator<List<T>> {
-  const UniqueItemsValidator();
-
-  List<T> _notUnique(List<T> value) {
-    final unique = value.toSet();
-
-    return unique.length == value.length
-        ? value
-        : value.where((e) => !unique.contains(e)).toList();
+/// Provides validation methods for [ListSchema].
+extension ListSchemaValidatorsExt<T extends Object> on ListSchema<T> {
+  /// {@macro unique_items_list_validator}
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.list(Ack.string).uniqueItems();
+  /// ```
+  ListSchema<T> uniqueItems() {
+    return withConstraints([UniqueItemsListValidator()]);
   }
+
+  /// {@macro min_items_list_validator}
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.list(Ack.string).minItems(2);
+  /// ```
+  ListSchema<T> minItems(int min) =>
+      withConstraints([MinItemsListValidator(min)]);
+
+  /// {@macro max_items_list_validator}
+  ///
+  /// Example:
+  ListSchema<T> maxItems(int max) =>
+      withConstraints([MaxItemsListValidator(max)]);
+}
+
+/// {@template unique_items_list_validator}
+/// Validator that checks if a [List] has unique items
+///
+/// Equivalent of calling `list.toSet().length == list.length`
+/// {@endtemplate}
+class UniqueItemsListValidator<T extends Object>
+    extends OpenApiConstraintValidator<List<T>> {
+  const UniqueItemsListValidator();
 
   @override
-  bool check(List<T> value) {
-    final unique = value.toSet();
-
-    return unique.length == value.length;
-  }
+  bool isValid(List<T> value) => value.duplicates.isEmpty;
 
   @override
   ConstraintError onError(List<T> value) {
-    final notUnique = _notUnique(value);
+    final nonUniqueValues = value.duplicates;
 
     return buildError(
       message:
-          'List items are not unique ${notUnique.map((e) => e.toString()).join(', ')}',
-      context: {'value': value, 'notUnique': notUnique},
+          'List items are not unique ${nonUniqueValues.map((e) => e.toString()).join(', ')}',
+      context: {'value': value, 'notUnique': nonUniqueValues},
     );
   }
 
+  @override
+  Map<String, Object?> toSchema() => {'uniqueItems': true};
   @override
   String get name => 'list_unique_items';
 
@@ -37,12 +60,18 @@ class UniqueItemsValidator<T extends Object>
   String get description => 'List items must be unique';
 }
 
-class MinItemsValidator<T extends Object> extends ConstraintValidator<List<T>> {
+/// {@template min_items_list_validator}
+/// Validator that checks if a [List] has at least a certain number of items
+///
+/// Equivalent of calling `list.length >= min`
+/// {@endtemplate}
+class MinItemsListValidator<T extends Object>
+    extends OpenApiConstraintValidator<List<T>> {
   final int min;
-  const MinItemsValidator(this.min);
+  const MinItemsListValidator(this.min);
 
   @override
-  bool check(List<T> value) => value.length >= min;
+  bool isValid(List<T> value) => value.length >= min;
 
   @override
   ConstraintError onError(List<T> value) {
@@ -53,18 +82,26 @@ class MinItemsValidator<T extends Object> extends ConstraintValidator<List<T>> {
   }
 
   @override
+  Map<String, Object?> toSchema() => {'minItems': min};
+
+  @override
   String get name => 'list_min_items';
 
   @override
   String get description => 'List must have at least $min items';
 }
 
-class MaxItemsValidator<T> extends ConstraintValidator<List<T>> {
+/// {@template max_items_list_validator}
+/// Validator that checks if a [List] has at most a certain number of items
+///
+/// Equivalent of calling `list.length <= max`
+/// {@endtemplate}
+class MaxItemsListValidator<T> extends OpenApiConstraintValidator<List<T>> {
   final int max;
-  const MaxItemsValidator(this.max);
+  const MaxItemsListValidator(this.max);
 
   @override
-  bool check(List<T> value) => value.length <= max;
+  bool isValid(List<T> value) => value.length <= max;
 
   @override
   ConstraintError onError(List<T> value) {
@@ -73,6 +110,9 @@ class MaxItemsValidator<T> extends ConstraintValidator<List<T>> {
       context: {'value': value, 'max': max},
     );
   }
+
+  @override
+  Map<String, Object?> toSchema() => {'maxItems': max};
 
   @override
   String get name => 'list_max_items';

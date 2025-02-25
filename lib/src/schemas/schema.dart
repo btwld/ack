@@ -1,4 +1,14 @@
-part of '../ack_base.dart';
+part of '../ack.dart';
+
+enum SchemaType {
+  string,
+  int,
+  double,
+  boolean,
+  object,
+  discriminatedObject,
+  list,
+}
 
 /// {@template schema}
 /// Abstract base class for defining data schemas.
@@ -8,7 +18,7 @@ part of '../ack_base.dart';
 ///
 /// See also:
 /// * [StringSchema] for validating strings.
-/// * [IntSchema] for validating integers.
+/// * [IntegerSchema] for validating integers.
 /// * [DoubleSchema] for validating doubles.
 /// * [BooleanSchema] for validating booleans.
 /// * [ListSchema] for validating lists of values.
@@ -17,20 +27,20 @@ part of '../ack_base.dart';
 /// * [SchemaFluentMethods] for fluent methods to enhance [Schema] instances.
 ///
 /// {@endtemplate}
-abstract class Schema<T extends Object> {
+sealed class Schema<T extends Object> {
+  /// The type of the schema.
+  final SchemaType type;
+
   /// Whether this schema allows null values.
   final bool _nullable;
-
-  /// Whether parsing should be strict, only accepting values of type [T].
-  ///
-  /// If `false`, attempts will be made to parse compatible types like [String]
-  /// or [num] into the expected type [T].
-  final bool _strict;
 
   /// A human-readable description of this schema.
   ///
   /// This description can be used for documentation or error messages.
   final String _description;
+
+  /// The default value to return if the value is not provided.
+  final T? _defaultValue;
 
   /// A list of validators applied to this schema.
   final List<ConstraintValidator<T>> _constraints;
@@ -44,12 +54,13 @@ abstract class Schema<T extends Object> {
   const Schema({
     bool nullable = false,
     required String? description,
-    bool strict = false,
-    List<ConstraintValidator<T>>? constraints,
+    required this.type,
+    required List<ConstraintValidator<T>>? constraints,
+    required T? defaultValue,
   })  : _nullable = nullable,
         _description = description ?? '',
-        _strict = strict,
-        _constraints = constraints ?? const [];
+        _constraints = constraints ?? const [],
+        _defaultValue = defaultValue;
 
   /// Attempts to parse the given [value] into type [T].
   ///
@@ -59,38 +70,28 @@ abstract class Schema<T extends Object> {
   ///
   /// Returns the parsed value of type [T] or `null` if parsing fails.
   T? _tryParse(Object value) {
-    if (value is T) return value;
-    if (!_strict) {
-      if (value is String) return _tryParseString(value);
-      if (value is num) return _tryParseNum(value);
-    }
-
-    return null;
+    return value is T ? value : null;
   }
 
-  /// Attempts to parse a [num] value into type [T].
+  /// Validates the [value] against the constraints, assuming it is already of type [T].
   ///
-  /// Supports parsing [num] to [int], [double], or [String].
-  /// Returns the parsed value of type [T] or `null` if parsing is not supported.
-  T? _tryParseNum(num value) {
-    if (T == int) return value.toInt() as T?;
-    if (T == double) return value.toDouble() as T?;
-    if (T == String) return value.toString() as T?;
-
-    return null;
-  }
-
-  /// Attempts to parse a [String] value into type [T].
+  /// This method is primarily for internal use and testing, after the value has
+  /// already been successfully parsed or is known to be of the correct type [T].
   ///
-  /// Supports parsing [String] to [int], [double], or [bool].
-  /// Returns the parsed value of type [T] or `null` if parsing is not supported.
-  T? _tryParseString(String value) {
-    if (T == int) return int.tryParse(value) as T?;
-    if (T == double) return double.tryParse(value) as T?;
-    if (T == bool) return bool.tryParse(value) as T?;
-
-    return null;
+  /// Returns a list of [SchemaError] objects if any constraints are violated,
+  /// otherwise returns an empty list.
+  List<SchemaError> _validateAsType(T value) {
+    return _constraints
+        .map((e) => e.validate(value))
+        .whereType<SchemaError>()
+        .toList();
   }
+
+  Schema<T> call({
+    bool? nullable,
+    String? description,
+    List<ConstraintValidator<T>>? constraints,
+  });
 
   /// Creates a new [Schema] with the same properties as this one, but with the
   /// given parameters overridden.
@@ -99,7 +100,6 @@ abstract class Schema<T extends Object> {
   /// concrete `copyWith` implementation that returns the correct subclass type.
   Schema<T> copyWith({
     bool? nullable,
-    bool? strict,
     String? description,
     List<ConstraintValidator<T>>? constraints,
   });
@@ -110,23 +110,11 @@ abstract class Schema<T extends Object> {
   /// Returns whether this schema allows null values.
   bool getNullable() => _nullable;
 
-  /// Returns whether parsing is strict for this schema.
-  bool getStrict() => _strict;
+  /// Returns the description of this schema.
+  String getDescription() => _description;
 
-  /// Validates the [value] against the constraints, assuming it is already of type [T].
-  ///
-  /// This method is primarily for internal use and testing, after the value has
-  /// already been successfully parsed or is known to be of the correct type [T].
-  ///
-  /// Returns a list of [SchemaError] objects if any constraints are violated,
-  /// otherwise returns an empty list.
-  @visibleForTesting
-  List<SchemaError> validateAsType(T value) {
-    return _constraints
-        .map((e) => e.validate(value))
-        .whereType<SchemaError>()
-        .toList();
-  }
+  /// Returns the type of this schema.
+  SchemaType getSchemaType() => type;
 
   /// Checks the [value] against this schema, performing type checking and
   /// constraint validation.
@@ -141,12 +129,16 @@ abstract class Schema<T extends Object> {
   ///   - Attempts to parse [value] to type [T] using [_tryParse].
   ///   - If parsing fails, returns [Fail] with a [SchemaError.invalidType].
   ///   - If parsing succeeds, validates the parsed value against the schema's
-  ///     constraints using [validateAsType].
+  ///     constraints using [_validateAsType].
   ///   - Returns [Ok] with the parsed value if validation succeeds, or [Fail]
   ///     with a list of [SchemaError] objects if validation fails.
   @protected
   SchemaResult<T> checkResult(Object? value) {
     if (value == null) {
+      if (_defaultValue != null) {
+        return Ok(_defaultValue);
+      }
+
       return _nullable ? Ok(null) : Fail([SchemaError.nonNullableValue()]);
     }
 
@@ -162,9 +154,13 @@ abstract class Schema<T extends Object> {
       );
     }
 
-    final errors = validateAsType(typedValue);
+    final errors = _validateAsType(typedValue);
 
-    return errors.isEmpty ? Ok(typedValue) : Fail(errors);
+    return errors.isEmpty
+        ? Ok(typedValue)
+        : _defaultValue != null
+            ? Ok(_defaultValue)
+            : Fail(errors);
   }
 
   /// Converts this schema to a [Map] representation.
@@ -173,11 +169,11 @@ abstract class Schema<T extends Object> {
   /// and description. It is used by [toJson].
   Map<String, Object?> toMap() {
     return {
-      'type': T.toString(),
+      'type': type.name,
       'constraints': _constraints.map((e) => e.toMap()).toList(),
       'nullable': _nullable,
-      'strict': _strict,
       'description': _description,
+      'defaultValue': _defaultValue,
     };
   }
 
@@ -214,11 +210,6 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
   /// This is a convenience method equivalent to calling `copyWith(nullable: true)`.
   S nullable() => copyWith(nullable: true) as S;
 
-  /// Creates a new schema of the same type that enforces strict parsing.
-  ///
-  /// This is a convenience method equivalent to calling `copyWith(strict: true)`.
-  S strict() => copyWith(strict: true) as S;
-
   /// Validates the [value] against this schema and throws an [AckException] if validation fails.
   ///
   /// If validation is successful, returns the validated value of type [T].
@@ -250,5 +241,117 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
         [SchemaError.unknownException(error: e, stackTrace: stackTrace)],
       );
     }
+  }
+}
+
+sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
+    extends Schema<T> with SchemaFluentMethods<Self, T> {
+  /// Whether parsing should be strict, only accepting values of type [T].
+  ///
+  /// If `false`, attempts will be made to parse compatible types like [String]
+  /// or [num] into the expected type [T].
+  final bool _strict;
+
+  const ScalarSchema({
+    bool? nullable,
+    bool? strict,
+    super.description,
+    super.constraints,
+    required super.type,
+    super.defaultValue,
+  })  : _strict = strict ?? false,
+        super(nullable: nullable ?? false);
+
+  /// Attempts to parse the given [value] into type [T].
+  ///
+  /// If [value] is already of type [T], it is returned directly.
+  /// If [_strict] is `false`, attempts will be made to parse [String] and [num]
+  /// values into [T] if possible.
+  ///
+  /// Returns the parsed value of type [T] or `null` if parsing fails.
+  @override
+  T? _tryParse(Object value) {
+    if (value is T) return value;
+    if (!_strict) {
+      if (value is String) return _tryParseString(value);
+      if (value is num) return _tryParseNum(value);
+    }
+
+    return null;
+  }
+
+  /// Attempts to parse a [num] value into type [T].
+  ///
+  /// Supports parsing [num] to [int], [double], or [String].
+  /// Returns the parsed value of type [T] or `null` if parsing is not supported.
+  T? _tryParseNum(num value) {
+    if (T == int) return value.toInt() as T?;
+    if (T == double) return value.toDouble() as T?;
+    if (T == String) return value.toString() as T?;
+
+    return null;
+  }
+
+  /// Attempts to parse a [String] value into type [T].
+  ///
+  /// Supports parsing [String] to [int], [double], or [bool].
+  /// Returns the parsed value of type [T] or `null` if parsing is not supported.
+  T? _tryParseString(String value) {
+    if (T == int) return int.tryParse(value) as T?;
+    if (T == double) return double.tryParse(value) as T?;
+    if (T == bool) return bool.tryParse(value) as T?;
+
+    return null;
+  }
+
+  @protected
+  Self Function({
+    bool? nullable,
+    String? description,
+    bool? strict,
+    List<ConstraintValidator<T>>? constraints,
+  }) get builder;
+
+  /// Creates a new schema of the same type that enforces strict parsing.
+  ///
+  /// This is a convenience method equivalent to calling `copyWith(strict: true)`.
+  Self strict() => copyWith(strict: true);
+
+  @override
+  Self call({
+    bool? nullable,
+    String? description,
+    bool? strict,
+    List<ConstraintValidator<T>>? constraints,
+  }) {
+    return copyWith(
+      nullable: nullable,
+      constraints: constraints,
+      strict: strict,
+      description: description,
+    );
+  }
+
+  @override
+  bool getIsString() => _strict;
+
+  @override
+  Self copyWith({
+    bool? nullable,
+    List<ConstraintValidator<T>>? constraints,
+    bool? strict,
+    String? description,
+  }) {
+    return builder(
+      constraints: constraints ?? _constraints,
+      description: description ?? _description,
+      nullable: nullable ?? _nullable,
+      strict: strict ?? _strict,
+    );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {...super.toMap(), 'strict': _strict};
   }
 }

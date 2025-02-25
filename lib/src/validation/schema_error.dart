@@ -1,4 +1,4 @@
-part of '../ack_base.dart';
+part of '../ack.dart';
 
 sealed class SchemaError {
   final String type;

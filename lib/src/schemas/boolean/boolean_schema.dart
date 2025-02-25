@@ -1,26 +1,14 @@
-part of '../../ack_base.dart';
+part of '../../ack.dart';
 
-final class BooleanSchema extends Schema<bool>
-    with SchemaFluentMethods<BooleanSchema, bool> {
+final class BooleanSchema extends ScalarSchema<BooleanSchema, bool> {
+  @override
+  final builder = BooleanSchema.new;
+
   const BooleanSchema({
     super.nullable,
     super.constraints,
     super.strict,
     super.description,
-  });
-
-  @override
-  BooleanSchema copyWith({
-    bool? nullable,
-    List<ConstraintValidator<bool>>? constraints,
-    bool? strict,
-    String? description,
-  }) {
-    return BooleanSchema(
-      nullable: nullable ?? _nullable,
-      constraints: constraints ?? _constraints,
-      strict: strict ?? _strict,
-      description: description ?? _description,
-    );
-  }
+    super.defaultValue,
+  }) : super(type: SchemaType.boolean);
 }

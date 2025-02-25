@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-String prettyJson(dynamic json) {
+String prettyJson(Map<String, dynamic> json) {
   var spaces = ' ' * 2;
   var encoder = JsonEncoder.withIndent(spaces);
 
@@ -87,4 +87,55 @@ int levenshtein(String s, String t) {
 
   // The final distance is in v1[t.length]
   return v1[t.length];
+}
+
+/// Merges two maps recursively.
+///
+/// If both maps have a value for the same key, the value from the second map
+/// will replace the value from the first map.
+///
+/// If both values are maps, the function will recursively merge them.
+///
+Map<String, Object?> deepMerge(
+  Map<String, Object?> map1,
+  Map<String, Object?> map2,
+) {
+  final result = Map<String, Object?>.from(map1);
+  map2.forEach((key, value) {
+    final existing = result[key];
+    if (existing is Map<String, Object?> && value is Map<String, Object?>) {
+      result[key] = deepMerge(existing, value);
+    } else {
+      result[key] = value;
+    }
+  });
+
+  return result;
+}
+
+extension IterableExt<T> on Iterable<T> {
+  bool get areUnique => duplicates.isEmpty;
+
+  bool get areNotUnique => !areUnique;
+
+  Iterable<T> get duplicates => _getNonUniqueValues();
+
+  Iterable<T> _getNonUniqueValues() {
+    final duplicates = <T>[];
+    final seen = <T>{};
+    for (final element in this) {
+      if (seen.contains(element)) {
+        duplicates.add(element);
+      } else {
+        seen.add(element);
+      }
+    }
+
+    return duplicates;
+  }
+
+  bool containsAll(Iterable<T> iterable) => iterable.every(contains);
+
+  Iterable<T> getNonContainedValues(Iterable<T> iterable) =>
+      iterable.where((e) => !contains(e));
 }

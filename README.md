@@ -3,20 +3,26 @@
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
 <!-- Add build and coverage badges when available -->
 
-A lightweight, extensible Dart schema validation library that simplifies defining and enforcing rules for your data structures. Perfect for validating forms, API responses, and configuration files with type-safe schemas.
+Use **ACK** for fluent schema building in your Flutter/Dart apps—whether it’s a simple form field or an LLM-generated response. With clear constraints and detailed error feedback and context, ACK helps you trust your data and adapt schemas quickly as AI-driven workflows evolve.
+
+## Motivation
+- Versatile Use: Validate forms or LLM outputs with one consistent approach in Flutter.
+- OpenAPI Specification Ready: Convert ACK schemas to OpenAPI for smoother AI integrations and standard API design.
+- Type-Safe & Fluent: Define validation rules with chainable constraints, not scattered if checks.
+- Structured Errors: Receive precise feedback on what failed and why.
+- Composability: Effortlessly extend and combine schemas to build complex definitions.
 
 ## Features
 
 - **Type-Safe Schema Definitions**
-  - Static methods (`Ack.string`, `Ack.int`, `Ack.boolean`) for compile-time safety
-  - Fluent API for building complex validations
-  - Strong typing support with generics
+  - Simple API for `string`, `int`, `double`, `boolean`, `list`, `object`, and `discriminated_object`
+  - Fluent API for building complex validations, easy to read validations.
 
 - **Rich Validation Rules**
   - **Strings**: `isEmail`, `isHexColor`, `minLength`, `maxLength`, `isEmpty`, `isNotEmpty`, `isDateTime`
   - **Numbers**: `minValue`, `maxValue`, `range`
   - **Lists**: `uniqueItems`, `minItems`, `maxItems`
-  - **Objects**: Nested validation, optional fields, extensible schemas
+  - **Objects**: `isContainingKey`, and `isLengthOf`
 
 - **Advanced Features**
   - Discriminated schemas for polymorphic data

@@ -1,4 +1,4 @@
-part of '../ack_base.dart';
+part of '../ack.dart';
 
 final class ConstraintError extends SchemaError {
   final String name;

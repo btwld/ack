@@ -10,7 +10,10 @@ void main() {
         discriminatorKey: 'type',
         schemas: {
           'a': ObjectSchema(
-            {'value': IntSchema()},
+            {
+              'type': StringSchema(),
+              'value': IntegerSchema(),
+            },
             required: ['type'],
           ),
         },
@@ -35,7 +38,7 @@ void main() {
           'a': ObjectSchema(
             {
               'type': StringSchema(),
-              'value': IntSchema(),
+              'value': IntegerSchema(),
             },
             required: ['type'],
           ),
@@ -59,7 +62,7 @@ void main() {
       final schemaWithoutRequired = ObjectSchema(
         {
           'type': StringSchema(),
-          'value': IntSchema(),
+          'value': IntegerSchema(),
         },
         additionalProperties: true,
         required: [],
@@ -82,41 +85,13 @@ void main() {
       );
     });
 
-    test(
-        'Fails when discriminator key is defined as a property in the selected schema',
-        () {
-      final schemaWithDiscriminatorProperty = ObjectSchema(
-        {
-          'value': IntSchema(),
-        },
-        additionalProperties: true,
-        required: ['type'],
-      );
-      final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
-        schemas: {'a': schemaWithDiscriminatorProperty},
-      );
-
-      final result = discriminatedSchema.validate({'type': 'a', 'value': 42});
-      expect(
-        result.isFail,
-        isTrue,
-      );
-      expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_missing_discriminator_key_in_schema',
-        ),
-      );
-    });
-
     test('Fails when underlying schema validation fails', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
         discriminatorKey: 'type',
         schemas: {
           'a': ObjectSchema(
             {
-              'value': IntSchema(),
+              'value': IntegerSchema(),
               'type': StringSchema(),
             },
             required: ['type'],

@@ -1,10 +1,13 @@
+import 'dart:developer';
+
 import 'package:ack/src/helpers.dart';
 import 'package:meta/meta.dart';
 
+part 'converters/open_api_schema.dart';
 part 'schemas/boolean/boolean_schema.dart';
 part 'schemas/boolean/boolean_validators.dart';
-part 'schemas/discriminated/discriminated_schema.dart';
-part 'schemas/discriminated/discriminated_validators.dart';
+part 'schemas/discriminated/discriminated_object_schema.dart';
+part 'schemas/discriminated/discriminated_object_validators.dart';
 part 'schemas/list/list_schema.dart';
 part 'schemas/list/list_validators.dart';
 part 'schemas/num/num_schema.dart';
@@ -25,7 +28,7 @@ final class Ack {
 
   static const boolean = BooleanSchema();
 
-  static const int = IntSchema();
+  static const int = IntegerSchema();
 
   static const double = DoubleSchema();
 
@@ -58,7 +61,7 @@ final class Ack {
   }
 
   static StringSchema enumString(List<String> values) {
-    return StringSchema(constraints: [EnumValidator(values)]);
+    return StringSchema(constraints: [EnumStringValidator(values)]);
   }
 
   static StringSchema enumValues(List<Enum> values) {

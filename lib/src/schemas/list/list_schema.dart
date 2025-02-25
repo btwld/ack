@@ -1,21 +1,16 @@
-part of '../../ack_base.dart';
+part of '../../ack.dart';
 
 final class ListSchema<V extends Object> extends Schema<List<V>>
     with SchemaFluentMethods<ListSchema<V>, List<V>> {
-  late final Schema<V> _itemSchema;
-  ListSchema(
+  final Schema<V> _itemSchema;
+  const ListSchema(
     Schema<V> itemSchema, {
     super.constraints = const [],
     super.nullable,
-    super.strict,
     super.description,
-  }) {
-    _itemSchema = _strict ? _applyStrictToSchema(itemSchema) : itemSchema;
-  }
-
-  Schema<V> _applyStrictToSchema(Schema<V> schema) {
-    return schema.copyWith(strict: true);
-  }
+    super.defaultValue,
+  })  : _itemSchema = itemSchema,
+        super(type: SchemaType.list);
 
   @override
   List<V>? _tryParse(Object value) {
@@ -35,33 +30,7 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
   }
 
   @override
-  ListSchema<V> copyWith({
-    List<ConstraintValidator<List<V>>>? constraints,
-    bool? nullable,
-    bool? strict,
-    String? description,
-  }) {
-    return ListSchema(
-      _itemSchema,
-      constraints: constraints ?? _constraints,
-      nullable: nullable ?? _nullable,
-      strict: strict ?? _strict,
-      description: description ?? _description,
-    );
-  }
-
-  @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': 'list',
-      'itemSchema': _itemSchema.toMap(),
-      'nullable': _nullable,
-      'constraints': _constraints.map((e) => e.toMap()).toList(),
-    };
-  }
-
-  @override
-  List<SchemaError> validateAsType(List<V> value) {
+  List<SchemaError> _validateAsType(List<V> value) {
     final errors = [
       ..._constraints.map((e) => e.validate(value)).whereType<SchemaError>(),
     ];
@@ -83,12 +52,42 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
 
     return errors;
   }
-}
 
-extension ListSchemaExt<T extends Object> on ListSchema<T> {
-  ListSchema<T> uniqueItems() => withConstraints([UniqueItemsValidator()]);
+  Schema<V> getItemSchema() => _itemSchema;
 
-  ListSchema<T> minItems(int min) => withConstraints([MinItemsValidator(min)]);
+  @override
+  ListSchema<V> copyWith({
+    List<ConstraintValidator<List<V>>>? constraints,
+    bool? nullable,
+    String? description,
+    List<V>? defaultValue,
+  }) {
+    return ListSchema(
+      _itemSchema,
+      constraints: constraints ?? _constraints,
+      nullable: nullable ?? _nullable,
+      description: description ?? _description,
+      defaultValue: defaultValue ?? _defaultValue,
+    );
+  }
 
-  ListSchema<T> maxItems(int max) => withConstraints([MaxItemsValidator(max)]);
+  @override
+  ListSchema<V> call({
+    bool? nullable,
+    String? description,
+    List<ConstraintValidator<List<V>>>? constraints,
+    List<V>? defaultValue,
+  }) {
+    return copyWith(
+      constraints: constraints,
+      nullable: nullable,
+      description: description,
+      defaultValue: defaultValue,
+    );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {...super.toMap(), 'itemSchema': _itemSchema.toMap()};
+  }
 }

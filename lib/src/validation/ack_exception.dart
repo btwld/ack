@@ -1,4 +1,4 @@
-part of '../ack_base.dart';
+part of '../ack.dart';
 
 class AckException implements Exception {
   final List<SchemaError> errors;

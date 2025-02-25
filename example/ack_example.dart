@@ -1,6 +1,7 @@
 import 'package:ack/ack.dart';
 
 void main() {
+  /// Object Example
   final addressSchema = Ack.object(
     {
       'street': Ack.string.isNotEmpty(),

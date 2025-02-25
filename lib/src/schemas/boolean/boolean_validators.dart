@@ -1,1 +1,1 @@
-part of '../../ack_base.dart';
+part of '../../ack.dart';
