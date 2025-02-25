@@ -17,7 +17,7 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
     );
   }
 
-  SchemaResult validate(Object? value) {
+  SchemaResult<T> validate(Object? value) {
     try {
       return checkResult(value);
     } catch (e, stackTrace) {
@@ -94,9 +94,9 @@ abstract class Schema<T extends Object> {
   }
 
   @protected
-  SchemaResult checkResult(Object? value) {
+  SchemaResult<T> checkResult(Object? value) {
     if (value == null) {
-      return _nullable ? Ok.unit() : Fail([SchemaError.nonNullableValue()]);
+      return _nullable ? Ok(null) : Fail([SchemaError.nonNullableValue()]);
     }
 
     final typedValue = _tryParse(value);

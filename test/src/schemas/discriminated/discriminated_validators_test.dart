@@ -131,7 +131,7 @@ void main() {
         hasOneSchemaError(PathSchemaError.key),
       );
 
-      final nestedSchemaError = result.pathSchemaError.first;
+      final nestedSchemaError = (result as Fail).pathSchemaError.first;
       expect(nestedSchemaError.path, 'a.value');
 
       expect(

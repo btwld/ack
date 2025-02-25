@@ -79,33 +79,43 @@ final dateSchema = Ack.string.isDateTime();
 
 ### Object Validation
 
-Validate complex objects with nested structures:
+Validate objects (maps) with required fields, optional fields, and nested schemas:
 
 ```dart
-final addressSchema = Ack.object({
-  'street': Ack.string(),
-  'city': Ack.string(),
-  'zip': Ack.string(),
-});
+  final addressSchema = Ack.object(
+    {
+      'street': Ack.string.isNotEmpty(),
+      'city': Ack.string.isNotEmpty(),
+      'zip': Ack.string.nullable(),
+    },
+    required: ['street', 'city'],
+  );
 
-final userSchema = Ack.object({
-  'name': Ack.string.isNotEmpty(),
-  'email': Ack.string.isEmail(),
-  'age': Ack.int.minValue(18),
-  'address': addressSchema(),
-});
+  final userSchema = Ack.object(
+    {
+      'name': Ack.string.isNotEmpty(),
+      'email': Ack.string.isEmail(),
+      'age': Ack.int.minValue(18),
+      'address': addressSchema,
+    },
+    additionalProperties: true,
+    required: ['name', 'email'],
+  );
 
-final result = userSchema.validate({
-  'name': 'John Doe',
-  'email': 'john@example.com',
-  'age': 25,
-  'address': {
-    'street': '123 Main St',
-    'city': 'Springfield',
-    'zip': '12345',
-  },
-});
+  final result = userSchema.validate({
+    'name': 'John Doe',
+    'email': 'john@example.com',
+    'age': 25,
+    'address': {
+      'street': '123 Main St',
+      'city': 'Springfield',
+      'zip': '12345',
+    },
+  });
 ```
+
+•	By default, a field not listed in required is optional.
+•	If you want a field to accept null, mark it as .nullable() on that field schema.
 
 ### List Validation
 
@@ -144,7 +154,7 @@ try {
 
 ### Discriminated Schemas
 
-Handle polymorphic data structures:
+Use Ack.discriminated for union or polymorphic data structures:
 
 ```dart
 // Define individual schemas
@@ -157,7 +167,7 @@ final adminSchema = Ack.object({
   'type': Ack.string,
   'name': Ack.string,
   'level': Ack.int,
-}, required: ['type'])();
+}, required: ['type']);
 
 // Combine them in a discriminated schema
 final schema = Ack.discriminated(

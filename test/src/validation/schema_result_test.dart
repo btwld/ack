@@ -9,7 +9,7 @@ void main() {
       expect(result.isFail, isFalse);
 
       result.match(
-        onOk: (value) => expect(value, 'test'),
+        onOk: (value) => expect(value.getOrNull(), 'test'),
         onFail: (_) => fail('Should not fail'),
       );
     });
