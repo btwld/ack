@@ -246,6 +246,6 @@ extension FailExt<T extends Object> on Fail<T> {
   List<SchemaError> get schemaErrors =>
       errors.whereType<SchemaError>().toList();
 
-  List<PathSchemaError> get nestedSchemaErrors =>
+  List<PathSchemaError> get pathSchemaError =>
       errors.whereType<PathSchemaError>().toList();
 }

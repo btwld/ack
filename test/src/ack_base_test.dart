@@ -27,18 +27,20 @@ void main() {
 
     group('list', () {
       test('creates list schema of base type', () {
-        final listSchema = Ack.string.list;
+        final listSchema = Ack.list(Ack.string);
         expect(listSchema.validate(['a', 'b', 'c']).isOk, isTrue);
         expect(listSchema.validate([1, 2, 3]).isOk, isTrue);
       });
 
       test('handles non-string values based on strict mode', () {
-        final listSchema = Ack.string.list;
+        final listSchema = Ack.list(Ack.string);
 
-        final strictListSchema = listSchema.strict();
+        final strictListSchema = Ack.list(Ack.string.strict());
+
+        final result = strictListSchema.validate([1, 2, 3]);
 
         expect(
-          strictListSchema.validate([1, 2, 3]).isFail,
+          result.isFail,
           isTrue,
           reason: 'strict mode should fail on non-string values',
         );
@@ -56,19 +58,21 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'user': Ack.object({
-              'type': Ack.string,
-              'name': Ack.string,
-            }, required: [
-              'type',
-            ])(),
-            'admin': Ack.object({
-              'type': Ack.string,
-              'name': Ack.string,
-              'level': Ack.int,
-            }, required: [
-              'type',
-            ])(),
+            'user': Ack.object(
+              {
+                'type': Ack.string,
+                'name': Ack.string,
+              },
+              required: ['type'],
+            ),
+            'admin': Ack.object(
+              {
+                'type': Ack.string,
+                'name': Ack.string,
+                'level': Ack.int,
+              },
+              required: ['type'],
+            ),
           },
         );
 

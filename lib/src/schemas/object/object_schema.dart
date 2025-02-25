@@ -2,7 +2,8 @@ part of '../../ack_base.dart';
 
 typedef MapValue = Map<String, Object?>;
 
-final class ObjectSchema extends Schema<MapValue> {
+final class ObjectSchema extends Schema<MapValue>
+    with SchemaFluentMethods<ObjectSchema, MapValue> {
   final Map<String, Schema> _properties;
   final bool additionalProperties;
   final List<String> required;
@@ -11,6 +12,7 @@ final class ObjectSchema extends Schema<MapValue> {
     this._properties, {
     this.additionalProperties = false,
     super.constraints,
+    super.description,
     this.required = const [],
     super.nullable,
     super.strict,
@@ -24,6 +26,7 @@ final class ObjectSchema extends Schema<MapValue> {
     List<ConstraintValidator<MapValue>>? constraints,
     bool? nullable,
     bool? strict,
+    String? description,
   }) {
     return ObjectSchema(
       properties ?? _properties,
@@ -32,6 +35,7 @@ final class ObjectSchema extends Schema<MapValue> {
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
       strict: strict ?? _strict,
+      description: description ?? _description,
     );
   }
 
@@ -95,7 +99,7 @@ final class ObjectSchema extends Schema<MapValue> {
     // Validate properties
     for (final key in _properties.keys) {
       final schemaProp = _properties[key]!;
-      final propResult = schemaProp.validate(value[key]);
+      final propResult = schemaProp.checkResult(value[key]);
 
       propResult.onFail(
         (errors) => constraintErrors.addAll(

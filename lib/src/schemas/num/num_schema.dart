@@ -1,57 +1,63 @@
 part of '../../ack_base.dart';
 
-final class DoubleSchema extends Schema<double> {
-  const DoubleSchema({super.nullable, super.constraints, super.strict});
+final class DoubleSchema extends Schema<double>
+    with SchemaFluentMethods<DoubleSchema, double> {
+  const DoubleSchema(
+      {super.nullable, super.constraints, super.strict, super.description});
 
   @override
   DoubleSchema copyWith({
     bool? nullable,
     List<ConstraintValidator<double>>? constraints,
     bool? strict,
+    String? description,
   }) {
     return DoubleSchema(
       nullable: nullable ?? _nullable,
       constraints: constraints ?? _constraints,
       strict: strict ?? _strict,
+      description: description ?? _description,
     );
   }
 }
 
-final class IntSchema extends Schema<int> {
-  const IntSchema({super.nullable, super.constraints, super.strict});
+final class IntSchema extends Schema<int>
+    with SchemaFluentMethods<IntSchema, int> {
+  const IntSchema(
+      {super.nullable, super.constraints, super.strict, super.description});
 
   @override
   IntSchema copyWith({
     bool? nullable,
     List<ConstraintValidator<int>>? constraints,
     bool? strict,
+    String? description,
   }) {
     return IntSchema(
       nullable: nullable ?? _nullable,
       constraints: constraints ?? _constraints,
       strict: strict ?? _strict,
+      description: description ?? _description,
     );
   }
 }
 
-extension DoubleSchemaExt<S extends Schema<double>> on S {
-  S maxValue(num max) =>
-      copyWith(constraints: [MaxValueValidator<double>(max)]) as S;
+extension IntSchemaExt on IntSchema {
+  IntSchema maxValue(int max) => withConstraints([MaxValueValidator<int>(max)]);
 
-  S minValue(num min) =>
-      copyWith(constraints: [MinValueValidator<double>(min)]) as S;
+  IntSchema minValue(int min) => withConstraints([MinValueValidator<int>(min)]);
 
-  S range(num min, num max) =>
-      copyWith(constraints: [RangeValidator<double>(min, max)]) as S;
+  IntSchema range(int min, int max) =>
+      withConstraints([RangeValidator<int>(min, max)]);
 }
 
-extension IntSchemaExt<S extends Schema<int>> on S {
-  S maxValue(num max) =>
-      copyWith(constraints: [MaxValueValidator<int>(max)]) as S;
+extension DoubleSchemaExt on DoubleSchema {
+  DoubleSchema maxValue(double max) =>
+      withConstraints([MaxValueValidator<double>(max)]);
 
-  S minValue(num min) =>
-      copyWith(constraints: [MinValueValidator<int>(min)]) as S;
+  DoubleSchema minValue(double min) =>
+      withConstraints([MinValueValidator<double>(min)]);
 
-  S range(num min, num max) =>
-      copyWith(constraints: [RangeValidator<int>(min, max)]) as S;
+  DoubleSchema range(double min, double max) =>
+      withConstraints([RangeValidator<double>(min, max)]);
 }

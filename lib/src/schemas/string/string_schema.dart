@@ -1,43 +1,47 @@
 part of '../../ack_base.dart';
 
-final class StringSchema extends Schema<String> {
-  const StringSchema({super.nullable, super.constraints, super.strict});
+final class StringSchema extends Schema<String>
+    with SchemaFluentMethods<StringSchema, String> {
+  const StringSchema(
+      {super.nullable, super.constraints, super.strict, super.description});
 
   @override
   StringSchema copyWith({
     bool? nullable,
     List<ConstraintValidator<String>>? constraints,
     bool? strict,
+    String? description,
   }) {
     return StringSchema(
       nullable: nullable ?? _nullable,
       constraints: constraints ?? _constraints,
       strict: strict ?? _strict,
+      description: description ?? _description,
     );
   }
 }
 
-extension StringSchemaExt<S extends Schema<String>> on S {
-  S isEmail() => copyWith(constraints: [const EmailValidator()]) as S;
+extension StringSchemaExt on StringSchema {
+  StringSchema isEmail() => withConstraints([const EmailValidator()]);
 
-  S isHexColor() => copyWith(constraints: [const HexColorValidator()]) as S;
+  StringSchema isHexColor() => withConstraints([const HexColorValidator()]);
 
-  S isEmpty() => copyWith(constraints: [const IsEmptyValidator()]) as S;
+  StringSchema isEmpty() => withConstraints([const IsEmptyValidator()]);
 
-  S minLength(int min) => copyWith(constraints: [MinLengthValidator(min)]) as S;
+  StringSchema minLength(int min) => withConstraints([MinLengthValidator(min)]);
 
-  S maxLength(int max) => copyWith(constraints: [MaxLengthValidator(max)]) as S;
+  StringSchema maxLength(int max) => withConstraints([MaxLengthValidator(max)]);
 
-  S oneOf(List<String> values) =>
-      copyWith(constraints: [OneOfValidator(values)]) as S;
+  StringSchema oneOf(List<String> values) =>
+      withConstraints([OneOfValidator(values)]);
 
-  S notOneOf(List<String> values) =>
-      copyWith(constraints: [NotOneOfValidator(values)]) as S;
+  StringSchema notOneOf(List<String> values) =>
+      withConstraints([NotOneOfValidator(values)]);
 
-  S isEnum(List<String> values) =>
-      copyWith(constraints: [EnumValidator(values)]) as S;
+  StringSchema isEnum(List<String> values) =>
+      withConstraints([EnumValidator(values)]);
 
-  S isNotEmpty() => copyWith(constraints: [const NotEmptyValidator()]) as S;
+  StringSchema isNotEmpty() => withConstraints([const NotEmptyValidator()]);
 
-  S isDateTime() => copyWith(constraints: [const DateTimeValidator()]) as S;
+  StringSchema isDateTime() => withConstraints([const DateTimeValidator()]);
 }

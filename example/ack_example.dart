@@ -2,9 +2,9 @@ import 'package:ack/ack.dart';
 
 void main() {
   final addressSchema = Ack.object({
-    'street': Ack.string(),
-    'city': Ack.string(),
-    'zip': Ack.string(),
+    'street': Ack.string.isEmail(),
+    'city': Ack.string,
+    'zip': Ack.string,
   });
   final userSchema = Ack.object({
     'name': Ack.string.isNotEmpty(),
@@ -13,7 +13,7 @@ void main() {
     'roles': Ack.string.list.minItems(1),
   });
 
-  final userWithAddressSchema = userSchema.extend({'address': addressSchema()});
+  final userWithAddressSchema = userSchema.extend({'address': addressSchema});
 
   final userData = {
     'name': 'John Doe',
@@ -27,7 +27,7 @@ void main() {
     },
   };
 
-  final result = userWithAddressSchema.validate(userData);
+  final result = userWithAddressSchema.checkResult(userData);
 
   result.match(
     onOk: (data) => print('User data is valid!'),

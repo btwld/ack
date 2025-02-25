@@ -1,17 +1,28 @@
 part of '../../ack_base.dart';
 
-final class DiscriminatedObjectSchema extends Schema<MapValue> {
+final class DiscriminatedObjectSchema extends Schema<MapValue>
+    with SchemaFluentMethods<DiscriminatedObjectSchema, MapValue> {
   final String _discriminatorKey;
-  final Map<String, ObjectSchema> _schemas;
+  late final Map<String, ObjectSchema> _schemas;
 
-  const DiscriminatedObjectSchema({
+  DiscriminatedObjectSchema({
     super.nullable,
     super.strict,
     required String discriminatorKey,
     required Map<String, ObjectSchema> schemas,
     super.constraints,
-  })  : _discriminatorKey = discriminatorKey,
-        _schemas = schemas;
+    super.description,
+  }) : _discriminatorKey = discriminatorKey {
+    _schemas = _strict ? _applyStrictToSchemas(schemas) : schemas;
+  }
+  Map<String, ObjectSchema> _applyStrictToSchemas(
+    Map<String, ObjectSchema> schemas,
+  ) {
+    return {
+      for (final entry in schemas.entries)
+        entry.key: entry.value.copyWith(strict: true)
+    };
+  }
 
   @override
   DiscriminatedObjectSchema copyWith({
@@ -20,6 +31,7 @@ final class DiscriminatedObjectSchema extends Schema<MapValue> {
     Map<String, ObjectSchema>? schemas,
     bool? nullable,
     bool? strict,
+    String? description,
   }) {
     return DiscriminatedObjectSchema(
       discriminatorKey: discriminatorKey ?? _discriminatorKey,
@@ -27,10 +39,11 @@ final class DiscriminatedObjectSchema extends Schema<MapValue> {
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
       strict: strict ?? _strict,
+      description: description ?? _description,
     );
   }
 
-  String? _getDiscriminatorValue(MapValue value) {
+  String? getDiscriminatorValue(MapValue value) {
     final discriminatorValue = value[_discriminatorKey];
     return discriminatorValue != null ? discriminatorValue as String : null;
   }
@@ -48,7 +61,7 @@ final class DiscriminatedObjectSchema extends Schema<MapValue> {
 
   @override
   List<SchemaError> validateAsType(MapValue value) {
-    final discriminatorValue = _getDiscriminatorValue(value);
+    final discriminatorValue = getDiscriminatorValue(value);
 
     if (discriminatorValue == null) {
       return [
@@ -68,7 +81,7 @@ final class DiscriminatedObjectSchema extends Schema<MapValue> {
       return errors;
     }
 
-    final result = discriminatedSchema.validate(value);
+    final result = discriminatedSchema.checkResult(value);
 
     final schemaErrors = <SchemaError>[];
     result.onFail(

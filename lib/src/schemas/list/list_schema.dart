@@ -1,25 +1,35 @@
 part of '../../ack_base.dart';
 
-final class ListSchema<V extends Object> extends Schema<List<V>> {
-  final Schema<V> _itemSchema;
+final class ListSchema<V extends Object> extends Schema<List<V>>
+    with SchemaFluentMethods<ListSchema<V>, List<V>> {
+  late final Schema<V> _itemSchema;
   ListSchema(
     Schema<V> itemSchema, {
     super.constraints = const [],
     super.nullable,
     super.strict,
-  }) : _itemSchema = itemSchema.copyWith(strict: strict);
+    super.description,
+  }) {
+    _itemSchema = _strict ? _applyStrictToSchema(itemSchema) : itemSchema;
+  }
+
+  Schema<V> _applyStrictToSchema(Schema<V> schema) {
+    return schema.copyWith(strict: true);
+  }
 
   @override
   ListSchema<V> copyWith({
     List<ConstraintValidator<List<V>>>? constraints,
     bool? nullable,
     bool? strict,
+    String? description,
   }) {
     return ListSchema(
       _itemSchema,
       constraints: constraints ?? _constraints,
       nullable: nullable ?? _nullable,
       strict: strict ?? _strict,
+      description: description ?? _description,
     );
   }
 
@@ -56,7 +66,7 @@ final class ListSchema<V extends Object> extends Schema<List<V>> {
     ];
 
     for (var i = 0; i < value.length; i++) {
-      final result = _itemSchema.validate(value[i]);
+      final result = _itemSchema.checkResult(value[i]);
 
       result.onFail((errors) {
         errors.addAll(
@@ -73,13 +83,10 @@ final class ListSchema<V extends Object> extends Schema<List<V>> {
   }
 }
 
-extension ListSchemaExt<T extends Object> on Schema<List<T>> {
-  Schema<List<T>> _consraint(ConstraintValidator<List<T>> validator) =>
-      copyWith(constraints: [validator]);
+extension ListSchemaExt<T extends Object> on ListSchema<T> {
+  ListSchema<T> uniqueItems() => withConstraints([UniqueItemsValidator()]);
 
-  Schema<List<T>> uniqueItems() => _consraint(UniqueItemsValidator());
+  ListSchema<T> minItems(int min) => withConstraints([MinItemsValidator(min)]);
 
-  Schema<List<T>> minItems(int min) => _consraint(MinItemsValidator(min));
-
-  Schema<List<T>> maxItems(int max) => _consraint(MaxItemsValidator(max));
+  ListSchema<T> maxItems(int max) => withConstraints([MaxItemsValidator(max)]);
 }

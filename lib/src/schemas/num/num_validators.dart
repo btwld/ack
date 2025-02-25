@@ -1,7 +1,7 @@
 part of '../../ack_base.dart';
 
 class MinValueValidator<T extends num> extends ConstraintValidator<T> {
-  final num min;
+  final min;
   const MinValueValidator(this.min);
 
   @override
@@ -29,7 +29,7 @@ class MinValueValidator<T extends num> extends ConstraintValidator<T> {
 }
 
 class MaxValueValidator<T extends num> extends ConstraintValidator<T> {
-  final num max;
+  final T max;
   const MaxValueValidator(this.max);
 
   @override
@@ -57,8 +57,8 @@ class MaxValueValidator<T extends num> extends ConstraintValidator<T> {
 }
 
 class RangeValidator<T extends num> extends ConstraintValidator<T> {
-  final num min;
-  final num max;
+  final T min;
+  final T max;
   const RangeValidator(this.min, this.max);
 
   @override

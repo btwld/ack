@@ -18,6 +18,29 @@ class SchemaResult<T extends Object> {
     return Fail(errors);
   }
 
+  T? getOrNull() {
+    return match(
+      onOk: (value) => value is Unit ? null : value,
+      onFail: (_) => null,
+    );
+  }
+
+  // getOrElse
+  T getOrElse(T Function() orElse) {
+    return match(
+      onOk: (value) => value is Unit ? orElse() : value,
+      onFail: (errors) => orElse(),
+    );
+  }
+
+  // getOrThrow
+  T getOrThrow() {
+    return match(
+      onOk: (value) => value,
+      onFail: (errors) => throw AckException(errors),
+    );
+  }
+
   R match<R>({
     required R Function(T value) onOk,
     required R Function(List<SchemaError> errors) onFail,
@@ -45,19 +68,19 @@ class SchemaResult<T extends Object> {
 /// Represents a successful result.
 final class Ok<T extends Object> extends SchemaResult<T> {
   final T value;
-  const Ok(this.value);
+  Ok(this.value);
 
-  const Ok.unit() : value = _unit as T;
+  static Ok<Unit> unit() => Ok<Unit>(_unit);
+}
+
+const _unit = Unit._();
+
+final class Unit {
+  const Unit._();
 }
 
 /// Represents an error result.
 class Fail<T extends Object> extends SchemaResult<T> {
   final List<SchemaError> errors;
   const Fail(this.errors);
-}
-
-const _unit = Null._();
-
-class Null {
-  const Null._();
 }

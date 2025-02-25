@@ -42,7 +42,7 @@ void main() {
       expect(result, hasOneSchemaError(PathSchemaError.key));
 
       final failResult = result as Fail;
-      final nestedSchemaError = failResult.nestedSchemaErrors.first;
+      final nestedSchemaError = failResult.pathSchemaError.first;
       expect(nestedSchemaError.path, 'age');
       expect(nestedSchemaError.errors, hasOneSchemaError('invalid_type'));
     });

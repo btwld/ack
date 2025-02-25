@@ -238,8 +238,8 @@ void main() {
         hasOneSchemaError(PathSchemaError.key),
       );
 
-      final failResult = result;
-      final nestedSchemaError = failResult.nestedSchemaErrors.first;
+      final failResult = result as Fail;
+      final nestedSchemaError = failResult.pathSchemaError.first;
       expect(nestedSchemaError.path, 'a.value');
 
       expect(
