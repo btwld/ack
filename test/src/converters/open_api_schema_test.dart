@@ -2,58 +2,58 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('OpenApi3SchemaConverter Tests', () {
+  group('OpenApiSchemaConverter Tests', () {
     test('StringSchema converts to basic OpenAPI schema', () {
       final schema = StringSchema();
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(), equals({'type': 'string'}));
     });
 
     test('StringSchema with nullable includes nullable field', () {
       final schema = StringSchema(nullable: true);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(), equals({'type': 'string', 'nullable': true}));
     });
 
     test('StringSchema with description includes description field', () {
       final schema = StringSchema(description: 'A test string');
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(),
           equals({'type': 'string', 'description': 'A test string'}));
     });
 
     test('StringSchema with MinLength constraint merges correctly', () {
       final schema = StringSchema(constraints: [MinLengthStringValidator(5)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(), equals({'type': 'string', 'minLength': 5}));
     });
 
     test('DoubleSchema with Minimum and Maximum constraints', () {
       final schema = DoubleSchema(
           constraints: [MinNumValidator(0.0), MaxNumValidator(100.0)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(),
           equals({'type': 'number', 'minimum': 0.0, 'maximum': 100.0}));
     });
 
     test('IntegerSchema with MultipleOf constraint', () {
       final schema = IntegerSchema(constraints: [MultipleOfNumValidator(2)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(), equals({'type': 'integer', 'multipleOf': 2}));
     });
 
     test('BooleanSchema converts to basic OpenAPI schema', () {
       final schema = BooleanSchema();
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(), equals({'type': 'boolean'}));
     });
 
     test('ListSchema with StringSchema items includes items field', () {
       final itemSchema = StringSchema();
       final schema = ListSchema(itemSchema); // Assuming items parameter
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -68,7 +68,7 @@ void main() {
         'age': IntegerSchema(),
       };
       final schema = ObjectSchema(properties, additionalProperties: true);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -84,7 +84,7 @@ void main() {
     test('ObjectSchema with required properties includes required field', () {
       final properties = {'name': StringSchema()};
       final schema = ObjectSchema(properties, required: ['name']);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -99,7 +99,7 @@ void main() {
 
     test('ObjectSchema with additionalProperties false', () {
       final schema = ObjectSchema({}, additionalProperties: false);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -113,55 +113,55 @@ void main() {
   group('OpenApi3SchemaConverter Tests', () {
     test('StringSchema converts to basic OpenAPI schema', () {
       final schema = StringSchema();
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(), equals({'type': 'string'}));
     });
 
     test('StringSchema with nullable includes nullable field', () {
       final schema = StringSchema(nullable: true);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(), equals({'type': 'string', 'nullable': true}));
     });
 
     test('StringSchema with description includes description field', () {
       final schema = StringSchema(description: 'A test string');
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(),
           equals({'type': 'string', 'description': 'A test string'}));
     });
 
     test('StringSchema with MinLength constraint merges correctly', () {
       final schema = StringSchema(constraints: [MinLengthStringValidator(5)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(), equals({'type': 'string', 'minLength': 5}));
     });
 
     test('DoubleSchema with Minimum and Maximum constraints', () {
       final schema = DoubleSchema(
           constraints: [MinNumValidator(0.0), MaxNumValidator(100.0)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(),
           equals({'type': 'number', 'minimum': 0.0, 'maximum': 100.0}));
     });
 
     test('IntegerSchema with MultipleOf constraint', () {
       final schema = IntegerSchema(constraints: [MultipleOfNumValidator(2)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(), equals({'type': 'integer', 'multipleOf': 2}));
     });
 
     test('BooleanSchema converts to basic OpenAPI schema', () {
       final schema = BooleanSchema();
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(), equals({'type': 'boolean'}));
     });
 
     test('ListSchema with StringSchema items includes items field', () {
       final itemSchema = StringSchema();
       final schema = ListSchema(itemSchema);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -176,7 +176,7 @@ void main() {
         'age': IntegerSchema(),
       };
       final schema = ObjectSchema(properties);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -192,7 +192,7 @@ void main() {
     test('ObjectSchema with required properties includes required field', () {
       final properties = <String, Schema<Object>>{'name': StringSchema()};
       final schema = ObjectSchema(properties, required: ['name']);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -207,7 +207,7 @@ void main() {
 
     test('ObjectSchema with additionalProperties false', () {
       final schema = ObjectSchema({}, additionalProperties: false);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -223,7 +223,7 @@ void main() {
         'typeOne': ObjectSchema({'value': IntegerSchema()}),
         'typeTwo': ObjectSchema({'value': StringSchema()}),
       });
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
 
       final schemaMap = converter.toSchema();
 
@@ -251,7 +251,7 @@ void main() {
     test('Nested ObjectSchema converts correctly', () {
       final nestedSchema = ObjectSchema({'id': IntegerSchema()});
       final schema = ObjectSchema({'nested': nestedSchema});
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -272,7 +272,7 @@ void main() {
     test('ListSchema with ObjectSchema items', () {
       final itemSchema = ObjectSchema({'name': StringSchema()});
       final schema = ListSchema(itemSchema);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -294,7 +294,7 @@ void main() {
         RegexPatternStringValidator(
             patternName: 'pattern', pattern: r'^[a-z]+$', example: 'a    ')
       ]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -308,7 +308,7 @@ void main() {
 
     test('StringSchema with format constraint', () {
       final schema = StringSchema(constraints: [DateTimeStringValidator()]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(),
           equals({'type': 'string', 'format': 'date-time'}));
     });
@@ -316,7 +316,7 @@ void main() {
     test('IntegerSchema with minimum and maximum constraints', () {
       final schema = IntegerSchema(
           constraints: [MinNumValidator(1), MaxNumValidator(100)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(converter.toSchema(),
           equals({'type': 'integer', 'minimum': 1, 'maximum': 100}));
     });
@@ -324,7 +324,7 @@ void main() {
     test('ListSchema with minItems and maxItems constraints', () {
       final schema = ListSchema<String>(StringSchema(),
           constraints: [MinItemsListValidator(1), MaxItemsListValidator(10)]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -340,7 +340,7 @@ void main() {
           ObjectSchema({'id': IntegerSchema()}, required: ['id']);
       final schema =
           ObjectSchema({'nested': nestedSchema}, required: ['nested']);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -365,7 +365,7 @@ void main() {
         MinLengthStringValidator(5),
         MinLengthStringValidator(3)
       ]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       // Assumes the converter takes the most restrictive value
       expect(converter.toSchema(), equals({'type': 'string', 'minLength': 3}));
     });
@@ -373,7 +373,7 @@ void main() {
     test('Nested ListSchema converts correctly', () {
       final innerListSchema = ListSchema(StringSchema());
       final schema = ListSchema(innerListSchema);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -395,7 +395,7 @@ void main() {
               ObjectSchema({'value': StringSchema(), 'key': StringSchema()}),
         },
       );
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
 
       final schemaMap = converter.toSchema();
 
@@ -425,7 +425,7 @@ void main() {
 
     test('Empty ObjectSchema with additionalProperties true', () {
       final schema = ObjectSchema({}, additionalProperties: true);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -445,7 +445,7 @@ void main() {
               ObjectSchema({'kind': StringSchema(), 'count': IntegerSchema()}),
         },
       );
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       final result = converter.toSchema();
 
       // Check the discriminator field
@@ -479,7 +479,7 @@ void main() {
       final schema = StringSchema(constraints: [
         EnumStringValidator(['red', 'blue', 'green'])
       ]);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -493,7 +493,7 @@ void main() {
         {'id': IntegerSchema(), 'name': StringSchema()},
         required: ['id'],
       );
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -509,7 +509,7 @@ void main() {
 
     test('IntegerSchema with default value', () {
       final schema = IntegerSchema(defaultValue: 42);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({
@@ -527,7 +527,7 @@ void main() {
         ],
       );
       final schema = ListSchema(itemSchema);
-      final converter = OpenApi3SchemaConverter(schema: schema);
+      final converter = OpenApiSchemaConverter(schema: schema);
       expect(
           converter.toSchema(),
           equals({

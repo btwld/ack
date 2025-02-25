@@ -1,12 +1,28 @@
 part of '../ack.dart';
 
-class OpenApi3SchemaConverter<S extends Schema<T>, T extends Object> {
+class OpenApiSchemaConverter<S extends Schema<T>, T extends Object> {
   final S _schema;
+  final String _startDelimeter;
+  final String _endDelimeter;
 
-  const OpenApi3SchemaConverter({required S schema}) : _schema = schema;
-
+  const OpenApiSchemaConverter({
+    required S schema,
+    String startDelimeter = '<response>',
+    String endDelimeter = '</response>',
+  })  : _schema = schema,
+        _startDelimeter = startDelimeter,
+        _endDelimeter = endDelimeter;
   Map<String, Object?> toSchema() {
     return _convertSchema(_schema);
+  }
+
+  String toJson() => prettyJson(toSchema());
+
+  String toResponsePrompt([
+    String startDelimeter = '<response>',
+    String endDelimeter = '</response>',
+  ]) {
+    return '$startDelimeter\n${toJson()}\n$endDelimeter';
   }
 }
 
@@ -16,6 +32,10 @@ JSON _convertObjectSchema(ObjectSchema schema) {
   final properties = schema.getProperties();
   final required = schema.getRequiredProperties();
   final additionalProperties = schema.getAllowsAdditionalProperties();
+
+  if (properties.containsKey('type')) {
+    throw ArgumentError('Property name "type" is reserved and cannot be used.');
+  }
 
   return {
     'properties':

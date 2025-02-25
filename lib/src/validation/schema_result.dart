@@ -28,6 +28,13 @@ class SchemaResult<T extends Object> {
   /// Returns `true` if this instance is a [Fail].
   bool get isFail => this is Fail<T>;
 
+  /// Returns the list of errors associated with this result.
+  ///
+  /// If this result is successful, it returns an empty list.
+  /// If this result is a failure, it returns the list of errors.
+  List<SchemaError> getErrors() =>
+      match(onOk: (_) => [], onFail: (errors) => errors);
+
   /// Returns the contained value if this result is successful; otherwise, returns `null`.
   T? getOrNull() {
     return match(onOk: (value) => value.getOrNull(), onFail: (_) => null);
@@ -121,6 +128,7 @@ final class Ok<T extends Object> extends SchemaResult<T> {
 /// of [SchemaError]s describing what went wrong.
 class Fail<T extends Object> extends SchemaResult<T> {
   /// The list of errors associated with this failure.
+  @override
   final List<SchemaError> errors;
 
   /// Creates a failure result with the specified [errors].

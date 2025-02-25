@@ -9,14 +9,14 @@ void main() {
       final validSchemaA = ObjectSchema(
         {
           'value': IntegerSchema(),
-          'type': StringSchema(),
+          'key': StringSchema(),
         },
         additionalProperties: true,
-        required: ['type'],
+        required: ['key'],
       );
 
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {'a': validSchemaA},
       );
 
@@ -38,14 +38,14 @@ void main() {
 
     test('Non-nullable schema fails on null', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
-              'type': StringSchema(),
+              'key': StringSchema(),
               'value': IntegerSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
@@ -60,14 +60,14 @@ void main() {
 
     test('Nullable schema passes on null', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
-              'type': StringSchema(),
+              'key': StringSchema(),
               'value': IntegerSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
@@ -81,14 +81,14 @@ void main() {
 
     test('Invalid type returns invalid type error', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
-              'type': StringSchema(),
+              'key': StringSchema(),
               'value': IntegerSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
@@ -103,18 +103,18 @@ void main() {
 
     test('Valid discriminated object passes validation', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
-              'type': StringSchema(),
+              'key': StringSchema(),
               'value': IntegerSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
-      final result = discriminatedSchema.validate({'type': 'a', 'value': 42});
+      final result = discriminatedSchema.validate({'key': 'a', 'value': 42});
       expect(
         result.isOk,
         isTrue,
@@ -123,14 +123,14 @@ void main() {
 
     test('Fails when discriminator key is missing from the value', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
-              'type': StringSchema(),
+              'key': StringSchema(),
               'value': IntegerSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
@@ -149,18 +149,18 @@ void main() {
 
     test('Fails when no schema is found for the discriminator value', () {
       final schema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
-              'type': StringSchema(),
+              'key': StringSchema(),
               'value': IntegerSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
-      final result = schema.validate({'type': 'nonexistent', 'value': 42});
+      final result = schema.validate({'key': 'nonexistent', 'value': 42});
       expect(
         result.isFail,
         isTrue,
@@ -177,18 +177,18 @@ void main() {
         () {
       final schemaWithoutRequired = ObjectSchema(
         {
-          'type': StringSchema(),
+          'key': StringSchema(),
           'value': IntegerSchema(),
         },
         additionalProperties: true,
         required: [],
       );
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {'a': schemaWithoutRequired},
       );
 
-      final result = discriminatedSchema.validate({'type': 'a', 'value': 42});
+      final result = discriminatedSchema.validate({'key': 'a', 'value': 42});
       expect(
         result.isFail,
         isTrue,
@@ -203,19 +203,19 @@ void main() {
 
     test('Fails when underlying schema validation fails', () {
       final discriminatedSchema = DiscriminatedObjectSchema(
-        discriminatorKey: 'type',
+        discriminatorKey: 'key',
         schemas: {
           'a': ObjectSchema(
             {
               'value': IntegerSchema(),
-              'type': StringSchema(),
+              'key': StringSchema(),
             },
-            required: ['type'],
+            required: ['key'],
           ),
         },
       );
       final result =
-          discriminatedSchema.validate({'type': 'a', 'value': 'not an int'});
+          discriminatedSchema.validate({'key': 'a', 'value': 'not an int'});
 
       expect(
         (result as Fail).errors,

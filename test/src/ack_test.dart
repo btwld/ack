@@ -56,29 +56,29 @@ void main() {
     group('discriminated()', () {
       test('validates discriminated objects', () {
         final schema = Ack.discriminated(
-          discriminatorKey: 'type',
+          discriminatorKey: 'key',
           schemas: {
             'user': Ack.object(
               {
-                'type': Ack.string,
+                'key': Ack.string,
                 'name': Ack.string,
               },
-              required: ['type'],
+              required: ['key'],
             ),
             'admin': Ack.object(
               {
-                'type': Ack.string,
+                'key': Ack.string,
                 'name': Ack.string,
                 'level': Ack.int,
               },
-              required: ['type'],
+              required: ['key'],
             ),
           },
         );
 
         expect(
           schema.validate({
-            'type': 'user',
+            'key': 'user',
             'name': 'John',
           }).isOk,
           isTrue,
@@ -87,7 +87,7 @@ void main() {
 
         expect(
           schema.validate({
-            'type': 'admin',
+            'key': 'admin',
             'name': 'Admin',
             'level': 1,
           }).isOk,
@@ -97,7 +97,7 @@ void main() {
 
         expect(
           schema.validate({
-            'type': 'unknown',
+            'key': 'unknown',
             'name': 'Test',
           }).isFail,
           isTrue,

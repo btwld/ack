@@ -1,232 +1,281 @@
-# ack
+# **ACK**
 
-[![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
-<!-- Add build and coverage badges when available -->
+ACK provides a fluent, unified schema-building solution for Dart and Flutter applications. It delivers clear constraints, descriptive error feedback, and powerful utilities for validating forms, AI-driven outputs, and JSON or CLI arguments.
 
-Use **ACK** for fluent schema building in your Flutter/Dart apps—whether it’s a simple form field or an LLM-generated response. With clear constraints and detailed error feedback and context, ACK helps you trust your data and adapt schemas quickly as AI-driven workflows evolve.
+## Use Cases and Key Benefits
 
-## Motivation
-- Versatile Use: Validate forms or LLM outputs with one consistent approach in Flutter.
-- OpenAPI Specification Ready: Convert ACK schemas to OpenAPI for smoother AI integrations and standard API design.
-- Type-Safe & Fluent: Define validation rules with chainable constraints, not scattered if checks.
-- Structured Errors: Receive precise feedback on what failed and why.
-- Composability: Effortlessly extend and combine schemas to build complex definitions.
-
-## Features
-
-- **Type-Safe Schema Definitions**
-  - Simple API for `string`, `int`, `double`, `boolean`, `list`, `object`, and `discriminated_object`
-  - Fluent API for building complex validations, easy to read validations.
-
-- **Rich Validation Rules**
-  - **Strings**: `isEmail`, `isHexColor`, `minLength`, `maxLength`, `isEmpty`, `isNotEmpty`, `isDateTime`
-  - **Numbers**: `minValue`, `maxValue`, `range`
-  - **Lists**: `uniqueItems`, `minItems`, `maxItems`
-  - **Objects**: `isContainingKey`, and `isLengthOf`
-
-- **Advanced Features**
-  - Discriminated schemas for polymorphic data
-  - Custom validation rules
-  - Detailed error reporting
-  - Exception-based validation option
-
-## Getting started
-
-```dart
-import 'package:ack/ack.dart';
-
-void main() {
-  final emailSchema = Ack.string.isEmail();
-  const email = 'test@example.com';
-  
-  emailSchema.validate(email).match(
-    onOk: (data) => print('Valid email!'),
-    onFail: (errors) => print('Validation errors: $errors'),
-  );
-}
-```
+- Validates diverse data types with customizable constraints  
+- Converts into OpenAPI Specs for LLM function calling and structured response support  
+- Offers a fluent API for intuitive schema building  
+- Provides detailed error reporting for validation failures  
 
 ## Installation
 
-Add ack to your `pubspec.yaml`:
+Add ACK to your `pubspec.yaml`:
 
-```yaml
-dependencies:
-  ack: ^latest_version
-```
-
-Or use:
 ```bash
 dart pub add ack
 ```
 
-## Usage
+## Usage Overview
 
-### Basic Schema Validation
+Ack provides schema types to validate different kinds of data. You can customize each schema with constraints, nullability, strict parsing, default values, and more using a fluent API.
 
-Create and validate simple schemas:
 
-```dart
-// String validation
-final emailSchema = Ack.string.isEmail();
-final colorSchema = Ack.string.isHexColor();
-final nameSchema = Ack.string.isNotEmpty();
+### String Schema
 
-// Number validation
-final ageSchema = Ack.int.range(0, 120);
-final temperatureSchema = Ack.double.minValue(0);
+Validates string data, with constraints like minimum length, maximum length, non-empty checks, regex patterns, and more.
 
-// Boolean validation
-final activeSchema = Ack.boolean();
-
-// DateTime validation
-final dateSchema = Ack.string.isDateTime();
-```
-
-### Object Validation
-
-Validate objects (maps) with required fields, optional fields, and nested schemas:
+**Example**:
 
 ```dart
-  final addressSchema = Ack.object(
-    {
-      'street': Ack.string.isNotEmpty(),
-      'city': Ack.string.isNotEmpty(),
-      'zip': Ack.string.nullable(),
-    },
-    required: ['street', 'city'],
-  );
+import 'package:ack/ack.dart';
 
-  final userSchema = Ack.object(
-    {
-      'name': Ack.string.isNotEmpty(),
-      'email': Ack.string.isEmail(),
-      'age': Ack.int.minValue(18),
-      'address': addressSchema,
-    },
-    additionalProperties: true,
-    required: ['name', 'email'],
-  );
+final schema = Ack.string
+    .minLength(5)
+    .maxLength(10)
+    .isNotEmpty()
+    .nullable(); // Accepts null
 
-  final result = userSchema.validate({
-    'name': 'John Doe',
-    'email': 'john@example.com',
-    'age': 25,
-    'address': {
-      'street': '123 Main St',
-      'city': 'Springfield',
-      'zip': '12345',
-    },
-  });
-```
-
-•	By default, a field not listed in required is optional.
-•	If you want a field to accept null, mark it as .nullable() on that field schema.
-
-### List Validation
-
-Validate arrays with specific constraints:
-
-```dart
-final numbersSchema = Ack.double.list
-  .uniqueItems()
-  .minItems(1)
-  .maxItems(5);
-
-final tagsSchema = Ack.string.list
-  .uniqueItems()
-  .minItems(1);
-```
-
-### Error Handling
-
-Choose between Result-based or Exception-based validation:
-
-```dart
-// Result-based validation
-schema.validate(data).match(
-  onOk: (data) => print('Valid!'),
-  onFail: (errors) => print('Validation errors: $errors'),
-);
-
-// Exception-based validation
-try {
-  schema.validateOrThrow(data);
-  print('Valid!');
-} catch (e) {
-  print('Validation failed: $e');
+final result = schema.validate("hello");
+if (result.isOk) {
+  print(result.getOrNull()); // "hello"
 }
 ```
 
-### Discriminated Schemas
+### Integer Schema
 
-Use Ack.discriminated for union or polymorphic data structures:
+Validates integer data. Constraints include min/max values, exclusive bounds, and multiples.
+
+**Example**:
 
 ```dart
-// Define individual schemas
-final userSchema = Ack.object({
-  'type': Ack.string,
-  'name': Ack.string,
-}, required: ['type'])();
+final schema = Ack.int
+    .minValue(0)
+    .maxValue(100)
+    .multipleOf(5);
 
-final adminSchema = Ack.object({
-  'type': Ack.string,
-  'name': Ack.string,
-  'level': Ack.int,
-}, required: ['type']);
-
-// Combine them in a discriminated schema
-final schema = Ack.discriminated(
-  discriminatorKey: 'type',
-  schemas: {
-    'user': userSchema,
-    'admin': adminSchema,
-  },
-);
-
-// Example usage
-final validUser = {
-  'type': 'user',
-  'name': 'John Doe',
-};
-
-final validAdmin = {
-  'type': 'admin',
-  'name': 'Admin User',
-  'level': 1,
-};
-
-// Validate user data
-schema.validate(validUser).match(
-  onOk: (data) => print('Valid user data!'),
-  onFail: (errors) => print('User validation errors: $errors'),
-);
-
-// Validate admin data
-schema.validate(validAdmin).match(
-  onOk: (data) => print('Valid admin data!'),
-  onFail: (errors) => print('Admin validation errors: $errors'),
-);
-
-// Invalid data example
-final invalidData = {
-  'type': 'admin',
-  'name': 'Invalid Admin',
-  // Missing required 'level' field
-};
-
-schema.validate(invalidData).match(
-  onOk: (data) => print('Valid data!'),
-  onFail: (errors) => print('Validation errors: $errors'),
-);
+final result = schema.validate(25);
 ```
 
-## Additional Information
+### Double Schema
 
-### Contributing
+Similar to IntegerSchema, but for doubles:
 
-Contributions are welcome! Feel free to:
-- Open issues for bugs or feature requests
-- Submit pull requests
-- Improve documentation
-- Share examples and use cases
+```dart
+final schema = Ack.double
+    .minValue(0.0)
+    .maxValue(100.0)
+    .multipleOf(0.5);
+
+final result = schema.validate(25.5);
+```
+
+### Boolean Schema
+
+Validates boolean data:
+
+**Example**:
+
+```dart
+final schema = Ack.boolean.nullable();
+
+final result = schema.validate(true);
+```
+
+This schema accepts boolean values or null.
+
+### List Schema
+
+Validates lists of items, each item validated by an inner schema:
+
+**Example**:
+
+```dart
+final itemSchema = Ack.string.minLength(3);
+final listSchema = Ack.list(itemSchema).minItems(2).uniqueItems();
+
+final result = listSchema.validate(["abc", "def"]);
+```
+
+### Object Schema
+
+Validates `Map<String, Object?>` with property definitions and constraints on required fields, additional properties, etc.
+
+**Example**:
+
+```dart
+final schema = Ack.object({
+    "name": Ack.string.minLength(3),
+    "age": Ack.int.minValue(0).nullable(),
+  }, required: ["name"],
+);
+
+final result = schema.validate({"name": "John"});
+```
+
+This schema requires a "name" property (string, min length 3) and allows an optional "age" property (integer >= 0), with at least one property.
+
+#$1
+
+## Additional Features
+
+### Strict Parsing
+
+For scalar schemas (String, Integer, Double, Boolean), ACK can parse strings or numbers into the correct type if strict is false (the default). If you set strict, the schema only accepts an already-correct type.
+
+```dart
+// By default, Ack.int will accept "123" and parse it to 123.
+final looseSchema = Ack.int;
+print(looseSchema.validate("123").isOk); // true
+
+// If you require strictly typed ints (no string parsing):
+final strictSchema = Ack.int.strict();
+print(strictSchema.validate("123").isOk); // false
+print(strictSchema.validate(123).isOk);   // true
+```
+
+### Default Values
+
+You can set a default value so that if validation fails or if the user provides null, the schema returns the default:
+
+```dart
+// Setting default value in the constructor:
+final schema = Ack.string(
+  defaultValue: "Guest",
+  nullable: true,
+).minLength(3);
+
+// This fails the minLength check, but returns the default "Guest"
+final result = schema.validate("hi");
+print(result.getOrNull()); // "Guest"
+
+final nullResult = schema.validate(null);
+print(nullResult.getOrNull()); // "Guest"
+```
+
+> **Important**: If the parsed value is invalid or null, but a defaultValue is present, ACK will return Ok(defaultValue) instead of failing.
+
+### Custom Constraints
+
+You can extend `ConstraintValidator<T>` or `OpenApiConstraintValidator<T>` to create your own validation rules. For example:
+
+```dart
+class OnlyFooStringValidator extends OpenApiConstraintValidator<String> {
+  const OnlyFooStringValidator();
+
+  @override
+  String get name => 'only_foo';
+  @override
+  String get description => 'String must be "foo" only';
+
+  @override
+  bool isValid(String value) => value == 'foo';
+
+  @override
+  ConstraintError onError(String value) {
+    return buildError(
+      message: 'Value "$value" is not "foo".',
+      context: {'value': value},
+    );
+  }
+
+  // If you want this constraint to appear in OpenAPI:
+  @override
+  Map<String, Object?> toSchema() {
+    // Typically you'd put `"enum": ["foo"]`, or similar
+    return {
+      'enum': ['foo'],
+      'description': 'Must be exactly "foo"',
+    };
+  }
+}
+
+// Using it:
+final schema = Ack.string.withConstraints([OnlyFooStringValidator()]);
+final result = schema.validate("bar"); // Fails validation
+```
+
+### Custom OpenAPI Constraints
+
+When you implement `OpenApiConstraintValidator<T>`, your custom validator's `toSchema()` output is automatically merged into the final JSON schema. This means you can add fields like `pattern`, `enum`, `minimum`, etc., as recognized by OpenAPI or JSON Schema.
+
+```dart
+// Example usage with the built-in OpenApiSchemaConverter
+final converter = OpenApiSchemaConverter(schema: schema);
+print(converter.toJson());
+```
+
+The library merges all constraints' `toSchema()` results, so you get a single cohesive OpenAPI spec for your entire schema.
+
+### Fluent API
+
+ACK's fluent API lets you chain methods:
+
+```dart
+final schema = Ack.int
+  .minValue(0)
+  .maxValue(100)
+  .multipleOf(5)
+  .nullable() // accept null
+  .strict();  // require actual int type
+```
+
+### Validation and SchemaResult
+
+Calling `schema.validate(value)` returns a `SchemaResult<T>`, which can be:
+- `Ok<T>`: Access the validated value with `getOrNull()` or `getOrThrow()`.
+- `Fail<T>`: Contains `List<SchemaError>` with messages describing which constraints failed.
+
+```dart
+final result = schema.validate(120);
+if (result.isOk) {
+  print("Valid: ${result.getOrNull()}");
+} else {
+  print("Errors: ${result.getErrors()}");
+}
+
+// You can also use validateOrThrow:
+try {
+  schema.validateOrThrow(120);
+} catch (e) {
+  print(e); // AckException with details
+}
+```
+
+### OpenAPI Integration
+
+ACK can generate OpenAPI schema definitions from your schemas, aiding in API documentation or code generation.
+
+```dart
+final schema = Ack.string.minLength(5);
+final converter = OpenApiSchemaConverter(schema: schema);
+final openApiSchema = converter.toSchema();
+print(openApiSchema); // {type: string, minLength: 5, ...}
+
+// You can also produce a JSON string or a response-delimited format:
+print(converter.toJson());
+// or
+print(converter.toResponsePrompt());
+```
+
+### Error Handling with SchemaResult
+
+Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is either `Ok<T>` or `Fail<T>`:
+- `Ok`: Access the data via `getOrNull()` or `getOrThrow()`
+- `Fail`: Inspect `getErrors()` for a list of `SchemaError` describing the failures
+
+### Quick Reference
+
+1. Fluent Methods:
+   - `nullable()`
+   - `strict()`
+   - `withConstraints([ ... ])`
+   - `validate(value)` → `SchemaResult<T>`
+   - `validateOrThrow(value)` → throws `AckException` on errors
+2. Default Values: Provide `defaultValue: T?` directly in the schema constructor or via `.call(defaultValue: X)`.
+3. Custom Constraints: Extend `ConstraintValidator<T>` or `OpenApiConstraintValidator<T>` to add your own logic.
+4. OpenAPI: Use `OpenApiSchemaConverter(schema: yourSchema).toSchema()` (or `.toJson()`) to generate specs.
+
+Happy validating with ACK!
+

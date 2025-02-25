@@ -30,3 +30,4 @@ doc/api/
 # FVM Version Cache
 .fvm/
 flattened
+.cursor/rules

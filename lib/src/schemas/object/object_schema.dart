@@ -25,6 +25,11 @@ final class ObjectSchema extends Schema<MapValue>
       );
     }
 
+    // Check if properties has a key called 'type'
+    if (_properties.containsKey('type')) {
+      log('Warning: Property name "type" is reserved for OpenAPI schema');
+    }
+
     if (_required.areNotUnique) {
       throw ArgumentError('Required properties must be unique');
     }
