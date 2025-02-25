@@ -8,16 +8,6 @@ class SchemaResult<T extends Object> {
   /// Creates a new [SchemaResult] instance.
   const SchemaResult();
 
-  /// Indicates whether this result is successful.
-  ///
-  /// Returns `true` if this instance is an [Ok].
-  bool get isOk => this is Ok<T>;
-
-  /// Indicates whether this result represents a failure.
-  ///
-  /// Returns `true` if this instance is a [Fail].
-  bool get isFail => this is Fail<T>;
-
   /// Returns a successful result that wraps the given [value].
   static SchemaResult<T> ok<T extends Object>(T value) {
     return Ok(value);
@@ -28,12 +18,19 @@ class SchemaResult<T extends Object> {
     return Fail(errors);
   }
 
+  /// Indicates whether this result is successful.
+  ///
+  /// Returns `true` if this instance is an [Ok].
+  bool get isOk => this is Ok<T>;
+
+  /// Indicates whether this result represents a failure.
+  ///
+  /// Returns `true` if this instance is a [Fail].
+  bool get isFail => this is Fail<T>;
+
   /// Returns the contained value if this result is successful; otherwise, returns `null`.
   T? getOrNull() {
-    return match(
-      onOk: (value) => value.getOrNull(),
-      onFail: (_) => null,
-    );
+    return match(onOk: (value) => value.getOrNull(), onFail: (_) => null);
   }
 
   /// Returns the contained value if this result is successful; otherwise, returns the result of [orElse].
@@ -70,6 +67,7 @@ class SchemaResult<T extends Object> {
   }) {
     final self = this;
     if (self is Ok<T>) return onOk(self);
+
     return onFail((self as Fail<T>).errors);
   }
 
@@ -78,10 +76,7 @@ class SchemaResult<T extends Object> {
   /// If this instance is a [Fail], it calls [onFail] with its list of errors.
   /// Otherwise, it does nothing.
   void onFail(void Function(List<SchemaError> errors) onFail) {
-    match(
-      onOk: (_) {},
-      onFail: onFail,
-    );
+    match(onOk: (_) {}, onFail: onFail);
   }
 
   /// Invokes [onOk] if this result is successful.
@@ -89,10 +84,7 @@ class SchemaResult<T extends Object> {
   /// If this instance is an [Ok], it calls [onOk] with its contained value.
   /// Otherwise, it does nothing.
   void onOk(void Function(Ok<T> value) onOk) {
-    match(
-      onOk: onOk,
-      onFail: (_) {},
-    );
+    match(onOk: onOk, onFail: (_) {});
   }
 }
 
@@ -102,6 +94,8 @@ class SchemaResult<T extends Object> {
 /// If no meaningful value is provided, [getOrNull] returns `null`.
 final class Ok<T extends Object> extends SchemaResult<T> {
   final T? _value;
+
+  const
 
   /// Creates a successful result that wraps the given [value].
   Ok(this._value);

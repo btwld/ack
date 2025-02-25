@@ -23,10 +23,7 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
     } catch (e, stackTrace) {
       return Fail(
         [
-          SchemaError.unknownException(
-            error: e,
-            stackTrace: stackTrace,
-          ),
+          SchemaError.unknownException(error: e, stackTrace: stackTrace),
         ],
       );
     }
@@ -49,6 +46,32 @@ abstract class Schema<T extends Object> {
         _strict = strict,
         _constraints = constraints ?? const [];
 
+  T? _tryParse(Object value) {
+    if (value is T) return value;
+    if (!_strict) {
+      if (value is String) return _tryParseString(value);
+      if (value is num) return _tryParseNum(value);
+    }
+
+    return null;
+  }
+
+  T? _tryParseNum(num value) {
+    if (T == int) return value.toInt() as T?;
+    if (T == double) return value.toDouble() as T?;
+    if (T == String) return value.toString() as T?;
+
+    return null;
+  }
+
+  T? _tryParseString(String value) {
+    if (T == int) return int.tryParse(value) as T?;
+    if (T == double) return double.tryParse(value) as T?;
+    if (T == bool) return bool.tryParse(value) as T?;
+
+    return null;
+  }
+
   Schema<T> copyWith({
     bool? nullable,
     bool? strict,
@@ -61,29 +84,6 @@ abstract class Schema<T extends Object> {
   bool getNullable() => _nullable;
 
   bool getStrict() => _strict;
-
-  T? _tryParse(Object value) {
-    if (value is T) return value;
-    if (!_strict) {
-      if (value is String) return _tryParseString(value);
-      if (value is num) return _tryParseNum(value);
-    }
-    return null;
-  }
-
-  T? _tryParseNum(num value) {
-    if (T == int) return value.toInt() as T?;
-    if (T == double) return value.toDouble() as T?;
-    if (T == String) return value.toString() as T?;
-    return null;
-  }
-
-  T? _tryParseString(String value) {
-    if (T == int) return int.tryParse(value) as T?;
-    if (T == double) return double.tryParse(value) as T?;
-    if (T == bool) return bool.tryParse(value) as T?;
-    return null;
-  }
 
   @visibleForTesting
   List<SchemaError> validateAsType(T value) {
@@ -112,6 +112,7 @@ abstract class Schema<T extends Object> {
     }
 
     final errors = validateAsType(typedValue);
+
     return errors.isEmpty ? Ok(typedValue) : Fail(errors);
   }
 

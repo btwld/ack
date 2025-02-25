@@ -77,11 +77,12 @@ int levenshtein(String s, String t) {
         v1[j] + 1, // Insertion
         v0[j + 1] + 1, // Deletion
         v0[j] + cost // Substitution
+        ,
       ].reduce((a, b) => a < b ? a : b);
     }
 
     // Copy v1 to v0 for the next iteration
-    v0 = List.from(v1);
+    v0 = List.of(v1);
   }
 
   // The final distance is in v1[t.length]

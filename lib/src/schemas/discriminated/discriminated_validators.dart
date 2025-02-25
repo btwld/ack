@@ -8,7 +8,9 @@ final class DiscriminatedValidationError extends ConstraintError {
   }) : super(name: 'discriminated_$name');
 
   factory DiscriminatedValidationError.missingDiscriminatorKeyInSchema(
-      String discriminatorKey, String discriminatorValue) {
+    String discriminatorKey,
+    String discriminatorValue,
+  ) {
     return DiscriminatedValidationError._(
       name: 'missing_discriminator_key_in_schema',
       message:
@@ -21,7 +23,9 @@ final class DiscriminatedValidationError extends ConstraintError {
   }
 
   factory DiscriminatedValidationError.noSchemaForDiscriminatorValue(
-      String discriminatorKey, String discriminatorValue) {
+    String discriminatorKey,
+    String discriminatorValue,
+  ) {
     return DiscriminatedValidationError._(
       name: 'no_schema_for_discriminator_value',
       message:
@@ -41,10 +45,7 @@ final class DiscriminatedValidationError extends ConstraintError {
       name: 'key_must_be_required_in_schema',
       message:
           'Key is required in schema: $discriminatorKey for schema: $schema',
-      context: {
-        'discriminatorKey': discriminatorKey,
-        'schema': schema,
-      },
+      context: {'discriminatorKey': discriminatorKey, 'schema': schema},
     );
   }
 
@@ -55,10 +56,7 @@ final class DiscriminatedValidationError extends ConstraintError {
     return DiscriminatedValidationError._(
       name: 'missing_discriminator_key',
       message: 'Missing discriminator key: $discriminatorKey in value: $value',
-      context: {
-        'discriminatorKey': discriminatorKey,
-        'value': value,
-      },
+      context: {'discriminatorKey': discriminatorKey, 'value': value},
     );
   }
 }

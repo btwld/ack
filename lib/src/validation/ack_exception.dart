@@ -7,9 +7,7 @@ class AckException implements Exception {
   const AckException(this.errors, {this.stackTrace});
 
   Map<String, dynamic> toMap() {
-    return {
-      'errors': errors.map((e) => e.toMap()).toList(),
-    };
+    return {'errors': errors.map((e) => e.toMap()).toList()};
   }
 
   String toJson() => prettyJson(toMap());

@@ -2,8 +2,12 @@ part of '../../ack_base.dart';
 
 final class BooleanSchema extends Schema<bool>
     with SchemaFluentMethods<BooleanSchema, bool> {
-  const BooleanSchema(
-      {super.nullable, super.constraints, super.strict, super.description});
+  const BooleanSchema({
+    super.nullable,
+    super.constraints,
+    super.strict,
+    super.description,
+  });
 
   @override
   BooleanSchema copyWith({

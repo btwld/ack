@@ -1,34 +1,15 @@
 part of '../ack_base.dart';
 
 sealed class SchemaError {
-  final String _message;
   final String type;
   final Map<String, Object?> context;
+  final String _message;
 
   const SchemaError({
     required this.type,
     required String message,
     this.context = const {},
   }) : _message = message;
-
-  String get _contextMessage => context.isEmpty
-      ? ''
-      : context.entries.map((e) => '${e.key}: ${e.value}').join('\n');
-
-  String get message => _message;
-
-  Map<String, Object?> toMap() {
-    return {
-      'type': type,
-      'message': _message,
-      'context': context,
-    };
-  }
-
-  String toJson() => prettyJson(toMap());
-
-  @override
-  String toString() => 'SchemaError: ${toJson()}';
 
   static InvalidTypeSchemaError invalidType({
     required Type valueType,
@@ -48,10 +29,7 @@ sealed class SchemaError {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    return UnknownExceptionSchemaError(
-      error: error,
-      stackTrace: stackTrace,
-    );
+    return UnknownExceptionSchemaError(error: error, stackTrace: stackTrace);
   }
 
   static PathSchemaError _pathSchema({
@@ -62,9 +40,9 @@ sealed class SchemaError {
   }) {
     return PathSchemaError(
       path: path,
-      errors: errors,
-      message: message,
       schema: schema,
+      message: message,
+      errors: errors,
     );
   }
 
@@ -90,8 +68,24 @@ sealed class SchemaError {
         );
       }
     }
+
     return schemaErrors;
   }
+
+  String get _contextMessage => context.isEmpty
+      ? ''
+      : context.entries.map((e) => '${e.key}: ${e.value}').join('\n');
+
+  String get message => _message;
+
+  Map<String, Object?> toMap() {
+    return {'type': type, 'message': _message, 'context': context};
+  }
+
+  String toJson() => prettyJson(toMap());
+
+  @override
+  String toString() => 'SchemaError: ${toJson()}';
 }
 
 final class InvalidTypeSchemaError extends SchemaError {
@@ -115,26 +109,18 @@ final class InvalidTypeSchemaError extends SchemaError {
 final class NonNullableValueSchemaError extends SchemaError {
   static const String key = 'non_nullable_value';
   NonNullableValueSchemaError()
-      : super(
-          type: key,
-          message: 'Non nullable value is null',
-        );
+      : super(type: key, message: 'Non nullable value is null');
 }
 
 final class UnknownExceptionSchemaError extends SchemaError {
   static const String key = 'unknown_exception';
   final Object? error;
   final StackTrace? stackTrace;
-  UnknownExceptionSchemaError({
-    this.error,
-    this.stackTrace,
-  }) : super(
+  UnknownExceptionSchemaError({this.error, this.stackTrace})
+      : super(
           type: key,
           message: 'Unknown Exception when validating schema $error',
-          context: {
-            'error': error,
-            'stackTrace': stackTrace,
-          },
+          context: {'error': error, 'stackTrace': stackTrace},
         );
 }
 
@@ -160,8 +146,8 @@ final class PathSchemaError extends SchemaError {
     return PathSchemaError(
       path: '$rootKey.$path',
       schema: schema,
-      errors: errors,
       message: message,
+      errors: errors,
     );
   }
 }

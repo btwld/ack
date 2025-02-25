@@ -2,8 +2,12 @@ part of '../../ack_base.dart';
 
 final class DoubleSchema extends Schema<double>
     with SchemaFluentMethods<DoubleSchema, double> {
-  const DoubleSchema(
-      {super.nullable, super.constraints, super.strict, super.description});
+  const DoubleSchema({
+    super.nullable,
+    super.constraints,
+    super.strict,
+    super.description,
+  });
 
   @override
   DoubleSchema copyWith({
@@ -23,8 +27,12 @@ final class DoubleSchema extends Schema<double>
 
 final class IntSchema extends Schema<int>
     with SchemaFluentMethods<IntSchema, int> {
-  const IntSchema(
-      {super.nullable, super.constraints, super.strict, super.description});
+  const IntSchema({
+    super.nullable,
+    super.constraints,
+    super.strict,
+    super.description,
+  });
 
   @override
   IntSchema copyWith({

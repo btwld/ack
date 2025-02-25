@@ -31,17 +31,17 @@ final class ObjectSchemaError extends ConstraintError {
 
   factory ObjectSchemaError.unallowedProperty(String property) {
     return ObjectSchemaError(
-      name: 'property_unallowed',
       message: 'Unallowed additional property: $property',
       context: {'property': property},
+      name: 'property_unallowed',
     );
   }
 
   factory ObjectSchemaError.requiredProperty(String property) {
     return ObjectSchemaError(
-      name: 'property_required',
       message: 'Required property: $property',
       context: {'property': property},
+      name: 'property_required',
     );
   }
 }

@@ -21,11 +21,17 @@ part 'validation/schema_error.dart';
 part 'validation/schema_result.dart';
 
 final class Ack {
+  static const string = StringSchema();
+
+  static const boolean = BooleanSchema();
+
+  static const int = IntSchema();
+
+  static const double = DoubleSchema();
+
   const Ack._();
 
-  static ListSchema<T> list<T extends Object, S extends Schema<T>>(
-    S schema,
-  ) {
+  static ListSchema<T> list<T extends Object, S extends Schema<T>>(S schema) {
     return ListSchema<T>(schema);
   }
 
@@ -58,11 +64,4 @@ final class Ack {
   static StringSchema enumValues(List<Enum> values) {
     return enumString(values.map((e) => e.name).toList());
   }
-
-  static const string = StringSchema();
-
-  static const boolean = BooleanSchema();
-
-  static const int = IntSchema();
-  static const double = DoubleSchema();
 }

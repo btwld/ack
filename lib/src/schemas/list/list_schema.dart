@@ -18,6 +18,23 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
   }
 
   @override
+  List<V>? _tryParse(Object value) {
+    if (value is! List) return null;
+
+    List<V>? parsedList = <V>[];
+    for (final v in value) {
+      final parsed = _itemSchema._tryParse(v);
+      if (parsed == null) {
+        parsedList = null;
+        break;
+      }
+      parsedList!.add(parsed);
+    }
+
+    return parsedList;
+  }
+
+  @override
   ListSchema<V> copyWith({
     List<ConstraintValidator<List<V>>>? constraints,
     bool? nullable,
@@ -44,25 +61,9 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
   }
 
   @override
-  List<V>? _tryParse(Object value) {
-    if (value is! List) return null;
-
-    List<V>? parsedList = <V>[];
-    for (final v in value) {
-      final parsed = _itemSchema._tryParse(v);
-      if (parsed == null) {
-        parsedList = null;
-        break;
-      }
-      parsedList!.add(parsed);
-    }
-    return parsedList;
-  }
-
-  @override
   List<SchemaError> validateAsType(List<V> value) {
     final errors = [
-      ..._constraints.map((e) => e.validate(value)).whereType<SchemaError>()
+      ..._constraints.map((e) => e.validate(value)).whereType<SchemaError>(),
     ];
 
     for (var i = 0; i < value.length; i++) {
@@ -72,13 +73,14 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
         errors.addAll(
           SchemaError.pathSchemas(
             path: '[$i]',
-            errors: errors,
             message: 'Item in index [$i] schema validation failed',
+            errors: errors,
             schema: _itemSchema,
           ),
         );
       });
     }
+
     return errors;
   }
 }

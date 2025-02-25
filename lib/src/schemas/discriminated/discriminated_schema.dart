@@ -20,8 +20,14 @@ final class DiscriminatedObjectSchema extends Schema<MapValue>
   ) {
     return {
       for (final entry in schemas.entries)
-        entry.key: entry.value.copyWith(strict: true)
+        entry.key: entry.value.copyWith(strict: true),
     };
+  }
+
+  String? getDiscriminatorValue(MapValue value) {
+    final discriminatorValue = value[_discriminatorKey];
+
+    return discriminatorValue != null ? discriminatorValue as String : null;
   }
 
   @override
@@ -34,18 +40,13 @@ final class DiscriminatedObjectSchema extends Schema<MapValue>
     String? description,
   }) {
     return DiscriminatedObjectSchema(
+      nullable: nullable ?? _nullable,
+      strict: strict ?? _strict,
       discriminatorKey: discriminatorKey ?? _discriminatorKey,
       schemas: schemas ?? _schemas,
       constraints: constraints ?? _constraints,
-      nullable: nullable ?? _nullable,
-      strict: strict ?? _strict,
       description: description ?? _description,
     );
-  }
-
-  String? getDiscriminatorValue(MapValue value) {
-    final discriminatorValue = value[_discriminatorKey];
-    return discriminatorValue != null ? discriminatorValue as String : null;
   }
 
   @override
@@ -84,18 +85,16 @@ final class DiscriminatedObjectSchema extends Schema<MapValue>
     final result = discriminatedSchema.checkResult(value);
 
     final schemaErrors = <SchemaError>[];
-    result.onFail(
-      (errors) {
-        schemaErrors.addAll(
-          SchemaError.pathSchemas(
-            path: discriminatorValue,
-            errors: errors,
-            message: 'Schema for $discriminatorValue validation failed',
-            schema: this,
-          ),
-        );
-      },
-    );
+    result.onFail((errors) {
+      schemaErrors.addAll(
+        SchemaError.pathSchemas(
+          path: discriminatorValue,
+          message: 'Schema for $discriminatorValue validation failed',
+          errors: errors,
+          schema: this,
+        ),
+      );
+    });
 
     return schemaErrors;
   }
@@ -117,11 +116,12 @@ final class DiscriminatedObjectSchema extends Schema<MapValue>
         discriminatorValue,
       ),
     );
+
     return (errors, null);
   }
 
   // Validate the schema configuration
-  for (final MapEntry(key: key, value: schema) in schemas.entries) {
+  for (final MapEntry(:key, value: schema) in schemas.entries) {
     final keyIsRequired = schema.required.contains(discriminatorKey);
     final propertyExists = schema._properties.containsKey(discriminatorKey);
 

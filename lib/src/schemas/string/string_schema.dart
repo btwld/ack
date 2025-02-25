@@ -2,8 +2,12 @@ part of '../../ack_base.dart';
 
 final class StringSchema extends Schema<String>
     with SchemaFluentMethods<StringSchema, String> {
-  const StringSchema(
-      {super.nullable, super.constraints, super.strict, super.description});
+  const StringSchema({
+    super.nullable,
+    super.constraints,
+    super.strict,
+    super.description,
+  });
 
   @override
   StringSchema copyWith({

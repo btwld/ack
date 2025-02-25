@@ -4,9 +4,9 @@ typedef MapValue = Map<String, Object?>;
 
 final class ObjectSchema extends Schema<MapValue>
     with SchemaFluentMethods<ObjectSchema, MapValue> {
-  final Map<String, Schema> _properties;
   final bool additionalProperties;
   final List<String> required;
+  final Map<String, Schema> _properties;
 
   ObjectSchema(
     this._properties, {
@@ -17,27 +17,6 @@ final class ObjectSchema extends Schema<MapValue>
     super.nullable,
     super.strict,
   });
-
-  @override
-  ObjectSchema copyWith({
-    bool? additionalProperties,
-    List<String>? required,
-    Map<String, Schema>? properties,
-    List<ConstraintValidator<MapValue>>? constraints,
-    bool? nullable,
-    bool? strict,
-    String? description,
-  }) {
-    return ObjectSchema(
-      properties ?? _properties,
-      additionalProperties: additionalProperties ?? this.additionalProperties,
-      required: required ?? this.required,
-      constraints: constraints ?? _constraints,
-      nullable: nullable ?? _nullable,
-      strict: strict ?? _strict,
-      description: description ?? _description,
-    );
-  }
 
   ObjectSchema extend(
     Map<String, Schema> properties, {
@@ -58,8 +37,8 @@ final class ObjectSchema extends Schema<MapValue>
         mergedProperties[key] = existingProp.extend(
           properties,
           additionalProperties: additionalProperties,
-          constraints: constraints,
           required: required,
+          constraints: constraints,
         );
       } else {
         mergedProperties[key] = prop;
@@ -70,13 +49,31 @@ final class ObjectSchema extends Schema<MapValue>
         <String>{...this.required, ...?required}.toList();
 
     return copyWith(
-      properties: mergedProperties,
       additionalProperties: additionalProperties,
-      constraints: [
-        ..._constraints,
-        ...?constraints,
-      ],
       required: requiredProperties,
+      properties: mergedProperties,
+      constraints: [..._constraints, ...?constraints],
+    );
+  }
+
+  @override
+  ObjectSchema copyWith({
+    bool? additionalProperties,
+    List<String>? required,
+    Map<String, Schema>? properties,
+    List<ConstraintValidator<MapValue>>? constraints,
+    bool? nullable,
+    bool? strict,
+    String? description,
+  }) {
+    return ObjectSchema(
+      properties ?? _properties,
+      additionalProperties: additionalProperties ?? this.additionalProperties,
+      constraints: constraints ?? _constraints,
+      description: description ?? _description,
+      required: required ?? this.required,
+      nullable: nullable ?? _nullable,
+      strict: strict ?? _strict,
     );
   }
 
@@ -85,15 +82,9 @@ final class ObjectSchema extends Schema<MapValue>
     final constraintErrors = super.validateAsType(value);
 
     constraintErrors.addAll([
-      ..._validateRequiredProperties(
-        value,
-        required,
-      ),
+      ..._validateRequiredProperties(value, required),
       if (!additionalProperties)
-        ..._validateUnallowedProperties(
-          value,
-          _properties.keys,
-        ),
+        ..._validateUnallowedProperties(value, _properties.keys),
     ]);
 
     // Validate properties
@@ -105,8 +96,8 @@ final class ObjectSchema extends Schema<MapValue>
         (errors) => constraintErrors.addAll(
           SchemaError.pathSchemas(
             path: key,
-            errors: errors,
             message: 'Property $key schema validation failed',
+            errors: errors,
             schema: schemaProp,
           ),
         ),

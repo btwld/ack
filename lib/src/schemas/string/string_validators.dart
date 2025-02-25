@@ -5,14 +5,9 @@ class DateTimeValidator extends ConstraintValidator<String> {
   const DateTimeValidator();
 
   @override
-  String get name => 'datetime';
-
-  @override
-  String get description => 'Must be a valid date time string';
-
-  @override
   bool check(String value) {
     final dateTime = DateTime.tryParse(value);
+
     return dateTime != null;
   }
 
@@ -24,21 +19,21 @@ class DateTimeValidator extends ConstraintValidator<String> {
       context: {
         'value': value,
         'expected_format': 'ISO 8601',
-        'example': '2023-01-01T00:00:00.000Z'
+        'example': '2023-01-01T00:00:00.000Z',
       },
     );
   }
+
+  @override
+  String get name => 'datetime';
+
+  @override
+  String get description => 'Must be a valid date time string';
 }
 
 class EnumValidator extends ConstraintValidator<String> {
   final List<String> enumValues;
-  EnumValidator(this.enumValues);
-
-  @override
-  String get name => 'string_enum';
-
-  @override
-  String get description => 'Must be one of: ${enumValues.join(', ')}';
+  const EnumValidator(this.enumValues);
 
   @override
   bool check(String value) => enumValues.contains(value);
@@ -52,10 +47,16 @@ class EnumValidator extends ConstraintValidator<String> {
         'value': value,
         'closest_match': findClosestStringMatch(value, enumValues),
         'enumValues': enumValues,
-        'total_allowed_values': enumValues.length
+        'total_allowed_values': enumValues.length,
       },
     );
   }
+
+  @override
+  String get name => 'string_enum';
+
+  @override
+  String get description => 'Must be one of: ${enumValues.join(', ')}';
 }
 
 class EmailValidator extends RegexValidator {
@@ -78,13 +79,7 @@ class HexColorValidator extends RegexValidator {
 
 class OneOfValidator extends ConstraintValidator<String> {
   final List<String> values;
-  OneOfValidator(this.values);
-
-  @override
-  String get name => 'string_one_of';
-
-  @override
-  String get description => 'Must be one of: ${values.join(', ')}';
+  const OneOfValidator(this.values);
 
   @override
   bool check(String value) => values.contains(value);
@@ -98,21 +93,21 @@ class OneOfValidator extends ConstraintValidator<String> {
         'value': value,
         'allowed_values': values,
         'total_allowed_values': values.length,
-        'closest_match': findClosestStringMatch(value, values)
+        'closest_match': findClosestStringMatch(value, values),
       },
     );
   }
+
+  @override
+  String get name => 'string_one_of';
+
+  @override
+  String get description => 'Must be one of: ${values.join(', ')}';
 }
 
 class NotOneOfValidator extends ConstraintValidator<String> {
   final List<String> values;
-  NotOneOfValidator(this.values);
-
-  @override
-  String get name => 'string_not_one_of';
-
-  @override
-  String get description => 'Must NOT be one of: ${values.join(', ')}';
+  const NotOneOfValidator(this.values);
 
   @override
   bool check(String value) => !values.contains(value);
@@ -126,20 +121,21 @@ class NotOneOfValidator extends ConstraintValidator<String> {
         'value': value,
         'disallowed_values': values,
         'total_disallowed_values': values.length,
-        'suggestion': 'Please choose a value that is not in the disallowed list'
+        'suggestion':
+            'Please choose a value that is not in the disallowed list',
       },
     );
   }
+
+  @override
+  String get name => 'string_not_one_of';
+
+  @override
+  String get description => 'Must NOT be one of: ${values.join(', ')}';
 }
 
 class NotEmptyValidator extends ConstraintValidator<String> {
   const NotEmptyValidator();
-
-  @override
-  String get name => 'string_not_empty';
-
-  @override
-  String get description => 'String cannot be empty';
 
   @override
   bool check(String value) => value.isNotEmpty;
@@ -151,10 +147,16 @@ class NotEmptyValidator extends ConstraintValidator<String> {
       context: {
         'value': value,
         'value_length': value.length,
-        'requirement': 'String must contain at least one character'
+        'requirement': 'String must contain at least one character',
       },
     );
   }
+
+  @override
+  String get name => 'string_not_empty';
+
+  @override
+  String get description => 'String cannot be empty';
 }
 
 class RegexValidator extends ConstraintValidator<String> {
@@ -168,16 +170,10 @@ class RegexValidator extends ConstraintValidator<String> {
   });
 
   @override
-  String get name => patternName;
-
-  @override
-  String get description =>
-      'Must match the pattern: $patternName. Example $example';
-
-  @override
   bool check(String value) {
     try {
       final regex = RegExp(pattern);
+
       return regex.hasMatch(value);
     } catch (e) {
       return false;
@@ -197,16 +193,17 @@ class RegexValidator extends ConstraintValidator<String> {
       },
     );
   }
+
+  @override
+  String get name => patternName;
+
+  @override
+  String get description =>
+      'Must match the pattern: $patternName. Example $example';
 }
 
 class IsEmptyValidator extends ConstraintValidator<String> {
   const IsEmptyValidator();
-
-  @override
-  String get name => 'string_is_empty';
-
-  @override
-  String get description => 'String must be empty';
 
   @override
   bool check(String value) => value.isEmpty;
@@ -218,21 +215,21 @@ class IsEmptyValidator extends ConstraintValidator<String> {
       context: {
         'value': value,
         'value_length': value.length,
-        'requirement': 'String length must be 0'
+        'requirement': 'String length must be 0',
       },
     );
   }
+
+  @override
+  String get name => 'string_is_empty';
+
+  @override
+  String get description => 'String must be empty';
 }
 
 class MinLengthValidator extends ConstraintValidator<String> {
   final int min;
   const MinLengthValidator(this.min);
-
-  @override
-  String get name => 'string_min_length';
-
-  @override
-  String get description => 'String must be at least $min characters long';
 
   @override
   bool check(String value) => value.length >= min;
@@ -245,21 +242,21 @@ class MinLengthValidator extends ConstraintValidator<String> {
         'value': value,
         'current_length': value.length,
         'min_length': min,
-        'characters_needed': min - value.length
+        'characters_needed': min - value.length,
       },
     );
   }
+
+  @override
+  String get name => 'string_min_length';
+
+  @override
+  String get description => 'String must be at least $min characters long';
 }
 
 class MaxLengthValidator extends ConstraintValidator<String> {
   final int max;
   const MaxLengthValidator(this.max);
-
-  @override
-  String get name => 'string_max_length';
-
-  @override
-  String get description => 'String must be at most $max characters long';
 
   @override
   bool check(String value) => value.length <= max;
@@ -273,8 +270,14 @@ class MaxLengthValidator extends ConstraintValidator<String> {
         'current_length': value.length,
         'max_length': max,
         'excess_characters': value.length - max,
-        'truncated_value': value.substring(0, max)
+        'truncated_value': value.substring(0, max),
       },
     );
   }
+
+  @override
+  String get name => 'string_max_length';
+
+  @override
+  String get description => 'String must be at most $max characters long';
 }

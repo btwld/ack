@@ -5,12 +5,6 @@ class MinValueValidator<T extends num> extends ConstraintValidator<T> {
   const MinValueValidator(this.min);
 
   @override
-  String get name => 'num_min_value';
-
-  @override
-  String get description => 'Must be greater than or equal to $min';
-
-  @override
   bool check(num value) => value >= min;
 
   @override
@@ -26,17 +20,17 @@ class MinValueValidator<T extends num> extends ConstraintValidator<T> {
       },
     );
   }
+
+  @override
+  String get name => 'num_min_value';
+
+  @override
+  String get description => 'Must be greater than or equal to $min';
 }
 
 class MaxValueValidator<T extends num> extends ConstraintValidator<T> {
   final T max;
   const MaxValueValidator(this.max);
-
-  @override
-  String get name => 'num_max_value';
-
-  @override
-  String get description => 'Must be less than or equal to $max';
 
   @override
   bool check(num value) => value <= max;
@@ -54,18 +48,18 @@ class MaxValueValidator<T extends num> extends ConstraintValidator<T> {
       },
     );
   }
+
+  @override
+  String get name => 'num_max_value';
+
+  @override
+  String get description => 'Must be less than or equal to $max';
 }
 
 class RangeValidator<T extends num> extends ConstraintValidator<T> {
   final T min;
   final T max;
   const RangeValidator(this.min, this.max);
-
-  @override
-  String get name => 'num_range';
-
-  @override
-  String get description => 'Must be between $min and $max (inclusive)';
 
   @override
   bool check(num value) => value >= min && value <= max;
@@ -87,4 +81,10 @@ class RangeValidator<T extends num> extends ConstraintValidator<T> {
       },
     );
   }
+
+  @override
+  String get name => 'num_range';
+
+  @override
+  String get description => 'Must be between $min and $max (inclusive)';
 }
