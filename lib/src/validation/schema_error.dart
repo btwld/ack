@@ -119,7 +119,7 @@ final class UnknownExceptionSchemaError extends SchemaError {
   UnknownExceptionSchemaError({this.error, this.stackTrace})
       : super(
           type: key,
-          message: 'Unknown Exception when validating schema $error',
+          message: 'Unknown Exception when validating schema ${error ?? ''}',
           context: {'error': error, 'stackTrace': stackTrace},
         );
 }

@@ -22,9 +22,7 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
       return checkResult(value);
     } catch (e, stackTrace) {
       return Fail(
-        [
-          SchemaError.unknownException(error: e, stackTrace: stackTrace),
-        ],
+        [SchemaError.unknownException(error: e, stackTrace: stackTrace)],
       );
     }
   }
