@@ -129,7 +129,7 @@ final class Ok<T extends Object> extends SchemaResult<T> {
 /// of [SchemaError]s describing what went wrong.
 class Fail<T extends Object> extends SchemaResult<T> {
   /// The list of errors associated with this failure.
-  @override
+
   final List<SchemaError> errors;
 
   /// Creates a failure result with the specified [errors].
