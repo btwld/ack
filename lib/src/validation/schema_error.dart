@@ -1,4 +1,6 @@
-part of '../ack.dart';
+import 'package:ack/src/helpers.dart';
+
+import '../schemas/schema.dart';
 
 sealed class SchemaError {
   final String type;
@@ -76,17 +78,14 @@ sealed class SchemaError {
     return schemaErrors;
   }
 
-  Map<String, Object?> get _contextMessage => {
-        if (context.isNotEmpty)
-          'context': context.entries
-              .map((e) => '${e.key}: ${e.value ?? ''}')
-              .join('\n'),
-      };
-
   String get message => _message;
 
   Map<String, Object?> toMap() {
-    return {'type': type, 'message': _message, ..._contextMessage};
+    return {
+      'type': type,
+      'message': _message,
+      if (context.isNotEmpty) 'context': context,
+    };
   }
 
   String toJson() => prettyJson(toMap());
@@ -171,4 +170,13 @@ final class PathSchemaError extends SchemaError {
       errors: errors,
     );
   }
+}
+
+class ConstraintError extends SchemaError {
+  final String name;
+  const ConstraintError({
+    required this.name,
+    required super.message,
+    required super.context,
+  }) : super(type: 'constraint_$name');
 }

@@ -1,28 +1,4 @@
-import 'dart:convert';
-import 'dart:developer';
-
-import 'package:ack/src/helpers.dart';
-import 'package:meta/meta.dart';
-
-part 'converters/open_api_schema.dart';
-part 'schemas/boolean/boolean_schema.dart';
-part 'schemas/boolean/boolean_validators.dart';
-part 'schemas/discriminated/discriminated_object_schema.dart';
-part 'schemas/discriminated/discriminated_object_validators.dart';
-part 'schemas/list/list_schema.dart';
-part 'schemas/list/list_validators.dart';
-part 'schemas/num/num_schema.dart';
-part 'schemas/num/num_validators.dart';
-part 'schemas/object/object_schema.dart';
-part 'schemas/object/object_validators.dart';
-part 'schemas/schema.dart';
-part 'schemas/string/string_schema.dart';
-part 'schemas/string/string_validators.dart';
-part 'validation/ack_exception.dart';
-part 'validation/constraint_error.dart';
-part 'validation/constraint_validator.dart';
-part 'validation/schema_error.dart';
-part 'validation/schema_result.dart';
+import 'schemas/schema.dart';
 
 final class Ack {
   static const string = StringSchema();

@@ -1,4 +1,4 @@
-part of '../../ack.dart';
+part of '../schema.dart';
 
 final class DoubleSchema extends ScalarSchema<DoubleSchema, double> {
   @override

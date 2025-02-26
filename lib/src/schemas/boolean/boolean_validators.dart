@@ -1,1 +1,1 @@
-part of '../../ack.dart';
+part of '../schema.dart';

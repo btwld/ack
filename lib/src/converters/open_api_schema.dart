@@ -1,4 +1,9 @@
-part of '../ack.dart';
+import 'dart:developer';
+
+import '../helpers.dart';
+import '../schemas/schema.dart';
+import '../validation/ack_exception.dart';
+import '../validation/constraint_validator.dart';
 
 class OpenApiConverterException implements Exception {
   final Object? error;
@@ -135,11 +140,11 @@ JSON _convertListSchema(ListSchema schema) => {
       'items': _convertSchema(schema.getItemSchema()),
     };
 
-JSON _convertSchema<S extends Schema<T>, T extends Object>(S schema) {
-  final type = _convertSchemaType(schema.getSchemaType());
-  final nullable = schema.getNullable();
-  final description = schema.getDescription();
-  final defaultValue = schema._defaultValue;
+JSON _convertSchema(Schema schema) {
+  final type = _convertSchemaType(schema.getSchemaTypeValue());
+  final nullable = schema.getNullableValue();
+  final description = schema.getDescriptionValue();
+  final defaultValue = schema.getDefaultValue();
 
   JSON schemaMap = {
     if (type.isNotEmpty) 'type': type,

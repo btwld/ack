@@ -1,4 +1,4 @@
-part of '../../ack.dart';
+part of '../schema.dart';
 
 final class StringSchema extends ScalarSchema<StringSchema, String> {
   @override

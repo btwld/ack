@@ -1,4 +1,5 @@
-part of '../ack.dart';
+import 'ack_exception.dart';
+import 'schema_error.dart';
 
 /// Represents either a successful outcome or a failure.
 ///

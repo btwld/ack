@@ -1,4 +1,4 @@
-part of '../../ack.dart';
+part of '../schema.dart';
 
 extension IntSchemaValidatorExt on IntegerSchema {
   /// {@macro max_num_validator}

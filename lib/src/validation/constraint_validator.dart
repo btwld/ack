@@ -1,4 +1,7 @@
-part of '../ack.dart';
+import 'package:meta/meta.dart';
+
+import '../helpers.dart';
+import 'schema_error.dart';
 
 abstract class ConstraintValidator<T> {
   const ConstraintValidator();

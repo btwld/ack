@@ -1,4 +1,4 @@
-part of '../../ack.dart';
+part of '../schema.dart';
 
 /// Provides validation methods for [StringSchema].
 extension StringSchemaValidatorExt on StringSchema {

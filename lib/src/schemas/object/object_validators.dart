@@ -1,4 +1,4 @@
-part of '../../ack.dart';
+part of '../schema.dart';
 
 List<ObjectSchemaError> _validateRequiredProperties(
   MapValue value,
