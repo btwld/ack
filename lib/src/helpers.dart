@@ -139,3 +139,16 @@ extension IterableExt<T> on Iterable<T> {
   Iterable<T> getNonContainedValues(Iterable<T> iterable) =>
       iterable.where((e) => !contains(e));
 }
+
+/// Checks if a string is a valid json format
+/// check if starts with the charcters that are supported
+/// as valid json
+///
+bool isJsonValue(String value) {
+  if (value.isEmpty) return false;
+  final trimmedValue = value.trim();
+
+  // Check if starts with { and ends with } or starts with [ and ends with ]
+  return (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
+      (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'));
+}

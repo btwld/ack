@@ -32,12 +32,12 @@ Validates string data, with constraints like minimum length, maximum length, non
 import 'package:ack/ack.dart';
 
 final schema = Ack.string
-    .minLength(5)
-    .maxLength(10)
-    .isNotEmpty()
-    .nullable(); // Accepts null
+  .minLength(5)
+  .maxLength(10)
+  .isNotEmpty()
+  .nullable(); // Accepts null
 
-final result = schema.validate("hello");
+final result = schema.validate('hello');
 if (result.isOk) {
   print(result.getOrNull()); // "hello"
 }
@@ -93,9 +93,11 @@ Validates lists of items, each item validated by an inner schema:
 
 ```dart
 final itemSchema = Ack.string.minLength(3);
-final listSchema = Ack.list(itemSchema).minItems(2).uniqueItems();
+final listSchema = Ack.list(itemSchema)
+    .minItems(2)
+    .uniqueItems();
 
-final result = listSchema.validate(["abc", "def"]);
+final result = listSchema.validate(['abc', 'def']);
 ```
 
 ### Object Schema
@@ -105,13 +107,15 @@ Validates `Map<String, Object?>` with property definitions and constraints on re
 **Example**:
 
 ```dart
-final schema = Ack.object({
-    "name": Ack.string.minLength(3),
-    "age": Ack.int.minValue(0).nullable(),
-  }, required: ["name"],
+final schema = Ack.object(
+  {
+    'name': Ack.string.minLength(3),
+    'age': Ack.int.minValue(0).nullable(),
+  },
+  required: ['name'],
 );
 
-final result = schema.validate({"name": "John"});
+final result = schema.validate({'name': 'John'});
 ```
 
 This schema requires a "name" property (string, min length 3) and allows an optional "age" property (integer >= 0), with at least one property.
@@ -142,12 +146,12 @@ You can set a default value so that if validation fails or if the user provides 
 ```dart
 // Setting default value in the constructor:
 final schema = Ack.string(
-  defaultValue: "Guest",
+  defaultValue: 'Guest',
   nullable: true,
 ).minLength(3);
 
 // This fails the minLength check, but returns the default "Guest"
-final result = schema.validate("hi");
+final result = schema.validate('hi');
 print(result.getOrNull()); // "Guest"
 
 final nullResult = schema.validate(null);
@@ -243,21 +247,120 @@ try {
 }
 ```
 
-### OpenAPI Integration
+### OpenAPI Spec
 
 ACK can generate OpenAPI schema definitions from your schemas, aiding in API documentation or code generation.
 
 ```dart
-final schema = Ack.string.minLength(5);
+final schema = Ack.object({
+  'name': Ack.string
+    .minLength(2)
+    .maxLength(50),
+  'age': Ack.int
+    .minValue(0)
+    .maxValue(120),
+}, required: ['name', 'age']);
+
 final converter = OpenApiSchemaConverter(schema: schema);
 final openApiSchema = converter.toSchema();
-print(openApiSchema); // {type: string, minLength: 5, ...}
 
-// You can also produce a JSON string or a response-delimited format:
-print(converter.toJson());
-// or
-print(converter.toResponsePrompt());
+print(openApiSchema);
+
+/* Returns schema like:
+{
+  "type": "object",
+  "required": ["name", "age"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 120
+    }
+  }
+}
+*/
 ```
+#### Working with Limited LLM OpenAPI Support
+
+> **Important**: When working with LLMs that have limited OpenAPI support, ACK allows you to inject schema instructions directly into prompts while maintaining JSON response validation.
+
+```dart
+final schema = Ack.object(
+  {
+    'name': Ack.string.minLength(2).maxLength(50),
+    'age': Ack.int.minValue(0).maxValue(120),
+  },
+  required: ['name', 'age'],
+);
+
+final converter = OpenApiSchemaConverter(schema: schema);
+
+// Build a prompt for the LLM that includes the schema
+final prompt = '''
+You are a helpful assistant. Please provide information about a person following this schema:
+
+${converter.toResponsePrompt()}
+
+/* Will output:
+<schema>
+{
+  "type": "object",
+  "required": ["name", "age"],
+  "properties": {
+    "name": {
+      "type": "string", 
+      "minLength": 2,
+      "maxLength": 50
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 120
+    }
+  },
+  "additionalProperties": false
+}
+</schema>
+
+Your response should be valid JSON, that follows the <schema> and formatted as follows:
+
+<response>
+{valid_json_response}
+</response>
+<stop_response>
+*/
+
+''';
+
+
+
+// Simulate LLM response
+final llmResponse = '''
+Here is the person's information:
+<response>
+{
+  "name": "John Smith",
+  "age": 35
+}
+</response>
+''';
+
+final jsonPayload = converter.parseResponse(llmResponse);
+
+print(jsonPayload);
+```
+## LLMs with Limited OpenAPI Support
+
+For LLMs that don't support the full OpenAPI specification, ACK provides flexible response formatting. You can customize the schema instructions, response delimiters, and add stop sequences:
+
+```dart
+final objectSchema
+
 
 ### Error Handling with SchemaResult
 
