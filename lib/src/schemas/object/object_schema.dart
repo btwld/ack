@@ -65,6 +65,20 @@ final class ObjectSchema extends Schema<MapValue>
     return constraintErrors;
   }
 
+  /// Validate the [value] as a JSON string
+  ///
+  /// This method is useful for validating JSON strings against the schema.
+  ///
+  /// If the value is not a JSON string, it will be converted to a JSON string
+  /// using [jsonEncode].
+  SchemaResult<MapValue> validateJson(String value) {
+    try {
+      return validate(jsonDecode(value) as Map<String, Object?>);
+    } catch (e) {
+      return Fail([SchemaError.invalidJsonFormat(value)]);
+    }
+  }
+
   ObjectSchema extend(
     Map<String, Schema> properties, {
     bool? additionalProperties,

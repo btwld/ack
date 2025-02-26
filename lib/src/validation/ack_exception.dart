@@ -2,9 +2,8 @@ part of '../ack.dart';
 
 class AckException implements Exception {
   final List<SchemaError> errors;
-  final StackTrace? stackTrace;
 
-  const AckException(this.errors, {this.stackTrace});
+  const AckException(this.errors);
 
   Map<String, dynamic> toMap() {
     return {'errors': errors.map((e) => e.toMap()).toList()};

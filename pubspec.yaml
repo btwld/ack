@@ -1,7 +1,7 @@
 name: ack
 description: A simple validation library for Dart
 version: 0.0.1
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/leoafarias/ack
 
 environment:
   sdk: ^3.6.1

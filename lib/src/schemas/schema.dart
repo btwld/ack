@@ -163,6 +163,24 @@ sealed class Schema<T extends Object> {
             : Fail(errors);
   }
 
+  /// Validates the [value] against this schema and returns a [SchemaResult].
+  ///
+  /// This method provides a non-throwing way to validate values against the schema.
+  /// It wraps the validation logic in a `try-catch` block to handle potential
+  /// exceptions during validation and returns a [Fail] result with a
+  /// [SchemaError.unknownException] if an exception occurs.
+  ///
+  /// Use [validateOrThrow] if you prefer to throw an exception on validation failure.
+  SchemaResult<T> validate(Object? value) {
+    try {
+      return checkResult(value);
+    } catch (e, stackTrace) {
+      return Fail(
+        [SchemaError.unknownException(error: e, stackTrace: stackTrace)],
+      );
+    }
+  }
+
   /// Converts this schema to a [Map] representation.
   ///
   /// This map includes the schema's type, constraints, nullability, strictness,
@@ -223,24 +241,6 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
       onOk: (data) => data,
       onFail: (errors) => throw AckException(errors),
     );
-  }
-
-  /// Validates the [value] against this schema and returns a [SchemaResult].
-  ///
-  /// This method provides a non-throwing way to validate values against the schema.
-  /// It wraps the validation logic in a `try-catch` block to handle potential
-  /// exceptions during validation and returns a [Fail] result with a
-  /// [SchemaError.unknownException] if an exception occurs.
-  ///
-  /// Use [validateOrThrow] if you prefer to throw an exception on validation failure.
-  SchemaResult<T> validate(Object? value) {
-    try {
-      return checkResult(value);
-    } catch (e, stackTrace) {
-      return Fail(
-        [SchemaError.unknownException(error: e, stackTrace: stackTrace)],
-      );
-    }
   }
 }
 
@@ -317,6 +317,8 @@ sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
   /// This is a convenience method equivalent to calling `copyWith(strict: true)`.
   Self strict() => copyWith(strict: true);
 
+  bool getStrictValue() => _strict;
+
   @override
   Self call({
     bool? nullable,
@@ -331,9 +333,6 @@ sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
       description: description,
     );
   }
-
-  @override
-  bool getIsString() => _strict;
 
   @override
   Self copyWith({

@@ -1,28 +1,108 @@
 part of '../ack.dart';
 
-class OpenApiSchemaConverter<S extends Schema<T>, T extends Object> {
-  final S _schema;
-  final String _startDelimeter;
-  final String _endDelimeter;
+class OpenApiConverterException implements Exception {
+  final Object? error;
+  final AckException? _ackException;
+
+  final String _message;
+
+  const OpenApiConverterException(
+    this._message, {
+    this.error,
+    AckException? ackException,
+  }) : _ackException = ackException;
+
+  static OpenApiConverterException validationError(AckException ackException) {
+    return OpenApiConverterException(
+      'Validation error',
+      ackException: ackException,
+    );
+  }
+
+  static OpenApiConverterException unknownError(Object error) {
+    return OpenApiConverterException('Unknown error', error: error);
+  }
+
+  static OpenApiConverterException jsonDecodeError(Object error) {
+    return OpenApiConverterException('Invalid JSON format', error: error);
+  }
+
+  bool get isValidationError => _ackException != null;
+
+  String get message {
+    if (isValidationError) {
+      return '$_message\n${_ackException!.toJson()}';
+    }
+
+    return '$_message\nError: ${error ?? ''}';
+  }
+
+  @override
+  String toString() {
+    return 'OpenApiConverterException: $message';
+  }
+}
+
+class OpenApiSchemaConverter {
+  /// The sequence that indicates the end of the response.
+  /// Use this if you want the LLM to stop once it reaches response.
+  final String stopSequence;
+  final String startDelimeter;
+  final String endDelimeter;
+  final ObjectSchema _schema;
 
   const OpenApiSchemaConverter({
-    required S schema,
-    String startDelimeter = '<response>',
-    String endDelimeter = '</response>',
-  })  : _schema = schema,
-        _startDelimeter = startDelimeter,
-        _endDelimeter = endDelimeter;
+    required ObjectSchema schema,
+    this.startDelimeter = '<response>',
+    this.endDelimeter = '</response>',
+    this.stopSequence = '<stop_response>',
+    String? customResponseInstruction,
+  }) : _schema = schema;
+
+  String toResponsePrompt() {
+    return '''
+<schema>\n${toSchemaString()}\n</schema>
+
+Your response should be valid JSON, that follows the <schema> and formatted as follows:
+
+$startDelimeter
+{valid_json_response}
+$endDelimeter
+$stopSequence
+    ''';
+  }
+
   Map<String, Object?> toSchema() {
     return _convertSchema(_schema);
   }
 
-  String toJson() => prettyJson(toSchema());
+  String toSchemaString() => prettyJson(toSchema());
 
-  String toResponsePrompt([
-    String startDelimeter = '<response>',
-    String endDelimeter = '</response>',
-  ]) {
-    return '$startDelimeter\n${toJson()}\n$endDelimeter';
+  Map<String, Object?> parseResponse(String response) {
+    try {
+      // Get all the content after <_startDelimeter>
+      final jsonString = response.substring(
+        response.indexOf(startDelimeter) + startDelimeter.length,
+        response.indexOf(endDelimeter),
+      );
+
+      return _schema.validateJson(jsonString).getOrThrow();
+    } on FormatException catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        OpenApiConverterException.jsonDecodeError(e),
+        stackTrace,
+      );
+    } on AckException catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        OpenApiConverterException.validationError(e),
+        stackTrace,
+      );
+    } catch (e, stackTrace) {
+      Error.throwWithStackTrace(
+        OpenApiConverterException.unknownError(e),
+        stackTrace,
+      );
+    }
   }
 }
 

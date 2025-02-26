@@ -21,6 +21,10 @@ sealed class SchemaError {
     );
   }
 
+  static InvalidJsonFormatSchemaError invalidJsonFormat(String json) {
+    return InvalidJsonFormatSchemaError(json: json);
+  }
+
   static NonNullableValueSchemaError nonNullableValue() {
     return NonNullableValueSchemaError();
   }
@@ -72,14 +76,17 @@ sealed class SchemaError {
     return schemaErrors;
   }
 
-  String get _contextMessage => context.isEmpty
-      ? ''
-      : context.entries.map((e) => '${e.key}: ${e.value}').join('\n');
+  Map<String, Object?> get _contextMessage => {
+        if (context.isNotEmpty)
+          'context': context.entries
+              .map((e) => '${e.key}: ${e.value ?? ''}')
+              .join('\n'),
+      };
 
   String get message => _message;
 
   Map<String, Object?> toMap() {
-    return {'type': type, 'message': _message, 'context': context};
+    return {'type': type, 'message': _message, ..._contextMessage};
   }
 
   String toJson() => prettyJson(toMap());
@@ -103,6 +110,20 @@ final class InvalidTypeSchemaError extends SchemaError {
             'valueType': valueType.toString(),
             'expectedType': expectedType.toString(),
           },
+        );
+}
+
+/// Invalid json format
+///
+/// This error is thrown when the value is not a valid JSON string.
+final class InvalidJsonFormatSchemaError extends SchemaError {
+  static const String key = 'invalid_json_format';
+  final String json;
+  InvalidJsonFormatSchemaError({required this.json})
+      : super(
+          type: key,
+          message: 'Invalid JSON format: $json',
+          context: {'json': json},
         );
 }
 
