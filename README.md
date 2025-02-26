@@ -287,7 +287,7 @@ print(openApiSchema);
 ```
 #### Working with Limited LLM OpenAPI Support
 
-> **Important**: When working with LLMs that have limited OpenAPI support, ACK allows you to inject schema instructions directly into prompts while maintaining JSON response validation.
+**Important**: When using LLMs with limited OpenAPI support, ACK lets you add schema instructions directly into prompts while keeping JSON response validation. Some LLM providers let you ensure the response is valid JSON even without a schema. This might work better for you.
 
 ```dart
 final schema = Ack.object(
@@ -305,6 +305,7 @@ final prompt = '''
 You are a helpful assistant. Please provide information about a person following this schema:
 
 ${converter.toResponsePrompt()}
+''';
 
 /* Will output:
 <schema>
@@ -335,11 +336,7 @@ Your response should be valid JSON, that follows the <schema> and formatted as f
 <stop_response>
 */
 
-''';
-
-
-
-// Simulate LLM response
+// Simulated LLM response
 final llmResponse = '''
 Here is the person's information:
 <response>
@@ -354,12 +351,6 @@ final jsonPayload = converter.parseResponse(llmResponse);
 
 print(jsonPayload);
 ```
-## LLMs with Limited OpenAPI Support
-
-For LLMs that don't support the full OpenAPI specification, ACK provides flexible response formatting. You can customize the schema instructions, response delimiters, and add stop sequences:
-
-```dart
-final objectSchema
 
 
 ### Error Handling with SchemaResult
