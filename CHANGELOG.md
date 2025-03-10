@@ -1,7 +1,13 @@
+## 0.1.0
+
+-  Error and exception improvements
+-  Reworked validation and constraint workflows
+-  Improved testing
+
 ## 0.0.2
 
-- Better json response parsing for OpenApiSchemaConverter
+-  Better JSON response parsing for OpenApiSchemaConverter
 
 ## 0.0.1
 
-- Initial version.
+-  Initial version.
