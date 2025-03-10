@@ -291,7 +291,7 @@ class StringRegexConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) {
-    return 'Invalid format $patternName. Ex: $example';
+    return 'Invalid $patternName format. Ex: $example';
   }
 
   @override

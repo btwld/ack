@@ -1,3 +1,7 @@
+## 0.1.2
+
+-  Improved error messages
+
 ## 0.1.1
 
 -  Added deprecations

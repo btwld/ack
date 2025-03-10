@@ -67,18 +67,14 @@ void main() {
       var result = schema.validate('abc');
       expect(result.isFail, isTrue);
       var error = result.getError() as SchemaConstraintsError;
-      expect(
-          error.constraints.first.message,
-          contains(
-              'The string length (3) is too short; it must be at least (5) characters.'));
+      expect(error.constraints.first.message,
+          equals('Too short, min 5 characters'));
 
       result = schema.validate('abcdefghijk');
       expect(result.isFail, isTrue);
       error = result.getError() as SchemaConstraintsError;
-      expect(
-          error.constraints.first.message,
-          contains(
-              'The string length (11) exceeds the maximum allowed of (10) characters.'));
+      expect(error.constraints.first.message,
+          equals('Too long, max 10 characters'));
     });
 
     test('Enum validation error messages', () {
@@ -90,11 +86,10 @@ void main() {
       var error = result.getError() as SchemaConstraintsError;
 
       expect(error.constraints.length, 1);
-      expect(
-          error.constraints.first.message,
-          contains(
-              'Invalid value (yellow). Allowed values are: ("red", "green", "blue"). '));
+      expect(error.constraints.first.message,
+          equals('Allowed: "red", "green", "blue"'));
     });
+
     test('Date validation error messages', () {
       final constraint = StringDateConstraint();
       final schema = Ack.string.constrain(constraint);
@@ -102,11 +97,10 @@ void main() {
       var result = schema.validate('2023-13-45');
       expect(result.isFail, isTrue);
       var error = result.getError() as SchemaConstraintsError;
-      expect(
-          error.constraints.first.message,
-          contains(
-              'The value (2023-13-45) is not a valid date. Expected format: YYYY-MM-DD (e.g. 2017-07-21)'));
+      expect(error.constraints.first.message,
+          equals('Invalid date. YYYY-MM-DD required. Ex: 2017-07-21'));
     });
+
     test('List validation error messages', () {
       final minItems = ListMinItemsConstraint(2);
       final maxItems = ListMaxItemsConstraint(4);
@@ -120,28 +114,22 @@ void main() {
       var result = schema.validate(['a']);
       expect(result.isFail, isTrue);
       var error = result.getError() as SchemaConstraintsError;
-      expect(
-          error.constraints.first.message,
-          contains(
-              'The list has only (1) items; at least (2) items are required.'));
+      expect(error.constraints.first.message,
+          equals('Too few items, min 2. Got 1'));
 
       // Test too many items
       result = schema.validate(['a', 'b', 'c', 'd', 'e']);
       expect(result.isFail, isTrue);
       error = result.getError() as SchemaConstraintsError;
-      expect(
-          error.constraints.first.message,
-          contains(
-              'The list contains (5) items, which exceeds the allowed maximum of (4).'));
+      expect(error.constraints.first.message,
+          equals('Too many items, max 4. Got 5'));
 
       // Test duplicate items
       result = schema.validate(['a', 'b', 'a']);
       expect(result.isFail, isTrue);
       error = result.getError() as SchemaConstraintsError;
-      expect(
-          error.constraints.first.message,
-          contains(
-              'The list contains duplicate items: "a". All items must be unique.'));
+      expect(error.constraints.first.message,
+          equals('Must be unique. Duplicates found: "a"'));
     });
   });
 

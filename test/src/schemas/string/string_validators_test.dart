@@ -24,7 +24,8 @@ void main() {
         expect(validator.isValid('test@example.com'), isTrue);
 
         final result = validator.validate('not-an-email');
-        expect(result?.message, contains('not-an-email'));
+        expect(result?.message,
+            equals('Invalid email format. Ex: example@domain.com'));
       });
     });
 
@@ -50,7 +51,8 @@ void main() {
         expect(validator.isValid('#00ff55'), isTrue);
 
         final result = validator.validate('not-a-color');
-        expect(result?.message, contains('not-a-color'));
+        expect(
+            result?.message, equals('Invalid hex_color format. Ex: #f0f0f0'));
       });
     });
 
@@ -72,7 +74,7 @@ void main() {
         expect(validator.isValid(''), isTrue);
 
         final result = validator.validate('not empty');
-        expect(result?.message, contains('not empty'));
+        expect(result?.message, equals('Should be empty'));
       });
     });
 
@@ -96,8 +98,7 @@ void main() {
         expect(validator.isValid('abc'), isTrue);
 
         final result = validator.validate('ab');
-        expect(result?.message, contains('(2)'));
-        expect(result?.message, contains('(3)'));
+        expect(result?.message, equals('Too short, min 3 characters'));
       });
     });
 
@@ -121,8 +122,7 @@ void main() {
         expect(validator.isValid('abc'), isTrue);
 
         final result = validator.validate('abcd');
-        expect(result?.message, contains('(4)'));
-        expect(result?.message, contains('(3)'));
+        expect(result?.message, equals('Too long, max 3 characters'));
       });
     });
 
@@ -173,7 +173,7 @@ void main() {
         expect(validator.isValid('red'), isTrue);
 
         final result = validator.validate('yellow');
-        expect(result?.message, contains('yellow'));
+        expect(result?.message, equals('Allowed: "red", "green", "blue"'));
       });
     });
 
@@ -216,10 +216,11 @@ void main() {
 
       test('schema validation works with datetime validator', () {
         final validator = StringDateTimeConstraint();
-        expect(validator.isValid('2023-01-01T00:00:00.000Z'), isTrue);
+        expect(validator.isValid('2021-01-01T00:00:00Z'), isTrue);
 
         final result = validator.validate('not a datetime');
-        expect(result?.message, contains('not a datetime'));
+        expect(
+            result?.message, equals('Invalid date-time (ISO 8601 required)'));
       });
     });
   });
