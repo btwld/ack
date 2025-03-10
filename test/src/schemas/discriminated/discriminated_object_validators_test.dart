@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../../test_helpers.dart';
-
 void main() {
   group('Discriminated Validators', () {
     test('Fails when discriminator key is missing from the value', () {
@@ -23,11 +21,10 @@ void main() {
         result.isFail,
         isTrue,
       );
+      final error = (result as Fail).error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_missing_discriminator_key',
-        ),
+        error.getConstraint<ObjectDiscriminatorValueConstraint>(),
+        isNotNull,
       );
     });
 
@@ -49,11 +46,13 @@ void main() {
         result.isFail,
         isTrue,
       );
+
+      expect((result as Fail).error, isA<SchemaConstraintsError>());
+
+      final error = (result as Fail).error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_no_schema_for_discriminator_value',
-        ),
+        error.getConstraint<ObjectDiscriminatorValueConstraint>(),
+        isNotNull,
       );
     });
 
@@ -77,11 +76,10 @@ void main() {
         result.isFail,
         isTrue,
       );
+      final error = (result as Fail).error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_key_must_be_required_in_schema',
-        ),
+        error.getConstraint<ObjectDiscriminatorStructureConstraint>(),
+        isNotNull,
       );
     });
 
@@ -102,19 +100,22 @@ void main() {
           discriminatedSchema.validate({'key': 'a', 'value': 'not an int'});
 
       expect(
-        (result as Fail).errors,
-        hasOneSchemaError(PathSchemaError.key),
+        (result as Fail).error,
+        isA<SchemaNestedError>(),
       );
 
-      final nestedSchemaError = (result as Fail).pathSchemaError.first;
-      expect(nestedSchemaError.path, 'a.value');
+      final resultError = (result as Fail).error as SchemaNestedError;
 
-      expect(
-        nestedSchemaError.errors,
-        hasOneSchemaError(
-          'invalid_type',
-        ),
-      );
+      final constraintsError =
+          resultError.getSchemaError<SchemaConstraintsError>();
+
+      // Check that the 'value' property has an error
+      expect(constraintsError, isNotNull);
+
+      // Check that it's an invalid type error
+      final valueError =
+          constraintsError!.getConstraint<InvalidTypeConstraint>();
+      expect(valueError, isNotNull);
     });
   });
 }

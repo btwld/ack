@@ -31,3 +31,4 @@ doc/api/
 .fvm/
 flattened
 .cursor/rules
+coverage/test

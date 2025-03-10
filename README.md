@@ -19,8 +19,7 @@ dart pub add ack
 
 ## Usage Overview
 
-Ack provides schema types to validate different kinds of data. You can customize each schema with constraints, nullability, strict parsing, default values, and more using a fluent API.
-
+ACK provides schema types to validate different kinds of data. You can customize each schema with constraints, nullability, strict parsing, default values, and more using a fluent API.
 
 ### String Schema
 
@@ -60,7 +59,7 @@ final result = schema.validate(25);
 
 ### Double Schema
 
-Similar to IntegerSchema, but for doubles:
+Similar to Integer Schema, but for doubles:
 
 ```dart
 final schema = Ack.double
@@ -120,8 +119,6 @@ final result = schema.validate({'name': 'John'});
 
 This schema requires a "name" property (string, min length 3) and allows an optional "age" property (integer >= 0), with at least one property.
 
-#$1
-
 ## Additional Features
 
 ### Strict Parsing
@@ -158,7 +155,7 @@ final nullResult = schema.validate(null);
 print(nullResult.getOrNull()); // "Guest"
 ```
 
-> **Important**: If the parsed value is invalid or null, but a defaultValue is present, ACK will return Ok(defaultValue) instead of failing.
+> **Important**: If the parsed value is invalid or null, but a default value is present, ACK will return Ok(defaultValue) instead of failing.
 
 ### Custom Constraints
 
@@ -285,7 +282,9 @@ print(openApiSchema);
 }
 */
 ```
+
 #### Working with Limited LLM OpenAPI Support
+
 > [!TIP]
 > When using LLMs with limited OpenAPI support, ACK lets you add schema instructions directly into prompts while keeping JSON response validation. Some LLM providers let you ensure the response is valid JSON even without a schema. This might work better for you.
 
@@ -372,4 +371,3 @@ Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is ei
 4. OpenAPI: Use `OpenApiSchemaConverter(schema: yourSchema).toSchema()` (or `.toJson()`) to generate specs.
 
 Happy validating with ACK!
-

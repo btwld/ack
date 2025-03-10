@@ -15,7 +15,7 @@ void main() {
         final schema = Ack.string.strict();
         expect(
           () => schema.validateOrThrow(42),
-          throwsA(isA<AckException>()),
+          throwsA(isA<AckViolationException>()),
         );
       });
 
@@ -76,30 +76,36 @@ void main() {
           },
         );
 
+        final userValidation = schema.validate({
+          'key': 'user',
+          'name': 'John',
+        });
+
+        final adminValidation = schema.validate({
+          'key': 'admin',
+          'name': 'Admin',
+          'level': 1,
+        });
+
+        final unknownValidation = schema.validate({
+          'key': 'unknown',
+          'name': 'Test',
+        });
+
         expect(
-          schema.validate({
-            'key': 'user',
-            'name': 'John',
-          }).isOk,
+          userValidation.isOk,
           isTrue,
           reason: 'Should validate a valid user object',
         );
 
         expect(
-          schema.validate({
-            'key': 'admin',
-            'name': 'Admin',
-            'level': 1,
-          }).isOk,
+          adminValidation.isOk,
           isTrue,
           reason: 'Should validate a valid admin object',
         );
 
         expect(
-          schema.validate({
-            'key': 'unknown',
-            'name': 'Test',
-          }).isFail,
+          unknownValidation.isFail,
           isTrue,
           reason: 'Should fail for unknown discriminator value',
         );
@@ -165,7 +171,7 @@ void main() {
 
       test('validates int type', () {
         expect(Ack.int.validate(42).isOk, isTrue);
-        expect(Ack.int.validate(42.5).isOk, isTrue);
+        expect(Ack.int.validate(42.5).isOk, isFalse);
 
         final strict = Ack.int.strict();
         expect(strict.validate(42).isOk, isTrue);
@@ -183,4 +189,23 @@ void main() {
       });
     });
   });
+
+  group('Ack Additional Coverage', () {
+    test('Ack.enumValues covers lines for enum name mapping', () {
+      final schema = Ack.enumValues(_TestColors.values);
+
+      expect(schema.validate('red').isOk, isTrue, reason: 'Valid enum name');
+      expect(schema.validate('blue').isOk, isTrue);
+      expect(schema.validate('orange').isFail, isTrue, reason: 'Invalid enum');
+    });
+
+    test('Ack.enumString additional test to hit final lines', () {
+      final schema = Ack.enumString(['apple', 'banana']);
+
+      expect(schema.validate('banana').isOk, isTrue);
+      expect(schema.validate('pear').isFail, isTrue);
+    });
+  });
 }
+
+enum _TestColors { red, green, blue }

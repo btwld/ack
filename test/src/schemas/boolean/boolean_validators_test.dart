@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../../test_helpers.dart';
-
 void main() {
   group('Boolean Validators', () {
     group('BooleanSchema Edge Cases', () {
@@ -25,7 +23,12 @@ void main() {
         final result = schema.validate("True");
         // bool.tryParse("True") returns null, so this should fail unless handled differently.
 
-        expect(result, hasOneSchemaError('invalid_type'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error as SchemaConstraintsError;
+        expect(
+          error.getConstraint<InvalidTypeConstraint>(),
+          isNotNull,
+        );
       });
 
       test('String with whitespace " true " fails validation', () {
@@ -33,7 +36,12 @@ void main() {
         final result = schema.validate(" true ");
         // Again, this should fail unless you choose to trim inputs.
 
-        expect(result, hasOneSchemaError('invalid_type'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error as SchemaConstraintsError;
+        expect(
+          error.getConstraint<InvalidTypeConstraint>(),
+          isNotNull,
+        );
       });
     });
 
@@ -42,14 +50,24 @@ void main() {
         final schema = BooleanSchema();
         final result = schema.validate(123);
 
-        expect(result, hasOneSchemaError('invalid_type'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error as SchemaConstraintsError;
+        expect(
+          error.getConstraint<InvalidTypeConstraint>(),
+          isNotNull,
+        );
       });
 
       test('Passing an object returns invalid type error', () {
         final schema = BooleanSchema();
         final result = schema.validate({'key': 'value'});
 
-        expect(result, hasOneSchemaError('invalid_type'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error as SchemaConstraintsError;
+        expect(
+          error.getConstraint<InvalidTypeConstraint>(),
+          isNotNull,
+        );
       });
     });
   });

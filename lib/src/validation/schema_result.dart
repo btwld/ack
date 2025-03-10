@@ -5,7 +5,7 @@ import 'schema_error.dart';
 ///
 /// A [SchemaResult] encapsulates a successful value (an [Ok] instance)
 /// or a failure (a [Fail] instance containing a list of [SchemaError]s).
-class SchemaResult<T extends Object> {
+sealed class SchemaResult<T extends Object> {
   /// Creates a new [SchemaResult] instance.
   const SchemaResult();
 
@@ -15,8 +15,12 @@ class SchemaResult<T extends Object> {
   }
 
   /// Returns a failure result that wraps the specified list of [errors].
-  static SchemaResult<T> fail<T extends Object>(List<SchemaError> errors) {
-    return Fail(errors);
+  static SchemaResult<T> fail<T extends Object>(SchemaError error) {
+    return Fail(error);
+  }
+
+  static SchemaResult<T> unit<T extends Object>() {
+    return Ok(null);
   }
 
   /// Indicates whether this result is successful.
@@ -33,12 +37,16 @@ class SchemaResult<T extends Object> {
   ///
   /// If this result is successful, it returns an empty list.
   /// If this result is a failure, it returns the list of errors.
-  List<SchemaError> getErrors() =>
-      match(onOk: (_) => [], onFail: (errors) => errors);
+  SchemaError getError() {
+    return match(
+      onOk: (_) => throw Exception('Cannot get error from Ok'),
+      onFail: (error) => error,
+    );
+  }
 
   /// Returns the contained value if this result is successful; otherwise, returns `null`.
   T? getOrNull() {
-    return match(onOk: (value) => value.getOrNull(), onFail: (_) => null);
+    return match(onOk: (value) => value, onFail: (_) => null);
   }
 
   /// Returns the contained value if this result is successful; otherwise, returns the result of [orElse].
@@ -46,20 +54,17 @@ class SchemaResult<T extends Object> {
   /// If this instance is an [Ok], it returns its contained value.
   /// Otherwise, it returns the value produced by invoking [orElse].
   T getOrElse(T Function() orElse) {
-    return match(
-      onOk: (value) => value.getOrElse(orElse),
-      onFail: (_) => orElse(),
-    );
+    return match(onOk: (value) => value ?? orElse(), onFail: (_) => orElse());
   }
 
-  /// Returns the contained value if this result is successful; otherwise, throws an [AckException].
+  /// Returns the contained value if this result is successful; otherwise, throws an [AckViolationException].
   ///
   /// If this instance is an [Ok], it returns its contained value.
-  /// Otherwise, it throws an [AckException] with the associated errors.
+  /// Otherwise, it throws an [AckViolationException] with the associated errors.
   T getOrThrow() {
     return match(
-      onOk: (value) => value.getOrThrow(),
-      onFail: (errors) => throw AckException(errors),
+      onOk: (value) => value ?? (throw Exception('Value of ok is null')),
+      onFail: (error) => throw AckViolationException(error),
     );
   }
 
@@ -70,20 +75,25 @@ class SchemaResult<T extends Object> {
   ///
   /// Returns the result of the invoked callback.
   R match<R>({
-    required R Function(Ok<T> value) onOk,
-    required R Function(List<SchemaError> errors) onFail,
+    required R Function(T? value) onOk,
+    required R Function(SchemaError error) onFail,
   }) {
     final self = this;
-    if (self is Ok<T>) return onOk(self);
 
-    return onFail((self as Fail<T>).errors);
+    if (self is Ok<T>) {
+      final value = self._value;
+
+      return onOk(value);
+    }
+
+    return onFail((self as Fail<T>).error);
   }
 
   /// Invokes [onFail] if this result represents a failure.
   ///
   /// If this instance is a [Fail], it calls [onFail] with its list of errors.
   /// Otherwise, it does nothing.
-  void onFail(void Function(List<SchemaError> errors) onFail) {
+  void onFail(void Function(SchemaError error) onFail) {
     match(onOk: (_) {}, onFail: onFail);
   }
 
@@ -91,8 +101,8 @@ class SchemaResult<T extends Object> {
   ///
   /// If this instance is an [Ok], it calls [onOk] with its contained value.
   /// Otherwise, it does nothing.
-  void onOk(void Function(Ok<T> value) onOk) {
-    match(onOk: onOk, onFail: (_) {});
+  void onOk(void Function(T value) onOk) {
+    match(onOk: (value) => value == null ? () : onOk(value), onFail: (_) {});
   }
 }
 
@@ -103,24 +113,7 @@ class SchemaResult<T extends Object> {
 final class Ok<T extends Object> extends SchemaResult<T> {
   final T? _value;
 
-  const
-
-  /// Creates a successful result that wraps the given [value].
-  Ok(this._value);
-
-  /// Returns the contained value, or `null` if no value is present.
-  @override
-  T? getOrNull() => _value;
-
-  /// Returns the contained value if present; otherwise, returns the result of [orElse].
-  @override
-  T getOrElse(T Function() orElse) {
-    return _value ?? orElse();
-  }
-
-  /// Returns the contained value, or throws an exception if the value is `null`.
-  @override
-  T getOrThrow() => _value!;
+  const Ok(this._value);
 }
 
 /// Represents a failure outcome with associated errors.
@@ -130,8 +123,8 @@ final class Ok<T extends Object> extends SchemaResult<T> {
 class Fail<T extends Object> extends SchemaResult<T> {
   /// The list of errors associated with this failure.
 
-  final List<SchemaError> errors;
+  final SchemaError error;
 
-  /// Creates a failure result with the specified [errors].
-  const Fail(this.errors);
+  /// Creates a failure result with the specified [error].
+  const Fail(this.error);
 }

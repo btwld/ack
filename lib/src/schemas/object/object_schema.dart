@@ -6,6 +6,7 @@ final class ObjectSchema extends Schema<MapValue>
     with SchemaFluentMethods<ObjectSchema, MapValue> {
   final bool _additionalProperties;
   final List<String> _required;
+
   final Map<String, Schema> _properties;
 
   ObjectSchema(
@@ -26,6 +27,7 @@ final class ObjectSchema extends Schema<MapValue>
     }
 
     // Check if properties has a key called 'type'
+    // TODO: need to remove this
     if (_properties.containsKey('type')) {
       log('Warning: Property name "type" is reserved for OpenAPI schema');
     }
@@ -35,57 +37,13 @@ final class ObjectSchema extends Schema<MapValue>
     }
   }
 
-  @override
-  List<SchemaError> _validateAsType(MapValue value) {
-    final constraintErrors = super._validateAsType(value);
-
-    constraintErrors.addAll([
-      ..._validateRequiredProperties(value, _required),
-      if (!_additionalProperties)
-        ..._validateUnallowedProperties(value, _properties.keys),
-    ]);
-
-    // Validate properties
-    for (final key in _properties.keys) {
-      final schemaProp = _properties[key]!;
-      final propResult = schemaProp.checkResult(value[key]);
-
-      propResult.onFail(
-        (errors) => constraintErrors.addAll(
-          SchemaError.pathSchemas(
-            path: key,
-            message: 'Property $key schema validation failed',
-            errors: errors,
-            schema: schemaProp,
-          ),
-        ),
-      );
-    }
-
-    return constraintErrors;
-  }
-
-  /// Validate the [value] as a JSON string
-  ///
-  /// This method is useful for validating JSON strings against the schema.
-  ///
-  /// If the value is not a JSON string, it will be converted to a JSON string
-  /// using [jsonEncode].
-  SchemaResult<MapValue> validateJson(String value) {
-    try {
-      return validate(jsonDecode(value) as Map<String, Object?>);
-    } catch (e) {
-      return Fail([SchemaError.invalidJsonFormat(value)]);
-    }
-  }
-
   ObjectSchema extend(
     Map<String, Schema> properties, {
     bool? additionalProperties,
     List<String>? required,
     bool? nullable,
     String? description,
-    List<ConstraintValidator<MapValue>>? constraints,
+    List<Validator<MapValue>>? constraints,
     MapValue? defaultValue,
   }) {
     // if property SchemaValue is of SchemaMap, we need to merge them
@@ -128,6 +86,53 @@ final class ObjectSchema extends Schema<MapValue>
 
   bool getAllowsAdditionalProperties() => _additionalProperties;
 
+  @override
+  List<ConstraintError> checkValidators(MapValue value) {
+    final extraValidation = [
+      ObjectNoAdditionalPropertiesConstraint(this),
+      ObjectRequiredPropertiesConstraint(this),
+    ];
+
+    return [
+      ...super.checkValidators(value),
+      ...extraValidation
+          .map((v) => v.validate(value))
+          .whereType<ConstraintError>(),
+    ];
+  }
+
+  @override
+  SchemaResult<MapValue> validateValue(Object? value) {
+    final result = super.validateValue(value);
+
+    if (result.isFail) return result;
+
+    final resultValue = result.getOrNull();
+
+    if (_nullable && resultValue == null) return SchemaResult.unit();
+
+    final violations = <SchemaError>[];
+
+    for (final entry in _properties.entries) {
+      final propKey = entry.key;
+      final propSchema = entry.value;
+
+      final propValue = resultValue![propKey];
+
+      final propResult = propSchema.validate(propValue, debugName: propKey);
+
+      if (propResult.isFail) {
+        violations.add(propResult.getError());
+      }
+    }
+
+    if (violations.isEmpty) return SchemaResult.ok(resultValue!);
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: violations, context: context),
+    );
+  }
+
   /// Will extend the ObjectSchema with the values passed into call method
   ///
   /// This method is intended to be used to extend the schema with additional
@@ -146,7 +151,7 @@ final class ObjectSchema extends Schema<MapValue>
     bool? additionalProperties,
     List<String>? required,
     Map<String, Schema>? properties,
-    List<ConstraintValidator<MapValue>>? constraints,
+    List<Validator<MapValue>>? constraints,
   }) {
     return extend(
       properties ?? _properties,
@@ -163,7 +168,7 @@ final class ObjectSchema extends Schema<MapValue>
     bool? additionalProperties,
     List<String>? required,
     Map<String, Schema>? properties,
-    List<ConstraintValidator<MapValue>>? constraints,
+    List<Validator<MapValue>>? constraints,
     bool? nullable,
     String? description,
     MapValue? defaultValue,

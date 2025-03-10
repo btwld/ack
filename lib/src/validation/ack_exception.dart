@@ -1,19 +1,19 @@
 import '../helpers.dart';
 import 'schema_error.dart';
 
-class AckException implements Exception {
-  final List<SchemaError> errors;
+class AckViolationException implements Exception {
+  final SchemaError error;
 
-  const AckException(this.errors);
+  const AckViolationException(this.error);
 
   Map<String, dynamic> toMap() {
-    return {'errors': errors.map((e) => e.toMap()).toList()};
+    return {'error': error.toMap()};
   }
 
   String toJson() => prettyJson(toMap());
 
   @override
   String toString() {
-    return 'AckException: ${toJson()}';
+    return 'AckViolationException: ${toJson()}';
   }
 }

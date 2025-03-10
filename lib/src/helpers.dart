@@ -7,7 +7,11 @@ String prettyJson(Map<String, dynamic> json) {
   return encoder.convert(json);
 }
 
-String? findClosestStringMatch(String value, List<String> allowedValues) {
+String? findClosestStringMatch(
+  String value,
+  List<String> allowedValues, {
+  double threshold = 0.6, // Add a threshold parameter with default
+}) {
   // Normalize the input value
   final normalizedValue = value.toLowerCase().trim();
 
@@ -19,27 +23,35 @@ String? findClosestStringMatch(String value, List<String> allowedValues) {
 
   for (final allowed in allowedValues) {
     final normalizedAllowed = allowed.toLowerCase().trim();
+    double similarity = 0.0;
 
-    // Check for direct containment: treat as a perfect similarity (1.0)
-    if (normalizedValue.contains(normalizedAllowed) ||
-        normalizedAllowed.contains(normalizedValue)) {
-      bestScore = 1.0;
-      bestMatch = allowed;
-      // Typically, you could break here to return the first perfect match.
-      // But continuing lets us find the "last" perfect match in the list.
-      // continue; // current approach
-      // break;    // an alternative if you want the FIRST perfect match found
-      continue;
+    // Check for exact match first
+    if (normalizedValue == normalizedAllowed) {
+      return allowed; // Return immediately for exact matches
     }
 
-    // Calculate similarity using the Levenshtein distance
-    final distance = levenshtein(normalizedValue, normalizedAllowed);
-    final maxLen = normalizedValue.length > normalizedAllowed.length
-        ? normalizedValue.length
-        : normalizedAllowed.length;
+    // Check for containment with more nuanced scoring
+    if (normalizedValue.contains(normalizedAllowed) ||
+        normalizedAllowed.contains(normalizedValue)) {
+      // Calculate length ratio for a more nuanced containment score
+      final ratio = normalizedValue.length / normalizedAllowed.length;
+      if (ratio >= 0.5 && ratio <= 2.0) {
+        // Only consider it high similarity if lengths are reasonably close
+        similarity = 0.8 + (0.2 * (1.0 - (ratio > 1 ? 1 / ratio : ratio)));
+      } else {
+        // Otherwise, still give it a boost but not perfect
+        similarity = 0.6;
+      }
+    } else {
+      // Calculate similarity using the Levenshtein distance
+      final distance = levenshtein(normalizedValue, normalizedAllowed);
+      final maxLen = normalizedValue.length > normalizedAllowed.length
+          ? normalizedValue.length
+          : normalizedAllowed.length;
 
-    // Convert distance to a similarity score (1.0 = perfect match)
-    final similarity = maxLen == 0 ? 1.0 : 1.0 - (distance / maxLen);
+      // Convert distance to a similarity score (1.0 = perfect match)
+      similarity = maxLen == 0 ? 1.0 : 1.0 - (distance / maxLen);
+    }
 
     // Update best score & match if this is better
     if (similarity > bestScore) {
@@ -48,8 +60,8 @@ String? findClosestStringMatch(String value, List<String> allowedValues) {
     }
   }
 
-  // Return the best match only if it meets the similarity threshold
-  return bestMatch;
+  // Only return the match if it meets the threshold
+  return bestScore >= threshold ? bestMatch : null;
 }
 
 int levenshtein(String s, String t) {
@@ -138,17 +150,45 @@ extension IterableExt<T> on Iterable<T> {
 
   Iterable<T> getNonContainedValues(Iterable<T> iterable) =>
       iterable.where((e) => !contains(e));
+
+  T? firstWhereOrNull(bool Function(T) test) {
+    for (final element in this) {
+      if (test(element)) return element;
+    }
+
+    return null;
+  }
 }
 
 /// Checks if a string is a valid json format
 /// check if starts with the charcters that are supported
 /// as valid json
 ///
-bool isJsonValue(String value) {
+bool looksLikeJson(String value) {
   if (value.isEmpty) return false;
   final trimmedValue = value.trim();
 
   // Check if starts with { and ends with } or starts with [ and ends with ]
   return (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
       (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'));
+}
+
+/// Extension to check if an object is considered "truthy"
+extension TruthyCheck on Object? {
+  bool get isTruthy {
+    final value = this;
+    if (value == null) return false;
+
+    return switch (value) {
+      String v => v.isNotEmpty,
+      Iterable v => v.isNotEmpty,
+      Map v => v.isNotEmpty,
+      bool v => v,
+      num v => v != 0,
+      Duration v => v != Duration.zero,
+      Uri v => v.toString().isNotEmpty,
+      RegExp r => r.pattern.isNotEmpty,
+      _ => true,
+    };
+  }
 }

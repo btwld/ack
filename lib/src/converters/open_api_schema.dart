@@ -1,24 +1,26 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import '../constraints/constraint.dart';
 import '../helpers.dart';
 import '../schemas/schema.dart';
 import '../validation/ack_exception.dart';
-import '../validation/constraint_validator.dart';
 
 class OpenApiConverterException implements Exception {
   final Object? error;
-  final AckException? _ackException;
+  final AckViolationException? _ackException;
 
   final String _message;
 
   const OpenApiConverterException(
     this._message, {
     this.error,
-    AckException? ackException,
+    AckViolationException? ackException,
   }) : _ackException = ackException;
 
-  static OpenApiConverterException validationError(AckException ackException) {
+  static OpenApiConverterException validationError(
+    AckViolationException ackException,
+  ) {
     return OpenApiConverterException(
       'Validation error',
       ackException: ackException,
@@ -85,29 +87,32 @@ $stopSequence
   String toSchemaString() => prettyJson(toSchema());
 
   Map<String, Object?> parseResponse(String response) {
-    // Check if response is json before encoding
-    if (isJsonValue(response)) {
-      try {
-        return _schema.validateJson(jsonDecode(response)).getOrThrow();
-      } catch (_) {
-        log('Failed to parse response as JSON: $response');
-      }
-    }
-
     try {
+      if (looksLikeJson(response)) {
+        try {
+          final jsonValue = jsonDecode(response) as Map<String, Object?>;
+
+          return _schema.validate(jsonValue).getOrThrow();
+        } catch (_) {
+          log('Failed to parse response as JSON: $response');
+          rethrow;
+        }
+      }
       // Get all the content after <_startDelimeter>
       final jsonString = response.substring(
         response.indexOf(startDelimeter) + startDelimeter.length,
         response.indexOf(endDelimeter),
       );
 
-      return _schema.validateJson(jsonString).getOrThrow();
+      final jsonValue = jsonDecode(jsonString) as Map<String, Object?>;
+
+      return _schema.validate(jsonValue).getOrThrow();
     } on FormatException catch (e, stackTrace) {
       Error.throwWithStackTrace(
         OpenApiConverterException.jsonDecodeError(e),
         stackTrace,
       );
-    } on AckException catch (e, stackTrace) {
+    } on AckViolationException catch (e, stackTrace) {
       Error.throwWithStackTrace(
         OpenApiConverterException.validationError(e),
         stackTrace,
@@ -193,6 +198,7 @@ String _convertSchemaType(SchemaType type) {
     SchemaType.list => 'array',
     SchemaType.object => 'object',
     SchemaType.discriminatedObject => '',
+    SchemaType.unknown => 'unknown',
   };
 }
 
@@ -205,14 +211,13 @@ String _convertSchemaType(SchemaType type) {
 /// [constraints] - The list of OpenAPI constraint validators to merge.
 /// Returns a merged schema map, or an empty map if no valid schemas are provided.
 JSON _getMergedOpenApiConstraints<T extends Object>(
-  List<ConstraintValidator<T>> constraints,
+  List<Constraint<T>> constraints,
 ) {
-  final openApiConstraints =
-      constraints.whereType<OpenApiConstraintValidator<T>>();
+  final openApiConstraints = constraints.whereType<OpenApiSpec<T>>();
 
   return openApiConstraints.fold<JSON>({}, (previousValue, element) {
     try {
-      final schema = element.toSchema();
+      final schema = element.toOpenApiSpec();
 
       return deepMerge(previousValue, schema);
     } catch (e) {

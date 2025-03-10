@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../../test_helpers.dart';
-
 void main() {
   group('BooleanSchema', () {
     test('copyWith changes nullable property', () {
@@ -25,7 +23,15 @@ void main() {
         final schema = BooleanSchema();
         final result = schema.validate(null);
 
-        expect(result, hasOneSchemaError('non_nullable_value'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.isNonNullable,
+          isTrue,
+        );
       });
 
       test('Nullable schema passes on null', () {
@@ -39,7 +45,15 @@ void main() {
         final schema = BooleanSchema();
         final result = schema.validate(123); // Not a boolean
 
-        expect(result, hasOneSchemaError('invalid_type'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.isInvalidType,
+          isTrue,
+        );
       });
 
       test('Valid boolean passes with no constraints', () {
@@ -54,6 +68,7 @@ void main() {
         final result = schema.validate("true");
 
         expect(result.isOk, isTrue);
+        expect(result.getOrNull(), isTrue);
       });
 
       test('String "false" parses to boolean false', () {
@@ -61,13 +76,22 @@ void main() {
         final result = schema.validate("false");
 
         expect(result.isOk, isTrue);
+        expect(result.getOrNull(), isFalse);
       });
 
       test('Invalid string fails to parse to boolean', () {
         final schema = BooleanSchema();
         final result = schema.validate("not a boolean");
 
-        expect(result, hasOneSchemaError('invalid_type'));
+        expect(result.isFail, isTrue);
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.isInvalidType,
+          isTrue,
+        );
       });
     });
   });

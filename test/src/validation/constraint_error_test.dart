@@ -1,38 +1,47 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
+class _MockConstraint extends Constraint {
+  const _MockConstraint()
+      : super(constraintKey: 'test_constraint', description: 'Test constraint');
+}
+
 void main() {
-  group('ConstraintError', () {
+  group('$ConstraintError', () {
     test('toMap() returns correct structure', () {
       final error = ConstraintError(
-        name: 'test_constraint',
         message: 'Test constraint failed',
-        context: {'key': 'value'},
+        constraint: _MockConstraint(),
       );
 
       final map = error.toMap();
 
-      expect(map, {
-        'type': 'constraint_test_constraint',
-        'message': 'Test constraint failed',
-        'context': {'key': 'value'},
-      });
+      expect(
+          map,
+          equals({
+            'message': 'Test constraint failed',
+            'constraint': {
+              'constraintKey': 'test_constraint',
+              'description': 'Test constraint'
+            },
+          }));
     });
 
     test('toString() returns formatted string', () {
       final error = ConstraintError(
-        name: 'test_constraint',
         message: 'Test constraint failed',
-        context: {},
+        constraint: _MockConstraint(),
       );
 
+      final errorString = error.toString();
+
       expect(
-        error.toString(),
-        contains('SchemaError:'),
+        errorString,
+        contains('$ConstraintError'),
       );
       expect(
-        error.toString(),
-        contains('constraint_test_constraint'),
+        errorString,
+        contains('test_constraint'),
       );
     });
   });

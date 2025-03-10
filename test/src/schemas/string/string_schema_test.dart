@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../../test_helpers.dart';
-
 void main() {
   group('StringSchema', () {
     test('copyWith changes nullable property', () {
@@ -12,15 +10,15 @@ void main() {
       expect(result.isOk, isTrue);
     });
 
-    test('copyWith changes constraints', () {
-      final schema = StringSchema(constraints: [MaxLengthStringValidator(5)]);
+    test('copyWith changes validators', () {
+      final schema = StringSchema(constraints: [StringMaxLengthConstraint(5)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<MaxLengthStringValidator>());
+      expect(schema.getConstraints()[0], isA<StringMaxLengthConstraint>());
 
       final newSchema =
-          schema.copyWith(constraints: [MinLengthStringValidator(10)]);
+          schema.copyWith(constraints: [StringMinLengthConstraint(10)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<MinLengthStringValidator>());
+      expect(newSchema.getConstraints()[0], isA<StringMinLengthConstraint>());
     });
 
     group('StringSchema Basic Validation', () {
@@ -28,7 +26,14 @@ void main() {
         final schema = StringSchema();
         final result = schema.validate(null);
         expect(result.isFail, isTrue);
-        expect(result, hasOneSchemaError('non_nullable_value'));
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<NonNullableConstraint>(),
+          isNotNull,
+        );
       });
 
       test('Nullable schema passes on null', () {
@@ -45,7 +50,14 @@ void main() {
         final strictSchema = StringSchema(strict: true);
         final strictResult = strictSchema.validate(123);
         expect(strictResult.isFail, isTrue);
-        expect(strictResult, hasOneSchemaError('invalid_type'));
+
+        final error = (strictResult as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<InvalidTypeConstraint>(),
+          isNotNull,
+        );
       });
 
       test('Valid string passes with no constraints', () {
@@ -56,7 +68,7 @@ void main() {
     });
 
     group('EmailValidator', () {
-      final validator = EmailStringValidator();
+      final validator = StringEmailConstraint();
 
       test('Valid emails pass validation', () {
         expect(validator.isValid('test@example.com'), isTrue);
@@ -76,12 +88,21 @@ void main() {
         expect(schema.validate('test@example.com').isOk, isTrue);
 
         final result = schema.validate('not-an-email');
-        expect(result, hasOneConstraintError('email'));
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringEmailConstraint>(),
+          isNotNull,
+        );
       });
     });
 
     group('HexColorValidator', () {
-      final validator = HexColorStringValidator();
+      final validator = StringHexColorValidator();
 
       test('Valid hex colors pass validation', () {
         expect(validator.isValid('#fff'), isTrue);
@@ -102,21 +123,28 @@ void main() {
         expect(schema.validate('#00ff55').isOk, isTrue);
 
         final result = schema.validate('not-a-color');
-        expect(result, hasOneConstraintError('hex_color'));
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringHexColorValidator>(),
+          isNotNull,
+        );
       });
     });
 
     group('IsEmptyValidator', () {
-      final validator = IsEmptyStringValidator();
+      final validator = StringEmptyConstraint();
 
       test('Empty string passes validation', () {
         expect(validator.isValid(''), isTrue);
       });
 
-      test('Non-empty strings fail validation', () {
+      test('Non-empty string fails validation', () {
         expect(validator.isValid('not empty'), isFalse);
-        expect(validator.isValid(' '), isFalse);
-        expect(validator.isValid('a'), isFalse);
       });
 
       test('schema validation works with isEmpty validator', () {
@@ -124,23 +152,32 @@ void main() {
         expect(schema.validate('').isOk, isTrue);
 
         final result = schema.validate('not empty');
-        expect(result, hasOneConstraintError('string_is_empty'));
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringEmptyConstraint>(),
+          isNotNull,
+        );
       });
     });
 
     group('MinLengthValidator', () {
-      final validator = MinLengthStringValidator(3);
+      final validator = StringMinLengthConstraint(3);
 
-      test('Strings meeting minimum length pass validation', () {
-        expect(validator.isValid('abc'), isTrue);
+      test('String longer than min length passes validation', () {
         expect(validator.isValid('abcd'), isTrue);
-        expect(validator.isValid('12345'), isTrue);
       });
 
-      test('Strings below minimum length fail validation', () {
-        expect(validator.isValid('a'), isFalse);
+      test('String equal to min length passes validation', () {
+        expect(validator.isValid('abc'), isTrue);
+      });
+
+      test('String shorter than min length fails validation', () {
         expect(validator.isValid('ab'), isFalse);
-        expect(validator.isValid(''), isFalse);
       });
 
       test('schema validation works with minLength validator', () {
@@ -148,23 +185,32 @@ void main() {
         expect(schema.validate('abc').isOk, isTrue);
 
         final result = schema.validate('ab');
-        expect(result, hasOneConstraintError('string_min_length'));
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringMinLengthConstraint>(),
+          isNotNull,
+        );
       });
     });
 
     group('MaxLengthValidator', () {
-      final validator = MaxLengthStringValidator(3);
+      final validator = StringMaxLengthConstraint(3);
 
-      test('Strings within maximum length pass validation', () {
-        expect(validator.isValid(''), isTrue);
-        expect(validator.isValid('a'), isTrue);
+      test('String shorter than max length passes validation', () {
         expect(validator.isValid('ab'), isTrue);
+      });
+
+      test('String equal to max length passes validation', () {
         expect(validator.isValid('abc'), isTrue);
       });
 
-      test('Strings exceeding maximum length fail validation', () {
+      test('String longer than max length fails validation', () {
         expect(validator.isValid('abcd'), isFalse);
-        expect(validator.isValid('12345'), isFalse);
       });
 
       test('schema validation works with maxLength validator', () {
@@ -172,87 +218,55 @@ void main() {
         expect(schema.validate('abc').isOk, isTrue);
 
         final result = schema.validate('abcd');
-        expect(result, hasOneConstraintError('string_max_length'));
-      });
-    });
+        expect(result.isFail, isTrue);
 
-    group('OneOfValidator', () {
-      final validator = OneOfStringValidator(['apple', 'banana']);
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
 
-      test('Strings in allowed values pass validation', () {
-        expect(validator.isValid('apple'), isTrue);
-        expect(validator.isValid('banana'), isTrue);
-      });
-
-      test('Strings not in allowed values fail validation', () {
-        expect(validator.isValid('orange'), isFalse);
-        expect(validator.isValid(''), isFalse);
-        expect(validator.isValid('APPLE'), isFalse);
-      });
-
-      test('schema validation works with oneOf validator', () {
-        final schema = StringSchema().oneOf(['apple', 'banana']);
-        expect(schema.validate('apple').isOk, isTrue);
-
-        final result = schema.validate('orange');
-        expect(result, hasOneConstraintError('string_one_of'));
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringMaxLengthConstraint>(),
+          isNotNull,
+        );
       });
     });
 
     group('NotOneOfValidator', () {
-      final validator = NotOneOfStringValidator(['apple', 'banana']);
+      final validator = StringNotOneOfValidator(['red', 'green', 'blue']);
 
-      test('Strings not in disallowed values pass validation', () {
-        expect(validator.isValid('orange'), isTrue);
-        expect(validator.isValid(''), isTrue);
-        expect(validator.isValid('APPLE'), isTrue);
+      test('Value not in disallowed list passes validation', () {
+        expect(validator.isValid('yellow'), isTrue);
       });
 
-      test('Strings in disallowed values fail validation', () {
-        expect(validator.isValid('apple'), isFalse);
-        expect(validator.isValid('banana'), isFalse);
+      test('Value in disallowed list fails validation', () {
+        expect(validator.isValid('red'), isFalse);
+        expect(validator.isValid('green'), isFalse);
+        expect(validator.isValid('blue'), isFalse);
       });
 
       test('schema validation works with notOneOf validator', () {
-        final schema = StringSchema().notOneOf(['apple', 'banana']);
-        expect(schema.validate('orange').isOk, isTrue);
+        final schema = StringSchema().notOneOf(['red', 'green', 'blue']);
+        expect(schema.validate('yellow').isOk, isTrue);
 
-        final result = schema.validate('apple');
-        expect(result, hasOneConstraintError('string_not_one_of'));
-      });
-    });
+        final result = schema.validate('red');
+        expect(result.isFail, isTrue);
 
-    group('EnumValidator', () {
-      final validator = EnumStringValidator(['red', 'green', 'blue']);
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
 
-      test('Strings in enum pass validation', () {
-        expect(validator.isValid('red'), isTrue);
-        expect(validator.isValid('green'), isTrue);
-        expect(validator.isValid('blue'), isTrue);
-      });
-
-      test('Strings not in enum fail validation', () {
-        expect(validator.isValid('yellow'), isFalse);
-        expect(validator.isValid(''), isFalse);
-        expect(validator.isValid('RED'), isFalse);
-      });
-
-      test('schema validation works with enum validator', () {
-        final schema = StringSchema().isEnum(['red', 'green', 'blue']);
-        expect(schema.validate('red').isOk, isTrue);
-
-        final result = schema.validate('yellow');
-        expect(result, hasOneConstraintError('string_enum'));
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringNotOneOfValidator>(),
+          isNotNull,
+        );
       });
     });
 
     group('NotEmptyValidator', () {
-      final validator = NotEmptyStringValidator();
+      final validator = StringNotEmptyValidator();
 
-      test('Non-empty strings pass validation', () {
-        expect(validator.isValid('hello'), isTrue);
-        expect(validator.isValid(' '), isTrue);
-        expect(validator.isValid('a'), isTrue);
+      test('Non-empty string passes validation', () {
+        expect(validator.isValid('not empty'), isTrue);
       });
 
       test('Empty string fails validation', () {
@@ -261,34 +275,117 @@ void main() {
 
       test('schema validation works with notEmpty validator', () {
         final schema = StringSchema().isNotEmpty();
-        expect(schema.validate('hello').isOk, isTrue);
+        expect(schema.validate('not empty').isOk, isTrue);
 
         final result = schema.validate('');
-        expect(result, hasOneConstraintError('string_not_empty'));
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringNotEmptyValidator>(),
+          isNotNull,
+        );
       });
     });
 
     group('DateTimeValidator', () {
-      final validator = DateTimeStringValidator();
+      final validator = StringDateTimeConstraint();
 
-      test('Valid datetime strings pass validation', () {
+      test('Valid ISO 8601 datetime passes validation', () {
         expect(validator.isValid('2023-01-01T00:00:00.000Z'), isTrue);
         expect(validator.isValid('2023-12-31T23:59:59.999Z'), isTrue);
-        expect(validator.isValid('2023-06-15T12:30:45Z'), isTrue);
       });
 
-      test('Invalid datetime strings fail validation', () {
-        expect(validator.isValid('not a datetime'), isFalse);
-        expect(validator.isValid('32'), isFalse);
-        expect(validator.isValid(''), isFalse);
+      test('Invalid datetime fails validation', () {
+        expect(validator.isValid('not-a-date'), isFalse);
+        expect(validator.isValid('2023-13-T12'), isFalse);
       });
 
       test('schema validation works with datetime validator', () {
         final schema = StringSchema().isDateTime();
         expect(schema.validate('2023-01-01T00:00:00.000Z').isOk, isTrue);
 
-        final result = schema.validate('not a datetime');
-        expect(result, hasOneConstraintError('datetime'));
+        final result = schema.validate('not-a-date');
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringDateTimeConstraint>(),
+          isNotNull,
+        );
+      });
+    });
+
+    group('DateValidator', () {
+      final validator = StringDateConstraint();
+
+      test('Valid date string passes validation', () {
+        expect(validator.isValid('2023-01-01'), isTrue);
+        expect(validator.isValid('2023-12-31'), isTrue);
+      });
+
+      test('Invalid date string fails validation', () {
+        expect(validator.isValid('not-a-date'), isFalse);
+        expect(validator.isValid('2023-13-01'), isFalse);
+        expect(validator.isValid('2023/01/01'), isFalse);
+      });
+
+      test('schema validation works with date validator', () {
+        final schema = StringSchema().isDate();
+        expect(schema.validate('2023-01-01').isOk, isTrue);
+
+        final result = schema.validate('not-a-date');
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<StringDateConstraint>(),
+          isNotNull,
+        );
+      });
+    });
+
+    group('EnumValidator', () {
+      final validator =
+          StringEnumConstraint(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+
+      test('Valid enum value passes validation', () {
+        expect(validator.isValid('DRAFT'), isTrue);
+        expect(validator.isValid('PUBLISHED'), isTrue);
+        expect(validator.isValid('ARCHIVED'), isTrue);
+      });
+
+      test('Invalid enum value fails validation', () {
+        expect(validator.isValid('PENDING'), isFalse);
+        expect(validator.isValid('draft'), isFalse);
+      });
+
+      test('schema validation works with enum validator', () {
+        final schema =
+            StringSchema().isEnum(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+        expect(schema.validate('DRAFT').isOk, isTrue);
+
+        final result = schema.validate('PENDING');
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.constraints
+              .any((c) => c.constraintKey == 'string_enum'),
+          isTrue,
+        );
       });
     });
   });

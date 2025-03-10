@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../../test_helpers.dart';
-
 void main() {
   group('DiscriminatedMapSchema', () {
     test('copyWith returns a new instance with updated fields', () {
@@ -50,12 +48,10 @@ void main() {
         },
       );
       final result = discriminatedSchema.validate(null);
-      expect(
-        result,
-        hasOneSchemaError(
-          'non_nullable_value',
-        ),
-      );
+
+      expect(result.isFail, isTrue);
+      final error = (result as Fail).error as SchemaConstraintsError;
+      expect(error.getConstraint<NonNullableConstraint>(), isNotNull);
     });
 
     test('Nullable schema passes on null', () {
@@ -93,11 +89,14 @@ void main() {
         },
       );
       final result = discriminatedSchema.validate('not a map');
+
+      expect(result.isFail, isTrue);
+      final error = (result as Fail).error;
+      expect(error, isA<SchemaConstraintsError>());
+      final constraintsError = error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneSchemaError(
-          'invalid_type',
-        ),
+        constraintsError.getConstraint<InvalidTypeConstraint>(),
+        isNotNull,
       );
     });
 
@@ -139,12 +138,10 @@ void main() {
         result.isFail,
         isTrue,
       );
+      expect((result as Fail).error, isA<SchemaConstraintsError>());
+      final error = (result as Fail).error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_missing_discriminator_key',
-        ),
-      );
+          error.getConstraint<ObjectDiscriminatorValueConstraint>(), isNotNull);
     });
 
     test('Fails when no schema is found for the discriminator value', () {
@@ -165,12 +162,10 @@ void main() {
         result.isFail,
         isTrue,
       );
+      expect((result as Fail).error, isA<SchemaConstraintsError>());
+      final error = (result as Fail).error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_no_schema_for_discriminator_value',
-        ),
-      );
+          error.getConstraint<ObjectDiscriminatorValueConstraint>(), isNotNull);
     });
 
     test('Fails when discriminator key is not required in the selected schema',
@@ -193,11 +188,11 @@ void main() {
         result.isFail,
         isTrue,
       );
+      expect((result as Fail).error, isA<SchemaConstraintsError>());
+      final error = (result as Fail).error as SchemaConstraintsError;
       expect(
-        result,
-        hasOneConstraintError(
-          'discriminated_key_must_be_required_in_schema',
-        ),
+        error.getConstraint<ObjectDiscriminatorStructureConstraint>(),
+        isNotNull,
       );
     });
 
@@ -217,20 +212,14 @@ void main() {
       final result =
           discriminatedSchema.validate({'key': 'a', 'value': 'not an int'});
 
-      expect(
-        (result as Fail).errors,
-        hasOneSchemaError(PathSchemaError.key),
-      );
+      final error = (result as Fail).error as SchemaNestedError;
 
-      final failResult = result as Fail;
-      final nestedSchemaError = failResult.pathSchemaError.first;
-      expect(nestedSchemaError.path, 'a.value');
+      final valueError = error.getSchemaError<SchemaConstraintsError>();
+      expect(valueError, isA<SchemaConstraintsError>());
 
       expect(
-        nestedSchemaError.errors,
-        hasOneSchemaError(
-          'invalid_type',
-        ),
+        valueError!.getConstraint<InvalidTypeConstraint>(),
+        isNotNull,
       );
     });
   });

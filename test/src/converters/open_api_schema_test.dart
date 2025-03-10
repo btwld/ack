@@ -5,265 +5,242 @@ import 'package:test/test.dart';
 
 void main() {
   group('OpenApiSchemaConverter Tests', () {
-    test('ObjectSchema with properties converts correctly', () {
-      final properties = <String, Schema<Object>>{
-        'name': StringSchema(),
-        'age': IntegerSchema(),
-      };
-      final schema = ObjectSchema(properties);
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
+    group('Schema Type Conversion', () {
+      test('converts basic schema types correctly', () {
+        final schema = ObjectSchema({
+          'string': StringSchema(),
+          'integer': IntegerSchema(),
+          'double': DoubleSchema(),
+          'boolean': BooleanSchema(),
+        });
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
           converter.toSchema(),
           equals({
             'type': 'object',
             'properties': {
-              'name': {'type': 'string'},
-              'age': {'type': 'integer'},
+              'string': {'type': 'string'},
+              'integer': {'type': 'integer'},
+              'double': {'type': 'number'},
+              'boolean': {'type': 'boolean'},
             },
             'additionalProperties': false,
-          }));
-    });
+          }),
+        );
+      });
 
-    test('ObjectSchema with required properties includes required field', () {
-      final properties = <String, Schema<Object>>{'name': StringSchema()};
-      final schema = ObjectSchema(properties, required: ['name']);
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
+      test('converts list schema correctly', () {
+        final schema = ObjectSchema({
+          'items': ListSchema(StringSchema()),
+        });
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
           converter.toSchema(),
           equals({
             'type': 'object',
             'properties': {
-              'name': {'type': 'string'}
+              'items': {
+                'type': 'array',
+                'items': {'type': 'string'},
+              },
             },
-            'required': ['name'],
             'additionalProperties': false,
-          }));
-    });
+          }),
+        );
+      });
 
-    test('ObjectSchema with additionalProperties false', () {
-      final schema = ObjectSchema({}, additionalProperties: false);
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
-          converter.toSchema(),
-          equals({
-            'type': 'object',
-            'properties': {},
-            'additionalProperties': false,
-          }));
-    });
-
-    test('Nested ObjectSchema converts correctly', () {
-      final nestedSchema = ObjectSchema({'id': IntegerSchema()});
-      final schema = ObjectSchema({'nested': nestedSchema});
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
+      test('converts discriminated object schema correctly', () {
+        final schema = ObjectSchema({
+          'pet': DiscriminatedObjectSchema(
+            discriminatorKey: 'animalType',
+            schemas: {
+              'dog': ObjectSchema({
+                'animalType': StringSchema(),
+                'name': StringSchema(),
+              }, required: [
+                'animalType',
+                'name'
+              ]),
+              'cat': ObjectSchema({
+                'animalType': StringSchema(),
+                'breed': StringSchema(),
+              }, required: [
+                'animalType',
+                'breed'
+              ]),
+            },
+          ),
+        });
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
           converter.toSchema(),
           equals({
             'type': 'object',
             'properties': {
-              'nested': {
-                'type': 'object',
-                'properties': {
-                  'id': {'type': 'integer'}
-                },
-                'additionalProperties': false,
-              }
+              'pet': {
+                'discriminator': {'propertyName': 'animalType'},
+                'oneOf': [
+                  {
+                    'type': 'object',
+                    'properties': {
+                      'animalType': {'type': 'string'},
+                      'name': {'type': 'string'},
+                    },
+                    'required': ['animalType', 'name'],
+                    'additionalProperties': false,
+                  },
+                  {
+                    'type': 'object',
+                    'properties': {
+                      'animalType': {'type': 'string'},
+                      'breed': {'type': 'string'},
+                    },
+                    'required': ['animalType', 'breed'],
+                    'additionalProperties': false,
+                  },
+                ],
+              },
             },
             'additionalProperties': false,
-          }));
+          }),
+        );
+      });
     });
 
-    test('ObjectSchema with nested required properties', () {
-      final nestedSchema =
-          ObjectSchema({'id': IntegerSchema()}, required: ['id']);
-      final schema =
-          ObjectSchema({'nested': nestedSchema}, required: ['nested']);
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
+    group('Schema Properties', () {
+      test('handles nullable schemas', () {
+        final schema = ObjectSchema({
+          'optional': StringSchema().nullable(),
+        });
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
           converter.toSchema(),
           equals({
             'type': 'object',
             'properties': {
-              'nested': {
-                'type': 'object',
-                'properties': {
-                  'id': {'type': 'integer'}
-                },
-                'required': ['id'],
-                'additionalProperties': false,
-              }
+              'optional': {
+                'type': 'string',
+                'nullable': true,
+              },
             },
-            'required': ['nested'],
             'additionalProperties': false,
-          }));
-    });
+          }),
+        );
+      });
 
-    test('Empty ObjectSchema with additionalProperties true', () {
-      final schema = ObjectSchema({}, additionalProperties: true);
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
-          converter.toSchema(),
-          equals({
-            'type': 'object',
-            'properties': {},
-            'additionalProperties': true,
-          }));
-    });
-
-    test('ObjectSchema with required properties', () {
-      final schema = ObjectSchema(
-        {'id': IntegerSchema(), 'name': StringSchema()},
-        required: ['id'],
-      );
-      final converter = OpenApiSchemaConverter(schema: schema);
-      expect(
+      test('includes schema descriptions', () {
+        final schema = ObjectSchema({
+          'name': StringSchema(description: 'The user\'s name'),
+        });
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
           converter.toSchema(),
           equals({
             'type': 'object',
             'properties': {
-              'id': {'type': 'integer'},
-              'name': {'type': 'string'},
+              'name': {
+                'type': 'string',
+                'description': 'The user\'s name',
+              },
             },
-            'required': ['id'],
             'additionalProperties': false,
-          }));
-    });
-  });
+          }),
+        );
+      });
 
-  group('OpenApiSchemaConverter.toJson', () {
-    test('should return a valid JSON string matching toSchema()', () {
-      final schema = ObjectSchema({'name': StringSchema()});
-      final converter = OpenApiSchemaConverter(schema: schema);
-      final jsonString = converter.toSchemaString();
-      final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
-      expect(jsonMap, equals(converter.toSchema()));
-    });
-  });
-
-  group('OpenApiSchemaConverter.toResponsePrompt', () {
-    test('should wrap JSON with the correct start and end delimiters', () {
-      final schema = ObjectSchema({'name': StringSchema()});
-      final converter = OpenApiSchemaConverter(
-        schema: schema,
-        startDelimeter: '<response2>',
-        endDelimeter: '</response2>',
-        stopSequence: '<stop_response2>',
-      );
-      final responsePrompt = converter.toResponsePrompt();
-      expect(responsePrompt.contains(converter.startDelimeter), isTrue);
-      final schemaString = converter.toSchemaString();
-      expect(responsePrompt.contains(schemaString), isTrue);
-      expect(
-        responsePrompt
-            .trim()
-            .endsWith('${converter.endDelimeter}\n${converter.stopSequence}'),
-        isTrue,
-      );
-    });
-  });
-
-  group('OpenApiSchemaConverter.parseResponse', () {
-    test('should successfully parse a valid response', () {
-      final schema =
-          ObjectSchema({'value': StringSchema()}, required: ['value']);
-      final converter = OpenApiSchemaConverter(
-        schema: schema,
-        startDelimeter: '<start>',
-        endDelimeter: '<end>',
-      );
-      final validJson = '{"value": "test"}';
-      final response = '<start>$validJson<end>';
-      final result = converter.parseResponse(response);
-      expect(result, equals({"value": "test"}));
+      test('includes default values', () {
+        final schema = ObjectSchema({
+          'active': BooleanSchema(defaultValue: true),
+        });
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
+          converter.toSchema(),
+          equals({
+            'type': 'object',
+            'properties': {
+              'active': {
+                'type': 'boolean',
+                'default': true,
+              },
+            },
+            'additionalProperties': false,
+          }),
+        );
+      });
     });
 
-    test('should throw a JSON decode error for invalid JSON content', () {
-      final schema =
-          ObjectSchema({'value': StringSchema()}, required: ['value']);
-      final converter = OpenApiSchemaConverter(
-        schema: schema,
-        startDelimeter: '<start>',
-        endDelimeter: '<end>',
-      );
-      final invalidJson = '{"value": "test"';
-      final response = '<start>$invalidJson<end>';
-      expect(
-        () => converter.parseResponse(response),
-        throwsA(isA<OpenApiConverterException>().having(
-            (e) => e.message, 'message', contains('Invalid JSON format'))),
-      );
+    group('Response Parsing', () {
+      test('parses raw JSON response', () {
+        final schema = ObjectSchema({'value': StringSchema()});
+        final converter = OpenApiSchemaConverter(schema: schema);
+        final mapValue = {
+          'value': 'test',
+        };
+        final result = converter.parseResponse(jsonEncode(mapValue));
+        expect(result, equals(mapValue));
+      });
+
+      test('parses delimited response', () {
+        final schema = ObjectSchema({'value': StringSchema()});
+        final converter = OpenApiSchemaConverter(
+          schema: schema,
+          startDelimeter: '<response>',
+          endDelimeter: '</response>',
+        );
+        final result = converter.parseResponse(
+          '<response>{"value": "test"}</response>',
+        );
+        expect(result, equals({'value': 'test'}));
+      });
+
+      test('throws on invalid JSON', () {
+        final schema = ObjectSchema({'value': StringSchema()});
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
+          () => converter.parseResponse('{"value": invalid}'),
+          throwsA(isA<OpenApiConverterException>().having(
+            (e) => e.message,
+            'message',
+            contains('Invalid JSON format'),
+          )),
+        );
+      });
+
+      test('throws on schema validation failure', () {
+        final schema = ObjectSchema(
+          {'value': StringSchema()},
+          required: ['value'],
+        );
+        final converter = OpenApiSchemaConverter(schema: schema);
+        expect(
+          () => converter.parseResponse('{}'),
+          throwsA(isA<OpenApiConverterException>().having(
+            (e) => e.message,
+            'message',
+            contains('Validation error'),
+          )),
+        );
+      });
     });
 
-    test('should throw an unknown error when the start delimiter is missing',
-        () {
-      final schema =
-          ObjectSchema({'value': StringSchema()}, required: ['value']);
-      final converter = OpenApiSchemaConverter(
-        schema: schema,
-        startDelimeter: '<start>',
-        endDelimeter: '<end>',
-      );
-      final validJson = '{"value": "test"}';
-      final response = '$validJson<end>';
-      expect(
-        () => converter.parseResponse(response),
-        throwsA(isA<OpenApiConverterException>().having(
-            (e) => e.message, 'message', contains('Invalid JSON format'))),
-      );
-    });
+    group('Response Formatting', () {
+      test('generates correct response prompt', () {
+        final schema = ObjectSchema({'value': StringSchema()});
+        final converter = OpenApiSchemaConverter(
+          schema: schema,
+          startDelimeter: '<start>',
+          endDelimeter: '</end>',
+          stopSequence: '<stop>',
+        );
+        final prompt = converter.toResponsePrompt();
 
-    test('should throw an unknown error when the end delimiter is missing', () {
-      final schema =
-          ObjectSchema({'value': StringSchema()}, required: ['value']);
-      final converter = OpenApiSchemaConverter(
-        schema: schema,
-        startDelimeter: '<start>',
-        endDelimeter: '<end>',
-      );
-      final validJson = '{"value": "test"}';
-      final response = '<start>$validJson';
-      expect(
-        () => converter.parseResponse(response),
-        throwsA(isA<OpenApiConverterException>()
-            .having((e) => e.message, 'message', contains('Unknown error'))),
-      );
-    });
-
-    test('should throw a validation error when schema validation fails', () {
-      final schema =
-          ObjectSchema({'value': StringSchema()}, required: ['value']);
-      final converter = OpenApiSchemaConverter(
-        schema: schema,
-        startDelimeter: '<start>',
-        endDelimeter: '<end>',
-      );
-      final invalidData = '{}';
-      final response = '<start>$invalidData<end>';
-      expect(
-        () => converter.parseResponse(response),
-        throwsA(isA<OpenApiConverterException>()
-            .having((e) => e.message, 'message', contains('Validation error'))),
-      );
-    });
-  });
-
-  group('OpenApiConverterException', () {
-    test('toString should include the error message and details', () {
-      final exception =
-          OpenApiConverterException('Test error', error: 'some error');
-      expect(exception.toString(), contains('Test error'));
-      expect(exception.toString(), contains('some error'));
-    });
-
-    test(
-        'isValidationError should return true when an AckException is provided',
-        () {
-      final schema = ObjectSchema({'value': BooleanSchema()});
-      final resultErrors =
-          schema.validate({'value': 'not_boolean'}).getErrors();
-      final ackEx = AckException(resultErrors);
-      final exception = OpenApiConverterException.validationError(ackEx);
-      expect(exception.isValidationError, isTrue);
+        expect(prompt, contains('<schema>'));
+        expect(prompt, contains('</schema>'));
+        expect(prompt, contains('<start>'));
+        expect(prompt, contains('</end>'));
+        expect(prompt, contains('<stop>'));
+        expect(prompt, contains(converter.toSchemaString()));
+      });
     });
   });
 }

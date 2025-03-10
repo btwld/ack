@@ -12,13 +12,42 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
   })  : _itemSchema = itemSchema,
         super(type: SchemaType.list);
 
+  Schema<V> getItemSchema() => _itemSchema;
+
   @override
-  List<V>? _tryParse(Object value) {
+  SchemaResult<List<V>> validateValue(Object? value) {
+    final result = super.validateValue(value);
+
+    if (result.isFail) return result;
+
+    final listValue = result.getOrNull();
+
+    if (_nullable && listValue == null) return SchemaResult.unit();
+
+    final itemsViolation = <SchemaError>[];
+
+    for (var i = 0; i < listValue!.length; i++) {
+      final itemResult = _itemSchema.validate(listValue[i], debugName: '$i');
+
+      if (itemResult.isFail) {
+        itemsViolation.add(itemResult.getError());
+      }
+    }
+
+    if (itemsViolation.isEmpty) return SchemaResult.ok(listValue);
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: itemsViolation, context: context),
+    );
+  }
+
+  @override
+  List<V>? tryParse(Object? value) {
     if (value is! List) return null;
 
     List<V>? parsedList = <V>[];
     for (final v in value) {
-      final parsed = _itemSchema._tryParse(v);
+      final parsed = _itemSchema.tryParse(v);
       if (parsed == null) {
         parsedList = null;
         break;
@@ -30,34 +59,8 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
   }
 
   @override
-  List<SchemaError> _validateAsType(List<V> value) {
-    final errors = [
-      ..._constraints.map((e) => e.validate(value)).whereType<SchemaError>(),
-    ];
-
-    for (var i = 0; i < value.length; i++) {
-      final result = _itemSchema.checkResult(value[i]);
-
-      result.onFail((errors) {
-        errors.addAll(
-          SchemaError.pathSchemas(
-            path: '[$i]',
-            message: 'Item in index [$i] schema validation failed',
-            errors: errors,
-            schema: _itemSchema,
-          ),
-        );
-      });
-    }
-
-    return errors;
-  }
-
-  Schema<V> getItemSchema() => _itemSchema;
-
-  @override
   ListSchema<V> copyWith({
-    List<ConstraintValidator<List<V>>>? constraints,
+    List<Validator<List<V>>>? constraints,
     bool? nullable,
     String? description,
     List<V>? defaultValue,
@@ -75,7 +78,7 @@ final class ListSchema<V extends Object> extends Schema<List<V>>
   ListSchema<V> call({
     bool? nullable,
     String? description,
-    List<ConstraintValidator<List<V>>>? constraints,
+    List<Validator<List<V>>>? constraints,
     List<V>? defaultValue,
   }) {
     return copyWith(

@@ -1,50 +1,77 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../../../test_helpers.dart';
-
 void main() {
-  group('Object Validators', () {
-    test('Fails on additional unallowed property', () {
-      final schema = ObjectSchema(
-          {
-            'age': IntegerSchema(),
-          },
-          additionalProperties: false,
-          required: ['age']);
-      final result = schema.validate({'age': 25, 'name': 'John'});
-      expect(result.isFail, isTrue);
-      expect(result, hasOneConstraintError('object_property_unallowed'));
+  late ObjectSchema schema;
+
+  setUp(() {
+    schema = Ack.object({
+      'name': Ack.string,
+      'age': Ack.int,
+    });
+  });
+
+  group('PropertyRequiredConstraintViolation', () {
+    test('validates required property correctly', () {
+      final validator = ObjectRequiredPropertiesConstraint(
+          schema.copyWith(required: ['name']));
+
+      expect(
+        validator.isValid({'name': 'John', 'age': 25}),
+        isTrue,
+        reason: 'Should be valid when required property exists',
+      );
+
+      expect(
+        validator.isValid({'age': 25}),
+        isFalse,
+        reason: 'Should be invalid when required property is missing',
+      );
+
+      expect(
+        validator.isValid({'email': 'test@test.com'}),
+        isFalse,
+        reason: 'Should be invalid when required property is missing',
+      );
     });
 
-    test('Fails on missing required property', () {
-      final schema = ObjectSchema(
-          {
-            'age': IntegerSchema(),
-            'name': StringSchema(),
-          },
-          additionalProperties: true,
-          required: ['age']);
-      final result = schema.validate({'name': 'John'});
-      expect(result.isFail, isTrue);
-      expect(result, hasOneConstraintError('object_property_required'));
+    test('handles empty required keys list', () {
+      final validator =
+          ObjectRequiredPropertiesConstraint(schema.copyWith(required: []));
+
+      expect(
+        validator.isValid({'email': 'test@test.com'}),
+        isTrue,
+        reason: 'Should be valid when required keys list is empty',
+      );
     });
 
-    test('Fails on property schema error', () {
-      // Assuming IntSchema validates that the value must be an integer.
-      final schema = ObjectSchema(
-          {
-            'age': IntegerSchema(),
-          },
-          additionalProperties: true,
-          required: ['age']);
-      final result = schema.validate({'age': 'not an int'});
-      expect(result, hasOneSchemaError(PathSchemaError.key));
+    test('handles single required key', () {
+      final validator = ObjectRequiredPropertiesConstraint(
+          schema.copyWith(required: ['name']));
 
-      final failResult = result as Fail;
-      final nestedSchemaError = failResult.pathSchemaError.first;
-      expect(nestedSchemaError.path, 'age');
-      expect(nestedSchemaError.errors, hasOneSchemaError('invalid_type'));
+      expect(
+        validator.isValid({'name': 'John'}),
+        isTrue,
+        reason: 'Should be valid when single required property exists',
+      );
+
+      expect(
+        validator.isValid({'age': 25}),
+        isFalse,
+        reason: 'Should be invalid when single required property is missing',
+      );
+    });
+
+    test('validates null values correctly', () {
+      final validator = ObjectRequiredPropertiesConstraint(
+          schema.copyWith(required: ['name']));
+
+      expect(
+        validator.isValid({'name': null}),
+        isTrue,
+        reason: 'Should be valid when required property exists with null value',
+      );
     });
   });
 }

@@ -15,7 +15,7 @@ void main() {
     {
       'name': Ack.string.isNotEmpty(),
       'email': Ack.string.isEmail(),
-      'age': Ack.int.minValue(18),
+      'age': Ack.int.min(18),
       'address': addressSchema,
     },
     additionalProperties: true,

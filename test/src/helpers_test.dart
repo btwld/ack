@@ -433,52 +433,52 @@ void main() {
 
   group('isJsonValue', () {
     test('returns true for valid JSON object strings', () {
-      expect(isJsonValue('{}'), isTrue);
-      expect(isJsonValue('{"key": "value"}'), isTrue);
-      expect(isJsonValue('{"nested": {"key": "value"}}'), isTrue);
+      expect(looksLikeJson('{}'), isTrue);
+      expect(looksLikeJson('{"key": "value"}'), isTrue);
+      expect(looksLikeJson('{"nested": {"key": "value"}}'), isTrue);
     });
 
     test('returns true for valid JSON array strings', () {
-      expect(isJsonValue('[]'), isTrue);
-      expect(isJsonValue('[1, 2, 3]'), isTrue);
-      expect(isJsonValue('[{"key": "value"}]'), isTrue);
+      expect(looksLikeJson('[]'), isTrue);
+      expect(looksLikeJson('[1, 2, 3]'), isTrue);
+      expect(looksLikeJson('[{"key": "value"}]'), isTrue);
     });
 
     test('returns true with whitespace around valid JSON', () {
-      expect(isJsonValue('  {}  '), isTrue);
-      expect(isJsonValue('\n{}\n'), isTrue);
-      expect(isJsonValue('\t[]  '), isTrue);
-      expect(isJsonValue('  \n  {"key": "value"}  \n  '), isTrue);
+      expect(looksLikeJson('  {}  '), isTrue);
+      expect(looksLikeJson('\n{}\n'), isTrue);
+      expect(looksLikeJson('\t[]  '), isTrue);
+      expect(looksLikeJson('  \n  {"key": "value"}  \n  '), isTrue);
     });
 
     test('returns false for empty string', () {
-      expect(isJsonValue(''), isFalse);
+      expect(looksLikeJson(''), isFalse);
     });
 
     test('returns false for whitespace only', () {
-      expect(isJsonValue('   '), isFalse);
-      expect(isJsonValue('\n\t  \n'), isFalse);
+      expect(looksLikeJson('   '), isFalse);
+      expect(looksLikeJson('\n\t  \n'), isFalse);
     });
 
     test('returns false for invalid JSON format', () {
-      expect(isJsonValue('{'), isFalse); // Missing closing brace
-      expect(isJsonValue('}'), isFalse); // Missing opening brace
-      expect(isJsonValue('['), isFalse); // Missing closing bracket
-      expect(isJsonValue(']'), isFalse); // Missing opening bracket
-      expect(isJsonValue('{"unclosed": "object"'), isFalse);
-      expect(isJsonValue('[1, 2,'), isFalse);
+      expect(looksLikeJson('{'), isFalse); // Missing closing brace
+      expect(looksLikeJson('}'), isFalse); // Missing opening brace
+      expect(looksLikeJson('['), isFalse); // Missing closing bracket
+      expect(looksLikeJson(']'), isFalse); // Missing opening bracket
+      expect(looksLikeJson('{"unclosed": "object"'), isFalse);
+      expect(looksLikeJson('[1, 2,'), isFalse);
     });
 
     test('returns false for non-JSON strings', () {
-      expect(isJsonValue('hello'), isFalse);
-      expect(isJsonValue('123'), isFalse);
-      expect(isJsonValue('true'), isFalse);
-      expect(isJsonValue('null'), isFalse);
+      expect(looksLikeJson('hello'), isFalse);
+      expect(looksLikeJson('123'), isFalse);
+      expect(looksLikeJson('true'), isFalse);
+      expect(looksLikeJson('null'), isFalse);
     });
 
     test('returns false for mismatched brackets', () {
-      expect(isJsonValue('{]'), isFalse);
-      expect(isJsonValue('[}'), isFalse);
+      expect(looksLikeJson('{]'), isFalse);
+      expect(looksLikeJson('[}'), isFalse);
     });
   });
 }
