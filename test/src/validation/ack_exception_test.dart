@@ -40,7 +40,7 @@ void main() {
         constraints: constraintErrors,
         context: _MockSchemaContext(),
       );
-      final exception = AckViolationException(schemaError);
+      final exception = AckException(schemaError);
       final map = exception.toMap();
 
       // Verify the error map structure
@@ -89,13 +89,13 @@ void main() {
         constraints: [constraintError],
         context: _MockSchemaContext(),
       );
-      final exception = AckViolationException(schemaError);
+      final exception = AckException(schemaError);
 
       final value = exception.toString();
 
       expect(
         value,
-        contains('$AckViolationException'),
+        contains('$AckException'),
       );
       expect(
         value,

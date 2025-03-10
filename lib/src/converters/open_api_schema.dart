@@ -8,18 +8,18 @@ import '../validation/ack_exception.dart';
 
 class OpenApiConverterException implements Exception {
   final Object? error;
-  final AckViolationException? _ackException;
+  final AckException? _ackException;
 
   final String _message;
 
   const OpenApiConverterException(
     this._message, {
     this.error,
-    AckViolationException? ackException,
+    AckException? ackException,
   }) : _ackException = ackException;
 
   static OpenApiConverterException validationError(
-    AckViolationException ackException,
+    AckException ackException,
   ) {
     return OpenApiConverterException(
       'Validation error',
@@ -112,7 +112,7 @@ $stopSequence
         OpenApiConverterException.jsonDecodeError(e),
         stackTrace,
       );
-    } on AckViolationException catch (e, stackTrace) {
+    } on AckException catch (e, stackTrace) {
       Error.throwWithStackTrace(
         OpenApiConverterException.validationError(e),
         stackTrace,

@@ -1,10 +1,10 @@
 import '../helpers.dart';
 import 'schema_error.dart';
 
-class AckViolationException implements Exception {
+class AckException implements Exception {
   final SchemaError error;
 
-  const AckViolationException(this.error);
+  const AckException(this.error);
 
   Map<String, dynamic> toMap() {
     return {'error': error.toMap()};

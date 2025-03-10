@@ -47,7 +47,7 @@ void main() {
       expect(result.getError(), schemaError);
       expect(result.getOrNull(), isNull);
       expect(result.getOrElse(() => 'default'), 'default');
-      expect(() => result.getOrThrow(), throwsA(isA<AckViolationException>()));
+      expect(() => result.getOrThrow(), throwsA(isA<AckException>()));
 
       var failCalled = false;
       result.onFail((_) => failCalled = true);

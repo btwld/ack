@@ -15,7 +15,7 @@ void main() {
         final schema = Ack.string.strict();
         expect(
           () => schema.validateOrThrow(42),
-          throwsA(isA<AckViolationException>()),
+          throwsA(isA<AckException>()),
         );
       });
 

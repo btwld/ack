@@ -265,10 +265,10 @@ mixin SchemaFluentMethods<S extends Schema<T>, T extends Object> on Schema<T> {
   /// This is a convenience method equivalent to calling `copyWith(nullable: true)`.
   S nullable() => copyWith(nullable: true) as S;
 
-  /// Validates the [value] against this schema and throws an [AckViolationException] if validation fails.
+  /// Validates the [value] against this schema and throws an [AckException] if validation fails.
   ///
   /// If validation is successful, returns the validated value of type [T].
-  /// If validation fails, throws an [AckViolationException] containing a list of [SchemaError] objects.
+  /// If validation fails, throws an [AckException] containing a list of [SchemaError] objects.
   ///
   /// **Note**: `AckException` is assumed to be a custom exception class defined elsewhere,
   /// likely in `ack_base.dart`, to handle schema validation errors. Ensure `AckException`

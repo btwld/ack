@@ -1,3 +1,7 @@
+## 0.1.1
+
+-  Added deprecations
+
 ## 0.1.0
 
 -  Error and exception improvements

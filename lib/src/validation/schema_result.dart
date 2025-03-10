@@ -57,14 +57,14 @@ sealed class SchemaResult<T extends Object> {
     return match(onOk: (value) => value ?? orElse(), onFail: (_) => orElse());
   }
 
-  /// Returns the contained value if this result is successful; otherwise, throws an [AckViolationException].
+  /// Returns the contained value if this result is successful; otherwise, throws an [AckException].
   ///
   /// If this instance is an [Ok], it returns its contained value.
-  /// Otherwise, it throws an [AckViolationException] with the associated errors.
+  /// Otherwise, it throws an [AckException] with the associated errors.
   T getOrThrow() {
     return match(
       onOk: (value) => value ?? (throw Exception('Value of ok is null')),
-      onFail: (error) => throw AckViolationException(error),
+      onFail: (error) => throw AckException(error),
     );
   }
 
