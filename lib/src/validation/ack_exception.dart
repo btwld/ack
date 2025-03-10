@@ -14,6 +14,6 @@ class AckException implements Exception {
 
   @override
   String toString() {
-    return 'AckViolationException: ${toJson()}';
+    return '$AckException: ${toJson()}';
   }
 }
