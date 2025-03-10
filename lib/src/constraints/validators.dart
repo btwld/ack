@@ -15,7 +15,7 @@ final class InvalidTypeConstraint extends Constraint<Object>
   InvalidTypeConstraint({required this.expectedType})
       : super(
           constraintKey: 'invalid_type',
-          description: 'Type should be $expectedType',
+          description: 'Expected type: $expectedType',
         );
 
   @override
@@ -32,7 +32,7 @@ final class NonNullableConstraint extends Constraint<Object>
         );
 
   @override
-  String buildMessage(Object? value) => 'Value cannot be null';
+  String buildMessage(Object? value) => 'Cannot be null';
 }
 
 /// {@template string_datetime_validator}
@@ -53,8 +53,7 @@ class StringDateTimeConstraint extends Constraint<String>
   bool isValid(String value) => DateTime.tryParse(value) != null;
 
   @override
-  String buildMessage(String value) =>
-      'The value ($value) is not a valid date time. Expected format: ISO 8601 (e.g. 2021-01-01T00:00:00Z)';
+  String buildMessage(String value) => 'Invalid date-time (ISO 8601 required)';
 
   @override
   Map<String, Object?> toOpenApiSpec() => {'format': 'date-time'};
@@ -93,7 +92,7 @@ class StringDateConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) =>
-      'The value ($value) is not a valid date. Expected format: YYYY-MM-DD (e.g. 2017-07-21).';
+      'Invalid date. YYYY-MM-DD required. Ex: 2017-07-21';
 
   @override
   Map<String, Object?> toOpenApiSpec() => {'format': 'date'};
@@ -120,14 +119,20 @@ class StringEnumConstraint extends Constraint<String>
   bool isValid(String value) => enumValues.contains(value);
 
   @override
+  Map<String, Object?> buildContext(String value) {
+    final closestMatch = findClosestStringMatch(value, enumValues);
+
+    return {'closestMatch': closestMatch, 'allowedValues': enumValues};
+  }
+
+  @override
   String buildMessage(String value) {
     final closestMatch = findClosestStringMatch(value, enumValues);
-    final closestMatchMessage =
-        closestMatch.isTruthy ? '(Closest match: "${closestMatch!}")' : '';
-
     final allowedValues = enumValues.map((e) => '"$e"').join(', ');
 
-    return 'Invalid value ($value). Allowed values are: ($allowedValues). $closestMatchMessage';
+    return closestMatch != null
+        ? 'Did you mean "$closestMatch"? Allowed: $allowedValues'
+        : 'Allowed: $allowedValues';
   }
 
   @override
@@ -188,7 +193,7 @@ class StringNotOneOfValidator extends StringRegexConstraint {
 
   @override
   String buildMessage(String value) {
-    return 'The value ($value) is not allowed. Disallowed values: $disallowedValues.';
+    return 'Disallowed value: Cannot be one of $disallowedValues';
   }
 }
 
@@ -211,7 +216,7 @@ class StringNotEmptyValidator extends Constraint<String>
 
   @override
   String buildMessage(String value) {
-    return 'The string must not be empty.';
+    return 'Cannot be empty';
   }
 }
 
@@ -231,13 +236,7 @@ class StringJsonValidator extends Constraint<String> with Validator<String> {
   @override
   bool isValid(String value) {
     try {
-      if (looksLikeJson(value)) {
-        jsonDecode(value);
-
-        return true;
-      }
-
-      return false;
+      return looksLikeJson(value) && jsonDecode(value) != null;
     } catch (e) {
       return false;
     }
@@ -245,7 +244,7 @@ class StringJsonValidator extends Constraint<String> with Validator<String> {
 
   @override
   String buildMessage(String value) {
-    return 'The value ($value) is not valid JSON.';
+    return 'Invalid JSON';
   }
 }
 
@@ -292,7 +291,7 @@ class StringRegexConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) {
-    return 'The value ($value) does not match the required pattern for $constraintKey. Expected format: "$example".';
+    return 'Invalid format $patternName. Ex: $example';
   }
 
   @override
@@ -321,7 +320,7 @@ class StringEmptyConstraint extends Constraint<String> with Validator<String> {
 
   @override
   String buildMessage(String value) {
-    return 'The string must be empty. Got: ($value)';
+    return 'Should be empty';
   }
 }
 
@@ -347,7 +346,7 @@ class StringMinLengthConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) {
-    return 'The string length (${value.length}) is too short; it must be at least ($min) characters.';
+    return 'Too short, min $min characters';
   }
 
   @override
@@ -377,7 +376,7 @@ class StringMaxLengthConstraint extends Constraint<String>
   @override
   @visibleForTesting
   String buildMessage(String value) {
-    return 'The string length (${value.length}) exceeds the maximum allowed of ($max) characters.';
+    return 'Too long, max $max characters';
   }
 
   @override
@@ -402,10 +401,15 @@ class ListUniqueItemsConstraint<T extends Object> extends Constraint<List<T>>
   bool isValid(List<T> value) => value.duplicates.isEmpty;
 
   @override
+  Map<String, Object?> buildContext(List<T> value) {
+    return {'duplicates': value.duplicates.toList()};
+  }
+
+  @override
   String buildMessage(List<T> value) {
     final nonUniqueValues = value.duplicates.map((e) => '"$e"').join(', ');
 
-    return 'The list contains duplicate items: $nonUniqueValues. All items must be unique.';
+    return 'Must be unique. Duplicates found: $nonUniqueValues';
   }
 
   @override
@@ -434,7 +438,7 @@ class ListMinItemsConstraint<T extends Object> extends Constraint<List<T>>
 
   @override
   String buildMessage(List<T> value) {
-    return 'The list has only (${value.length}) items; at least ($min) items are required.';
+    return 'Too few items, min $min. Got ${value.length}';
   }
 
   @override
@@ -463,7 +467,7 @@ class ListMaxItemsConstraint<T extends Object> extends Constraint<List<T>>
 
   @override
   String buildMessage(List<T> value) {
-    return 'The list contains (${value.length}) items, which exceeds the allowed maximum of ($max).';
+    return 'Too many items, max $max. Got ${value.length}';
   }
 
   @override
@@ -499,8 +503,8 @@ class NumberMinConstraint<T extends num> extends Constraint<T>
   @override
   String buildMessage(T value) {
     return exclusive
-        ? 'The number ($value) is too low; it must be greater than ($min).'
-        : 'The number ($value) is too low; it must be at least ($min).';
+        ? 'Too low. Must be more than $min'
+        : 'Too low. Must be $min or more';
   }
 
   @override
@@ -530,8 +534,7 @@ class NumberMultipleOfConstraint<T extends num> extends Constraint<T>
 
   @override
   String buildMessage(T value) {
-    return 'The number ($value) is not a multiple of ($multiple).'
-        ' The quotient is (${value / multiple}), the remainder is (${value % multiple}).';
+    return 'Not a multiple of $multiple';
   }
 
   @override
@@ -568,8 +571,8 @@ class NumberMaxConstraint<T extends num> extends Constraint<T>
   @override
   String buildMessage(T value) {
     return exclusive
-        ? 'The number ($value) exceeds the limit; it must be less than ($max).'
-        : 'The number ($value) exceeds the maximum allowed of ($max).';
+        ? 'Too high. Must be less than $max'
+        : 'Too high. Must be $max or less';
   }
 
   @override
@@ -613,7 +616,7 @@ class NumberRangeConstraint<T extends num> extends Constraint<T>
 
   @override
   String buildMessage(T value) {
-    return 'The number ($value) is outside the allowed range ($min to $max).';
+    return 'Out of range must be between $min and $max';
   }
 
   @override
@@ -647,7 +650,7 @@ class ObjectMinPropertiesConstraint extends Constraint<MapValue>
 
   @override
   String buildMessage(MapValue value) {
-    return 'The object has (${value.length}) properties, which is less than the required minimum of ($min).';
+    return 'Too few properties, min $min. Got ${value.length}';
   }
 
   @override
@@ -676,7 +679,7 @@ class ObjectMaxPropertiesConstraint extends Constraint<MapValue>
 
   @override
   String buildMessage(MapValue value) {
-    return 'The object has (${value.length}) properties, exceeding the allowed maximum of ($max).';
+    return 'Too many properties, max $max. Got ${value.length}';
   }
 
   @override
@@ -707,10 +710,15 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
       : _getUnallowedProperties(value).isEmpty;
 
   @override
+  Map<String, Object?> buildContext(MapValue value) {
+    return {'unallowedProperties': _getUnallowedProperties(value).toList()};
+  }
+
+  @override
   String buildMessage(MapValue value) {
     final unallowedKeys = _getUnallowedProperties(value);
 
-    return 'Unallowed properties: ($unallowedKeys).';
+    return 'Extra properties: $unallowedKeys';
   }
 }
 
@@ -729,20 +737,25 @@ class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
           description: 'Required properties: ${schema.getRequiredProperties()}',
         );
 
+  List<String> _getMissingProperties(MapValue value) => schema
+      .getRequiredProperties()
+      .toSet()
+      .difference(value.keys.toSet())
+      .toList();
+
   @override
   bool isValid(MapValue value) {
-    return value.keys.containsAll(schema.getRequiredProperties());
+    return _getMissingProperties(value).isEmpty;
+  }
+
+  @override
+  Map<String, Object?> buildContext(MapValue value) {
+    return {'missingProperties': _getMissingProperties(value)};
   }
 
   @override
   String buildMessage(MapValue value) {
-    final missingKeys = schema
-        .getRequiredProperties()
-        .toSet()
-        .difference(value.keys.toSet())
-        .toList();
-
-    return 'Missing required properties: $missingKeys.';
+    return 'Missing: ${_getMissingProperties(value)}';
   }
 }
 
@@ -795,10 +808,11 @@ class ObjectDiscriminatorStructureConstraint
     final notRequired = _getSchemasWithNotRequiredDiscriminator(value);
 
     return '''
-The discriminator key ($discriminatorKey) must be present and required in all schemas.
-${missing.isNotEmpty ? '- Missing in: ($missing)\n' : ''}
-${notRequired.isNotEmpty ? '- Not marked as required in: ($notRequired)' : ''}
-''';
+Discriminator "$discriminatorKey" must be present & required.
+${missing.isNotEmpty ? 'Missing: ($missing)' : ''}
+${notRequired.isNotEmpty ? 'Not required: ($notRequired)' : ''}
+'''
+        .trim();
   }
 }
 
@@ -835,7 +849,7 @@ class ObjectDiscriminatorValueConstraint extends Constraint<MapValue>
     final validSchemaKeys = schemas.keys.toList();
 
     return discriminatorValue != null
-        ? 'The discriminator value ($discriminatorValue) is invalid. Allowed values: ($validSchemaKeys).'
-        : 'The discriminator field ($discriminatorKey) is missing.';
+        ? 'Invalid discriminator: $discriminatorValue. Allowed: ($validSchemaKeys)'
+        : 'Missing discriminator "$discriminatorKey"';
   }
 }

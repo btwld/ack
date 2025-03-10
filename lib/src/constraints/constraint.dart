@@ -20,14 +20,26 @@ final class ConstraintError {
 
   final String message;
 
-  const ConstraintError({required this.message, required this.constraint});
+  final Map<String, Object?>? context;
+
+  const ConstraintError({
+    required this.message,
+    required this.constraint,
+    this.context,
+  });
 
   Type get type => constraint.runtimeType;
 
   String get constraintKey => constraint.constraintKey;
 
+  Object? getContextValue(String key) => context?[key];
+
   Map<String, Object?> toMap() {
-    return {'message': message, 'constraint': constraint.toMap()};
+    return {
+      'message': message,
+      'constraint': constraint.toMap(),
+      'context': context,
+    };
   }
 
   @override
@@ -43,11 +55,17 @@ mixin Validator<T extends Object> on Constraint<T> {
   String buildMessage(T value);
 
   @protected
+  Map<String, Object?> buildContext(T value) => {'value': value};
+  @protected
   bool isValid(T value);
 
   ConstraintError? validate(T value) => isValid(value)
       ? null
-      : ConstraintError(message: buildMessage(value), constraint: this);
+      : ConstraintError(
+          message: buildMessage(value),
+          constraint: this,
+          context: buildContext(value),
+        );
 }
 
 mixin WithConstraintError<T> on Constraint {
