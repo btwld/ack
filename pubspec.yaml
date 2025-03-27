@@ -1,15 +1,19 @@
-name: ack
-description: A simple validation library for Dart
-version: 0.1.2
-repository: https://github.com/leoafarias/ack
+name: ack_example_test
+description: Test project for ACK schema generation.
+version: 1.0.0
+publish_to: none
 
 environment:
-  sdk: ^3.3.0
+  sdk: ^3.2.6
 
+# Using path dependencies for local development
 dependencies:
-  meta: ^1.15.0
+  ack:
+    path: ./packages/ack
+
 dev_dependencies:
-  coverage: ^1.11.1
-  dart_code_metrics_presets: ^2.21.0
-  lints: ^5.0.0
-  test: ^1.24.0
+  ack_generator:
+    path: ./packages/ack_generator
+  build_runner: ^2.4.0
+  lints: ^2.1.0
+  melos: ^3.1.1

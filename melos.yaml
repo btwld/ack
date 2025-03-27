@@ -1,0 +1,25 @@
+name: ack_workspace
+repository: https://github.com/leoafarias/ack
+
+packages:
+  - packages/**
+  - example/*
+
+scripts:
+  analyze:
+    run: melos exec -- "dart analyze . --fatal-infos"
+    description: Run analyzer on all packages
+
+  test:
+    run: melos exec -- "dart test"
+    description: Run tests for all packages
+    packageFilters:
+      dirExists: test
+
+  format:
+    run: melos exec -- "dart format . --fix"
+    description: Format code for all packages
+
+  deps-outdated:
+    run: melos exec -- "dart pub outdated"
+    description: Check for outdated dependencies in all packages

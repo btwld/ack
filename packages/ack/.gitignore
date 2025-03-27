@@ -32,5 +32,3 @@ doc/api/
 flattened
 .cursor/rules
 coverage/test
-extracted_code
-extract_lib_code.sh
