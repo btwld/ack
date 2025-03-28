@@ -4,7 +4,6 @@ import 'package:path/path.dart' as p;
 import 'package:source_gen/source_gen.dart';
 
 import '../../ack_generator.dart';
-import '../generator/schema_model_generator.dart';
 
 /// Builder that produces SchemaModel-based schema classes
 class SchemaModelBuilder implements Builder {
@@ -51,15 +50,13 @@ class SchemaModelBuilder implements Builder {
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
 // ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
-
-import 'package:ack/ack.dart';
 ''';
 
       buffer.writeln(defaultHeader);
 
-      // Import the original model
+      // Get the model file name for the part directive
       final modelPath = p.basename(inputId.path);
-      buffer.writeln("import '$modelPath';");
+      buffer.writeln("part of '$modelPath';");
       buffer.writeln();
 
       for (final annotatedElement in annotatedElements) {
@@ -80,7 +77,7 @@ import 'package:ack/ack.dart';
       }
 
       // Write the output file
-      final outputId = inputId.changeExtension('.schema.dart');
+      final outputId = inputId.changeExtension('.g.dart');
       await buildStep.writeAsString(outputId, buffer.toString());
     } catch (e, stack) {
       log.severe('Error generating schema for ${inputId.path}', e, stack);
@@ -111,6 +108,6 @@ import 'package:ack/ack.dart';
 
   @override
   Map<String, List<String>> get buildExtensions => {
-        '.dart': ['.schema.dart'],
+        '.dart': ['.g.dart'],
       };
 }

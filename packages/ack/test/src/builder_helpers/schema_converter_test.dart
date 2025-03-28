@@ -38,7 +38,13 @@ class ProductSchema extends SchemaModel<Product> {
   }
 
   /// Checks if the map contains a key
+  @override
   bool containsKey(String key) => toMap().containsKey(key);
+
+  @override
+  void initialize() {
+    // TODO: implement initialize
+  }
 
   @override
   Product toModel() {
@@ -75,6 +81,7 @@ class CategorySchema extends SchemaModel<Category> {
   }
 
   /// Checks if the map contains a key
+  @override
   bool containsKey(String key) => toMap().containsKey(key);
 
   @override
@@ -83,6 +90,11 @@ class CategorySchema extends SchemaModel<Category> {
       name: this['name'] as String,
       id: this['id'] as int,
     );
+  }
+
+  @override
+  void initialize() {
+    // TODO: implement initialize
   }
 
   @override

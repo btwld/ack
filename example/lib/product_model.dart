@@ -1,4 +1,8 @@
+import 'package:ack/ack.dart';
 import 'package:ack_generator/ack_generator.dart';
+
+// Add part directive for the generated code
+part 'product_model.g.dart';
 
 @Schema(
   description: 'A product model with validation',
@@ -59,7 +63,4 @@ class Category {
     this.description,
     this.metadata = const {},
   });
-
-  // Added for compatibility with generated schema
-  Category toModel() => this;
 }

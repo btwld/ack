@@ -3,7 +3,7 @@ builders:
   schema_model_builder:
     import: "package:ack_generator/builder.dart"
     builder_factories: ["schemaModelBuilder"]
-    build_extensions: {".dart": [".schema.dart"]}
+    build_extensions: {".dart": [".g.dart"]}
     auto_apply: dependents
     build_to: source
     applies_builders: []

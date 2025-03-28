@@ -1,6 +1,5 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/product_model.dart';
-import 'package:ack_example/product_model.schema.dart';
 import 'package:test/test.dart';
 
 // Helper class for testing type parameters
@@ -104,17 +103,9 @@ void main() {
       expect(schema.description, equals('Testing validateAndTransform'));
       expect(schema.price, equals(29.99));
       expect(schema.imageUrl, isNull);
-
-      // Get the category as a map first, then check its properties
-      final categoryMap = schema.getValue('category') as Map<String, dynamic>;
-      expect(categoryMap['id'], equals('cat2'));
-      expect(categoryMap['name'], equals('Transform Category'));
-
-      // Create a CategorySchema from the map for proper testing
-      final categorySchema = CategorySchema.parse(categoryMap);
-      expect(categorySchema, isA<CategorySchema>());
-      expect(categorySchema.id, equals('cat2'));
-      expect(categorySchema.name, equals('Transform Category'));
+      expect(schema.category.id, equals('cat2'));
+      expect(schema.category.name, equals('Transform Category'));
+      expect(schema.category, isA<CategorySchema>());
     });
 
     test('Debug SchemaModel.get to identify the issue', () {

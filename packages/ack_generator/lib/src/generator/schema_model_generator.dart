@@ -4,12 +4,6 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:source_gen/source_gen.dart';
 
-// Add imports for SchemaContext and SchemaUnknownError
-const schemaContextImport = "import 'package:ack/src/context.dart';";
-const schemaErrorImport =
-    "import 'package:ack/src/validation/schema_error.dart';";
-const stackTraceImport = "import 'dart:core';";
-
 /// Generator for SchemaModel-based schemas
 class SchemaModelGenerator {
   final formatter = DartFormatter();
@@ -283,24 +277,6 @@ class SchemaModelGenerator {
     required SchemaData modelData,
     required List<PropertyInfo> properties,
   }) {
-    // Check if we need context and error imports
-    bool needsContextAndErrorImports = properties.any(
-      (property) =>
-          (!_isPrimitiveType(property.typeName) ||
-              (property.typeName.name == 'List' &&
-                  !_isPrimitiveListType(property.typeName))) &&
-          !property.isNullable,
-    );
-
-    // Generate import statements
-    String imports =
-        "import 'package:ack/ack.dart';\n\nimport '$modelClassName.dart';\n";
-
-    // Add additional imports if needed
-    if (needsContextAndErrorImports) {
-      imports += '\n$schemaContextImport\n$schemaErrorImport\n';
-    }
-
     // Generate property schemas
     final propertySchemas = properties
         .where(
@@ -342,25 +318,17 @@ class SchemaModelGenerator {
       if (!_isPrimitiveType(property.typeName)) {
         // Generate a getter that properly handles nested schema objects
         final schemaType = '${property.typeName.name}Schema';
+        final schemaReturnType =
+            property.isNullable ? '$schemaType?' : schemaType;
+
         if (property.isNullable) {
-          return '''  $returnType get ${property.name} {
+          return '''  $schemaReturnType get ${property.name} {
     final map = getValue<Map<String, dynamic>>('${property.name}');
-    if (map == null) return null;
-    return $schemaType.parse(map);
+    return map == null ? null : $schemaType.parse(map);
   }''';
         } else {
-          return '''  $returnType get ${property.name} {
-    final map = getValue<Map<String, dynamic>>('${property.name}');
-    if (map == null) {
-      final context = SchemaContext(name: '${property.name}', schema: schema, value: null);
-      final error = SchemaUnknownError(
-        error: '${property.name} is required but was null', 
-        stackTrace: StackTrace.current,
-        context: context,
-      );
-      throw AckException(error);
-    }
-    return $schemaType.parse(map);
+          return '''  $schemaReturnType get ${property.name} {
+    return $schemaType.parse(getValue<Map<String, dynamic>>('${property.name}')!);
   }''';
         }
       }
@@ -370,25 +338,17 @@ class SchemaModelGenerator {
           !_isPrimitiveListType(property.typeName)) {
         final itemType = property.typeName.typeArguments[0].name;
         final schemaType = '${itemType}Schema';
+        final listType = 'List<$schemaType>';
+        final schemaReturnType = property.isNullable ? '$listType?' : listType;
+
         if (property.isNullable) {
-          return '''  $returnType get ${property.name} {
+          return '''  $schemaReturnType get ${property.name} {
     final list = getValue<List<dynamic>>('${property.name}');
-    if (list == null) return null;
-    return list.map((item) => $schemaType.parse(item as Map<String, dynamic>)).toList();
+    return list?.map((item) => $schemaType.parse(item as Map<String, dynamic>)).toList();
   }''';
         } else {
-          return '''  $returnType get ${property.name} {
-    final list = getValue<List<dynamic>>('${property.name}');
-    if (list == null) {
-      final context = SchemaContext(name: '${property.name}', schema: schema, value: null);
-      final error = SchemaUnknownError(
-        error: '${property.name} is required but was null', 
-        stackTrace: StackTrace.current,
-        context: context,
-      );
-      throw AckException(error);
-    }
-    return list.map((item) => $schemaType.parse(item as Map<String, dynamic>)).toList();
+          return '''  $schemaReturnType get ${property.name} {
+    return getValue<List<dynamic>>('${property.name}')!.map((item) => $schemaType.parse(item as Map<String, dynamic>)).toList();
   }''';
         }
       }
@@ -451,8 +411,7 @@ class SchemaModelGenerator {
         ? '$baseDoc\n/// ${modelData.description}'
         : baseDoc;
 
-    return '''$imports
-$classDoc
+    return '''$classDoc
 class $schemaClassName extends SchemaModel<$modelClassName> {
   // Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
@@ -474,6 +433,12 @@ $propertySchemas
       $schemaClassName.parse,
     );
 $dependenciesCode
+  }
+
+  // Initialize method that calls the static method
+  @override
+  void initialize() {
+    $schemaClassName.ensureInitialize();
   }
 
   // Constructors
@@ -689,12 +654,7 @@ $additionalPropsCode
     final typeStr = _getTypeString(property.typeName);
 
     // For nested model types, convert properly
-    if (!typeStr.startsWith('String') &&
-        !typeStr.startsWith('int') &&
-        !typeStr.startsWith('double') &&
-        !typeStr.startsWith('bool') &&
-        !typeStr.startsWith('List<') &&
-        !typeStr.startsWith('Map<')) {
+    if (!_isPrimitiveType(property.typeName)) {
       return '${property.name}.toModel()';
     }
 

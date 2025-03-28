@@ -31,6 +31,11 @@ class TestSchema extends SchemaModel<TestModel> {
   }
 
   @override
+  void initialize() {
+    // TODO: implement initialize
+  }
+
+  @override
   SchemaResult validate() {
     if (!toMap().containsKey('name') || !toMap().containsKey('value')) {
       return SchemaResult.fail(SchemaMockError());
@@ -62,6 +67,11 @@ class AnotherSchema extends SchemaModel<AnotherModel> {
       title: this['title'] as String,
       amount: this['amount'] as double,
     );
+  }
+
+  @override
+  void initialize() {
+    // TODO: implement initialize
   }
 
   @override

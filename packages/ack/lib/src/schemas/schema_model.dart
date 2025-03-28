@@ -4,19 +4,14 @@ import 'dart:convert';
 import 'package:ack/src/builder_helpers/schema_converter.dart';
 import 'package:ack/src/builder_helpers/schema_registry.dart';
 import 'package:ack/src/validation/schema_result.dart';
+import 'package:meta/meta.dart';
 
 /// Base class for type-safe schema models
 abstract class SchemaModel<T> {
   final Map<String, Object?> _data;
-  final bool _isValidated;
 
   /// Create from data map
-  SchemaModel(this._data) : _isValidated = false;
-
-  /// Create from pre-validated data
-  /// This constructor is used by generated code to create schema models from pre-validated data
-  /// It sets the _isValidated flag to true, indicating that the data has already been validated
-  SchemaModel._validated(this._data) : _isValidated = true;
+  SchemaModel(this._data);
 
   // Static parse methods are implemented by subclasses
 
@@ -37,6 +32,9 @@ abstract class SchemaModel<T> {
 
     return schema as S;
   }
+
+  @protected
+  void initialize();
 
   /// Get a value with type safety
   V? getValue<V>(String key) {

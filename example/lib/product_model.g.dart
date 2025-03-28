@@ -3,16 +3,7 @@
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
 // ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
 
-import 'package:ack/ack.dart';
-
-import 'product_model.dart';
-
-import 'package:ack/ack.dart';
-
-import 'Product.dart';
-
-import 'package:ack/src/context.dart';
-import 'package:ack/src/validation/schema_error.dart';
+part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
@@ -43,6 +34,12 @@ class ProductSchema extends SchemaModel<Product> {
     );
     // Register schema dependencies
     CategorySchema.ensureInitialize();
+  }
+
+  // Initialize method that calls the static method
+  @override
+  void initialize() {
+    ProductSchema.ensureInitialize();
   }
 
   // Constructors
@@ -91,19 +88,8 @@ class ProductSchema extends SchemaModel<Product> {
   String get description => getValue<String>('description')!;
   double get price => getValue<double>('price')!;
   String? get imageUrl => getValue<String>('imageUrl');
-  Category get category {
-    final map = getValue<Map<String, dynamic>>('category');
-    if (map == null) {
-      final context =
-          SchemaContext(name: 'category', schema: schema, value: null);
-      final error = SchemaUnknownError(
-        error: 'category is required but was null',
-        stackTrace: StackTrace.current,
-        context: context,
-      );
-      throw AckException(error);
-    }
-    return CategorySchema.parse(map);
+  CategorySchema get category {
+    return CategorySchema.parse(getValue<Map<String, dynamic>>('category')!);
   }
 
   // Get metadata with fallback
@@ -187,10 +173,6 @@ class ProductSchema extends SchemaModel<Product> {
   }
 }
 
-import 'package:ack/ack.dart';
-
-import 'Category.dart';
-
 /// Generated schema for Category
 /// A category for organizing products
 class CategorySchema extends SchemaModel<Category> {
@@ -215,6 +197,12 @@ class CategorySchema extends SchemaModel<Category> {
     SchemaRegistry.register<Category, CategorySchema>(
       CategorySchema.parse,
     );
+  }
+
+  // Initialize method that calls the static method
+  @override
+  void initialize() {
+    CategorySchema.ensureInitialize();
   }
 
   // Constructors
