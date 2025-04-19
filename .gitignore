@@ -34,3 +34,4 @@ flattened
 coverage/test
 extracted_code
 extract_lib_code.sh
+packages/ack/coverage

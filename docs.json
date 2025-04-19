@@ -1,0 +1,109 @@
+{
+  "$schema": "https://docs.page/schema.json",
+  "name": "Ack",
+  "description": "Documentation for the Ack project",
+
+  "theme": {
+    "defaultTheme": "dark"
+  },
+  "header": {
+    "showName": true,
+    "showThemeToggle": false,
+    "showGitHubCard": true
+  },
+  "social": {
+    "github": "leofarias/ack"
+  },
+  "seo": {
+    "noindex": false
+  },
+  "sidebar": [
+    {
+      "group": "Introduction",
+      "pages": [
+        {
+          "title": "Overview",
+          "href": "/"
+        },
+        {
+          "title": "Installation",
+          "href": "/installation"
+        },
+        {
+          "title": "Configuration",
+          "href": "/configuration"
+        }
+      ]
+    },
+    {
+      "group": "Schemas",
+      "pages": [
+        {
+          "title": "Schema Types",
+          "href": "/schema-types"
+        },
+        {
+          "title": "Schema Usage",
+          "href": "/schema-usage"
+        },
+        {
+          "title": "Nested Models",
+          "href": "/nested-model-handling"
+        },
+        {
+          "title": "JSON Serialization",
+          "href": "/json-serialization"
+        }
+      ]
+    },
+    {
+      "group": "Validation",
+      "pages": [
+        {
+          "title": "Built-in Validation",
+          "href": "/built-in-validation"
+        },
+        {
+          "title": "Custom Validation",
+          "href": "/custom-validation"
+        },
+        {
+          "title": "Error Handling",
+          "href": "/error-handling"
+        }
+      ]
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        {
+          "title": "Code Generation",
+          "href": "/code-generation"
+        }
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        {
+          "title": "API Reference",
+          "href": "/api-reference"
+        },
+        {
+          "title": "Examples",
+          "href": "/examples"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "versions": {
+      "default": "1.0.0"
+    }
+  },
+  "search": {},
+  "content": {
+    "showPageTitle": true,
+    "zoomImages": true
+  }
+}

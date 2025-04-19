@@ -1,4 +1,4 @@
-part of '../schema.dart';
+part of 'schema.dart';
 
 final class ListSchema<V extends Object> extends AckSchema<List<V>>
     with SchemaFluentMethods<ListSchema<V>, List<V>> {

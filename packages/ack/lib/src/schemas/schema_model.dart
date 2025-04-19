@@ -27,7 +27,7 @@ abstract class SchemaModel<T> {
   static S get<S extends SchemaModel>(Map<String, Object?> data) {
     final schema = SchemaRegistry.createSchema(S, data);
     if (schema == null) {
-      throw Exception('No schema registered for type ${S.runtimeType}');
+      throw Exception('No schema registered for type $S');
     }
 
     return schema as S;

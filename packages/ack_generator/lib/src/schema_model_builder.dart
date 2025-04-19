@@ -3,7 +3,7 @@ import 'package:build/build.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_gen/source_gen.dart';
 
-import '../../ack_generator.dart';
+import '../ack_generator.dart';
 
 /// Builder that produces SchemaModel-based schema classes
 class SchemaModelBuilder implements Builder {

@@ -1,0 +1,218 @@
+---
+title: Code Generation with Ack
+---
+
+This guide explains how to use Ack's code generator to create schema classes from your Dart models.
+
+## Overview
+
+The `ack_generator` package uses build_runner to generate schema classes from your annotated Dart classes. This provides several benefits:
+
+- **Type Safety**: Work with strongly-typed models instead of dynamic maps
+- **IDE Support**: Get autocomplete and refactoring support for your models
+- **Validation Rules**: Define validation rules directly on your model classes
+- **Automatic Serialization**: Convert between JSON, models, and schema objects
+
+## Setup
+
+### 1. Add Dependencies
+
+First, add the required packages to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  ack: ^latest_version
+
+dev_dependencies:
+  ack_generator: ^latest_version
+  build_runner: ^2.3.0
+```
+
+Then run:
+
+```bash
+dart pub get
+```
+
+### 2. Annotate Your Models
+
+Create a model class and annotate it with `@Schema` and property-specific annotations:
+
+```dart
+import 'package:ack_generator/ack_generator.dart';
+
+@Schema(
+  description: 'User account information',
+  additionalProperties: true,
+  additionalPropertiesField: 'metadata',
+)
+class User {
+  @IsEmail()
+  final String email;
+
+  @MinLength(3)
+  @MaxLength(50)
+  final String name;
+
+  @Min(13)
+  final int? age;
+
+  final Map<String, dynamic> metadata;
+
+  User({
+    required this.email,
+    required this.name,
+    this.age,
+    Map<String, dynamic>? metadata,
+  }) : metadata = metadata ?? {};
+}
+```
+
+### 3. Generate Schema Classes
+
+Run the build_runner command to generate schema files:
+
+```bash
+# One-time build
+dart run build_runner build
+
+# Watch mode for continuous generation
+dart run build_runner watch
+```
+
+This will create a `user.schema.dart` file next to your model file.
+
+## Using Generated Schemas
+
+### Validating Data
+
+```dart
+import 'user.dart';
+import 'user.schema.dart'; // Generated file
+
+void main() {
+  // Create a map to validate
+  final userData = {
+    'email': 'user@example.com',
+    'name': 'John Doe',
+    'age': 25,
+    'role': 'admin' // Additional property
+  };
+
+  // Validate the data
+  final result = UserSchema.validate(userData);
+
+  if (result.isOk) {
+    print('Valid data!');
+  } else {
+    print('Validation error: ${result.getError()}');
+  }
+}
+```
+
+### Creating Models from Data
+
+```dart
+// Parse the map into a schema object
+final userSchema = UserSchema.parse(userData);
+
+// Convert schema to model
+final user = userSchema.toModel();
+
+// Access the strongly-typed properties
+print('User: ${user.name}, ${user.email}, ${user.age}');
+
+// Access additional properties
+print('Role: ${user.metadata['role']}');
+```
+
+### Converting Models to Schema Objects
+
+```dart
+// Create a model instance
+final user = User(
+  email: 'new@example.com',
+  name: 'New User',
+  age: 30,
+);
+
+// Convert to schema for validation or serialization
+final schema = UserSchema.fromModel(user);
+
+// Convert back to JSON
+final json = schema.toMap();
+```
+
+## Available Annotations
+
+### Class Annotations
+
+- `@Schema(...)` - Primary annotation for schema generation
+  - `description` - Schema description
+  - `additionalProperties` - Whether to allow additional properties
+  - `additionalPropertiesField` - Field to store additional properties
+  - `schemaClassName` - Custom name for the generated schema class
+
+### Property Annotations
+
+#### String Validators
+- `@IsEmail()` - Validate email format
+- `@MinLength(length)` - Minimum string length
+- `@MaxLength(length)` - Maximum string length
+- `@Pattern(pattern)` - Regex pattern validation
+- `@IsNotEmpty()` - String cannot be empty
+- `@EnumValues([...])` - String must be one of specified values
+
+#### Number Validators
+- `@Min(value)` - Minimum numeric value
+- `@Max(value)` - Maximum numeric value
+- `@Positive()` - Number must be positive
+- `@MultipleOf(value)` - Number must be a multiple of the value
+
+#### List Validators
+- `@MinItems(count)` - Minimum number of items
+- `@MaxItems(count)` - Maximum number of items
+- `@UniqueItems()` - Items must be unique
+
+#### Common Validators
+- `@Required()` - Mark property as required (for nullable types)
+- `@Nullable()` - Mark property as explicitly nullable
+- `@Description(text)` - Add a description for documentation
+
+## Working with Nested Models
+
+The code generator handles nested model relationships automatically:
+
+```dart
+@Schema()
+class Address {
+  final String street;
+  final String city;
+
+  Address({required this.street, required this.city});
+}
+
+@Schema()
+class User {
+  final String name;
+  final Address address;
+
+  User({required this.name, required this.address});
+}
+```
+
+Generated schema classes will properly convert between nested models and their schema representations.
+
+## Best Practices
+
+1. **Keep Models Simple**: Focus on data structure and validation requirements
+2. **Use Constructor Parameters**: Define all properties as final with constructor parameters
+3. **Provide Default Values**: Handle optional fields with default values in constructors
+4. **Document Your Models**: Use `@Description` to document properties
+5. **Prefer Strong Types**: Use specific types instead of dynamic when possible
+
+## Next Steps
+
+- Check [Custom Validation](/custom-validation) for complex validation rules
+- Explore [Nested Models](/nested-model-handling) for working with complex object structures
+- See [Examples](/examples) for more complete code samples

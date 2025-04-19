@@ -1,4 +1,4 @@
-import 'package:ack_generator/src/generator/schema_model_generator.dart';
+import 'package:ack_generator/src/schema_model_generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -63,9 +63,11 @@ void main() {
 
       // Check the output includes all constraints
       expect(
-          buffer.toString(),
-          equals(
-              'Ack.string.minLength(3).maxLength(10).pattern(\'$testPattern\')'));
+        buffer.toString(),
+        equals(
+          'Ack.string.minLength(3).maxLength(10).pattern(\'$testPattern\')',
+        ),
+      );
     });
   });
 }

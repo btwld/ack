@@ -1,0 +1,150 @@
+---
+title: Ack Examples
+---
+
+This page provides basic examples to help you understand how to use Ack effectively in your Dart and Flutter applications.
+
+## Basic Validation Examples
+
+### String Validation
+
+```dart
+import 'package:ack/ack.dart';
+
+// For custom validation examples, see the Custom Validation page
+
+void main() {
+  final usernameSchema = Ack.string
+    .minLength(3)
+    .maxLength(20)
+    .pattern(r'[a-zA-Z0-9_]+') // Alphanumeric with underscore
+    .isNotEmpty();
+
+  final emailSchema = Ack.string
+    .isEmail()
+    .isNotEmpty();
+
+  // Valid username
+  final validUsername = usernameSchema.validate('john_doe123');
+  print('Valid username: ${validUsername.isOk}'); // true
+
+  // Invalid username (too short)
+  final invalidUsername = usernameSchema.validate('jo');
+  print('Invalid username: ${invalidUsername.isOk}'); // false
+  final error = invalidUsername.getError() as SchemaConstraintsError;
+  print('Error: ${error.constraints.first.message}');
+
+  // Valid email
+  final validEmail = emailSchema.validate('john@example.com');
+  print('Valid email: ${validEmail.isOk}'); // true
+
+  // Invalid email
+  final invalidEmail = emailSchema.validate('not-an-email');
+  print('Invalid email: ${invalidEmail.isOk}'); // false
+}
+```
+
+### Number Validation
+
+```dart
+import 'package:ack/ack.dart';
+
+// For custom validation examples, see the Custom Validation page
+
+void main() {
+  final ageSchema = Ack.int
+    .min(0)
+    .max(120);
+
+  final priceSchema = Ack.double
+    .positive(); // Must be greater than 0
+
+  // Valid age
+  final validAge = ageSchema.validate(25);
+  print('Valid age: ${validAge.isOk}'); // true
+
+  // Invalid age (negative)
+  final invalidAge = ageSchema.validate(-5);
+  print('Invalid age: ${invalidAge.isOk}'); // false
+
+  // Valid price
+  final validPrice = priceSchema.validate(19.99);
+  print('Valid price: ${validPrice.isOk}'); // true
+
+  // Invalid price (negative)
+  final invalidPrice = priceSchema.validate(-10.50);
+  print('Invalid price: ${invalidPrice.isOk}'); // false
+}
+```
+
+## Object Validation
+
+Validating complex objects with nested properties:
+
+```dart
+import 'package:ack/ack.dart';
+
+void main() {
+  // Define the schema for a user object
+  final userSchema = Ack.object(
+    {
+      'id': Ack.string.pattern(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'), // UUID format
+      'name': Ack.string.minLength(2).maxLength(50),
+      'email': Ack.string.isEmail(),
+      'age': Ack.int.min(18).nullable(),
+      'address': Ack.object(
+        {
+          'street': Ack.string,
+          'city': Ack.string,
+          'zipCode': Ack.string.pattern(r'\d{5}(-\d{4})?').nullable(), // US ZIP code format
+          'country': Ack.string,
+        },
+        required: ['street', 'city', 'country'],
+      ),
+      'tags': Ack.list(Ack.string).uniqueItems(),
+    },
+    required: ['id', 'name', 'email'],
+  );
+
+  // Valid user
+  final validUser = {
+    'id': '123e4567-e89b-12d3-a456-426614174000',
+    'name': 'John Doe',
+    'email': 'john@example.com',
+    'age': 30,
+    'address': {
+      'street': '123 Main St',
+      'city': 'New York',
+      'zipCode': '10001',
+      'country': 'USA',
+    },
+    'tags': ['developer', 'dart', 'flutter'],
+  };
+
+  final result = userSchema.validate(validUser);
+  if (result.isOk) {
+    print('User is valid!');
+    final validatedUser = result.getOrNull();
+    // Use validatedUser safely...
+  } else {
+    print('Validation error:');
+    final error = result.getError();
+    if (error is SchemaConstraintsError) {
+      print('- ${error.name}: ${error.constraints.first.message}');
+    } else if (error is SchemaNestedError) {
+      // Handle nested errors
+      print('- Nested error in ${error.name}');
+    }
+  }
+}
+```
+
+## Next Steps
+
+For more specific examples, check out these guides:
+
+- [Form Validation](/form-validation) - Using Ack with Flutter forms
+- [OpenAPI Integration](/openapi-integration) - Generating OpenAPI schemas and LLM function calling
+- [Custom Validation](/custom-validation) - Creating custom validators
+- [Nested Model Handling](/nested-model-handling) - Working with complex nested data structures
+- [JSON Serialization](/json-serialization) - Converting between JSON and Dart objects

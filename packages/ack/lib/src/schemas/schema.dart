@@ -10,12 +10,12 @@ import '../validation/ack_exception.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
-part 'boolean/boolean_schema.dart';
-part 'discriminated/discriminated_object_schema.dart';
-part 'list/list_schema.dart';
-part 'num/num_schema.dart';
-part 'object/object_schema.dart';
-part 'string/string_schema.dart';
+part 'boolean_schema.dart';
+part 'discriminated_object_schema.dart';
+part 'list_schema.dart';
+part 'num_schema.dart';
+part 'object_schema.dart';
+part 'string_schema.dart';
 
 enum SchemaType {
   string,

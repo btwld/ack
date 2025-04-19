@@ -1,6 +1,6 @@
 import 'package:build/build.dart';
 
-import 'src/builder/schema_model_builder.dart';
+import 'src/schema_model_builder.dart';
 
 /// Builds SchemaModel-based schema classes for model classes
 Builder schemaModelBuilder(BuilderOptions options) =>

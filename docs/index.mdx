@@ -1,0 +1,86 @@
+---
+title: Ack Validation Library
+---
+
+
+Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API.
+
+## What Ack Does
+
+- Validates data against schemas you define
+- Converts between JSON and your Dart models
+- Generates OpenAPI specifications
+- Provides clear error messages
+
+## Quick Start
+
+Add Ack to your project:
+
+```bash
+dart pub add ack
+```
+
+### Basic Usage
+
+```dart
+import 'package:ack/ack.dart';
+
+// Create a schema
+final userSchema = Ack.object({
+  'name': Ack.string.minLength(2).maxLength(50),
+  'age': Ack.int.min(0).max(120),
+  'email': Ack.string.isEmail().nullable(),
+}, required: ['name', 'age']);
+
+// Validate data
+final result = userSchema.validate({
+  'name': 'John',
+  'age': 30,
+  'email': 'john@example.com'
+});
+
+// Check if validation succeeded
+if (result.isOk) {
+  final validData = result.getOrThrow();
+  print('Valid data: $validData');
+} else {
+  final error = result.getError();
+  print('Error: $error');
+}
+```
+
+## Core Features
+
+### Schema Types
+
+- **String**: `Ack.string.minLength(3).isEmail()`
+- **Number**: `Ack.int.min(0)` or `Ack.double.min(0)`
+- **Boolean**: `Ack.boolean`
+- **Lists**: `Ack.list(Ack.string).minItems(1)`
+- **Objects**: `Ack.object({'name': Ack.string})`
+- **Unions**: `Ack.discriminated(discriminatorKey: 'type', schemas: {...})`
+
+### Validation Options
+
+- **Nullable**: `Ack.string.nullable()`
+- **Default values**: `result.getOrElse(() => 'Guest')`
+- **Custom validation**: `Ack.string.constrain(myValidator)`
+
+### Error Handling
+
+```dart
+if (result.isFail) {
+  // Get formatted error message
+  final error = result.getError();
+  print('${error.name}: ${error.message}');
+}
+```
+
+## Next Steps
+
+- [Installation](/installation) - Complete installation instructions
+- [Schema Types](/schema-types) - Learn about available schema types
+- [Common Configuration](/configuration) - Configure schemas for your needs
+- [Examples](/examples) - See more code examples
+- [API Reference](/api-reference) - Detailed API documentation
+- [Advanced Guides](/nested-model-handling) - Dive deeper into specific topics

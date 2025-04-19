@@ -1,4 +1,4 @@
-part of '../schema.dart';
+part of 'schema.dart';
 
 final class DoubleSchema extends NumSchema<double> {
   @override

@@ -40,7 +40,7 @@ Create your model class with validation annotations:
 ```dart
 import 'package:ack_generator/ack_generator.dart';
 
-@AckModel(
+@Schema(
   description: 'A user model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -126,7 +126,7 @@ void main() {
 
 ### Class Annotations
 
-- `@AckModel(...)` - Marks a class for schema generation
+- `@Schema(...)` - Marks a class for schema generation
   - `description` - Schema description
   - `additionalProperties` - Whether to allow additional properties
   - `additionalPropertiesField` - Field to store additional properties

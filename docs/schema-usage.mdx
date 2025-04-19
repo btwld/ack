@@ -1,0 +1,225 @@
+---
+title: Generated Schema Usage
+---
+
+# Generated Schema Usage
+
+When you use Ack's code generation feature, it automatically creates schema classes that provide powerful validation, parsing, and serialization capabilities for your models. This page explains how to use these generated schemas effectively.
+
+## Schema Structure
+
+For each model you define with Ack, the generator creates a corresponding schema class with the naming pattern `{ModelName}Schema`. This schema class includes:
+
+- Validation methods
+- Parsing functionality
+- Serialization helpers
+- Type conversion utilities
+
+## Basic Usage
+
+Here's a typical workflow using a generated schema:
+
+```dart
+void main() {
+  // Create a map to validate
+  final userMap = {
+    'email': 'user@example.com',
+    'name': 'John Doe',
+    'age': 30,
+    'password': 'securepass123',
+    'role': 'admin' // Additional property
+  };
+
+  // Validate the data
+  final result = UserSchema.schema.validate(userMap);
+
+  if (result.isOk) {
+    // Create an instance from valid data
+    final userSchema = UserSchema.parse(userMap);
+    final user = userSchema.toModel();
+
+    print('Valid user: ${user.name}, ${user.email}');
+    print('Additional properties: ${user.metadata}'); // Contains {'role': 'admin'}
+  } else {
+    // Handle validation errors
+    print('Validation failed: ${result.getError().name}');
+  }
+}
+```
+
+## Key Features
+
+### Validation
+
+The generated schema provides a static `validate` method that checks if input data conforms to your model definition:
+
+```dart
+// Returns a Result object indicating success or failure
+final result = UserSchema.schema.validate(inputMap);
+
+if (result.isOk) {
+  // Data is valid
+} else {
+  // Access validation errors
+  final error = result.getError();
+  print(error.name);    // Error type
+  print(error.message); // Error message
+  print(error.path);    // Path to the field with the error
+}
+```
+
+### Parsing
+
+The `parse` method converts valid input data into a schema instance:
+
+```dart
+// Throws an exception if data is invalid
+final userSchema = UserSchema.parse(validUserMap);
+
+// Alternatively, use validate and conditional logic to handle errors gracefully
+final safeResult = UserSchema.schema.validate(inputMap);
+if (safeResult.isOk) {
+  final userSchema = UserSchema(safeResult.getOrThrow());
+  // Use userSchema...
+}
+```
+
+### Model Conversion
+
+Each schema provides a `toModel()` method to convert the schema instance to your model class:
+
+```dart
+final userSchema = UserSchema.parse(validUserMap);
+final user = userSchema.toModel();
+
+// Now you have a fully typed model instance
+print(user.email); // Typed as String
+print(user.age);   // Typed as int
+```
+
+### JSON Serialization
+
+Schemas support JSON serialization out of the box:
+
+```dart
+// From schema to map (which can be converted to JSON)
+final userSchema = UserSchema.parse(validUserMap);
+final json = userSchema.toMap(); // In generated schemas, this would be toJson()
+
+// From map to schema (in generated schemas, this would be fromJson())
+final reconstructed = UserSchema(json);
+```
+
+## Handling Additional Properties
+
+By default, Ack schemas can capture additional properties not defined in your model:
+
+```dart
+final inputWithExtra = {
+  'name': 'Alice',
+  'age': 25,
+  'favoriteColor': 'blue' // Not in the model definition
+};
+
+final userSchema = UserSchema.parse(inputWithExtra);
+final user = userSchema.toModel();
+
+// Access additional properties via metadata
+print(user.metadata['favoriteColor']); // Outputs: blue
+```
+
+## Error Handling
+
+The validation system provides detailed error information:
+
+```dart
+final invalidInput = {
+  'name': 'John',
+  'age': 'not-a-number' // Should be an integer
+};
+
+final result = UserSchema.schema.validate(invalidInput);
+if (!result.isOk) {
+  final error = result.getError();
+  print(error.name);    // e.g., "invalid_type"
+  print(error.message); // e.g., "Expected number, received string"
+  print(error.path);    // e.g., ["age"]
+}
+```
+
+## Working with Nested Schemas
+
+For models with nested objects, the generated schemas handle validation recursively:
+
+```dart
+final addressData = {
+  'street': '123 Main St',
+  'city': 'Anytown',
+  'zipCode': '12345'
+};
+
+final userData = {
+  'name': 'Jane Doe',
+  'address': addressData
+};
+
+// Validates both the user data and the nested address
+final result = UserWithAddressSchema.schema.validate(userData);
+```
+
+## Advanced Usage
+
+### Custom Transformations
+
+You can extend the generated schemas with custom transformations:
+
+```dart
+// In the actual implementation, this is defined in the UserSchema class
+// But you could also define it as an extension
+extension on UserSchema {
+  UserSchema withUppercaseName() {
+    final Map<String, dynamic> newData = Map<String, dynamic>.from(toMap());
+    newData['name'] = (newData['name'] as String).toUpperCase();
+    return UserSchema(newData);
+  }
+}
+
+final userSchema = UserSchema.parse(validUserMap).withUppercaseName();
+```
+
+### Integration with Forms
+
+Schemas work great for form validation:
+
+```dart
+void submitForm() {
+  final formData = {
+    'email': emailController.text,
+    'password': passwordController.text,
+  };
+
+  final result = LoginSchema.schema.validate(formData);
+  if (result.isOk) {
+    // Submit form
+    api.login(LoginSchema.parse(formData).toModel());
+  } else {
+    // Show validation errors
+    displayErrors(result.getError());
+  }
+}
+```
+
+## Comparison with Pydantic
+
+If you're familiar with Pydantic in Python, Ack's schema system offers similar functionality:
+
+| Pydantic | Ack Schemas |
+|----------|-------------|
+| `model_validate(data)` | `Schema.parse(data)` |
+| `model_validate_json(json_str)` | `Schema.fromJson(jsonMap)` |
+| `model_dump()` | `schema.toJson()` |
+| `model_dump_json()` | `jsonEncode(schema.toJson())` |
+| Field validators | Custom validation rules |
+| Pydantic models | Generated model classes |
+
+Like Pydantic, Ack provides strong typing, data validation, and serialization capabilities, but with the type safety and performance benefits of Dart.

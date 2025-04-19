@@ -3,9 +3,9 @@
 // Deprecated type aliases for backwards compatibility.
 // These aliases will be removed in a future release. Please migrate to the new types.
 
-import 'package:ack/src/constraints/constraint_extensions.dart';
-
 import 'constraints/constraint.dart';
+import 'constraints/list_extensions.dart';
+import 'constraints/number_extensions.dart';
 import 'constraints/validators.dart';
 import 'schemas/schema.dart';
 import 'validation/ack_exception.dart';

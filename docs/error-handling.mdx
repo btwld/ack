@@ -1,0 +1,155 @@
+---
+title: Error Handling in Ack
+---
+
+
+This guide explains how to handle validation errors in Ack.
+
+## Validation Results
+
+Every call to `.validate()` returns a `SchemaResult` object:
+
+```dart
+final result = schema.validate(data);
+
+if (result.isOk) {
+  // Validation passed
+  final validData = result.getOrThrow();
+  // Use validData safely...
+} else {
+  // Validation failed
+  final error = result.getError();
+  // Handle error...
+}
+```
+
+## Understanding Error Types
+
+Ack provides three main error types:
+
+1. **SchemaConstraintsError**: A field failed validation (e.g., too short, wrong format)
+2. **SchemaNestedError**: Errors in nested object or list fields
+3. **SchemaUnknownError**: Unexpected errors during validation
+
+## Handling Basic Errors
+
+For simple error handling:
+
+```dart
+final schema = Ack.string.minLength(3).isEmail();
+final result = schema.validate('a');
+
+if (result.isFail) {
+  final error = result.getError() as SchemaConstraintsError;
+
+  // Print the error message
+  print('${error.name}: ${error.constraints.first.message}');
+  // Example output: "string: Too short, min 3 characters"
+}
+```
+
+## Working with Constraint Errors
+
+Get detailed information about validation failures:
+
+```dart
+if (result.isFail) {
+  final error = result.getError();
+
+  if (error is SchemaConstraintsError) {
+    print('Field "${error.name}" failed validation:');
+
+    // List all constraint violations
+    for (final constraint in error.constraints) {
+      print('- ${constraint.message}');
+      // Example: "- Too short, min 3 characters"
+    }
+
+    // Check for specific errors
+    if (error.isInvalidType) {
+      print('→ Wrong type');
+    }
+  }
+}
+```
+
+## Handling Nested Errors
+
+For errors in complex objects:
+
+```dart
+// For custom validation examples, see the Custom Validation page
+final userSchema = Ack.object({
+  'name': Ack.string.minLength(2),
+  'address': Ack.object({
+    'city': Ack.string.minLength(2),
+    'zipCode': Ack.string.matches(r'^\d{5}$'), // US ZIP code format
+  })
+});
+
+final result = userSchema.validate({
+  'name': 'J', // Too short
+  'address': {
+    'city': '', // Too short
+    'zipCode': 'ABC' // Invalid format
+  }
+});
+
+if (result.isFail) {
+  // Helper function to format nested errors
+  Map<String, List<String>> formatErrors(SchemaError error) {
+    final Map<String, List<String>> formatted = {};
+
+    if (error is SchemaConstraintsError) {
+      final messages = error.constraints
+          .map((c) => c.message)
+          .toList();
+
+      formatted[error.name] = messages;
+    }
+
+    // Recurse into nested errors
+    if (error is SchemaNestedError) {
+      for (final nestedError in error.errors) {
+        formatted.addAll(formatErrors(nestedError));
+      }
+    }
+
+    return formatted;
+  }
+
+  // Print formatted errors
+  final errorMap = formatErrors(result.getError());
+  errorMap.forEach((name, messages) {
+    print('$name: ${messages.join(', ')}');
+    // Example: "address.zipCode: Invalid format, must match pattern"
+  });
+}
+```
+
+## Form Validation
+
+Use Ack to validate forms in Flutter:
+
+```dart
+TextFormField(
+  decoration: InputDecoration(labelText: 'Email'),
+  validator: (value) {
+    final result = Ack.string.isEmail().validate(value ?? '');
+    if (result.isFail) {
+      final error = result.getError() as SchemaConstraintsError;
+      return error.constraints.first.message;
+    }
+    return null; // Validation passed
+  },
+)
+```
+
+## Best Practices
+
+1. **Always check results**: Use `isOk` or `isFail` before accessing data
+2. **Use typed checks**: Check error types with `is SchemaConstraintsError`
+3. **Access constraint messages**: Use `error.constraints.first.message` to get user-friendly error messages
+4. **Handle nested errors**: Use recursion to process `SchemaNestedError` objects
+5. **Log detailed errors**: For debugging, log the full error details with `error.toString()`
+6. **Handle errors at the right level**: Some errors need UI feedback, others need logging

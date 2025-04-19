@@ -125,6 +125,32 @@ final result = schema.validate({'name': 'John'});
 
 This schema requires a "name" property (string, min length 3) and allows an optional "age" property (integer >= 0), with at least one property.
 
+### Discriminated Union Schema
+
+Validates objects where the structure depends on a specific "discriminator" field.
+
+**Example**:
+
+```dart
+final schema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'user': Ack.object({
+      'type': Ack.string,
+      'name': Ack.string,
+    }),
+    'admin': Ack.object({
+      'type': Ack.string,
+      'level': Ack.int,
+    }),
+  },
+);
+
+final userResult = schema.validate({'type': 'user', 'name': 'Alice'}); // OK
+final adminResult = schema.validate({'type': 'admin', 'level': 5});   // OK
+final invalidResult = schema.validate({'type': 'guest'});            // Fail
+```
+
 ## Additional Features
 
 ### Strict Parsing
@@ -292,7 +318,7 @@ print(openApiSchema);
 #### Working with Limited LLM OpenAPI Support
 
 > [!TIP]
-> When using LLMs with limited OpenAPI support, ACK lets you add schema instructions directly into prompts while keeping JSON response validation. Some LLM providers let you ensure the response is valid JSON even without a schema. This might work better for you.
+> When an LLM has limited support for OpenAPI function calling schemas but *can* guarantee valid JSON output, you can embed the schema definition directly within the prompt using `toResponsePrompt()`. This allows you to still validate the LLM's JSON output using `parseResponse()` against your ACK schema.
 
 ```dart
 final schema = Ack.object(
@@ -377,3 +403,14 @@ Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is ei
 4. OpenAPI: Use `OpenApiSchemaConverter(schema: yourSchema).toSchema()` (or `.toJson()`) to generate specs.
 
 Happy validating with ACK!
+
+## Documentation
+
+For detailed guides on using Ack effectively, check out the documentation at [docs.page](https://docs.page/leofarias/ack):
+
+- [Nested Model Handling](https://docs.page/leofarias/ack/nested-model-handling) - Learn how to work with nested model structures
+- [JSON Serialization](https://docs.page/leofarias/ack/json-serialization) - Best practices for JSON serialization and deserialization
+- [Error Handling](https://docs.page/leofarias/ack/error-handling) - Understanding and managing validation errors
+- [Custom Validation](https://docs.page/leofarias/ack/custom-validation) - Creating custom validators for your specific needs
+
+## License

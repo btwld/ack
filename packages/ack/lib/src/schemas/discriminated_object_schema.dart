@@ -1,4 +1,4 @@
-part of '../schema.dart';
+part of 'schema.dart';
 
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     with SchemaFluentMethods<DiscriminatedObjectSchema, MapValue> {

@@ -1,0 +1,202 @@
+---
+title: Built-in Validation in Ack
+---
+
+This guide covers the built-in validators available in Ack for different schema types.
+
+## String Validators
+
+String schemas support these built-in validators:
+
+```dart
+// Email validation
+final emailSchema = Ack.string.isEmail();
+
+// Length validation
+final usernameSchema = Ack.string
+  .minLength(3)    // At least 3 characters
+  .maxLength(20);  // At most 20 characters
+
+// Pattern matching (regex)
+// For custom regex validation, see the Custom Validation page
+
+// Use matches for regex pattern validation
+final alphanumericSchema = Ack.string.matches(r'^[a-zA-Z0-9]+$');
+
+// Not empty validation
+final requiredSchema = Ack.string.isNotEmpty();
+
+// Enum validation (value must be one of these)
+final colorSchema = Ack.string.isEnum(['red', 'green', 'blue']);
+
+// Format validations
+// Date validation
+final dateSchema = Ack.string.isDate();         // YYYY-MM-DD format
+final datetimeSchema = Ack.string.isDateTime(); // ISO 8601 format
+
+// UUID validation
+final uuidSchema = Ack.string.matches(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+);
+
+// URL validation
+final urlSchema = Ack.string.matches(
+  r'^https?://[a-zA-Z0-9][-a-zA-Z0-9.]*\.[a-z]{2,}(/.*)?$'
+);
+
+// Hex color validation
+final hexColorSchema = Ack.string.matches(
+  r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+);
+```
+
+## Number Validators
+
+Integer and double schemas support these validators:
+
+```dart
+// Range validation (inclusive)
+final ageSchema = Ack.int
+  .min(0)     // Must be at least 0
+  .max(120);  // Must be at most 120
+
+// Exclusive range validation
+// For custom exclusive range validation, see the Custom Validation page
+
+// For exclusive range validation, use custom constraints
+// See the Custom Validation page for examples
+final temperatureSchema = Ack.double
+  .positive()   // Must be greater than 0
+  .max(100);    // Must be at most 100
+
+// Sign validation
+final positiveSchema = Ack.int.positive();      // Must be > 0
+final nonNegativeSchema = Ack.int.nonNegative(); // Must be >= 0
+final negativeSchema = Ack.int.negative();      // Must be < 0
+
+// Multiple of validation
+final evenSchema = Ack.int.multipleOf(2);       // Must be multiple of 2
+final decimalSchema = Ack.double.multipleOf(0.1); // Must be multiple of 0.1
+```
+
+## Boolean Validators
+
+Boolean schemas have simple validation:
+
+```dart
+// Basic boolean validation
+final flagSchema = Ack.boolean();
+
+// With default value
+final boolSchema = Ack.boolean();
+final defaultValue = boolSchema.validate(null).getOrElse(() => true);
+```
+
+## List Validators
+
+List schemas support these validators:
+
+```dart
+// Size validation
+final tagsSchema = Ack.list(Ack.string())
+  .minItems(1)     // At least 1 item
+  .maxItems(10);   // At most 10 items
+
+// Uniqueness validation
+final uniqueListSchema = Ack.list(Ack.string())
+  .uniqueItems();  // No duplicate items allowed
+
+// Non-empty validation
+final nonEmptySchema = Ack.list(Ack.int())
+  .nonempty();     // Must have at least 1 item
+```
+
+## Object Validators
+
+Object schemas support these validators:
+
+```dart
+// Required fields
+final userSchema = Ack.object({
+  'id': Ack.string(),
+  'name': Ack.string(),
+  'email': Ack.string().isEmail(),
+  'age': Ack.int().nullable(),
+}, required: ['id', 'name']); // id and name are required fields
+
+// Property count validation
+final metadataSchema = Ack.object({
+  // Properties here
+}, minProperties: 1, maxProperties: 10);
+
+// Additional properties control
+final strictSchema = Ack.object({
+  'name': Ack.string(),
+}, additionalProperties: false); // No extra fields allowed
+
+final flexibleSchema = Ack.object({
+  'name': Ack.string(),
+}, additionalProperties: Ack.string()); // Extra fields must be strings
+```
+
+## Common Validators for All Types
+
+These validators work with any schema type:
+
+```dart
+// Nullable values
+final nullableSchema = Ack.string().nullable();
+
+// Default values
+final schema = Ack.string().nullable();
+final defaultValue = schema.validate(null).getOrElse(() => 'Guest');
+
+// Strict type checking (no automatic type conversion)
+final strictSchema = Ack.int.strict();
+// strictSchema.validate("123") will fail, while Ack.int.validate("123") would pass
+
+// Custom validation
+final evenNumberSchema = Ack.int.custom(
+  'even_number',
+  (value) => value % 2 == 0,
+  message: 'Number must be even'
+);
+```
+
+## Pre-processing Values
+
+You can transform values before validation:
+
+```dart
+// Trim whitespace before validating an email
+final emailSchema = Ack.string
+  .preprocess((value) => value.trim())
+  .isEmail();
+```
+
+## Validator Composition
+
+Combine validators for complex rules:
+
+```dart
+// Complex password validation
+final passwordSchema = Ack.allOf([
+  Ack.string.minLength(8),
+  Ack.string.matches(r'[A-Z]'), // Must contain uppercase
+  Ack.string.matches(r'[a-z]'), // Must contain lowercase
+  Ack.string.matches(r'[0-9]'), // Must contain digit
+  Ack.string.matches(r'[!@#$%^&*]') // Must contain special character
+]);
+
+// Either valid email or username
+final loginSchema = Ack.oneOf([
+  Ack.string.isEmail(),
+  Ack.string.matches(r'^[a-zA-Z0-9_]{3,20}$')
+]);
+```
+
+## Next Steps
+
+- See [Custom Validation](/custom-validation) for creating your own validators
+- Explore [Schema Types](/schema-types) for detailed type options
+- Check the [API Reference](/api-reference) for comprehensive documentation

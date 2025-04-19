@@ -1,0 +1,119 @@
+---
+title: Common Configuration Options
+---
+
+
+This page covers configuration options that apply to all schema types in Ack.
+
+## Nullable Values
+
+Allow schemas to accept `null` values:
+
+```dart
+// Basic nullable string - accepts both strings and null
+final nameSchema = Ack.string.nullable();
+
+// Validate null value
+final nullResult = nameSchema.validate(null);
+print(nullResult.isOk); // true
+
+// Validate string value
+final stringResult = nameSchema.validate('Alice');
+print(stringResult.isOk); // true
+```
+
+## Default Values
+
+Handle default values when input is `null` or validation fails using `getOrElse()`:
+
+```dart
+// Basic approach with getOrElse
+final schema = Ack.string.nullable();
+final result = schema.validate(null);
+final valueWithDefault = result.getOrElse(() => 'Guest');
+print(valueWithDefault); // Prints: "Guest"
+
+// Pipeline approach
+final pipelinedValue = Ack.string
+  .nullable()
+  .validate(null)
+  .getOrElse(() => 'Guest');
+print(pipelinedValue); // Prints: "Guest"
+
+// Using with validation logic
+final data = getDataFromSource(); // might be null
+final validatedData = Ack.string
+  .minLength(3)
+  .nullable()
+  .validate(data)
+  .getOrElse(() => 'Default Value');
+```
+
+Default values are used when:
+- The input is `null` and the schema is nullable
+- You want to provide a fallback value instead of handling errors separately
+
+## Strict Type Checking
+
+By default, Ack attempts to parse strings or numbers into the correct type. Use `strict()` to require exact types:
+
+```dart
+// Default behavior: converts "123" to integer 123
+final looseSchema = Ack.int;
+print(looseSchema.validate("123").isOk); // true
+
+// Strict behavior: requires actual int type
+final strictSchema = Ack.int.strict();
+print(strictSchema.validate("123").isOk); // false
+print(strictSchema.validate(123).isOk);   // true
+```
+
+## Custom Constraints
+
+Ack supports custom constraints for specialized validation rules. See the [Custom Validation](/custom-validation) page for detailed examples and best practices.
+
+## Schema Composition
+
+Combine schemas for more complex validation rules:
+
+```dart
+// Multiple constraints (all conditions must be met)
+final nameSchema = Ack.string
+  .minLength(2)
+  .maxLength(50)
+  .isNotEmpty();
+
+// Union types (simulating OR logic)
+// For a string ID with specific format
+final uuidSchema = Ack.string.uuid();
+
+// For an integer ID
+final intIdSchema = Ack.int.min(1);
+```
+
+For more advanced composition patterns, see the [Custom Validation](/custom-validation) page.
+
+## Validation Options
+
+Additional validation options:
+
+```dart
+// Preprocessing values (trimming whitespace)
+final emailSchema = Ack.string
+  .preprocess((value) => value.trim())
+  .isEmail();
+
+// Custom error messages
+final ageSchema = Ack.int
+  .min(18, message: 'You must be at least 18 years old');
+```
+
+For more advanced validation options, see the [Custom Validation](/custom-validation) page.
+
+See the [Schema Types](/schema-types) page for details on the specific validation options available for each schema type.
+
+## Next Steps
+
+- Check out the [Schema Types](/schema-types) documentation for specific schema validators
+- See [Custom Validation](/custom-validation) for more examples of custom validators
+- Explore the [Examples](/examples) page for real-world usage patterns

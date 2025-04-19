@@ -1,4 +1,4 @@
-part of '../schema.dart';
+part of 'schema.dart';
 
 typedef MapValue = Map<String, Object?>;
 

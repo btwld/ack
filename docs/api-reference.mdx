@@ -1,0 +1,208 @@
+---
+title: Ack API Reference
+---
+
+
+This page provides detailed information about the API for Ack, the fluent schema validation library for Dart.
+
+## Core Classes
+
+### Ack
+
+The main entry point for creating schemas. Provides static factory methods for all schema types.
+
+```dart
+// Examples
+Ack.string
+Ack.int
+Ack.double
+Ack.boolean
+Ack.list(innerSchema)
+Ack.object(propertySchemas)
+Ack.discriminated(discriminatorKey, schemas)
+```
+
+### SchemaResult
+
+Represents the result of a validation, which can be either `Ok<T>` or `Fail<T>`.
+
+Methods:
+- `isOk` - Returns true if validation succeeded
+- `getOrNull()` - Returns the validated value or null if validation failed
+- `getOrThrow()` - Returns the validated value or throws an `AckException` if validation failed
+- `getError()` - Returns a `SchemaError` object describing validation failure
+
+```dart
+final result = schema.validate(value);
+if (result.isOk) {
+  final validValue = result.getOrNull();
+  // Use validated value
+} else {
+  final error = result.getError();
+  // Handle validation error
+}
+```
+
+## Schema Types
+
+### StringSchema
+
+Validates string data and provides methods for string-specific constraints.
+
+Methods:
+- `minLength(int)` - Set minimum string length
+- `maxLength(int)` - Set maximum string length
+- `isNotEmpty()` - Require non-empty string
+- `constrain(StringRegexConstraint)` - Require string to match regex pattern
+- `isEmail()` - Require valid email format
+- `isDate()` - Require valid date format
+- `isDateTime()` - Require valid date-time format
+
+### IntSchema
+
+Validates integer data and provides methods for integer-specific constraints.
+
+Methods:
+- `min(int)` - Set minimum value (inclusive)
+- `max(int)` - Set maximum value (inclusive)
+- `constrain(ExclusiveMinConstraint)` - Set exclusive minimum value
+- `constrain(ExclusiveMaxConstraint)` - Set exclusive maximum value
+- `constrain(MultipleOfConstraint)` - Require value to be multiple of number
+- `constrain(PositiveConstraint)` - Require positive integer (> 0)
+- `constrain(NonNegativeConstraint)` - Require non-negative integer (>= 0)
+- `constrain(NegativeConstraint)` - Require negative integer (< 0)
+
+### DoubleSchema
+
+Validates double data and provides methods for double-specific constraints.
+
+Methods:
+- `min(double)` - Set minimum value (inclusive)
+- `max(double)` - Set maximum value (inclusive)
+- `constrain(ExclusiveMinConstraint)` - Set exclusive minimum value
+- `constrain(ExclusiveMaxConstraint)` - Set exclusive maximum value
+- `constrain(MultipleOfConstraint)` - Require value to be multiple of number
+- `constrain(PositiveConstraint)` - Require positive double (> 0)
+- `constrain(NonNegativeConstraint)` - Require non-negative double (>= 0)
+- `constrain(NegativeConstraint)` - Require negative double (< 0)
+
+### BooleanSchema
+
+Validates boolean data.
+
+### ListSchema<T>
+
+Validates lists of items, where each item is validated against the inner schema.
+
+Constructor:
+- `Ack.list(schema)` - Create list schema with inner schema
+
+Methods:
+- `minItems(int)` - Set minimum number of items
+- `maxItems(int)` - Set maximum number of items
+- `uniqueItems()` - Require all items to be unique
+- `nonempty()` - Require non-empty list
+
+### ObjectSchema
+
+Validates objects (Map<String, Object?>) with property definitions and constraints.
+
+Constructor:
+- `Ack.object(Map<String, Schema> propertySchemas)` - Create object schema with property schemas
+
+Parameters:
+- `required: List<String>` - List of required property names
+- `additionalProperties: bool | Schema` - Whether to allow additional properties or schema to validate them
+- `minProperties: int` - Minimum number of properties
+- `maxProperties: int` - Maximum number of properties
+
+### DiscriminatedSchema
+
+Validates objects based on a discriminator field.
+
+Constructor:
+- `Ack.discriminated({required String discriminatorKey, required Map<String, ObjectSchema> schemas})` - Create discriminated union schema
+
+## Common Methods
+
+These methods are available on all schema types:
+
+- `nullable()` - Allow null values
+- `strict()` - Require exact type (no parsing)
+- `constrain(Validator)` - Add custom constraint
+- `withConstraints(List<Validator>)` - Add multiple custom constraints
+- `validate(value)` - Validate a value against the schema
+- `validateOrThrow(value)` - Validate a value and throw if invalid
+
+## Error Handling Methods
+
+Results from `validate()` provide these helpful methods:
+- `getOrElse(() => defaultValue)` - Get validated value or a default if validation fails/null
+- `getOrThrow()` - Get validated value or throw error if validation fails
+- `getOrNull()` - Get validated value or null if validation fails
+
+## OpenAPI Integration
+
+### OpenApiSchemaConverter
+
+Converts Ack schemas to OpenAPI compatible JSON Schema.
+
+```dart
+final schema = Ack.object({/* ... */});
+final converter = OpenApiSchemaConverter(schema: schema);
+final openApiSchema = converter.toSchema(); // Get schema as Map
+final openApiJson = converter.toJson();     // Get schema as JSON string
+```
+
+Methods:
+- `toSchema()` - Convert to OpenAPI schema as Map
+- `toJson()` - Convert to OpenAPI schema as JSON string
+- `toResponsePrompt()` - Generate prompt for LLMs with schema embedded
+- `parseResponse(String)` - Parse LLM response against the schema
+
+## Error Handling
+
+### SchemaError
+
+Represents an error that occurred during validation.
+
+Types:
+- `SchemaConstraintsError` - Contains constraint violations
+- `SchemaNestedError` - Contains errors in nested objects
+- `SchemaUnknownError` - Contains unexpected errors
+
+Properties:
+- `name` - Name of the field that failed validation
+- `errorKey` - Error key for programmatic handling
+- `schema` - Schema that failed validation
+- `value` - Value that failed validation
+
+For `SchemaConstraintsError`, access error messages through:
+- `constraints` - List of constraint errors
+- `constraints.first.message` - Human-readable error message
+
+### AckException
+
+Exception thrown when validation fails.
+
+Constructor:
+- `AckException(SchemaError error)` - Create exception with error
+
+## Custom Validation
+
+### ConstraintValidator<T>
+
+Base class for creating custom validation constraints.
+
+Methods to override:
+- `String get name` - Name of the constraint
+- `bool isValid(T value)` - Validation logic
+- `ConstraintError onError(T value)` - Error creation logic
+
+### OpenApiConstraintValidator<T>
+
+Base class for creating custom validation constraints with OpenAPI support.
+
+Additional methods to override:
+- `String get description` - Description of the constraint
+- `Map<String, Object?> toSchema()` - OpenAPI schema representation

@@ -1,0 +1,201 @@
+---
+title: Schema Types in Ack
+---
+
+
+This guide covers all the built-in schema types in Ack and their specific validation options.
+
+## Basic Schema Types
+
+### String Schema
+
+Create string validators with various constraints:
+
+```dart
+// Basic string schema
+final nameSchema = Ack.string;
+
+// String with length constraints
+final usernameSchema = Ack.string
+  .minLength(3)
+  .maxLength(20)
+  .constrain(
+    StringRegexConstraint(
+      patternName: 'alphanumeric_underscore',
+      pattern: r'^[a-zA-Z0-9_]+$',
+      example: 'user_123'
+    )
+  );
+
+// Email validation
+final emailSchema = Ack.string.isEmail();
+
+// Enum values (select from options)
+final roleSchema = Ack.string.isEnum(['admin', 'user', 'guest']);
+
+// Note: For custom constraints, see the Custom Validation page
+```
+
+### Number Schemas
+
+Create validators for integer and decimal values:
+
+```dart
+// Integer validation
+final ageSchema = Ack.int
+  .min(0)
+  .max(120);
+
+// Double/decimal validation
+final priceSchema = Ack.double
+  .min(0.0, exclusive: true) // Must be greater than 0.0
+  .multipleOf(0.01); // Allow only 2 decimal places
+
+// Note: Ack has a built-in multipleOf validator for both int and double
+```
+
+### Boolean Schema
+
+Simple true/false validation:
+
+```dart
+final isActiveSchema = Ack.boolean;
+```
+
+### Date and Time Validation
+
+Validate date and time values using string constraints:
+
+```dart
+// Basic date validation
+final birthdateSchema = Ack.string.isDate();
+
+// Date-time validation
+final appointmentSchema = Ack.string.isDateTime();
+
+// For date range validation, see the Custom Validation page
+```
+
+## Collection Schemas
+
+### List Schema
+
+Validate arrays and lists:
+
+```dart
+// List of strings
+final tagsSchema = Ack.list(Ack.string);
+
+// List with constraints
+final itemsSchema = Ack.list(Ack.string)
+  .minItems(1)
+  .maxItems(10)
+  .uniqueItems();
+```
+
+### Map Schema
+
+Validate key-value maps:
+
+```dart
+// Note: Ack doesn't have a dedicated map schema, but you can use object schema
+// with additionalProperties to achieve the same result
+
+// Map with string keys to integer values
+final scoresSchema = Ack.object(
+  {}, // No predefined properties
+  additionalProperties: Ack.int.min(0).max(100)
+);
+```
+
+## Object Schema
+
+Validate structured data objects:
+
+```dart
+// User object schema
+final userSchema = Ack.object({
+  'name': Ack.string.minLength(1),
+  'age': Ack.int.min(0),
+  'email': Ack.string.isEmail(),
+  'address': Ack.object({
+    'street': Ack.string,
+    'city': Ack.string,
+    'zipCode': Ack.string.pattern(r'^\d{5}$')
+  })
+});
+```
+
+### Object Schema with Optional Fields
+
+Use `required` to specify which fields must be present:
+
+```dart
+final productSchema = Ack.object({
+  'id': Ack.string,
+  'name': Ack.string,
+  'description': Ack.string,
+  'price': Ack.double.min(0),
+  'tags': Ack.list(Ack.string),
+}, required: ['id', 'name', 'price']);
+```
+
+## Combining Schemas
+
+Combine schemas using logical operators:
+
+```dart
+// Schema that accepts either a string or null
+final nullableString = Ack.string.nullable();
+
+// Note: Ack doesn't have built-in oneOf or allOf methods
+// For union types, you can use discriminated schemas or handle each type separately
+
+// For a string ID with specific format
+final stringIdSchema = Ack.string.pattern(r'^\d{9}$');
+
+// For an integer ID
+final intIdSchema = Ack.int.min(1);
+
+// For password validation with multiple requirements
+final passwordSchema = Ack.string
+  .minLength(8)
+  .pattern(r'[A-Z]') // Must contain uppercase
+  .pattern(r'[0-9]'); // Must contain digit
+```
+
+## Making Schemas Nullable
+
+Add nullable support to any schema:
+
+```dart
+// Nullable schemas
+final middleNameSchema = Ack.string.nullable();
+final optionalDateSchema = Ack.string.isDate().nullable();
+
+// With default values
+final statusSchema = Ack.string.isEnum(['active', 'inactive']).nullable();
+final result = statusSchema.validate(null);
+final status = result.getOrElse(() => 'active');
+```
+
+## Using with JSON
+
+Parse and validate JSON data:
+
+```dart
+final jsonData = jsonDecode('{"name": "John", "age": 30}');
+final result = userSchema.validate(jsonData);
+
+if (result.isOk) {
+  final validData = result.getOrThrow();
+  print(validData['name']); // "John"
+}
+```
+
+## Next Steps
+
+- Read the [Configuration](/configuration) guide for common configuration options
+- See [Custom Validation](/custom-validation) for creating specialized validators
+- Check the [API Reference](/api-reference) for all available options
+- Explore [Examples](/examples) to see Ack in action

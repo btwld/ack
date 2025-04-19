@@ -1,0 +1,72 @@
+---
+title: Installing Ack
+---
+
+
+## Add to Your Project
+
+Add Ack to your project using the Dart CLI:
+
+```bash
+# For Dart projects
+dart pub add ack
+
+# For Flutter projects
+flutter pub add ack
+```
+
+Or manually add to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  ack: ^latest_version
+```
+
+## Using the Code Generator (Optional)
+
+If you want to generate schema classes from your models, add the generator:
+
+```bash
+# Add the generator and build_runner
+dart pub add --dev ack_generator build_runner
+```
+
+Or in your `pubspec.yaml`:
+
+```yaml
+dev_dependencies:
+  ack_generator: ^latest_version
+  build_runner: ^2.3.0
+```
+
+Run the generator:
+
+```bash
+dart run build_runner build
+```
+
+## Basic Usage
+
+Import Ack in your Dart files:
+
+```dart
+import 'package:ack/ack.dart';
+
+// Create a schema
+final nameSchema = Ack.string.minLength(3);
+
+// Validate data
+final result = nameSchema.validate('John');
+if (result.isOk) {
+  print('Valid: ${result.getOrThrow()}');
+}
+```
+
+## Requirements
+
+- Dart SDK: `>=2.17.0 <4.0.0`
+
+## Next Steps
+
+- [Configuration](/configuration) - Learn how to configure schemas
+- [Examples](/examples) - See Ack in action 
