@@ -26,22 +26,23 @@ class UserSchema extends SchemaModel<User> {
     'name'
   ], additionalProperties: true);
 
-  UserSchema([Map<String, Object?>? data]) : super(data ?? {});
+  UserSchema([Object? data]) : super(data ?? {});
 
   static SchemaResult validateData(Map<String, Object?> data) {
     return schema.validate(data);
   }
 
-  static UserSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-    return UserSchema(data);
+  @override
+  AckSchema getSchema() {
+    return schema;
   }
 
   @override
   User toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return User(
       email: getValue<String>('email')!,
       name: getValue<String>('name')!,
@@ -59,14 +60,6 @@ class UserSchema extends SchemaModel<User> {
       ...user.metadata,
     });
   }
-
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
-
-  @override
-  void initialize() {}
 }
 
 class Address {
@@ -85,18 +78,19 @@ class AddressSchema extends SchemaModel<Address> {
     'city'
   ]);
 
-  AddressSchema([Map<String, Object?>? data]) : super(data ?? {});
+  AddressSchema([Object? data]) : super(data ?? {});
 
-  static AddressSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-    return AddressSchema(data);
+  @override
+  AckSchema getSchema() {
+    return schema;
   }
 
   @override
   Address toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Address(
       street: getValue<String>('street')!,
       city: getValue<String>('city')!,
@@ -109,14 +103,6 @@ class AddressSchema extends SchemaModel<Address> {
       'city': address.city,
     });
   }
-
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
-
-  @override
-  void initialize() {}
 }
 
 void main() {
@@ -154,8 +140,9 @@ void main() {
         'role': 'admin' // Additional property
       };
 
-      // Parse the map into a schema object
-      final userSchema = UserSchema.parse(userData);
+      // Create a schema object from the data
+      final userSchema = UserSchema(userData);
+      expect(userSchema.isValid, isTrue);
 
       // Convert schema to model
       final user = userSchema.toModel();
@@ -194,7 +181,9 @@ void main() {
         'city': 'Anytown',
       };
 
-      final address = AddressSchema.parse(addressData).toModel();
+      final addressSchema = AddressSchema(addressData);
+      expect(addressSchema.isValid, isTrue);
+      final address = addressSchema.toModel();
       expect(address.street, equals('123 Main St'));
       expect(address.city, equals('Anytown'));
     });

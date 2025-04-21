@@ -324,11 +324,11 @@ class SchemaModelGenerator {
         if (property.isNullable) {
           return '''  $schemaReturnType get ${property.name} {
     final map = getValue<Map<String, dynamic>>('${property.name}');
-    return map == null ? null : $schemaType.parse(map);
+    return map == null ? null : $schemaType(map);
   }''';
         } else {
           return '''  $schemaReturnType get ${property.name} {
-    return $schemaType.parse(getValue<Map<String, dynamic>>('${property.name}')!);
+    return $schemaType(getValue<Map<String, dynamic>>('${property.name}')!);
   }''';
         }
       }
@@ -344,11 +344,11 @@ class SchemaModelGenerator {
         if (property.isNullable) {
           return '''  $schemaReturnType get ${property.name} {
     final list = getValue<List<dynamic>>('${property.name}');
-    return list?.map((item) => $schemaType.parse(item as Map<String, dynamic>)).toList();
+    return list?.map((item) => $schemaType(item as Map<String, dynamic>)).toList();
   }''';
         } else {
           return '''  $schemaReturnType get ${property.name} {
-    return getValue<List<dynamic>>('${property.name}')!.map((item) => $schemaType.parse(item as Map<String, dynamic>)).toList();
+    return getValue<List<dynamic>>('${property.name}')!.map((item) => $schemaType(item as Map<String, dynamic>)).toList();
   }''';
         }
       }
@@ -430,56 +430,17 @@ $propertySchemas
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<$modelClassName, $schemaClassName>(
-      $schemaClassName.parse,
+      (data) => $schemaClassName(data),
     );
 $dependenciesCode
   }
 
-  // Initialize method that calls the static method
+  // Override to return the schema for validation
   @override
-  void initialize() {
-    $schemaClassName.ensureInitialize();
-  }
+  AckSchema getSchema() => schema;
 
-  // Constructors
-  $schemaClassName([Map<String, Object?>? data]) : super(data ?? {});
-
-  // Internal constructor for validated data
-  factory $schemaClassName.fromValidated(Map<String, Object?> data) {
-    final schema = $schemaClassName(data);
-    // Mark as pre-validated (implementation detail)
-    return schema;
-  }
-
-  /// Factory methods for parsing data
-  static $schemaClassName parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-
-    return $schemaClassName(result.getOrThrow());
-  }
-
-  static $schemaClassName? tryParse(Map<String, Object?> data) {
-    try {
-      return parse(data);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Static helper to validate a map
-  static SchemaResult validateMap(Map<String, Object?> map) {
-    return schema.validate(map);
-  }
-
-  /// Validate the current data
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
+  // Constructor that validates input
+  $schemaClassName([Object? value]) : super(value);
 
   // Type-safe getters
 $getters
@@ -488,6 +449,10 @@ $metadataGetter
   // Model conversion methods
   @override
   $modelClassName toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return $modelClassName(
 $modelConversionProps
     );
@@ -518,16 +483,6 @@ $additionalPropsCode
   static String toOpenApiSpecString() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchemaString();
-  }
-
-  /// Validate and convert to an instance - maintaining compatibility
-  static SchemaResult<$modelClassName> createFromMap(Map<String, Object?> map) {
-    final result = schema.validate(map);
-    if (result.isFail) {
-      return SchemaResult.fail(result.getError());
-    }
-
-    return SchemaResult.ok($schemaClassName(result.getOrThrow()).toModel());
   }
 }''';
   }
@@ -741,41 +696,6 @@ $additionalPropsCode
         typeName.typeArguments.map((t) => _getTypeString(t)).join(', ');
 
     return '$name<$typeArgs>';
-  }
-
-  /// Format a constraint value based on the property type
-  String _formatConstraintValue(
-    TypeName typeName,
-    String constraintKey,
-    dynamic value,
-  ) {
-    // Handle numeric values - show integers without decimal points
-    if ((constraintKey == 'min' ||
-            constraintKey == 'max' ||
-            constraintKey == 'multipleOf') &&
-        value is double &&
-        value.truncateToDouble() == value &&
-        typeName.name == 'int') {
-      return value.toInt().toString();
-    }
-
-    // Handle string values
-    if (value is String) {
-      return "'$value'";
-    }
-
-    // Handle list values
-    if (value is List) {
-      final items = value.map((item) {
-        if (item is String) {
-          return "'$item'";
-        }
-        return item.toString();
-      }).join(', ');
-      return '[$items]';
-    }
-
-    return value.toString();
   }
 
   /// Find model dependencies for a list of properties

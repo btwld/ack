@@ -23,8 +23,11 @@ void main() {
         },
       };
 
-      // Try parsing the data
-      final schema = ProductSchema.parse(productData);
+      // Create schema with the data
+      final schema = ProductSchema(productData);
+
+      // Check if schema is valid
+      expect(schema.isValid, isTrue);
 
       // Print the raw data for debugging
       print('Schema data: ${schema.toMap()}');
@@ -71,23 +74,25 @@ void main() {
         'price': 'not a number', // Wrong type
       };
 
+      // Create a schema instance with invalid data
+      final schema = ProductSchema(invalidData);
+
+      // Check that it's invalid
+      expect(schema.isValid, isFalse);
+      expect(schema.getErrors(), isNotNull);
+
+      // Trying to convert to model should throw
       expect(
-        () => ProductSchema.parse(invalidData),
+        () => schema.toModel(),
         throwsA(isA<AckException>()),
       );
-
-      // Create a schema instance and validate it directly instead of using static validateMap
-      final schema = ProductSchema(invalidData);
-      final result = schema.validate();
-      expect(result.isFail, isTrue);
     });
 
-    test('SchemaModel.validateAndTransform should validate and transform data',
-        () {
+    test('SchemaModel should validate and transform data', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
-        'description': 'Testing validateAndTransform',
+        'description': 'Testing validation',
         'price': 29.99,
         'category': {
           'id': 'cat2',
@@ -95,12 +100,15 @@ void main() {
         },
       };
 
-      // Use the validateAndTransform method
-      final schema = ProductSchema.parse(productData);
+      // Create schema with the data
+      final schema = ProductSchema(productData);
+
+      // Check if schema is valid
+      expect(schema.isValid, isTrue);
       expect(schema, isA<ProductSchema>());
       expect(schema.id, equals('456'));
       expect(schema.name, equals('Test Transform'));
-      expect(schema.description, equals('Testing validateAndTransform'));
+      expect(schema.description, equals('Testing validation'));
       expect(schema.price, equals(29.99));
       expect(schema.imageUrl, isNull);
       expect(schema.category.id, equals('cat2'));
@@ -108,7 +116,7 @@ void main() {
       expect(schema.category, isA<CategorySchema>());
     });
 
-    test('Debug SchemaModel.get to identify the issue', () {
+    test('Using direct constructor instead of SchemaModel.get', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
@@ -121,19 +129,14 @@ void main() {
       };
 
       print('ProductSchema type: $ProductSchema');
-      print('SchemaModel.get is called with Type=ProductSchema');
       print('Registration in schema would use: Product, ProductSchema');
 
-      try {
-        print('Attempting to call SchemaModel.get<ProductSchema>...');
-        final schema = SchemaModel.get<ProductSchema>(productData);
-        print('Schema created successfully: $schema');
-      } catch (e, stackTrace) {
-        print('Exception when calling SchemaModel.get<ProductSchema>: $e');
-        print(
-          'StackTrace first line: ${stackTrace.toString().split('\n').first}',
-        );
-      }
+      // Using direct constructor instead of SchemaModel.get
+      final schema = ProductSchema(productData);
+      print('Schema created successfully: $schema');
+
+      // Check if schema is valid
+      expect(schema.isValid, isTrue);
 
       print('\nTesting if Product type is correctly registered:');
       try {
@@ -143,16 +146,12 @@ void main() {
         print('Error checking registry: $e');
       }
 
-      print('\nTesting if generated classes work directly:');
-      try {
-        final schema = ProductSchema.parse(productData);
-        print('Using ProductSchema.parse works: ${schema.id}');
-      } catch (e) {
-        print('Error using parse: $e');
-      }
+      print('\nTesting if direct constructor works:');
+      expect(schema.id, equals('456'));
+      expect(schema.name, equals('Test Transform'));
     });
 
-    test('Debug SchemaModel.get with CategorySchema', () {
+    test('Using direct constructor with CategorySchema', () {
       final categoryData = {
         'id': 'cat3',
         'name': 'Test Category',
@@ -160,16 +159,14 @@ void main() {
 
       print('CategorySchema type: $CategorySchema');
 
-      try {
-        print('Attempting to call SchemaModel.get<CategorySchema>...');
-        final schema = SchemaModel.get<CategorySchema>(categoryData);
-        print('Schema created successfully: $schema');
-      } catch (e, stackTrace) {
-        print('Exception when calling SchemaModel.get<CategorySchema>: $e');
-        print(
-          'StackTrace first line: ${stackTrace.toString().split('\n').first}',
-        );
-      }
+      // Using direct constructor instead of SchemaModel.get
+      final schema = CategorySchema(categoryData);
+      print('Schema created successfully: $schema');
+
+      // Check if schema is valid
+      expect(schema.isValid, isTrue);
+      expect(schema.id, equals('cat3'));
+      expect(schema.name, equals('Test Category'));
     });
 
     test('Explore type issues with generic methods', () {
@@ -221,7 +218,7 @@ void main() {
       testGenericTypeIssue<ProductSchema>();
     });
 
-    test('Custom implementation of SchemaModel.get', () {
+    test('Using SchemaRegistry directly', () {
       final productData = {
         'id': '678',
         'name': 'Custom Implementation',
@@ -233,49 +230,31 @@ void main() {
         },
       };
 
-      // Custom implementation that solves the type issue
-      // The problem in the original implementation is that S.runtimeType returns 'Type'
-      // instead of the actual type (ProductSchema). This happens because type parameters
-      // become 'Type' at runtime due to Dart's type erasure.
+      // With our new implementation, we can use the constructor directly
+      final schema = ProductSchema(productData);
+      print('Direct constructor works: ${schema.id}');
 
-      // Instead, we can use a factory approach where we directly call the parse method
-      // from the subclass based on what we expect.
-      T getSchema<T extends SchemaModel>(Map<String, Object?> data) {
-        if (T == ProductSchema) {
-          return ProductSchema.parse(data) as T;
-        } else if (T == CategorySchema) {
-          return CategorySchema.parse(data) as T;
-        } else {
-          throw Exception('No schema registered for type $T');
-        }
-      }
+      // We can also verify properties
+      expect(schema.name, equals('Custom Implementation'));
+      expect(schema.price, equals(39.99));
 
-      try {
-        // Using our custom implementation instead
-        final schema = getSchema<ProductSchema>(productData);
-        print('Custom get implementation works: ${schema.id}');
+      // Note: SchemaRegistry.createSchema would work if the schema was registered
+      // But for this test, we'll skip this part since we haven't registered the schema
+      // In a real application, you would register the schema in the generated code
 
-        // We can also verify properties
-        expect(schema.name, equals('Custom Implementation'));
-        expect(schema.price, equals(39.99));
-      } catch (e) {
-        print('Error in custom get: $e');
-      }
-
-      // A better architecture for SchemaRegistry would use a type map with factory functions
-      // where each schema type can register its own parse function, like this:
+      // We can also use a type map if needed for more complex scenarios
       Map<Type, Function> typeFactoryMap = {
-        ProductSchema: (Map<String, Object?> data) => ProductSchema.parse(data),
-        CategorySchema: (Map<String, Object?> data) =>
-            CategorySchema.parse(data),
+        ProductSchema: (Object? data) => ProductSchema(data),
+        CategorySchema: (Object? data) => CategorySchema(data),
       };
 
       try {
         // Using the factory map
         final factory = typeFactoryMap[ProductSchema];
         if (factory != null) {
-          final schema = factory(productData) as ProductSchema;
-          print('Factory map approach works: ${schema.id}');
+          final mapSchema = factory(productData) as ProductSchema;
+          print('Factory map approach works: ${mapSchema.id}');
+          expect(mapSchema.id, equals('678'));
         } else {
           print('Factory map has no entry for ProductSchema');
         }

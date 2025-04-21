@@ -30,57 +30,18 @@ class ProductSchema extends SchemaModel<Product> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Product, ProductSchema>(
-      ProductSchema.parse,
+      (data) => ProductSchema(data),
     );
     // Register schema dependencies
     CategorySchema.ensureInitialize();
   }
 
-  // Initialize method that calls the static method
+  // Override to return the schema for validation
   @override
-  void initialize() {
-    ProductSchema.ensureInitialize();
-  }
+  AckSchema getSchema() => schema;
 
-  // Constructors
-  ProductSchema([Map<String, Object?>? data]) : super(data ?? {});
-
-  // Internal constructor for validated data
-  factory ProductSchema.fromValidated(Map<String, Object?> data) {
-    final schema = ProductSchema(data);
-    // Mark as pre-validated (implementation detail)
-    return schema;
-  }
-
-  /// Factory methods for parsing data
-  static ProductSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-
-    return ProductSchema(result.getOrThrow());
-  }
-
-  static ProductSchema? tryParse(Map<String, Object?> data) {
-    try {
-      return parse(data);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Static helper to validate a map
-  static SchemaResult validateMap(Map<String, Object?> map) {
-    return schema.validate(map);
-  }
-
-  /// Validate the current data
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
+  // Constructor that validates input
+  ProductSchema([Object? value]) : super(value);
 
   // Type-safe getters
   String get id => getValue<String>('id')!;
@@ -89,7 +50,7 @@ class ProductSchema extends SchemaModel<Product> {
   double get price => getValue<double>('price')!;
   String? get imageUrl => getValue<String>('imageUrl');
   CategorySchema get category {
-    return CategorySchema.parse(getValue<Map<String, dynamic>>('category')!);
+    return CategorySchema(getValue<Map<String, dynamic>>('category')!);
   }
 
   // Get metadata with fallback
@@ -115,6 +76,10 @@ class ProductSchema extends SchemaModel<Product> {
   // Model conversion methods
   @override
   Product toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Product(
       id: id,
       name: name,
@@ -161,16 +126,6 @@ class ProductSchema extends SchemaModel<Product> {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchemaString();
   }
-
-  /// Validate and convert to an instance - maintaining compatibility
-  static SchemaResult<Product> createFromMap(Map<String, Object?> map) {
-    final result = schema.validate(map);
-    if (result.isFail) {
-      return SchemaResult.fail(result.getError());
-    }
-
-    return SchemaResult.ok(ProductSchema(result.getOrThrow()).toModel());
-  }
 }
 
 /// Generated schema for Category
@@ -195,55 +150,16 @@ class CategorySchema extends SchemaModel<Category> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Category, CategorySchema>(
-      CategorySchema.parse,
+      (data) => CategorySchema(data),
     );
   }
 
-  // Initialize method that calls the static method
+  // Override to return the schema for validation
   @override
-  void initialize() {
-    CategorySchema.ensureInitialize();
-  }
+  AckSchema getSchema() => schema;
 
-  // Constructors
-  CategorySchema([Map<String, Object?>? data]) : super(data ?? {});
-
-  // Internal constructor for validated data
-  factory CategorySchema.fromValidated(Map<String, Object?> data) {
-    final schema = CategorySchema(data);
-    // Mark as pre-validated (implementation detail)
-    return schema;
-  }
-
-  /// Factory methods for parsing data
-  static CategorySchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-
-    return CategorySchema(result.getOrThrow());
-  }
-
-  static CategorySchema? tryParse(Map<String, Object?> data) {
-    try {
-      return parse(data);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Static helper to validate a map
-  static SchemaResult validateMap(Map<String, Object?> map) {
-    return schema.validate(map);
-  }
-
-  /// Validate the current data
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
+  // Constructor that validates input
+  CategorySchema([Object? value]) : super(value);
 
   // Type-safe getters
   String get id => getValue<String>('id')!;
@@ -266,6 +182,10 @@ class CategorySchema extends SchemaModel<Category> {
   // Model conversion methods
   @override
   Category toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Category(
       id: id,
       name: name,
@@ -305,16 +225,6 @@ class CategorySchema extends SchemaModel<Category> {
   static String toOpenApiSpecString() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchemaString();
-  }
-
-  /// Validate and convert to an instance - maintaining compatibility
-  static SchemaResult<Category> createFromMap(Map<String, Object?> map) {
-    final result = schema.validate(map);
-    if (result.isFail) {
-      return SchemaResult.fail(result.getError());
-    }
-
-    return SchemaResult.ok(CategorySchema(result.getOrThrow()).toModel());
   }
 }
 

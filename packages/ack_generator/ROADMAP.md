@@ -53,7 +53,7 @@ We've successfully implemented and tested the ack_generator for validating Dart 
 #### Documentation
 
 - [x] Document all available validation annotations
-- [x] Create examples for common validation scenarios 
+- [x] Create examples for common validation scenarios
 - [x] Add a troubleshooting guide for common issues
 - [x] Update README with clear installation and usage instructions
 
@@ -68,7 +68,7 @@ We've successfully implemented and tested the ack_generator for validating Dart 
 
 ### Current Status
 
-The core ack package provides the validation engine that powers the schema validation. 
+The core ack package provides the validation engine that powers the schema validation.
 
 ### TODO List
 
@@ -76,9 +76,13 @@ The core ack package provides the validation engine that powers the schema valid
 
 - [x] Fix the SchemaModel._validated constructor implementation
 - [x] Remove unused constructors and methods
+- [x] Redesign the SchemaModel API for a more intuitive experience
+- [x] Add automatic validation during construction
+- [x] Add isValid getter and getErrors() method for easier error handling
+- [x] Add abstract getSchema() method to define the schema
+- [x] Improve error handling for validation failures
+- [x] Add more detailed error reporting
 - [ ] Ensure proper inheritance in generated schema classes
-- [ ] Improve error handling for validation failures
-- [ ] Add more detailed error reporting
 
 #### Validation Enhancements
 
@@ -89,9 +93,11 @@ The core ack package provides the validation engine that powers the schema valid
 
 #### Documentation
 
-- [ ] Improve API documentation with more examples
+- [x] Improve API documentation with more examples
+- [x] Document the new SchemaModel API
+- [x] Create a migration guide from the old API to the new API
+- [x] Document best practices for using the validation system
 - [ ] Create a developer guide for extending the validation system
-- [ ] Document best practices for using the validation system
 
 ## Overall Project
 
@@ -111,9 +117,10 @@ The core ack package provides the validation engine that powers the schema valid
 
 ### Community & Adoption
 
-- [ ] Create more real-world examples
+- [x] Create more real-world examples
+- [x] Create migration guides for the new SchemaModel API
 - [ ] Publish articles about using the validation system
 - [ ] Develop integration examples with popular frameworks
 - [ ] Create migration guides from other validation systems
 
-By prioritizing the schema generation fixes and testing improvements, we've created a more robust validation system that's easier to use and maintain. Recent cleanup efforts have removed unused code and improved the codebase, making it more maintainable and efficient. 
+By prioritizing the schema generation fixes and testing improvements, we've created a more robust validation system that's easier to use and maintain. Recent cleanup efforts have removed unused code and improved the codebase, making it more maintainable and efficient.

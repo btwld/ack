@@ -30,60 +30,45 @@ class User {
 
 // Mock schema model for testing
 class UserSchema extends SchemaModel<User> {
-  UserSchema(Map<String, Object?> data) : super(data) {
-    initialize();
+  UserSchema(Object? data) : super(data) {
+    if (isValid) {
+      _initialize();
+    }
   }
 
   late final String name;
   late final int age;
   late final String? email;
 
-  @override
-  void initialize() {
+  void _initialize() {
     name = getValue<String>('name')!;
     age = getValue<int>('age')!;
     email = getValue<String>('email');
   }
 
   @override
+  AckSchema getSchema() {
+    return Ack.object({
+      'name': Ack.string.minLength(2),
+      'age': Ack.int.min(0).max(120),
+      'email': Ack.string.isEmail().nullable(),
+    }, required: [
+      'name',
+      'age'
+    ]);
+  }
+
+  @override
   User toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return User(
       name: name,
       age: age,
       email: email,
     );
-  }
-
-  @override
-  SchemaResult validate() {
-    final schema = Ack.object({
-      'name': Ack.string.minLength(2),
-      'age': Ack.int.min(0).max(120),
-      'email': Ack.string.isEmail().nullable(),
-    }, required: [
-      'name',
-      'age'
-    ]);
-
-    return schema.validate(toMap());
-  }
-
-  static UserSchema parse(Map<String, Object?> data) {
-    final schema = Ack.object({
-      'name': Ack.string.minLength(2),
-      'age': Ack.int.min(0).max(120),
-      'email': Ack.string.isEmail().nullable(),
-    }, required: [
-      'name',
-      'age'
-    ]);
-
-    final result = schema.validate(data);
-    if (result.isOk) {
-      return UserSchema(data);
-    } else {
-      throw AckException(result.getError());
-    }
   }
 
   static UserSchema fromModel(User user) {
@@ -153,8 +138,9 @@ void main() {
           'email': 'john@example.com',
         };
 
-        // Parse using the schema model
-        final userSchema = UserSchema.parse(jsonMap);
+        // Create a schema object from the data
+        final userSchema = UserSchema(jsonMap);
+        expect(userSchema.isValid, isTrue);
 
         // Convert to a typed model
         final user = userSchema.toModel();

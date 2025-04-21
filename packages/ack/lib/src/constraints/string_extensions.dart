@@ -42,26 +42,61 @@ extension StringSchemaExtensions on StringSchema {
   /// {@macro date_validator}
   StringSchema isDate() => _add(const StringDateConstraint());
 
-  /// Validates that the string contains a pattern.
-  /// 
-  /// This is useful for validating that a string contains certain characters,
-  /// like uppercase letters, digits, etc.
-  /// 
+  /// Validates that the string fully matches a pattern.
+  ///
+  /// This is useful for validating that a string conforms to a specific format,
+  /// such as alphanumeric characters only, date formats, etc.
+  ///
+  /// The pattern is automatically anchored with ^ and $ if not already present,
+  /// ensuring the entire string matches the pattern.
+  ///
   /// Example:
   /// ```dart
-  /// // Password must contain at least one uppercase letter
-  /// final passwordSchema = Ack.string.matches(r'[A-Z]');
+  /// // Username must be alphanumeric with underscores
+  /// final usernameSchema = Ack.string.matches(r'[a-zA-Z0-9_]+');
+  ///
+  /// // Date in YYYY-MM-DD format
+  /// final dateSchema = Ack.string.matches(r'\d{4}-\d{2}-\d{2}');
   /// ```
   StringSchema matches(String pattern, {String? example}) {
-    // For partial matching, we use .*pattern.* to match anywhere in the string
-    final cleanPattern = pattern.replaceAll(r'^', '').replaceAll(r'$', '');
-    final wrappedPattern = r'^.*' + cleanPattern + r'.*$';
-    
+    // Ensure the pattern is anchored for full string validation
+    String fullPattern = pattern;
+    if (!pattern.startsWith('^')) {
+      fullPattern = '^$fullPattern';
+    }
+    if (!pattern.endsWith(r'$')) {
+      fullPattern = fullPattern + r'$';
+    }
+
     return constrain(
       StringRegexConstraint(
         patternName: 'matches',
-        pattern: wrappedPattern,
+        pattern: fullPattern,
         example: example ?? 'Example matching $pattern',
+      ),
+    );
+  }
+
+  /// Validates that the string contains a pattern.
+  ///
+  /// This is useful for validating that a string contains certain characters,
+  /// like uppercase letters, digits, etc.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Password must contain at least one uppercase letter
+  /// final passwordSchema = Ack.string.contains(r'[A-Z]');
+  /// ```
+  StringSchema contains(String pattern, {String? example}) {
+    // For partial matching, we use .*pattern.* to match anywhere in the string
+    final cleanPattern = pattern.replaceAll(r'^', '').replaceAll(r'$', '');
+    final wrappedPattern = r'^.*' + cleanPattern + r'.*$';
+
+    return constrain(
+      StringRegexConstraint(
+        patternName: 'contains',
+        pattern: wrappedPattern,
+        example: example ?? 'Example containing $pattern',
       ),
     );
   }

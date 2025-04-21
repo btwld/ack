@@ -59,18 +59,19 @@ class UserSchema extends SchemaModel<User> {
       additionalProperties: true,
       required: ['name', 'email', 'age']);
 
-  UserSchema([Map<String, Object?>? data]) : super(data ?? {});
+  UserSchema([Object? data]) : super(data ?? {});
 
-  static UserSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-    return UserSchema(data);
+  @override
+  AckSchema getSchema() {
+    return schema;
   }
 
   @override
   User toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     final Map<String, dynamic> additionalProps = Map.from(toMap());
     ['name', 'email', 'age', 'password'].forEach(additionalProps.remove);
 
@@ -89,14 +90,6 @@ class UserSchema extends SchemaModel<User> {
     newData['name'] = (newData['name'] as String).toUpperCase();
     return UserSchema(newData);
   }
-
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
-
-  @override
-  void initialize() {}
 }
 
 class AddressSchema extends SchemaModel<Address> {
@@ -110,32 +103,25 @@ class AddressSchema extends SchemaModel<Address> {
     'zipCode'
   ]);
 
-  AddressSchema([Map<String, Object?>? data]) : super(data ?? {});
+  AddressSchema([Object? data]) : super(data ?? {});
 
-  static AddressSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-    return AddressSchema(data);
+  @override
+  AckSchema getSchema() {
+    return schema;
   }
 
   @override
   Address toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Address(
       street: getValue<String>('street')!,
       city: getValue<String>('city')!,
       zipCode: getValue<String>('zipCode')!,
     );
   }
-
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
-
-  @override
-  void initialize() {}
 }
 
 class UserWithAddressSchema extends SchemaModel<UserWithAddress> {
@@ -147,36 +133,29 @@ class UserWithAddressSchema extends SchemaModel<UserWithAddress> {
     'address'
   ]);
 
-  UserWithAddressSchema([Map<String, Object?>? data]) : super(data ?? {});
+  UserWithAddressSchema([Object? data]) : super(data ?? {});
 
-  static UserWithAddressSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-    return UserWithAddressSchema(data);
+  @override
+  AckSchema getSchema() {
+    return schema;
   }
 
   AddressSchema get address {
     final addressData = getValue<Map<String, dynamic>>('address')!;
-    return AddressSchema.parse(addressData);
+    return AddressSchema(addressData);
   }
 
   @override
   UserWithAddress toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return UserWithAddress(
       name: getValue<String>('name')!,
       address: address.toModel(),
     );
   }
-
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
-
-  @override
-  void initialize() {}
 }
 
 class LoginSchema extends SchemaModel<Login> {
@@ -188,31 +167,24 @@ class LoginSchema extends SchemaModel<Login> {
     'password'
   ]);
 
-  LoginSchema([Map<String, Object?>? data]) : super(data ?? {});
+  LoginSchema([Object? data]) : super(data ?? {});
 
-  static LoginSchema parse(Map<String, Object?> data) {
-    final result = schema.validate(data);
-    if (result.isFail) {
-      throw AckException(result.getError());
-    }
-    return LoginSchema(data);
+  @override
+  AckSchema getSchema() {
+    return schema;
   }
 
   @override
   Login toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Login(
       email: getValue<String>('email')!,
       password: getValue<String>('password')!,
     );
   }
-
-  @override
-  SchemaResult validate() {
-    return schema.validate(toMap());
-  }
-
-  @override
-  void initialize() {}
 }
 
 void main() {
@@ -233,7 +205,8 @@ void main() {
       expect(result.isOk, isTrue);
 
       // Create an instance from valid data
-      final userSchema = UserSchema.parse(userMap);
+      final userSchema = UserSchema(userMap);
+      expect(userSchema.isValid, isTrue);
       final user = userSchema.toModel();
 
       expect(user.name, equals('John Doe'));
@@ -278,8 +251,9 @@ void main() {
         'age': 25,
       };
 
-      // Using parse (would throw if invalid)
-      final userSchema = UserSchema.parse(validUserMap);
+      // Using constructor (validation happens automatically)
+      final userSchema = UserSchema(validUserMap);
+      expect(userSchema.isValid, isTrue);
       expect(userSchema, isA<UserSchema>());
 
       // Using safeParse equivalent
@@ -296,7 +270,8 @@ void main() {
         'age': 25,
       };
 
-      final userSchema = UserSchema.parse(validUserMap);
+      final userSchema = UserSchema(validUserMap);
+      expect(userSchema.isValid, isTrue);
       final user = userSchema.toModel();
 
       expect(user.name, equals('Test User'));
@@ -312,7 +287,8 @@ void main() {
       };
 
       // In an actual generated schema, we'd have toJson and fromJson methods
-      final userSchema = UserSchema.parse(validUserMap);
+      final userSchema = UserSchema(validUserMap);
+      expect(userSchema.isValid, isTrue);
       final json = userSchema.toMap(); // Simulating toJson()
 
       expect(json, equals(validUserMap));
@@ -330,7 +306,8 @@ void main() {
         'favoriteColor': 'blue' // Not in the model definition
       };
 
-      final userSchema = UserSchema.parse(inputWithExtra);
+      final userSchema = UserSchema(inputWithExtra);
+      expect(userSchema.isValid, isTrue);
       final user = userSchema.toModel();
 
       expect(user.metadata['favoriteColor'], equals('blue'));
@@ -365,7 +342,8 @@ void main() {
       final result = UserWithAddressSchema.schema.validate(userData);
       expect(result.isOk, isTrue);
 
-      final userWithAddressSchema = UserWithAddressSchema.parse(userData);
+      final userWithAddressSchema = UserWithAddressSchema(userData);
+      expect(userWithAddressSchema.isValid, isTrue);
       final userWithAddress = userWithAddressSchema.toModel();
       expect(userWithAddress.name, equals('Jane Doe'));
       expect(userWithAddress.address.street, equals('123 Main St'));
@@ -378,7 +356,8 @@ void main() {
         'age': 25,
       };
 
-      final userSchema = UserSchema.parse(validUserMap);
+      final userSchema = UserSchema(validUserMap);
+      expect(userSchema.isValid, isTrue);
       final transformed = userSchema.withUppercaseName();
       expect(transformed.getValue<String>('name'), equals('TEST USER'));
     });
@@ -394,7 +373,8 @@ void main() {
       expect(result.isOk, isTrue);
 
       if (result.isOk) {
-        final loginSchema = LoginSchema.parse(formData);
+        final loginSchema = LoginSchema(formData);
+        expect(loginSchema.isValid, isTrue);
         final loginModel = loginSchema.toModel();
         expect(loginModel.email, equals('user@example.com'));
         expect(loginModel.password, equals('securepass'));

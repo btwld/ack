@@ -15,11 +15,11 @@ void main() {
       });
 
       test('String with length constraints', () {
-        final usernameSchema = Ack.string.minLength(3).maxLength(20).constrain(
-            StringRegexConstraint(
-                patternName: 'alphanumeric_underscore',
-                pattern: r'^[a-zA-Z0-9_]+$',
-                example: 'user_123'));
+        // Using matches() for full string validation
+        final usernameSchema = Ack.string
+            .minLength(3)
+            .maxLength(20)
+            .matches(r'[a-zA-Z0-9_]+', example: 'user_123');
 
         expect(usernameSchema.validate('user_123').isOk, isTrue);
         expect(usernameSchema.validate('ab').isOk, isFalse); // Too short
@@ -36,8 +36,7 @@ void main() {
       });
 
       test('Enum values', () {
-        final roleSchema = Ack.string
-            .constrain(StringEnumConstraint(['admin', 'user', 'guest']));
+        final roleSchema = Ack.string.isEnum(['admin', 'user', 'guest']);
 
         expect(roleSchema.validate('admin').isOk, isTrue);
         expect(roleSchema.validate('user').isOk, isTrue);
@@ -131,14 +130,11 @@ void main() {
       // Note: Ack doesn't have a built-in allOf method, so we'll simulate it
       test('Multiple constraints (simulating allOf)', () {
         // In a real application, you would chain constraints on a single schema
+        // Using contains() for partial matching
         final passwordSchema = Ack.string
             .minLength(8)
-            .constrain(StringRegexConstraint(
-                patternName: 'uppercase',
-                pattern: r'[A-Z]',
-                example: 'Password'))
-            .constrain(StringRegexConstraint(
-                patternName: 'digit', pattern: r'[0-9]', example: 'password1'));
+            .contains(r'[A-Z]', example: 'Password') // Must contain uppercase
+            .contains(r'[0-9]', example: 'password1'); // Must contain digit
 
         expect(passwordSchema.validate('Password1').isOk, isTrue);
         expect(passwordSchema.validate('password').isOk,
@@ -152,11 +148,9 @@ void main() {
       test('Nullable schemas', () {
         final middleNameSchema = Ack.string.nullable();
         // Note: Ack doesn't have a built-in dateTime schema type
+        // Using matches() for full string validation
         final optionalDateSchema = Ack.string
-            .constrain(StringRegexConstraint(
-                patternName: 'iso_date',
-                pattern: r'^\d{4}-\d{2}-\d{2}$',
-                example: '2023-01-01'))
+            .matches(r'\d{4}-\d{2}-\d{2}', example: '2023-01-01')
             .nullable();
 
         expect(middleNameSchema.validate(null).isOk, isTrue);

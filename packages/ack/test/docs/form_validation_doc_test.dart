@@ -9,21 +9,16 @@ void main() {
         final usernameSchema = Ack.string
             .minLength(3)
             .maxLength(20)
-            .constrain(
-              StringRegexConstraint(
-                  patternName: 'alphanumeric_underscore',
-                  pattern: r'^[a-zA-Z0-9_]+$',
-                  example: 'john_doe123'),
-            )
+            .matches(r'[a-zA-Z0-9_]+', example: 'john_doe123')
             .isNotEmpty();
 
         final emailSchema = Ack.string.isEmail().isNotEmpty();
 
         final passwordSchema = Ack.string
             .minLength(8)
-            .matches(r'[A-Z]') // Must contain uppercase
-            .matches(r'[a-z]') // Must contain lowercase
-            .matches(r'[0-9]') // Must contain digit
+            .contains(r'[A-Z]') // Must contain uppercase
+            .contains(r'[a-z]') // Must contain lowercase
+            .contains(r'[0-9]') // Must contain digit
             .isNotEmpty();
 
         // Test valid values

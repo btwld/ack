@@ -1,8 +1,5 @@
+import 'package:ack/ack.dart';
 import 'package:ack/src/builder_helpers/schema_converter.dart';
-import 'package:ack/src/builder_helpers/schema_registry.dart';
-import 'package:ack/src/schemas/schema_model.dart';
-import 'package:ack/src/validation/schema_error.dart';
-import 'package:ack/src/validation/schema_result.dart';
 import 'package:test/test.dart';
 
 // Test model classes
@@ -29,12 +26,22 @@ class Category {
 
 /// Schema class for Product model
 class ProductSchema extends SchemaModel<Product> {
-  ProductSchema(Map<String, dynamic> data) : super(data);
+  ProductSchema(Object? data) : super(data);
 
-  /// Creates a validated schema from data
-  static ProductSchema parse(Map<String, dynamic> data) {
-    // In a real implementation this would validate the data
-    return ProductSchema(data);
+  @override
+  AckSchema getSchema() {
+    return Ack.object({
+      'name': Ack.string,
+      'price': Ack.double,
+      'category': Ack.object({
+        'name': Ack.string,
+        'id': Ack.int,
+      }).nullable(),
+      'tags': Ack.list(Ack.string).nullable(),
+    }, required: [
+      'name',
+      'price'
+    ]);
   }
 
   /// Checks if the map contains a key
@@ -42,42 +49,36 @@ class ProductSchema extends SchemaModel<Product> {
   bool containsKey(String key) => toMap().containsKey(key);
 
   @override
-  void initialize() {
-    // TODO: implement initialize
-  }
-
-  @override
   Product toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Product(
       name: this['name'] as String,
       price: this['price'] as double,
       category: containsKey('category') && this['category'] != null
-          ? CategorySchema(this['category'] as Map<String, dynamic>).toModel()
+          ? CategorySchema(this['category']).toModel()
           : null,
       tags:
           containsKey('tags') ? List<String>.from(this['tags'] as List) : null,
     );
   }
-
-  @override
-  SchemaResult validate() {
-    // Simple validation implementation for testing
-    if (!containsKey('name') || !containsKey('price')) {
-      // Create a mock error for demonstration purposes
-      return SchemaResult.fail(SchemaMockError());
-    }
-    return SchemaResult.ok(this);
-  }
 }
 
 /// Schema class for Category model
 class CategorySchema extends SchemaModel<Category> {
-  CategorySchema(Map<String, dynamic> data) : super(data);
+  CategorySchema(Object? data) : super(data);
 
-  /// Creates a validated schema from data
-  static CategorySchema parse(Map<String, dynamic> data) {
-    // In a real implementation this would validate the data
-    return CategorySchema(data);
+  @override
+  AckSchema getSchema() {
+    return Ack.object({
+      'name': Ack.string,
+      'id': Ack.int,
+    }, required: [
+      'name',
+      'id'
+    ]);
   }
 
   /// Checks if the map contains a key
@@ -86,25 +87,14 @@ class CategorySchema extends SchemaModel<Category> {
 
   @override
   Category toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
     return Category(
       name: this['name'] as String,
       id: this['id'] as int,
     );
-  }
-
-  @override
-  void initialize() {
-    // TODO: implement initialize
-  }
-
-  @override
-  SchemaResult validate() {
-    // Simple validation implementation for testing
-    if (!containsKey('name') || !containsKey('id')) {
-      // Create a mock error for demonstration purposes
-      return SchemaResult.fail(SchemaMockError());
-    }
-    return SchemaResult.ok(this);
   }
 }
 
@@ -114,8 +104,10 @@ class UnregisteredType {}
 /// Register test schemas in the SchemaRegistry
 void registerTestSchemas() {
   // Register schema factories
-  SchemaRegistry.register<Product, ProductSchema>(ProductSchema.parse);
-  SchemaRegistry.register<Category, CategorySchema>(CategorySchema.parse);
+  SchemaRegistry.register<Product, ProductSchema>(
+      (data) => ProductSchema(data));
+  SchemaRegistry.register<Category, CategorySchema>(
+      (data) => CategorySchema(data));
 }
 
 void main() {
@@ -279,11 +271,13 @@ void main() {
         final result =
             SchemaConverter.convertValue<CategorySchema>(invalidData);
 
-        // This might still create a schema since validation isn't strict in our test schemas
-        // In a real implementation, validation would likely fail
+        // With our new implementation, the schema is created but validation fails
         if (result != null) {
-          // If a schema is created, trying to access missing fields should fail
-          expect(() => result.toModel(), throwsA(isA<TypeError>()));
+          // The schema should be invalid
+          expect(result.isValid, isFalse);
+
+          // Trying to convert to model should throw AckException
+          expect(() => result.toModel(), throwsA(isA<AckException>()));
         }
       });
     });

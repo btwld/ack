@@ -10,10 +10,10 @@ ACK provides a fluent, unified schema-building solution for Dart and Flutter app
 
 ## Use Cases and Key Benefits
 
-- Validates diverse data types with customizable constraints  
-- Converts into OpenAPI Specs for LLM function calling and structured response support  
-- Offers a fluent API for intuitive schema building  
-- Provides detailed error reporting for validation failures  
+- Validates diverse data types with customizable constraints
+- Converts into OpenAPI Specs for LLM function calling and structured response support
+- Offers a fluent API for intuitive schema building
+- Provides detailed error reporting for validation failures
 
 ## Installation
 
@@ -345,7 +345,7 @@ ${converter.toResponsePrompt()}
   "required": ["name", "age"],
   "properties": {
     "name": {
-      "type": "string", 
+      "type": "string",
       "minLength": 2,
       "maxLength": 50
     },
@@ -404,13 +404,62 @@ Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is ei
 
 Happy validating with ACK!
 
+## SchemaModel API
+
+ACK provides a `SchemaModel` base class for creating schema-based models with automatic validation.
+
+```dart
+// Define a schema model
+class UserSchema extends SchemaModel<User> {
+  UserSchema(Object? data) : super(data);
+
+  @override
+  AckSchema getSchema() {
+    return Ack.object({
+      'name': Ack.string.minLength(2),
+      'email': Ack.string.isEmail(),
+      'age': Ack.int.min(0).nullable(),
+    }, required: ['name', 'email']);
+  }
+
+  @override
+  User toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
+    return User(
+      name: getValue<String>('name')!,
+      email: getValue<String>('email')!,
+      age: getValue<int?>('age'),
+    );
+  }
+}
+
+// Using the schema model
+final userData = {
+  'name': 'John Doe',
+  'email': 'john@example.com',
+  'age': 30,
+};
+
+final userSchema = UserSchema(userData);
+
+// Check if the schema is valid
+if (userSchema.isValid) {
+  // Convert to model
+  final user = userSchema.toModel();
+  print('User: ${user.name}, ${user.email}, ${user.age}');
+} else {
+  // Handle validation errors
+  print('Validation errors: ${userSchema.getErrors()}');
+}
+```
+
 ## Documentation
 
-For detailed guides on using Ack effectively, check out the documentation at [docs.page](https://docs.page/leofarias/ack):
+For detailed guides on using Ack effectively, check out the documentation in the repository:
 
-- [Nested Model Handling](https://docs.page/leofarias/ack/nested-model-handling) - Learn how to work with nested model structures
-- [JSON Serialization](https://docs.page/leofarias/ack/json-serialization) - Best practices for JSON serialization and deserialization
-- [Error Handling](https://docs.page/leofarias/ack/error-handling) - Understanding and managing validation errors
-- [Custom Validation](https://docs.page/leofarias/ack/custom-validation) - Creating custom validators for your specific needs
+- [SchemaModel API](/docs/schema_model.md) - Learn how to use the SchemaModel API
 
 ## License
