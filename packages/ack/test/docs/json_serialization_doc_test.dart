@@ -30,7 +30,7 @@ class User {
 
 // Mock schema model for testing
 class UserSchema extends SchemaModel<User> {
-  UserSchema(Object? data) : super(data) {
+  UserSchema(super.data) {
     if (isValid) {
       _initialize();
     }

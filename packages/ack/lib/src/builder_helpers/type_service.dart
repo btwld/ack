@@ -60,8 +60,6 @@ class TypeService {
     final end = typeStr.lastIndexOf('>');
     if (end <= start) return null;
 
-    final elementTypeName = typeStr.substring(start, end);
-
     // This is a simplified approach - in a real implementation,
     // you'd need to maintain a map of type names to actual Type objects
     return null;

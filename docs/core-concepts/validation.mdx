@@ -1,0 +1,178 @@
+---
+title: Validation Rules
+---
+
+Ack provides a rich set of built-in validation rules (constraints) that you can chain onto schema types to enforce specific requirements. Most constraints also accept an optional `message:` parameter to customize the error message upon failure (see [Error Handling](./error-handling.mdx#custom-error-messages)).
+
+## Common Constraints (Applicable to Multiple Types)
+
+### `nullable()`
+
+Allows the value to be `null` in addition to the type's constraints.
+
+```dart
+final optionalName = Ack.string.nullable();
+final optionalAge = Ack.int.nullable();
+```
+
+### `constrain(SchemaConstraint constraint)`
+
+Applies a custom `SchemaConstraint`. See the [Custom Validation](../guides/custom-validation.mdx) guide.
+
+## String Constraints
+
+Apply these to [`Ack.string`](./schemas.mdx#string-schema) schemas.
+
+### `minLength(int min)`
+Ensures the string has at least `min` characters.
+```dart
+Ack.string.minLength(5)
+```
+
+### `maxLength(int max)`
+Ensures the string has at most `max` characters.
+```dart
+Ack.string.maxLength(100)
+```
+
+### `length(int exactLength)`
+Ensures the string has exactly `exactLength` characters.
+```dart
+Ack.string.length(10)
+```
+
+### `isNotEmpty()`
+Ensures the string is not empty (`''`). Equivalent to `minLength(1)`.
+```dart
+Ack.string.isNotEmpty()
+```
+
+### `pattern(String pattern, {String? patternName, String? example})`
+Ensures the string matches the given regular expression `pattern`.
+```dart
+// Simple alphanumeric pattern
+Ack.string.pattern(r'^[a-zA-Z0-9]+$')
+
+// UUID pattern
+Ack.string.pattern(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$')
+```
+
+### `isEmail()`
+Ensures the string is a valid email address format.
+```dart
+Ack.string.isEmail()
+```
+
+### `isUrl()`
+Ensures the string is a valid URL format.
+```dart
+Ack.string.isUrl()
+```
+
+### `isDate()`
+Ensures the string is a valid date format (YYYY-MM-DD).
+```dart
+Ack.string.isDate()
+```
+
+### `isDateTime()`
+Ensures the string is a valid date-time format (ISO 8601).
+```dart
+Ack.string.isDateTime()
+```
+
+### `isEnum(List<String> allowedValues)`
+Ensures the string is one of the `allowedValues`.
+```dart
+Ack.string.isEnum(['active', 'inactive', 'pending'])
+```
+
+## Number Constraints (Int and Double)
+
+Apply these to [`Ack.int`](./schemas.mdx#number-schemas) and [`Ack.double`](./schemas.mdx#number-schemas) schemas.
+
+### `min(num limit, {bool exclusive = false})`
+Ensures the number is greater than (`exclusive: true`) or equal to (`exclusive: false`) the `limit`.
+```dart
+Ack.int.min(0) // >= 0
+Ack.double.min(0, exclusive: true) // > 0
+```
+
+### `max(num limit, {bool exclusive = false})`
+Ensures the number is less than (`exclusive: true`) or equal to (`exclusive: false`) the `limit`.
+```dart
+Ack.int.max(100) // <= 100
+Ack.double.max(100, exclusive: true) // < 100
+```
+
+### `positive()`
+Ensures the number is greater than 0. Shortcut for `min(0, exclusive: true)`.
+```dart
+Ack.int.positive()
+Ack.double.positive()
+```
+
+### `negative()`
+Ensures the number is less than 0. Shortcut for `max(0, exclusive: true)`.
+```dart
+Ack.int.negative()
+Ack.double.negative()
+```
+
+### `multipleOf(num factor)`
+Ensures the number is a multiple of the `factor`.
+```dart
+Ack.int.multipleOf(5) // Must be divisible by 5
+Ack.double.multipleOf(0.01) // Allows up to 2 decimal places
+```
+
+## List Constraints
+
+Apply these to [`Ack.list`](./schemas.mdx#list-schema) schemas.
+
+### `minItems(int min)`
+Ensures the list has at least `min` items.
+```dart
+Ack.list(Ack.string).minItems(1)
+```
+
+### `maxItems(int max)`
+Ensures the list has at most `max` items.
+```dart
+Ack.list(Ack.int).maxItems(10)
+```
+
+### `length(int exactLength)`
+Ensures the list has exactly `exactLength` items.
+```dart
+Ack.list(Ack.boolean).length(5)
+```
+
+### `isNotEmpty()`
+Ensures the list is not empty. Equivalent to `minItems(1)`.
+```dart
+Ack.list(Ack.object({...})).isNotEmpty()
+```
+
+### `uniqueItems()`
+Ensures all items in the list are unique. Uses `Set` comparison.
+```dart
+Ack.list(Ack.string).uniqueItems()
+```
+
+## Combining Constraints
+
+You can chain multiple constraints together. They are evaluated in the order they are applied.
+
+```dart
+final usernameSchema = Ack.string
+  .minLength(3)        // First check min length
+  .maxLength(20)       // Then check max length
+  .pattern(r'^[a-z0-9_]+$') // Then check pattern (lowercase alphanumeric/underscore)
+  .isNotEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
+
+final quantitySchema = Ack.int
+  .min(1)              // Must be at least 1
+  .max(100)            // Must be at most 100
+  .multipleOf(1);     // Must be an integer (redundant for Ack.int)
+``` 

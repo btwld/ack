@@ -1,10 +1,11 @@
 name: ack_generator
 description: A code generator for building schema classes from @AckModel annotations
 version: 0.1.0
-# repository: https://github.com/my_org/my_repo
+publish_to: none
+repository: https://github.com/leoafarias/ack
 
 environment:
-  sdk: ^3.2.6
+  sdk: ^3.3.0
 
 dependencies:
   ack:
@@ -20,6 +21,7 @@ dependencies:
 dev_dependencies:
   build_runner: ^2.4.6
   build_test: ^2.2.0
+  dart_code_metrics_presets: ^2.22.0
   lints: ^5.0.0
   test: ^1.25.15
 

@@ -1,5 +1,4 @@
 import '../schemas/schema.dart';
-import 'constraint.dart';
 import 'validators.dart';
 
 /// Extension methods for [ListSchema] to provide additional validation capabilities.
@@ -31,9 +30,9 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
   /// ```
   ListSchema<T> maxItems(int max) =>
       withConstraints([ListMaxItemsConstraint(max)]);
-  
+
   /// Validates that a list has exactly the specified number of items.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final coordinatesSchema = Ack.list(Ack.double).exactItems(2);
@@ -41,9 +40,9 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
   ListSchema<T> exactItems(int count) {
     return minItems(count).maxItems(count);
   }
-  
+
   /// Validates that a list is not empty.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final tagsSchema = Ack.list(Ack.string).notEmpty();

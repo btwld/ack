@@ -8,5 +8,4 @@ export 'src/schema_model_generator.dart'
         PropertyConstraintInfo,
         RequiredConstraint,
         NullableConstraint,
-        AckModelData,
         TypeName;

@@ -1,6 +1,11 @@
 # Ack Generator
 
+[![Pub Version](https://img.shields.io/pub/v/ack_generator?label=version&style=for-the-badge&logo=dart&logoColor=3DB0F3&labelColor=white&color=3DB0F3)](https://pub.dev/packages/ack_generator/changelog)
+[![Pub Points](https://img.shields.io/pub/points/ack_generator?style=for-the-badge&logo=dart&logoColor=3DB0F3&label=Points&labelColor=white&color=3DB0F3)](https://pub.dev/packages/ack_generator/score)
+
 A code generator that creates validation schema classes from annotated Dart classes. This package is built on top of the [ack](https://pub.dev/packages/ack) validation library.
+
+See the full documentation at [docs.page/leoafarias/ack/guides/code-generation](https://docs.page/leoafarias/ack/guides/code-generation.mdx).
 
 ## Features
 

@@ -8,6 +8,8 @@
 
 ACK provides a fluent, unified schema-building solution for Dart and Flutter applications. It delivers clear constraints, descriptive error feedback, and powerful utilities for validating forms, AI-driven outputs, and JSON or CLI arguments.
 
+See the full documentation at [docs.page/leoafarias/ack](https://docs.page/leoafarias/ack).
+
 ## Use Cases and Key Benefits
 
 - Validates diverse data types with customizable constraints
@@ -56,8 +58,8 @@ Validates integer data. Constraints include min/max values, exclusive bounds, an
 
 ```dart
 final schema = Ack.int
-    .minValue(0)
-    .maxValue(100)
+    .min(0)
+    .max(100)
     .multipleOf(5);
 
 final result = schema.validate(25);
@@ -69,8 +71,8 @@ Similar to Integer Schema, but for doubles:
 
 ```dart
 final schema = Ack.double
-    .minValue(0.0)
-    .maxValue(100.0)
+    .min(0.0)
+    .max(100.0)
     .multipleOf(0.5);
 
 final result = schema.validate(25.5);
@@ -115,7 +117,7 @@ Validates `Map<String, Object?>` with property definitions and constraints on re
 final schema = Ack.object(
   {
     'name': Ack.string.minLength(3),
-    'age': Ack.int.minValue(0).nullable(),
+    'age': Ack.int.min(0).nullable(),
   },
   required: ['name'],
 );
@@ -247,8 +249,8 @@ ACK's fluent API lets you chain methods:
 
 ```dart
 final schema = Ack.int
-  .minValue(0)
-  .maxValue(100)
+  .min(0)
+  .max(100)
   .multipleOf(5)
   .nullable() // accept null
   .strict();  // require actual int type
@@ -286,8 +288,8 @@ final schema = Ack.object({
     .minLength(2)
     .maxLength(50),
   'age': Ack.int
-    .minValue(0)
-    .maxValue(120),
+    .min(0)
+    .max(120),
 }, required: ['name', 'age']);
 
 final converter = OpenApiSchemaConverter(schema: schema);
@@ -324,7 +326,7 @@ print(openApiSchema);
 final schema = Ack.object(
   {
     'name': Ack.string.minLength(2).maxLength(50),
-    'age': Ack.int.minValue(0).maxValue(120),
+    'age': Ack.int.min(0).max(120),
   },
   required: ['name', 'age'],
 );

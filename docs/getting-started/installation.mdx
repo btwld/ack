@@ -15,11 +15,11 @@ dart pub add ack
 flutter pub add ack
 ```
 
-Or manually add to your `pubspec.yaml`:
+Or manually add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for the latest version):
 
 ```yaml
 dependencies:
-  ack: ^latest_version
+  ack: ^1.0.0 # Replace with latest version
 ```
 
 ## Using the Code Generator (Optional)
@@ -35,8 +35,8 @@ Or in your `pubspec.yaml`:
 
 ```yaml
 dev_dependencies:
-  ack_generator: ^latest_version
-  build_runner: ^2.3.0
+  ack_generator: ^1.0.0 # Replace with latest version
+  build_runner: ^2.3.0 # Check for compatible version
 ```
 
 Run the generator:
@@ -45,23 +45,29 @@ Run the generator:
 dart run build_runner build
 ```
 
-## Basic Usage
+## Basic Usage after Installation
 
 Import Ack in your Dart files:
 
 ```dart
 import 'package:ack/ack.dart';
 
-// Create a schema
+// 1. Define a simple schema (e.g., for a name)
 final nameSchema = Ack.string.minLength(3);
 
-// Validate data
+// 2. Validate some data against the schema
 final result = nameSchema.validate('John');
+
+// 3. Check the result
 if (result.isOk) {
-  print('Valid: ${result.getOrThrow()}');
+  print('Valid: ${result.getOrThrow()}'); // Access the valid data
+} else {
+  print('Invalid: ${result.getError()?.message}'); // Get the error message
 }
 ```
 
+See the [Quickstart Tutorial](./quickstart-tutorial.mdx) for a more complete example.
+
 ## Requirements
 
-- Dart SDK: `>=2.17.0 <4.0.0`
+- Dart SDK: `>=2.17.0 <4.0.0` 

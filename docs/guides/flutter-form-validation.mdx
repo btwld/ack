@@ -1,0 +1,280 @@
+---
+title: Form Validation in Flutter with Ack
+---
+
+This guide shows how to use Ack for validating forms in Flutter applications.
+
+## Basic Form Validation with `TextFormField`
+
+Ack integrates seamlessly with Flutter's `Form` and `TextFormField` widgets. You can use [Ack schemas](../core-concepts/schemas.mdx) directly within the `validator` function of a `TextFormField`.
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:flutter/material.dart';
+
+class SignUpForm extends StatefulWidget {
+  const SignUpForm({super.key});
+
+  @override
+  State<SignUpForm> createState() => _SignUpFormState();
+}
+
+class _SignUpFormState extends State<SignUpForm> {
+  // GlobalKey to manage Form state
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers for input fields
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  // Define Ack schemas for validation rules
+  // See: [Schema Types](../core-concepts/schemas.mdx), [Validation Rules](../core-concepts/validation.mdx)
+  final _usernameSchema = Ack.string
+    .minLength(3, message: 'Username must be at least 3 characters')
+    .maxLength(20, message: 'Username cannot exceed 20 characters')
+    .pattern(r'^[a-zA-Z0-9_]+$', message: 'Username can only contain letters, numbers, and underscores')
+    .isNotEmpty(message: 'Username is required');
+
+  final _emailSchema = Ack.string
+    .isEmail(message: 'Please enter a valid email address')
+    .isNotEmpty(message: 'Email is required');
+
+  final _passwordSchema = Ack.string
+    .minLength(8, message: 'Password must be at least 8 characters')
+    .pattern(r'[A-Z]', message: 'Password must contain an uppercase letter')
+    .pattern(r'[a-z]', message: 'Password must contain a lowercase letter')
+    .pattern(r'[0-9]', message: 'Password must contain a digit')
+    .isNotEmpty(message: 'Password is required');
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey, // Associate the key with the Form
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Username Field
+          TextFormField(
+            controller: _usernameController,
+            decoration: const InputDecoration(labelText: 'Username'),
+            // Use the schema's validate method in the validator
+            validator: (value) {
+              final result = _usernameSchema.validate(value);
+              // Return the error message if validation fails
+              // See: [Error Handling](../core-concepts/error-handling.mdx)
+              return result.isFail ? result.getError()?.message : null;
+            },
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+          ),
+          const SizedBox(height: 16),
+
+          // Email Field
+          TextFormField(
+            controller: _emailController,
+            decoration: const InputDecoration(labelText: 'Email'),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              final result = _emailSchema.validate(value);
+              return result.isFail ? result.getError()?.message : null;
+            },
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+          ),
+          const SizedBox(height: 16),
+
+          // Password Field
+          TextFormField(
+            controller: _passwordController,
+            decoration: const InputDecoration(labelText: 'Password'),
+            obscureText: true,
+            validator: (value) {
+              final result = _passwordSchema.validate(value);
+              return result.isFail ? result.getError()?.message : null;
+            },
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+          ),
+          const SizedBox(height: 24),
+
+          // Submit Button
+          ElevatedButton(
+            onPressed: _submitForm,
+            child: const Text('Sign Up'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitForm() {
+    // Validate the entire form using the GlobalKey
+    if (_formKey.currentState!.validate()) {
+      // If the form is valid, display a Snackbar or proceed.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Processing Data')),
+      );
+      print('Form is valid!');
+      print('Username: ${_usernameController.text}');
+      print('Email: ${_emailController.text}');
+      // Usually, you would send this data to a server
+    } else {
+      print('Form is invalid.');
+    }
+  }
+
+  @override
+  void dispose() {
+    // Dispose controllers when the widget is removed from the widget tree
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+}
+```
+
+**Key Points:**
+
+1.  **Define Schemas:** Create `AckSchema` instances for each form field using rules from [Validation Rules](../core-concepts/validation.mdx).
+2.  **`TextFormField.validator`:** Inside the `validator` function, call `schema.validate(value)`. If `result.isFail`, return `result.getError()?.message` to display the error (see [Error Handling](../core-concepts/error-handling.mdx)).
+3.  **`GlobalKey<FormState>`:** Use a key to manage the form and trigger validation on submission via `_formKey.currentState!.validate()`.
+4.  **`AutovalidateMode`:** Set `autovalidateMode` (e.g., `AutovalidateMode.onUserInteraction`) on `TextFormField` for real-time feedback as the user types or interacts.
+5.  **Custom Error Messages:** Provide custom error messages directly within the schema definition using the `message:` parameter (see [Error Handling](../core-concepts/error-handling.mdx#custom-error-messages)).
+
+## Real-time Validation with `TextField`
+
+If you are not using a `Form` widget or prefer manual state management for errors, you can listen to controller changes and update the error state directly.
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:flutter/material.dart';
+
+class RealtimeValidationField extends StatefulWidget {
+  const RealtimeValidationField({super.key});
+
+  @override
+  State<RealtimeValidationField> createState() => _RealtimeValidationFieldState();
+}
+
+class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
+  final _emailController = TextEditingController();
+  String? _emailErrorText; // State variable to hold the error message
+
+  // Define the schema
+  final _emailSchema = Ack.string
+      .isEmail(message: 'Please enter a valid email')
+      .isNotEmpty(message: 'Email cannot be empty');
+
+  @override
+  void initState() {
+    super.initState();
+    // Add listener to validate on change
+    _emailController.addListener(_validateEmail);
+  }
+
+  void _validateEmail() {
+    final text = _emailController.text;
+    // Only validate if the field is not empty (or on first interaction)
+    // Adjust logic based on desired UX (e.g., validate after first blur)
+    if (text.isNotEmpty) { 
+      final result = _emailSchema.validate(text);
+      // Update the error state variable, triggering a rebuild
+      setState(() {
+        _emailErrorText = result.isFail ? result.getError()?.message : null;
+      });
+    } else {
+      // Clear error if field becomes empty
+      setState(() {
+         _emailErrorText = null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: TextField(
+        controller: _emailController,
+        decoration: InputDecoration(
+          labelText: 'Email',
+          // Display the error text from the state variable
+          errorText: _emailErrorText, 
+        ),
+        keyboardType: TextInputType.emailAddress,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.removeListener(_validateEmail);
+    _emailController.dispose();
+    super.dispose();
+  }
+}
+```
+
+**Key Points:**
+
+1.  **State Variable:** Maintain a state variable (e.g., `_emailErrorText`) to hold the current error message for the field.
+2.  **Controller Listener:** Add a listener to the `TextEditingController` in `initState`.
+3.  **Validation Logic:** Inside the listener, call `schema.validate()` with the controller's text.
+4.  **`setState`:** Call `setState` to update the error state variable based on the validation result. This triggers a UI rebuild to show/hide the error.
+5.  **Dispose:** Remember to remove the listener in `dispose`.
+
+## Validating Entire Models/Forms on Submission
+
+Instead of validating field by field, you can validate a complete data structure (like a map representing the whole form) on submission using [`Ack.object`](../core-concepts/schemas.mdx#object-schema).
+
+```dart
+// Define a schema for the whole form data
+final _formSchema = Ack.object({
+  'username': _usernameSchema, // Reuse field schemas
+  'email': _emailSchema,
+  'password': _passwordSchema,
+  'confirmPassword': Ack.string.isNotEmpty(message: 'Please confirm password')
+      // Example: Custom constraint for cross-field validation
+      // See: [Custom Validation](./custom-validation.mdx)
+      .constrain(SchemaConstraint<String>(
+        name: 'passwords_match',
+        message: 'Passwords do not match',
+        validate: (value, data) {
+          // Access other form data via the optional 'data' parameter
+          final password = data?['password'] as String?;
+          return value == password;
+        },
+      )),
+}, required: ['username', 'email', 'password', 'confirmPassword']);
+
+void _submitForm() {
+  // Gather all form data into a map
+  final formData = {
+    'username': _usernameController.text,
+    'email': _emailController.text,
+    'password': _passwordController.text,
+    'confirmPassword': _confirmPasswordController.text, // Assume this controller exists
+  };
+
+  // Validate the entire map
+  final result = _formSchema.validate(formData);
+
+  if (result.isOk) {
+    print('Entire form data is valid!');
+    // Submit formData
+  } else {
+    final error = result.getError();
+    print('Form submission error: ${error?.message}');
+    // You might need to map the error path back to specific fields 
+    // to display errors if not using TextFormField validators.
+    print('Error path: ${error?.path}'); 
+  }
+}
+```
+
+**Key Points:**
+
+1.  **Object Schema:** Create an [`Ack.object`](../core-concepts/schemas.mdx#object-schema) schema representing the entire form's data structure.
+2.  **Reuse Schemas:** Reuse the individual field schemas within the object schema.
+3.  **Cross-Field Validation:** Use custom constraints ([`.constrain`](../core-concepts/validation.mdx#constrainschemaconstraint-constraint)) within the object schema to perform validation that depends on multiple fields. See the [Custom Validation](./custom-validation.mdx) guide.
+4.  **Centralized Validation:** Validate the complete `formData` map against the `_formSchema` on submission.
+5.  **Error Handling:** If validation fails, you might need logic to map the [`error.path`](../core-concepts/error-handling.mdx#understanding-schemaerror) back to the specific UI field(s) causing the error, especially if not using `TextFormField`'s built-in validation display. 

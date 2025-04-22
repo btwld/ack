@@ -5,4 +5,7 @@ linter:
     - require_trailing_commas
     - prefer_single_quotes
     - sort_pub_dependencies
- 
+
+dart_code_metrics:
+  extends:
+    - package:dart_code_metrics_presets/recommended.yaml

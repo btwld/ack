@@ -1,5 +1,4 @@
 import '../schemas/schema.dart';
-import 'constraint.dart';
 import 'validators.dart';
 
 /// Extension methods for [ObjectSchema] to provide additional validation capabilities.
@@ -27,9 +26,9 @@ extension ObjectSchemaExtensions on ObjectSchema {
   ObjectSchema maxProperties(int max) {
     return withConstraints([ObjectMaxPropertiesConstraint(max: max)]);
   }
-  
+
   /// Validates that an object has exactly the specified number of properties.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final pointSchema = Ack.object({

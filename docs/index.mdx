@@ -5,12 +5,19 @@ title: Overview
 
 Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API. Ack is short for "acknowledge".
 
+## Why Use Ack?
+
+- **Simplify Validation**: Easily handle complex data validation logic.
+- **Ensure Data Integrity**: Guarantee data consistency from external sources (APIs, user input).
+- **Single Source of Truth**: Define data structures and rules in one place.
+- **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion.
+
 ## What Ack Does
 
-- Validates data against schemas you define
-- Converts between JSON and your Dart models
-- Generates OpenAPI specifications
-- Provides clear error messages
+- Ensures data conforms to your defined schemas
+- Facilitates seamless conversion between JSON and Dart models
+- Generates OpenAPI (Swagger) specifications from your schemas
+- Delivers detailed and easy-to-understand validation error messages
 
 ## Quick Start
 
@@ -25,27 +32,32 @@ dart pub add ack
 ```dart
 import 'package:ack/ack.dart';
 
-// Create a schema
+// Define the structure and rules for a user object.
 final userSchema = Ack.object({
-  'name': Ack.string.minLength(2).maxLength(50),
-  'age': Ack.int.min(0).max(120),
-  'email': Ack.string.isEmail().nullable(),
-}, required: ['name', 'age']);
+  'name': Ack.string.minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
+  'age': Ack.int.min(0).max(120),                // Age must be an integer between 0 and 120.
+  'email': Ack.string.isEmail().nullable(),      // Email must be a valid format, but can be null.
+}, required: ['name', 'age']); // Name and age are mandatory fields.
 
-// Validate data
-final result = userSchema.validate({
+// Data to validate.
+final dataToValidate = {
   'name': 'John',
   'age': 30,
   'email': 'john@example.com'
-});
+};
 
-// Check if validation succeeded
+// Perform the validation against the schema.
+final result = userSchema.validate(dataToValidate);
+
+// Check the validation outcome.
 if (result.isOk) {
+  // Validation passed, safely access the validated data.
   final validData = result.getOrThrow();
   print('Valid data: $validData');
 } else {
+  // Validation failed, access the detailed error.
   final error = result.getError();
-  print('Error: $error');
+  print('Validation Error: ${error.message}'); // Or use error.toString() for full details.
 }
 ```
 
@@ -63,15 +75,15 @@ if (result.isOk) {
 ### Validation Options
 
 - **Nullable**: `Ack.string.nullable()`
-- **Default values**: `result.getOrElse(() => 'Guest')`
 - **Custom validation**: `Ack.string.constrain(myValidator)`
 
 ### Error Handling
 
 ```dart
 if (result.isFail) {
-  // Get formatted error message
+  // Get formatted error message (or the full error object)
   final error = result.getError();
-  print('${error.name}: ${error.message}');
+  print('${error.name}: ${error.message}'); // Specific message
+  // print(error); // Full error details including path
 }
 ```

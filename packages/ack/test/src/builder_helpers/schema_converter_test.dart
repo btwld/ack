@@ -26,7 +26,7 @@ class Category {
 
 /// Schema class for Product model
 class ProductSchema extends SchemaModel<Product> {
-  ProductSchema(Object? data) : super(data);
+  ProductSchema(super.data);
 
   @override
   AckSchema getSchema() {
@@ -68,7 +68,7 @@ class ProductSchema extends SchemaModel<Product> {
 
 /// Schema class for Category model
 class CategorySchema extends SchemaModel<Category> {
-  CategorySchema(Object? data) : super(data);
+  CategorySchema(super.data);
 
   @override
   AckSchema getSchema() {

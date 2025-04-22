@@ -200,7 +200,9 @@ class ComplexPasswordConstraint extends Constraint<String>
     if (!RegExp(r'[A-Z]').hasMatch(value)) return false;
     if (!RegExp(r'[a-z]').hasMatch(value)) return false;
     if (!RegExp(r'[0-9]').hasMatch(value)) return false;
-    if (!RegExp(r'[!@#$%^&*]').hasMatch(value)) return false;
+    if (!RegExp(r'[!@#$%^&*]').hasMatch(value)) {
+      return false;
+    }
     return true;
   }
 
@@ -211,8 +213,9 @@ class ComplexPasswordConstraint extends Constraint<String>
     if (!RegExp(r'[A-Z]').hasMatch(value)) issues.add('an uppercase letter');
     if (!RegExp(r'[a-z]').hasMatch(value)) issues.add('a lowercase letter');
     if (!RegExp(r'[0-9]').hasMatch(value)) issues.add('a number');
-    if (!RegExp(r'[!@#$%^&*]').hasMatch(value))
+    if (!RegExp(r'[!@#$%^&*]').hasMatch(value)) {
       issues.add('a special character');
+    }
     return 'Password must contain ${issues.join(', ')}';
   }
 }

@@ -12,7 +12,7 @@ class TestModel {
 
 /// Test schema class for TestModel
 class TestSchema extends SchemaModel<TestModel> {
-  TestSchema(Object? data) : super(data);
+  TestSchema(super.data);
 
   @override
   AckSchema getSchema() {
@@ -47,7 +47,7 @@ class AnotherModel {
 
 /// Test schema class for AnotherModel
 class AnotherSchema extends SchemaModel<AnotherModel> {
-  AnotherSchema(Object? data) : super(data);
+  AnotherSchema(super.data);
 
   @override
   AckSchema getSchema() {

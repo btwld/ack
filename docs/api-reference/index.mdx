@@ -1,0 +1,113 @@
+---
+title: API Reference
+---
+
+This page provides a quick reference for the core Ack classes, methods, and annotations. For detailed explanations and usage examples, refer to the specific guides linked below.
+
+## Core `Ack` Class
+
+Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.mdx).
+
+- [`Ack.string`](../core-concepts/schemas.mdx#string-schema): Creates a `StringSchema`.
+- [`Ack.int`](../core-concepts/schemas.mdx#number-schemas): Creates an `IntSchema`.
+- [`Ack.double`](../core-concepts/schemas.mdx#number-schemas): Creates a `DoubleSchema`.
+- [`Ack.boolean`](../core-concepts/schemas.mdx#boolean-schema): Creates a `BooleanSchema`.
+- [`Ack.list(AckSchema itemSchema)`](../core-concepts/schemas.mdx#list-schema): Creates a `ListSchema`.
+- [`Ack.object(...)`](../core-concepts/schemas.mdx#object-schema): Creates an `ObjectSchema`.
+
+## `AckSchema<T>` (Base Class)
+
+Base class for all schema types.
+
+- [`Result<T> validate(dynamic data)`](../core-concepts/error-handling.mdx#the-result-object): Validates the input data against the schema.
+- [`AckSchema<T?> nullable()`](../core-concepts/schemas.mdx#making-schemas-nullable): Returns a new schema that also accepts `null`.
+- `AckSchema<T> description(String description)`: Adds a description (used by [`toOpenApi()`](../guides/openapi-integration.mdx)).
+- `AckSchema<T> defaultValue(T value)`: Sets a default value (used by [`toOpenApi()`](../guides/openapi-integration.mdx)).
+- [`AckSchema<T> constrain(...)`](../guides/custom-validation.mdx#applying-custom-constraints): Applies a custom validation constraint.
+- [`Map<String, dynamic> toOpenApi()`](../guides/openapi-integration.mdx#generating-openapi-schemas): Converts the schema to an OpenAPI Schema Object map (requires `package:ack/openapi.dart`).
+
+## `StringSchema`
+
+Schema for validating strings. See [String Constraints](../core-concepts/validation.mdx#string-constraints).
+
+- [`minLength(...)`](../core-concepts/validation.mdx#minlengthint-min)
+- [`maxLength(...)`](../core-concepts/validation.mdx#maxlengthint-max)
+- [`length(...)`](../core-concepts/validation.mdx#lengthint-exactlength)
+- [`isNotEmpty(...)`](../core-concepts/validation.mdx#isnotempty)
+- [`pattern(...)`](../core-concepts/validation.mdx#patternstring-pattern--string-patternname-string-example)
+- [`isEmail(...)`](../core-concepts/validation.mdx#isemail)
+- [`isUrl(...)`](../core-concepts/validation.mdx#isurl)
+- [`isDate(...)`](../core-concepts/validation.mdx#isdate)
+- [`isDateTime(...)`](../core-concepts/validation.mdx#isdatetime)
+- [`isEnum(...)`](../core-concepts/validation.mdx#isenumliststring-allowedvalues)
+
+## `IntSchema` / `DoubleSchema` (Number Schemas)
+
+Schemas for validating numbers. See [Number Constraints](../core-concepts/validation.mdx#number-constraints-int-and-double).
+
+- [`min(...)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false)
+- [`max(...)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false)
+- [`positive(...)`](../core-concepts/validation.mdx#positive)
+- [`negative(...)`](../core-concepts/validation.mdx#negative)
+- [`multipleOf(...)`](../core-concepts/validation.mdx#multipleofnum-factor)
+
+## `BooleanSchema`
+
+Schema for validating booleans. See [Boolean Schema](../core-concepts/schemas.mdx#boolean-schema). No specific constraints beyond type.
+
+## `ListSchema<E>`
+
+Schema for validating lists. See [List Constraints](../core-concepts/validation.mdx#list-constraints).
+
+- [`minItems(...)`](../core-concepts/validation.mdx#minitemsint-min)
+- [`maxItems(...)`](../core-concepts/validation.mdx#maxitemsint-max)
+- [`length(...)`](../core-concepts/validation.mdx#lengthint-exactlength-1)
+- [`isNotEmpty(...)`](../core-concepts/validation.mdx#isnotempty-1)
+- [`uniqueItems(...)`](../core-concepts/validation.mdx#uniqueitems)
+
+## `ObjectSchema`
+
+Schema for validating objects (maps). See [Object Schema](../core-concepts/schemas.mdx#object-schema).
+
+- Constructed using `Ack.object(...)`.
+- Configuration includes `properties`, `required`, `additionalProperties`.
+
+## `Result<T>`
+
+Object returned by `validate()`. See [The Result Object](../core-concepts/error-handling.mdx#the-result-object).
+
+- `bool isOk`
+- `bool isFail`
+- `T getOrThrow()`
+- `T? getOrNull()`
+- `SchemaError? getError()`
+- `T getOrElse(T Function() defaultValue)`
+
+## `SchemaError` (and Subclasses)
+
+Object representing a validation failure. See [Understanding SchemaError](../core-concepts/error-handling.mdx#understanding-schemaerror) and [Error Types](../core-concepts/error-handling.mdx#error-types).
+
+- `String name`
+- `String message`
+- `List<String> path`
+- `dynamic value`
+- `dynamic expected`
+
+**Subclasses:** `SchemaTypeError`, `SchemaRequiredError`, `SchemaConstraintsError`, `SchemaNestedError`.
+
+## `SchemaConstraint<T>`
+
+Base class for creating custom validation rules. See [Custom Validation Guide](../guides/custom-validation.mdx).
+
+- `SchemaConstraint({required String name, required String message})`
+- `bool validate(T value, [Map<String, dynamic>? data])`
+
+## Code Generation (`ack_generator`)
+
+Annotations for use on model classes when using code generation. See [Code Generation Guide](../guides/code-generation.mdx#available-annotations).
+
+**Class Annotations:** `@Schema(...)`
+
+**Property Annotations:** `@Required`, `@Nullable`, `@Description`, `@IsEmail`, `@IsUrl`, `@IsDate`, `@IsDateTime`, `@MinLength`, `@MaxLength`, `@Length`, `@Pattern`, `@IsNotEmpty`, `@EnumValues`, `@Min`, `@Max`, `@Positive`, `@Negative`, `@MultipleOf`, `@MinItems`, `@MaxItems`, `@UniqueItems`.
+
+*Refer to the individual guides for detailed usage and examples.* 

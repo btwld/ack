@@ -12,26 +12,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Setup Melos
       - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: 'stable'
+      - run: dart pub global activate melos
+      - run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
       
-      - name: Install dependencies
-        run: dart pub get
+      - name: Bootstrap workspace
+        run: melos bootstrap
       
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: melos format --check
       
       - name: Analyze project source
-        run: dart analyze
+        run: melos analyze
       
       - name: Run tests
-        run: dart test --coverage=coverage
+        run: melos test --coverage
 
       - name: Format coverage to lcov
-        run: dart pub global activate coverage && dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
+        run: melos exec -- dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ack-core # Optional: flag for core tests
+          fail_ci_if_error: true
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    # Run only on pushes to tags like v1.0.0
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup Melos (same as test job)
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub global activate melos
+      - run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+      - run: melos bootstrap
+
+      # Publish packages
+      - name: Publish Packages
+        # Requires PUB_DEV_ACCESS_TOKEN, PUB_DEV_REFRESH_TOKEN, PUB_DEV_ID_TOKEN_AUDIENCE secrets
+        run: melos publish --yes
+        env:
+          PUB_DEV_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}
+          PUB_DEV_REFRESH_TOKEN: ${{ secrets.PUB_DEV_REFRESH_TOKEN }}
+          PUB_DEV_ID_TOKEN_AUDIENCE: ${{ secrets.PUB_DEV_ID_TOKEN_AUDIENCE }}
