@@ -34,7 +34,8 @@ Schema for validating strings. See [String Constraints](../core-concepts/validat
 - [`maxLength(...)`](../core-concepts/validation.mdx#maxlengthint-max)
 - [`length(...)`](../core-concepts/validation.mdx#lengthint-exactlength)
 - [`isNotEmpty(...)`](../core-concepts/validation.mdx#isnotempty)
-- [`pattern(...)`](../core-concepts/validation.mdx#patternstring-pattern--string-patternname-string-example)
+- [`matches(...)`](../core-concepts/validation.mdx#matchesstring-pattern-string-example)
+- [`contains(...)`](../core-concepts/validation.mdx#containsstring-pattern-string-example)
 - [`isEmail(...)`](../core-concepts/validation.mdx#isemail)
 - [`isUrl(...)`](../core-concepts/validation.mdx#isurl)
 - [`isDate(...)`](../core-concepts/validation.mdx#isdate)
@@ -108,6 +109,6 @@ Annotations for use on model classes when using code generation. See [Code Gener
 
 **Class Annotations:** `@Schema(...)`
 
-**Property Annotations:** `@Required`, `@Nullable`, `@Description`, `@IsEmail`, `@IsUrl`, `@IsDate`, `@IsDateTime`, `@MinLength`, `@MaxLength`, `@Length`, `@Pattern`, `@IsNotEmpty`, `@EnumValues`, `@Min`, `@Max`, `@Positive`, `@Negative`, `@MultipleOf`, `@MinItems`, `@MaxItems`, `@UniqueItems`.
+**Property Annotations:** `@Required`, `@Nullable`, `@Description`, `@IsEmail`, `@IsUrl`, `@IsDate`, `@IsDateTime`, `@MinLength`, `@MaxLength`, `@Length`, `@Matches`, `@Contains`, `@IsNotEmpty`, `@EnumValues`, `@Min`, `@Max`, `@Positive`, `@Negative`, `@MultipleOf`, `@MinItems`, `@MaxItems`, `@UniqueItems`.
 
-*Refer to the individual guides for detailed usage and examples.* 
+*Refer to the individual guides for detailed usage and examples.*

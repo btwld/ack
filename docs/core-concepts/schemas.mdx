@@ -19,13 +19,7 @@ final nameSchema = Ack.string;
 final usernameSchema = Ack.string
   .minLength(3)
   .maxLength(20)
-  .constrain(
-    StringRegexConstraint(
-      patternName: 'alphanumeric_underscore',
-      pattern: r'^[a-zA-Z0-9_]+$', // Regex: letters, numbers, underscore
-      example: 'user_123'
-    )
-  );
+  .matches(r'[a-zA-Z0-9_]+', example: 'user_123'); // Regex: letters, numbers, underscore
 
 // Email validation
 final emailSchema = Ack.string.isEmail();
@@ -127,20 +121,25 @@ Validate structured data objects with defined properties and types. This is one 
 
 ```dart
 // User object schema
-final userSchema = Ack.object({
-  // Define properties and their schemas
-  'name': Ack.string.minLength(1),
-  'age': Ack.int.min(0),
-  'email': Ack.string.isEmail(),
-  // Nested object for address
-  'address': Ack.object({
-    'street': Ack.string,
-    'city': Ack.string,
-    'zipCode': Ack.string.pattern(r'^\d{5}$') // Simple 5-digit zip code regex
-  }, required: ['street', 'city']) // Street and city are required *within* the address object
-}, 
-// Specify required top-level properties for the *user* object
-required: ['name', 'email']);
+final userSchema = Ack.object(
+  {
+    // Define properties and their schemas
+    'name': Ack.string.minLength(1),
+    'age': Ack.int.min(0),
+    'email': Ack.string.isEmail(),
+    // Nested object for address
+    'address': Ack.object(
+      {
+        'street': Ack.string,
+        'city': Ack.string,
+        'zipCode': Ack.string.matches(r'\d{5}', example: '12345'), // Simple 5-digit zip code regex
+      },
+      required: ['street', 'city'], // Street and city are required *within* the address object
+    ),
+  },
+  // Specify required top-level properties for the *user* object
+  required: ['name', 'email'],
+);
 ```
 
 ### Optional Fields
@@ -149,13 +148,16 @@ By default, fields defined in an `Ack.object` are optional unless included in th
 You can also make any field explicitly nullable using `.nullable()`. See [Making Schemas Nullable](#making-schemas-nullable) below.
 
 ```dart
-final productSchema = Ack.object({
-  'id': Ack.string,         // Required
-  'name': Ack.string,       // Required
-  'description': Ack.string, // Optional (not in 'required' list)
-  'price': Ack.double.min(0), // Required
-  'tags': Ack.list(Ack.string).nullable(), // Optional list (can be null)
-}, required: ['id', 'name', 'price']);
+final productSchema = Ack.object(
+  {
+    'id': Ack.string,         // Required
+    'name': Ack.string,       // Required
+    'description': Ack.string, // Optional (not in 'required' list)
+    'price': Ack.double.min(0), // Required
+    'tags': Ack.list(Ack.string).nullable(), // Optional list (can be null)
+  },
+  required: ['id', 'name', 'price'],
+);
 
 // Valid: description is missing, tags is null
 final validData = {'id': 'p1', 'name': 'Thing', 'price': 9.99, 'tags': null};
@@ -163,7 +165,7 @@ print(productSchema.validate(validData).isOk); // true
 
 // Invalid: name is missing
 final invalidData = {'id': 'p2', 'price': 19.99};
-print(productSchema.validate(invalidData).isOk); // false 
+print(productSchema.validate(invalidData).isOk); // false
 ```
 
 ### Handling Nested Models
@@ -177,7 +179,7 @@ Assuming you have validated data or a model instance (`user`):
 ```dart
 // Direct access (if using generated models or SchemaModel)
 // The type is automatically converted.
-Address billingAddress = user.billingAddress; 
+Address billingAddress = user.billingAddress;
 print(billingAddress.city);
 
 // Accessing items in a list of models
@@ -190,7 +192,7 @@ for (final item in items) {
 final validatedData = result.getOrThrow();
 final addressMap = validatedData['address'] as Map<String, dynamic>?;
 if (addressMap != null) {
-  // You might need to validate/parse the nested part separately 
+  // You might need to validate/parse the nested part separately
   // if not using generated models.
   final nestedAddressSchema = Ack.object({...}); // Define address schema again
   final addressResult = nestedAddressSchema.validate(addressMap);
@@ -209,7 +211,7 @@ When updating, it's best practice to create new instances rather than modifying 
 // Assume 'user' is an existing immutable model instance
 final updatedUser = user.copyWith(
   // Create a new Address instance with the changed city
-  address: user.address.copyWith(city: "Miami") 
+  address: user.address.copyWith(city: "Miami")
 );
 
 // If using generated schemas, you might convert back for re-validation
@@ -224,11 +226,13 @@ final updatedUser = user.copyWith(
 By default, `Ack.object` ignores properties in the input data that are not defined in the schema. To capture these, use `additionalProperties`:
 
 ```dart
-final flexibleSchema = Ack.object({
-  'id': Ack.int,
-}, 
-// Allow any other properties, as long as their values are strings
-additionalProperties: Ack.string);
+final flexibleSchema = Ack.object(
+  {
+    'id': Ack.int,
+  },
+  // Allow any other properties, as long as their values are strings
+  additionalProperties: Ack.string,
+);
 
 final data = {'id': 1, 'name': 'Gadget', 'color': 'blue', 'status': 123};
 final result = flexibleSchema.validate(data);
@@ -242,10 +246,13 @@ print(validated); // {id: 1, name: Gadget} - Extra properties are included
 To *disallow* any extra properties, set `additionalProperties: false`:
 
 ```dart
-final strictSchema = Ack.object({
-  'id': Ack.int,
-  'name': Ack.string,
-}, additionalProperties: false);
+final strictSchema = Ack.object(
+  {
+    'id': Ack.int,
+    'name': Ack.string,
+  },
+  additionalProperties: false,
+);
 
 final dataWithExtra = {'id': 1, 'name': 'Test', 'extra': 'disallowed'};
 final result = strictSchema.validate(dataWithExtra);
@@ -266,10 +273,13 @@ final middleNameSchema = Ack.string.nullable();
 final optionalDateSchema = Ack.string.isDate().nullable();
 
 // Nullable object (the entire address object can be null)
-final optionalAddressSchema = Ack.object({
-  'street': Ack.string,
-  'city': Ack.string,
-}, required: ['street', 'city']).nullable(); // Note .nullable() is outside Ack.object
+final optionalAddressSchema = Ack.object(
+  {
+    'street': Ack.string,
+    'city': Ack.string,
+  },
+  required: ['street', 'city'],
+).nullable(); // Note .nullable() is outside Ack.object
 
 // --- Validation Examples ---
 
@@ -284,5 +294,5 @@ print(optionalAddressSchema.validate(validAddress).isOk); // true (valid address
 
 // Invalid nested object still fails even if object is nullable
 final invalidAddress = {'street': '1 Elm St'}; // Missing required 'city'
-print(optionalAddressSchema.validate(invalidAddress).isOk); // false 
-``` 
+print(optionalAddressSchema.validate(invalidAddress).isOk); // false
+```

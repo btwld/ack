@@ -326,11 +326,10 @@ class SchemaModelGenerator {
     final map = getValue<Map<String, dynamic>>('${property.name}');
     return map == null ? null : $schemaType(map);
   }''';
-        } else {
-          return '''  $schemaReturnType get ${property.name} {
+        }
+        return '''  $schemaReturnType get ${property.name} {
     return $schemaType(getValue<Map<String, dynamic>>('${property.name}')!);
   }''';
-        }
       }
 
       // For list types with model items, we also need special handling
@@ -346,11 +345,10 @@ class SchemaModelGenerator {
     final list = getValue<List<dynamic>>('${property.name}');
     return list?.map((item) => $schemaType(item as Map<String, dynamic>)).toList();
   }''';
-        } else {
-          return '''  $schemaReturnType get ${property.name} {
+        }
+        return '''  $schemaReturnType get ${property.name} {
     return getValue<List<dynamic>>('${property.name}')!.map((item) => $schemaType(item as Map<String, dynamic>)).toList();
   }''';
-        }
       }
 
       // For primitive types, use the original approach
@@ -379,10 +377,9 @@ class SchemaModelGenerator {
     final modelConversionProps = properties.map((property) {
       if (property.name == modelData.additionalPropertiesField) {
         return '      ${property.name}: ${modelData.additionalPropertiesField},';
-      } else {
-        final conversion = _generateModelConversion(property);
-        return '      ${property.name}: $conversion,';
       }
+      final conversion = _generateModelConversion(property);
+      return '      ${property.name}: $conversion,';
     }).join('\n');
 
     // ToMap properties
@@ -473,14 +470,14 @@ $additionalPropsCode
     return result;
   }
 
-  /// Convert the schema to OpenAPI specification format
-  static Map<String, Object?> toOpenApiSpec() {
+  /// Convert the schema to an OpenAPI definition
+  static Map<String, Object?> toDefinition() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchema();
   }
 
-  /// Convert the schema to OpenAPI specification JSON string
-  static String toOpenApiSpecString() {
+  /// Convert the schema to an OpenAPI definition JSON string
+  static String toDefinitionString() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchemaString();
   }
@@ -528,10 +525,8 @@ $additionalPropsCode
     } else if (typeStr == 'Map') {
       // Default handling for Map
       return 'Ack.object({}, additionalProperties: true)';
-    } else {
-      // For custom types, reference their schema
-      return '${typeStr}Schema.schema';
-    }
+    } // For custom types, reference their schema
+    return '${typeStr}Schema.schema';
   }
 
   /// Apply a constraint to the schema buffer
@@ -755,7 +750,7 @@ class SchemaData {
   final String? additionalPropertiesField;
   final String? schemaClassName;
 
-  SchemaData({
+  const SchemaData({
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
@@ -785,7 +780,7 @@ class TypeName {
   final String name;
   final List<TypeName> typeArguments;
 
-  TypeName(this.name, this.typeArguments);
+  const TypeName(this.name, this.typeArguments);
 }
 
 /// Information about a property constraint
@@ -793,7 +788,7 @@ class PropertyConstraintInfo {
   final String constraintKey;
   final Map<String, Object?> parameters;
 
-  PropertyConstraintInfo({
+  const PropertyConstraintInfo({
     required this.constraintKey,
     required this.parameters,
   });

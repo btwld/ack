@@ -45,7 +45,7 @@ import 'package:ack_generator/ack_generator.dart';
 @Schema(
   description: 'Represents a user account.',
   // Allow properties not explicitly defined in the class
-  additionalProperties: true, 
+  additionalProperties: true,
   // Store extra properties in the 'metadata' field of the model
   additionalPropertiesField: 'metadata',
 )
@@ -99,15 +99,14 @@ The generated `{ModelName}Schema` class (e.g., `UserSchema`) provides the primar
 The generated schema class typically includes:
 
 -   A static `schema` getter (`UserSchema.schema`) representing the `AckSchema` instance.
--   A static `validate()` method (`UserSchema.validate(data)`) for validating raw data.
--   A static `parse()` method (`UserSchema.parse(validData)`) to create a schema instance from valid data.
 -   A static `fromModel()` method (`UserSchema.fromModel(userInstance)`) to create a schema instance from your model instance.
 -   An instance method `toModel()` to convert the schema instance back to your model class.
 -   An instance method `toMap()` (or `toJson()`) for serialization.
+-   Automatic validation in the constructor.
 
 ### Validation
 
-Use the static `validate` method on the generated schema class to check if input data (typically a `Map<String, dynamic>`) conforms to the rules defined by your annotations. It returns a [`Result`](../core-concepts/error-handling.mdx#the-result-object).
+Validation happens automatically when you create an instance of the generated schema class. You can then check if the data is valid using the `isValid` property.
 
 ```dart
 // file: main.dart
@@ -121,26 +120,26 @@ void main() {
     'age': 25,
     'role': 'admin' // Additional property captured by metadata
   };
-  
+
   final invalidUserData = {
     'email': 'invalid-email', // Fails @IsEmail
     'name': 'Jo', // Fails @MinLength(3)
   };
 
-  // Validate the data - returns a Result object
-  final result = UserSchema.validate(userData);
-  final invalidResult = UserSchema.validate(invalidUserData);
+  // Create schema instances - validation happens automatically
+  final userSchema = UserSchema(userData);
+  final invalidUserSchema = UserSchema(invalidUserData);
 
-  if (result.isOk) {
+  if (userSchema.isValid) {
     print('User data is valid!');
   } else {
-    print('Validation failed: ${result.getError()}'); // Should not happen here
+    print('Validation failed: ${userSchema.getErrors()}'); // Should not happen here
   }
-  
-  if (invalidResult.isFail) {
+
+  if (!invalidUserSchema.isValid) {
     print('Invalid data validation failed as expected:');
     // See Error Handling guide for details on SchemaError
-    final error = invalidResult.getError(); 
+    final error = invalidUserSchema.getErrors();
     print('- Error Name: ${error?.name}');
     print('- Error Message: ${error?.message}');
     print('- Error Path: ${error?.path}');
@@ -150,45 +149,62 @@ void main() {
 
 *Also see the [JSON Serialization](../core-concepts/json-serialization.mdx) guide.*
 
-### Parsing Data to Schema Instance
-
-If validation passes (or you are sure the data is valid), use the static `parse` method to convert the raw data map into an instance of the generated schema class.
-
-```dart
-// Assuming 'userData' is a valid map
-// This throws an exception if the data is invalid based on the schema!
-try {
-  final userSchemaInstance = UserSchema.parse(userData);
-  print('Parsed schema instance successfully.');
-  // userSchemaInstance now holds the data in a structured way
-} catch (e) {
-  print('Failed to parse data: $e');
-}
-
-// Safer approach: Validate first
-final validationResult = UserSchema.validate(userData);
-if (validationResult.isOk) {
-  // Use the validated data directly with the constructor if needed,
-  // or use parse() safely.
-  final userSchemaInstance = UserSchema.parse(validationResult.getOrThrow());
-  // ... proceed ...
-}
-```
-
 ### Converting Schema Instance to Model
 
-Once you have an instance of the generated schema class (e.g., `userSchemaInstance`), use the `toModel()` method to get an instance of your original model class (`User`).
+Once you have an instance of the generated schema class, use the `toModel()` method to get an instance of your original model class (`User`). Make sure to check `isValid` first to avoid exceptions.
 
 ```dart
-// Assuming userSchemaInstance is a valid UserSchema instance from parse()
-final userModel = userSchemaInstance.toModel();
+// Create a schema instance - validation happens automatically
+final userSchema = UserSchema(userData);
 
-// Now you have a fully typed User model instance
-print('User Model: Name=${userModel.name}, Email=${userModel.email}');
+// Check if valid before converting to model
+if (userSchema.isValid) {
+  final userModel = userSchema.toModel();
 
-// Access additional properties stored in the metadata field
-print('User Metadata Role: ${userModel.metadata['role']}');
+  // Now you have a fully typed User model instance
+  print('User Model: Name=${userModel.name}, Email=${userModel.email}');
+
+  // Access additional properties stored in the metadata field
+  print('User Metadata Role: ${userModel.metadata['role']}');
+}
 ```
+
+### Generating OpenAPI Definitions
+
+The generated schema classes include methods to convert your schema to OpenAPI definition format, which is useful for API documentation or integration with OpenAPI tools.
+
+```dart
+// Get the OpenAPI definition as a Map
+final definition = UserSchema.toDefinition();
+
+// Get the OpenAPI definition as a formatted JSON string
+final definitionString = UserSchema.toDefinitionString();
+print('OpenAPI Definition:\n$definitionString');
+
+/* Example output:
+{
+  "type": "object",
+  "required": ["name", "email"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 2
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "nullable": true
+    }
+  }
+}
+*/
+```
+
+This makes it easy to generate API documentation or validate requests and responses against your schema.
 
 ### Converting Model to Schema Instance
 
@@ -200,7 +216,7 @@ final userModelInstance = User(
   email: 'jane@example.com',
   name: 'Jane Doe',
   age: 28,
-  metadata: {'status': 'active'}
+  metadata: {'status': 'active'},
 );
 
 // Convert the model instance to a schema instance
@@ -249,7 +265,8 @@ Refer to the annotations provided by the `ack_generator` package. These generall
 -   `@MinLength(int)`
 -   `@MaxLength(int)`
 -   `@Length(int)`
--   `@Pattern(String)`
+-   `@Matches(String)`
+-   `@Contains(String)`
 -   `@IsNotEmpty()`
 -   `@EnumValues(List<String>)`
 
@@ -296,27 +313,49 @@ import 'address.dart';
 class User {
   final String name;
   // Reference another @Schema annotated class
-  final Address address; 
+  final Address address;
   // List of nested models
-  final List<Address>? alternateAddresses; 
+  final List<Address>? alternateAddresses;
 
   User({required this.name, required this.address, this.alternateAddresses});
 }
 ```
 
-When you run `build_runner`, it generates `address.schema.dart` and `user.schema.dart`. The generated `UserSchema` will correctly reference `AddressSchema` for validation and parsing of the nested `address` and `alternateAddresses` fields.
+When you run `build_runner`, it generates `address.schema.dart` and `user.schema.dart`. The generated `UserSchema` will correctly reference `AddressSchema` for validation of the nested `address` and `alternateAddresses` fields.
 
 **Accessing Nested Models:**
 
 ```dart
-// Assume userModel is a valid User instance obtained via UserSchema(...).toModel()
-Address primaryAddress = userModel.address;
-print(primaryAddress.city);
+// Create a schema instance with nested data
+final userData = {
+  'name': 'John Doe',
+  'address': {
+    'street': '123 Main St',
+    'city': 'Anytown',
+  },
+  'alternateAddresses': [
+    {
+      'street': '456 Oak Ave',
+      'city': 'Othertown',
+    },
+  ],
+};
 
-List<Address>? otherAddresses = userModel.alternateAddresses;
-if (otherAddresses != null) {
-  for (final addr in otherAddresses) {
-    print(addr.street);
+// Create schema instance and convert to model if valid
+final userSchema = UserSchema(userData);
+if (userSchema.isValid) {
+  final userModel = userSchema.toModel();
+
+  // Access the primary address
+  Address primaryAddress = userModel.address;
+  print(primaryAddress.city); // Outputs: Anytown
+
+  // Access the alternate addresses
+  List<Address>? otherAddresses = userModel.alternateAddresses;
+  if (otherAddresses != null) {
+    for (final addr in otherAddresses) {
+      print(addr.street); // Outputs: 456 Oak Ave
+    }
   }
 }
-``` 
+```

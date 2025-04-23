@@ -1,10 +1,6 @@
----
-title: SchemaModel Class API
----
-
 # SchemaModel Class API
 
-This document describes the `SchemaModel` API in Ack, which provides an alternative pattern for creating schema-based models where the validation logic is encapsulated within the model wrapper itself.
+This document describes the `SchemaModel` API in Ack, which provides a way to create schema-based models with automatic validation. While you can implement SchemaModel classes manually, the recommended approach is to use code generation.
 
 ## Overview
 
@@ -15,57 +11,54 @@ The `SchemaModel` class is a base class for creating schema-based models that ca
 - **Automatic Validation**: Validation happens automatically when a SchemaModel is created
 - **Simple Error Handling**: Easy access to validation errors through `isValid` and `getErrors()`
 - **Type Safety**: Uses `Object?` instead of `dynamic` for better type safety
-- **Fluent API**: Intuitive API for creating and using schema models
+- **Code Generation**: Generate schema models automatically from annotated classes
 
-## Basic Usage
+## Using Code Generation (Recommended Approach)
+
+The easiest way to use SchemaModel is with code generation. This approach lets you define your models as regular Dart classes with annotations, and the generator creates the corresponding SchemaModel classes for you.
+
+### 1. Define Your Model Class
 
 ```dart
-import 'package:ack/ack.dart';
+// file: user.dart
+import 'package:ack_generator/ack_generator.dart';
 
-// Assume User class exists
+@Schema()
 class User {
+  @MinLength(2)
   final String name;
+
+  @IsEmail()
   final String email;
+
+  @Min(0)
   final int? age;
+
   User({required this.name, required this.email, this.age});
 }
+```
 
-// Define a schema model by extending SchemaModel
-class UserSchema extends SchemaModel<User> {
-  // Constructor passes data to the base class for validation
-  UserSchema(Object? data) : super(data);
+### 2. Generate the Schema Class
 
-  // Define the schema used for validation
-  // This returns an AckSchema instance, see [Schema Types](./schemas.mdx)
-  @override
-  AckSchema getSchema() {
-    return Ack.object({
-      'name': Ack.string.minLength(2),
-      'email': Ack.string.isEmail(),
-      'age': Ack.int.min(0).nullable(),
-    }, required: ['name', 'email']);
-  }
+Run the build_runner command to generate the schema class:
 
-  // Convert the validated data to the actual User model
-  @override
-  User toModel() {
-    // Check validation status before converting
-    if (!isValid) {
-      // Throw an exception or handle appropriately
-      // getErrors() returns a SchemaError, see [Error Handling](./error-handling.mdx)
-      throw AckException(getErrors()!); 
-    }
-    
-    // Use getValue<T>(key) to access validated data safely
-    return User(
-      name: getValue<String>('name')!,
-      email: getValue<String>('email')!,
-      age: getValue<int?>('age'),
-    );
-  }
-}
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
 
-// Using the schema model
+This generates a `user.schema.dart` file with a `UserSchema` class that extends `SchemaModel<User>`.
+
+### 3. Use the Generated Schema Class
+
+There are two ways to use the generated schema class:
+
+#### Approach 1: Using the constructor (direct validation)
+
+```dart
+// file: main.dart
+import 'user.dart';
+import 'user.schema.dart'; // Import the generated file
+
 void main() {
   final userData = {
     'name': 'John Doe',
@@ -73,145 +66,230 @@ void main() {
     'age': 30,
   };
 
-  // Create the SchemaModel instance - validation runs automatically
+  // Create schema instance - validation happens automatically in constructor
   final userSchema = UserSchema(userData);
 
-  // Check if the data was valid according to the schema
+  // Check if the data is valid
   if (userSchema.isValid) {
-    // Convert to the typed User model
+    // Convert to the User model
     final user = userSchema.toModel();
     print('Valid User: ${user.name}, ${user.email}, Age: ${user.age}');
   } else {
     // Handle validation errors
-    // getErrors() returns a SchemaError? - see [Error Handling](./error-handling.mdx)
     print('Validation errors: ${userSchema.getErrors()}');
-  }
-
-  final invalidData = {'name': 'Jane', 'email': 'jane@'}; // Invalid email
-  final invalidUserSchema = UserSchema(invalidData);
-  if (!invalidUserSchema.isValid) {
-     print('Invalid User Data Errors: ${invalidUserSchema.getErrors()}');
   }
 }
 ```
 
-## API Reference
-
-### Constructor
+#### Using fromModel for existing models
 
 ```dart
-SchemaModel(Object? data)
+// file: main.dart
+import 'user.dart';
+import 'user.schema.dart'; // Import the generated file
+
+void main() {
+  // Create a schema instance from an existing User model
+  final existingUser = User(
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+  );
+  final userSchema = UserSchema.fromModel(existingUser);
+
+  // Convert back to a Map for serialization
+  final map = userSchema.toMap();
+  print('Serialized: $map');
+}
 ```
 
-Creates a new SchemaModel instance with the given data. The data can be any object, but it's typically a `Map<String, dynamic>`. Validation happens automatically during construction based on the `getSchema()` implementation.
+## Generated Schema Class API
 
-### Methods
+When you use code generation, the generated schema class extends the base SchemaModel class and adds some static methods and properties for convenience. Here's what you'll find in a generated schema class:
 
-#### `abstract AckSchema getSchema()`
+### Static Properties and Methods
 
-This abstract method must be implemented by subclasses. It should return an [`AckSchema`](./schemas.mdx) instance that defines the validation rules for the model.
+#### `static AckSchema get schema`
 
-#### `abstract T toModel()`
+Returns the `AckSchema` instance that defines the validation rules for the model, generated from your annotations.
 
-This abstract method must be implemented by subclasses. It should convert the validated internal data representation to a model instance of type `T`. It's crucial to check `isValid` before calling this method to avoid errors when accessing potentially invalid data.
+```dart
+final userSchema = UserSchema.schema;
+print('Schema: ${userSchema}');
+```
 
-#### `T? getValue<T>(String key)`
+#### `static UserSchema fromModel(User model)`
 
-Gets a value from the validated internal data by its key, attempting to cast it to the specified type `T`. Returns `null` if the key doesn't exist, the data is invalid, or the value cannot be cast.
+Creates a new schema instance from an existing model instance.
+
+```dart
+final user = User(
+  name: 'John',
+  email: 'john@example.com',
+);
+final schema = UserSchema.fromModel(user);
+```
+
+#### `static Map<String, Object?> toDefinition()`
+
+Converts the schema to an OpenAPI definition as a Map.
+
+```dart
+final definition = UserSchema.toDefinition();
+print('OpenAPI Definition: $definition');
+```
+
+#### `static String toDefinitionString()`
+
+Converts the schema to an OpenAPI definition as a formatted JSON string.
+
+```dart
+final definitionString = UserSchema.toDefinitionString();
+print('OpenAPI Definition JSON:\n$definitionString');
+```
+
+### Instance Methods
+
+#### `User toModel()`
+
+Converts the schema instance to a model instance.
+
+```dart
+final schema = UserSchema.parse(userData);
+final user = schema.toModel();
+```
 
 #### `Map<String, dynamic> toMap()`
 
-Returns the original input data (or the validated data structure) as a `Map<String, dynamic>`, assuming the input was map-like. Useful for serialization if needed, but usually, you'd convert to your model first.
+Converts the schema instance to a map, useful for serialization.
+
+```dart
+final schema = UserSchema.parse(userData);
+final map = schema.toMap();
+final json = jsonEncode(map);
+```
+
+#### `bool get isValid`
+
+Returns whether the data is valid according to the schema.
+
+```dart
+final schema = UserSchema(userData);
+if (schema.isValid) {
+  // Use schema...
+}
+```
 
 #### `SchemaError? getErrors()`
 
-Returns the [`SchemaError`](./error-handling.mdx#understanding-schemaerror) object containing details about validation failures if `isValid` is `false`. Returns `null` if the data is valid (`isValid` is `true`).
+Returns the validation errors if the data is invalid, or `null` if the data is valid.
 
-### Properties
+```dart
+final schema = UserSchema(userData);
+if (!schema.isValid) {
+  print('Errors: ${schema.getErrors()}');
+}
+```
 
-#### `bool isValid`
+## Working with Nested Models
 
-Read-only property. Returns `true` if the input data passed validation against the schema defined in `getSchema()`, `false` otherwise.
+The code generator automatically handles nested models if the nested type is also annotated with `@Schema`.
+
+```dart
+// file: address.dart
+import 'package:ack_generator/ack_generator.dart';
+
+@Schema()
+class Address {
+  final String street;
+  final String city;
+
+  Address({required this.street, required this.city});
+}
+
+// file: user.dart
+import 'package:ack_generator/ack_generator.dart';
+import 'address.dart';
+
+@Schema()
+class User {
+  final String name;
+  final Address address;
+
+  User({required this.name, required this.address});
+}
+```
+
+When you run `build_runner`, it generates both `AddressSchema` and `UserSchema` classes. The `UserSchema` will automatically use `AddressSchema` for validating the nested `address` field.
+
+```dart
+final userData = {
+  'name': 'John Doe',
+  'address': {
+    'street': '123 Main St',
+    'city': 'Anytown',
+  },
+};
+
+// Create schema instance - validation happens automatically
+final userSchema = UserSchema(userData);
+
+// Check if valid and convert to model
+if (userSchema.isValid) {
+  final user = userSchema.toModel();
+  print('User: ${user.name}, City: ${user.address.city}');
+}
+```
+
+## Manual Implementation (Advanced)
+
+While code generation is recommended, you can also implement `SchemaModel` manually for more control. The manual implementation follows the same pattern as the base SchemaModel class, with validation happening automatically in the constructor.
+
+```dart
+class UserSchema extends SchemaModel<User> {
+  UserSchema(Object? data) : super(data);
+
+  @override
+  AckSchema getSchema() {
+    return Ack.object(
+      {
+        'name': Ack.string.minLength(2),
+        'email': Ack.string.isEmail(),
+        'age': Ack.int.min(0).nullable(),
+      },
+      required: ['name', 'email'],
+    );
+  }
+
+  @override
+  User toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
+    return User(
+      name: getValue<String>('name')!,
+      email: getValue<String>('email')!,
+      age: getValue<int?>('age'),
+    );
+  }
+}
+```
 
 ## SchemaRegistry
 
 The `SchemaRegistry` is an optional utility for managing `SchemaModel` factories. It allows you to create `SchemaModel` instances dynamically based on a model type.
 
-### Registering a Schema Factory
-
-You need to provide a factory function that takes `Object?` data and returns an instance of your `SchemaModel` subclass.
-
 ```dart
 // Register a factory for creating UserSchema instances
 SchemaRegistry.register<User, UserSchema>((data) => UserSchema(data));
-```
 
-### Creating a Schema via Registry
-
-Use the registry to create a schema instance when you have the model type and the data.
-
-```dart
 // Create a UserSchema instance using the registered factory
 final schema = SchemaRegistry.createSchema(User, userData);
 
 if (schema != null && schema.isValid) {
-  final user = (schema as UserSchema).toModel(); 
+  final user = (schema as UserSchema).toModel();
   print('Created via registry: ${user.name}');
-} else {
-  print('Failed to create schema via registry or data invalid.');
 }
 ```
 
 *Note: Using `SchemaRegistry` is optional and useful in scenarios where you need to handle schema creation dynamically.*
-
-## Migration Guide (Illustrative)
-
-This section shows conceptual changes if migrating from a hypothetical older API version to the current `SchemaModel` pattern.
-
-### Hypothetical "Before" (Manual Validation Call)
-
-```dart
-// Hypothetical old pattern
-class OldUserSchema {
-  final Map<String, dynamic> data;
-  OldUserSchema(this.data);
-  
-  static final schema = Ack.object({...}); // Schema defined separately
-  
-  SchemaResult validate() {
-    return schema.validate(data);
-  }
-  
-  User toModel() { /* ... conversion ... */ }
-}
-
-// Usage
-final oldSchema = OldUserSchema(userData);
-final validationResult = oldSchema.validate();
-if (validationResult.isOk) {
-  final user = oldSchema.toModel();
-}
-```
-
-### "After" (Using SchemaModel)
-
-The current `SchemaModel` integrates schema definition and validation into the constructor.
-
-```dart
-// Current SchemaModel pattern
-class UserSchema extends SchemaModel<User> {
-  UserSchema(Object? data) : super(data);
-
-  @override
-  AckSchema getSchema() { /* ... return schema ... */ }
-
-  @override
-  User toModel() { /* ... conversion, check isValid ... */ }
-}
-
-// Usage
-final userSchema = UserSchema(userData); // Validation happens here
-if (userSchema.isValid) {
-  final user = userSchema.toModel();
-}
-``` 

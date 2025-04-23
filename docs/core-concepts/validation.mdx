@@ -47,14 +47,24 @@ Ensures the string is not empty (`''`). Equivalent to `minLength(1)`.
 Ack.string.isNotEmpty()
 ```
 
-### `pattern(String pattern, {String? patternName, String? example})`
-Ensures the string matches the given regular expression `pattern`.
+### `matches(String pattern, {String? example})`
+Ensures the string fully matches the given regular expression `pattern`. The pattern is automatically anchored with `^` and `$` if not already present.
 ```dart
 // Simple alphanumeric pattern
-Ack.string.pattern(r'^[a-zA-Z0-9]+$')
+Ack.string.matches(r'[a-zA-Z0-9]+')
 
 // UUID pattern
-Ack.string.pattern(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$')
+Ack.string.matches(r'[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}')
+```
+
+### `contains(String pattern, {String? example})`
+Ensures the string contains the given pattern anywhere within it.
+```dart
+// Password must contain at least one uppercase letter
+Ack.string.contains(r'[A-Z]')
+
+// Password must contain at least one digit
+Ack.string.contains(r'[0-9]')
 ```
 
 ### `isEmail()`
@@ -168,11 +178,11 @@ You can chain multiple constraints together. They are evaluated in the order the
 final usernameSchema = Ack.string
   .minLength(3)        // First check min length
   .maxLength(20)       // Then check max length
-  .pattern(r'^[a-z0-9_]+$') // Then check pattern (lowercase alphanumeric/underscore)
+  .matches(r'[a-z0-9_]+') // Then check pattern (lowercase alphanumeric/underscore)
   .isNotEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
 
 final quantitySchema = Ack.int
   .min(1)              // Must be at least 1
   .max(100)            // Must be at most 100
   .multipleOf(1);     // Must be an integer (redundant for Ack.int)
-``` 
+```

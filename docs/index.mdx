@@ -63,19 +63,13 @@ if (result.isOk) {
 
 ## Core Features
 
-### Schema Types
+Ack provides a comprehensive set of features for data validation and transformation:
 
-- **String**: `Ack.string.minLength(3).isEmail()`
-- **Number**: `Ack.int.min(0)` or `Ack.double.min(0)`
-- **Boolean**: `Ack.boolean`
-- **Lists**: `Ack.list(Ack.string).minItems(1)`
-- **Objects**: `Ack.object({'name': Ack.string})`
-- **Unions**: `Ack.discriminated(discriminatorKey: 'type', schemas: {...})`
-
-### Validation Options
-
-- **Nullable**: `Ack.string.nullable()`
-- **Custom validation**: `Ack.string.constrain(myValidator)`
+- **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
+- **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
+- **[Error Handling](/core-concepts/error-handling)**: Get detailed, structured error messages for validation failures
+- **[JSON Serialization](/core-concepts/json-serialization)**: Convert between JSON and typed models
+- **[SchemaModel Class](/core-concepts/schema-model-class)**: Create schema-based models with automatic validation
 
 ### Error Handling
 

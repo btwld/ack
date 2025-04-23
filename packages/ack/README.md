@@ -460,8 +460,8 @@ if (userSchema.isValid) {
 
 ## Documentation
 
-For detailed guides on using Ack effectively, check out the documentation in the repository:
+For detailed guides on using Ack effectively, check out the documentation:
 
-- [SchemaModel API](/docs/schema_model.md) - Learn how to use the SchemaModel API
+- [SchemaModel API](https://docs.page/leofarias/ack/core-concepts/schema-model-class) - Learn how to use the SchemaModel API
 
 ## License

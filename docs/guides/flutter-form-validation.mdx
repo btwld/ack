@@ -33,7 +33,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final _usernameSchema = Ack.string
     .minLength(3, message: 'Username must be at least 3 characters')
     .maxLength(20, message: 'Username cannot exceed 20 characters')
-    .pattern(r'^[a-zA-Z0-9_]+$', message: 'Username can only contain letters, numbers, and underscores')
+    .matches(r'[a-zA-Z0-9_]+', message: 'Username can only contain letters, numbers, and underscores')
     .isNotEmpty(message: 'Username is required');
 
   final _emailSchema = Ack.string
@@ -42,9 +42,9 @@ class _SignUpFormState extends State<SignUpForm> {
 
   final _passwordSchema = Ack.string
     .minLength(8, message: 'Password must be at least 8 characters')
-    .pattern(r'[A-Z]', message: 'Password must contain an uppercase letter')
-    .pattern(r'[a-z]', message: 'Password must contain a lowercase letter')
-    .pattern(r'[0-9]', message: 'Password must contain a digit')
+    .contains(r'[A-Z]', message: 'Password must contain an uppercase letter')
+    .contains(r'[a-z]', message: 'Password must contain a lowercase letter')
+    .contains(r'[0-9]', message: 'Password must contain a digit')
     .isNotEmpty(message: 'Password is required');
 
   @override
@@ -175,7 +175,7 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
     final text = _emailController.text;
     // Only validate if the field is not empty (or on first interaction)
     // Adjust logic based on desired UX (e.g., validate after first blur)
-    if (text.isNotEmpty) { 
+    if (text.isNotEmpty) {
       final result = _emailSchema.validate(text);
       // Update the error state variable, triggering a rebuild
       setState(() {
@@ -198,7 +198,7 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
         decoration: InputDecoration(
           labelText: 'Email',
           // Display the error text from the state variable
-          errorText: _emailErrorText, 
+          errorText: _emailErrorText,
         ),
         keyboardType: TextInputType.emailAddress,
       ),
@@ -264,9 +264,9 @@ void _submitForm() {
   } else {
     final error = result.getError();
     print('Form submission error: ${error?.message}');
-    // You might need to map the error path back to specific fields 
+    // You might need to map the error path back to specific fields
     // to display errors if not using TextFormField validators.
-    print('Error path: ${error?.path}'); 
+    print('Error path: ${error?.path}');
   }
 }
 ```
@@ -277,4 +277,4 @@ void _submitForm() {
 2.  **Reuse Schemas:** Reuse the individual field schemas within the object schema.
 3.  **Cross-Field Validation:** Use custom constraints ([`.constrain`](../core-concepts/validation.mdx#constrainschemaconstraint-constraint)) within the object schema to perform validation that depends on multiple fields. See the [Custom Validation](./custom-validation.mdx) guide.
 4.  **Centralized Validation:** Validate the complete `formData` map against the `_formSchema` on submission.
-5.  **Error Handling:** If validation fails, you might need logic to map the [`error.path`](../core-concepts/error-handling.mdx#understanding-schemaerror) back to the specific UI field(s) causing the error, especially if not using `TextFormField`'s built-in validation display. 
+5.  **Error Handling:** If validation fails, you might need logic to map the [`error.path`](../core-concepts/error-handling.mdx#understanding-schemaerror) back to the specific UI field(s) causing the error, especially if not using `TextFormField`'s built-in validation display.
