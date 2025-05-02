@@ -14,7 +14,8 @@ final class Ack {
   const Ack._();
 
   static ListSchema<T> list<T extends Object, S extends AckSchema<T>>(
-      S schema) {
+    S schema,
+  ) {
     return ListSchema<T>(schema);
   }
 

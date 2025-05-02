@@ -9,7 +9,7 @@ import '../ack_generator.dart';
 class SchemaModelBuilder implements Builder {
   final BuilderOptions options;
 
-  SchemaModelBuilder(this.options);
+  const SchemaModelBuilder(this.options);
 
   @override
   Future<void> build(BuildStep buildStep) async {

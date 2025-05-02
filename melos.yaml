@@ -5,10 +5,6 @@ packages:
   - packages/**
   - example/*
 
-# Bootstrap will automatically generate pubspec_overrides.yaml files
-command:
-  bootstrap:
-
 scripts:
   analyze:
     run: melos exec -- "dart analyze . --fatal-infos"
@@ -17,6 +13,16 @@ scripts:
       scope:
         - ack
         - ack_generator
+
+  fix:
+    run: melos exec -- "dart fix --apply"
+    description: Apply fixes to all packages
+    packageFilters:
+      scope:
+        - ack
+        - ack_generator
+      dependsOn:
+        - "ack"  # This will ensure 'ack' is prioritized
 
   test:
     run: melos exec -- "dart test"

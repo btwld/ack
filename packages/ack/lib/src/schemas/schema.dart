@@ -82,6 +82,17 @@ sealed class AckSchema<T extends Object> {
         _constraints = constraints ?? const [],
         _defaultValue = defaultValue;
 
+  /// Attempts to convert the given [value] into type [T].
+  ///
+  /// If [value] is already of type [T], it is returned directly.
+  /// Otherwise, returns null.
+  ///
+  /// This is an internal method used for type conversion during validation.
+  @protected
+  T? _tryConvertType(Object? value) {
+    return value is T ? value : null;
+  }
+
   SchemaContext get context => getCurrentSchemaContext();
 
   /// Validates the [value] against the constraints, assuming it is already of type [T].
@@ -98,17 +109,6 @@ sealed class AckSchema<T extends Object> {
         .map((e) => e.validate(value))
         .whereType<ConstraintError>()
         .toList();
-  }
-
-  /// Attempts to convert the given [value] into type [T].
-  ///
-  /// If [value] is already of type [T], it is returned directly.
-  /// Otherwise, returns null.
-  ///
-  /// This is an internal method used for type conversion during validation.
-  @protected
-  T? _tryConvertType(Object? value) {
-    return value is T ? value : null;
   }
 
   AckSchema<T> call({
@@ -257,6 +257,7 @@ sealed class AckSchema<T extends Object> {
   /// ```
   T? tryParse(Object? input, {String? debugName}) {
     final result = validate(input, debugName: debugName);
+
     return result.isOk ? result.getOrNull() : null;
   }
 
@@ -362,21 +363,6 @@ sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
     return null;
   }
 
-  @protected
-  Self Function({
-    bool? nullable,
-    String? description,
-    List<Validator<T>>? constraints,
-    bool? strict,
-  }) get builder;
-
-  /// Creates a new schema of the same type that enforces strict parsing.
-  ///
-  /// This is a convenience method equivalent to calling `copyWith(strict: true)`.
-  Self strict() => copyWith(strict: true);
-
-  bool getStrictValue() => _strict;
-
   /// Attempts to convert the given [value] into type [T].
   ///
   /// If [value] is already of type [T], it is returned directly.
@@ -394,6 +380,21 @@ sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
 
     return null;
   }
+
+  @protected
+  Self Function({
+    bool? nullable,
+    String? description,
+    List<Validator<T>>? constraints,
+    bool? strict,
+  }) get builder;
+
+  /// Creates a new schema of the same type that enforces strict parsing.
+  ///
+  /// This is a convenience method equivalent to calling `copyWith(strict: true)`.
+  Self strict() => copyWith(strict: true);
+
+  bool getStrictValue() => _strict;
 
   @override
   Self call({
