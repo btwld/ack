@@ -1,5 +1,5 @@
 name: ack_workspace
-repository: https://github.com/leoafarias/ack
+repository: https://github.com/btwld/ack
 
 packages:
   - packages/**

@@ -2,7 +2,7 @@ name: ack_generator
 description: A code generator for building schema classes from @AckModel annotations
 version: 0.2.0
 publish_to: none
-repository: https://github.com/leoafarias/ack
+repository: https://github.com/btwld/ack
 
 environment:
   sdk: ^3.3.0
