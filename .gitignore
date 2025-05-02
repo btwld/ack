@@ -35,5 +35,13 @@ coverage/test
 extracted_code
 extract_lib_code.sh
 packages/ack/coverage
+
+# Coverage
+coverage/*
+!coverage/lcov.info
+packages/*/coverage/*
+!packages/*/coverage/lcov.info
+
+# Keep .claude directory
 .claude/
 CLAUDE.md
