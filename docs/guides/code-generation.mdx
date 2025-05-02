@@ -1,0 +1,361 @@
+---
+title: Code Generation with Ack
+---
+
+This guide explains how to use Ack's code generator (`ack_generator`) to create schema classes automatically from your Dart models, enabling type-safe validation and serialization.
+
+## Overview
+
+The `ack_generator` package integrates with `build_runner` to generate schema classes from your annotated Dart models. This provides several benefits:
+
+- **Type Safety**: Work with strongly-typed models and schemas instead of raw maps.
+- **IDE Support**: Leverage auto-complete, refactoring, and compile-time checks.
+- **Declarative Validation**: Define validation rules directly on your model classes using annotations.
+- **Automatic Serialization**: Easily convert between JSON/maps, your models, and generated schema objects.
+- **Reduced Boilerplate**: Eliminates the need to manually write schema definitions and validation logic for models.
+
+## Setup
+
+### 1. Add Dependencies
+
+Add `ack`, `ack_generator`, and `build_runner` to your `pubspec.yaml` (check [pub.dev](https://pub.dev/) for the latest compatible versions):
+
+```yaml
+dependencies:
+  # Core Ack library
+  ack: ^1.0.0 # Replace with latest version
+
+dev_dependencies:
+  # Ack code generator
+  ack_generator: ^1.0.0 # Replace with latest version
+  # Standard Dart build tool
+  build_runner: ^2.4.0 # Example: Use a recent version
+```
+
+Run `dart pub get` or `flutter pub get`.
+
+### 2. Annotate Your Models
+
+Define your data model as a standard Dart class. Annotate the class with `@Schema()` and its properties with relevant validation annotations from `ack_generator`.
+
+```dart
+// file: user.dart
+import 'package:ack_generator/ack_generator.dart';
+
+@Schema(
+  description: 'Represents a user account.',
+  // Allow properties not explicitly defined in the class
+  additionalProperties: true,
+  // Store extra properties in the 'metadata' field of the model
+  additionalPropertiesField: 'metadata',
+)
+class User {
+  // Property Annotations define validation rules
+  @IsEmail()
+  final String email;
+
+  @MinLength(3)
+  @MaxLength(50)
+  final String name;
+
+  @Min(13) // Must be 13 or older
+  final int? age; // Nullable type, validation applies if value is present
+
+  // Field to hold additional properties (must match additionalPropertiesField)
+  final Map<String, dynamic> metadata;
+
+  // Standard Dart constructor
+  User({
+    required this.email,
+    required this.name,
+    this.age,
+    Map<String, dynamic>? metadata,
+  }) : metadata = metadata ?? {};
+}
+```
+
+### 3. Generate Schema Classes
+
+Run the `build_runner` command in your terminal:
+
+```bash
+# For a one-time build:
+dart run build_runner build --delete-conflicting-outputs
+
+# To watch for changes and rebuild automatically:
+dart run build_runner watch --delete-conflicting-outputs
+```
+
+This command generates a corresponding `.schema.dart` file (e.g., `user.schema.dart`) next to your model file. This generated file contains the `UserSchema` class.
+
+**Important:** Do not edit the generated `.schema.dart` file directly, as your changes will be overwritten.
+
+## Using Generated Schemas
+
+The generated `{ModelName}Schema` class (e.g., `UserSchema`) provides the primary interface for validation, parsing, and serialization.
+
+### Schema Structure
+
+The generated schema class typically includes:
+
+-   A static `schema` getter (`UserSchema.schema`) representing the `AckSchema` instance.
+-   A static `fromModel()` method (`UserSchema.fromModel(userInstance)`) to create a schema instance from your model instance.
+-   An instance method `toModel()` to convert the schema instance back to your model class.
+-   An instance method `toMap()` (or `toJson()`) for serialization.
+-   Automatic validation in the constructor.
+
+### Validation
+
+Validation happens automatically when you create an instance of the generated schema class. You can then check if the data is valid using the `isValid` property.
+
+```dart
+// file: main.dart
+import 'user.dart';
+import 'user.schema.dart'; // Import the generated file
+
+void main() {
+  final userData = {
+    'email': 'user@example.com',
+    'name': 'John Doe',
+    'age': 25,
+    'role': 'admin' // Additional property captured by metadata
+  };
+
+  final invalidUserData = {
+    'email': 'invalid-email', // Fails @IsEmail
+    'name': 'Jo', // Fails @MinLength(3)
+  };
+
+  // Create schema instances - validation happens automatically
+  final userSchema = UserSchema(userData);
+  final invalidUserSchema = UserSchema(invalidUserData);
+
+  if (userSchema.isValid) {
+    print('User data is valid!');
+  } else {
+    print('Validation failed: ${userSchema.getErrors()}'); // Should not happen here
+  }
+
+  if (!invalidUserSchema.isValid) {
+    print('Invalid data validation failed as expected:');
+    // See Error Handling guide for details on SchemaError
+    final error = invalidUserSchema.getErrors();
+    print('- Error Name: ${error?.name}');
+    print('- Error Message: ${error?.message}');
+    print('- Error Path: ${error?.path}');
+  }
+}
+```
+
+*Also see the [JSON Serialization](../core-concepts/json-serialization.mdx) guide.*
+
+### Converting Schema Instance to Model
+
+Once you have an instance of the generated schema class, use the `toModel()` method to get an instance of your original model class (`User`). Make sure to check `isValid` first to avoid exceptions.
+
+```dart
+// Create a schema instance - validation happens automatically
+final userSchema = UserSchema(userData);
+
+// Check if valid before converting to model
+if (userSchema.isValid) {
+  final userModel = userSchema.toModel();
+
+  // Now you have a fully typed User model instance
+  print('User Model: Name=${userModel.name}, Email=${userModel.email}');
+
+  // Access additional properties stored in the metadata field
+  print('User Metadata Role: ${userModel.metadata['role']}');
+}
+```
+
+### Generating OpenAPI Definitions
+
+The generated schema classes include methods to convert your schema to OpenAPI definition format, which is useful for API documentation or integration with OpenAPI tools.
+
+```dart
+// Get the OpenAPI definition as a Map
+final definition = UserSchema.toDefinition();
+
+// Get the OpenAPI definition as a formatted JSON string
+final definitionString = UserSchema.toDefinitionString();
+print('OpenAPI Definition:\n$definitionString');
+
+/* Example output:
+{
+  "type": "object",
+  "required": ["name", "email"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 2
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "nullable": true
+    }
+  }
+}
+*/
+```
+
+This makes it easy to generate API documentation or validate requests and responses against your schema.
+
+### Converting Model to Schema Instance
+
+To go the other way (from your model instance to a schema instance), use the static `fromModel` method.
+
+```dart
+// Create an instance of your model
+final userModelInstance = User(
+  email: 'jane@example.com',
+  name: 'Jane Doe',
+  age: 28,
+  metadata: {'status': 'active'},
+);
+
+// Convert the model instance to a schema instance
+final userSchemaInstance = UserSchema.fromModel(userModelInstance);
+print('Converted model to schema instance.');
+```
+
+### Serialization (Schema to Map/JSON)
+
+The generated schema instance provides a `toMap()` method (which can be easily converted to JSON) for serialization.
+
+```dart
+// Assuming userSchemaInstance is a valid UserSchema instance
+final mapRepresentation = userSchemaInstance.toMap();
+
+// Convert map to JSON string (requires dart:convert)
+import 'dart:convert';
+final jsonString = jsonEncode(mapRepresentation);
+print('JSON output: $jsonString');
+```
+
+## Available Annotations
+
+Refer to the annotations provided by the `ack_generator` package. These generally mirror the fluent API methods used for manual schema definition.
+
+### Class Level
+
+-   `@Schema(description: ..., additionalProperties: ..., additionalPropertiesField: ..., schemaClassName: ...)`: The main annotation to mark a class for schema generation. See [Configuration](../core-concepts/configuration.mdx#schema-annotation) for parameter details.
+
+### Property Level
+
+*These annotations correspond to rules defined in the [Validation Rules](../core-concepts/validation.mdx) guide.*
+
+**Common:**
+
+-   `@Required()`: Makes a nullable property mandatory.
+-   `@Nullable()`: Explicitly marks a property as nullable (often redundant if the Dart type is already nullable, but can improve clarity).
+-   `@Description('...')`: Adds a description to the property in generated schemas/docs.
+
+**String:**
+
+-   `@IsEmail()`
+-   `@IsUrl()`
+-   `@IsDate()`
+-   `@IsDateTime()`
+-   `@MinLength(int)`
+-   `@MaxLength(int)`
+-   `@Length(int)`
+-   `@Matches(String)`
+-   `@Contains(String)`
+-   `@IsNotEmpty()`
+-   `@EnumValues(List<String>)`
+
+**Number (Int/Double):**
+
+-   `@Min(num)`
+-   `@Max(num)`
+-   `@Positive()`
+-   `@Negative()`
+-   `@MultipleOf(num)`
+
+**List:**
+
+-   `@MinItems(int)`
+-   `@MaxItems(int)`
+-   `@Length(int)`
+-   `@UniqueItems()`
+-   `@IsNotEmpty()`
+
+*Note: Ensure the annotations match the property type (e.g., don't use `@MinLength` on an `int`).*
+
+## Working with Nested Models
+
+The code generator automatically handles nested models if the nested type is also annotated with `@Schema`. This aligns with how nested objects are handled in [manual schema definitions](../core-concepts/schemas.mdx#handling-nested-models).
+
+```dart
+// file: address.dart
+import 'package:ack_generator/ack_generator.dart';
+
+@Schema()
+class Address {
+  @Required() // Example: street is required even if type is String?
+  final String? street;
+  final String city;
+
+  Address({this.street, required this.city});
+}
+
+// file: user.dart (updated)
+import 'package:ack_generator/ack_generator.dart';
+import 'address.dart';
+
+@Schema()
+class User {
+  final String name;
+  // Reference another @Schema annotated class
+  final Address address;
+  // List of nested models
+  final List<Address>? alternateAddresses;
+
+  User({required this.name, required this.address, this.alternateAddresses});
+}
+```
+
+When you run `build_runner`, it generates `address.schema.dart` and `user.schema.dart`. The generated `UserSchema` will correctly reference `AddressSchema` for validation of the nested `address` and `alternateAddresses` fields.
+
+**Accessing Nested Models:**
+
+```dart
+// Create a schema instance with nested data
+final userData = {
+  'name': 'John Doe',
+  'address': {
+    'street': '123 Main St',
+    'city': 'Anytown',
+  },
+  'alternateAddresses': [
+    {
+      'street': '456 Oak Ave',
+      'city': 'Othertown',
+    },
+  ],
+};
+
+// Create schema instance and convert to model if valid
+final userSchema = UserSchema(userData);
+if (userSchema.isValid) {
+  final userModel = userSchema.toModel();
+
+  // Access the primary address
+  Address primaryAddress = userModel.address;
+  print(primaryAddress.city); // Outputs: Anytown
+
+  // Access the alternate addresses
+  List<Address>? otherAddresses = userModel.alternateAddresses;
+  if (otherAddresses != null) {
+    for (final addr in otherAddresses) {
+      print(addr.street); // Outputs: 456 Oak Ave
+    }
+  }
+}
+```

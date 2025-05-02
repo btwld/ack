@@ -1,0 +1,135 @@
+---
+title: Configuration
+---
+
+Ack allows for some configuration settings, although most behavior is controlled directly through the schema definitions when they are created.
+
+## Global Settings (Less Common)
+
+In general, Ack prefers configuration per schema definition rather than global settings. However, if needed, you might manage global aspects like custom format registries or shared validation logic through your own application structure (e.g., a singleton or dependency injection).
+
+*Currently, Ack does not expose a dedicated global configuration object. Configuration is primarily done at the schema level.*
+
+## Schema-Level Configuration
+
+Most "configuration" happens when you define your schemas using the fluent API provided by Ack.
+
+### Required Fields
+
+Use the `required` parameter in [`Ack.object`](./schemas.mdx#object-schema) to specify mandatory fields within an object.
+
+```dart
+Ack.object({
+  'id': Ack.int,
+  'name': Ack.string,
+  'email': Ack.string.isEmail().nullable() // Email is optional because nullable
+}, required: ['id', 'name']); // id and name are required
+```
+
+### Additional Properties
+
+Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object-schema).
+
+```dart
+// Allow any extra properties, validate their values as strings
+Ack.object({
+  'id': Ack.int
+}, additionalProperties: Ack.string);
+
+// Disallow any extra properties
+Ack.object({
+  'id': Ack.int
+}, additionalProperties: false);
+
+// Allow extra properties, but don't validate their values (default behavior)
+Ack.object({
+  'id': Ack.int
+}, additionalProperties: true); 
+// or simply:
+Ack.object({
+  'id': Ack.int
+});
+```
+
+### Custom Error Messages
+
+Provide custom messages for built-in [validation rules](./validation.mdx) using the `message:` parameter.
+See also: [Custom Error Messages in Error Handling](./error-handling.mdx#custom-error-messages).
+
+```dart
+Ack.string.minLength(5, message: 'Must be 5 characters or more.');
+Ack.int.min(18, message: 'Must be at least 18 years old.');
+```
+
+### Custom Validation Logic
+
+Use `.constrain()` to add complex or reusable validation logic.
+
+```dart
+class IsPositiveConstraint extends SchemaConstraint<num> {
+  IsPositiveConstraint() : super(name: 'is_positive', message: 'Number must be positive');
+
+  @override
+  bool validate(num value, [Map<String, dynamic>? data]) {
+    return value > 0;
+  }
+}
+
+// Apply the custom constraint
+Ack.double.constrain(IsPositiveConstraint()); 
+```
+*See the [Custom Validation Guide](../guides/custom-validation.mdx) for details.*
+
+## Code Generation Configuration
+
+When using `ack_generator`, you configure schema generation via annotations on your model classes.
+
+### `@Schema` Annotation
+
+This class-level annotation controls overall schema generation for a model.
+
+```dart
+@Schema(
+  // Add a description to the generated schema (useful for OpenAPI)
+  description: 'User account information',
+  
+  // Allow properties not defined in the model?
+  additionalProperties: true, 
+  
+  // If true, which field in the model stores these extra properties?
+  additionalPropertiesField: 'metadata', 
+  
+  // Optionally override the generated schema class name
+  schemaClassName: 'MyUserSchema' 
+)
+class User {
+  // ... fields ...
+  final Map<String, dynamic> metadata; // Matches additionalPropertiesField
+}
+```
+
+### Property Annotations
+
+Validation rules are configured using annotations on model fields.
+
+```dart
+@Schema()
+class Product {
+  @MinLength(3, message: "Name too short")
+  @Required() // Make this nullable String required
+  final String? name;
+
+  @Min(0, exclusive: true) // Price must be > 0
+  @Description("The retail price of the product")
+  final double price;
+  
+  // ... rest of the model ...
+}
+```
+*See the [Code Generation Guide](../guides/code-generation.mdx) for a list of available annotations.*
+
+## Summary
+
+- Ack primarily uses **schema-level configuration** through methods and parameters like `.minLength()`, `required: [...]`, `additionalProperties: ...`.
+- **Code generation** is configured using `@Schema()` and property annotations.
+- There is currently no central **global configuration** object provided by Ack itself. 

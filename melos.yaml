@@ -1,0 +1,49 @@
+name: ack_workspace
+repository: https://github.com/leoafarias/ack
+
+packages:
+  - packages/**
+  - example/*
+
+# Bootstrap will automatically generate pubspec_overrides.yaml files
+command:
+  bootstrap:
+
+scripts:
+  analyze:
+    run: melos exec -- "dart analyze . --fatal-infos"
+    description: Run analyzer on all packages
+    packageFilters:
+      scope:
+        - ack
+        - ack_generator
+
+  test:
+    run: melos exec -- "dart test"
+    description: Run tests for all packages
+    packageFilters:
+      dirExists: test
+
+  format:
+    run: melos exec -- "dart format . --fix"
+    description: Format code for all packages
+
+  deps-outdated:
+    run: melos exec -- "dart pub outdated"
+    description: Check for outdated dependencies in all packages
+
+  # Create proper analysis_options.yaml files
+  ensure_analysis_options:
+    run: .scripts/ensure_analysis_options.sh
+    description: Ensures each package has DCM configuration in analysis_options.yaml
+    
+  # Additional standard Melos commands
+  bs:
+    run: melos bootstrap
+    description: Initialize the workspace with dependencies.
+      
+  clean:
+    run: melos clean
+    description: Clean all build outputs.
+
+  # Additional scripts can be added here if needed

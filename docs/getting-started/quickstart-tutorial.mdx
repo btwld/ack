@@ -1,0 +1,163 @@
+---
+title: Quickstart Tutorial
+---
+
+This tutorial guides you through the basics of using Ack to define a schema, validate data, and handle the results.
+
+## Prerequisites
+
+Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter project.
+
+## Steps
+
+1.  **Import Ack:**
+    Start by importing the Ack library in your Dart file.
+
+    ```dart
+    import 'package:ack/ack.dart';
+    ```
+
+2.  **Define a Schema:**
+    Let's create a schema for a simple user object with a name (required string) and age (optional integer).
+
+    ```dart
+    final userSchema = Ack.object({
+      // 'name' field: must be a string with at least 2 characters.
+      'name': Ack.string.minLength(2),
+      // 'age' field: must be an integer, 0 or greater, but can be missing (nullable).
+      'age': Ack.int.min(0).nullable(),
+    },
+    // Specify that 'name' is a required field.
+    required: ['name']);
+    ```
+    
+    *Learn more about [Schemas](../core-concepts/schemas.mdx) and [Validation](../core-concepts/validation.mdx).* 
+
+3.  **Prepare Data:**
+    Create some data (usually a `Map<String, dynamic>`) that you want to validate.
+
+    ```dart
+    // Example 1: Valid data
+    final validData = {
+      'name': 'Alice',
+      'age': 30,
+    };
+    
+    // Example 2: Valid data (age is optional)
+    final validDataNoAge = {
+      'name': 'Bob',
+    };
+    
+    // Example 3: Invalid data (name too short)
+    final invalidDataShortName = {
+      'name': 'X',
+      'age': 25,
+    };
+    
+    // Example 4: Invalid data (name is missing)
+    final invalidDataMissingName = {
+      'age': 40,
+    };
+    ```
+
+4.  **Validate Data:**
+    Use the `validate()` method of your schema to check the data. This returns a `Result` object.
+
+    ```dart
+    final result1 = userSchema.validate(validData);
+    final result2 = userSchema.validate(validDataNoAge);
+    final result3 = userSchema.validate(invalidDataShortName);
+    final result4 = userSchema.validate(invalidDataMissingName);
+    ```
+
+5.  **Handle the Result:**
+    Check the `isOk` property of the `Result`. If `true`, validation passed. If `false`, validation failed.
+
+    ```dart
+    void checkResult(Result result, dynamic originalData) {
+      print('\nChecking: $originalData');
+      if (result.isOk) {
+        // Validation succeeded!
+        // Safely get the validated data (type matches schema structure)
+        final validatedData = result.getOrThrow(); 
+        print('  Result: OK');
+        print('  Validated Data: $validatedData');
+        // You can now confidently use validatedData
+        // e.g., String name = validatedData['name'];
+        //      int? age = validatedData['age'];
+      } else {
+        // Validation failed!
+        // Get the specific error details
+        final error = result.getError();
+        print('  Result: FAILED');
+        print('  Error Name: ${error?.name}'); 
+        print('  Error Message: ${error?.message}'); 
+        print('  Error Path: ${error?.path}'); // Shows where the error occurred
+      }
+    }
+    
+    // Run checks on our examples
+    checkResult(result1, validData);
+    checkResult(result2, validDataNoAge);
+    checkResult(result3, invalidDataShortName);
+    checkResult(result4, invalidDataMissingName);
+    ```
+    
+    *Learn more about [Error Handling](../core-concepts/error-handling.mdx).* 
+
+## Full Example Code
+
+```dart
+import 'package:ack/ack.dart';
+
+void main() {
+  // Define Schema
+  final userSchema = Ack.object({
+    'name': Ack.string.minLength(2),
+    'age': Ack.int.min(0).nullable(),
+  }, required: ['name']);
+
+  // Data Examples
+  final validData = {'name': 'Alice', 'age': 30};
+  final validDataNoAge = {'name': 'Bob'};
+  final invalidDataShortName = {'name': 'X', 'age': 25};
+  final invalidDataMissingName = {'age': 40};
+
+  // Validate Data
+  final result1 = userSchema.validate(validData);
+  final result2 = userSchema.validate(validDataNoAge);
+  final result3 = userSchema.validate(invalidDataShortName);
+  final result4 = userSchema.validate(invalidDataMissingName);
+
+  // Handle Results
+  checkResult(result1, validData);
+  checkResult(result2, validDataNoAge);
+  checkResult(result3, invalidDataShortName);
+  checkResult(result4, invalidDataMissingName);
+}
+
+// Helper function to print results
+void checkResult(Result result, dynamic originalData) {
+  print('\nChecking: $originalData');
+  if (result.isOk) {
+    final validatedData = result.getOrThrow(); 
+    print('  Result: OK');
+    print('  Validated Data: $validatedData');
+  } else {
+    final error = result.getError();
+    print('  Result: FAILED');
+    print('  Error Name: ${error?.name}'); 
+    print('  Error Message: ${error?.message}'); 
+    print('  Error Path: ${error?.path}');
+  }
+}
+```
+
+## Next Steps
+
+Now that you understand the basics, explore more advanced topics:
+
+-   Dive deeper into different [Schema Types](../core-concepts/schemas.mdx).
+-   Learn about [Built-in Validation Rules](../core-concepts/validation.mdx).
+-   Discover how to add [Custom Validation](../guides/custom-validation.mdx).
+-   See how Ack integrates with [JSON Serialization](../core-concepts/json-serialization.mdx). 

@@ -1,0 +1,83 @@
+---
+title: Overview
+---
+
+
+Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API. Ack is short for "acknowledge".
+
+## Why Use Ack?
+
+- **Simplify Validation**: Easily handle complex data validation logic.
+- **Ensure Data Integrity**: Guarantee data consistency from external sources (APIs, user input).
+- **Single Source of Truth**: Define data structures and rules in one place.
+- **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion.
+
+## What Ack Does
+
+- Ensures data conforms to your defined schemas
+- Facilitates seamless conversion between JSON and Dart models
+- Generates OpenAPI (Swagger) specifications from your schemas
+- Delivers detailed and easy-to-understand validation error messages
+
+## Quick Start
+
+Add Ack to your project:
+
+```bash
+dart pub add ack
+```
+
+### Basic Usage
+
+```dart
+import 'package:ack/ack.dart';
+
+// Define the structure and rules for a user object.
+final userSchema = Ack.object({
+  'name': Ack.string.minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
+  'age': Ack.int.min(0).max(120),                // Age must be an integer between 0 and 120.
+  'email': Ack.string.isEmail().nullable(),      // Email must be a valid format, but can be null.
+}, required: ['name', 'age']); // Name and age are mandatory fields.
+
+// Data to validate.
+final dataToValidate = {
+  'name': 'John',
+  'age': 30,
+  'email': 'john@example.com'
+};
+
+// Perform the validation against the schema.
+final result = userSchema.validate(dataToValidate);
+
+// Check the validation outcome.
+if (result.isOk) {
+  // Validation passed, safely access the validated data.
+  final validData = result.getOrThrow();
+  print('Valid data: $validData');
+} else {
+  // Validation failed, access the detailed error.
+  final error = result.getError();
+  print('Validation Error: ${error.message}'); // Or use error.toString() for full details.
+}
+```
+
+## Core Features
+
+Ack provides a comprehensive set of features for data validation and transformation:
+
+- **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
+- **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
+- **[Error Handling](/core-concepts/error-handling)**: Get detailed, structured error messages for validation failures
+- **[JSON Serialization](/core-concepts/json-serialization)**: Convert between JSON and typed models
+- **[SchemaModel Class](/core-concepts/schema-model-class)**: Create schema-based models with automatic validation
+
+### Error Handling
+
+```dart
+if (result.isFail) {
+  // Get formatted error message (or the full error object)
+  final error = result.getError();
+  print('${error.name}: ${error.message}'); // Specific message
+  // print(error); // Full error details including path
+}
+```

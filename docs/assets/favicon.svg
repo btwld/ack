@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="32" height="32">
+  <!--
+    Outer "A" shape
+    M40,180 → move to bottom‑left
+    L100,30 → up to apex
+    L160,180 → down to bottom‑right
+    L130,180 → back along base
+    L100,130 → up to crossbar intersection
+    L70,180 → back to left base point
+    Z → close
+  -->
+  <path fill="#2C5282" fill-rule="evenodd" d="
+    M40,180 L100,30 L160,180 L130,180 L100,130 L70,180 Z
+
+    <!--
+      Inner cutout for the crossbar
+      M70,140 → left leg at crossbar
+      L130,140 → right leg at crossbar
+      L150,180 → bottom‑right
+      L50,180 → bottom‑left
+      Z → close
+    -->
+    M70,140 L130,140 L150,180 L50,180 Z
+  "/>
+</svg> 

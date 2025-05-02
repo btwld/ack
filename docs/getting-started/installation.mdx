@@ -1,0 +1,73 @@
+---
+title: Installing Ack
+---
+
+
+## Add to Your Project
+
+Add Ack to your project using the Dart CLI:
+
+```bash
+# For Dart projects
+dart pub add ack
+
+# For Flutter projects
+flutter pub add ack
+```
+
+Or manually add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for the latest version):
+
+```yaml
+dependencies:
+  ack: ^1.0.0 # Replace with latest version
+```
+
+## Using the Code Generator (Recommended)
+
+If you want to generate schema classes from your models, add the generator:
+
+```bash
+# Add the generator and build_runner
+dart pub add --dev ack_generator build_runner
+```
+
+Or in your `pubspec.yaml`:
+
+```yaml
+dev_dependencies:
+  ack_generator: ^1.0.0 # Replace with latest version
+  build_runner: ^2.3.0 # Check for compatible version
+```
+
+Run the generator:
+
+```bash
+dart run build_runner build
+```
+
+## Basic Usage after Installation
+
+Import Ack in your Dart files:
+
+```dart
+import 'package:ack/ack.dart';
+
+// 1. Define a simple schema (e.g., for a name)
+final nameSchema = Ack.string.minLength(3);
+
+// 2. Validate some data against the schema
+final result = nameSchema.validate('John');
+
+// 3. Check the result
+if (result.isOk) {
+  print('Valid: ${result.getOrThrow()}'); // Access the valid data
+} else {
+  print('Invalid: ${result.getError()?.message}'); // Get the error message
+}
+```
+
+See the [Quickstart Tutorial](./quickstart-tutorial.mdx) for a more complete example.
+
+## Requirements
+
+- Dart SDK: `>=2.17.0 <4.0.0` 

@@ -1,0 +1,43 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docs/**'
+      - 'docs.json'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'docs/**'
+      - 'docs.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install docs.page CLI
+        run: npm install -g @docs.page/cli
+      
+      - name: Validate documentation
+        run: npx @docs.page/cli check
+      
+  notify:
+    needs: validate
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify docs.page update
+        run: |
+          echo "Documentation has been updated and is now available at https://docs.page/leoafarias/ack"
+          # You could add additional notification steps here, such as:
+          # - Sending a Slack message
+          # - Creating a GitHub issue
+          # - Sending an email notification

@@ -1,0 +1,171 @@
+---
+title: JSON Serialization
+---
+
+Ack schemas facilitate easy conversion between your Dart models and JSON data, often used when interacting with APIs.
+
+## Validating JSON Data
+
+The most common use case is validating incoming JSON data (e.g., from an API response). This typically involves two steps:
+
+1.  **Decode JSON:** Use `dart:convert` to parse the JSON string into a Dart object (usually `Map<String, dynamic>` or `List`).
+2.  **Validate:** Pass the decoded Dart object to your [Ack schema](./schemas.mdx)'s `validate()` method.
+
+```dart
+import 'dart:convert';
+import 'package:ack/ack.dart';
+
+// Assume userSchema is defined (e.g., in schemas.mdx)
+final userSchema = Ack.object({
+  'name': Ack.string,
+  'age': Ack.int.min(0),
+  'email': Ack.string.isEmail().nullable(),
+}, required: ['name']);
+
+void processApiResponse(String jsonString) {
+  // 1. Decode JSON string into a Dart object.
+  // Note: jsonDecode returns dynamic, so the structure is unknown initially.
+  dynamic jsonData; 
+  try {
+    jsonData = jsonDecode(jsonString);
+  } catch (e) {
+    print('Failed to decode JSON: $e');
+    return;
+  }
+
+  // 2. Validate the decoded data against your defined schema.
+  final result = userSchema.validate(jsonData);
+
+  if (result.isOk) {
+    // Data structure and types are valid according to the schema.
+    final validDataMap = result.getOrThrow();
+    print('Valid JSON received: $validDataMap');
+    
+    // Optionally convert to a typed model (see next section)
+    // final user = User.fromValidatedMap(validDataMap);
+
+  } else {
+    // Handle validation errors (see Error Handling guide)
+    print('Invalid JSON data: ${result.getError()?.message}');
+    // Log the full error for debugging if needed:
+    // print('Error details: ${result.getError()}');
+  }
+}
+
+// Example Usage
+processApiResponse('{"name": "Alice", "age": 30, "email": "alice@example.com"}');
+processApiResponse('{"name": "Bob", "age": -5}'); // Invalid: age fails min(0)
+processApiResponse('{"age": 25}'); // Invalid: missing required field 'name'
+processApiResponse('not valid json'); // Decoding error
+```
+
+*Learn more about [Error Handling](./error-handling.mdx).*
+
+## Converting Validated Data to Models
+
+After successful validation, the `result.getOrThrow()` (or similar methods) gives you a Dart object (often a `Map<String, dynamic>`) whose structure matches your schema. You typically want to convert this into a strongly-typed Dart model class.
+
+**Manual Conversion:**
+
+If you are not using code generation, you'll need a factory constructor or method on your model class to handle this conversion.
+
+```dart
+// Assumed User model class
+class User {
+  final String name;
+  final int? age;
+  final String? email;
+
+  User({required this.name, this.age, this.email});
+
+  // Factory constructor to create User from a validated map
+  factory User.fromValidatedMap(Map<String, dynamic> map) {
+    // Assumes the map structure and types have already been 
+    // validated by the Ack schema. Direct casting is safe here.
+    return User(
+      name: map['name'] as String, 
+      age: map['age'] as int?, // Cast to nullable int
+      email: map['email'] as String?,
+    );
+  }
+}
+
+// Inside the validation success block:
+if (result.isOk) {
+  final validDataMap = result.getOrThrow();
+  // Convert map to User model
+  final user = User.fromValidatedMap(validDataMap);
+  print('Created User model: ${user.name}');
+} 
+```
+
+**Using Code Generation:**
+
+If you use Ack's code generation, the generated schema class provides `toModel()` and `fromModel()` methods for seamless conversion.
+
+```dart
+// Assumes user.dart and user.schema.dart (generated) exist
+import 'user.dart';
+import 'user.schema.dart';
+
+// Inside the validation success block:
+if (result.isOk) {
+  // Parse the validated data into the generated schema instance
+  final userSchemaInstance = UserSchema.parse(result.getOrThrow());
+  // Convert the schema instance to the User model instance
+  final user = userSchemaInstance.toModel(); 
+  print('Created User model via generator: ${user.name}');
+} 
+```
+
+*See the [Code Generation Guide](../guides/code-generation.mdx) for more details.*
+
+## Serializing Models to JSON-compatible Maps
+
+To send data back to an API or store it, you often need to convert your Dart models back into a map suitable for JSON encoding.
+
+**Manual Conversion:**
+
+Add a `toMap()` method to your model class.
+
+```dart
+class User {
+  // ... (properties and constructor as before)
+
+  // Method to convert User instance to a Map
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'age': age,
+      'email': email,
+    };
+  }
+}
+
+// Usage:
+final user = User(name: 'Charlie', age: 40);
+final userMap = user.toMap();
+final jsonString = jsonEncode(userMap); // Encode map to JSON string
+print('Serialized JSON: $jsonString');
+```
+
+**Using Code Generation:**
+
+The generated schema class handles this.
+
+```dart
+// Assume userModel is an instance of User
+// 1. Convert Model to Schema instance
+final userSchemaInstance = UserSchema.fromModel(userModel);
+// 2. Convert Schema instance to Map
+final userMap = userSchemaInstance.toMap();
+// 3. Encode Map to JSON
+final jsonString = jsonEncode(userMap);
+print('Serialized JSON via generator: $jsonString');
+```
+
+## Key Considerations
+
+-   **`dart:convert`:** Ack handles the schema definition and validation logic. Use the standard `dart:convert` library (`jsonEncode`, `jsonDecode`) for the actual JSON string conversion.
+-   **Type Safety:** Ack validation acts as a bridge. While `jsonDecode` produces `dynamic`, successful validation against an `AckSchema` gives you confidence in the structure and types of the resulting Dart `Map` or `List` before you convert it to your model.
+-   **Code Generation:** Using `ack_generator` significantly simplifies the model conversion steps (`toMap`, `fromValidatedMap`/`parse`), reducing boilerplate code. 

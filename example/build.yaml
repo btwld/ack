@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      ack_generator|ack_schema:
+        enabled: true
+        generate_for:
+          - lib/*.dart 
