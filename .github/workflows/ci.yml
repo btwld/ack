@@ -28,19 +28,6 @@ jobs:
       
       - name: Run tests
         run: melos test
-        
-      - name: Create coverage directory
-        run: mkdir -p coverage
-        
-      - name: Format coverage to lcov
-        run: melos exec -- dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: ack-core # Optional: flag for core tests
-          fail_ci_if_error: true
 
   publish:
     needs: test
