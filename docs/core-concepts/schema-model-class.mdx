@@ -50,7 +50,7 @@ This generates a `user.schema.dart` file with a `UserSchema` class that extends 
 
 ### 3. Use the Generated Schema Class
 
-There are two ways to use the generated schema class:
+There are four main ways to use the generated schema class:
 
 #### Approach 1: Using the constructor (direct validation)
 
@@ -81,7 +81,63 @@ void main() {
 }
 ```
 
-#### Using fromModel for existing models
+#### Approach 2: Using parse() method (exception-based validation)
+
+```dart
+// file: main.dart
+import 'user.dart';
+import 'user.schema.dart'; // Import the generated file
+
+void main() {
+  final userData = {
+    'name': 'John Doe',
+    'email': 'john@example.com',
+    'age': 30,
+  };
+
+  try {
+    // Validate and convert to model in one step
+    // Throws AckException if validation fails
+    final user = UserSchema.parse(userData);
+    
+    // Use the validated model directly
+    print('Valid User: ${user.name}, ${user.email}, Age: ${user.age}');
+  } catch (e) {
+    // Handle validation errors
+    print('Validation failed: $e');
+  }
+}
+```
+
+#### Approach 3: Using tryParse() method (null-safety validation)
+
+```dart
+// file: main.dart
+import 'user.dart';
+import 'user.schema.dart'; // Import the generated file
+
+void main() {
+  final userData = {
+    'name': 'John Doe',
+    'email': 'invalid-email', // This will fail validation
+    'age': 30,
+  };
+
+  // Validate and convert to model in one step
+  // Returns null if validation fails
+  final user = UserSchema.tryParse(userData);
+  
+  if (user != null) {
+    // Use the validated model
+    print('Valid User: ${user.name}, ${user.email}, Age: ${user.age}');
+  } else {
+    // Handle validation failure
+    print('Validation failed - invalid data');
+  }
+}
+```
+
+#### Approach 4: Using fromModel for existing models
 
 ```dart
 // file: main.dart
@@ -115,6 +171,32 @@ Returns the `AckSchema` instance that defines the validation rules for the model
 ```dart
 final userSchema = UserSchema.schema;
 print('Schema: ${userSchema}');
+```
+
+#### `static User parse(Object? input, {String? debugName})`
+
+Parses the input data and returns a model instance. Throws an `AckException` if validation fails.
+
+```dart
+try {
+  final user = UserSchema.parse({'name': 'John', 'email': 'john@example.com'});
+  print('Valid user: ${user.name}');
+} catch (e) {
+  print('Validation failed: $e');
+}
+```
+
+#### `static User? tryParse(Object? input, {String? debugName})`
+
+Attempts to parse the input data and returns a model instance. Returns `null` if validation fails.
+
+```dart
+final user = UserSchema.tryParse({'name': 'John', 'email': 'john@example.com'});
+if (user != null) {
+  print('Valid user: ${user.name}');
+} else {
+  print('Validation failed');
+}
 ```
 
 #### `static UserSchema fromModel(User model)`
@@ -154,8 +236,20 @@ print('OpenAPI Definition JSON:\n$definitionString');
 Converts the schema instance to a model instance.
 
 ```dart
-final schema = UserSchema.parse(userData);
-final user = schema.toModel();
+// Option 1: Using constructor + toModel
+final schema = UserSchema(userData);
+if (schema.isValid) {
+  final user = schema.toModel();
+  print('User: ${user.name}');
+}
+
+// Option 2: Using parse + toModel
+try {
+  final user = UserSchema.parse(userData).toModel();
+  print('User: ${user.name}');
+} catch (e) {
+  print('Validation failed');
+}
 ```
 
 #### `Map<String, dynamic> toMap()`
@@ -163,9 +257,12 @@ final user = schema.toModel();
 Converts the schema instance to a map, useful for serialization.
 
 ```dart
-final schema = UserSchema.parse(userData);
-final map = schema.toMap();
-final json = jsonEncode(map);
+final schema = UserSchema(userData);
+if (schema.isValid) {
+  final map = schema.toMap();
+  final json = jsonEncode(map);
+  print('JSON: $json');
+}
 ```
 
 #### `bool get isValid`

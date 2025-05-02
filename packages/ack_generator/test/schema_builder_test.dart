@@ -11,7 +11,7 @@ void main() {
       const productModel = '''
 import 'package:ack_generator/ack_generator.dart';
 
-@AckModel(
+@Schema(
   description: 'A product model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -47,7 +47,7 @@ class Product {
   });
 }
 
-@AckModel(
+@Schema(
   description: 'A category for organizing products',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -79,14 +79,19 @@ class Category {
           'a|lib/product_model.dart': productModel,
         },
         outputs: {
-          'a|lib/product_model.schema.dart':
-              decodedMatches(contains('ProductSchema')),
+          'a|lib/product_model.g.dart': decodedMatches(
+            allOf([
+              contains('ProductSchema'),
+              contains('Product parse(Object? input, {String? debugName})'),
+              contains('Product? tryParse(Object? input, {String? debugName})'),
+            ]),
+          ),
         },
         reader: await PackageAssetReader.currentIsolate(),
       );
     });
 
-    test('no output for model without AckModel annotation', () async {
+    test('no output for model without Schema annotation', () async {
       final builder = schemaModelBuilder(BuilderOptions.empty);
 
       const plainModel = '''

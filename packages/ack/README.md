@@ -256,27 +256,113 @@ final schema = Ack.int
   .strict();  // require actual int type
 ```
 
-### Validation and SchemaResult
+### Validation and Parsing Methods
 
-Calling `schema.validate(value)` returns a `SchemaResult<T>`, which can be:
-- `Ok<T>`: Access the validated value with `getOrNull()` or `getOrThrow()`.
-- `Fail<T>`: Contains `List<SchemaError>` with messages describing which constraints failed.
+Ack provides multiple methods for validating and parsing data, each offering different error handling patterns to suit your coding style:
+
+#### validate() - Result Pattern
+
+The `validate()` method uses a Result pattern, returning a `SchemaResult<T>` which can be either:
+- `Ok<T>`: Contains the validated value, accessible via `getOrNull()` or `getOrThrow()`
+- `Fail<T>`: Contains validation errors, accessible via `getErrors()`
+
+This approach gives you fine-grained control over error handling and access to the full error details.
 
 ```dart
-final result = schema.validate(120);
-if (result.isOk) {
-  print("Valid: ${result.getOrNull()}");
-} else {
-  print("Errors: ${result.getErrors()}");
-}
+// Schema for a user object with validation rules
+final userSchema = Ack.object({
+  'name': Ack.string.minLength(2),
+  'email': Ack.string.isEmail()
+}, required: ['name', 'email']);
 
-// You can also use validateOrThrow:
-try {
-  schema.validateOrThrow(120);
-} catch (e) {
-  print(e); // AckException with details
+// Validate user data
+final result = userSchema.validate({
+  'name': 'John',
+  'email': 'not-an-email'
+});
+
+if (result.isOk) {
+  // Access the validated data
+  final validData = result.getOrThrow();
+  print("Valid user: ${validData['name']}");
+} else {
+  // Access detailed validation errors
+  final errors = result.getErrors();
+  print("Validation failed: ${errors.name}");
+  
+  // You can inspect specific errors
+  for (final issue in errors.issues) {
+    print(" - ${issue.path}: ${issue.message}");
+  }
 }
 ```
+
+#### parse() - Exception Pattern
+
+The `parse()` method provides a more direct approach using exceptions for error handling. It returns the validated data directly if validation succeeds, or throws an `AckException` if validation fails.
+
+```dart
+try {
+  // Return the validated data directly
+  final validatedData = userSchema.parse({
+    'name': 'John Doe',
+    'email': 'john@example.com'
+  });
+  
+  // Use the validated data immediately
+  print("Valid user: ${validatedData['name']}");
+} catch (e) {
+  // Handle validation failure with exception
+  print("Validation failed: $e");
+}
+```
+
+#### tryParse() - Null Safety Pattern
+
+The `tryParse()` method uses Dart's null safety for error handling. It returns the validated data if validation succeeds, or `null` if validation fails.
+
+```dart
+// Returns validated data or null on validation failure
+final maybeData = userSchema.tryParse({
+  'name': 'John Doe',
+  'email': 'invalid-email' // This will fail validation
+});
+
+if (maybeData != null) {
+  // Use the validated data
+  print("Valid user: ${maybeData['name']}");
+} else {
+  // Handle validation failure
+  print("Validation failed");
+}
+```
+
+#### validateOrThrow() - Exception with Return Value
+
+The `validateOrThrow()` method throws an exception on error, but also returns the validated data for immediate use:
+
+```dart
+try {
+  // Validate and get data in one step
+  final validData = userSchema.validateOrThrow({
+    'name': 'John Doe',
+    'email': 'john@example.com'
+  });
+  
+  // Use the validated data immediately
+  print("Valid user: ${validData['name']}");
+} catch (e) {
+  // Handle validation failure with exception
+  print("Validation failed: $e");
+}
+```
+
+#### Choosing the Right Approach
+
+- Use `validate()` when you need detailed error information or want to handle valid and invalid cases in the same code path
+- Use `parse()` when you prefer exception-based error handling and want to get the validated data directly
+- Use `tryParse()` when you prefer null-safety-based error handling for cleaner code without try/catch blocks
+- Use `validateOrThrow()` when you want to use exception handling but also need direct access to the validated data
 
 ### OpenAPI Spec
 
@@ -394,15 +480,18 @@ Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is ei
 
 ### Quick Reference
 
-1. Fluent Methods:
+1. Validation & Parsing Methods:
+   - `validate(value)` → `SchemaResult<T>` (Result pattern)
+   - `parse(value)` → `T` or throws `AckException` (Exception pattern)
+   - `tryParse(value)` → `T?` returns null on validation failure (Null safety pattern)
+   - `validateOrThrow(value)` → `T` or throws `AckException` on errors
+2. Fluent Methods:
    - `nullable()`
    - `strict()`
-   - `withConstraints([ ... ])`
-   - `validate(value)` → `SchemaResult<T>`
-   - `validateOrThrow(value)` → throws `AckException` on errors
-2. Default Values: Provide `defaultValue: T?` directly in the schema constructor or via `.call(defaultValue: X)`.
-3. Custom Constraints: Extend `ConstraintValidator<T>` or `OpenApiConstraintValidator<T>` to add your own logic.
-4. OpenAPI: Use `OpenApiSchemaConverter(schema: yourSchema).toSchema()` (or `.toJson()`) to generate specs.
+   - `withConstraints([ ... ])` 
+3. Default Values: Provide `defaultValue: T?` directly in the schema constructor or via `.call(defaultValue: X)`.
+4. Custom Constraints: Extend `ConstraintValidator<T>` or `OpenApiConstraintValidator<T>` to add your own logic.
+5. OpenAPI: Use `OpenApiSchemaConverter(schema: yourSchema).toSchema()` (or `.toJson()`) to generate specs.
 
 Happy validating with ACK!
 
@@ -438,7 +527,7 @@ class UserSchema extends SchemaModel<User> {
   }
 }
 
-// Using the schema model
+// Using the schema model - Constructor approach
 final userData = {
   'name': 'John Doe',
   'email': 'john@example.com',
@@ -455,6 +544,27 @@ if (userSchema.isValid) {
 } else {
   // Handle validation errors
   print('Validation errors: ${userSchema.getErrors()}');
+}
+
+// Using the static parse method (throws on validation error)
+try {
+  // Parse directly to a model instance in one step
+  final user = UserSchema.parse(userData);
+  print('User: ${user.name}, ${user.email}, ${user.age}');
+} catch (e) {
+  print('Validation failed: $e');
+}
+
+// Using the static tryParse method (null-safe)
+final maybeUser = UserSchema.tryParse({
+  'name': 'J', // Too short, will fail validation
+  'email': 'invalid-email'
+});
+
+if (maybeUser != null) {
+  print('Valid user: ${maybeUser.name}');
+} else {
+  print('Validation failed');
 }
 ```
 

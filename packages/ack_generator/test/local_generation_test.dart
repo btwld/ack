@@ -11,7 +11,7 @@ void main() {
 import 'package:ack_generator/ack_generator.dart';
 import 'package:ack/ack.dart';
 
-@AckModel(
+@Schema(
   description: 'A product model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -47,7 +47,7 @@ class Product {
   });
 }
 
-@AckModel(
+@Schema(
   description: 'A category for organizing products',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -83,7 +83,7 @@ class Category {
           'a|lib/product_model.dart': productModelContent,
         },
         outputs: {
-          'a|lib/product_model.schema.dart': decodedMatches(
+          'a|lib/product_model.g.dart': decodedMatches(
             allOf(
               contains('class ProductSchema extends SchemaModel<Product>'),
               contains('class CategorySchema extends SchemaModel<Category>'),

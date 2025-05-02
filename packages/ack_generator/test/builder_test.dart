@@ -11,7 +11,7 @@ void main() {
       const productModel = '''
 import 'package:ack_generator/ack_generator.dart';
 
-@AckModel(
+@Schema(
   description: 'A product model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -47,7 +47,7 @@ class Product {
   });
 }
 
-@AckModel(
+@Schema(
   description: 'A category for organizing products',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -79,14 +79,16 @@ class Category {
           'a|lib/product_model.dart': productModel,
         },
         outputs: {
-          'a|lib/product_model.schema.dart': decodedMatches(
-            allOf(
+          'a|lib/product_model.g.dart': decodedMatches(
+            allOf([
               contains('class ProductSchema extends SchemaModel<Product>'),
               contains('class CategorySchema extends SchemaModel<Category>'),
               contains("'id': Ack.string.isNotEmpty()"),
               contains("'name': Ack.string.isNotEmpty()"),
               contains("'price': Ack.double"),
               contains("'imageUrl': Ack.string.nullable()"),
+              contains("Product parse(Object? input, {String? debugName})"),
+              contains("Product? tryParse(Object? input, {String? debugName})"),
               predicate(
                 (String content) =>
                     content.contains(
@@ -95,7 +97,7 @@ class Category {
                     content.contains('additionalProperties: true'),
                 'contains required fields and additionalProperties',
               ),
-            ),
+            ]),
           ),
         },
         reader: await PackageAssetReader.currentIsolate(),
@@ -106,7 +108,7 @@ class Category {
       const userModel = '''
 import 'package:ack_generator/ack_generator.dart';
 
-@AckModel(
+@Schema(
   description: 'A user model with validation',
 )
 class User {
@@ -134,21 +136,23 @@ class User {
           'a|lib/user_model.dart': userModel,
         },
         outputs: {
-          'a|lib/user_model.schema.dart': decodedMatches(
-            allOf(
+          'a|lib/user_model.g.dart': decodedMatches(
+            allOf([
               contains('class UserSchema extends SchemaModel<User>'),
               contains("'email': Ack.string.isEmail()"),
               contains("'name': Ack.string.isNotEmpty().minLength(3)"),
               contains("'age': Ack.int.min(18)"),
               contains("required: ['email', 'name', 'age']"),
-            ),
+              contains("User parse(Object? input, {String? debugName})"),
+              contains("User? tryParse(Object? input, {String? debugName})"),
+            ]),
           ),
         },
         reader: await PackageAssetReader.currentIsolate(),
       );
     });
 
-    test('no output for model without AckModel annotation', () async {
+    test('no output for model without Schema annotation', () async {
       const plainModel = '''
 class SimpleProduct {
   final String id;
@@ -177,7 +181,7 @@ class SimpleProduct {
       const invalidUsage = '''
 import 'package:ack_generator/ack_generator.dart';
 
-@AckModel(description: 'This is invalid')
+@Schema(description: 'This is invalid')
 void invalidFunction() {}
 ''';
 

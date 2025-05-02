@@ -12,12 +12,13 @@ import 'package:ack/ack.dart';
 
 // Mock necessary base classes for analyzer
 abstract class SchemaModel<T> {
-  final Map<String, dynamic> _data;
-  SchemaModel(this._data);
-  SchemaModel._validated(this._data);
-  Map<String, dynamic> toMap() => _data;
-  T? getValue<T>(String key) => _data[key] as T?;
+  final Map<String, dynamic> data;
+  SchemaModel(this.data);
+  SchemaModel.validated(this.data);
+  Map<String, dynamic> toMap() => data;
+  T? getValue<T>(String key) => data[key] as T?;
   T toModel();
+  T create(Map<String, Object?> data);
 }
 
 abstract class SchemaResult<T> {
@@ -201,7 +202,7 @@ class ProductSchema extends SchemaModel<Product> {
   // Constructors
   ProductSchema([Map<String, dynamic>? data]) : super(data ?? {});
 
-  ProductSchema._validated(Map<String, dynamic> data) : super._validated(data);
+  ProductSchema.validated(Map<String, dynamic> data) : super.validated(data);
 
   /// Factory methods for parsing data
   static ProductSchema parse(Map<String, dynamic> data) {
@@ -211,15 +212,28 @@ class ProductSchema extends SchemaModel<Product> {
       throw AckException(result.getError());
     }
 
-    return ProductSchema._validated(result.getOrThrow());
+    return ProductSchema.validated(result.getOrThrow());
   }
 
-  static ProductSchema? tryParse(Map<String, dynamic> data) {
+  static ProductSchema? tryParseValue(Map<String, dynamic> data) {
     try {
       return parse(data);
     } catch (_) {
       return null;
     }
+  }
+  
+  @override
+  Product create(Map<String, Object?> data) {
+    return Product(
+      id: data['id'] as String,
+      name: data['name'] as String,
+      description: data['description'] as String,
+      price: data['price'] as double,
+      imageUrl: data['imageUrl'] as String?,
+      category: (data['category'] as CategorySchema).toModel(),
+      metadata: data.containsKey('metadata') ? data['metadata'] as Map<String, dynamic> : {},
+    );
   }
 
   /// Static helper to validate a map
@@ -246,9 +260,9 @@ class ProductSchema extends SchemaModel<Product> {
     final result = <String, dynamic>{};
     final knownFields = ['id', 'name', 'description', 'price', 'imageUrl', 'category'];
 
-    for (final key in _data.keys) {
+    for (final key in data.keys) {
       if (!knownFields.contains(key)) {
-        result[key] = _data[key];
+        result[key] = data[key];
       }
     }
     return result;
@@ -257,15 +271,7 @@ class ProductSchema extends SchemaModel<Product> {
   // Model conversion methods
   @override
   Product toModel() {
-    return Product(
-      id: id,
-      name: name,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      category: category.toModel(),
-      metadata: metadata,
-    );
+    return create(data);
   }
 
   /// Convert from a model instance to a schema
@@ -310,7 +316,7 @@ class ProductSchema extends SchemaModel<Product> {
       return SchemaResult.fail(result.getError());
     }
 
-    return SchemaResult.ok(ProductSchema._validated(result.getOrThrow()).toModel());
+    return SchemaResult.ok(ProductSchema.validated(result.getOrThrow()).toModel());
   }
 }
 
@@ -347,7 +353,7 @@ class CategorySchema extends SchemaModel<Category> {
   // Constructors
   CategorySchema([Map<String, dynamic>? data]) : super(data ?? {});
 
-  CategorySchema._validated(Map<String, dynamic> data) : super._validated(data);
+  CategorySchema.validated(Map<String, dynamic> data) : super.validated(data);
 
   /// Factory methods for parsing data
   static CategorySchema parse(Map<String, dynamic> data) {
@@ -357,15 +363,25 @@ class CategorySchema extends SchemaModel<Category> {
       throw AckException(result.getError());
     }
 
-    return CategorySchema._validated(result.getOrThrow());
+    return CategorySchema.validated(result.getOrThrow());
   }
 
-  static CategorySchema? tryParse(Map<String, dynamic> data) {
+  static CategorySchema? tryParseValue(Map<String, dynamic> data) {
     try {
       return parse(data);
     } catch (_) {
       return null;
     }
+  }
+  
+  @override
+  Category create(Map<String, Object?> data) {
+    return Category(
+      id: data['id'] as String,
+      name: data['name'] as String,
+      description: data['description'] as String?,
+      metadata: data.containsKey('metadata') ? data['metadata'] as Map<String, dynamic> : {},
+    );
   }
 
   /// Static helper to validate a map
@@ -389,9 +405,9 @@ class CategorySchema extends SchemaModel<Category> {
     final result = <String, dynamic>{};
     final knownFields = ['id', 'name', 'description'];
 
-    for (final key in _data.keys) {
+    for (final key in data.keys) {
       if (!knownFields.contains(key)) {
-        result[key] = _data[key];
+        result[key] = data[key];
       }
     }
     return result;
@@ -400,12 +416,7 @@ class CategorySchema extends SchemaModel<Category> {
   // Model conversion methods
   @override
   Category toModel() {
-    return Category(
-      id: id,
-      name: name,
-      description: description,
-      metadata: metadata,
-    );
+    return create(data);
   }
 
   /// Convert from a model instance to a schema
@@ -447,7 +458,7 @@ class CategorySchema extends SchemaModel<Category> {
       return SchemaResult.fail(result.getError());
     }
 
-    return SchemaResult.ok(CategorySchema._validated(result.getOrThrow()).toModel());
+    return SchemaResult.ok(CategorySchema.validated(result.getOrThrow()).toModel());
   }
 }
 ''';

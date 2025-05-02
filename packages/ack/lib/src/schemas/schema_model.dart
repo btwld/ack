@@ -6,9 +6,12 @@ import 'package:ack/src/schemas/schema.dart';
 import 'package:ack/src/validation/ack_exception.dart';
 import 'package:ack/src/validation/schema_error.dart';
 import 'package:ack/src/validation/schema_result.dart';
+import 'package:meta/meta.dart';
 
 /// Base class for type-safe schema models
 abstract class SchemaModel<T> {
+  /// The data stored in this model (protected access for subclasses)
+  @protected
   final Map<String, Object?> _data = {};
   late final bool _isValid;
   late final SchemaError? _error;
@@ -16,6 +19,14 @@ abstract class SchemaModel<T> {
   /// Create from any value, validating it automatically
   SchemaModel(Object? value) {
     _initialize(value);
+  }
+
+  /// Create from pre-validated data (internal use)
+  @protected
+  SchemaModel.validated(Map<String, Object?> validatedData) {
+    _data.addAll(validatedData);
+    _isValid = true;
+    _error = null;
   }
 
   void _initialize(Object? value) {
@@ -30,10 +41,9 @@ abstract class SchemaModel<T> {
     }
   }
 
-  /// Validate the input value
+  /// Internal validation method
   SchemaResult _validateValue(Object? value) {
     final schema = getSchema();
-
     return schema.validate(value);
   }
 
@@ -49,7 +59,6 @@ abstract class SchemaModel<T> {
   /// Get a value with type safety
   V? getValue<V>(String key) {
     final value = _data[key];
-
     return SchemaConverter.convertValue(value);
   }
 
@@ -59,13 +68,40 @@ abstract class SchemaModel<T> {
   /// Get raw data
   Map<String, Object?> toMap() => Map.from(_data);
 
-  /// Convert to a model instance
+  /// Convert this schema to a model instance.
+  /// This is implemented by generated code for each schema type.
+  ///
+  /// Throws an [AckException] if the schema is not valid.
   T toModel() {
     if (!isValid) {
       throw AckException(getErrors()!);
     }
+
     // Implementation provided by subclasses
     throw UnimplementedError('Subclasses must implement toModel()');
+  }
+
+  /// Parse the input and return a model instance.
+  /// Throws an [AckException] if validation fails.
+  ///
+  /// This is implemented by generated code for each schema type.
+  T parse(Object? input, {String? debugName}) {
+    final schema = getSchema();
+    final result = schema.validate(input, debugName: debugName);
+    if (result.isOk) {
+      return toModel();
+    }
+    throw AckException(result.getError());
+  }
+
+  /// Try to parse the input and return a model instance.
+  /// Returns null if validation fails.
+  ///
+  /// This is implemented by generated code for each schema type.
+  T? tryParse(Object? input, {String? debugName}) {
+    final schema = getSchema();
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? toModel() : null;
   }
 
   /// Convert to JSON string

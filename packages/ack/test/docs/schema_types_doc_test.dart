@@ -234,8 +234,8 @@ void main() {
 
         // Example of Option 1: Custom validation logic.
         bool validateStringOrInt(dynamic value) {
-          final isString = Ack.string.validate(value).isOk;
-          final isInt = Ack.int.validate(value).isOk;
+          final isString = Ack.string.strict().validate(value).isOk;
+          final isInt = Ack.int.strict().validate(value).isOk;
           return isString || isInt;
         }
 

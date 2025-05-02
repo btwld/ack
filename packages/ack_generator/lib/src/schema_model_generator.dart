@@ -455,7 +455,26 @@ $modelConversionProps
     );
   }
 
-  /// Convert from a model instance to a schema
+  /// Parses the input and returns a $modelClassName instance.
+  /// Throws an [AckException] if validation fails.
+  @override
+  $modelClassName parse(Object? input, {String? debugName}) {
+    final result = validate(input, debugName: debugName);
+    if (result.isOk) {
+      return toModel();
+    }
+    throw AckException(result.getError()!);
+  }
+
+  /// Attempts to parse the input and returns a $modelClassName instance.
+  /// Returns null if validation fails.
+  @override
+  $modelClassName? tryParse(Object? input, {String? debugName}) {
+    final result = validate(input, debugName: debugName);
+    return result.isOk ? toModel() : null;
+  }
+
+  /// Create a schema from a model instance
   static $schemaClassName fromModel($modelClassName model) {
     return $schemaClassName(toMapFromModel(model));
   }
@@ -468,6 +487,24 @@ $toMapProps
 
 $additionalPropsCode
     return result;
+  }
+
+  /// Static parse method that creates a $modelClassName directly from input.
+  /// Throws an [AckException] if validation fails.
+  static $modelClassName parseModel(Object? input, {String? debugName}) {
+    final schema = $schemaClassName(input);
+    return schema.toModel();
+  }
+
+  /// Static tryParse method that creates a $modelClassName directly from input.
+  /// Returns null if validation fails.
+  static $modelClassName? tryParseModel(Object? input, {String? debugName}) {
+    try {
+      final schema = $schemaClassName(input);
+      return schema.isValid ? schema.toModel() : null;
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Convert the schema to an OpenAPI definition

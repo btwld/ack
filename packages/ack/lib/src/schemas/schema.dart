@@ -100,16 +100,14 @@ sealed class AckSchema<T extends Object> {
         .toList();
   }
 
-  /// Attempts to parse the given [value] into type [T].
+  /// Attempts to convert the given [value] into type [T].
   ///
   /// If [value] is already of type [T], it is returned directly.
-  /// If [_strict] is `false`, attempts will be made to parse [String] and [num]
-  /// values into [T] if possible.
+  /// Otherwise, returns null.
   ///
-  /// Returns the parsed value of type [T] or `null` if parsing fails.
-
-  @visibleForTesting
-  T? tryParse(Object? value) {
+  /// This is an internal method used for type conversion during validation.
+  @protected
+  T? _tryConvertType(Object? value) {
     return value is T ? value : null;
   }
 
@@ -145,18 +143,14 @@ sealed class AckSchema<T extends Object> {
   /// Returns the default value of this schema.
   T? getDefaultValue() => _defaultValue;
 
-  /// Validates the [value] against this schema and returns a [SchemaResult].
+  /// Core validation logic for this schema.
   ///
-  /// This method provides a non-throwing way to validate values against the schema.
-  /// It wraps the validation logic in a `try-catch` block to handle potential
-  /// exceptions during validation and returns a [Fail] result with a
-  /// [SchemaError.unknownException] if an exception occurs.
-  ///
-  /// Use [validateOrThrow] if you prefer to throw an exception on validation failure.
+  /// This method handles null values, type conversion, and constraint validation.
   @protected
   @mustCallSuper
   SchemaResult<T> validateValue(Object? value) {
     try {
+      // Handle null values
       if (value == null) {
         return _nullable
             ? SchemaResult.unit()
@@ -166,7 +160,8 @@ sealed class AckSchema<T extends Object> {
               ));
       }
 
-      final typedValue = tryParse(value);
+      // Try to convert to the target type
+      final typedValue = _tryConvertType(value);
 
       if (typedValue == null) {
         return SchemaResult.fail(
@@ -179,6 +174,7 @@ sealed class AckSchema<T extends Object> {
         );
       }
 
+      // Validate against constraints
       final constraintViolations = checkValidators(typedValue);
 
       if (constraintViolations.isNotEmpty) {
@@ -202,17 +198,66 @@ sealed class AckSchema<T extends Object> {
     }
   }
 
-  /// Validates the [value] against this schema and returns a [SchemaResult].
+  /// Validates the [value] against this schema with proper context and returns a [SchemaResult].
   ///
   /// This method provides a non-throwing way to validate values against the schema.
-  /// It wraps the validation logic in a `try-catch` block to handle potential
-  /// exceptions during validation and returns a [Fail] result with a
-  /// [SchemaError.unknownException] if an exception occurs.
+  /// It wraps the validation logic in a context to provide better error reporting.
   SchemaResult<T> validate(Object? value, {String? debugName}) {
     return executeWithContext(
       SchemaContext(name: debugName ?? type.name, schema: this, value: value),
       () => validateValue(value),
     );
+  }
+
+  /// Validates and parses the [input] against this schema.
+  ///
+  /// If validation is successful, returns the validated value.
+  /// If validation fails, throws an [AckException] with the validation error.
+  ///
+  /// This method provides a simpler, more direct API compared to [validate]
+  /// when you want to immediately use the validated data.
+  ///
+  /// ```dart
+  /// final userSchema = Ack.object({...});
+  ///
+  /// try {
+  ///   final validUser = userSchema.parse(jsonData);
+  ///   // Use validUser directly
+  /// } on AckException catch (e) {
+  ///   // Handle validation error
+  /// }
+  /// ```
+  T? parse(Object? input, {String? debugName}) {
+    final result = validate(input, debugName: debugName);
+
+    if (result.isOk) {
+      return result.getOrNull();
+    }
+
+    throw AckException(result.getError());
+  }
+
+  /// Validates and parses the [input] against this schema, returning null if validation fails.
+  ///
+  /// If validation is successful, returns the validated value.
+  /// If validation fails, returns null.
+  ///
+  /// This method provides a non-throwing alternative to [parse] that's useful
+  /// when you want to handle validation failure through a null check.
+  ///
+  /// ```dart
+  /// final userSchema = Ack.object({...});
+  ///
+  /// final validUser = userSchema.tryParse(jsonData);
+  /// if (validUser != null) {
+  ///   // Use validUser
+  /// } else {
+  ///   // Handle validation failure
+  /// }
+  /// ```
+  T? tryParse(Object? input, {String? debugName}) {
+    final result = validate(input, debugName: debugName);
+    return result.isOk ? result.getOrNull() : null;
   }
 
   /// Converts this schema to a [Map] representation.
@@ -270,12 +315,8 @@ mixin SchemaFluentMethods<S extends AckSchema<T>, T extends Object>
   ///
   /// If validation is successful, returns the validated value of type [T].
   /// If validation fails, throws an [AckException] containing a list of [SchemaError] objects.
-  ///
-  /// **Note**: `AckException` is assumed to be a custom exception class defined elsewhere,
-  /// likely in `ack_base.dart`, to handle schema validation errors. Ensure `AckException`
-  /// is properly documented to explain its structure and usage for conveying validation failure details.
-  void validateOrThrow(Object value, {String? debugName}) {
-    validate(value, debugName: debugName).getOrThrow();
+  T? validateOrThrow(Object? value, {String? debugName}) {
+    return parse(value, debugName: debugName);
   }
 }
 
@@ -336,7 +377,7 @@ sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
 
   bool getStrictValue() => _strict;
 
-  /// Attempts to parse the given [value] into type [T].
+  /// Attempts to convert the given [value] into type [T].
   ///
   /// If [value] is already of type [T], it is returned directly.
   /// If [_strict] is `false`, attempts will be made to parse [String] and [num]
@@ -344,7 +385,7 @@ sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
   ///
   /// Returns the parsed value of type [T] or `null` if parsing fails.
   @override
-  T? tryParse(Object? value) {
+  T? _tryConvertType(Object? value) {
     if (value is T) return value;
     if (!_strict) {
       if (value is String) return _tryParseString(value);

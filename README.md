@@ -53,4 +53,11 @@ melos clean
 
 ## Contributing
 
-Please refer to the contribution guidelines (TODO: Add CONTRIBUTING.md).
+Contributions are welcome! A detailed CONTRIBUTING.md file will be added soon with specific guidelines.
+
+In the meantime, please follow these basic steps:
+1. Fork the repository
+2. Create a feature branch
+3. Add your changes
+4. Run tests with `melos test`
+5. Submit a pull request

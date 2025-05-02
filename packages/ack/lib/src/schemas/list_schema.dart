@@ -42,12 +42,12 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
-  List<V>? tryParse(Object? value) {
+  List<V>? _tryConvertType(Object? value) {
     if (value is! List) return null;
 
     List<V>? parsedList = <V>[];
     for (final v in value) {
-      final parsed = _itemSchema.tryParse(v);
+      final parsed = _itemSchema._tryConvertType(v);
       if (parsed == null) {
         parsedList = null;
         break;

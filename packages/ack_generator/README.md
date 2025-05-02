@@ -115,8 +115,7 @@ void main() {
   
   if (result.isOk) {
     // Create an instance from valid data
-    final userSchema = UserSchema.parse(userMap);
-    final user = userSchema.toModel();
+    final user = UserSchema.parse(userMap);
     
     print('Valid user: ${user.name}, ${user.email}');
     print('Additional properties: ${user.metadata}'); // Contains {'role': 'admin'}

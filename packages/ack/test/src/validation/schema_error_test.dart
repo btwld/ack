@@ -1,6 +1,5 @@
 import 'package:ack/ack.dart';
 import 'package:ack/src/context.dart';
-import 'package:ack/src/helpers.dart';
 import 'package:test/test.dart';
 
 class _MockSchemaContext extends SchemaContext {
@@ -153,7 +152,7 @@ void main() {
     'address': addressSchema,
   });
 
-  test('SchemaError', () {
+  test('SchemaError - validates nested objects', () {
     final result =
         userWithAddressSchema.validate(debugName: 'userWithAddress', {
       'age': 'car',
@@ -167,6 +166,18 @@ void main() {
       },
     });
 
-    print(prettyJson(composeSchemaErrorMap(result.getError())));
+    // Verify that validation failed
+    expect(result.isFail, isTrue);
+    
+    final error = result.getError();
+    
+    // Verify it's a nested error
+    expect(error, isA<SchemaNestedError>());
+    
+    // Verify error string contains expected messages
+    final errorString = error.toString();
+    expect(errorString, contains('schema_nested_error'));
+    expect(errorString, contains('userWithAddress'));
+    expect(errorString.length, greaterThan(20));
   });
 }
