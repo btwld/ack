@@ -211,22 +211,17 @@ final user = User(
 final schema = UserSchema.fromModel(user);
 ```
 
-#### `static Map<String, Object?> toDefinition()`
+#### `static Map<String, Object?> toJsonSchema()`
 
-Converts the schema to an OpenAPI definition as a Map.
-
-```dart
-final definition = UserSchema.toDefinition();
-print('OpenAPI Definition: $definition');
-```
-
-#### `static String toDefinitionString()`
-
-Converts the schema to an OpenAPI definition as a formatted JSON string.
+Converts the schema to a JSON Schema as a Map.
 
 ```dart
-final definitionString = UserSchema.toDefinitionString();
-print('OpenAPI Definition JSON:\n$definitionString');
+final jsonSchema = UserSchema.toJsonSchema();
+print('JSON Schema: $jsonSchema');
+
+// Convert to JSON string if needed
+final jsonString = jsonEncode(jsonSchema);
+print('JSON String:\n$jsonString');
 ```
 
 ### Instance Methods
