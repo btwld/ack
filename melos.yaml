@@ -5,6 +5,13 @@ packages:
   - packages/**
   - example/*
 
+command:
+  version:
+    # Generate changelogs
+    workspaceChangelog: true
+    # Message for version commits
+    message: "chore(release): publish packages"
+
 scripts:
   analyze:
     run: melos exec -- "dart analyze . --fatal-infos"
@@ -42,14 +49,40 @@ scripts:
   ensure_analysis_options:
     run: .scripts/ensure_analysis_options.sh
     description: Ensures each package has DCM configuration in analysis_options.yaml
-    
+
   # Additional standard Melos commands
   bs:
     run: melos bootstrap
     description: Initialize the workspace with dependencies.
-      
+
   clean:
     run: melos clean
     description: Clean all build outputs.
 
-  # Additional scripts can be added here if needed
+  # Build scripts for code generation
+  build:
+    run: melos exec -- "dart run build_runner build --delete-conflicting-outputs"
+    description: Run build_runner for all packages
+    packageFilters:
+      dependsOn: build_runner
+
+  # Version and publish scripts
+  version-patch:
+    run: melos version --patch --yes
+    description: Bump patch version for all packages
+
+  version-minor:
+    run: melos version --minor --yes
+    description: Bump minor version for all packages
+
+  version-major:
+    run: melos version --major --yes
+    description: Bump major version for all packages
+
+  publish-dry:
+    run: melos publish
+    description: Dry-run publish packages to pub.dev
+
+  publish:
+    run: melos publish --no-dry-run
+    description: Publish packages to pub.dev

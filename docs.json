@@ -68,7 +68,8 @@
   ],
   "variables": {
     "versions": {
-      "default": "1.0.0"
+      "default": "0.2.0",
+      "isPrerelease": true
     }
   },
   "search": {},

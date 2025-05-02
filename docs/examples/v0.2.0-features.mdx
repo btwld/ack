@@ -1,0 +1,464 @@
+---
+title: Ack 0.2.0 Features and Examples
+---
+
+# Ack 0.2.0 Features and Examples
+
+This document showcases the new features and improvements introduced in Ack 0.2.0, with practical examples to help you get started quickly.
+
+## SchemaModel API Improvements
+
+The SchemaModel API has been completely redesigned for a more intuitive and streamlined experience.
+
+### Before vs. After
+
+**Before (0.1.x):**
+```dart
+// Create a schema instance
+final schema = ProductSchema();
+
+// Validate data separately
+final validationResult = schema.validate(productData);
+if (validationResult.isValid) {
+  // Create model from validated data
+  final product = schema.createFromMap(productData);
+}
+```
+
+**After (0.2.0):**
+```dart
+// Create schema instance with automatic validation
+final schema = ProductSchema(productData);
+
+// Check if valid and get model in one step
+if (schema.isValid) {
+  final product = schema.toModel();
+}
+```
+
+### Key Improvements
+
+1. **Automatic Validation**: Validation now happens automatically when a SchemaModel is created
+2. **Simplified Error Handling**: Easy access to validation errors through `isValid` and `getErrors()`
+3. **Better Type Safety**: Uses `Object?` instead of `dynamic` for better type safety
+4. **Streamlined API**: Fewer methods with more intuitive names
+
+## Complete Example: Product Catalog
+
+Let's build a complete example of a product catalog system using the new features.
+
+### 1. Define Your Models
+
+```dart
+// file: category.dart
+import 'package:ack_generator/ack_generator.dart';
+
+part 'category.schema.dart';
+
+@Schema(description: 'Product category')
+class Category {
+  @IsNotEmpty()
+  final String id;
+
+  @MinLength(3)
+  @MaxLength(50)
+  final String name;
+
+  Category({required this.id, required this.name});
+}
+
+// file: product.dart
+import 'package:ack_generator/ack_generator.dart';
+import 'category.dart';
+
+part 'product.schema.dart';
+
+@Schema(
+  description: 'A product with validation',
+  additionalProperties: true,
+  additionalPropertiesField: 'metadata',
+)
+class Product {
+  @IsNotEmpty()
+  final String id;
+
+  @MinLength(3)
+  @MaxLength(50)
+  final String name;
+
+  @IsNotEmpty()
+  final String description;
+
+  @Min(0.01)
+  final double price;
+
+  @Nullable()
+  final String? imageUrl;
+
+  @Required()
+  final Category category;
+
+  final Map<String, dynamic> metadata;
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    this.imageUrl,
+    required this.category,
+    Map<String, dynamic>? metadata,
+  }) : metadata = metadata ?? {};
+}
+```
+
+### 2. Generate Schema Classes
+
+Run the build_runner command:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### 3. Use the Generated Schema Classes
+
+```dart
+import 'product.dart';
+import 'product.schema.dart';
+import 'category.dart';
+import 'category.schema.dart';
+import 'dart:convert';
+
+void main() {
+  // Sample data
+  final productData = {
+    'id': 'prod-123',
+    'name': 'Wireless Headphones',
+    'description': 'High-quality wireless headphones with noise cancellation',
+    'price': 99.99,
+    'imageUrl': 'https://example.com/headphones.jpg',
+    'category': {
+      'id': 'cat-audio',
+      'name': 'Audio Equipment'
+    },
+    'inStock': true, // Additional property captured in metadata
+    'tags': ['wireless', 'audio', 'premium'] // Additional property captured in metadata
+  };
+
+  // Invalid data example
+  final invalidProductData = {
+    'id': 'prod-456',
+    'name': 'TV', // Too short, fails MinLength(3)
+    'description': 'A television',
+    'price': -50, // Negative, fails Min(0.01)
+    'category': {
+      'id': '', // Empty, fails IsNotEmpty()
+      'name': 'Electronics'
+    }
+  };
+
+  // 1. Validate and create schema instance
+  final productSchema = ProductSchema(productData);
+  final invalidProductSchema = ProductSchema(invalidProductData);
+
+  // 2. Check validation results
+  print('Valid product schema? ${productSchema.isValid}'); // true
+  print('Invalid product schema? ${invalidProductSchema.isValid}'); // false
+
+  // 3. Get validation errors for invalid data
+  if (!invalidProductSchema.isValid) {
+    final errors = invalidProductSchema.getErrors();
+    print('Validation errors:');
+    print('- Error type: ${errors?.name}');
+    print('- Error message: ${errors?.message}');
+    print('- Error path: ${errors?.path}');
+  }
+
+  // 4. Convert valid schema to model
+  if (productSchema.isValid) {
+    final product = productSchema.toModel();
+    
+    // Use the strongly-typed model
+    print('Product: ${product.name} - \$${product.price}');
+    print('Category: ${product.category.name}');
+    
+    // Access additional properties via metadata
+    print('In Stock: ${product.metadata['inStock']}');
+    print('Tags: ${product.metadata['tags']}');
+  }
+
+  // 5. Convert model to schema
+  final newProduct = Product(
+    id: 'prod-789',
+    name: 'Bluetooth Speaker',
+    description: 'Portable Bluetooth speaker with 20-hour battery life',
+    price: 49.99,
+    category: Category(id: 'cat-audio', name: 'Audio Equipment'),
+    metadata: {
+      'inStock': true,
+      'tags': ['bluetooth', 'portable', 'audio']
+    }
+  );
+
+  // Create schema from model
+  final newProductSchema = ProductSchema.fromModel(newProduct);
+  
+  // Convert to Map/JSON
+  final productMap = newProductSchema.toMap();
+  final productJson = jsonEncode(productMap);
+  print('Product JSON: $productJson');
+
+  // 6. Generate OpenAPI definition
+  final openApiDefinition = ProductSchema.toDefinition();
+  final openApiJson = jsonEncode(openApiDefinition);
+  print('OpenAPI Definition: $openApiJson');
+}
+```
+
+## String Validation Improvements
+
+### New `matches()` Method
+
+The `matches()` method now validates if a string matches a full pattern (anchored with ^ and $).
+
+```dart
+// Define a schema with pattern validation
+final usernameSchema = Ack.string.matches(r'^[a-z0-9_]{3,16}$');
+
+// Validate strings
+print(usernameSchema.validate('user_123').isValid); // true
+print(usernameSchema.validate('user@123').isValid); // false - contains @
+print(usernameSchema.validate('ab').isValid); // false - too short
+print(usernameSchema.validate('user_123!').isValid); // false - contains !
+```
+
+### Using String Validation in Models
+
+```dart
+import 'package:ack_generator/ack_generator.dart';
+
+part 'user.schema.dart';
+
+@Schema(description: 'User account')
+class User {
+  @IsNotEmpty()
+  @Matches(r'^[a-z0-9_]{3,16}$')
+  final String username;
+
+  @IsEmail()
+  final String email;
+
+  @MinLength(8)
+  @Matches(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$')
+  final String password;
+
+  User({
+    required this.username,
+    required this.email,
+    required this.password,
+  });
+}
+```
+
+## OpenAPI Integration
+
+The SchemaModel now provides improved methods for generating OpenAPI specifications.
+
+```dart
+// Get OpenAPI definition as a Map
+final definition = ProductSchema.toDefinition();
+
+// Get OpenAPI definition as a formatted JSON string
+final definitionString = ProductSchema.toDefinitionString();
+
+// Example of using the definition in a larger OpenAPI document
+final openApiDoc = {
+  'openapi': '3.0.0',
+  'info': {
+    'title': 'Product API',
+    'version': '1.0.0',
+    'description': 'API for managing products'
+  },
+  'paths': {
+    '/products': {
+      'post': {
+        'summary': 'Create a new product',
+        'requestBody': {
+          'required': true,
+          'content': {
+            'application/json': {
+              'schema': {
+                '\$ref': '#/components/schemas/Product'
+              }
+            }
+          }
+        },
+        'responses': {
+          '201': {
+            'description': 'Product created successfully'
+          }
+        }
+      }
+    }
+  },
+  'components': {
+    'schemas': {
+      'Product': ProductSchema.toDefinition(),
+      'Category': CategorySchema.toDefinition()
+    }
+  }
+};
+```
+
+## Working with Nested Models
+
+The code generator now handles nested models more elegantly.
+
+```dart
+// Define models with nesting
+@Schema()
+class Address {
+  @IsNotEmpty()
+  final String street;
+  
+  @IsNotEmpty()
+  final String city;
+  
+  @IsNotEmpty()
+  final String country;
+  
+  Address({
+    required this.street,
+    required this.city,
+    required this.country
+  });
+}
+
+@Schema()
+class Customer {
+  @IsNotEmpty()
+  final String id;
+  
+  @MinLength(2)
+  final String name;
+  
+  @IsEmail()
+  final String email;
+  
+  // Nested model
+  final Address billingAddress;
+  
+  // Optional nested model
+  final Address? shippingAddress;
+  
+  // List of nested models
+  final List<Address>? additionalAddresses;
+  
+  Customer({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.billingAddress,
+    this.shippingAddress,
+    this.additionalAddresses
+  });
+}
+
+// Usage
+final customerData = {
+  'id': 'cust-123',
+  'name': 'John Doe',
+  'email': 'john@example.com',
+  'billingAddress': {
+    'street': '123 Main St',
+    'city': 'New York',
+    'country': 'USA'
+  },
+  'shippingAddress': {
+    'street': '456 Park Ave',
+    'city': 'New York',
+    'country': 'USA'
+  },
+  'additionalAddresses': [
+    {
+      'street': '789 Work Blvd',
+      'city': 'New York',
+      'country': 'USA'
+    }
+  ]
+};
+
+// Create schema instance
+final customerSchema = CustomerSchema(customerData);
+
+// Convert to model if valid
+if (customerSchema.isValid) {
+  final customer = customerSchema.toModel();
+  
+  // Access nested models
+  print('Billing City: ${customer.billingAddress.city}');
+  
+  // Access optional nested model
+  if (customer.shippingAddress != null) {
+    print('Shipping City: ${customer.shippingAddress!.city}');
+  }
+  
+  // Access list of nested models
+  if (customer.additionalAddresses != null) {
+    for (final address in customer.additionalAddresses!) {
+      print('Additional Address: ${address.street}, ${address.city}');
+    }
+  }
+}
+```
+
+## Migrating from 0.1.x to 0.2.0
+
+If you're upgrading from a previous version, here are the key changes to be aware of:
+
+1. **Constructor Changes**: SchemaModel now takes `Object?` instead of `Map<String, dynamic>`
+2. **Automatic Validation**: Validation now happens in the constructor
+3. **Removed Methods**: `parse()`, `fromValidated()`, `validateMap()`, `validate()`, `createFromMap()`, and `initialize()` methods have been removed
+4. **New Methods**: Use `isValid` getter and `getErrors()` method for error handling
+5. **String Validation**: The `matches()` method now validates full string patterns
+
+### Migration Example
+
+**Before (0.1.x):**
+```dart
+// Create schema
+final schema = UserSchema();
+
+// Validate data
+final validationResult = schema.validate(userData);
+if (validationResult.isValid) {
+  // Create model from validated data
+  final user = schema.createFromMap(userData);
+  // Use user...
+} else {
+  // Handle errors
+  print('Validation errors: ${validationResult.errors}');
+}
+```
+
+**After (0.2.0):**
+```dart
+// Create schema with automatic validation
+final schema = UserSchema(userData);
+
+// Check if valid
+if (schema.isValid) {
+  // Get model
+  final user = schema.toModel();
+  // Use user...
+} else {
+  // Handle errors
+  print('Validation errors: ${schema.getErrors()}');
+}
+```
+
+## Conclusion
+
+Ack 0.2.0 brings significant improvements to the SchemaModel API, making it more intuitive and easier to use. The automatic validation, improved error handling, and better type safety make it a powerful tool for building robust applications with strong data validation.
+
+For more information, check out the [SchemaModel Class API](../core-concepts/schema-model-class.mdx) and [Code Generation](../guides/code-generation.mdx) guides.

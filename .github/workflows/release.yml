@@ -1,0 +1,124 @@
+name: Process Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  process-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write  # Required for pub.dev publishing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important for versioning to work properly
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Setup Dart and Melos
+      - uses: dart-lang/setup-dart@v1
+      - uses: bluefireteam/melos-action@v3
+        with:
+          run-bootstrap: true
+
+      # Run tests to ensure everything is working properly
+      - name: Analyze project source
+        run: melos analyze
+        env:
+          DART_GENERATE_WARNINGS_IN_GENERATED_FILES: false
+
+      - name: Run tests
+        run: melos test
+
+      # Extract version from the release tag (e.g., v1.2.3 -> 1.2.3)
+      - name: Extract version
+        id: version
+        run: |
+          TAG=${{ github.event.release.tag_name }}
+          VERSION=${TAG#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version extracted: $VERSION"
+
+      # Get release notes and extract the Changelog section
+      - name: Get release notes
+        id: release_notes
+        run: |
+          FULL_NOTES=$(cat << 'EOF'
+          ${{ github.event.release.body }}
+          EOF
+          )
+
+          # Extract content between "## Changelog" and the next heading or end of file
+          CHANGELOG_SECTION=$(echo "$FULL_NOTES" | awk '/^## Changelog/{flag=1;next} /^##/{flag=0} flag')
+
+          # Check if changelog section is empty or not found
+          if [ -z "$CHANGELOG_SECTION" ]; then
+            echo "::error::No '## Changelog' section found in release notes or it's empty. Please add a '## Changelog' section."
+            exit 1
+          fi
+
+          # Trim leading and trailing whitespace
+          CHANGELOG_SECTION=$(echo "$CHANGELOG_SECTION" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+          # Check again after trimming
+          if [ -z "$CHANGELOG_SECTION" ]; then
+            echo "::error::The '## Changelog' section is empty. Please add content to the changelog."
+            exit 1
+          fi
+
+          echo "NOTES<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG_SECTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # Create a custom changelog entry from the release notes
+      - name: Prepare changelog
+        run: |
+          # Create a formatted changelog entry
+          CHANGELOG_ENTRY="## ${{ env.VERSION }} ($(date +%Y-%m-%d))\n\n${{ env.NOTES }}"
+          echo -e "$CHANGELOG_ENTRY" > changelog_entry.md
+          echo "Changelog entry created:"
+          cat changelog_entry.md
+
+      # Version packages with the specified version
+      - name: Version packages
+        run: |
+          # First update the version in all packages
+          melos version --all ${{ env.VERSION }} --yes
+
+          # Now manually update the CHANGELOG.md files with the release notes
+          for pkg in $(melos list --parsable); do
+            if [ -f "$pkg/CHANGELOG.md" ]; then
+              echo "Updating CHANGELOG.md for $pkg"
+              # Prepend the new changelog entry to the existing CHANGELOG.md
+              TEMP_CHANGELOG=$(mktemp)
+              cat changelog_entry.md > $TEMP_CHANGELOG
+              echo "" >> $TEMP_CHANGELOG
+              cat "$pkg/CHANGELOG.md" >> $TEMP_CHANGELOG
+              mv $TEMP_CHANGELOG "$pkg/CHANGELOG.md"
+            fi
+          done
+
+          # Also update the root CHANGELOG.md if it exists
+          if [ -f "CHANGELOG.md" ]; then
+            echo "Updating root CHANGELOG.md"
+            TEMP_CHANGELOG=$(mktemp)
+            cat changelog_entry.md > $TEMP_CHANGELOG
+            echo "" >> $TEMP_CHANGELOG
+            cat "CHANGELOG.md" >> $TEMP_CHANGELOG
+            mv $TEMP_CHANGELOG "CHANGELOG.md"
+          fi
+
+          # Commit the changelog updates
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "docs: update changelogs with release notes [skip ci]"
+          git push
+
+      # Publish to pub.dev if the release is not a draft or prerelease
+      - name: Publish to pub.dev
+        if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
+        run: |
+          # Melos will handle the dependency order automatically
+          melos publish --no-dry-run
