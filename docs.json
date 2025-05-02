@@ -1,0 +1,79 @@
+{
+  "$schema": "https://docs.page/schema.json",
+  "name": "Ack",
+  "description": "Documentation for the Ack project",
+
+  "theme": {
+    "defaultTheme": "dark"
+  },
+  "header": {
+    "showName": true,
+    "showThemeToggle": false,
+    "showGitHubCard": true
+  },
+  "social": {
+    "github": "leofarias/ack"
+  },
+  "seo": {
+    "noindex": false
+  },
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        { "title": "Overview", "href": "/" },
+        { "title": "Installation", "href": "/getting-started/installation" },
+        {
+          "title": "Quickstart Tutorial",
+          "href": "/getting-started/quickstart-tutorial"
+        }
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        { "title": "Schema Types", "href": "/core-concepts/schemas" },
+        { "title": "Validation Rules", "href": "/core-concepts/validation" },
+        { "title": "Error Handling", "href": "/core-concepts/error-handling" },
+        {
+          "title": "JSON Serialization",
+          "href": "/core-concepts/json-serialization"
+        },
+        {
+          "title": "SchemaModel Class",
+          "href": "/core-concepts/schema-model-class"
+        },
+        { "title": "Configuration", "href": "/core-concepts/configuration" }
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        { "title": "Custom Validation", "href": "/guides/custom-validation" },
+        { "title": "Code Generation", "href": "/guides/code-generation" },
+        {
+          "title": "OpenAPI Integration",
+          "href": "/guides/openapi-integration"
+        },
+        {
+          "title": "Flutter Form Validation",
+          "href": "/guides/flutter-form-validation"
+        }
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [{ "title": "API Reference", "href": "/api-reference/" }]
+    }
+  ],
+  "variables": {
+    "versions": {
+      "default": "1.0.0"
+    }
+  },
+  "search": {},
+  "content": {
+    "showPageTitle": true,
+    "zoomImages": true
+  }
+}

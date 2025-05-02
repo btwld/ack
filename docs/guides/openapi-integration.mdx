@@ -1,0 +1,194 @@
+---
+title: OpenAPI (Swagger) Integration
+---
+
+Ack [schemas](../core-concepts/schemas.mdx) can be automatically converted into OpenAPI Specification (OAS, formerly Swagger) schema objects, allowing you to generate API documentation directly from your validation schemas.
+
+## Generating OpenAPI Schemas
+
+Use the `toOpenApi()` extension method available on any `AckSchema` instance (requires importing `package:ack/openapi.dart`).
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack/openapi.dart'; // Required for toOpenApi() extension
+import 'dart:convert';
+
+// Example User Schema
+final userSchema = Ack.object({
+  'id': Ack.int.positive().description('Unique user identifier'),
+  'name': Ack.string.minLength(2).maxLength(50).description('User\'s full name'),
+  'email': Ack.string.isEmail().description('User\'s email address'),
+  'role': Ack.string.isEnum(['admin', 'user', 'guest']).defaultValue('user'),
+  'isActive': Ack.boolean.defaultValue(true),
+  'tags': Ack.list(Ack.string).uniqueItems().description('List of user tags').nullable(),
+  'age': Ack.int.min(0).max(120).nullable().description('User\'s age'),
+}, 
+required: ['id', 'name', 'email'],
+description: 'Represents a user in the system'
+);
+
+void main() {
+  // Convert the AckSchema to an OpenAPI Schema Object Map
+  final openApiSchemaMap = userSchema.toOpenApi();
+
+  // Pretty print the JSON representation of the OpenAPI Schema
+  final jsonEncoder = JsonEncoder.withIndent('  ');
+  print(jsonEncoder.convert(openApiSchemaMap));
+}
+```
+
+**Output JSON (OpenAPI Schema Object):**
+
+```json
+{
+  "type": "object",
+  "description": "Represents a user in the system",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Unique user identifier",
+      "minimum": 0,
+      "exclusiveMinimum": true
+    },
+    "name": {
+      "type": "string",
+      "description": "User\'s full name",
+      "minLength": 2,
+      "maxLength": 50
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "User\'s email address"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user",
+        "guest"
+      ],
+      "default": "user"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "array",
+      "description": "List of user tags",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "nullable": true
+    },
+    "age": {
+      "type": "integer",
+      "format": "int64",
+      "description": "User\'s age",
+      "minimum": 0,
+      "maximum": 120,
+      "nullable": true
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "email"
+  ]
+}
+```
+
+## How Constraints Map to OpenAPI
+
+Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) to corresponding OpenAPI schema keywords:
+
+| Ack Constraint           | OpenAPI Keyword        | Notes                                  |
+| :----------------------- | :--------------------- | :------------------------------------- |
+| [`minLength(n)`](../core-concepts/validation.mdx#minlengthint-min)           | `minLength: n`         | String                                 |
+| [`maxLength(n)`](../core-concepts/validation.mdx#maxlengthint-max)           | `maxLength: n`         | String                                 |
+| [`pattern(p)`](../core-concepts/validation.mdx#patternstring-pattern--string-patternname-string-example)             | `pattern: p`           | String                                 |
+| [`isEmail()`](../core-concepts/validation.mdx#isemail)              | `format: email`        | String                                 |
+| [`isUrl()`](../core-concepts/validation.mdx#isurl)                | `format: url`          | String (Note: format is informational) |
+| [`isDate()`](../core-concepts/validation.mdx#isdate)               | `format: date`         | String                                 |
+| [`isDateTime()`](../core-concepts/validation.mdx#isdatetime)           | `format: date-time`    | String                                 |
+| [`isEnum([...])`](../core-concepts/validation.mdx#isenumliststring-allowedvalues)          | `enum: [...]`          | String                                 |
+| [`min(n)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false)                 | `minimum: n`           | Number (Int/Double)                    |
+| [`max(n)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false)                 | `maximum: n`           | Number (Int/Double)                    |
+| [`min(n, exclusive:true)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false) | `minimum: n`, `exclusiveMinimum: true` | Number |
+| [`max(n, exclusive:true)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false) | `maximum: n`, `exclusiveMaximum: true` | Number |
+| [`multipleOf(n)`](../core-concepts/validation.mdx#multipleofnum-factor)          | `multipleOf: n`        | Number (Int/Double)                    |
+| [`minItems(n)`](../core-concepts/validation.mdx#minitemsint-min)            | `minItems: n`          | List (Array)                           |
+| [`maxItems(n)`](../core-concepts/validation.mdx#maxitemsint-max)            | `maxItems: n`          | List (Array)                           |
+| [`uniqueItems()`](../core-concepts/validation.mdx#uniqueitems)          | `uniqueItems: true`      | List (Array)                           |
+| [`nullable()`](../core-concepts/schemas.mdx#making-schemas-nullable)             | `nullable: true`       | Any Type                               |
+| `defaultValue(v)`        | `default: v`           | Any Type (Note: Use `.defaultValue()` on schema) |
+| `description(d)`         | `description: d`       | Any Type (Note: Use `.description()` on schema) |
+| [`Ack.int`](../core-concepts/schemas.mdx#number-schemas)                | `type: integer`, `format: int64` | Type |
+| [`Ack.double`](../core-concepts/schemas.mdx#number-schemas)             | `type: number`, `format: double`  | Type |
+| [`Ack.string`](../core-concepts/schemas.mdx#string-schema)             | `type: string`         | Type |
+| [`Ack.boolean`](../core-concepts/schemas.mdx#boolean-schema)            | `type: boolean`        | Type |
+| [`Ack.list(...)`](../core-concepts/schemas.mdx#list-schema)          | `type: array`, `items: {...}` | Type |
+| [`Ack.object(...)`](../core-concepts/schemas.mdx#object-schema)        | `type: object`, `properties: {...}`, `required: [...]` | Type |
+
+**Limitations:**
+
+-   **Custom Constraints:** [`SchemaConstraint`](./custom-validation.mdx) instances added via `.constrain()` are **not** translated to OpenAPI as there's no standard way to represent arbitrary logic.
+-   **Complex Formats:** Some specific formats (like UUID, achieved via `pattern`) don't have direct OpenAPI `format` equivalents and are translated based on their base type (`type: string`). You might add a `description` or use vendor extensions (`x-...`) in your OpenAPI definition manually if needed.
+-   **`additionalProperties`:** The translation of `additionalProperties` might need review depending on the exact OpenAPI behavior desired (e.g., `additionalProperties: true` vs `additionalProperties: {}` vs `additionalProperties: <Schema>`).
+
+## Integrating into API Documentation
+
+You can use the generated OpenAPI schema map within a larger OpenAPI document structure.
+
+```dart
+// Assume you have a function to build the full OpenAPI spec
+Map<String, dynamic> buildOpenApiSpecification() {
+  final userOpenApiSchema = userSchema.toOpenApi();
+  
+  return {
+    'openapi': '3.0.0',
+    'info': {
+      'title': 'My API',
+      'version': '1.0.0'
+    },
+    'paths': {
+      '/users': {
+        'post': {
+          'summary': 'Create a new user',
+          'requestBody': {
+            'required': true,
+            'content': {
+              'application/json': {
+                // Reference the generated schema
+                'schema': {
+                  '\$ref': '#/components/schemas/User'
+                }
+              }
+            }
+          },
+          'responses': {
+            '201': {
+              'description': 'User created successfully'
+            }
+          }
+        }
+      }
+    },
+    // Define the schema under components
+    'components': {
+      'schemas': {
+        'User': userOpenApiSchema
+      }
+    }
+  };
+}
+
+// Usage
+final fullApiSpec = buildOpenApiSpecification();
+print(JsonEncoder.withIndent('  ').convert(fullApiSpec));
+```
+
+This allows you to maintain your validation logic and API documentation source in one place (your Ack schemas). 

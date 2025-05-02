@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "nullable": true
+    }
+  },
+  "required": ["id", "name"],
+  "additionalProperties": true
+}

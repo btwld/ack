@@ -1,0 +1,141 @@
+---
+title: Error Handling
+---
+
+Ack provides detailed error information when validation fails. This guide explains how to interpret and use these errors.
+
+## The `Result` Object
+
+All `validate()` methods in Ack return a `Result` object. This object encapsulates either the successfully validated data or a `SchemaError`.
+
+- `result.isOk`: Returns `true` if validation succeeded, `false` otherwise.
+- `result.isFail`: Returns `true` if validation failed, `false` otherwise.
+- `result.getOrThrow()`: Returns the validated data if `isOk` is true, otherwise throws an exception.
+- `result.getOrNull()`: Returns the validated data if `isOk` is true, otherwise returns `null`.
+- `result.getError()`: Returns the `SchemaError` if `isFail` is true, otherwise returns `null`.
+- `result.getOrElse(defaultValue)`: Returns the validated data if `isOk` is true, otherwise returns the `defaultValue`.
+
+```dart
+import 'package:ack/ack.dart';
+
+final schema = Ack.string.minLength(5);
+final result = schema.validate('abc');
+
+if (result.isFail) {
+  final error = result.getError();
+  print('Validation failed: ${error?.message}'); 
+  
+  // Try to get data (will throw)
+  try {
+    result.getOrThrow(); 
+  } catch (e) {
+    print('Caught exception: $e');
+  }
+  
+  // Get a default value
+  final dataOrDefault = result.getOrElse(() => 'default_string');
+  print('Data or default: $dataOrDefault'); // Output: default_string
+}
+```
+
+## Understanding `SchemaError`
+
+The `SchemaError` object contains details about the validation failure.
+
+- `error.name`: A short identifier for the error type (e.g., `'invalid_type'`, `'min_length'`).
+- `error.message`: A human-readable description of the error.
+- `error.path`: A list indicating the location of the error within the data structure (e.g., `['user', 'address', 'zipCode']`).
+- `error.value`: The actual value that failed validation.
+- `error.expected`: The expected value or format (if applicable).
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string,
+  'age': Ack.int.min(18),
+  'address': Ack.object({
+    'city': Ack.string
+  })
+}, required: ['name', 'age']);
+
+final invalidData = {
+  'name': 'Test',
+  'age': 15, // Fails min(18)
+  'address': {
+    'city': 123 // Fails Ack.string
+  }
+};
+
+final result = userSchema.validate(invalidData);
+
+if (result.isFail) {
+  final error = result.getError();
+  print('Error Name: ${error?.name}');       // Example: 'min_length' or 'invalid_type' depending on failure
+  print('Error Message: ${error?.message}'); // Example: "Value 15 does not meet minimum requirement of 18" or similar
+  print('Error Path: ${error?.path}');         // Example: ['age']
+  print('Failed Value: ${error?.value}');     // Example: 15
+  print('Expected: ${error?.expected}');     // Example: "Minimum 18"
+  
+  // Note: The exact error structure (especially for nested errors) can vary.
+  // Sometimes the top-level error might be SchemaNestedError, 
+  // and you might need to inspect its nested errors.
+}
+```
+
+## Error Types
+
+Ack uses specific error types that inherit from `SchemaError`:
+
+- **`SchemaTypeError`**: The data type doesn't match the schema type (e.g., expected `String`, got `int`).
+- **`SchemaRequiredError`**: A required field is missing.
+- **`SchemaConstraintsError`**: The data violates one or more constraints (e.g., `minLength`, `min`, `pattern`). Contains a list of `failedConstraints`.
+- **`SchemaNestedError`**: An error occurred within a nested object or list.
+
+```dart
+final error = result.getError();
+
+if (error is SchemaTypeError) {
+  print('Type error: Expected ${error.expected}, got ${error.actualType}');
+} else if (error is SchemaRequiredError) {
+  print('Missing required field at path: ${error.path}');
+} else if (error is SchemaConstraintsError) {
+  print('Constraint violation: ${error.message}');
+  // You can access individual failed constraints
+  for (final constraint in error.constraints) {
+    print('- Failed constraint: ${constraint.name}, Message: ${constraint.message}');
+  }
+} else if (error is SchemaNestedError) {
+  print('Nested error at path ${error.path}: ${error.nestedError.message}');
+  // Recursively inspect error.nestedError
+}
+```
+
+## Displaying Errors in UI (Flutter Example)
+
+When using Ack with Flutter forms, you can extract the error message for display.
+
+```dart
+// Inside TextFormField validator
+validator: (value) {
+  final result = someSchema.validate(value);
+  if (result.isFail) {
+    // Return the human-readable message for the UI
+    return result.getError()?.message; 
+  }
+  return null; // Return null if valid
+}
+```
+
+*See the [Form Validation Guide](../guides/flutter-form-validation.mdx) for more details.*
+
+## Custom Error Messages
+
+Most built-in constraints (listed in the [Validation Rules](./validation.mdx) guide) allow you to provide a custom error message using the optional `message:` parameter.
+
+```dart
+final schema = Ack.string
+  .minLength(5, message: 'Please enter at least 5 characters for the name.')
+  .isEmail(message: 'That doesn\'t look like a valid email address.');
+
+final result = schema.validate('abc');
+print(result.getError()?.message); // Output: Please enter at least 5 characters for the name.
+``` 
