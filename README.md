@@ -1,7 +1,7 @@
 # Ack Validation Workspace
 
-[![CI/CD](https://github.com/leoafarias/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/leoafarias/ack/actions/workflows/ci.yml)
-[![docs.page](https://img.shields.io/badge/docs.page-documentation-blue)](https://docs.page/leoafarias/ack)
+[![CI/CD](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
+[![docs.page](https://img.shields.io/badge/docs.page-documentation-blue)](https://docs.page/btwld/ack)
 
 This is a monorepo containing packages for the Ack validation ecosystem.
 
@@ -13,7 +13,7 @@ This is a monorepo containing packages for the Ack validation ecosystem.
 
 ## Documentation
 
-Detailed documentation is available at [docs.page/leoafarias/ack](https://docs.page/leoafarias/ack).
+Detailed documentation is available at [docs.page/btwld/ack](https://docs.page/btwld/ack).
 
 ## Development
 

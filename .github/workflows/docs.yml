@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Notify docs.page update
         run: |
-          echo "Documentation has been updated and is now available at https://docs.page/leoafarias/ack"
+          echo "Documentation has been updated and is now available at https://docs.page/btwld/ack"
           # You could add additional notification steps here, such as:
           # - Sending a Slack message
           # - Creating a GitHub issue

@@ -5,7 +5,7 @@
 
 A code generator that creates validation schema classes from annotated Dart classes. This package is built on top of the [ack](https://pub.dev/packages/ack) validation library.
 
-See the full documentation at [docs.page/leoafarias/ack/guides/code-generation](https://docs.page/leoafarias/ack/guides/code-generation.mdx).
+See the full documentation at [docs.page/btwld/ack/guides/code-generation](https://docs.page/btwld/ack/guides/code-generation.mdx).
 
 ## Features
 
