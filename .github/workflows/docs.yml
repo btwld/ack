@@ -27,10 +27,7 @@ jobs:
         run: npm install -g @docs.page/cli
       
       - name: Validate documentation
-        run: docs validate
-      
-      - name: Check for broken links
-        run: docs check-links
+        run: npx @docs.page/cli check
       
   notify:
     needs: validate

@@ -5,10 +5,9 @@ packages:
   - packages/**
   - example/*
 
+# Bootstrap will automatically generate pubspec_overrides.yaml files
 command:
   bootstrap:
-    hooks:
-      post: melos generate
 
 scripts:
   analyze:
@@ -43,6 +42,4 @@ scripts:
     run: melos clean
     description: Clean all build outputs.
 
-  pubspec:
-    run: melos generate
-    description: Generate all pubspec_overrides.yaml files.
+  # Additional scripts can be added here if needed
