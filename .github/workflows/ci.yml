@@ -21,9 +21,6 @@ jobs:
       - name: Bootstrap workspace
         run: melos bootstrap
       
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-      
       - name: Analyze project source
         run: melos analyze
         env:

@@ -43,7 +43,8 @@ class User {
               contains('result.isOk ? toModel() : null'),
               contains('tryParse(Object? input, {String? debugName})'),
               contains(
-                  'Attempts to parse the input and returns a User instance',),
+                'Attempts to parse the input and returns a User instance',
+              ),
             ]),
           ),
         },
