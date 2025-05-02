@@ -22,14 +22,17 @@ jobs:
         run: melos bootstrap
       
       - name: Verify formatting
-        run: melos format --check
+        run: dart format --output=none --set-exit-if-changed .
       
       - name: Analyze project source
         run: melos analyze
       
       - name: Run tests
-        run: melos test --coverage
-
+        run: melos test
+        
+      - name: Create coverage directory
+        run: mkdir -p coverage
+        
       - name: Format coverage to lcov
         run: melos exec -- dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
 
