@@ -1,6 +1,6 @@
 name: ack_generator
 description: A code generator for building schema classes from @AckModel annotations
-version: 0.1.0
+version: 0.2.0
 publish_to: none
 repository: https://github.com/leoafarias/ack
 
@@ -17,7 +17,7 @@ dependencies:
   meta: ^1.15.0
   path: ^1.8.3
   source_gen: ^1.4.0
-  
+
 dev_dependencies:
   build_runner: ^2.4.6
   build_test: ^2.2.0

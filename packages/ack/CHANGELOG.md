@@ -1,5 +1,9 @@
 ## 0.2.0
 
+ - Bump "ack" to 0.2.0 with improved SchemaModel API and enhanced string validation
+
+## 0.2.0
+
 ### Breaking Changes
 
 - **SchemaModel API**: Completely redesigned the SchemaModel API for a more intuitive and streamlined experience

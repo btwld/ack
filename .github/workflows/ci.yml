@@ -10,22 +10,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      # Setup Melos
+      # Setup Melos using the dedicated action
       - uses: dart-lang/setup-dart@v1
-      - run: dart pub global activate melos
-      - run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
-      
-      - name: Bootstrap workspace
-        run: melos bootstrap
-      
+      - uses: bluefireteam/melos-action@v3
+        with:
+          run-bootstrap: true
+
       - name: Analyze project source
         run: melos analyze
         env:
           DART_GENERATE_WARNINGS_IN_GENERATED_FILES: false
-      
+
       - name: Run tests
         run: melos test
 
@@ -37,17 +36,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Setup Melos (same as test job)
+      # Setup Melos using the dedicated action
       - uses: dart-lang/setup-dart@v1
-      - run: dart pub global activate melos
-      - run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
-      - run: melos bootstrap
-
-      # Publish packages
-      - name: Publish Packages
-        # Requires PUB_DEV_ACCESS_TOKEN, PUB_DEV_REFRESH_TOKEN, PUB_DEV_ID_TOKEN_AUDIENCE secrets
-        run: melos publish --yes
+      - uses: bluefireteam/melos-action@v3
+        with:
+          run-bootstrap: true
+          publish: true
+          # Requires PUB_DEV_ACCESS_TOKEN, PUB_DEV_REFRESH_TOKEN, PUB_DEV_ID_TOKEN_AUDIENCE secrets
         env:
           PUB_DEV_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}
           PUB_DEV_REFRESH_TOKEN: ${{ secrets.PUB_DEV_REFRESH_TOKEN }}
           PUB_DEV_ID_TOKEN_AUDIENCE: ${{ secrets.PUB_DEV_ID_TOKEN_AUDIENCE }}
+
