@@ -174,12 +174,12 @@ if (userSchema.isValid) {
 The generated schema classes include methods to convert your schema to OpenAPI definition format, which is useful for API documentation or integration with OpenAPI tools.
 
 ```dart
-// Get the OpenAPI definition as a Map
-final definition = UserSchema.toDefinition();
+// Get the JSON Schema as a Map
+final jsonSchema = UserSchema.toJsonSchema();
 
-// Get the OpenAPI definition as a formatted JSON string
-final definitionString = UserSchema.toDefinitionString();
-print('OpenAPI Definition:\n$definitionString');
+// Convert to JSON string if needed
+final jsonString = jsonEncode(jsonSchema);
+print('JSON Schema:\n$jsonString');
 
 /* Example output:
 {

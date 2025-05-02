@@ -290,10 +290,10 @@ void main() {
   final userJson = jsonEncode(userMap);
   print('User JSON: $userJson');
 
-  // 6. Generate OpenAPI definition
-  final openApiDefinition = UserSchema.toDefinition();
-  final openApiJson = jsonEncode(openApiDefinition);
-  print('OpenAPI Definition: $openApiJson');
+  // 6. Generate JSON Schema
+  final jsonSchema = UserSchema.toJsonSchema();
+  final jsonString = jsonEncode(jsonSchema);
+  print('JSON Schema: $jsonString');
 }
 ```
 
@@ -355,13 +355,13 @@ The SchemaModel provides methods for generating OpenAPI specifications, making i
 ### Using Generated Schema for OpenAPI
 
 ```dart
-// Get OpenAPI definition as a Map
-final userDefinition = UserSchema.toDefinition();
-final profileDefinition = ProfileSchema.toDefinition();
+// Get JSON Schema as a Map
+final userSchema = UserSchema.toJsonSchema();
+final profileSchema = ProfileSchema.toJsonSchema();
 
-// Get OpenAPI definition as a formatted JSON string
-final definitionString = UserSchema.toDefinitionString();
-print('User Schema OpenAPI Definition:\n$definitionString');
+// Convert to JSON string if needed
+final jsonString = jsonEncode(userSchema);
+print('User Schema JSON:\n$jsonString');
 
 // Example of using the definition in a larger OpenAPI document
 final openApiDoc = {

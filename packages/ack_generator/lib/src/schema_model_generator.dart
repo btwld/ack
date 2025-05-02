@@ -507,16 +507,10 @@ $additionalPropsCode
     }
   }
 
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchema();
-  }
-
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
   }
 }''';
   }
