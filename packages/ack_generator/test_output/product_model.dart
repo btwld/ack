@@ -26,7 +26,8 @@ class AckException {
 }
 
 class ObjectSchema {
-  SchemaResult validate(Map<String, dynamic> data) => throw UnimplementedError();
+  SchemaResult validate(Map<String, dynamic> data) =>
+      throw UnimplementedError();
 }
 
 class OpenApiSchemaConverter {
@@ -38,8 +39,9 @@ class OpenApiSchemaConverter {
 String prettyJson(Object? data) => '';
 
 class Ack {
-  static ObjectSchema object(Map<String, dynamic> properties, {List<String>? required, bool? additionalProperties}) => 
-    throw UnimplementedError();
+  static ObjectSchema object(Map<String, dynamic> properties,
+          {List<String>? required, bool? additionalProperties}) =>
+      throw UnimplementedError();
   static dynamic get string => _MockAck();
   static dynamic get int => _MockAck();
   static dynamic get double => _MockAck();
@@ -69,21 +71,21 @@ class SchemaRegistry {
 class Product {
   @IsNotEmpty()
   final String id;
-  
+
   @IsNotEmpty()
   final String name;
-  
+
   @IsNotEmpty()
   final String description;
-  
+
   final double price;
-  
+
   @Nullable()
   final String? imageUrl;
-  
+
   @Required()
   final Category category;
-  
+
   final Map<String, dynamic> metadata;
 
   Product({
@@ -105,13 +107,13 @@ class Product {
 class Category {
   @IsNotEmpty()
   final String id;
-  
+
   @IsNotEmpty()
   final String name;
-  
+
   @Nullable()
   final String? description;
-  
+
   final Map<String, dynamic> metadata;
 
   Category({
@@ -120,7 +122,7 @@ class Category {
     this.description,
     this.metadata = const {},
   });
-  
+
   // Add toModel method to make analyzer happy
   Category toModel() => this;
 }

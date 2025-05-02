@@ -168,12 +168,12 @@ void main() {
 
     // Verify that validation failed
     expect(result.isFail, isTrue);
-    
+
     final error = result.getError();
-    
+
     // Verify it's a nested error
     expect(error, isA<SchemaNestedError>());
-    
+
     // Verify error string contains expected messages
     final errorString = error.toString();
     expect(errorString, contains('schema_nested_error'));

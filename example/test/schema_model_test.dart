@@ -19,16 +19,16 @@ void main() {
 
       // Create schema with valid data
       final schema = ProductSchema(validData);
-      
+
       // Check that validation was performed
       expect(schema.isValid, isTrue);
       expect(schema.getErrors(), isNull);
-      
+
       // Access properties
       expect(schema.id, equals('product-1'));
       expect(schema.name, equals('Test Product'));
       expect(schema.price, equals(19.99));
-      
+
       // Convert to model
       final product = schema.toModel();
       expect(product.id, equals('product-1'));
@@ -46,11 +46,11 @@ void main() {
 
       // Create schema with invalid data
       final schema = ProductSchema(invalidData);
-      
+
       // Check that validation was performed
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);
-      
+
       // Trying to convert to model should throw
       expect(() => schema.toModel(), throwsA(isA<AckException>()));
     });
@@ -61,7 +61,7 @@ void main() {
 
       // Create schema with non-map input
       final schema = ProductSchema(nonMapInput);
-      
+
       // Check that validation was performed
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);
@@ -70,7 +70,7 @@ void main() {
     test('handles null input', () {
       // Null input
       final schema = ProductSchema(null);
-      
+
       // Check that validation was performed
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);

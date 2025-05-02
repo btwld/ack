@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 class TestModel {
   final String name;
   final int age;
-  
+
   TestModel({required this.name, required this.age});
 }
 
@@ -14,15 +14,19 @@ class TestSchema extends SchemaModel<TestModel> {
   static final ObjectSchema schema = Ack.object({
     'name': Ack.string,
     'age': Ack.int,
-  }, required: ['name', 'age']);
-  
+  }, required: [
+    'name',
+    'age'
+  ]);
+
   TestSchema([Object? value]) : super(value);
-  
-  TestSchema.validated(Map<String, Object?> validatedData) : super.validated(validatedData);
-  
+
+  TestSchema.validated(Map<String, Object?> validatedData)
+      : super.validated(validatedData);
+
   @override
   ObjectSchema getSchema() => schema;
-  
+
   // Implement the static parseModel method
   static TestModel parseModel(Map<String, Object?> data) {
     final schema = TestSchema(data);
@@ -31,7 +35,7 @@ class TestSchema extends SchemaModel<TestModel> {
     }
     return schema.toModel();
   }
-  
+
   // Implement the static tryParseModel method
   static TestModel? tryParseModel(Map<String, Object?> data) {
     try {
@@ -41,13 +45,13 @@ class TestSchema extends SchemaModel<TestModel> {
       return null;
     }
   }
-  
+
   @override
   TestModel toModel() {
     if (!isValid) {
       throw AckException(getErrors()!);
     }
-    
+
     return TestModel(
       name: getValue<String>('name')!,
       age: getValue<int>('age')!,
@@ -61,80 +65,80 @@ void main() {
       test('returns a valid schema model for valid input', () {
         final data = {'name': 'John', 'age': 30};
         final model = TestSchema(data).parse(data);
-        
+
         expect(model.name, equals('John'));
         expect(model.age, equals(30));
       });
-      
+
       test('throws AckException for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
-        
+
         expect(
           () => TestSchema(data).parse(data),
           throwsA(isA<AckException>()),
         );
       });
-      
+
       test('converts validated data to model', () {
         final data = {'name': 'John', 'age': 30};
         final model = TestSchema(data).parse(data);
-        
+
         expect(model.name, equals('John'));
         expect(model.age, equals(30));
       });
     });
-    
+
     group('tryParse()', () {
       test('returns a valid model for valid input', () {
         final data = {'name': 'John', 'age': 30};
         final model = TestSchema(data).tryParse(data);
-        
+
         expect(model, isNotNull);
         expect(model!.name, equals('John'));
         expect(model.age, equals(30));
       });
-      
+
       test('returns null for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
         final model = TestSchema(data).tryParse(data);
-        
+
         expect(model, isNull);
       });
     });
-    
+
     group('parseModel() static method', () {
       test('returns a valid model for valid input', () {
         final data = {'name': 'John', 'age': 30};
         final model = TestSchema.parseModel(data);
-        
+
         expect(model.name, equals('John'));
         expect(model.age, equals(30));
       });
-      
+
       test('throws AckException for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
-        
+
         expect(
           () => TestSchema.parseModel(data),
           throwsA(isA<AckException>()),
         );
       });
     });
-    
+
     group('tryParseModel() static method', () {
       test('returns a valid model for valid input', () {
         final data = {'name': 'John', 'age': 30};
         final model = TestSchema.tryParseModel(data);
-        
+
         expect(model, isNotNull);
         expect(model!.name, equals('John'));
         expect(model.age, equals(30));
       });
-      
+
       test('returns null for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
         final model = TestSchema.tryParseModel(data);
-        
+
         expect(model, isNull);
       });
     });

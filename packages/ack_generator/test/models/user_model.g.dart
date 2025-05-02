@@ -234,4 +234,3 @@ class AddressSchema extends SchemaModel<Address> {
     return converter.toSchemaString();
   }
 }
-

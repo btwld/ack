@@ -227,4 +227,3 @@ class CategorySchema extends SchemaModel<Category> {
     return converter.toSchemaString();
   }
 }
-

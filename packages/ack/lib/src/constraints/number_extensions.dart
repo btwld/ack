@@ -20,7 +20,7 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
       _add(NumberMultipleOfConstraint(multiple));
 
   /// Validates that a number is positive (greater than 0).
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final priceSchema = Ack.double.positive();
@@ -28,9 +28,9 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   NumSchema<T> positive() {
     return constrain(NumberExclusiveMinConstraint(0 as T));
   }
-  
+
   /// Validates that a number is negative (less than 0).
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final temperatureSchema = Ack.double.negative();
@@ -38,9 +38,9 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   NumSchema<T> negative() {
     return constrain(NumberExclusiveMaxConstraint(0 as T));
   }
-  
+
   /// Validates that a number is within a range (inclusive by default).
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final percentageSchema = Ack.double.between(0, 100);
@@ -68,7 +68,8 @@ class NumberExclusiveMinConstraint<T extends num> extends Constraint<T>
   String buildMessage(T value) => 'Must be greater than $min';
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'minimum': min, 'exclusiveMinimum': true};
+  Map<String, Object?> toOpenApiSpec() =>
+      {'minimum': min, 'exclusiveMinimum': true};
 }
 
 /// Constraint for validating that a number is strictly less than a maximum value.
@@ -89,5 +90,6 @@ class NumberExclusiveMaxConstraint<T extends num> extends Constraint<T>
   String buildMessage(T value) => 'Must be less than $max';
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'maximum': max, 'exclusiveMaximum': true};
+  Map<String, Object?> toOpenApiSpec() =>
+      {'maximum': max, 'exclusiveMaximum': true};
 }

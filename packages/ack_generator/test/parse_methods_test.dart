@@ -42,7 +42,8 @@ class User {
               contains('Throws an [AckException] if validation fails'),
               contains('result.isOk ? toModel() : null'),
               contains('tryParse(Object? input, {String? debugName})'),
-              contains('Attempts to parse the input and returns a User instance'),
+              contains(
+                  'Attempts to parse the input and returns a User instance'),
             ]),
           ),
         },

@@ -23,7 +23,7 @@ void main() {
         // Test parsing null value
         final result = schema.parse(null);
         expect(result, isNull);
-        
+
         // Also test parsing a valid value with nullable schema
         final validResult = schema.parse('hello');
         expect(validResult, equals('hello'));
@@ -102,8 +102,15 @@ void main() {
           'address': Ack.object({
             'street': Ack.string,
             'city': Ack.string,
-          }, required: ['street', 'city']),
-        }, required: ['name', 'age', 'address']);
+          }, required: [
+            'street',
+            'city'
+          ]),
+        }, required: [
+          'name',
+          'age',
+          'address'
+        ]);
 
         final input = {
           'name': 'John',
