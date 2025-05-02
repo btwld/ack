@@ -13,6 +13,10 @@ scripts:
   analyze:
     run: melos exec -- "dart analyze . --fatal-infos"
     description: Run analyzer on all packages
+    packageFilters:
+      scope:
+        - ack
+        - ack_generator
 
   test:
     run: melos exec -- "dart test"

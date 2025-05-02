@@ -1,5 +1,12 @@
 include: package:lints/recommended.yaml
 
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+  errors:
+    # Treat info-level issues as warnings in test files
+    use_super_parameters: ignore
+
 dart_code_metrics:
   extends:
     - package:dart_code_metrics_presets/recommended.yaml

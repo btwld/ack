@@ -26,6 +26,8 @@ jobs:
       
       - name: Analyze project source
         run: melos analyze
+        env:
+          DART_GENERATE_WARNINGS_IN_GENERATED_FILES: false
       
       - name: Run tests
         run: melos test
