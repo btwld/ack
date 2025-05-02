@@ -87,8 +87,8 @@ class Category {
               contains("'name': Ack.string.isNotEmpty()"),
               contains("'price': Ack.double"),
               contains("'imageUrl': Ack.string.nullable()"),
-              contains("Product parse(Object? input, {String? debugName})"),
-              contains("Product? tryParse(Object? input, {String? debugName})"),
+              contains('Product parse(Object? input, {String? debugName})'),
+              contains('Product? tryParse(Object? input, {String? debugName})'),
               predicate(
                 (String content) =>
                     content.contains(
@@ -143,8 +143,8 @@ class User {
               contains("'name': Ack.string.isNotEmpty().minLength(3)"),
               contains("'age': Ack.int.min(18)"),
               contains("required: ['email', 'name', 'age']"),
-              contains("User parse(Object? input, {String? debugName})"),
-              contains("User? tryParse(Object? input, {String? debugName})"),
+              contains('User parse(Object? input, {String? debugName})'),
+              contains('User? tryParse(Object? input, {String? debugName})'),
             ]),
           ),
         },
