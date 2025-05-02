@@ -12,6 +12,23 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   })  : _itemSchema = itemSchema,
         super(type: SchemaType.list);
 
+  @override
+  List<V>? _tryConvertType(Object? value) {
+    if (value is! List) return null;
+
+    List<V>? parsedList = <V>[];
+    for (final v in value) {
+      final parsed = _itemSchema._tryConvertType(v);
+      if (parsed == null) {
+        parsedList = null;
+        break;
+      }
+      parsedList!.add(parsed);
+    }
+
+    return parsedList;
+  }
+
   AckSchema<V> getItemSchema() => _itemSchema;
 
   @override
@@ -39,23 +56,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     return SchemaResult.fail(
       SchemaNestedError(errors: itemsViolation, context: context),
     );
-  }
-
-  @override
-  List<V>? _tryConvertType(Object? value) {
-    if (value is! List) return null;
-
-    List<V>? parsedList = <V>[];
-    for (final v in value) {
-      final parsed = _itemSchema._tryConvertType(v);
-      if (parsed == null) {
-        parsedList = null;
-        break;
-      }
-      parsedList!.add(parsed);
-    }
-
-    return parsedList;
   }
 
   @override

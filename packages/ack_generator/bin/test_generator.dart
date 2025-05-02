@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-void main() async {
+void main() {
   print('Running schema generator test...');
 
   // Create mock product_model file with necessary imports and class definitions

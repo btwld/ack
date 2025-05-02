@@ -9,7 +9,7 @@ import '../schemas/schema.dart';
 sealed class SchemaError extends SchemaContext {
   final String errorKey;
 
-  SchemaError({
+  const SchemaError({
     required super.name,
     required super.schema,
     required super.value,

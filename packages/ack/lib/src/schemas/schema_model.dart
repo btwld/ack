@@ -44,6 +44,7 @@ abstract class SchemaModel<T> {
   /// Internal validation method
   SchemaResult _validateValue(Object? value) {
     final schema = getSchema();
+
     return schema.validate(value);
   }
 
@@ -59,6 +60,7 @@ abstract class SchemaModel<T> {
   /// Get a value with type safety
   V? getValue<V>(String key) {
     final value = _data[key];
+
     return SchemaConverter.convertValue(value);
   }
 
@@ -101,6 +103,7 @@ abstract class SchemaModel<T> {
   T? tryParse(Object? input, {String? debugName}) {
     final schema = getSchema();
     final result = schema.validate(input, debugName: debugName);
+
     return result.isOk ? toModel() : null;
   }
 
