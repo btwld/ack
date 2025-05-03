@@ -52,8 +52,13 @@ jobs:
           # Create a simple changelog entry with link to release notes
           echo -e "## ${{ env.VERSION }} ($RELEASE_DATE)\n\n* See [release notes]($RELEASE_URL) for details.\n" > changelog_entry.md
           
-          # Update version in all packages without automatic changelog updates
-          melos version --all ${{ env.VERSION }} --no-git-tag-version --yes
+          # Loop through all packages and manually set their versions
+          for pkg in $(melos list --parsable); do
+            # Extract package name from pubspec.yaml
+            pkg_name=$(grep -m 1 "name:" "$pkg/pubspec.yaml" | awk '{print $2}')
+            echo "Setting version for $pkg_name to ${{ env.VERSION }}"
+            melos version "$pkg_name" ${{ env.VERSION }} --no-git-tag-version --yes
+          done
           
           # Now manually update all CHANGELOG.md files
           for pkg in $(melos list --parsable); do
@@ -90,4 +95,4 @@ jobs:
         if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
         run: |
           # Melos will handle the dependency order automatically
-          melos publish --no-dry-run
+          melos publish --no-dry-run --yes
