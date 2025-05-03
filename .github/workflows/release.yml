@@ -40,53 +40,22 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version extracted: $VERSION"
 
-      # Get release notes and extract the Changelog section
-      - name: Get release notes
-        id: release_notes
+      # Version packages and update changelogs with a link to the release notes
+      - name: Version packages and update changelogs
         run: |
-          FULL_NOTES=$(cat << 'EOF'
-          ${{ github.event.release.body }}
-          EOF
-          )
-
-          # Extract content between "## Changelog" and the next heading or end of file
-          CHANGELOG_SECTION=$(echo "$FULL_NOTES" | awk '/^## Changelog/{flag=1;next} /^##/{flag=0} flag')
-
-          # Check if changelog section is empty or not found
-          if [ -z "$CHANGELOG_SECTION" ]; then
-            echo "::error::No '## Changelog' section found in release notes or it's empty. Please add a '## Changelog' section."
-            exit 1
-          fi
-
-          # Trim leading and trailing whitespace
-          CHANGELOG_SECTION=$(echo "$CHANGELOG_SECTION" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-
-          # Check again after trimming
-          if [ -z "$CHANGELOG_SECTION" ]; then
-            echo "::error::The '## Changelog' section is empty. Please add content to the changelog."
-            exit 1
-          fi
-
-          echo "NOTES<<EOF" >> $GITHUB_ENV
-          echo "$CHANGELOG_SECTION" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      # Create a custom changelog entry from the release notes
-      - name: Prepare changelog
-        run: |
-          # Create a formatted changelog entry
-          CHANGELOG_ENTRY="## ${{ env.VERSION }} ($(date +%Y-%m-%d))\n\n${{ env.NOTES }}"
-          echo -e "$CHANGELOG_ENTRY" > changelog_entry.md
-          echo "Changelog entry created:"
-          cat changelog_entry.md
-
-      # Version packages with the specified version
-      - name: Version packages
-        run: |
-          # First update the version in all packages
-          melos version --all ${{ env.VERSION }} --yes
-
-          # Now manually update the CHANGELOG.md files with the release notes
+          # Extract repository name for creating the release link
+          REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
+          RELEASE_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/v${{ env.VERSION }}"
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          
+          # Create a simple changelog entry with link to release notes
+          echo -e "## ${{ env.VERSION }} ($RELEASE_DATE)\n\n* See [release notes]($RELEASE_URL) for details.\n" > changelog_entry.md
+          
+          # Update version in all packages without automatic changelog updates
+          melos version --all ${{ env.VERSION }} --no-git-tag-version --yes
+          
+          # Now manually update all CHANGELOG.md files
           for pkg in $(melos list --parsable); do
             if [ -f "$pkg/CHANGELOG.md" ]; then
               echo "Updating CHANGELOG.md for $pkg"
@@ -98,7 +67,7 @@ jobs:
               mv $TEMP_CHANGELOG "$pkg/CHANGELOG.md"
             fi
           done
-
+          
           # Also update the root CHANGELOG.md if it exists
           if [ -f "CHANGELOG.md" ]; then
             echo "Updating root CHANGELOG.md"
@@ -108,12 +77,12 @@ jobs:
             cat "CHANGELOG.md" >> $TEMP_CHANGELOG
             mv $TEMP_CHANGELOG "CHANGELOG.md"
           fi
-
-          # Commit the changelog updates
+          
+          # Commit the version and changelog updates
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           git add .
-          git commit -m "docs: update changelogs with release notes [skip ci]"
+          git commit -m "chore: update versions and changelogs to ${{ env.VERSION }} [skip ci]"
           git push
 
       # Publish to pub.dev if the release is not a draft or prerelease
