@@ -2,7 +2,3 @@
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v0.2.0-beta.1) for details.
 
-
-## 0.1.0
-
-- Initial version.
