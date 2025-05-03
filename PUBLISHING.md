@@ -28,30 +28,32 @@ Before creating a release:
 2. Click "Draft a new release"
 3. Create a new tag in the format `v0.2.0` (must start with "v")
 4. Add a title, e.g., "Release v0.2.0"
-5. Add detailed release notes with the following structure:
+5. Add detailed release notes with a structure like:
 
 ```markdown
 # Release v0.2.0
 
 This release introduces [brief description of major changes].
 
-## Changelog
+## Key Features
+- **Feature 1**: Description
+- **Feature 2**: Description
 
-### Breaking Changes
+## Breaking Changes
 - **Feature**: Description of breaking change
   - Detail 1
   - Detail 2
 
-### Improvements
+## Improvements
 - **Feature**: Description of improvement
   - Detail 1
   - Detail 2
 
-### Bug Fixes
+## Bug Fixes
 - Fixed [description of bug]
 ```
 
-> **Important**: The content under the "## Changelog" section will be automatically added to the CHANGELOG.md files of all packages. If this section is missing or empty, the release workflow will fail.
+> **Note**: You should manually update the CHANGELOG.md files in each package before creating a release. The release workflow will no longer automatically extract content from release notes to update changelogs.
 
 6. Choose whether this is a pre-release:
    - Check "This is a pre-release" if you're releasing a beta or RC version
@@ -65,11 +67,20 @@ When you publish the release, the GitHub Actions workflow will automatically:
 
 1. Run tests and static analysis to ensure everything is working
 2. Extract the version number from the tag (e.g., `v0.2.0` → `0.2.0`)
-3. Extract the changelog content from the release notes
-4. Update version numbers in all package pubspec.yaml files
-5. Update CHANGELOG.md files with the extracted changelog content
-6. Commit and push these changes back to the repository
-7. Publish packages to pub.dev (unless it's marked as a pre-release)
+3. Update version numbers in all package pubspec.yaml files
+4. Add a simple changelog entry to each package's CHANGELOG.md with a link to the GitHub release
+5. Commit and push these changes back to the repository
+6. Publish packages to pub.dev (unless it's marked as a pre-release)
+
+The auto-generated changelog entry will look like:
+
+```markdown
+## 0.2.0 (2025-05-03)
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v0.2.0) for details.
+```
+
+This ensures your changelogs meet pub.dev requirements while directing users to your detailed release notes.
 
 ### 4. Verify the Release
 
@@ -115,10 +126,10 @@ melos publish
 
 If the release workflow fails, check:
 
-1. **Missing Changelog**: Ensure your release notes contain a "## Changelog" section
-2. **Empty Changelog**: The changelog section must have content
-3. **Test Failures**: Fix any failing tests
-4. **Permission Issues**: Ensure the GitHub Actions workflow has the necessary permissions
+1. **Test Failures**: Fix any failing tests or analyze issues
+2. **Version Issues**: Check if the version is valid and follows semantic versioning
+3. **Permission Issues**: Ensure the GitHub Actions workflow has the necessary permissions
+4. **Git Issues**: There might be problems with pushing commits back to the repository
 
 ### Manual Publishing Issues
 

@@ -45,3 +45,4 @@ packages/*/coverage/*
 # Keep .claude directory
 .claude/
 CLAUDE.md
+.idea
