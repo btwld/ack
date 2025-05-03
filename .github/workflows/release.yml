@@ -86,9 +86,12 @@ jobs:
           # Commit the version and changelog updates
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
+          
+          # Handle detached HEAD state by checking out main branch before committing
+          git checkout main
           git add .
           git commit -m "chore: update versions and changelogs to ${{ env.VERSION }} [skip ci]"
-          git push
+          git push origin main
 
       # Publish to pub.dev if the release is not a draft or prerelease
       - name: Publish to pub.dev
