@@ -35,8 +35,8 @@
         { "title": "Schema Types", "href": "/core-concepts/schemas" },
         { "title": "Validation Rules", "href": "/core-concepts/validation" },
         {
-          "title": "TypeSafe Models",
-          "href": "/core-concepts/model-validation"
+          "title": "TypeSafe Schemas",
+          "href": "/core-concepts/typesafe-schemas"
         },
         { "title": "Error Handling", "href": "/core-concepts/error-handling" },
         {
