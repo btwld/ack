@@ -1,15 +1,13 @@
 name: ack_generator
-description: A code generator for building schema classes from @AckModel annotations
-version: 0.2.0
-publish_to: none
+description: A code generator for building schema classes from @Schema annotations
+version: 0.2.0-beta.1
 repository: https://github.com/btwld/ack
 
 environment:
   sdk: ^3.3.0
 
 dependencies:
-  ack:
-    path: ../ack
+  ack: ^0.2.0-beta.1
   analyzer: ^6.3.0
   build: ^2.4.1
   build_config: ^1.1.1

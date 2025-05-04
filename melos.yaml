@@ -7,10 +7,17 @@ packages:
 
 command:
   version:
-    # Generate changelogs
+    # Generate changelogs for the workspace
     workspaceChangelog: true
+    # Link to GitHub release in changelog
+    linkToCommits: true  
     # Message for version commits
-    message: "chore(release): publish packages"
+    message: "chore(release): publish packages\n\n{new_package_versions}"
+    # Hooks for customizing the versioning process
+    hooks:
+      preCommit: |
+        # Update dependent package constraints here if needed
+        echo "Running pre-commit hook for versioning"
 
 scripts:
   analyze:
@@ -67,22 +74,13 @@ scripts:
       dependsOn: build_runner
 
   # Version and publish scripts
-  version-patch:
-    run: melos version --patch --yes
-    description: Bump patch version for all packages
-
-  version-minor:
-    run: melos version --minor --yes
-    description: Bump minor version for all packages
-
-  version-major:
-    run: melos version --major --yes
-    description: Bump major version for all packages
-
-  publish-dry:
-    run: melos publish
-    description: Dry-run publish packages to pub.dev
-
+  # Publishing helpers
   publish:
-    run: melos publish --no-dry-run
+    run: melos publish --no-dry-run --yes
     description: Publish packages to pub.dev
+    
+  release:
+    run: |
+      melos version --yes
+      melos publish --no-dry-run --yes
+    description: One-step version and publish
