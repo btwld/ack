@@ -14,7 +14,7 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 
 - Ensures data conforms to your defined schemas
 - Facilitates seamless conversion between JSON and Dart models
-- Generates OpenAPI (Swagger) specifications from your schemas
+- Generates JSON Schema specifications from your schemas
 - Delivers detailed and easy-to-understand validation error messages
 
 ## Quick Start
@@ -65,9 +65,70 @@ Ack provides a comprehensive set of features for data validation and transformat
 
 - **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
 - **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
+- **[TypeSafe Models](/core-concepts/model-validation)**: Create type-safe models with automatic validation
 - **[Error Handling](/core-concepts/error-handling)**: Get detailed, structured error messages for validation failures
 - **[JSON Serialization](/core-concepts/json-serialization)**: Convert between JSON and typed models
-- **[SchemaModel Class](/core-concepts/schema-model-class)**: Create schema-based models with automatic validation
+
+### TypeSafe Models
+
+Turn any Dart class into a validating model with annotations:
+
+```dart
+import 'package:ack_generator/ack_generator.dart';
+import 'dart:convert';
+
+// Define a model with validation
+@Schema()
+class User {
+  @MinLength(2)
+  final String name;
+
+  @IsEmail()
+  final String email;
+
+  @Min(18)
+  final int age;
+
+  User({required this.name, required this.email, required this.age});
+}
+
+// Dynamic payload from API, form, etc.
+final Map<String, dynamic> payload = {
+  'name': 'John',
+  'email': 'john@example.com',
+  'age': 30
+};
+```
+
+Generated schemas provide three main capabilities:
+
+**1. Direct model validation and conversion**
+
+```dart
+// Validate and convert to a type-safe model in one step
+final User user = UserSchema.parse(payload);
+print('Hello ${user.name}!');  // Type-safe model access
+```
+
+**2. Type-safe access through the schema**
+
+```dart
+// Access typed properties directly from the schema
+final userSchema = UserSchema(payload);
+if (userSchema.isValid) {
+  String name = userSchema.name;  // Typed as String
+  int age = userSchema.age;       // Typed as int
+  print('$name is $age years old');
+}
+```
+
+**3. JSON Schema generation for documentation**
+
+```dart
+// Generate JSON Schema from the same model definition
+final jsonSchema = UserSchema.toJsonSchema();
+print(jsonEncode(jsonSchema));  // Use in API docs or client validation
+```
 
 ### Error Handling
 

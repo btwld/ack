@@ -147,7 +147,7 @@ void main() {
 }
 ```
 
-*Also see the [JSON Serialization](../core-concepts/json-serialization.mdx) guide.*
+*Also see the [JSON Serialization](../core-concepts/json-serialization.mdx) and [TypeSafe Models](../core-concepts/model-validation.mdx) guides.*
 
 ### Converting Schema Instance to Model
 
@@ -169,9 +169,9 @@ if (userSchema.isValid) {
 }
 ```
 
-### Generating OpenAPI Definitions
+### Generating JSON Schema Definitions
 
-The generated schema classes include methods to convert your schema to OpenAPI definition format, which is useful for API documentation or integration with OpenAPI tools.
+The generated schema classes include methods to convert your schema to JSON Schema format, which is useful for API documentation and validation.
 
 ```dart
 // Get the JSON Schema as a Map
