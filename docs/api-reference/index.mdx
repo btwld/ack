@@ -21,10 +21,12 @@ Base class for all schema types.
 
 - [`Result<T> validate(dynamic data)`](../core-concepts/error-handling.mdx#the-result-object): Validates the input data against the schema.
 - [`AckSchema<T?> nullable()`](../core-concepts/schemas.mdx#making-schemas-nullable): Returns a new schema that also accepts `null`.
-- `AckSchema<T> description(String description)`: Adds a description (used by [`toOpenApi()`](../guides/openapi-integration.mdx)).
-- `AckSchema<T> defaultValue(T value)`: Sets a default value (used by [`toOpenApi()`](../guides/openapi-integration.mdx)).
+- `AckSchema<T> description(String description)`: Adds a description (used by [`toJsonSchema()`](../guides/json-schema-integration.mdx)).
+- `AckSchema<T> defaultValue(T value)`: Sets a default value (used by [`toJsonSchema()`](../guides/json-schema-integration.mdx)).
 - [`AckSchema<T> constrain(...)`](../guides/custom-validation.mdx#applying-custom-constraints): Applies a custom validation constraint.
-- [`Map<String, dynamic> toOpenApi()`](../guides/openapi-integration.mdx#generating-openapi-schemas): Converts the schema to an OpenAPI Schema Object map (requires `package:ack/openapi.dart`).
+- [`Map<String, dynamic> toJsonSchema()`](../guides/json-schema-integration.mdx#generating-json-schemas): Converts the schema to a JSON Schema Object map (requires `package:ack/json_schema.dart`).
+
+See also [TypeSafe Models](../core-concepts/model-validation.mdx) for working with schemas and Dart models.
 
 ## `StringSchema`
 

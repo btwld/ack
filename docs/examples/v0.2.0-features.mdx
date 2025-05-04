@@ -348,11 +348,11 @@ print(usernameSchema.validate('user123').isOk); // true
 print(usernameSchema.validate('123user').isOk); // false - starts with number
 ```
 
-## OpenAPI Integration
+## JSON Schema Integration
 
-The SchemaModel provides methods for generating OpenAPI specifications, making it easy to document your API.
+The SchemaModel provides methods for generating JSON Schema specifications, making it easy to document your API.
 
-### Using Generated Schema for OpenAPI
+### Using Generated Schema for JSON Schema
 
 ```dart
 // Get JSON Schema as a Map
@@ -363,82 +363,50 @@ final profileSchema = ProfileSchema.toJsonSchema();
 final jsonString = jsonEncode(userSchema);
 print('User Schema JSON:\n$jsonString');
 
-// Example of using the definition in a larger OpenAPI document
-final openApiDoc = {
-  'openapi': '3.0.0',
-  'info': {
-    'title': 'User API',
-    'version': '1.0.0',
-    'description': 'API for managing user accounts'
+// Example of using the definition in a larger API documentation
+final apiDoc = {
+  '$schema': 'http://json-schema.org/draft-07/schema#',
+  'title': 'User API Schema',
+  'description': 'JSON Schema for the User API',
+  'definitions': {
+    'User': userSchema,
+    'Profile': profileSchema
   },
-  'paths': {
+  'endpoints': {
     '/users': {
       'post': {
         'summary': 'Create a new user',
-        'requestBody': {
-          'required': true,
-          'content': {
-            'application/json': {
-              'schema': {
-                '\$ref': '#/components/schemas/User'
-              }
-            }
-          }
+        'requestSchema': {
+          '$ref': '#/definitions/User'
         },
-        'responses': {
-          '201': {
-            'description': 'User created successfully',
-            'content': {
-              'application/json': {
-                'schema': {
-                  '\$ref': '#/components/schemas/User'
-                }
-              }
-            }
-          },
-          '400': {
-            'description': 'Invalid input'
-          }
+        'responseSchema': {
+          '$ref': '#/definitions/User'
         }
       },
       'get': {
         'summary': 'List all users',
-        'responses': {
-          '200': {
-            'description': 'A list of users',
-            'content': {
-              'application/json': {
-                'schema': {
-                  'type': 'array',
-                  'items': {
-                    '\$ref': '#/components/schemas/User'
-                  }
-                }
-              }
-            }
+        'responseSchema': {
+          'type': 'array',
+          'items': {
+            '$ref': '#/definitions/User'
           }
         }
       }
     }
-  },
-  'components': {
-    'schemas': {
-      'User': userDefinition,
-      'Profile': profileDefinition
-    }
   }
 };
 
-// Convert to JSON for use with OpenAPI tools
-final openApiJson = jsonEncode(openApiDoc);
+// Convert to JSON for documentation tools
+final apiJson = jsonEncode(apiDoc);
 ```
 
-### Direct Schema to OpenAPI Conversion
+### Direct Schema to JSON Schema Conversion
 
-You can also convert schemas defined with `Ack.object` directly to OpenAPI:
+You can also convert schemas defined with `Ack.object` directly to JSON Schema:
 
 ```dart
 import 'package:ack/ack.dart';
+import 'package:ack/json_schema.dart';
 
 // Define a schema
 final userSchema = Ack.object(
@@ -453,9 +421,9 @@ final userSchema = Ack.object(
   ],
 );
 
-// Convert to OpenAPI
-final openApiDefinition = userSchema.toOpenApi('User');
-print(jsonEncode(openApiDefinition));
+// Convert to JSON Schema
+final jsonSchemaDefinition = userSchema.toJsonSchema();
+print(jsonEncode(jsonSchemaDefinition));
 
 /* Output:
 {
@@ -632,7 +600,7 @@ Ack 0.2.0 introduces several powerful new features:
 2. **SchemaModel API**: A new type-safe way to work with schemas and models with automatic validation
 3. **Code Generation**: Generate schema classes from annotated Dart models
 4. **String Validation Improvements**: Enhanced string validation with the `matches()` method
-5. **OpenAPI Integration**: Generate OpenAPI specifications from your schemas
+5. **JSON Schema Integration**: Generate JSON Schema specifications from your schemas
 6. **Nested Model Support**: Elegant handling of nested models with code generation
 
 These features make Ack a powerful tool for building robust applications with strong data validation. The automatic validation, improved error handling, and better type safety simplify working with complex data structures.
