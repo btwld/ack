@@ -8,7 +8,6 @@ void main() {
     test('generates schema files for annotated classes', () async {
       // Simulate the input Dart file content with annotated classes
       const productModelContent = '''
-import 'package:ack_generator/ack_generator.dart';
 import 'package:ack/ack.dart';
 
 @Schema(

@@ -100,7 +100,7 @@ class UserSchema extends SchemaModel<User> {
     return result.isOk ? toModel() : null;
   }
 
-  /// Convert from a model instance to a schema
+  /// Create a schema from a model instance
   static UserSchema fromModel(User model) {
     return UserSchema(toMapFromModel(model));
   }
@@ -123,16 +123,28 @@ class UserSchema extends SchemaModel<User> {
     return result;
   }
 
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchema();
+  /// Static parse method that creates a User directly from input.
+  /// Throws an [AckException] if validation fails.
+  static User parseModel(Object? input, {String? debugName}) {
+    final schema = UserSchema(input);
+    return schema.toModel();
   }
 
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
+  /// Static tryParse method that creates a User directly from input.
+  /// Returns null if validation fails.
+  static User? tryParseModel(Object? input, {String? debugName}) {
+    try {
+      final schema = UserSchema(input);
+      return schema.isValid ? schema.toModel() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
+    return converter.toSchema();
   }
 }
 
@@ -206,7 +218,7 @@ class AddressSchema extends SchemaModel<Address> {
     return result.isOk ? toModel() : null;
   }
 
-  /// Convert from a model instance to a schema
+  /// Create a schema from a model instance
   static AddressSchema fromModel(Address model) {
     return AddressSchema(toMapFromModel(model));
   }
@@ -222,15 +234,28 @@ class AddressSchema extends SchemaModel<Address> {
     return result;
   }
 
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
+  /// Static parse method that creates a Address directly from input.
+  /// Throws an [AckException] if validation fails.
+  static Address parseModel(Object? input, {String? debugName}) {
+    final schema = AddressSchema(input);
+    return schema.toModel();
+  }
+
+  /// Static tryParse method that creates a Address directly from input.
+  /// Returns null if validation fails.
+  static Address? tryParseModel(Object? input, {String? debugName}) {
+    try {
+      final schema = AddressSchema(input);
+      return schema.isValid ? schema.toModel() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchema();
   }
-
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
-  }
 }
+

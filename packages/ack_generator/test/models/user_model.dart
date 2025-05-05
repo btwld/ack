@@ -1,4 +1,4 @@
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 /// Annotate your model class with @AckModel
 @Schema(

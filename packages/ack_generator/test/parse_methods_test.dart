@@ -9,7 +9,7 @@ void main() {
 
     test('generated schema includes parse methods in generated code', () async {
       const userModel = '''
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema(
   description: 'A test user model',

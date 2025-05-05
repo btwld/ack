@@ -9,7 +9,7 @@ void main() {
       final builder = schemaModelBuilder(BuilderOptions.empty);
 
       const productModel = '''
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema(
   description: 'A product model with validation',

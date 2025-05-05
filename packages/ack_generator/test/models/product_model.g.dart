@@ -110,7 +110,7 @@ class ProductSchema extends SchemaModel<Product> {
     return result.isOk ? toModel() : null;
   }
 
-  /// Convert from a model instance to a schema
+  /// Create a schema from a model instance
   static ProductSchema fromModel(Product model) {
     return ProductSchema(toMapFromModel(model));
   }
@@ -134,16 +134,28 @@ class ProductSchema extends SchemaModel<Product> {
     return result;
   }
 
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchema();
+  /// Static parse method that creates a Product directly from input.
+  /// Throws an [AckException] if validation fails.
+  static Product parseModel(Object? input, {String? debugName}) {
+    final schema = ProductSchema(input);
+    return schema.toModel();
   }
 
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
+  /// Static tryParse method that creates a Product directly from input.
+  /// Returns null if validation fails.
+  static Product? tryParseModel(Object? input, {String? debugName}) {
+    try {
+      final schema = ProductSchema(input);
+      return schema.isValid ? schema.toModel() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
+    return converter.toSchema();
   }
 }
 
@@ -232,7 +244,7 @@ class CategorySchema extends SchemaModel<Category> {
     return result.isOk ? toModel() : null;
   }
 
-  /// Convert from a model instance to a schema
+  /// Create a schema from a model instance
   static CategorySchema fromModel(Category model) {
     return CategorySchema(toMapFromModel(model));
   }
@@ -253,15 +265,28 @@ class CategorySchema extends SchemaModel<Category> {
     return result;
   }
 
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
+  /// Static parse method that creates a Category directly from input.
+  /// Throws an [AckException] if validation fails.
+  static Category parseModel(Object? input, {String? debugName}) {
+    final schema = CategorySchema(input);
+    return schema.toModel();
+  }
+
+  /// Static tryParse method that creates a Category directly from input.
+  /// Returns null if validation fails.
+  static Category? tryParseModel(Object? input, {String? debugName}) {
+    try {
+      final schema = CategorySchema(input);
+      return schema.isValid ? schema.toModel() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchema();
   }
-
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
-  }
 }
+

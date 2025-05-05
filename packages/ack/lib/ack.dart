@@ -1,6 +1,7 @@
 library;
 
 export 'src/ack.dart';
+export 'src/annotations.dart';
 export 'src/builder_helpers/schema_registry.dart';
 export 'src/constraints/constraint.dart';
 export 'src/constraints/list_extensions.dart';

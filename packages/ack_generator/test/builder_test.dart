@@ -9,7 +9,7 @@ void main() {
 
     test('generates schema for a simple product model', () async {
       const productModel = '''
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema(
   description: 'A product model with validation',
@@ -106,7 +106,7 @@ class Category {
 
     test('generates schema with validation constraints', () async {
       const userModel = '''
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema(
   description: 'A user model with validation',
@@ -179,7 +179,7 @@ class SimpleProduct {
 
     test('validates that annotated element is a class', () async {
       const invalidUsage = '''
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema(description: 'This is invalid')
 void invalidFunction() {}
