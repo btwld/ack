@@ -43,6 +43,11 @@ class ProductSchema extends SchemaModel<Product> {
   // Constructor that validates input
   ProductSchema([Object? value]) : super(value);
 
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
+
   // Type-safe getters
   String get id => getValue<String>('id')!;
   String get name => getValue<String>('name')!;
@@ -174,6 +179,11 @@ class CategorySchema extends SchemaModel<Category> {
   // Constructor that validates input
   CategorySchema([Object? value]) : super(value);
 
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
+
   // Type-safe getters
   String get id => getValue<String>('id')!;
   String get name => getValue<String>('name')!;
@@ -253,3 +263,4 @@ class CategorySchema extends SchemaModel<Category> {
     return converter.toSchema();
   }
 }
+

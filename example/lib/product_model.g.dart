@@ -117,13 +117,13 @@ class ProductSchema extends SchemaModel<Product> {
 
   /// Convert the schema to an OpenAPI definition
   static Map<String, Object?> toDefinition() {
-    final converter = OpenApiSchemaConverter(schema: schema);
+    final converter = JsonSchemaConverter(schema: schema);
     return converter.toSchema();
   }
 
   /// Convert the schema to an OpenAPI definition JSON string
   static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
+    final converter = JsonSchemaConverter(schema: schema);
     return converter.toSchemaString();
   }
 }
@@ -217,13 +217,13 @@ class CategorySchema extends SchemaModel<Category> {
 
   /// Convert the schema to an OpenAPI definition
   static Map<String, Object?> toDefinition() {
-    final converter = OpenApiSchemaConverter(schema: schema);
+    final converter = JsonSchemaConverter(schema: schema);
     return converter.toSchema();
   }
 
   /// Convert the schema to an OpenAPI definition JSON string
   static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
+    final converter = JsonSchemaConverter(schema: schema);
     return converter.toSchemaString();
   }
 }

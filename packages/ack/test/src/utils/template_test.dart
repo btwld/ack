@@ -1,4 +1,4 @@
-import 'package:ack/src/helpers/template.dart';
+import 'package:ack/src/utils/template.dart';
 import 'package:test/test.dart';
 
 void main() {

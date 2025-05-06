@@ -16,7 +16,7 @@ Map<String, Object?> createCombinedApiSpec(
     final schema = schemaDef['schema'] as ObjectSchema;
 
     // Convert to OpenAPI spec
-    final converter = OpenApiSchemaConverter(schema: schema);
+    final converter = JsonSchemaConverter(schema: schema);
     final openApiSpec = converter.toSchema();
 
     // Add schema to components
@@ -67,7 +67,7 @@ Future<void> saveOpenApiSpec(
   String directoryPath, {
   String? fileName,
 }) async {
-  final converter = OpenApiSchemaConverter(schema: schema);
+  final converter = JsonSchemaConverter(schema: schema);
   final spec = converter.toSchema();
   final jsonContent = prettyJson(spec);
 

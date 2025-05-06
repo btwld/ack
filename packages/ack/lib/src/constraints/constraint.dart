@@ -47,7 +47,14 @@ final class ConstraintError {
 }
 
 mixin OpenApiSpec<T extends Object> on Constraint<T> {
-  Map<String, Object?> toOpenApiSpec();
+  @Deprecated(
+    'This method will be removed in future versions. Use toJsonSchema() instead.',
+  )
+  Map<String, Object?> toOpenApiSpec() {
+    return toJsonSchema();
+  }
+
+  Map<String, Object?> toJsonSchema();
 }
 
 mixin Validator<T extends Object> on Constraint<T> {

@@ -6,22 +6,16 @@
 part of 'sealed_block_model.dart';
 
 /// Generated schema for SealedBlock
-/// Base block class with polymorphic subclasses
 class SealedBlockSchema extends SchemaModel<SealedBlock> {
-  // Schema definition moved to a static field for easier access
-  static final ObjectSchema schema = _createSchema();
+  // Schema definition
+  static final DiscriminatedObjectSchema schema = _createSchema();
 
   // Create the validation schema
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'type': Ack.string,
-        'align': Ack.string.nullable(),
-        'flex': Ack.int.nullable(),
-        'scrollable': Ack.boolean.nullable(),
-      },
-      required: ['type'],
-      additionalProperties: false,
+  static DiscriminatedObjectSchema _createSchema() {
+    // This method will be populated at runtime when child schemas are registered
+    return Ack.discriminated(
+      discriminatorKey: 'type',
+      schemas: {},
     );
   }
 
@@ -30,76 +24,58 @@ class SealedBlockSchema extends SchemaModel<SealedBlock> {
     SchemaRegistry.register<SealedBlock, SealedBlockSchema>(
       (data) => SealedBlockSchema(data),
     );
-  }
 
-  // Override to return the schema for validation
-  @override
-  AckSchema getSchema() => schema;
+    // Child schemas will register themselves
+  }
 
   // Constructor that validates input
   SealedBlockSchema([Object? value]) : super(value);
 
-  // Type-safe getters
-  String get type => getValue<String>('type')!;
-  String? get align => getValue<String>('align');
-  int? get flex => getValue<int>('flex');
-  bool? get scrollable => getValue<bool>('scrollable');
-
-  // Model conversion methods
   @override
-  SealedBlock toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
+  AckSchema getSchema() => schema;
 
-    return SealedBlock(
-      type: type,
-      align: align,
-      flex: flex,
-      scrollable: scrollable,
-    );
-  }
-
-  /// Parses the input and returns a SealedBlock instance.
-  /// Throws an [AckException] if validation fails.
+  // Parsing method that delegates based on discriminator
   @override
   SealedBlock parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    if (result.isOk) {
-      return toModel();
+    // Validate using the discriminated schema
+    final result = schema.validate(input, debugName: debugName);
+    if (result.isFail) {
+      throw AckException(result.getError()!);
     }
-    throw AckException(result.getError()!);
+
+    // Get discriminator value
+    final json = input as Map<String, dynamic>;
+    final type = json['type'] as String;
+
+    // Get the schema map - this will have been populated by the child schemas
+    final schemaMap = schema.getSchemaMap();
+
+    // Check if we have a schema for this type
+    if (!schemaMap.containsKey(type)) {
+      throw AckException.validation('Unknown discriminator value: $type');
+    }
+
+    // Delegate to the appropriate schema based on type
+    switch (type) {
+      // This will be filled in when child schemas are registered
+      default:
+        // Use registry to find the appropriate schema class
+        final schemaInstance = SchemaRegistry.resolve(input);
+        if (schemaInstance == null) {
+          throw AckException.validation('No schema found for type: $type');
+        }
+        return schemaInstance.parse(input, debugName: debugName) as SealedBlock;
+    }
   }
 
-  /// Attempts to parse the input and returns a SealedBlock instance.
-  /// Returns null if validation fails.
+  // Simple tryParse implementation
   @override
   SealedBlock? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
-  }
-
-  /// Create a schema from a model instance
-  static SealedBlockSchema fromModel(SealedBlock model) {
-    return SealedBlockSchema(toMapFromModel(model));
-  }
-
-  /// Static version of toMap to maintain compatibility
-  static Map<String, Object?> toMapFromModel(SealedBlock instance) {
-    final Map<String, Object?> result = {
-      'type': instance.type,
-      'align': instance.align,
-      'flex': instance.flex,
-      'scrollable': instance.scrollable,
-    };
-
-    return result;
-  }
-
-  /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchema();
+    try {
+      return parse(input, debugName: debugName);
+    } catch (e) {
+      return null;
+    }
   }
 }
 
@@ -113,20 +89,23 @@ class TextBlockSchema extends SchemaModel<TextBlock> {
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
+        'type': Ack.string.literal('text'),
         'align': Ack.string.nullable(),
         'flex': Ack.int.nullable(),
         'scrollable': Ack.boolean.nullable(),
         'content': Ack.string,
       },
-      required: ['content'],
+      required: ['type', 'content'],
       additionalProperties: false,
     );
   }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<TextBlock, TextBlockSchema>(
-      (data) => TextBlockSchema(data),
+    SchemaRegistry.registerDiscriminated<TextBlock, TextBlockSchema>(
+      factory: (data) => TextBlockSchema(data),
+      discriminatorKey: 'type',
+      discriminatorValue: 'text',
     );
   }
 
@@ -136,6 +115,11 @@ class TextBlockSchema extends SchemaModel<TextBlock> {
 
   // Constructor that validates input
   TextBlockSchema([Object? value]) : super(value);
+
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
 
   // Type-safe getters
   String? get align => getValue<String>('align');
@@ -189,6 +173,7 @@ class TextBlockSchema extends SchemaModel<TextBlock> {
       'flex': instance.flex,
       'scrollable': instance.scrollable,
       'content': instance.content,
+      'type': instance.type,
     };
 
     return result;
@@ -211,6 +196,7 @@ class ImageBlockSchema extends SchemaModel<ImageBlock> {
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
+        'type': Ack.string.literal('image'),
         'align': Ack.string.nullable(),
         'flex': Ack.int.nullable(),
         'scrollable': Ack.boolean.nullable(),
@@ -219,15 +205,17 @@ class ImageBlockSchema extends SchemaModel<ImageBlock> {
         'height': Ack.double.nullable(),
         'fit': Ack.string.nullable(),
       },
-      required: ['src'],
+      required: ['type', 'src'],
       additionalProperties: false,
     );
   }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<ImageBlock, ImageBlockSchema>(
-      (data) => ImageBlockSchema(data),
+    SchemaRegistry.registerDiscriminated<ImageBlock, ImageBlockSchema>(
+      factory: (data) => ImageBlockSchema(data),
+      discriminatorKey: 'type',
+      discriminatorValue: 'image',
     );
   }
 
@@ -237,6 +225,11 @@ class ImageBlockSchema extends SchemaModel<ImageBlock> {
 
   // Constructor that validates input
   ImageBlockSchema([Object? value]) : super(value);
+
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
 
   // Type-safe getters
   String? get align => getValue<String>('align');
@@ -345,6 +338,11 @@ class WidgetBlockSchema extends SchemaModel<WidgetBlock> {
   // Constructor that validates input
   WidgetBlockSchema([Object? value]) : super(value);
 
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
+
   // Type-safe getters
   String? get align => getValue<String>('align');
   int? get flex => getValue<int>('flex');
@@ -427,3 +425,4 @@ class WidgetBlockSchema extends SchemaModel<WidgetBlock> {
     return converter.toSchema();
   }
 }
+

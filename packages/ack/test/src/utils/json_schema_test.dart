@@ -4,7 +4,7 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('OpenApiSchemaConverter Tests', () {
+  group('JsonSchemaConverter Tests', () {
     group('Schema Type Conversion', () {
       test('converts basic schema types correctly', () {
         final schema = ObjectSchema({
@@ -13,7 +13,7 @@ void main() {
           'double': DoubleSchema(),
           'boolean': BooleanSchema(),
         });
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           converter.toSchema(),
           equals({
@@ -33,7 +33,7 @@ void main() {
         final schema = ObjectSchema({
           'items': ListSchema(StringSchema()),
         });
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           converter.toSchema(),
           equals({
@@ -71,7 +71,7 @@ void main() {
             },
           ),
         });
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           converter.toSchema(),
           equals({
@@ -105,6 +105,75 @@ void main() {
           }),
         );
       });
+
+      test('handles nested discriminated schemas', () {
+        // Removed unused baseSchema variable
+
+        final circleSchema = ObjectSchema({
+          'type': StringSchema(),
+          'name': StringSchema(),
+          'radius': DoubleSchema(),
+        }, required: [
+          'type',
+          'name',
+          'radius'
+        ]);
+
+        final rectangleSchema = ObjectSchema({
+          'type': StringSchema(),
+          'name': StringSchema(),
+          'width': DoubleSchema(),
+          'height': DoubleSchema(),
+        }, required: [
+          'type',
+          'name',
+          'width',
+          'height'
+        ]);
+
+        // Create a discriminated schema
+        final shapeSchema = DiscriminatedObjectSchema(
+          discriminatorKey: 'type',
+          schemas: {
+            'circle': circleSchema,
+            'rectangle': rectangleSchema,
+          },
+        );
+
+        // Create a container schema that contains shapes
+        final containerSchema = ObjectSchema({
+          'id': StringSchema(),
+          'shapes': ListSchema(shapeSchema),
+        }, required: [
+          'id',
+          'shapes'
+        ]);
+
+        final converter = JsonSchemaConverter(schema: containerSchema);
+        final result = converter.toSchema();
+
+        // Fixed null safety issues by using null-aware operators or assertion
+        expect(result['type'], equals('object'));
+        final properties = result['properties'] as Map<String, dynamic>;
+        expect(properties['id']!['type'], equals('string'));
+        expect(properties['shapes']!['type'], equals('array'));
+
+        final shapesSchema =
+            properties['shapes']!['items'] as Map<String, dynamic>;
+        expect(shapesSchema['discriminator']!['propertyName'], equals('type'));
+
+        final oneOf = shapesSchema['oneOf'] as List;
+        expect(oneOf.length, equals(2));
+
+        // Verify the discriminated schemas are included correctly
+        final circleSchemaInResult = oneOf[0] as Map<String, dynamic>;
+        final rectangleSchemaInResult = oneOf[1] as Map<String, dynamic>;
+
+        expect(circleSchemaInResult['properties']!['radius']!['type'],
+            equals('number'));
+        expect(rectangleSchemaInResult['properties']!['width']!['type'],
+            equals('number'));
+      });
     });
 
     group('Schema Properties', () {
@@ -112,7 +181,7 @@ void main() {
         final schema = ObjectSchema({
           'optional': StringSchema().nullable(),
         });
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           converter.toSchema(),
           equals({
@@ -132,7 +201,7 @@ void main() {
         final schema = ObjectSchema({
           'name': StringSchema(description: 'The user\'s name'),
         });
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           converter.toSchema(),
           equals({
@@ -152,7 +221,7 @@ void main() {
         final schema = ObjectSchema({
           'active': BooleanSchema(defaultValue: true),
         });
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           converter.toSchema(),
           equals({
@@ -172,7 +241,7 @@ void main() {
     group('Response Parsing', () {
       test('parses raw JSON response', () {
         final schema = ObjectSchema({'value': StringSchema()});
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         final mapValue = {
           'value': 'test',
         };
@@ -182,7 +251,7 @@ void main() {
 
       test('parses delimited response', () {
         final schema = ObjectSchema({'value': StringSchema()});
-        final converter = OpenApiSchemaConverter(
+        final converter = JsonSchemaConverter(
           schema: schema,
           startDelimeter: '<response>',
           endDelimeter: '</response>',
@@ -195,10 +264,10 @@ void main() {
 
       test('throws on invalid JSON', () {
         final schema = ObjectSchema({'value': StringSchema()});
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           () => converter.parseResponse('{"value": invalid}'),
-          throwsA(isA<OpenApiConverterException>().having(
+          throwsA(isA<JsonSchemaConverterException>().having(
             (e) => e.message,
             'message',
             contains('Invalid JSON format'),
@@ -211,10 +280,10 @@ void main() {
           {'value': StringSchema()},
           required: ['value'],
         );
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         expect(
           () => converter.parseResponse('{}'),
-          throwsA(isA<OpenApiConverterException>().having(
+          throwsA(isA<JsonSchemaConverterException>().having(
             (e) => e.message,
             'message',
             contains('Validation error'),
@@ -226,7 +295,7 @@ void main() {
     group('Response Formatting', () {
       test('generates correct response prompt', () {
         final schema = ObjectSchema({'value': StringSchema()});
-        final converter = OpenApiSchemaConverter(
+        final converter = JsonSchemaConverter(
           schema: schema,
           startDelimeter: '<start>',
           endDelimeter: '</end>',

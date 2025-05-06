@@ -25,7 +25,7 @@ class StringLiteralConstraint extends Constraint<String>
       'Must be exactly: "$expectedValue" but got "$value"';
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {
-        'enum': [expectedValue]
+  Map<String, Object?> toJsonSchema() => {
+        'enum': [expectedValue],
       };
 }

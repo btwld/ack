@@ -139,7 +139,7 @@ void main() {
           'name'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         final openApiSchema = converter.toSchema();
 
         expect(openApiSchema, isA<Map<String, dynamic>>());

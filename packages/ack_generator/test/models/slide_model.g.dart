@@ -41,6 +41,11 @@ class SlideSchema extends SchemaModel<Slide> {
   // Constructor that validates input
   SlideSchema([Object? value]) : super(value);
 
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
+
   // Type-safe getters
   String get key => getValue<String>('key')!;
   SlideOptionsSchema? get options {
@@ -149,6 +154,11 @@ class SlideOptionsSchema extends SchemaModel<SlideOptions> {
   // Constructor that validates input
   SlideOptionsSchema([Object? value]) : super(value);
 
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
+
   // Type-safe getters
   String? get title => getValue<String>('title');
   String? get style => getValue<String>('style');
@@ -209,3 +219,4 @@ class SlideOptionsSchema extends SchemaModel<SlideOptions> {
     return converter.toSchema();
   }
 }
+

@@ -6,33 +6,39 @@ import '../helpers.dart';
 import '../schemas/schema.dart';
 import '../validation/ack_exception.dart';
 
-class OpenApiConverterException implements Exception {
+@Deprecated('Use JsonSchemaConverterException instead')
+typedef OpenApiConverterException = JsonSchemaConverterException;
+
+@Deprecated('Use JsonSchemaConverter instead')
+typedef OpenApiSchemaConverter = JsonSchemaConverter;
+
+class JsonSchemaConverterException implements Exception {
   final Object? error;
   final AckException? _ackException;
 
   final String _message;
 
-  const OpenApiConverterException(
+  const JsonSchemaConverterException(
     this._message, {
     this.error,
     AckException? ackException,
   }) : _ackException = ackException;
 
-  static OpenApiConverterException validationError(
+  static JsonSchemaConverterException validationError(
     AckException ackException,
   ) {
-    return OpenApiConverterException(
+    return JsonSchemaConverterException(
       'Validation error',
       ackException: ackException,
     );
   }
 
-  static OpenApiConverterException unknownError(Object error) {
-    return OpenApiConverterException('Unknown error', error: error);
+  static JsonSchemaConverterException unknownError(Object error) {
+    return JsonSchemaConverterException('Unknown error', error: error);
   }
 
-  static OpenApiConverterException jsonDecodeError(Object error) {
-    return OpenApiConverterException('Invalid JSON format', error: error);
+  static JsonSchemaConverterException jsonDecodeError(Object error) {
+    return JsonSchemaConverterException('Invalid JSON format', error: error);
   }
 
   bool get isValidationError => _ackException != null;
@@ -51,7 +57,7 @@ class OpenApiConverterException implements Exception {
   }
 }
 
-class OpenApiSchemaConverter {
+class JsonSchemaConverter {
   /// The sequence that indicates the end of the response.
   /// Use this if you want the LLM to stop once it reaches response.
   final String stopSequence;
@@ -59,7 +65,7 @@ class OpenApiSchemaConverter {
   final String endDelimeter;
   final ObjectSchema _schema;
 
-  const OpenApiSchemaConverter({
+  const JsonSchemaConverter({
     required ObjectSchema schema,
     this.startDelimeter = '<response>',
     this.endDelimeter = '</response>',
@@ -109,17 +115,17 @@ $stopSequence
       return _schema.validate(jsonValue).getOrThrow();
     } on FormatException catch (e, stackTrace) {
       Error.throwWithStackTrace(
-        OpenApiConverterException.jsonDecodeError(e),
+        JsonSchemaConverterException.jsonDecodeError(e),
         stackTrace,
       );
     } on AckException catch (e, stackTrace) {
       Error.throwWithStackTrace(
-        OpenApiConverterException.validationError(e),
+        JsonSchemaConverterException.validationError(e),
         stackTrace,
       );
     } catch (e, stackTrace) {
       Error.throwWithStackTrace(
-        OpenApiConverterException.unknownError(e),
+        JsonSchemaConverterException.unknownError(e),
         stackTrace,
       );
     }
@@ -145,11 +151,19 @@ JSON _convertObjectSchema(ObjectSchema schema) {
   };
 }
 
-JSON _convertDiscriminatedObjectSchema(DiscriminatedObjectSchema schema) => {
-      'discriminator': {'propertyName': schema.getDiscriminatorKey()},
-      'oneOf':
-          schema.getSchemas().map((schema) => _convertSchema(schema)).toList(),
-    };
+JSON _convertDiscriminatedObjectSchema(DiscriminatedObjectSchema schema) {
+  final discriminatorKey = schema.getDiscriminatorKey();
+  final schemaMap = schema.getSchemaMap();
+
+  // Create the oneOf array with each schema
+  final oneOfSchemas =
+      schemaMap.values.map((schema) => _convertSchema(schema)).toList();
+
+  return {
+    'discriminator': {'propertyName': discriminatorKey},
+    'oneOf': oneOfSchemas,
+  };
+}
 
 JSON _convertListSchema(ListSchema schema) => {
       'items': _convertSchema(schema.getItemSchema()),
@@ -185,7 +199,7 @@ JSON _convertSchema(AckSchema schema) {
 
   return deepMerge(
     schemaMap,
-    _getMergedOpenApiConstraints(schema.getConstraints()),
+    _getMergeJsonSchemaConstraints(schema.getConstraints()),
   );
 }
 
@@ -202,7 +216,7 @@ String _convertSchemaType(SchemaType type) {
   };
 }
 
-/// Merges the OpenAPI schemas from a list of [OpenApiConstraintValidator<T>].
+/// Merges the JSON schemas from a list of [Validator<T>].
 ///
 /// This function converts each validator to its schema representation using
 /// [toSchema()] and combines them into a single schema map using [deepMerge].
@@ -210,14 +224,14 @@ String _convertSchemaType(SchemaType type) {
 ///
 /// [constraints] - The list of OpenAPI constraint validators to merge.
 /// Returns a merged schema map, or an empty map if no valid schemas are provided.
-JSON _getMergedOpenApiConstraints<T extends Object>(
+JSON _getMergeJsonSchemaConstraints<T extends Object>(
   List<Constraint<T>> constraints,
 ) {
   final openApiConstraints = constraints.whereType<OpenApiSpec<T>>();
 
   return openApiConstraints.fold<JSON>({}, (previousValue, element) {
     try {
-      final schema = element.toOpenApiSpec();
+      final schema = element.toJsonSchema();
 
       return deepMerge(previousValue, schema);
     } catch (e) {

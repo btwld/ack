@@ -68,7 +68,7 @@ class NumberExclusiveMinConstraint<T extends num> extends Constraint<T>
   String buildMessage(T value) => 'Must be greater than $min';
 
   @override
-  Map<String, Object?> toOpenApiSpec() =>
+  Map<String, Object?> toJsonSchema() =>
       {'minimum': min, 'exclusiveMinimum': true};
 }
 
@@ -90,6 +90,6 @@ class NumberExclusiveMaxConstraint<T extends num> extends Constraint<T>
   String buildMessage(T value) => 'Must be less than $max';
 
   @override
-  Map<String, Object?> toOpenApiSpec() =>
+  Map<String, Object?> toJsonSchema() =>
       {'maximum': max, 'exclusiveMaximum': true};
 }

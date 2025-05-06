@@ -239,7 +239,7 @@ void main() {
           'age'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         final openApiSchema = converter.toSchema();
 
         expect(openApiSchema['type'], equals('object'));
@@ -272,7 +272,7 @@ void main() {
           'age'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
 
         // Simulated LLM response
         final llmResponse = '''
@@ -301,7 +301,7 @@ void main() {
           'age'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
 
         // Simulated LLM response with missing required field
         final llmResponse = '''
@@ -316,7 +316,7 @@ void main() {
         // Parse and validate the response
         expect(
           () => converter.parseResponse(llmResponse),
-          throwsA(isA<OpenApiConverterException>()),
+          throwsA(isA<JsonSchemaConverterException>()),
         );
       });
     });
