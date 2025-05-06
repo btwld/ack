@@ -1,6 +1,7 @@
 import '../schemas/schema.dart';
 import 'constraint.dart';
 import 'validators.dart';
+import 'string/literal_constraint.dart';
 
 /// Extension methods for [StringSchema] to provide additional validation capabilities.
 extension StringSchemaExtensions on StringSchema {
@@ -99,5 +100,18 @@ extension StringSchemaExtensions on StringSchema {
         example: example ?? 'Example containing $pattern',
       ),
     );
+  }
+
+  /// Validates that the string exactly equals the provided value.
+  ///
+  /// This is particularly useful for discriminator fields in discriminated schemas.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Type must be exactly 'user'
+  /// final typeSchema = Ack.string.literal('user');
+  /// ```
+  StringSchema literal(String value) {
+    return _add(StringLiteralConstraint(value));
   }
 }

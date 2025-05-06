@@ -123,24 +123,6 @@ class UserSchema extends SchemaModel<User> {
     return result;
   }
 
-  /// Static parse method that creates a User directly from input.
-  /// Throws an [AckException] if validation fails.
-  static User parseModel(Object? input, {String? debugName}) {
-    final schema = UserSchema(input);
-    return schema.toModel();
-  }
-
-  /// Static tryParse method that creates a User directly from input.
-  /// Returns null if validation fails.
-  static User? tryParseModel(Object? input, {String? debugName}) {
-    try {
-      final schema = UserSchema(input);
-      return schema.isValid ? schema.toModel() : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
@@ -234,28 +216,9 @@ class AddressSchema extends SchemaModel<Address> {
     return result;
   }
 
-  /// Static parse method that creates a Address directly from input.
-  /// Throws an [AckException] if validation fails.
-  static Address parseModel(Object? input, {String? debugName}) {
-    final schema = AddressSchema(input);
-    return schema.toModel();
-  }
-
-  /// Static tryParse method that creates a Address directly from input.
-  /// Returns null if validation fails.
-  static Address? tryParseModel(Object? input, {String? debugName}) {
-    try {
-      final schema = AddressSchema(input);
-      return schema.isValid ? schema.toModel() : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchema();
   }
 }
-

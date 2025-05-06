@@ -489,24 +489,6 @@ $additionalPropsCode
     return result;
   }
 
-  /// Static parse method that creates a $modelClassName directly from input.
-  /// Throws an [AckException] if validation fails.
-  static $modelClassName parseModel(Object? input, {String? debugName}) {
-    final schema = $schemaClassName(input);
-    return schema.toModel();
-  }
-
-  /// Static tryParse method that creates a $modelClassName directly from input.
-  /// Returns null if validation fails.
-  static $modelClassName? tryParseModel(Object? input, {String? debugName}) {
-    try {
-      final schema = $schemaClassName(input);
-      return schema.isValid ? schema.toModel() : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
@@ -780,12 +762,16 @@ class SchemaData {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final String? schemaClassName;
+  final String? discriminatedKey;
+  final String? discriminatedValue;
 
   const SchemaData({
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.schemaClassName,
+    this.discriminatedKey,
+    this.discriminatedValue,
   });
 }
 

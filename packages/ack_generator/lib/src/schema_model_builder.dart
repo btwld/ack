@@ -98,12 +98,17 @@ class SchemaModelBuilder implements Builder {
         annotation.peek('additionalPropertiesField')?.stringValue;
     final schemaClassName = annotation.peek('schemaClassName')?.stringValue ??
         '${element.name}Schema';
+    final discriminatedKey = annotation.peek('discriminatedKey')?.stringValue;
+    final discriminatedValue =
+        annotation.peek('discriminatedValue')?.stringValue;
 
     return SchemaData(
       description: description,
       additionalProperties: additionalProperties,
       additionalPropertiesField: additionalPropertiesField,
       schemaClassName: schemaClassName,
+      discriminatedKey: discriminatedKey,
+      discriminatedValue: discriminatedValue,
     );
   }
 

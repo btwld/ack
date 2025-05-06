@@ -19,6 +19,9 @@ targets:
             - test/models/test_model.dart
             - test/models/user_model.dart
             - test/models/product_model.dart
+            - test/models/slide_model.dart
+            - test/models/block_model.dart
+            - test/models/sealed_block_model.dart
         options:
           verify_types: true
           generate_for_nullable: true 

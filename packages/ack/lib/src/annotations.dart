@@ -14,11 +14,19 @@ class Schema {
   /// Name of the schema class to generate (defaults to {ClassName}Schema)
   final String? schemaClassName;
 
+  /// Field to use as discriminator for polymorphic sealed or abstract classes
+  final String? discriminatedKey;
+
+  /// Value to use for this specific subclass in a discriminated hierarchy
+  final String? discriminatedValue;
+
   const Schema({
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.schemaClassName,
+    this.discriminatedKey,
+    this.discriminatedValue,
   });
 }
 

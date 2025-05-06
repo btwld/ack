@@ -1,6 +1,8 @@
 import 'package:ack/ack.dart';
 
-// Generated file will be part 'block_model.g.dart';
+// There are issues with the generated code for abstract classes
+// Testing with manual implementation instead
+//part 'block_model.g.dart';
 
 /// Base class for blocks that make up a slide
 @Schema(description: 'Base class for blocks that make up a slide')

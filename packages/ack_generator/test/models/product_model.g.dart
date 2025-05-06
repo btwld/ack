@@ -134,24 +134,6 @@ class ProductSchema extends SchemaModel<Product> {
     return result;
   }
 
-  /// Static parse method that creates a Product directly from input.
-  /// Throws an [AckException] if validation fails.
-  static Product parseModel(Object? input, {String? debugName}) {
-    final schema = ProductSchema(input);
-    return schema.toModel();
-  }
-
-  /// Static tryParse method that creates a Product directly from input.
-  /// Returns null if validation fails.
-  static Product? tryParseModel(Object? input, {String? debugName}) {
-    try {
-      final schema = ProductSchema(input);
-      return schema.isValid ? schema.toModel() : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
@@ -265,28 +247,9 @@ class CategorySchema extends SchemaModel<Category> {
     return result;
   }
 
-  /// Static parse method that creates a Category directly from input.
-  /// Throws an [AckException] if validation fails.
-  static Category parseModel(Object? input, {String? debugName}) {
-    final schema = CategorySchema(input);
-    return schema.toModel();
-  }
-
-  /// Static tryParse method that creates a Category directly from input.
-  /// Returns null if validation fails.
-  static Category? tryParseModel(Object? input, {String? debugName}) {
-    try {
-      final schema = CategorySchema(input);
-      return schema.isValid ? schema.toModel() : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() {
     final converter = OpenApiSchemaConverter(schema: schema);
     return converter.toSchema();
   }
 }
-

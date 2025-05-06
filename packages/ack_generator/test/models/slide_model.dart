@@ -1,7 +1,8 @@
 import 'package:ack/ack.dart';
 import 'block_model.dart';
 
-// Generated file will be part 'slide_model.g.dart';
+// Using generated code
+part 'slide_model.g.dart';
 
 @Schema(description: 'A slide in the presentation.')
 class Slide {
