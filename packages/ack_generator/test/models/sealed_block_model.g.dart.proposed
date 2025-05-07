@@ -1,0 +1,396 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'sealed_block_model.dart';
+
+/// Generated base schema for SealedBlock
+/// Base block class with polymorphic subclasses
+sealed class SealedBlockSchema extends SchemaModel<SealedBlock> {
+  // Schema definition moved to a static field for easier access
+  static final DiscriminatedObjectSchema schema = _createDiscriminatedSchema();
+
+  // Create the base schema that all block types share
+  static ObjectSchema _createBaseObjectSchema() {
+    return Ack.object(
+      {
+        'type': Ack.string,
+        'align': Ack.string.nullable(),
+        'flex': Ack.int.nullable(),
+        'scrollable': Ack.boolean.nullable(),
+      },
+      required: ['type'],
+      additionalProperties: false,
+      description: 'Base block class with polymorphic subclasses',
+    );
+  }
+
+  // Create the discriminated schema that handles all block types
+  static DiscriminatedObjectSchema _createDiscriminatedSchema() {
+    return Ack.discriminatedObject(
+      discriminatorKey: 'type',
+      schemas: {
+        'text': TextBlockSchema._createSchema(),
+        'image': ImageBlockSchema._createSchema(),
+        'widget': WidgetBlockSchema._createSchema(),
+      },
+      description: 'Base block class with polymorphic subclasses',
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<SealedBlock, SealedBlockSchema>(
+      (data) {
+        final typeValue = (data as Map<String, dynamic>)['type'] as String?;
+        switch (typeValue) {
+          case 'text':
+            return TextBlockSchema(data);
+          case 'image':
+            return ImageBlockSchema(data);
+          case 'widget':
+            return WidgetBlockSchema(data);
+          default:
+            throw AckException(
+              SchemaTypeError(
+                message: 'Unknown block type: $typeValue',
+                context: SchemaErrorContext(path: ['type']),
+              ),
+            );
+        }
+      },
+    );
+    
+    // Register schema dependencies
+    TextBlockSchema.ensureInitialize();
+    ImageBlockSchema.ensureInitialize();
+    WidgetBlockSchema.ensureInitialize();
+  }
+
+  // Override to return the schema for validation
+  @override
+  AckSchema getSchema() => schema;
+
+  // Constructor that validates input
+  SealedBlockSchema([Object? value]) : super(value);
+
+  /// Validate the input against the schema
+  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
+    return schema.validate(input, debugName: debugName);
+  }
+
+  // Type-safe getters for common properties
+  String get type => getValue<String>('type')!;
+  String? get align => getValue<String>('align');
+  int? get flex => getValue<int>('flex');
+  bool? get scrollable => getValue<bool>('scrollable');
+
+  /// Create a schema from a model instance
+  static SealedBlockSchema fromModel(SealedBlock model) {
+    if (model is TextBlock) {
+      return TextBlockSchema.fromModel(model);
+    } else if (model is ImageBlock) {
+      return ImageBlockSchema.fromModel(model);
+    } else if (model is WidgetBlock) {
+      return WidgetBlockSchema.fromModel(model);
+    } else {
+      throw ArgumentError('Unknown SealedBlock type: ${model.runtimeType}');
+    }
+  }
+
+  /// Static version of toMap to maintain compatibility
+  static Map<String, Object?> toMapFromModel(SealedBlock instance) {
+    if (instance is TextBlock) {
+      return TextBlockSchema.toMapFromModel(instance);
+    } else if (instance is ImageBlock) {
+      return ImageBlockSchema.toMapFromModel(instance);
+    } else if (instance is WidgetBlock) {
+      return WidgetBlockSchema.toMapFromModel(instance);
+    } else {
+      throw ArgumentError('Unknown SealedBlock type: ${instance.runtimeType}');
+    }
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = OpenApiSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}
+
+/// Generated schema for TextBlock
+/// A text block with markdown content
+final class TextBlockSchema extends SealedBlockSchema {
+  // Schema definition for TextBlock
+  static final ObjectSchema _schema = _createSchema();
+
+  // Create the validation schema for TextBlock
+  static ObjectSchema _createSchema() {
+    // Extend the base schema with text block specific properties
+    return SealedBlockSchema._createBaseObjectSchema().extend(
+      {
+        'type': Ack.string.literal('text'),
+        'content': Ack.string,
+      },
+      required: ['content'],
+      description: 'A text block with markdown content',
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<TextBlock, TextBlockSchema>(
+      (data) => TextBlockSchema(data),
+    );
+  }
+
+  // Constructor that validates input
+  TextBlockSchema([Object? value]) : super(value);
+
+  // Type-safe getters specific to TextBlock
+  String get content => getValue<String>('content')!;
+
+  // Model conversion methods
+  @override
+  TextBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
+    return TextBlock(
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      content: content,
+    );
+  }
+
+  /// Parse input and return a TextBlock instance
+  TextBlock parse(Object? input, {String? debugName}) {
+    final result = _schema.validate(input, debugName: debugName);
+    if (result.isOk) {
+      return toModel();
+    }
+    throw AckException(result.getError()!);
+  }
+
+  /// Try to parse input and return a TextBlock instance or null
+  TextBlock? tryParse(Object? input, {String? debugName}) {
+    final result = _schema.validate(input, debugName: debugName);
+    return result.isOk ? toModel() : null;
+  }
+
+  /// Create a schema from a model instance
+  static TextBlockSchema fromModel(TextBlock model) {
+    return TextBlockSchema(toMapFromModel(model));
+  }
+
+  /// Static version of toMap to maintain compatibility
+  static Map<String, Object?> toMapFromModel(TextBlock instance) {
+    final Map<String, Object?> result = {
+      'type': instance.type,
+      'content': instance.content,
+    };
+
+    if (instance.align != null) result['align'] = instance.align;
+    if (instance.flex != null) result['flex'] = instance.flex;
+    if (instance.scrollable != null) result['scrollable'] = instance.scrollable;
+
+    return result;
+  }
+}
+
+/// Generated schema for ImageBlock
+/// An image block with image source and attributes
+final class ImageBlockSchema extends SealedBlockSchema {
+  // Schema definition for ImageBlock
+  static final ObjectSchema _schema = _createSchema();
+
+  // Create the validation schema for ImageBlock
+  static ObjectSchema _createSchema() {
+    // Extend the base schema with image block specific properties
+    return SealedBlockSchema._createBaseObjectSchema().extend(
+      {
+        'type': Ack.string.literal('image'),
+        'src': Ack.string,
+        'width': Ack.number.nullable(),
+        'height': Ack.number.nullable(),
+        'fit': Ack.string.nullable(),
+      },
+      required: ['src'],
+      description: 'An image block with image source and attributes',
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<ImageBlock, ImageBlockSchema>(
+      (data) => ImageBlockSchema(data),
+    );
+  }
+
+  // Constructor that validates input
+  ImageBlockSchema([Object? value]) : super(value);
+
+  // Type-safe getters specific to ImageBlock
+  String get src => getValue<String>('src')!;
+  double? get width => getValue<double>('width');
+  double? get height => getValue<double>('height');
+  String? get fit => getValue<String>('fit');
+
+  // Model conversion methods
+  @override
+  ImageBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
+    return ImageBlock(
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      src: src,
+      width: width,
+      height: height,
+      fit: fit,
+    );
+  }
+
+  /// Parse input and return an ImageBlock instance
+  ImageBlock parse(Object? input, {String? debugName}) {
+    final result = _schema.validate(input, debugName: debugName);
+    if (result.isOk) {
+      return toModel();
+    }
+    throw AckException(result.getError()!);
+  }
+
+  /// Try to parse input and return an ImageBlock instance or null
+  ImageBlock? tryParse(Object? input, {String? debugName}) {
+    final result = _schema.validate(input, debugName: debugName);
+    return result.isOk ? toModel() : null;
+  }
+
+  /// Create a schema from a model instance
+  static ImageBlockSchema fromModel(ImageBlock model) {
+    return ImageBlockSchema(toMapFromModel(model));
+  }
+
+  /// Static version of toMap to maintain compatibility
+  static Map<String, Object?> toMapFromModel(ImageBlock instance) {
+    final Map<String, Object?> result = {
+      'type': instance.type,
+      'src': instance.src,
+    };
+
+    if (instance.align != null) result['align'] = instance.align;
+    if (instance.flex != null) result['flex'] = instance.flex;
+    if (instance.scrollable != null) result['scrollable'] = instance.scrollable;
+    if (instance.width != null) result['width'] = instance.width;
+    if (instance.height != null) result['height'] = instance.height;
+    if (instance.fit != null) result['fit'] = instance.fit;
+
+    return result;
+  }
+}
+
+/// Generated schema for WidgetBlock
+/// A widget block with custom properties
+final class WidgetBlockSchema extends SealedBlockSchema {
+  // Schema definition for WidgetBlock
+  static final ObjectSchema _schema = _createSchema();
+
+  // Create the validation schema for WidgetBlock
+  static ObjectSchema _createSchema() {
+    // Extend the base schema with widget block specific properties
+    return SealedBlockSchema._createBaseObjectSchema().extend(
+      {
+        'type': Ack.string.literal('widget'),
+        'name': Ack.string,
+      },
+      required: ['name'],
+      additionalProperties: true,
+      description: 'A widget block with custom properties',
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<WidgetBlock, WidgetBlockSchema>(
+      (data) => WidgetBlockSchema(data),
+    );
+  }
+
+  // Constructor that validates input
+  WidgetBlockSchema([Object? value]) : super(value);
+
+  // Type-safe getters specific to WidgetBlock
+  String get name => getValue<String>('name')!;
+
+  // Get properties with fallback
+  Map<String, dynamic> get properties {
+    final result = <String, dynamic>{};
+    final knownFields = ['type', 'name', 'align', 'flex', 'scrollable'];
+
+    for (final key in toMap().keys) {
+      if (!knownFields.contains(key)) {
+        result[key] = toMap()[key];
+      }
+    }
+    return result;
+  }
+
+  // Model conversion methods
+  @override
+  WidgetBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+
+    return WidgetBlock(
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      name: name,
+      properties: properties,
+    );
+  }
+
+  /// Parse input and return a WidgetBlock instance
+  WidgetBlock parse(Object? input, {String? debugName}) {
+    final result = _schema.validate(input, debugName: debugName);
+    if (result.isOk) {
+      return toModel();
+    }
+    throw AckException(result.getError()!);
+  }
+
+  /// Try to parse input and return a WidgetBlock instance or null
+  WidgetBlock? tryParse(Object? input, {String? debugName}) {
+    final result = _schema.validate(input, debugName: debugName);
+    return result.isOk ? toModel() : null;
+  }
+
+  /// Create a schema from a model instance
+  static WidgetBlockSchema fromModel(WidgetBlock model) {
+    return WidgetBlockSchema(toMapFromModel(model));
+  }
+
+  /// Static version of toMap to maintain compatibility
+  static Map<String, Object?> toMapFromModel(WidgetBlock instance) {
+    final Map<String, Object?> result = {
+      'type': instance.type,
+      'name': instance.name,
+    };
+
+    if (instance.align != null) result['align'] = instance.align;
+    if (instance.flex != null) result['flex'] = instance.flex;
+    if (instance.scrollable != null) result['scrollable'] = instance.scrollable;
+    
+    // Add all custom properties
+    result.addAll(instance.properties);
+
+    return result;
+  }
+}
