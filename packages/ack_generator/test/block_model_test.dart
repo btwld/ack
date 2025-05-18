@@ -1,5 +1,5 @@
-import 'package:test/test.dart';
 import 'package:ack/ack.dart';
+import 'package:test/test.dart';
 
 // Test for validating the specific Block model pattern shown in the example
 void main() {
@@ -21,7 +21,7 @@ void main() {
         'centerRight',
         'bottomLeft',
         'bottomCenter',
-        'bottomRight'
+        'bottomRight',
       ]);
 
       // Create base Block schema
@@ -51,7 +51,7 @@ void main() {
         'fitWidth',
         'fitHeight',
         'none',
-        'scaleDown'
+        'scaleDown',
       ]);
 
       // Asset schema

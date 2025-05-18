@@ -2,7 +2,7 @@ import 'package:ack/src/constraints/validators.dart';
 
 import 'schemas/schema.dart';
 
-final class Ack {
+class Ack {
   static const string = StringSchema();
 
   static const boolean = BooleanSchema();

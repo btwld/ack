@@ -1,5 +1,3 @@
-library;
-
 export 'src/ack.dart';
 export 'src/annotations.dart';
 export 'src/builder_helpers/schema_registry.dart';

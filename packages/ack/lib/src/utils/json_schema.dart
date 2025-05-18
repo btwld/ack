@@ -53,7 +53,7 @@ class JsonSchemaConverterException implements Exception {
 
   @override
   String toString() {
-    return 'OpenApiConverterException: $message';
+    return 'JsonSchemaConverterException: $message';
   }
 }
 
@@ -153,11 +153,10 @@ JSON _convertObjectSchema(ObjectSchema schema) {
 
 JSON _convertDiscriminatedObjectSchema(DiscriminatedObjectSchema schema) {
   final discriminatorKey = schema.getDiscriminatorKey();
-  final schemaMap = schema.getSchemaMap();
+  final schemas = schema.getSchemas();
 
   // Create the oneOf array with each schema
-  final oneOfSchemas =
-      schemaMap.values.map((schema) => _convertSchema(schema)).toList();
+  final oneOfSchemas = schemas.map((schema) => _convertSchema(schema)).toList();
 
   return {
     'discriminator': {'propertyName': discriminatorKey},
@@ -183,18 +182,12 @@ JSON _convertSchema(AckSchema schema) {
     if (defaultValue != null) 'default': defaultValue,
   };
 
-  switch (schema) {
-    case ObjectSchema o:
-      schemaMap = deepMerge(schemaMap, _convertObjectSchema(o));
-      break;
-    case DiscriminatedObjectSchema d:
-      schemaMap = deepMerge(schemaMap, _convertDiscriminatedObjectSchema(d));
-      break;
-    case ListSchema l:
-      schemaMap = deepMerge(schemaMap, _convertListSchema(l));
-      break;
-    default:
-      break;
+  if (schema is ObjectSchema) {
+    schemaMap = deepMerge(schemaMap, _convertObjectSchema(schema));
+  } else if (schema is DiscriminatedObjectSchema) {
+    schemaMap = deepMerge(schemaMap, _convertDiscriminatedObjectSchema(schema));
+  } else if (schema is ListSchema) {
+    schemaMap = deepMerge(schemaMap, _convertListSchema(schema));
   }
 
   return deepMerge(
@@ -204,23 +197,31 @@ JSON _convertSchema(AckSchema schema) {
 }
 
 String _convertSchemaType(SchemaType type) {
-  return switch (type) {
-    SchemaType.string => 'string',
-    SchemaType.double => 'number',
-    SchemaType.int => 'integer',
-    SchemaType.boolean => 'boolean',
-    SchemaType.list => 'array',
-    SchemaType.object => 'object',
-    SchemaType.discriminatedObject => '',
-    SchemaType.unknown => 'unknown',
-  };
+  switch (type) {
+    case SchemaType.string:
+      return 'string';
+    case SchemaType.double:
+      return 'number';
+    case SchemaType.int:
+      return 'integer';
+    case SchemaType.boolean:
+      return 'boolean';
+    case SchemaType.list:
+      return 'array';
+    case SchemaType.object:
+      return 'object';
+    case SchemaType.discriminatedObject:
+      return '';
+    case SchemaType.unknown:
+      return 'unknown';
+  }
 }
 
 /// Merges the JSON schemas from a list of [Validator<T>].
 ///
 /// This function converts each validator to its schema representation using
-/// [toSchema()] and combines them into a single schema map using [deepMerge].
-/// If a call to [toSchema()] fails, the error is logged and the schema is skipped.
+/// [toJsonSchema()] and combines them into a single schema map using [deepMerge].
+/// If a call to [toJsonSchema()] fails, the error is logged and the schema is skipped.
 ///
 /// [constraints] - The list of OpenAPI constraint validators to merge.
 /// Returns a merged schema map, or an empty map if no valid schemas are provided.

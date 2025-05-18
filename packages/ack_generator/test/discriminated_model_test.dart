@@ -1,5 +1,5 @@
-import 'package:test/test.dart';
 import 'package:ack/ack.dart';
+import 'package:test/test.dart';
 
 // Test that validates discriminated schema patterns for polymorphic models
 void main() {
@@ -204,7 +204,9 @@ void main() {
       };
 
       expect(
-          discriminatedBlockSchema.validate(invalidNestedBlock).isOk, isFalse);
+        discriminatedBlockSchema.validate(invalidNestedBlock).isOk,
+        isFalse,
+      );
     });
   });
 }

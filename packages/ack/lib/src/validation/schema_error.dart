@@ -6,7 +6,12 @@ import '../constraints/validators.dart';
 import '../context.dart';
 import '../schemas/schema.dart';
 
-sealed class SchemaError extends SchemaContext {
+/// Extension to add firstOrNull to Iterable
+extension IterableExtension<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}
+
+abstract class SchemaError extends SchemaContext {
   final String errorKey;
 
   const SchemaError({
@@ -30,7 +35,7 @@ sealed class SchemaError extends SchemaContext {
       '$runtimeType: errorKey: $errorKey, name: $name, schema: ${schema.runtimeType}, value: ${value ?? 'N/A'}';
 }
 
-final class SchemaUnknownError extends SchemaError {
+class SchemaUnknownError extends SchemaError {
   final Object error;
   final StackTrace stackTrace;
   SchemaUnknownError({
@@ -53,7 +58,7 @@ final class SchemaUnknownError extends SchemaError {
   }
 }
 
-final class SchemaConstraintsError extends SchemaError {
+class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
   SchemaConstraintsError({
     required this.constraints,
@@ -97,7 +102,7 @@ final class SchemaConstraintsError extends SchemaError {
   }
 }
 
-final class SchemaNestedError extends SchemaError {
+class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
   SchemaNestedError({required this.errors, required SchemaContext context})
@@ -133,23 +138,26 @@ class SchemaMockError extends SchemaError {
 }
 
 Map<String, Object?> composeSchemaErrorMap(SchemaError error) {
-  final errorMap = switch (error) {
-    SchemaConstraintsError error => {
-        'value': error.value,
-        'errors': error.constraints.map((c) => c.message).toList(),
-      },
-    SchemaNestedError error => {
-        for (final e in error.errors) ...composeSchemaErrorMap(e),
-      },
-    SchemaUnknownError error => {
-        'error': error.error,
-        'stackTrace': error.stackTrace,
-      },
-    _ => {},
-  };
+  Map<String, Object?> errorMap;
+
+  if (error is SchemaConstraintsError) {
+    errorMap = {
+      'value': error.value,
+      'errors': error.constraints.map((c) => c.message).toList(),
+    };
+  } else if (error is SchemaNestedError) {
+    errorMap = {};
+    for (final e in error.errors) {
+      errorMap.addAll(composeSchemaErrorMap(e));
+    }
+  } else if (error is SchemaUnknownError) {
+    errorMap = {'error': error.error, 'stackTrace': error.stackTrace};
+  } else {
+    errorMap = {};
+  }
 
   return {
-    error.name: {
+    error.name: <String, Object?>{
       // 'errorKey': error.errorKey,
       // 'value': error.value,
       ...errorMap,

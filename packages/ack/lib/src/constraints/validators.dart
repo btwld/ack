@@ -6,7 +6,7 @@ import 'package:meta/meta.dart';
 
 import '../schemas/schema.dart';
 
-final class InvalidTypeConstraint extends Constraint<Object>
+class InvalidTypeConstraint extends Constraint<Object>
     with WithConstraintError<Object> {
   /// The expected type of the value.
   final Type expectedType;
@@ -23,7 +23,7 @@ final class InvalidTypeConstraint extends Constraint<Object>
       'Invalid type: (${value.runtimeType}). Expected type: ($expectedType)';
 }
 
-final class NonNullableConstraint extends Constraint<Object>
+class NonNullableConstraint extends Constraint<Object>
     with WithConstraintError<Object?> {
   NonNullableConstraint()
       : super(

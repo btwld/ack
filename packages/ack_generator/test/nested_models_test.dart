@@ -83,39 +83,59 @@ class SlideOptions {
       final generatedContent = String.fromCharCodes(outputAsBytes);
 
       // These assertions verify that our nested model generation works correctly
-      expect(generatedContent,
-          contains('class BlockSchema extends SchemaModel<Block>'));
       expect(
-          generatedContent,
-          contains(
-              'class SectionBlockSchema extends SchemaModel<SectionBlock>'));
-      expect(generatedContent,
-          contains('class ColumnBlockSchema extends SchemaModel<ColumnBlock>'));
-      expect(generatedContent,
-          contains('class SlideSchema extends SchemaModel<Slide>'));
+        generatedContent,
+        contains('class BlockSchema extends SchemaModel<Block>'),
+      );
       expect(
-          generatedContent,
-          contains(
-              'class SlideOptionsSchema extends SchemaModel<SlideOptions>'));
+        generatedContent,
+        contains(
+          'class SectionBlockSchema extends SchemaModel<SectionBlock>',
+        ),
+      );
+      expect(
+        generatedContent,
+        contains('class ColumnBlockSchema extends SchemaModel<ColumnBlock>'),
+      );
+      expect(
+        generatedContent,
+        contains('class SlideSchema extends SchemaModel<Slide>'),
+      );
+      expect(
+        generatedContent,
+        contains(
+          'class SlideOptionsSchema extends SchemaModel<SlideOptions>',
+        ),
+      );
 
       // Verify schema generation for nested types
-      expect(generatedContent, contains("Block toModel()"));
-      expect(generatedContent, contains("SectionBlock toModel()"));
-      expect(generatedContent, contains("ColumnBlock toModel()"));
-      expect(generatedContent, contains("Slide toModel()"));
-      expect(generatedContent, contains("SlideOptions toModel()"));
+      expect(generatedContent, contains('Block toModel()'));
+      expect(generatedContent, contains('SectionBlock toModel()'));
+      expect(generatedContent, contains('ColumnBlock toModel()'));
+      expect(generatedContent, contains('Slide toModel()'));
+      expect(generatedContent, contains('SlideOptions toModel()'));
 
       // Make sure parse methods are generated for all types
-      expect(generatedContent,
-          contains('Block parse(Object? input, {String? debugName})'));
-      expect(generatedContent,
-          contains('SectionBlock parse(Object? input, {String? debugName})'));
-      expect(generatedContent,
-          contains('ColumnBlock parse(Object? input, {String? debugName})'));
-      expect(generatedContent,
-          contains('Slide parse(Object? input, {String? debugName})'));
-      expect(generatedContent,
-          contains('SlideOptions parse(Object? input, {String? debugName})'));
+      expect(
+        generatedContent,
+        contains('Block parse(Object? input, {String? debugName})'),
+      );
+      expect(
+        generatedContent,
+        contains('SectionBlock parse(Object? input, {String? debugName})'),
+      );
+      expect(
+        generatedContent,
+        contains('ColumnBlock parse(Object? input, {String? debugName})'),
+      );
+      expect(
+        generatedContent,
+        contains('Slide parse(Object? input, {String? debugName})'),
+      );
+      expect(
+        generatedContent,
+        contains('SlideOptions parse(Object? input, {String? debugName})'),
+      );
     });
   });
 }

@@ -15,7 +15,7 @@ abstract class Constraint<T extends Object> {
   String toString() => '$runtimeType: $constraintKey: $description';
 }
 
-final class ConstraintError {
+class ConstraintError {
   final Constraint constraint;
 
   final String message;

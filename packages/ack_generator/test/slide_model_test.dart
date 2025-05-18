@@ -1,7 +1,8 @@
-import 'package:test/test.dart';
 import 'package:ack/ack.dart';
-import 'models/slide_model.dart';
+import 'package:test/test.dart';
+
 import 'models/block_model.dart';
+import 'models/slide_model.dart';
 
 // Test for validating nested model structure and schema definitions
 // This ensures the code generator can properly handle complex nested models
@@ -68,11 +69,11 @@ void main() {
         'sections': [
           {
             'columns': [
-              {'content': 'Test content'}
-            ]
-          }
+              {'content': 'Test content'},
+            ],
+          },
         ],
-        'comments': ['Test comment']
+        'comments': ['Test comment'],
       };
 
       // Validate the JSON against the schemas (should work if schemas are defined correctly)
@@ -81,7 +82,7 @@ void main() {
       // Create an invalid JSON to test validation
       final invalidJson = {
         // Missing required 'key' field
-        'sections': []
+        'sections': [],
       };
 
       // This should not validate successfully
