@@ -34,11 +34,6 @@ class BlockSchema extends SchemaModel<Block> {
   // Constructor that validates input
   BlockSchema([Object? value]) : super(value);
 
-  /// Validate the input against the schema
-  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
-    return schema.validate(input, debugName: debugName);
-  }
-
   // Type-safe getters
 
   // Model conversion methods
@@ -119,11 +114,6 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
 
   // Constructor that validates input
   SectionBlockSchema([Object? value]) : super(value);
-
-  /// Validate the input against the schema
-  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
-    return schema.validate(input, debugName: debugName);
-  }
 
   // Type-safe getters
   List<ColumnBlockSchema> get columns {
@@ -216,11 +206,6 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
 
   // Constructor that validates input
   ColumnBlockSchema([Object? value]) : super(value);
-
-  /// Validate the input against the schema
-  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
-    return schema.validate(input, debugName: debugName);
-  }
 
   // Type-safe getters
   String get content => getValue<String>('content')!;

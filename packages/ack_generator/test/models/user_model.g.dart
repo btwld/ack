@@ -42,11 +42,6 @@ class UserSchema extends SchemaModel<User> {
   // Constructor that validates input
   UserSchema([Object? value]) : super(value);
 
-  /// Validate the input against the schema
-  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
-    return schema.validate(input, debugName: debugName);
-  }
-
   // Type-safe getters
   String get email => getValue<String>('email')!;
   String get name => getValue<String>('name')!;
@@ -166,11 +161,6 @@ class AddressSchema extends SchemaModel<Address> {
 
   // Constructor that validates input
   AddressSchema([Object? value]) : super(value);
-
-  /// Validate the input against the schema
-  SchemaResult<MapValue> validate(Object? input, {String? debugName}) {
-    return schema.validate(input, debugName: debugName);
-  }
 
   // Type-safe getters
   String get street => getValue<String>('street')!;
