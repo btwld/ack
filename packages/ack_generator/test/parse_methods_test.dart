@@ -37,11 +37,12 @@ class User {
           'a|lib/user_model.g.dart': decodedMatches(
             allOf([
               contains('class UserSchema extends SchemaModel<User>'),
-              // Check for parse method components
-              contains('User parse(Object? input, {String? debugName})'),
+              // Check for static parse method components
+              contains('static User parse(Object? input, {String? debugName})'),
               contains('Throws an [AckException] if validation fails'),
-              contains('result.isOk ? toModel() : null'),
-              contains('tryParse(Object? input, {String? debugName})'),
+              contains('schema.validate(input, debugName: debugName)'),
+              contains('UserSchema(result.getOrNull()).toModel()'),
+              contains('static User? tryParse(Object? input, {String? debugName})'),
               contains(
                 'Attempts to parse the input and returns a User instance',
               ),

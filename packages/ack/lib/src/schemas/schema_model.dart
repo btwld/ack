@@ -83,29 +83,9 @@ abstract class SchemaModel<T> {
     throw UnimplementedError('Subclasses must implement toModel()');
   }
 
-  /// Parse the input and return a model instance.
-  /// Throws an [AckException] if validation fails.
-  ///
-  /// This is implemented by generated code for each schema type.
-  T parse(Object? input, {String? debugName}) {
-    final schema = getSchema();
-    final result = schema.validate(input, debugName: debugName);
-    if (result.isOk) {
-      return toModel();
-    }
-    throw AckException(result.getError());
-  }
-
-  /// Try to parse the input and return a model instance.
-  /// Returns null if validation fails.
-  ///
-  /// This is implemented by generated code for each schema type.
-  T? tryParse(Object? input, {String? debugName}) {
-    final schema = getSchema();
-    final result = schema.validate(input, debugName: debugName);
-
-    return result.isOk ? toModel() : null;
-  }
+  // NOTE: parse() and tryParse() are now implemented as static methods
+  // on generated schema classes, as per the documented API design.
+  // They are no longer instance methods on the base SchemaModel class.
 
   /// Convert to JSON string
   String toJson() => jsonEncode(_data);

@@ -32,6 +32,7 @@ class SlideSchema extends SchemaModel<Slide> {
     );
     // Register schema dependencies
     SlideOptionsSchema.ensureInitialize();
+    SectionBlockSchema.ensureInitialize();
   }
 
   // Override to return the schema for validation
@@ -65,7 +66,7 @@ class SlideSchema extends SchemaModel<Slide> {
 
     return Slide(
       key: key,
-      options: options.toModel(),
+      options: options?.toModel(),
       sections: sections.map((item) => item.toModel()).toList(),
       comments: comments,
     );
@@ -73,21 +74,19 @@ class SlideSchema extends SchemaModel<Slide> {
 
   /// Parses the input and returns a Slide instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  Slide parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static Slide parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return SlideSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a Slide instance.
   /// Returns null if validation fails.
-  @override
-  Slide? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static Slide? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? SlideSchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance
@@ -99,7 +98,9 @@ class SlideSchema extends SchemaModel<Slide> {
   static Map<String, Object?> toMapFromModel(Slide instance) {
     final Map<String, Object?> result = {
       'key': instance.key,
-      'options': SlideOptionsSchema.toMapFromModel(instance.options),
+      'options': instance.options != null
+          ? SlideOptionsSchema.toMapFromModel(instance.options!)
+          : null,
       'sections': instance.sections
           .map((item) => SectionBlockSchema.toMapFromModel(item))
           .toList(),
@@ -170,21 +171,21 @@ class SlideOptionsSchema extends SchemaModel<SlideOptions> {
 
   /// Parses the input and returns a SlideOptions instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  SlideOptions parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static SlideOptions parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return SlideOptionsSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a SlideOptions instance.
   /// Returns null if validation fails.
-  @override
-  SlideOptions? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static SlideOptions? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk
+        ? SlideOptionsSchema(result.getOrNull()).toModel()
+        : null;
   }
 
   /// Create a schema from a model instance

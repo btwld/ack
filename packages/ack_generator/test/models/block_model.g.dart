@@ -43,26 +43,25 @@ class BlockSchema extends SchemaModel<Block> {
       throw AckException(getErrors()!);
     }
 
-    return Block();
+    throw UnimplementedError(
+        'Cannot instantiate abstract class Block. Use a concrete subclass instead.');
   }
 
   /// Parses the input and returns a Block instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  Block parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static Block parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return BlockSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a Block instance.
   /// Returns null if validation fails.
-  @override
-  Block? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static Block? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? BlockSchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance
@@ -106,6 +105,8 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
     SchemaRegistry.register<SectionBlock, SectionBlockSchema>(
       (data) => SectionBlockSchema(data),
     );
+    // Register schema dependencies
+    ColumnBlockSchema.ensureInitialize();
   }
 
   // Override to return the schema for validation
@@ -136,21 +137,21 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
 
   /// Parses the input and returns a SectionBlock instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  SectionBlock parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static SectionBlock parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return SectionBlockSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a SectionBlock instance.
   /// Returns null if validation fails.
-  @override
-  SectionBlock? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static SectionBlock? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk
+        ? SectionBlockSchema(result.getOrNull()).toModel()
+        : null;
   }
 
   /// Create a schema from a model instance
@@ -224,21 +225,19 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
 
   /// Parses the input and returns a ColumnBlock instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  ColumnBlock parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static ColumnBlock parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return ColumnBlockSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a ColumnBlock instance.
   /// Returns null if validation fails.
-  @override
-  ColumnBlock? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static ColumnBlock? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? ColumnBlockSchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance

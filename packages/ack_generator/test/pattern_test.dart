@@ -1,4 +1,4 @@
-import 'package:ack_generator/src/schema_model_generator.dart';
+import 'package:ack_generator/src/analyzers/constraint_analyzer.dart';
 import 'package:test/test.dart';
 
 void main() {

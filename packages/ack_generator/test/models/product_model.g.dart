@@ -93,21 +93,19 @@ class ProductSchema extends SchemaModel<Product> {
 
   /// Parses the input and returns a Product instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  Product parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static Product parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return ProductSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a Product instance.
   /// Returns null if validation fails.
-  @override
-  Product? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static Product? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? ProductSchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance
@@ -209,21 +207,19 @@ class CategorySchema extends SchemaModel<Category> {
 
   /// Parses the input and returns a Category instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  Category parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static Category parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return CategorySchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a Category instance.
   /// Returns null if validation fails.
-  @override
-  Category? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static Category? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? CategorySchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance

@@ -83,21 +83,19 @@ class UserSchema extends SchemaModel<User> {
 
   /// Parses the input and returns a User instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  User parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static User parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return UserSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a User instance.
   /// Returns null if validation fails.
-  @override
-  User? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static User? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? UserSchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance
@@ -183,21 +181,19 @@ class AddressSchema extends SchemaModel<Address> {
 
   /// Parses the input and returns a Address instance.
   /// Throws an [AckException] if validation fails.
-  @override
-  Address parse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
+  static Address parse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
     if (result.isOk) {
-      return toModel();
+      return AddressSchema(result.getOrNull()).toModel();
     }
     throw AckException(result.getError()!);
   }
 
   /// Attempts to parse the input and returns a Address instance.
   /// Returns null if validation fails.
-  @override
-  Address? tryParse(Object? input, {String? debugName}) {
-    final result = validate(input, debugName: debugName);
-    return result.isOk ? toModel() : null;
+  static Address? tryParse(Object? input, {String? debugName}) {
+    final result = schema.validate(input, debugName: debugName);
+    return result.isOk ? AddressSchema(result.getOrNull()).toModel() : null;
   }
 
   /// Create a schema from a model instance
