@@ -285,10 +285,59 @@ Ack provides a wide range of validation annotations for your model properties:
 
 ### Common Validation
 
-- `@Nullable()`: Field is allowed to be null
-- `@Required()`: Field is required (useful for nullable types that must be provided)
+- `@Nullable()`: Override annotation - makes a non-nullable field accept null values in validation
+- `@Required()`: Override annotation - makes an optional constructor parameter required in validation
 - `@DefaultValue(value)`: Default value if the field is not provided
 - `@Description(text)`: Description for documentation
+
+**Automatic Inference**: With Ack's enhanced automatic inference, `@Required()` and `@Nullable()` annotations are rarely needed. The generator automatically determines:
+
+- **Required status** from constructor parameters: `required this.field` → field is required
+- **Nullable status** from field types: `String?` → field is nullable
+
+Use override annotations only when you need to override the automatic inference behavior.
+
+#### Automatic Inference Examples
+
+```dart
+@Schema()
+class User {
+  // ✅ Automatic inference - no annotations needed
+  final String name;        // Non-nullable field
+  final String? email;      // Nullable field
+  final int age;           // Non-nullable field
+
+  User({
+    required this.name,    // → Automatically inferred as required
+    this.email,           // → Automatically inferred as optional
+    required this.age,    // → Automatically inferred as required
+  });
+}
+
+// Generated schema automatically creates:
+// required: ['name', 'age']  // From constructor parameters
+// 'email': Ack.string.nullable()  // From String? type
+```
+
+#### Override Annotation Examples
+
+```dart
+@Schema()
+class AdvancedUser {
+  // Override: Make optional constructor param required in validation
+  @Required()
+  final String? nickname;   // Optional in constructor, required in validation
+
+  // Override: Make non-nullable field accept null in validation
+  @Nullable()
+  final String internalId; // Non-nullable type, but validation allows null
+
+  AdvancedUser({
+    this.nickname,         // Optional in constructor
+    required this.internalId, // Required in constructor
+  });
+}
+```
 
 ## Manual Implementation (Advanced)
 

@@ -1,21 +1,9 @@
-import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 
 import '../models/property_info.dart';
 import 'constraint_analyzer.dart';
 import 'type_analyzer.dart';
-
-/// Information about a parameter's required and nullable status
-class ParameterInfo {
-  final bool isRequired;
-  final bool isNullable;
-
-  const ParameterInfo({
-    required this.isRequired,
-    required this.isNullable,
-  });
-}
 
 /// Analyzes properties and extracts property information
 class PropertyAnalyzer {
@@ -31,59 +19,35 @@ class PropertyAnalyzer {
         fieldType.nullabilitySuffix == NullabilitySuffix.question;
     final typeName = TypeAnalyzer.getTypeName(fieldType);
 
-    // Create initial property info
+    // Find matching constructor parameter for enhanced inference
+    final matchingParam =
+        constructorParam ?? _findMatchingParameter(field, constructor);
+
+    // Determine required status from constructor parameter
+    final isRequired = _inferRequired(field, matchingParam);
+
+    // Determine nullable status from field type and parameter
+    final isNullable = _inferNullable(field, matchingParam, isNullableField);
+
+    // Create property info
     PropertyInfo property = PropertyInfo(
       name: field.name,
       typeName: typeName,
-      isNullable: isNullableField,
-      isRequired: false,
+      isRequired: isRequired,
+      isNullable: isNullable,
       constraints: [],
     );
-
-    // Analyze constructor parameter relationship
-    if (constructor != null) {
-      final parameterInfo = _analyzeParameterFieldRelationship(
-        field,
-        constructor,
-        constructorParam,
-      );
-
-      if (parameterInfo != null) {
-        property.isRequired = parameterInfo.isRequired;
-
-        // If field is not nullable but constructor param is, prefer the field
-        if (!isNullableField && parameterInfo.isNullable) {
-          property.isNullable = false;
-        } else if (isNullableField && !parameterInfo.isNullable) {
-          // Field is nullable but parameter is not - keep field nullability
-          property.isNullable = true;
-        } else {
-          property.isNullable = parameterInfo.isNullable;
-        }
-      }
-    } else if (constructorParam != null) {
-      // Fallback to simple parameter analysis
-      property.isRequired = constructorParam.isRequired;
-
-      if (!isNullableField &&
-          constructorParam.type.nullabilitySuffix ==
-              NullabilitySuffix.question) {
-        property.isNullable = false;
-      }
-    }
 
     // Extract constraint annotations from field
     final constraints =
         ConstraintAnalyzer.extractAllConstraints(field.metadata);
     property.constraints.addAll(constraints);
 
-    // Apply constraint effects on required/nullable status
+    // Apply constraint effects on required/nullable status (annotations override inference)
     for (final constraint in constraints) {
       if (ConstraintAnalyzer.isRequiredConstraint(constraint)) {
         property.isRequired = true;
-      } else if (ConstraintAnalyzer.isNullableConstraint(
-        constraint,
-      )) {
+      } else if (ConstraintAnalyzer.isNullableConstraint(constraint)) {
         property.isNullable = true;
       }
     }
@@ -91,122 +55,66 @@ class PropertyAnalyzer {
     return property;
   }
 
-  /// Analyze the relationship between a field and constructor parameters
-  /// Handles direct parameter mapping, initializer lists, and constructor body assignments
-  static ParameterInfo? _analyzeParameterFieldRelationship(
+  /// Find matching constructor parameter for a field using element-based analysis
+  static ParameterElement? _findMatchingParameter(
     FieldElement field,
-    ConstructorElement constructor,
-    ParameterElement? directParam,
+    ConstructorElement? constructor,
   ) {
-    final fieldName = field.name;
+    if (constructor == null) return null;
 
-    // Case 1: Direct parameter mapping (required this.field)
-    if (directParam != null) {
-      return ParameterInfo(
-        isRequired: directParam.isRequired,
-        isNullable:
-            directParam.type.nullabilitySuffix == NullabilitySuffix.question,
-      );
-    }
-
-    // Case 2 & 3: Initializer list or constructor body assignments
-    // We need to analyze the constructor's AST to find parameter assignments
-    final constructorNode = constructor.declaration;
-    if (constructorNode is ConstructorDeclaration) {
-      // Check initializer list first
-      final initializerParam = _findParameterInInitializers(
-        constructorNode,
-        fieldName,
-      );
-      if (initializerParam != null) {
-        final param = _findParameterByName(constructor, initializerParam);
-        if (param != null) {
-          return ParameterInfo(
-            isRequired: param.isRequired,
-            isNullable:
-                param.type.nullabilitySuffix == NullabilitySuffix.question,
-          );
-        }
-      }
-
-      // Check constructor body assignments
-      final bodyParam = _findParameterInConstructorBody(
-        constructorNode,
-        fieldName,
-      );
-      if (bodyParam != null) {
-        final param = _findParameterByName(constructor, bodyParam);
-        if (param != null) {
-          return ParameterInfo(
-            isRequired: param.isRequired,
-            isNullable:
-                param.type.nullabilitySuffix == NullabilitySuffix.question,
-          );
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /// Find parameter name used in initializer list for a specific field
-  static String? _findParameterInInitializers(
-    ConstructorDeclaration constructor,
-    String fieldName,
-  ) {
-    for (final initializer in constructor.initializers) {
-      if (initializer is ConstructorFieldInitializer) {
-        if (initializer.fieldName.name == fieldName) {
-          // Extract parameter name from the assignment expression
-          final expression = initializer.expression;
-          if (expression is SimpleIdentifier) {
-            return expression.name;
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  /// Find parameter name used in constructor body for a specific field
-  static String? _findParameterInConstructorBody(
-    ConstructorDeclaration constructor,
-    String fieldName,
-  ) {
-    final body = constructor.body;
-    if (body is BlockFunctionBody) {
-      for (final statement in body.block.statements) {
-        if (statement is ExpressionStatement) {
-          final expression = statement.expression;
-          if (expression is AssignmentExpression) {
-            final leftSide = expression.leftHandSide;
-            final rightSide = expression.rightHandSide;
-
-            // Check if this is an assignment to our field
-            if (leftSide is SimpleIdentifier && leftSide.name == fieldName) {
-              // Extract parameter name from right side
-              if (rightSide is SimpleIdentifier) {
-                return rightSide.name;
-              }
-            }
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  /// Find a parameter element by name in the constructor
-  static ParameterElement? _findParameterByName(
-    ConstructorElement constructor,
-    String parameterName,
-  ) {
+    // Direct match by name (handles: required this.field, this.field)
     for (final param in constructor.parameters) {
-      if (param.name == parameterName) {
+      if (param.name == field.name) {
         return param;
       }
     }
+
     return null;
+  }
+
+  /// Infer required status from constructor parameter and annotations
+  static bool _inferRequired(
+    FieldElement field,
+    ParameterElement? matchingParam,
+  ) {
+    // Check for explicit @IsRequired annotation first
+    final hasRequiredAnnotation = field.metadata.any((annotation) {
+      final name = annotation.element?.displayName;
+      return name == 'IsRequired' || name == 'Required';
+    });
+
+    if (hasRequiredAnnotation) {
+      return true;
+    }
+
+    // Infer from constructor parameter
+    return matchingParam?.isRequired ?? false;
+  }
+
+  /// Infer nullable status from field type, constructor parameter, and annotations
+  static bool _inferNullable(
+    FieldElement field,
+    ParameterElement? matchingParam,
+    bool isNullableField,
+  ) {
+    // Check for explicit @IsNullable annotation first
+    final hasNullableAnnotation = field.metadata.any((annotation) {
+      final name = annotation.element?.displayName;
+      return name == 'IsNullable' || name == 'Nullable';
+    });
+
+    if (hasNullableAnnotation) {
+      return true;
+    }
+
+    // Field type takes precedence (String? is always nullable)
+    if (isNullableField) {
+      return true;
+    }
+
+    // If field is non-nullable but parameter is nullable, keep field non-nullable
+    // This handles cases like: final String name; User({String? userName}) : name = userName ?? '';
+    return false;
   }
 
   /// Analyze a constructor parameter and create property information

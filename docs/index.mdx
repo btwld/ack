@@ -77,19 +77,24 @@ Turn any Dart class into a validating schema with annotations:
 import 'package:ack_generator/ack_generator.dart';
 import 'dart:convert';
 
-// Define a model with validation
+// Define a model with validation and automatic inference
 @Schema()
 class User {
-  @MinLength(2)
-  final String name;
+  @MinLength(2)                    // Validation rule
+  final String name;               // Non-nullable, required from constructor
 
-  @IsEmail()
-  final String email;
+  @IsEmail()                       // Validation rule
+  final String email;              // Non-nullable, required from constructor
 
-  @Min(18)
-  final int age;
+  @Min(18)                         // Validation rule
+  final int age;                   // Non-nullable, required from constructor
 
-  User({required this.name, required this.email, required this.age});
+  // Constructor parameters automatically determine required/optional status
+  User({
+    required this.name,            // → Automatically inferred as required
+    required this.email,           // → Automatically inferred as required
+    required this.age,             // → Automatically inferred as required
+  });
 }
 
 // Dynamic payload from API, form, etc.
@@ -99,6 +104,8 @@ final Map<String, dynamic> payload = {
   'age': 30
 };
 ```
+
+**Automatic Inference**: Ack automatically determines which fields are required or optional based on your constructor parameters (`required this.field` vs `this.field`) and field types (`String` vs `String?`). No need for redundant `@Required` or `@Nullable` annotations in most cases!
 
 Generated schemas provide three main capabilities:
 

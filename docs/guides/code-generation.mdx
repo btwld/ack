@@ -50,25 +50,25 @@ import 'package:ack_generator/ack_generator.dart';
   additionalPropertiesField: 'metadata',
 )
 class User {
-  // Property Annotations define validation rules
-  @IsEmail()
-  final String email;
+  // ✅ Automatic inference with validation annotations
+  @IsEmail()                    // Validation rule
+  final String email;           // Non-nullable, required from constructor
 
   @MinLength(3)
-  @MaxLength(50)
-  final String name;
+  @MaxLength(50)               // Validation rules
+  final String name;           // Non-nullable, required from constructor
 
-  @Min(13) // Must be 13 or older
-  final int? age; // Nullable type, validation applies if value is present
+  @Min(13)                     // Validation rule: Must be 13 or older
+  final int? age;              // Nullable type, optional from constructor
 
   // Field to hold additional properties (must match additionalPropertiesField)
   final Map<String, dynamic> metadata;
 
-  // Standard Dart constructor
+  // Constructor parameters automatically determine required/optional status
   User({
-    required this.email,
-    required this.name,
-    this.age,
+    required this.email,       // → Automatically inferred as required
+    required this.name,        // → Automatically inferred as required
+    this.age,                 // → Automatically inferred as optional (nullable)
     Map<String, dynamic>? metadata,
   }) : metadata = metadata ?? {};
 }
@@ -255,9 +255,14 @@ Refer to the annotations provided by the `ack_generator` package. These generall
 
 **Common:**
 
--   `@Required()`: Makes a nullable property mandatory.
--   `@Nullable()`: Explicitly marks a property as nullable (often redundant if the Dart type is already nullable, but can improve clarity).
+-   `@Required()`: Override annotation - makes an optional constructor parameter required in validation (rarely needed with automatic inference).
+-   `@Nullable()`: Override annotation - makes a non-nullable field accept null values in validation (rarely needed with automatic inference).
 -   `@Description('...')`: Adds a description to the property in generated schemas/docs.
+
+**Automatic Inference**: The generator automatically determines required/nullable status from your constructor and field types:
+- Use `required this.field` in constructors for required fields
+- Use `String?` field types for nullable fields
+- Override annotations are only needed in special cases where you want to override the automatic behavior
 
 **String:**
 
@@ -298,11 +303,26 @@ import 'package:ack_generator/ack_generator.dart';
 
 @Schema()
 class Address {
-  @Required() // Example: street is required even if type is String?
+  // ✅ Automatic inference example: clean constructor-based approach
+  final String street;     // Non-nullable, required in constructor
+  final String city;       // Non-nullable, required in constructor
+  final String? zipCode;   // Nullable, optional in constructor
+
+  Address({
+    required this.street,  // → Automatically inferred as required
+    required this.city,    // → Automatically inferred as required
+    this.zipCode,         // → Automatically inferred as optional
+  });
+}
+
+// Alternative: Override annotation example (when you need special behavior)
+@Schema()
+class FlexibleAddress {
+  @Required() // Override: street is required in validation despite being optional in constructor
   final String? street;
   final String city;
 
-  Address({this.street, required this.city});
+  FlexibleAddress({this.street, required this.city});
 }
 
 // file: user.dart (updated)
