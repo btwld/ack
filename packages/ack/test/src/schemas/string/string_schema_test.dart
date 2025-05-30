@@ -305,7 +305,7 @@ void main() {
       });
 
       test('schema validation works with datetime validator', () {
-        final schema = StringSchema().isDateTime();
+        final schema = StringSchema().dateTime();
         expect(schema.validate('2023-01-01T00:00:00.000Z').isOk, isTrue);
 
         final result = schema.validate('not-a-date');
@@ -337,7 +337,7 @@ void main() {
       });
 
       test('schema validation works with date validator', () {
-        final schema = StringSchema().isDate();
+        final schema = StringSchema().date();
         expect(schema.validate('2023-01-01').isOk, isTrue);
 
         final result = schema.validate('not-a-date');

@@ -46,6 +46,17 @@ class TextBlock extends SealedBlock {
     super.scrollable,
     required this.content,
   }) : super(type: 'text');
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'content': content,
+      if (align != null) 'align': align,
+      if (flex != null) 'flex': flex,
+      if (scrollable != null) 'scrollable': scrollable,
+    };
+  }
 }
 
 /// Image block with image source
@@ -74,6 +85,20 @@ class ImageBlock extends SealedBlock {
     this.height,
     this.fit,
   }) : super(type: 'image');
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'src': src,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (fit != null) 'fit': fit,
+      if (align != null) 'align': align,
+      if (flex != null) 'flex': flex,
+      if (scrollable != null) 'scrollable': scrollable,
+    };
+  }
 }
 
 /// Widget block with custom properties
@@ -97,4 +122,16 @@ class WidgetBlock extends SealedBlock {
     required this.name,
     this.properties = const {},
   }) : super(type: 'widget');
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'name': name,
+      ...properties,
+      if (align != null) 'align': align,
+      if (flex != null) 'flex': flex,
+      if (scrollable != null) 'scrollable': scrollable,
+    };
+  }
 }

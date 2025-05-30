@@ -99,7 +99,7 @@ The generated `{ModelName}Schema` class (e.g., `UserSchema`) provides the primar
 The generated schema class typically includes:
 
 -   A static `schema` getter (`UserSchema.schema`) representing the `AckSchema` instance.
--   A static `fromModel()` method (`UserSchema.fromModel(userInstance)`) to create a schema instance from your model instance.
+
 -   An instance method `toModel()` to convert the schema instance back to your model class.
 -   An instance method `toMap()` (or `toJson()`) for serialization.
 -   Automatic validation in the constructor.
@@ -208,7 +208,7 @@ This makes it easy to generate API documentation or validate requests and respon
 
 ### Converting Model to Schema Instance
 
-To go the other way (from your model instance to a schema instance), use the static `fromModel` method.
+To convert from your model instance to a schema instance, use the model's `toMap()` method.
 
 ```dart
 // Create an instance of your model
@@ -219,8 +219,11 @@ final userModelInstance = User(
   metadata: {'status': 'active'},
 );
 
-// Convert the model instance to a schema instance
-final userSchemaInstance = UserSchema.fromModel(userModelInstance);
+// Convert the model to map data using toMap()
+final userData = userModelInstance.toMap();
+
+// Create schema instance from the map data
+final userSchemaInstance = UserSchema(userData);
 print('Converted model to schema instance.');
 ```
 
@@ -259,24 +262,21 @@ Refer to the annotations provided by the `ack_generator` package. These generall
 **String:**
 
 -   `@IsEmail()`
--   `@IsUrl()`
--   `@IsDate()`
--   `@IsDateTime()`
 -   `@MinLength(int)`
 -   `@MaxLength(int)`
--   `@Length(int)`
--   `@Matches(String)`
--   `@Contains(String)`
+-   `@Pattern(String)` - Regex pattern validation
 -   `@IsNotEmpty()`
 -   `@EnumValues(List<String>)`
+-   `@IsDate()` - Date format validation (YYYY-MM-DD)
+-   `@IsDateTime()` - Date-time format validation (ISO 8601)
 
 **Number (Int/Double):**
 
 -   `@Min(num)`
 -   `@Max(num)`
--   `@Positive()`
--   `@Negative()`
 -   `@MultipleOf(num)`
+-   `@IsPositive()` - Must be greater than 0
+-   `@IsNegative()` - Must be less than 0
 
 **List:**
 

@@ -41,7 +41,7 @@ import 'package:ack/ack.dart';
 final schema = Ack.string
   .minLength(5)
   .maxLength(10)
-  .isNotEmpty()
+  .notEmpty()
   .nullable(); // Accepts null
 
 final result = schema.validate('hello');
@@ -272,7 +272,7 @@ This approach gives you fine-grained control over error handling and access to t
 // Schema for a user object with validation rules
 final userSchema = Ack.object({
   'name': Ack.string.minLength(2),
-  'email': Ack.string.isEmail()
+  'email': Ack.string.email()
 }, required: ['name', 'email']);
 
 // Validate user data
@@ -508,7 +508,7 @@ class UserSchema extends SchemaModel<User> {
   AckSchema getSchema() {
     return Ack.object({
       'name': Ack.string.minLength(2),
-      'email': Ack.string.isEmail(),
+      'email': Ack.string.email(),
       'age': Ack.int.min(0).nullable(),
     }, required: ['name', 'email']);
   }

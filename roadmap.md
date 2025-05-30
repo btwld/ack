@@ -72,7 +72,7 @@ This document outlines planned features and improvements for future versions of 
     }
     ```
   - Use cases:
-    - Trimming whitespace: `Ack.string.preprocess((value) => value.trim()).isEmail()`
+    - Trimming whitespace: `Ack.string.preprocess((value) => value.trim()).email()`
     - Normalizing case: `Ack.string.preprocess((value) => value.toLowerCase())`
     - Format conversion: `Ack.string.preprocess((value) => value.replaceAll('-', ''))`
 

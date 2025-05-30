@@ -17,8 +17,8 @@ import 'dart:convert';
 final userSchema = Ack.object({
   'id': Ack.int.positive().description('Unique user identifier'),
   'name': Ack.string.minLength(2).maxLength(50).description('User\'s full name'),
-  'email': Ack.string.isEmail().description('User\'s email address'),
-  'role': Ack.string.isEnum(['admin', 'user', 'guest']).defaultValue('user'),
+  'email': Ack.string.email().description('User\'s email address'),
+  'role': Ack.string.enumValues(['admin', 'user', 'guest']).defaultValue('user'),
   'isActive': Ack.boolean.defaultValue(true),
   'tags': Ack.list(Ack.string).uniqueItems().description('List of user tags').nullable(),
   'age': Ack.int.min(0).max(120).nullable().description('User\'s age'),
@@ -110,11 +110,11 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`minLength(n)`](../core-concepts/validation.mdx#minlengthint-min)           | `minLength: n`           | String                                 |
 | [`maxLength(n)`](../core-concepts/validation.mdx#maxlengthint-max)           | `maxLength: n`           | String                                 |
 | [`pattern(p)`](../core-concepts/validation.mdx#patternstring-pattern--string-patternname-string-example)             | `pattern: p`             | String                                 |
-| [`isEmail()`](../core-concepts/validation.mdx#isemail)              | `format: email`          | String                                 |
+| [`email()`](../core-concepts/validation.mdx#email)              | `format: email`          | String                                 |
 | [`isUrl()`](../core-concepts/validation.mdx#isurl)                | `format: url`            | String (Note: format is informational) |
-| [`isDate()`](../core-concepts/validation.mdx#isdate)               | `format: date`           | String                                 |
-| [`isDateTime()`](../core-concepts/validation.mdx#isdatetime)           | `format: date-time`      | String                                 |
-| [`isEnum([...])`](../core-concepts/validation.mdx#isenumliststring-allowedvalues)          | `enum: [...]`            | String                                 |
+| [`date()`](../core-concepts/validation.mdx#date)               | `format: date`           | String                                 |
+| [`dateTime()`](../core-concepts/validation.mdx#datetime)           | `format: date-time`      | String                                 |
+| [`enumValues([...])`](../core-concepts/validation.mdx#enumvalues)          | `enum: [...]`            | String                                 |
 | [`min(n)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false)                 | `minimum: n`             | Number (Int/Double)                    |
 | [`max(n)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false)                 | `maximum: n`             | Number (Int/Double)                    |
 | [`min(n, exclusive:true)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false) | `minimum: n`, `exclusiveMinimum: true` | Number |

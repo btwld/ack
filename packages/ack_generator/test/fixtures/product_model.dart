@@ -1,5 +1,8 @@
 import 'package:ack/ack.dart';
 
+// Using generated code
+part 'product_model.g.dart';
+
 /// A product with validation
 @Schema(
   description: 'A product model with validation',

@@ -15,6 +15,11 @@ void main() {
           'id': 'category-1',
           'name': 'Test Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 50,
+        'status': 'published',
+        'productCode': 'PRD-1111',
       };
 
       // Create schema with valid data

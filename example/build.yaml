@@ -1,7 +1,3 @@
-targets:
-  $default:
-    builders:
-      ack_generator|ack_schema:
-        enabled: true
-        generate_for:
-          - lib/*.dart 
+# Build configuration for ack_generator
+# The ack_generator builder is configured with auto_apply: dependents
+# so it will automatically run on all Dart files with @Schema annotations

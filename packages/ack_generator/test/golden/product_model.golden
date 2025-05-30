@@ -23,31 +23,13 @@ class ProductSchema extends SchemaModel<Product> {
     return Ack.object(
       {
         'id': Ack.string.notEmpty(),
-        'name': Ack.string.notEmpty().minLength(3).maxLength(100),
-        'description': Ack.string.notEmpty().maxLength(500),
-        'price': Ack.double.min(0.01).max(999999.99),
-        'contactEmail': Ack.string.email().nullable(),
+        'name': Ack.string.notEmpty(),
+        'description': Ack.string.notEmpty(),
+        'price': Ack.double,
         'imageUrl': Ack.string.nullable(),
         'category': CategorySchema.schema,
-        'releaseDate': Ack.string.date(),
-        'createdAt': Ack.string.dateTime(),
-        'updatedAt': Ack.string.dateTime().nullable(),
-        'stockQuantity': Ack.int.positive(),
-        'status': Ack.string.enumValues(['draft', 'published', 'archived']),
-        'productCode': Ack.string.matches('^[A-Z]{2,3}-\\d{4}\$'),
       },
-      required: [
-        'id',
-        'name',
-        'description',
-        'price',
-        'category',
-        'releaseDate',
-        'createdAt',
-        'stockQuantity',
-        'status',
-        'productCode'
-      ],
+      required: ['id', 'name', 'description', 'price', 'category'],
       additionalProperties: true,
     );
   }
@@ -88,11 +70,6 @@ class ProductSchema extends SchemaModel<Product> {
   }
 
 // Type-safe getters
-  String? get contactEmail {
-    return getValue<String>('contactEmail');
-  }
-
-// Type-safe getters
   String? get imageUrl {
     return getValue<String>('imageUrl');
   }
@@ -100,36 +77,6 @@ class ProductSchema extends SchemaModel<Product> {
 // Type-safe getters
   CategorySchema get category {
     return CategorySchema(getValue<Map<String, dynamic>>('category')!);
-  }
-
-// Type-safe getters
-  String get releaseDate {
-    return getValue<String>('releaseDate')!;
-  }
-
-// Type-safe getters
-  String get createdAt {
-    return getValue<String>('createdAt')!;
-  }
-
-// Type-safe getters
-  String? get updatedAt {
-    return getValue<String>('updatedAt');
-  }
-
-// Type-safe getters
-  int get stockQuantity {
-    return getValue<int>('stockQuantity')!;
-  }
-
-// Type-safe getters
-  String get status {
-    return getValue<String>('status')!;
-  }
-
-// Type-safe getters
-  String get productCode {
-    return getValue<String>('productCode')!;
   }
 
 // Get metadata with fallback
@@ -140,15 +87,8 @@ class ProductSchema extends SchemaModel<Product> {
       'name',
       'description',
       'price',
-      'contactEmail',
       'imageUrl',
-      'category',
-      'releaseDate',
-      'createdAt',
-      'updatedAt',
-      'stockQuantity',
-      'status',
-      'productCode'
+      'category'
     ];
 
     for (final key in toMap().keys) {
@@ -170,15 +110,8 @@ class ProductSchema extends SchemaModel<Product> {
       name: name,
       description: description,
       price: price,
-      contactEmail: contactEmail,
       imageUrl: imageUrl,
       category: category.toModel(),
-      releaseDate: releaseDate,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-      stockQuantity: stockQuantity,
-      status: status,
-      productCode: productCode,
       metadata: metadata,
     );
   }

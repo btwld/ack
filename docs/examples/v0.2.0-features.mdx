@@ -38,7 +38,7 @@ final roleSchema = Ack.enumValues(UserRole.values);
 final userSchema = Ack.object(
   {
     'username': Ack.string.minLength(3).maxLength(20),
-    'email': Ack.string.isEmail(),
+    'email': Ack.string.email(),
     'age': Ack.int.min(18).max(120).nullable(),
     'isActive': Ack.boolean.defaultValue(true),
     'roles': Ack.list(roleSchema),
@@ -264,8 +264,8 @@ void main() {
     print('Theme Preference: ${user.metadata['preferences']['theme']}');
   }
 
-  // 5. Convert model to schema
-  final newUser = User(
+  // 5. Convert model to schema (using toMap() method)
+  final userModelInstance = User(
     username: 'jane_smith',
     email: 'jane@example.com',
     age: 28,
@@ -282,12 +282,12 @@ void main() {
     }
   );
 
-  // Create schema from model
-  final newUserSchema = UserSchema.fromModel(newUser);
+  // Create schema from model data using toMap()
+  final userMap = userModelInstance.toMap();
+  final userSchemaInstance = UserSchema(userMap);
 
-  // Convert to Map/JSON
-  final userMap = newUserSchema.toMap();
-  final userJson = jsonEncode(userMap);
+  // Convert to JSON
+  final userJson = jsonEncode(userSchemaInstance.toMap());
   print('User JSON: $userJson');
 
   // 6. Generate JSON Schema
@@ -299,13 +299,13 @@ void main() {
 
 ## String Validation Improvements
 
-### New `matches()` Method
+### `matches()` Method for Full Pattern Validation
 
-The `matches()` method validates if a string matches a full pattern (anchored with ^ and $).
+The `matches()` method validates that a string fully matches a pattern (automatically anchored with ^ and $).
 
 ```dart
 // Define a schema with pattern validation
-final usernameSchema = Ack.string.matches(r'^[a-z0-9_]{3,16}$');
+final usernameSchema = Ack.string.matches(r'[a-z0-9_]{3,16}');
 
 // Validate strings
 print(usernameSchema.validate('user_123').isOk); // true
@@ -316,13 +316,25 @@ print(usernameSchema.validate('user_123!').isOk); // false - contains !
 // Password validation with complex pattern
 final passwordSchema = Ack.string
   .minLength(8)
-  .matches(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$');
+  .matches(r'(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+');
 
 // Validate passwords
 print(passwordSchema.validate('Abcd123!').isOk); // true - meets all requirements
 print(passwordSchema.validate('abcd123!').isOk); // false - no uppercase letter
 print(passwordSchema.validate('ABCD123!').isOk); // false - no lowercase letter
 print(passwordSchema.validate('Abcdefgh').isOk); // false - no special character
+```
+
+### `contains()` Method for Partial Pattern Matching
+
+The `contains()` method validates that a string contains a pattern anywhere within it.
+
+```dart
+// Password must contain at least one uppercase letter
+final passwordSchema = Ack.string.contains(r'[A-Z]');
+
+print(passwordSchema.validate('Password123').isOk); // true - contains uppercase
+print(passwordSchema.validate('password123').isOk); // false - no uppercase
 ```
 
 ### Combining String Validations
@@ -332,8 +344,8 @@ You can combine multiple string validations for more complex requirements:
 ```dart
 // Email validation with domain restriction
 final workEmailSchema = Ack.string
-  .isEmail()
-  .matches(r'^.+@company\.com$');
+  .email()
+  .contains(r'@company\.com');
 
 print(workEmailSchema.validate('user@company.com').isOk); // true
 print(workEmailSchema.validate('user@gmail.com').isOk); // false - wrong domain
@@ -342,7 +354,7 @@ print(workEmailSchema.validate('user@gmail.com').isOk); // false - wrong domain
 final usernameSchema = Ack.string
   .minLength(3)
   .maxLength(20)
-  .matches(r'^[a-z][a-z0-9_]*$'); // Must start with letter, then letters, numbers, underscores
+  .matches(r'[a-z][a-z0-9_]*'); // Must start with letter, then letters, numbers, underscores
 
 print(usernameSchema.validate('user123').isOk); // true
 print(usernameSchema.validate('123user').isOk); // false - starts with number
@@ -412,7 +424,7 @@ import 'package:ack/json_schema.dart';
 final userSchema = Ack.object(
   {
     'username': Ack.string.minLength(3).maxLength(20),
-    'email': Ack.string.isEmail(),
+    'email': Ack.string.email(),
     'age': Ack.int.min(18).nullable(),
   },
   required: [

@@ -1,5 +1,7 @@
-import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/type.dart';
+
+import '../models/type_name.dart';
 
 /// Analyzes Dart types and provides utilities for type information
 class TypeAnalyzer {
@@ -22,7 +24,8 @@ class TypeAnalyzer {
     if (type is InterfaceType) {
       return type.element.name;
     }
-    return type.getDisplayString();
+    // Use toString() as a fallback to avoid deprecated parameter issues
+    return type.toString();
   }
 
   /// Get a string representation of a type
@@ -93,36 +96,5 @@ class TypeAnalyzer {
     }
     // For custom types, reference their schema
     return '${typeStr}Schema.schema';
-  }
-}
-
-/// Type name with type arguments
-class TypeName {
-  final String name;
-  final List<TypeName> typeArguments;
-
-  const TypeName(this.name, this.typeArguments);
-
-  @override
-  String toString() => TypeAnalyzer.getTypeString(this);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TypeName &&
-          runtimeType == other.runtimeType &&
-          name == other.name &&
-          typeArguments.length == other.typeArguments.length &&
-          _listEquals(typeArguments, other.typeArguments);
-
-  @override
-  int get hashCode => name.hashCode ^ typeArguments.hashCode;
-
-  bool _listEquals<T>(List<T> a, List<T> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 }

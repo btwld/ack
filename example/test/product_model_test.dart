@@ -17,10 +17,16 @@ void main() {
         'name': 'Test Product',
         'description': 'A test product',
         'price': 19.99,
+        'contactEmail': 'test@example.com',
         'category': {
           'id': 'cat1',
           'name': 'Test Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 100,
+        'status': 'published',
+        'productCode': 'ABC-1234',
       };
 
       // Create schema with the data
@@ -44,26 +50,20 @@ void main() {
       expect(categoryData['id'], equals('cat1'));
       expect(categoryData['name'], equals('Test Category'));
 
-      // Skip model conversion which is causing issues
-      // Instead manually create a Product to verify the data works
-      final product = Product(
-        id: schema.id,
-        name: schema.name,
-        description: schema.description,
-        price: schema.price,
-        imageUrl: schema.imageUrl,
-        category: Category(
-          id: categoryData['id'] as String,
-          name: categoryData['name'] as String,
-        ),
-      );
+      // Use the generated toModel() method instead of manual constructor
+      final product = schema.toModel();
 
       // Verify the product was created correctly
       expect(product.id, equals('123'));
       expect(product.name, equals('Test Product'));
       expect(product.description, equals('A test product'));
       expect(product.price, equals(19.99));
-      expect(product.imageUrl, isNull);
+      expect(product.contactEmail, equals('test@example.com'));
+      expect(product.releaseDate, equals('2024-01-15'));
+      expect(product.createdAt, equals('2024-01-15T10:30:00Z'));
+      expect(product.stockQuantity, equals(100));
+      expect(product.status, equals('published'));
+      expect(product.productCode, equals('ABC-1234'));
       expect(product.category.id, equals('cat1'));
       expect(product.category.name, equals('Test Category'));
     });
@@ -98,6 +98,11 @@ void main() {
           'id': 'cat2',
           'name': 'Transform Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 25,
+        'status': 'published',
+        'productCode': 'TRN-4567',
       };
 
       // Create schema with the data
@@ -126,6 +131,11 @@ void main() {
           'id': 'cat2',
           'name': 'Transform Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 15,
+        'status': 'draft',
+        'productCode': 'DIR-8901',
       };
 
       print('ProductSchema type: $ProductSchema');
@@ -190,14 +200,21 @@ void main() {
       Type staticTypeParam = TypeHelper.getTypeParam<Product>();
       print('Static generic method - Product: $staticTypeParam');
 
-      // Check what happens with runtime types
-      dynamic productInstance = Product(
-        id: '789',
-        name: 'Type Test',
-        description: 'Testing type parameters',
-        price: 99.99,
-        category: Category(id: 'cat9', name: 'Type Tests'),
-      );
+      // Check what happens with runtime types using schema
+      final testData = {
+        'id': '789',
+        'name': 'Type Test',
+        'description': 'Testing type parameters',
+        'price': 99.99,
+        'category': {'id': 'cat9', 'name': 'Type Tests'},
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 10,
+        'status': 'draft',
+        'productCode': 'TST-1234',
+      };
+      final testSchema = ProductSchema(testData);
+      dynamic productInstance = testSchema.toModel();
       print('Runtime type of instance: ${productInstance.runtimeType}');
 
       // Compare what the SchemaModel.get method is doing
@@ -228,6 +245,11 @@ void main() {
           'id': 'cat4',
           'name': 'Custom Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 5,
+        'status': 'archived',
+        'productCode': 'CUS-2468',
       };
 
       // With our new implementation, we can use the constructor directly

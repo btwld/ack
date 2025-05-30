@@ -45,7 +45,7 @@ class StringDateTimeConstraint extends Constraint<String>
   /// {@macro string_datetime_validator}
   const StringDateTimeConstraint()
       : super(
-          constraintKey: 'string_date_time',
+          constraintKey: 'datetime',
           description: 'Must be a valid date time string',
         );
 
@@ -69,7 +69,7 @@ class StringDateConstraint extends Constraint<String>
   /// {@macro string_date_validator}
   const StringDateConstraint()
       : super(
-          constraintKey: 'string_date',
+          constraintKey: 'date',
           description: 'Must be a valid date string in YYYY-MM-DD format',
         );
 

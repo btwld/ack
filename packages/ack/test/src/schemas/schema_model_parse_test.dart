@@ -21,9 +21,6 @@ class TestSchema extends SchemaModel<TestModel> {
 
   TestSchema([Object? value]) : super(value);
 
-  TestSchema.validated(Map<String, Object?> validatedData)
-      : super.validated(validatedData);
-
   @override
   ObjectSchema getSchema() => schema;
 
@@ -60,47 +57,64 @@ class TestSchema extends SchemaModel<TestModel> {
 }
 
 void main() {
-  group('SchemaModel Parse Methods', () {
-    group('parse()', () {
-      test('returns a valid schema model for valid input', () {
+  group('SchemaModel Instance-Based Validation', () {
+    group('instance validation with toModel()', () {
+      test('returns a valid model for valid input', () {
         final data = {'name': 'John', 'age': 30};
-        final model = TestSchema(data).parse(data);
+        final schema = TestSchema(data);
 
+        expect(schema.isValid, isTrue);
+        final model = schema.toModel();
         expect(model.name, equals('John'));
         expect(model.age, equals(30));
       });
 
-      test('throws AckException for invalid input', () {
+      test('throws AckException for invalid input when calling toModel()', () {
         final data = {'name': 'John'}; // missing required 'age'
+        final schema = TestSchema(data);
 
+        expect(schema.isValid, isFalse);
         expect(
-          () => TestSchema(data).parse(data),
+          () => schema.toModel(),
           throwsA(isA<AckException>()),
         );
       });
 
-      test('converts validated data to model', () {
-        final data = {'name': 'John', 'age': 30};
-        final model = TestSchema(data).parse(data);
+      test('provides error details for invalid input', () {
+        final data = {'name': 'John'}; // missing required 'age'
+        final schema = TestSchema(data);
 
-        expect(model.name, equals('John'));
-        expect(model.age, equals(30));
+        expect(schema.isValid, isFalse);
+        final errors = schema.getErrors();
+        expect(errors, isNotNull);
+        // Just verify we get an error, don't check specific content
+        expect(errors.toString(), isNotEmpty);
       });
     });
 
-    group('tryParse()', () {
-      test('returns a valid model for valid input', () {
+    group('safe validation pattern', () {
+      test('returns model when valid', () {
         final data = {'name': 'John', 'age': 30};
-        final model = TestSchema(data).tryParse(data);
+        final schema = TestSchema(data);
+
+        TestModel? model;
+        if (schema.isValid) {
+          model = schema.toModel();
+        }
 
         expect(model, isNotNull);
         expect(model!.name, equals('John'));
         expect(model.age, equals(30));
       });
 
-      test('returns null for invalid input', () {
+      test('returns null when invalid', () {
         final data = {'name': 'John'}; // missing required 'age'
-        final model = TestSchema(data).tryParse(data);
+        final schema = TestSchema(data);
+
+        TestModel? model;
+        if (schema.isValid) {
+          model = schema.toModel();
+        }
 
         expect(model, isNull);
       });

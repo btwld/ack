@@ -93,27 +93,22 @@ if (!userSchema.isValid) {
 
 ### 2. Model Conversion and Validation
 
-For a more streamlined approach, the generated schema provides methods to directly parse and convert data to your model:
+For converting validated data to your model, use the instance-based approach:
 
 ```dart
-// Option 1: Exception-based parsing (most convenient)
-try {
-  // Parse data directly to a typed model
-  final User user = UserSchema.parse(data);
-  
-  // Work with your fully typed model 
-  print('Hello ${user.name}! You are ${user.age} years old');
-} catch (e) {
-  print('Invalid data: $e');
-}
+// Create schema instance and validate
+final userSchema = UserSchema(data);
 
-// Option 2: Null-safe parsing
-final User? user = UserSchema.tryParse(data);
-if (user != null) {
-  // Work with your validated model
-  print('Hello ${user.name}!');
+if (userSchema.isValid) {
+  // Convert to your fully typed model
+  final User user = userSchema.toModel();
+
+  // Work with your fully typed model
+  print('Hello ${user.name}! You are ${user.age} years old');
 } else {
-  print('Validation failed');
+  // Handle validation errors
+  final error = userSchema.getErrors();
+  print('Invalid data: ${error?.message}');
 }
 ```
 
@@ -265,20 +260,20 @@ Ack provides a wide range of validation annotations for your model properties:
 
 - `@MinLength(int)`: String must have at least n characters
 - `@MaxLength(int)`: String must have at most n characters
-- `@Length(int)`: String must have exactly n characters
 - `@IsEmail()`: String must be a valid email address
-- `@IsUrl()`: String must be a valid URL
-- `@Matches(pattern)`: String must match the regular expression pattern
+- `@Pattern(pattern)`: String must match the regular expression pattern
 - `@IsNotEmpty()`: String must not be empty
 - `@EnumValues(values)`: String must be one of the specified values
+- `@IsDate()`: String must be a valid date in YYYY-MM-DD format
+- `@IsDateTime()`: String must be a valid date-time in ISO 8601 format
 
 ### Number Validation
 
 - `@Min(n)`: Number must be greater than or equal to n
 - `@Max(n)`: Number must be less than or equal to n
-- `@Positive()`: Number must be positive
-- `@Negative()`: Number must be negative
 - `@MultipleOf(n)`: Number must be a multiple of n
+- `@IsPositive()`: Number must be greater than 0
+- `@IsNegative()`: Number must be less than 0
 
 ### List Validation
 
@@ -308,7 +303,7 @@ class UserSchema extends SchemaModel<User> {
     return Ack.object(
       {
         'name': Ack.string.minLength(2),
-        'email': Ack.string.isEmail(),
+        'email': Ack.string.email(),
         'age': Ack.int.min(18),
       },
       required: ['name', 'email', 'age'],

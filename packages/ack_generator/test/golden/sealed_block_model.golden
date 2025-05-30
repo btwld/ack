@@ -1,0 +1,283 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'sealed_block_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+// TODO: Migrate discriminated union generation to code_builder
+// Using string-based generation for sealed classes temporarily
+class SealedBlockSchema {
+  // Discriminated schema implementation would go here
+  // See sealed_block_model.g.dart for reference
+}
+
+/// Generated schema for TextBlock
+/// A text block with markdown content
+class TextBlockSchema extends SchemaModel<TextBlock> {
+  // Constructor that validates input
+  TextBlockSchema([Object? value = null]) : super(value);
+
+// Schema definition moved to a static field for easier access
+  static final ObjectSchema schema = _createSchema();
+
+// Create the validation schema
+  static ObjectSchema _createSchema() {
+    return Ack.object(
+      {
+        'align': Ack.string.nullable(),
+        'flex': Ack.int.nullable(),
+        'scrollable': Ack.boolean.nullable(),
+        'content': Ack.string,
+      },
+      required: ['content'],
+      additionalProperties: false,
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<TextBlock, TextBlockSchema>(
+      (data) => TextBlockSchema(data),
+    );
+  }
+
+// Override to return the schema for validation
+  @override
+  AckSchema getSchema() {
+    return schema;
+  }
+
+// Type-safe getters
+  String? get align {
+    return getValue<String>('align');
+  }
+
+// Type-safe getters
+  int? get flex {
+    return getValue<int>('flex');
+  }
+
+// Type-safe getters
+  bool? get scrollable {
+    return getValue<bool>('scrollable');
+  }
+
+// Type-safe getters
+  String get content {
+    return getValue<String>('content')!;
+  }
+
+// Model conversion methods
+  @override
+  TextBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return TextBlock(
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      content: content,
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = JsonSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}
+
+/// Generated schema for ImageBlock
+/// An image block with image source and attributes
+class ImageBlockSchema extends SchemaModel<ImageBlock> {
+  // Constructor that validates input
+  ImageBlockSchema([Object? value = null]) : super(value);
+
+// Schema definition moved to a static field for easier access
+  static final ObjectSchema schema = _createSchema();
+
+// Create the validation schema
+  static ObjectSchema _createSchema() {
+    return Ack.object(
+      {
+        'align': Ack.string.nullable(),
+        'flex': Ack.int.nullable(),
+        'scrollable': Ack.boolean.nullable(),
+        'src': Ack.string,
+        'width': Ack.double.nullable(),
+        'height': Ack.double.nullable(),
+        'fit': Ack.string.nullable(),
+      },
+      required: ['src'],
+      additionalProperties: false,
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<ImageBlock, ImageBlockSchema>(
+      (data) => ImageBlockSchema(data),
+    );
+  }
+
+// Override to return the schema for validation
+  @override
+  AckSchema getSchema() {
+    return schema;
+  }
+
+// Type-safe getters
+  String? get align {
+    return getValue<String>('align');
+  }
+
+// Type-safe getters
+  int? get flex {
+    return getValue<int>('flex');
+  }
+
+// Type-safe getters
+  bool? get scrollable {
+    return getValue<bool>('scrollable');
+  }
+
+// Type-safe getters
+  String get src {
+    return getValue<String>('src')!;
+  }
+
+// Type-safe getters
+  double? get width {
+    return getValue<double>('width');
+  }
+
+// Type-safe getters
+  double? get height {
+    return getValue<double>('height');
+  }
+
+// Type-safe getters
+  String? get fit {
+    return getValue<String>('fit');
+  }
+
+// Model conversion methods
+  @override
+  ImageBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return ImageBlock(
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      src: src,
+      width: width,
+      height: height,
+      fit: fit,
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = JsonSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}
+
+/// Generated schema for WidgetBlock
+/// A widget block with custom properties
+class WidgetBlockSchema extends SchemaModel<WidgetBlock> {
+  // Constructor that validates input
+  WidgetBlockSchema([Object? value = null]) : super(value);
+
+// Schema definition moved to a static field for easier access
+  static final ObjectSchema schema = _createSchema();
+
+// Create the validation schema
+  static ObjectSchema _createSchema() {
+    return Ack.object(
+      {
+        'align': Ack.string.nullable(),
+        'flex': Ack.int.nullable(),
+        'scrollable': Ack.boolean.nullable(),
+        'name': Ack.string,
+      },
+      required: ['name'],
+      additionalProperties: true,
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<WidgetBlock, WidgetBlockSchema>(
+      (data) => WidgetBlockSchema(data),
+    );
+  }
+
+// Override to return the schema for validation
+  @override
+  AckSchema getSchema() {
+    return schema;
+  }
+
+// Type-safe getters
+  String? get align {
+    return getValue<String>('align');
+  }
+
+// Type-safe getters
+  int? get flex {
+    return getValue<int>('flex');
+  }
+
+// Type-safe getters
+  bool? get scrollable {
+    return getValue<bool>('scrollable');
+  }
+
+// Type-safe getters
+  String get name {
+    return getValue<String>('name')!;
+  }
+
+// Get metadata with fallback
+  Map<String, Object?> get properties {
+    final result = <String, Object?>{};
+    final knownFields = ['align', 'flex', 'scrollable', 'name'];
+
+    for (final key in toMap().keys) {
+      if (!knownFields.contains(key)) {
+        result[key] = toMap()[key];
+      }
+    }
+    return result;
+  }
+
+// Model conversion methods
+  @override
+  WidgetBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return WidgetBlock(
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      name: name,
+      properties: properties,
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = JsonSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}

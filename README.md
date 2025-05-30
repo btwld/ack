@@ -40,7 +40,7 @@ import 'package:ack/ack.dart';
 // Define a schema for a user object
 final userSchema = Ack.object({
   'name': Ack.string.minLength(2).maxLength(50),
-  'email': Ack.string.isEmail(),
+  'email': Ack.string.email(),
   'age': Ack.int.min(0).max(120).nullable(),
 }, required: ['name', 'email']);
 

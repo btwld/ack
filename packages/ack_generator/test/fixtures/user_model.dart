@@ -1,5 +1,8 @@
 import 'package:ack/ack.dart';
 
+// Using generated code
+part 'user_model.g.dart';
+
 /// Annotate your model class with @AckModel
 @Schema(
   description: 'A user model with validation',

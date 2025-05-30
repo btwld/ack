@@ -42,9 +42,9 @@ class _SignUpFormState extends State<SignUpForm> {
 
   final _passwordSchema = Ack.string
     .minLength(8, message: 'Password must be at least 8 characters')
-    .contains(r'[A-Z]', message: 'Password must contain an uppercase letter')
-    .contains(r'[a-z]', message: 'Password must contain a lowercase letter')
-    .contains(r'[0-9]', message: 'Password must contain a digit')
+    .matches(r'.*[A-Z].*', message: 'Password must contain an uppercase letter')
+    .matches(r'.*[a-z].*', message: 'Password must contain a lowercase letter')
+    .matches(r'.*[0-9].*', message: 'Password must contain a digit')
     .isNotEmpty(message: 'Password is required');
 
   @override
@@ -227,6 +227,19 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
 Instead of validating field by field, you can validate a complete data structure (like a map representing the whole form) on submission using [`Ack.object`](../core-concepts/schemas.mdx#object-schema).
 
 ```dart
+// Custom constraint for password matching (see Custom Validation guide)
+class PasswordMatchConstraint extends SchemaConstraint<String> {
+  final String fieldToMatch;
+  PasswordMatchConstraint(this.fieldToMatch)
+      : super(name: 'password_match', message: 'Passwords do not match');
+
+  @override
+  bool validate(String value, [Map<String, dynamic>? data]) {
+    final otherPassword = data?[fieldToMatch] as String?;
+    return value == otherPassword;
+  }
+}
+
 // Define a schema for the whole form data
 final _formSchema = Ack.object({
   'username': _usernameSchema, // Reuse field schemas
@@ -235,15 +248,7 @@ final _formSchema = Ack.object({
   'confirmPassword': Ack.string.isNotEmpty(message: 'Please confirm password')
       // Example: Custom constraint for cross-field validation
       // See: [Custom Validation](./custom-validation.mdx)
-      .constrain(SchemaConstraint<String>(
-        name: 'passwords_match',
-        message: 'Passwords do not match',
-        validate: (value, data) {
-          // Access other form data via the optional 'data' parameter
-          final password = data?['password'] as String?;
-          return value == password;
-        },
-      )),
+      .constrain(PasswordMatchConstraint('password')),
 }, required: ['username', 'email', 'password', 'confirmPassword']);
 
 void _submitForm() {

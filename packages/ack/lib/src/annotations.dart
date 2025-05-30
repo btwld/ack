@@ -50,8 +50,8 @@ abstract class PropertyConstraint {
 }
 
 /// Mark a property as required in the schema
-class Required extends PropertyConstraint {
-  const Required();
+class IsRequired extends PropertyConstraint {
+  const IsRequired();
 
   @override
   String get constraintKey => 'required';
@@ -60,15 +60,27 @@ class Required extends PropertyConstraint {
   Map<String, Object?> get parameters => {};
 }
 
+/// @deprecated Use IsRequired instead for consistent naming
+@Deprecated('Use IsRequired instead for consistent naming')
+class Required extends IsRequired {
+  const Required();
+}
+
 /// Mark a property as nullable in the schema
-class Nullable extends PropertyConstraint {
-  const Nullable();
+class IsNullable extends PropertyConstraint {
+  const IsNullable();
 
   @override
   String get constraintKey => 'nullable';
 
   @override
   Map<String, Object?> get parameters => {};
+}
+
+/// @deprecated Use IsNullable instead for consistent naming
+@Deprecated('Use IsNullable instead for consistent naming')
+class Nullable extends IsNullable {
+  const Nullable();
 }
 
 /// Add a description to a property
@@ -86,143 +98,329 @@ class Description extends PropertyConstraint {
 
 // String constraints
 class IsEmail extends PropertyConstraint {
-  const IsEmail();
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsEmail({this.description});
 
   @override
-  String get constraintKey => 'isEmail';
+  String get constraintKey => 'email';
 
   @override
-  Map<String, Object?> get parameters => {};
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
 }
 
-class MinLength extends PropertyConstraint {
+class IsMinLength extends PropertyConstraint {
   final int length;
 
-  const MinLength(this.length);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMinLength(this.length, {this.description});
 
   @override
   String get constraintKey => 'minLength';
 
   @override
-  Map<String, Object?> get parameters => {'length': length};
+  Map<String, Object?> get parameters => {
+        'length': length,
+        if (description != null) 'description': description,
+      };
 }
 
-class MaxLength extends PropertyConstraint {
+/// @deprecated Use IsMinLength instead for consistent naming
+@Deprecated('Use IsMinLength instead for consistent naming')
+class MinLength extends IsMinLength {
+  const MinLength(super.length);
+}
+
+class IsMaxLength extends PropertyConstraint {
   final int length;
 
-  const MaxLength(this.length);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMaxLength(this.length, {this.description});
 
   @override
   String get constraintKey => 'maxLength';
 
   @override
-  Map<String, Object?> get parameters => {'length': length};
+  Map<String, Object?> get parameters => {
+        'length': length,
+        if (description != null) 'description': description,
+      };
 }
 
-class Pattern extends PropertyConstraint {
+/// @deprecated Use IsMaxLength instead for consistent naming
+@Deprecated('Use IsMaxLength instead for consistent naming')
+class MaxLength extends IsMaxLength {
+  const MaxLength(super.length);
+}
+
+class IsPattern extends PropertyConstraint {
   final String pattern;
 
-  const Pattern(this.pattern);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsPattern(this.pattern, {this.description});
 
   @override
   String get constraintKey => 'pattern';
 
   @override
-  Map<String, Object?> get parameters => {'pattern': pattern};
+  Map<String, Object?> get parameters => {
+        'pattern': pattern,
+        if (description != null) 'description': description,
+      };
+}
+
+/// @deprecated Use IsPattern instead for consistent naming
+@Deprecated('Use IsPattern instead for consistent naming')
+class Pattern extends IsPattern {
+  const Pattern(super.pattern);
 }
 
 class IsNotEmpty extends PropertyConstraint {
-  const IsNotEmpty();
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsNotEmpty({this.description});
 
   @override
-  String get constraintKey => 'isNotEmpty';
+  String get constraintKey => 'notEmpty';
 
   @override
-  Map<String, Object?> get parameters => {};
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
 }
 
-class EnumValues extends PropertyConstraint {
+class IsEnumValues extends PropertyConstraint {
   final List<String> values;
 
-  const EnumValues(this.values);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsEnumValues(this.values, {this.description});
 
   @override
   String get constraintKey => 'enumValues';
 
   @override
-  Map<String, Object?> get parameters => {'values': values};
+  Map<String, Object?> get parameters => {
+        'values': values,
+        if (description != null) 'description': description,
+      };
+}
+
+/// @deprecated Use IsEnumValues instead for consistent naming
+@Deprecated('Use IsEnumValues instead for consistent naming')
+class EnumValues extends IsEnumValues {
+  const EnumValues(super.values);
 }
 
 // Number constraints
-class Min extends PropertyConstraint {
+class IsMin extends PropertyConstraint {
   final num value;
 
-  const Min(this.value);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMin(this.value, {this.description});
 
   @override
   String get constraintKey => 'min';
 
   @override
-  Map<String, Object?> get parameters => {'value': value};
+  Map<String, Object?> get parameters => {
+        'value': value,
+        if (description != null) 'description': description,
+      };
 }
 
-class Max extends PropertyConstraint {
+/// @deprecated Use IsMin instead for consistent naming
+@Deprecated('Use IsMin instead for consistent naming')
+class Min extends IsMin {
+  const Min(super.value);
+}
+
+class IsMax extends PropertyConstraint {
   final num value;
 
-  const Max(this.value);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMax(this.value, {this.description});
 
   @override
   String get constraintKey => 'max';
 
   @override
-  Map<String, Object?> get parameters => {'value': value};
+  Map<String, Object?> get parameters => {
+        'value': value,
+        if (description != null) 'description': description,
+      };
 }
 
-class MultipleOf extends PropertyConstraint {
+/// @deprecated Use IsMax instead for consistent naming
+@Deprecated('Use IsMax instead for consistent naming')
+class Max extends IsMax {
+  const Max(super.value);
+}
+
+class IsMultipleOf extends PropertyConstraint {
   final num value;
 
-  const MultipleOf(this.value);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMultipleOf(this.value, {this.description});
 
   @override
   String get constraintKey => 'multipleOf';
 
   @override
-  Map<String, Object?> get parameters => {'value': value};
+  Map<String, Object?> get parameters => {
+        'value': value,
+        if (description != null) 'description': description,
+      };
+}
+
+/// @deprecated Use IsMultipleOf instead for consistent naming
+@Deprecated('Use IsMultipleOf instead for consistent naming')
+class MultipleOf extends IsMultipleOf {
+  const MultipleOf(super.value);
+}
+
+/// Validates that a number is positive (greater than 0)
+class IsPositive extends PropertyConstraint {
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsPositive({this.description});
+
+  @override
+  String get constraintKey => 'positive';
+
+  @override
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
+}
+
+/// Validates that a number is negative (less than 0)
+class IsNegative extends PropertyConstraint {
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsNegative({this.description});
+
+  @override
+  String get constraintKey => 'negative';
+
+  @override
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
+}
+
+/// Validates that a string is a valid date in YYYY-MM-DD format
+class IsDate extends PropertyConstraint {
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsDate({this.description});
+
+  @override
+  String get constraintKey => 'date';
+
+  @override
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
+}
+
+/// Validates that a string is a valid date-time in ISO 8601 format
+class IsDateTime extends PropertyConstraint {
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsDateTime({this.description});
+
+  @override
+  String get constraintKey => 'dateTime';
+
+  @override
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
 }
 
 // List constraints
-class MinItems extends PropertyConstraint {
+class IsMinItems extends PropertyConstraint {
   final int count;
 
-  const MinItems(this.count);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMinItems(this.count, {this.description});
 
   @override
   String get constraintKey => 'minItems';
 
   @override
-  Map<String, Object?> get parameters => {'count': count};
+  Map<String, Object?> get parameters => {
+        'count': count,
+        if (description != null) 'description': description,
+      };
 }
 
-class MaxItems extends PropertyConstraint {
+/// @deprecated Use IsMinItems instead for consistent naming
+@Deprecated('Use IsMinItems instead for consistent naming')
+class MinItems extends IsMinItems {
+  const MinItems(super.count);
+}
+
+class IsMaxItems extends PropertyConstraint {
   final int count;
 
-  const MaxItems(this.count);
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsMaxItems(this.count, {this.description});
 
   @override
   String get constraintKey => 'maxItems';
 
   @override
-  Map<String, Object?> get parameters => {'count': count};
+  Map<String, Object?> get parameters => {
+        'count': count,
+        if (description != null) 'description': description,
+      };
 }
 
-class UniqueItems extends PropertyConstraint {
-  const UniqueItems();
+/// @deprecated Use IsMaxItems instead for consistent naming
+@Deprecated('Use IsMaxItems instead for consistent naming')
+class MaxItems extends IsMaxItems {
+  const MaxItems(super.count);
+}
+
+class IsUniqueItems extends PropertyConstraint {
+  /// Optional description for documentation or error message customization
+  final String? description;
+
+  const IsUniqueItems({this.description});
 
   @override
   String get constraintKey => 'uniqueItems';
 
   @override
-  Map<String, Object?> get parameters => {};
+  Map<String, Object?> get parameters =>
+      description != null ? {'description': description} : {};
+}
+
+/// @deprecated Use IsUniqueItems instead for consistent naming
+@Deprecated('Use IsUniqueItems instead for consistent naming')
+class UniqueItems extends IsUniqueItems {
+  const UniqueItems();
 }
 
 // Object field type annotation

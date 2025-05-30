@@ -1,10 +1,18 @@
 import 'package:build/build.dart';
+import 'package:source_gen/source_gen.dart';
 
-import 'src/schema_model_builder.dart';
+import 'src/generator.dart';
 
-/// Builds SchemaModel-based schema classes for model classes
-Builder schemaModelBuilder(BuilderOptions options) =>
-    SchemaModelBuilder(options);
+/// Main builder function - keeps it simple
+Builder ackSchemaBuilder(BuilderOptions options) {
+  return PartBuilder(
+    [AckSchemaGenerator()],
+    '.g.dart',
+    header: '''
+// GENERATED CODE - DO NOT MODIFY BY HAND
 
-/// Factory function for use with build_runner as configured in pubspec.yaml
-Builder ackSchemaBuilder(BuilderOptions options) => SchemaModelBuilder(options);
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+''',
+  );
+}

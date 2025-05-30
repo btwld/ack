@@ -1,5 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 
+import '../models/class_info.dart';
+import '../models/property_info.dart';
 import 'property_analyzer.dart';
 
 /// Analyzes a class element and extracts comprehensive class information
@@ -13,7 +15,7 @@ class ClassAnalyzer {
       name: element.name,
       constructorParams: _findConstructorParameters(element),
       properties: _analyzeClassProperties(element, additionalPropertiesField),
-      dependencies: <String>{},
+      dependencies: {},
     );
   }
 
@@ -42,18 +44,42 @@ class ClassAnalyzer {
 
     // If still no constructor, try to use any constructor
     if (primaryConstructor == null && classElement.constructors.isNotEmpty) {
-      primaryConstructor = classElement.constructors.first;
+      primaryConstructor = classElement.constructors.firstOrNull;
     }
 
     // Analyze the parameters
     if (primaryConstructor != null) {
       for (final param in primaryConstructor.parameters) {
-        final propertyInfo = PropertyAnalyzer.analyzeConstructorParameter(param);
+        final propertyInfo =
+            PropertyAnalyzer.analyzeConstructorParameter(param);
         constructorParams[param.name] = propertyInfo;
       }
     }
 
     return constructorParams;
+  }
+
+  /// Find the primary constructor element
+  static ConstructorElement? findPrimaryConstructor(ClassElement classElement) {
+    // First look for a constructor annotated with @SchemaConstructor
+    for (final constructor in classElement.constructors) {
+      if (constructor.metadata
+          .any((m) => m.element?.displayName == 'SchemaConstructor')) {
+        return constructor;
+      }
+    }
+
+    // If no annotated constructor, use the default constructor
+    if (classElement.unnamedConstructor != null) {
+      return classElement.unnamedConstructor;
+    }
+
+    // If still no constructor, try to use any constructor
+    if (classElement.constructors.isNotEmpty) {
+      return classElement.constructors.firstOrNull;
+    }
+
+    return null;
   }
 
   /// Analyze all properties of a class
@@ -67,10 +93,16 @@ class ClassAnalyzer {
     final constructorParams = _findConstructorParameters(classElement);
     properties.addAll(constructorParams);
 
+    // Find the primary constructor for AST analysis
+    final primaryConstructor = _findPrimaryConstructor(classElement);
+
     // Process all instance fields
     for (final field in classElement.fields) {
       // Skip excluded fields
-      if (PropertyAnalyzer.shouldExcludeField(field, additionalPropertiesField)) {
+      if (PropertyAnalyzer.shouldExcludeField(
+        field,
+        additionalPropertiesField,
+      )) {
         continue;
       }
 
@@ -91,10 +123,11 @@ class ClassAnalyzer {
         }
       }
 
-      // Analyze the field
+      // Analyze the field with enhanced constructor analysis
       final property = PropertyAnalyzer.analyzeField(
         field,
         constructorParam: actualConstructorParam,
+        constructor: primaryConstructor,
       );
 
       properties[field.name] = property;
@@ -103,8 +136,35 @@ class ClassAnalyzer {
     return properties;
   }
 
-  /// Find all dependencies for the class  
-  static Set<String> findClassDependencies(Map<String, PropertyInfo> properties) {
+  /// Find the primary constructor for analysis
+  static ConstructorElement? _findPrimaryConstructor(
+    ClassElement classElement,
+  ) {
+    // First look for a constructor annotated with @SchemaConstructor
+    for (final constructor in classElement.constructors) {
+      if (constructor.metadata
+          .any((m) => m.element?.displayName == 'SchemaConstructor')) {
+        return constructor;
+      }
+    }
+
+    // If no annotated constructor, use the default constructor
+    if (classElement.unnamedConstructor != null) {
+      return classElement.unnamedConstructor;
+    }
+
+    // If still no constructor, try to use any constructor
+    if (classElement.constructors.isNotEmpty) {
+      return classElement.constructors.firstOrNull;
+    }
+
+    return null;
+  }
+
+  /// Find all dependencies for the class
+  static Set<String> findClassDependencies(
+    Map<String, PropertyInfo> properties,
+  ) {
     final dependencies = <String>{};
 
     for (final property in properties.values) {
@@ -112,59 +172,5 @@ class ClassAnalyzer {
     }
 
     return dependencies;
-  }
-}
-
-/// Comprehensive information about a class
-class ClassInfo {
-  final String name;
-  final Map<String, PropertyInfo> constructorParams;
-  final Map<String, PropertyInfo> properties;
-  final Set<String> dependencies;
-
-  ClassInfo({
-    required this.name,
-    required this.constructorParams,
-    required this.properties,
-    required this.dependencies,
-  });
-
-  /// Get properties excluding a specific field (like additionalProperties)
-  Map<String, PropertyInfo> getPropertiesExcluding(String? fieldName) {
-    if (fieldName == null) return properties;
-    
-    return Map.fromEntries(
-      properties.entries.where((entry) => entry.key != fieldName),
-    );
-  }
-
-  /// Get required properties
-  List<PropertyInfo> getRequiredProperties({String? excludeField}) {
-    return getPropertiesExcluding(excludeField)
-        .values
-        .where((prop) => prop.isRequired)
-        .toList();
-  }
-
-  /// Update dependencies
-  ClassInfo withDependencies(Set<String> dependencies) {
-    return ClassInfo(
-      name: name,
-      constructorParams: constructorParams,
-      properties: properties,
-      dependencies: dependencies,
-    );
-  }
-
-  @override
-  String toString() => 'ClassInfo($name, properties: ${properties.length}, '
-      'dependencies: ${dependencies.length})';
-}
-
-/// Extension for null-safe operations
-extension NullableExtension<T> on T? {
-  R? let<R>(R Function(T) block) {
-    final value = this;
-    return value != null ? block(value) : null;
   }
 }

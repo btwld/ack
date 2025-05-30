@@ -13,18 +13,46 @@ class Product {
   final String id;
 
   @IsNotEmpty()
+  @IsMinLength(3)
+  @IsMaxLength(100)
   final String name;
 
   @IsNotEmpty()
+  @IsMaxLength(500)
   final String description;
 
+  @IsMin(0.01)
+  @IsMax(999999.99)
   final double price;
 
-  @Nullable()
+  @IsNullable()
+  @IsEmail()
+  final String? contactEmail;
+
+  @IsNullable()
   final String? imageUrl;
 
-  @Required()
+  @IsRequired()
   final Category category;
+
+  @IsDate()
+  final String releaseDate;
+
+  @IsDateTime()
+  final String createdAt;
+
+  @IsNullable()
+  @IsDateTime()
+  final String? updatedAt;
+
+  @IsPositive()
+  final int stockQuantity;
+
+  @IsEnumValues(['draft', 'published', 'archived'])
+  final String status;
+
+  @IsPattern('^[A-Z]{2,3}-\\d{4}\$')
+  final String productCode;
 
   final Map<String, dynamic> metadata;
 
@@ -33,8 +61,15 @@ class Product {
     required this.name,
     required this.description,
     required this.price,
+    this.contactEmail,
     this.imageUrl,
     required this.category,
+    required this.releaseDate,
+    required this.createdAt,
+    this.updatedAt,
+    required this.stockQuantity,
+    required this.status,
+    required this.productCode,
     this.metadata = const {},
   });
 }
@@ -51,7 +86,7 @@ class Category {
   @IsNotEmpty()
   final String name;
 
-  @Nullable()
+  @IsNullable()
   final String? description;
 
   final Map<String, dynamic> metadata;

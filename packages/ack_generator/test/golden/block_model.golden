@@ -1,0 +1,174 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'block_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated schema for Block
+/// Base class for blocks that make up a slide
+class BlockSchema extends SchemaModel<Block> {
+  // Constructor that validates input
+  BlockSchema([Object? value = null]) : super(value);
+
+// Schema definition moved to a static field for easier access
+  static final ObjectSchema schema = _createSchema();
+
+// Create the validation schema
+  static ObjectSchema _createSchema() {
+    return Ack.object(
+      {},
+      required: [],
+      additionalProperties: false,
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<Block, BlockSchema>(
+      (data) => BlockSchema(data),
+    );
+  }
+
+// Override to return the schema for validation
+  @override
+  AckSchema getSchema() {
+    return schema;
+  }
+
+// Model conversion methods
+  @override
+  Block toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    throw UnimplementedError(
+        'Cannot instantiate abstract class Block. Use a concrete subclass instead.');
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = JsonSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}
+
+/// Generated schema for SectionBlock
+/// A section block that contains multiple columns
+class SectionBlockSchema extends SchemaModel<SectionBlock> {
+  // Constructor that validates input
+  SectionBlockSchema([Object? value = null]) : super(value);
+
+// Schema definition moved to a static field for easier access
+  static final ObjectSchema schema = _createSchema();
+
+// Create the validation schema
+  static ObjectSchema _createSchema() {
+    return Ack.object(
+      {
+        'columns': Ack.list(ColumnBlockSchema.schema),
+      },
+      required: ['columns'],
+      additionalProperties: false,
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<SectionBlock, SectionBlockSchema>(
+      (data) => SectionBlockSchema(data),
+    );
+    // Register schema dependencies
+    ColumnBlockSchema.ensureInitialize();
+  }
+
+// Override to return the schema for validation
+  @override
+  AckSchema getSchema() {
+    return schema;
+  }
+
+// Type-safe getters
+  List<ColumnBlockSchema> get columns {
+    return getValue<List<dynamic>>('columns')!
+        .map((item) => ColumnBlockSchema(item as Map<String, dynamic>))
+        .toList();
+  }
+
+// Model conversion methods
+  @override
+  SectionBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return SectionBlock(
+      columns.map((item) => item.toModel()).toList(),
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = JsonSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}
+
+/// Generated schema for ColumnBlock
+/// A column block that contains markdown content
+class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
+  // Constructor that validates input
+  ColumnBlockSchema([Object? value = null]) : super(value);
+
+// Schema definition moved to a static field for easier access
+  static final ObjectSchema schema = _createSchema();
+
+// Create the validation schema
+  static ObjectSchema _createSchema() {
+    return Ack.object(
+      {
+        'content': Ack.string,
+      },
+      required: ['content'],
+      additionalProperties: false,
+    );
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<ColumnBlock, ColumnBlockSchema>(
+      (data) => ColumnBlockSchema(data),
+    );
+  }
+
+// Override to return the schema for validation
+  @override
+  AckSchema getSchema() {
+    return schema;
+  }
+
+// Type-safe getters
+  String get content {
+    return getValue<String>('content')!;
+  }
+
+// Model conversion methods
+  @override
+  ColumnBlock toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return ColumnBlock(
+      content,
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() {
+    final converter = JsonSchemaConverter(schema: schema);
+    return converter.toSchema();
+  }
+}

@@ -34,7 +34,7 @@ import 'package:ack/ack.dart';
 final userSchema = Ack.object({
   'name': Ack.string.minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
   'age': Ack.int.min(0).max(120),                // Age must be an integer between 0 and 120.
-  'email': Ack.string.isEmail().nullable(),      // Email must be a valid format, but can be null.
+  'email': Ack.string.email().nullable(),      // Email must be a valid format, but can be null.
 }, required: ['name', 'age']); // Name and age are mandatory fields.
 
 // Data to validate.
@@ -105,9 +105,14 @@ Generated schemas provide three main capabilities:
 **1. Direct model validation and conversion**
 
 ```dart
-// Validate and convert to a type-safe model in one step
-final User user = UserSchema.parse(payload);
-print('Hello ${user.name}!');  // Type-safe model access
+// Validate and convert to a type-safe model
+final userSchema = UserSchema(payload);
+if (userSchema.isValid) {
+  final User user = userSchema.toModel();
+  print('Hello ${user.name}!');  // Type-safe model access
+} else {
+  print('Validation failed: ${userSchema.getErrors()}');
+}
 ```
 
 **2. Type-safe access through the schema**
