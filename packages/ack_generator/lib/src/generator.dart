@@ -39,7 +39,7 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
 
     // Skip subclasses that are part of a sealed discriminated union
     // They will be generated as part of the sealed class processing
-    if (_isSubclassOfSealedDiscriminatedUnion(element)) {
+    if (_isSubclassOfDiscriminatedUnion(element)) {
       return ''; // Return empty string to skip generation
     }
 
@@ -502,10 +502,8 @@ $argsString
 /// Generated base schema for ${element.name} with inheritance support
 ${schemaData.description != null ? '/// ${schemaData.description}' : ''}
 class $schemaClassName<T extends ${element.name}> extends SchemaModel<T> {
-  // Constructor that validates input
   $schemaClassName([Object? value = null]) : super(value);
 
-  // Main discriminated schema (default entry point for ${element.name})
   $discriminatedSchemaCode
 
 $baseSchemaCode
@@ -515,11 +513,9 @@ $baseSchemaCode
     SchemaRegistry.register<${element.name}, $schemaClassName>(
       (data) => $schemaClassName(data),
     );
-    // Register schema dependencies
     $dependencies
   }
 
-  // Override to return the discriminated schema for validation
   @override
   AckSchema getSchema() => schema;
 
@@ -540,12 +536,18 @@ $patternMatching
     final emitter = DartEmitter(useNullSafetySyntax: true);
     final code = method.accept(emitter).toString();
 
-    // Add proper indentation for string context
-    // Skip comment lines that start with '//'
+    // DartEmitter doesn't add semicolons to arrow functions when converting to string
+    // TODO: Refactor discriminated unions to use code_builder consistently
     return code
         .split('\n')
         .where((line) => !line.trim().startsWith('//'))
-        .map((line) => '  $line')
+        .map((line) {
+          final trimmed = line.trim();
+          if (trimmed.contains('=>') && trimmed.isNotEmpty && !trimmed.endsWith(';')) {
+            return '  $line;';
+          }
+          return '  $line';
+        })
         .join('\n');
   }
 
@@ -566,23 +568,21 @@ $patternMatching
 
   /// Check if a class is a subclass of a discriminated union (sealed or abstract)
   /// This prevents duplicate generation of subclass schemas
-  bool _isSubclassOfSealedDiscriminatedUnion(ClassElement element) {
-    // Simple check: if this class has a discriminatedValue annotation,
-    // it's part of a discriminated union and should not be generated separately
+  bool _isSubclassOfDiscriminatedUnion(ClassElement element) {
+    // Check for discriminatedValue annotation
     for (final annotation in element.metadata) {
       if (annotation.element?.displayName == 'Schema') {
         final reader = ConstantReader(annotation.computeConstantValue());
         final discriminatedValue =
             reader.peek('discriminatedValue')?.stringValue;
         if (discriminatedValue != null) {
-          // This class has a discriminatedValue, so it's part of a discriminated union
-          // Check if the superclass is sealed or abstract to confirm
+          // Verify superclass is sealed or abstract
           final supertype = element.supertype;
           if (supertype != null) {
             final superElement = supertype.element;
             if (superElement is ClassElement &&
                 (superElement.isSealed || superElement.isAbstract)) {
-              return true; // This is a subclass of a discriminated union
+              return true;
             }
           }
         }
@@ -822,10 +822,8 @@ $maybeWhenCases
 /// Generated schema for $subclassName extending ${baseName}Schema
 ${description != null ? '/// $description' : ''}
 class $schemaClassName extends ${baseName}Schema<$subclassName> {
-  // Constructor that validates input
   $schemaClassName([Object? value = null]) : super(value);
 
-  // Extended schema that inherits from base schema
   static final ObjectSchema schema = ${baseName}Schema.baseSchema.extend(
     {
       ${propertySchemas.isNotEmpty ? propertySchemas : '// No additional properties'}
@@ -841,12 +839,10 @@ class $schemaClassName extends ${baseName}Schema<$subclassName> {
     );
   }
 
-  // Override to return the extended schema for validation
   @override
   AckSchema getSchema() => schema;
 
-${subclassGetters.isNotEmpty ? '  // Subclass-specific type-safe getters (base getters inherited)\n$subclassGetters\n' : ''}
-  // Model conversion methods
+${subclassGetters.isNotEmpty ? '$subclassGetters\n' : ''}
   @override
   $subclassName toModel() {
     if (!isValid) {
