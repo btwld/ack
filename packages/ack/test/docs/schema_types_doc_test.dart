@@ -29,14 +29,14 @@ void main() {
       });
 
       test('Email validation', () {
-        final emailSchema = Ack.string.isEmail();
+        final emailSchema = Ack.string.email();
 
         expect(emailSchema.validate('user@example.com').isOk, isTrue);
         expect(emailSchema.validate('invalid-email').isOk, isFalse);
       });
 
       test('Enum values', () {
-        final roleSchema = Ack.string.isEnum(['admin', 'user', 'guest']);
+        final roleSchema = Ack.string.enumValues(['admin', 'user', 'guest']);
 
         expect(roleSchema.validate('admin').isOk, isTrue);
         expect(roleSchema.validate('user').isOk, isTrue);
@@ -105,7 +105,7 @@ void main() {
     group('Object Schema', () {
       test('Basic object schema', () {
         final userSchema = Ack.object({
-          'name': Ack.string.isNotEmpty(), // Ensure name is not empty.
+          'name': Ack.string.notEmpty(), // Ensure name is not empty.
           'age': Ack.int.min(0), // Age must be non-negative.
         });
 
@@ -142,14 +142,14 @@ void main() {
 
       test('Nested object schema', () {
         final addressSchema = Ack.object({
-          'street': Ack.string.isNotEmpty(),
-          'city': Ack.string.isNotEmpty(),
+          'street': Ack.string.notEmpty(),
+          'city': Ack.string.notEmpty(),
           'zip':
               Ack.string.matches(r'^\d{5}$', example: '12345'), // 5-digit zip.
         });
 
         final userWithAddressSchema = Ack.object({
-          'name': Ack.string.isNotEmpty(),
+          'name': Ack.string.notEmpty(),
           'address': addressSchema, // Nested schema.
         });
 
@@ -182,7 +182,7 @@ void main() {
       test('Nested list of objects', () {
         final itemSchema = Ack.object({
           'id': Ack.int.min(1), // Use min(1) for positive integers.
-          'name': Ack.string.isNotEmpty(),
+          'name': Ack.string.notEmpty(),
         });
 
         final orderSchema = Ack.object({
@@ -283,7 +283,7 @@ void main() {
 
       test('With default values', () {
         final statusSchema =
-            Ack.string.isEnum(['active', 'inactive']).nullable();
+            Ack.string.enumValues(['active', 'inactive']).nullable();
 
         final result = statusSchema.validate(null);
         expect(result.isOk, isTrue);

@@ -72,7 +72,7 @@ void main() {
     group('Schema Composition', () {
       test('Multiple constraints', () {
         // Multiple constraints (all conditions must be met)
-        final nameSchema = Ack.string.minLength(2).maxLength(50).isNotEmpty();
+        final nameSchema = Ack.string.minLength(2).maxLength(50).notEmpty();
 
         expect(nameSchema.validate('John').isOk, isTrue);
         expect(nameSchema.validate('J').isOk, isFalse); // Too short

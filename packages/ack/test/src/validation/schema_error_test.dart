@@ -135,8 +135,8 @@ void main() {
   final userSchema = Ack.object({
     'name': Ack.string.minLength(5).maxLength(10),
     'age': Ack.int.min(18).max(100),
-    'email': Ack.string.isEmail(),
-    'phone': Ack.string.isNotEmpty(),
+    'email': Ack.string.email(),
+    'phone': Ack.string.notEmpty(),
   }, required: [
     'name',
     'email'

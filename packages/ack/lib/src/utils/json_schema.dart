@@ -139,10 +139,6 @@ JSON _convertObjectSchema(ObjectSchema schema) {
   final required = schema.getRequiredProperties();
   final additionalProperties = schema.getAllowsAdditionalProperties();
 
-  if (properties.containsKey('type')) {
-    throw ArgumentError('Property name "type" is reserved and cannot be used.');
-  }
-
   return {
     'properties':
         properties.map((key, value) => MapEntry(key, _convertSchema(value))),

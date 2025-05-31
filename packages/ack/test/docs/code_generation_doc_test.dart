@@ -18,7 +18,7 @@ class User {
 
 class UserSchema extends SchemaModel<User> {
   static final ObjectSchema schema = Ack.object({
-    'email': Ack.string.isEmail(),
+    'email': Ack.string.email(),
     'name': Ack.string.minLength(3).maxLength(50),
     'age': Ack.int.min(13).nullable(),
   }, required: [

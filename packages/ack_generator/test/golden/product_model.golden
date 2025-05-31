@@ -12,13 +12,10 @@ part of 'product_model.dart';
 /// Generated schema for Product
 /// A product model with validation
 class ProductSchema extends SchemaModel<Product> {
-  // Constructor that validates input
   ProductSchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
@@ -43,63 +40,49 @@ class ProductSchema extends SchemaModel<Product> {
     CategorySchema.ensureInitialize();
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Type-safe getters
   String get id {
     return getValue<String>('id')!;
   }
 
-// Type-safe getters
   String get name {
     return getValue<String>('name')!;
   }
 
-// Type-safe getters
   String get description {
     return getValue<String>('description')!;
   }
 
-// Type-safe getters
   double get price {
     return getValue<double>('price')!;
   }
 
-// Type-safe getters
   String? get imageUrl {
     return getValue<String>('imageUrl');
   }
 
-// Type-safe getters
   CategorySchema get category {
     return CategorySchema(getValue<Map<String, dynamic>>('category')!);
   }
 
-// Get metadata with fallback
   Map<String, Object?> get metadata {
-    final result = <String, Object?>{};
-    final knownFields = [
+    final map = toMap();
+    final knownFields = {
       'id',
       'name',
       'description',
       'price',
       'imageUrl',
       'category'
-    ];
-
-    for (final key in toMap().keys) {
-      if (!knownFields.contains(key)) {
-        result[key] = toMap()[key];
-      }
-    }
-    return result;
+    };
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-// Model conversion methods
   @override
   Product toModel() {
     if (!isValid) {
@@ -126,13 +109,10 @@ class ProductSchema extends SchemaModel<Product> {
 /// Generated schema for Category
 /// A category for organizing products
 class CategorySchema extends SchemaModel<Category> {
-  // Constructor that validates input
   CategorySchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
@@ -152,41 +132,30 @@ class CategorySchema extends SchemaModel<Category> {
     );
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Type-safe getters
   String get id {
     return getValue<String>('id')!;
   }
 
-// Type-safe getters
   String get name {
     return getValue<String>('name')!;
   }
 
-// Type-safe getters
   String? get description {
     return getValue<String>('description');
   }
 
-// Get metadata with fallback
   Map<String, Object?> get metadata {
-    final result = <String, Object?>{};
-    final knownFields = ['id', 'name', 'description'];
-
-    for (final key in toMap().keys) {
-      if (!knownFields.contains(key)) {
-        result[key] = toMap()[key];
-      }
-    }
-    return result;
+    final map = toMap();
+    final knownFields = {'id', 'name', 'description'};
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-// Model conversion methods
   @override
   Category toModel() {
     if (!isValid) {

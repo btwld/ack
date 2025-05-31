@@ -12,13 +12,10 @@ part of 'block_model.dart';
 /// Generated schema for Block
 /// Base class for blocks that make up a slide
 class BlockSchema extends SchemaModel<Block> {
-  // Constructor that validates input
   BlockSchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {},
@@ -34,13 +31,11 @@ class BlockSchema extends SchemaModel<Block> {
     );
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Model conversion methods
   @override
   Block toModel() {
     if (!isValid) {
@@ -60,13 +55,10 @@ class BlockSchema extends SchemaModel<Block> {
 /// Generated schema for SectionBlock
 /// A section block that contains multiple columns
 class SectionBlockSchema extends SchemaModel<SectionBlock> {
-  // Constructor that validates input
   SectionBlockSchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
@@ -86,20 +78,17 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
     ColumnBlockSchema.ensureInitialize();
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Type-safe getters
   List<ColumnBlockSchema> get columns {
     return getValue<List<dynamic>>('columns')!
         .map((item) => ColumnBlockSchema(item as Map<String, dynamic>))
         .toList();
   }
 
-// Model conversion methods
   @override
   SectionBlock toModel() {
     if (!isValid) {
@@ -120,13 +109,10 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
 /// Generated schema for ColumnBlock
 /// A column block that contains markdown content
 class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
-  // Constructor that validates input
   ColumnBlockSchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
@@ -144,18 +130,15 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
     );
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Type-safe getters
   String get content {
     return getValue<String>('content')!;
   }
 
-// Model conversion methods
   @override
   ColumnBlock toModel() {
     if (!isValid) {

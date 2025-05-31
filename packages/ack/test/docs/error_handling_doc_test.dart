@@ -25,7 +25,7 @@ void main() {
 
     group('Handling Basic Errors', () {
       test('Email validation error', () {
-        final schema = Ack.string.minLength(3).isEmail();
+        final schema = Ack.string.minLength(3).email();
         final result = schema.validate('a');
 
         expect(result.isOk, isFalse);
@@ -83,7 +83,7 @@ void main() {
       test('Form field validation', () {
         // Simulate a form field validator
         String? validator(String? value) {
-          final result = Ack.string.isEmail().validate(value ?? '');
+          final result = Ack.string.email().validate(value ?? '');
           if (result.isFail) {
             final error = result.getError() as SchemaConstraintsError;
             return error.constraints.first.message;

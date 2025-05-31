@@ -23,6 +23,12 @@ void main() {
       await testGolden('sealed_block_model');
     });
 
+    test(
+        'generates correct output for discriminated unions with sealed classes',
+        () async {
+      await testGolden('payment_method_model');
+    });
+
     if (Platform.environment['UPDATE_GOLDEN'] == 'true') {
       print('Golden files updated. Review changes before committing.');
     }

@@ -1,7 +1,10 @@
 import 'package:analyzer/dart/element/element.dart';
+import 'package:source_gen/source_gen.dart';
 
 import '../models/class_info.dart';
 import '../models/property_info.dart';
+import '../models/schema_data.dart';
+import '../models/sealed_class_info.dart';
 import 'property_analyzer.dart';
 
 /// Analyzes a class element and extracts comprehensive class information
@@ -110,5 +113,60 @@ class ClassAnalyzer {
     }
 
     return dependencies;
+  }
+
+  /// Analyze a sealed class and extract discriminated union information
+  /// Returns null if the class is not a sealed class with discriminated union setup
+  static SealedClassInfo? analyzeSealedClass(
+    ClassElement element,
+    SchemaData schemaData,
+  ) {
+    // Check if class is sealed and has discriminatedKey
+    if (!element.isSealed || schemaData.discriminatedKey == null) {
+      return null;
+    }
+
+    final discriminatorKey = schemaData.discriminatedKey!;
+    final subclasses = <ClassElement>[];
+    final discriminatorMapping = <String, ClassElement>{};
+
+    // Find all subclasses in the same library
+    final library = element.library;
+    for (final unit in library.units) {
+      for (final type in unit.classes) {
+        if (type.supertype?.element == element) {
+          subclasses.add(type);
+
+          // Extract discriminated value from subclass annotation
+          final discriminatedValue = _extractDiscriminatedValue(type);
+          if (discriminatedValue != null) {
+            discriminatorMapping[discriminatedValue] = type;
+          }
+        }
+      }
+    }
+
+    // Validate that we found subclasses with discriminated values
+    if (subclasses.isEmpty || discriminatorMapping.isEmpty) {
+      return null;
+    }
+
+    return SealedClassInfo(
+      sealedClass: element,
+      subclasses: subclasses,
+      discriminatorMapping: discriminatorMapping,
+      discriminatorKey: discriminatorKey,
+    );
+  }
+
+  /// Extract discriminated value from a class element's Schema annotation
+  static String? _extractDiscriminatedValue(ClassElement element) {
+    for (final annotation in element.metadata) {
+      if (annotation.element?.displayName == 'Schema') {
+        final reader = ConstantReader(annotation.computeConstantValue());
+        return reader.peek('discriminatedValue')?.stringValue;
+      }
+    }
+    return null;
   }
 }

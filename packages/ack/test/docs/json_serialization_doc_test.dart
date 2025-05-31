@@ -51,7 +51,7 @@ class UserSchema extends SchemaModel<User> {
     return Ack.object({
       'name': Ack.string.minLength(2),
       'age': Ack.int.min(0).max(120),
-      'email': Ack.string.isEmail().nullable(),
+      'email': Ack.string.email().nullable(),
     }, required: [
       'name',
       'age'
@@ -88,7 +88,7 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string.minLength(2),
           'age': Ack.int.min(0).max(120),
-          'email': Ack.string.isEmail().nullable(),
+          'email': Ack.string.email().nullable(),
         }, required: [
           'name',
           'age'
@@ -112,7 +112,7 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string.minLength(2),
           'age': Ack.int.min(0).max(120),
-          'email': Ack.string.isEmail().nullable(),
+          'email': Ack.string.email().nullable(),
         }, required: [
           'name',
           'age'
@@ -161,7 +161,7 @@ void main() {
         final orderSchema = Ack.object({
           'id': Ack.string,
           'customer':
-              Ack.object({'name': Ack.string, 'email': Ack.string.isEmail()}),
+              Ack.object({'name': Ack.string, 'email': Ack.string.email()}),
           'items': Ack.list(Ack.object({
             'productId': Ack.string,
             'quantity': Ack.int.min(1),
@@ -198,7 +198,7 @@ void main() {
         final orderSchema = Ack.object({
           'id': Ack.string,
           'customer':
-              Ack.object({'name': Ack.string, 'email': Ack.string.isEmail()}),
+              Ack.object({'name': Ack.string, 'email': Ack.string.email()}),
           'items': Ack.list(Ack.object({
             'productId': Ack.string,
             'quantity': Ack.int.min(1),

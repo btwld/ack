@@ -12,13 +12,10 @@ part of 'user_model.dart';
 /// Generated schema for User
 /// A user model with validation
 class UserSchema extends SchemaModel<User> {
-  // Constructor that validates input
   UserSchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
@@ -42,51 +39,38 @@ class UserSchema extends SchemaModel<User> {
     AddressSchema.ensureInitialize();
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Type-safe getters
   String get email {
     return getValue<String>('email')!;
   }
 
-// Type-safe getters
   String get name {
     return getValue<String>('name')!;
   }
 
-// Type-safe getters
   int? get age {
     return getValue<int>('age');
   }
 
-// Type-safe getters
   String? get password {
     return getValue<String>('password');
   }
 
-// Type-safe getters
   AddressSchema get address {
     return AddressSchema(getValue<Map<String, dynamic>>('address')!);
   }
 
-// Get metadata with fallback
   Map<String, Object?> get metadata {
-    final result = <String, Object?>{};
-    final knownFields = ['email', 'name', 'age', 'password', 'address'];
-
-    for (final key in toMap().keys) {
-      if (!knownFields.contains(key)) {
-        result[key] = toMap()[key];
-      }
-    }
-    return result;
+    final map = toMap();
+    final knownFields = {'email', 'name', 'age', 'password', 'address'};
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-// Model conversion methods
   @override
   User toModel() {
     if (!isValid) {
@@ -111,13 +95,10 @@ class UserSchema extends SchemaModel<User> {
 
 /// Generated schema for Address
 class AddressSchema extends SchemaModel<Address> {
-  // Constructor that validates input
   AddressSchema([Object? value = null]) : super(value);
 
-// Schema definition moved to a static field for easier access
   static final ObjectSchema schema = _createSchema();
 
-// Create the validation schema
   static ObjectSchema _createSchema() {
     return Ack.object(
       {
@@ -137,28 +118,23 @@ class AddressSchema extends SchemaModel<Address> {
     );
   }
 
-// Override to return the schema for validation
   @override
   AckSchema getSchema() {
     return schema;
   }
 
-// Type-safe getters
   String get street {
     return getValue<String>('street')!;
   }
 
-// Type-safe getters
   String get city {
     return getValue<String>('city')!;
   }
 
-// Type-safe getters
   String? get zip {
     return getValue<String>('zip');
   }
 
-// Model conversion methods
   @override
   Address toModel() {
     if (!isValid) {

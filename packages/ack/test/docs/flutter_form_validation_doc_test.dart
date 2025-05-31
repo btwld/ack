@@ -10,16 +10,16 @@ void main() {
             .minLength(3)
             .maxLength(20)
             .matches(r'[a-zA-Z0-9_]+', example: 'john_doe123')
-            .isNotEmpty();
+            .notEmpty();
 
-        final emailSchema = Ack.string.isEmail().isNotEmpty();
+        final emailSchema = Ack.string.email().notEmpty();
 
         final passwordSchema = Ack.string
             .minLength(8)
             .contains(r'[A-Z]') // Must contain uppercase
             .contains(r'[a-z]') // Must contain lowercase
             .contains(r'[0-9]') // Must contain digit
-            .isNotEmpty();
+            .notEmpty();
 
         // Test valid values
         expect(usernameSchema.validate('john_doe123').isOk, isTrue);
@@ -37,7 +37,7 @@ void main() {
 
     group('Real-time Validation', () {
       test('Validate as user types', () {
-        final emailSchema = Ack.string.isEmail();
+        final emailSchema = Ack.string.email();
 
         // Empty string should be valid (user hasn't typed anything yet)
         expect(emailSchema.validate('').isOk, isFalse);
@@ -54,7 +54,7 @@ void main() {
       test('Validate all fields at once', () {
         // Define schemas
         final usernameSchema = Ack.string.minLength(3);
-        final emailSchema = Ack.string.isEmail();
+        final emailSchema = Ack.string.email();
         final passwordSchema = Ack.string.minLength(8);
 
         // Test all fields valid
