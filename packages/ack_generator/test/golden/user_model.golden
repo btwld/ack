@@ -14,21 +14,17 @@ part of 'user_model.dart';
 class UserSchema extends SchemaModel<User> {
   UserSchema([Object? value = null]) : super(value);
 
-  static final ObjectSchema schema = _createSchema();
-
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'email': Ack.string.email(),
-        'name': Ack.string.notEmpty(),
-        'age': Ack.int.nullable(),
-        'password': Ack.string.minLength(8).nullable(),
-        'address': AddressSchema.schema,
-      },
-      required: ['email', 'name', 'password', 'address'],
-      additionalProperties: true,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {
+      'email': Ack.string.email(),
+      'name': Ack.string.notEmpty(),
+      'age': Ack.int.nullable(),
+      'password': Ack.string.minLength(8).nullable(),
+      'address': AddressSchema.schema,
+    },
+    required: ['email', 'name', 'password', 'address'],
+    additionalProperties: true,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -40,25 +36,15 @@ class UserSchema extends SchemaModel<User> {
   }
 
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
-  String get email {
-    return getValue<String>('email')!;
-  }
+  String get email => getValue<String>('email')!;
 
-  String get name {
-    return getValue<String>('name')!;
-  }
+  String get name => getValue<String>('name')!;
 
-  int? get age {
-    return getValue<int>('age');
-  }
+  int? get age => getValue<int>('age');
 
-  String? get password {
-    return getValue<String>('password');
-  }
+  String? get password => getValue<String>('password');
 
   AddressSchema get address {
     return AddressSchema(getValue<Map<String, dynamic>>('address')!);
@@ -87,29 +73,23 @@ class UserSchema extends SchemaModel<User> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for Address
 class AddressSchema extends SchemaModel<Address> {
   AddressSchema([Object? value = null]) : super(value);
 
-  static final ObjectSchema schema = _createSchema();
-
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'street': Ack.string.notEmpty(),
-        'city': Ack.string.notEmpty(),
-        'zip': Ack.string.nullable(),
-      },
-      required: ['street', 'city'],
-      additionalProperties: false,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {
+      'street': Ack.string.notEmpty(),
+      'city': Ack.string.notEmpty(),
+      'zip': Ack.string.nullable(),
+    },
+    required: ['street', 'city'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -119,21 +99,13 @@ class AddressSchema extends SchemaModel<Address> {
   }
 
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
-  String get street {
-    return getValue<String>('street')!;
-  }
+  String get street => getValue<String>('street')!;
 
-  String get city {
-    return getValue<String>('city')!;
-  }
+  String get city => getValue<String>('city')!;
 
-  String? get zip {
-    return getValue<String>('zip');
-  }
+  String? get zip => getValue<String>('zip');
 
   @override
   Address toModel() {
@@ -148,8 +120,6 @@ class AddressSchema extends SchemaModel<Address> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }

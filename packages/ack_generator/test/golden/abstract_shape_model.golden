@@ -1,0 +1,237 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'abstract_shape_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated base schema for Shape with inheritance support
+/// A shape that can be a circle, rectangle, or triangle
+class ShapeSchema<T extends Shape> extends SchemaModel<T> {
+  // Constructor that validates input
+  ShapeSchema([Object? value = null]) : super(value);
+
+  // Main discriminated schema (default entry point for Shape)
+    static final DiscriminatedObjectSchema schema = Ack.discriminated(
+    discriminatorKey: 'type',
+    schemas: {
+      'circle': CircleSchema.schema,
+        'rectangle': RectangleSchema.schema,
+        'triangle': TriangleSchema.schema,
+    },
+  );
+
+  static final ObjectSchema baseSchema = Ack.object(
+    {
+        'type': Ack.string,
+        'color': Ack.string.nullable(),
+        'isFilled': Ack.boolean,
+    },
+    required: ['type'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<Shape, ShapeSchema>(
+      (data) => ShapeSchema(data),
+    );
+    // Register schema dependencies
+    CircleSchema.ensureInitialize();
+    RectangleSchema.ensureInitialize();
+    TriangleSchema.ensureInitialize();
+  }
+
+  // Override to return the discriminated schema for validation
+  @override
+  AckSchema getSchema() => schema;
+
+  String get type => getValue<String>('type')!
+
+  String? get color => getValue<String>('color')
+
+  bool get isFilled => getValue<bool>('isFilled')!
+
+  R when<R>({
+    required R Function(CircleSchema) circle,
+    required R Function(RectangleSchema) rectangle,
+    required R Function(TriangleSchema) triangle,
+  }) => switch (type) {
+    'circle' => circle(CircleSchema(data)),
+    'rectangle' => rectangle(RectangleSchema(data)),
+    'triangle' => triangle(TriangleSchema(data)),
+    _ => throw StateError('Unknown shape type: $type'),
+  };
+
+  R maybeWhen<R>({
+    R Function(CircleSchema)? circle,
+    R Function(RectangleSchema)? rectangle,
+    R Function(TriangleSchema)? triangle,
+    required R Function() orElse,
+  }) => switch (type) {
+    'circle' => circle?.call(CircleSchema(data)) ?? orElse(),
+    'rectangle' => rectangle?.call(RectangleSchema(data)) ?? orElse(),
+    'triangle' => triangle?.call(TriangleSchema(data)) ?? orElse(),
+    _ => orElse(),
+  };
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for Circle extending ShapeSchema
+/// A circular shape with radius
+class CircleSchema extends ShapeSchema<Circle> {
+  // Constructor that validates input
+  CircleSchema([Object? value = null]) : super(value);
+
+  // Extended schema that inherits from base schema
+  static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
+    {
+      'radius': Ack.double
+    },
+    required: ['radius'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<Circle, CircleSchema>(
+      (data) => CircleSchema(data),
+    );
+  }
+
+  // Override to return the extended schema for validation
+  @override
+  AckSchema getSchema() => schema;
+
+  // Subclass-specific type-safe getters (base getters inherited)
+  double get radius => getValue<double>('radius')!
+
+  // Model conversion methods
+  @override
+  Circle toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return Circle(
+      type: type,
+      color: color,
+      isFilled: isFilled,
+      radius: radius
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for Rectangle extending ShapeSchema
+/// A rectangular shape with width and height
+class RectangleSchema extends ShapeSchema<Rectangle> {
+  // Constructor that validates input
+  RectangleSchema([Object? value = null]) : super(value);
+
+  // Extended schema that inherits from base schema
+  static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
+    {
+      'width': Ack.double,
+        'height': Ack.double
+    },
+    required: ['width', 'height'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<Rectangle, RectangleSchema>(
+      (data) => RectangleSchema(data),
+    );
+  }
+
+  // Override to return the extended schema for validation
+  @override
+  AckSchema getSchema() => schema;
+
+  // Subclass-specific type-safe getters (base getters inherited)
+  double get width => getValue<double>('width')!
+
+  double get height => getValue<double>('height')!
+
+  // Model conversion methods
+  @override
+  Rectangle toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return Rectangle(
+      type: type,
+      color: color,
+      isFilled: isFilled,
+      width: width,
+      height: height
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for Triangle extending ShapeSchema
+/// A triangular shape with three sides
+class TriangleSchema extends ShapeSchema<Triangle> {
+  // Constructor that validates input
+  TriangleSchema([Object? value = null]) : super(value);
+
+  // Extended schema that inherits from base schema
+  static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
+    {
+      'sideA': Ack.double,
+        'sideB': Ack.double,
+        'sideC': Ack.double
+    },
+    required: ['sideA', 'sideB', 'sideC'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<Triangle, TriangleSchema>(
+      (data) => TriangleSchema(data),
+    );
+  }
+
+  // Override to return the extended schema for validation
+  @override
+  AckSchema getSchema() => schema;
+
+  // Subclass-specific type-safe getters (base getters inherited)
+  double get sideA => getValue<double>('sideA')!
+
+  double get sideB => getValue<double>('sideB')!
+
+  double get sideC => getValue<double>('sideC')!
+
+  // Model conversion methods
+  @override
+  Triangle toModel() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    return Triangle(
+      type: type,
+      color: color,
+      isFilled: isFilled,
+      sideA: sideA,
+      sideB: sideB,
+      sideC: sideC
+    );
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
+}

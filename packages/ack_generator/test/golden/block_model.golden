@@ -14,15 +14,11 @@ part of 'block_model.dart';
 class BlockSchema extends SchemaModel<Block> {
   BlockSchema([Object? value = null]) : super(value);
 
-  static final ObjectSchema schema = _createSchema();
-
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {},
-      required: [],
-      additionalProperties: false,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {},
+    required: [],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -32,9 +28,7 @@ class BlockSchema extends SchemaModel<Block> {
   }
 
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   @override
   Block toModel() {
@@ -46,10 +40,8 @@ class BlockSchema extends SchemaModel<Block> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for SectionBlock
@@ -57,17 +49,13 @@ class BlockSchema extends SchemaModel<Block> {
 class SectionBlockSchema extends SchemaModel<SectionBlock> {
   SectionBlockSchema([Object? value = null]) : super(value);
 
-  static final ObjectSchema schema = _createSchema();
-
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'columns': Ack.list(ColumnBlockSchema.schema),
-      },
-      required: ['columns'],
-      additionalProperties: false,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {
+      'columns': Ack.list(ColumnBlockSchema.schema),
+    },
+    required: ['columns'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -79,9 +67,7 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
   }
 
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   List<ColumnBlockSchema> get columns {
     return getValue<List<dynamic>>('columns')!
@@ -100,10 +86,8 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for ColumnBlock
@@ -111,17 +95,13 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
 class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
   ColumnBlockSchema([Object? value = null]) : super(value);
 
-  static final ObjectSchema schema = _createSchema();
-
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'content': Ack.string,
-      },
-      required: ['content'],
-      additionalProperties: false,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {
+      'content': Ack.string,
+    },
+    required: ['content'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -131,13 +111,9 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
   }
 
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
-  String get content {
-    return getValue<String>('content')!;
-  }
+  String get content => getValue<String>('content')!;
 
   @override
   ColumnBlock toModel() {
@@ -150,8 +126,6 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }

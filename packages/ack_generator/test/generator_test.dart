@@ -29,6 +29,12 @@ void main() {
       await testGolden('payment_method_model');
     });
 
+    test(
+        'generates correct output for discriminated unions with abstract classes',
+        () async {
+      await testGolden('abstract_shape_model');
+    });
+
     if (Platform.environment['UPDATE_GOLDEN'] == 'true') {
       print('Golden files updated. Review changes before committing.');
     }

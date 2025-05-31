@@ -16,32 +16,24 @@ class PaymentMethodSchema<T extends PaymentMethod> extends SchemaModel<T> {
   PaymentMethodSchema([Object? value = null]) : super(value);
 
   // Main discriminated schema (default entry point for PaymentMethod)
-  static final DiscriminatedObjectSchema schema = _createDiscriminatedSchema();
+    static final DiscriminatedObjectSchema schema = Ack.discriminated(
+    discriminatorKey: 'type',
+    schemas: {
+      'credit_card': CreditCardPaymentSchema.schema,
+        'bank_transfer': BankTransferPaymentSchema.schema,
+        'digital_wallet': DigitalWalletPaymentSchema.schema,
+    },
+  );
 
-  static final ObjectSchema baseSchema = _createBaseSchema();
-
-  static ObjectSchema _createBaseSchema() {
-    return Ack.object(
-      {
+  static final ObjectSchema baseSchema = Ack.object(
+    {
         'type': Ack.string,
         'limit': Ack.double.nullable(),
         'isDefault': Ack.boolean,
-      },
-      required: ['type'],
-      additionalProperties: false,
-    );
-  }
-
-  static DiscriminatedObjectSchema _createDiscriminatedSchema() {
-    return Ack.discriminated(
-      discriminatorKey: 'type',
-      schemas: {
-        'credit_card': CreditCardPaymentSchema.schema,
-        'bank_transfer': BankTransferPaymentSchema.schema,
-        'digital_wallet': DigitalWalletPaymentSchema.schema,
-      },
-    );
-  }
+    },
+    required: ['type'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -56,63 +48,39 @@ class PaymentMethodSchema<T extends PaymentMethod> extends SchemaModel<T> {
 
   // Override to return the discriminated schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
-  String get type {
-    return getValue<String>('type')!;
-  }
+  String get type => getValue<String>('type')!
 
-  double? get limit {
-    return getValue<double>('limit');
-  }
+  double? get limit => getValue<double>('limit')
 
-  bool get isDefault {
-    return getValue<bool>('isDefault')!;
-  }
+  bool get isDefault => getValue<bool>('isDefault')!
 
   R when<R>({
     required R Function(CreditCardPaymentSchema) creditCard,
     required R Function(BankTransferPaymentSchema) bankTransfer,
     required R Function(DigitalWalletPaymentSchema) digitalWallet,
-  }) {
-    switch (type) {
-      case 'credit_card':
-        return creditCard(CreditCardPaymentSchema(data));
-      case 'bank_transfer':
-        return bankTransfer(BankTransferPaymentSchema(data));
-      case 'digital_wallet':
-        return digitalWallet(DigitalWalletPaymentSchema(data));
-      default:
-        throw StateError('Unknown paymentmethod type: $type');
-    }
-  }
+  }) => switch (type) {
+    'credit_card' => creditCard(CreditCardPaymentSchema(data)),
+    'bank_transfer' => bankTransfer(BankTransferPaymentSchema(data)),
+    'digital_wallet' => digitalWallet(DigitalWalletPaymentSchema(data)),
+    _ => throw StateError('Unknown paymentmethod type: $type'),
+  };
 
   R maybeWhen<R>({
     R Function(CreditCardPaymentSchema)? creditCard,
     R Function(BankTransferPaymentSchema)? bankTransfer,
     R Function(DigitalWalletPaymentSchema)? digitalWallet,
     required R Function() orElse,
-  }) {
-    switch (type) {
-      case 'credit_card':
-        return creditCard?.call(CreditCardPaymentSchema(data)) ?? orElse();
-      case 'bank_transfer':
-        return bankTransfer?.call(BankTransferPaymentSchema(data)) ?? orElse();
-      case 'digital_wallet':
-        return digitalWallet?.call(DigitalWalletPaymentSchema(data)) ??
-            orElse();
-      default:
-        return orElse();
-    }
-  }
+  }) => switch (type) {
+    'credit_card' => creditCard?.call(CreditCardPaymentSchema(data)) ?? orElse(),
+    'bank_transfer' => bankTransfer?.call(BankTransferPaymentSchema(data)) ?? orElse(),
+    'digital_wallet' => digitalWallet?.call(DigitalWalletPaymentSchema(data)) ?? orElse(),
+    _ => orElse(),
+  };
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for CreditCardPayment extending PaymentMethodSchema
@@ -122,21 +90,16 @@ class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
   CreditCardPaymentSchema([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return PaymentMethodSchema.baseSchema.extend(
-      {
-        'cardNumber': Ack.string.minLength(4),
+  static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
+    {
+      'cardNumber': Ack.string.minLength(4),
         'cardholderName': Ack.string.notEmpty(),
         'expiryDate': Ack.string,
         'brand': Ack.string
-      },
-      required: ['cardNumber', 'cardholderName', 'expiryDate', 'brand'],
-      additionalProperties: false,
-    );
-  }
+    },
+    required: ['cardNumber', 'cardholderName', 'expiryDate', 'brand'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -147,26 +110,16 @@ class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   // Subclass-specific type-safe getters (base getters inherited)
-  String get cardNumber {
-    return getValue<String>('cardNumber')!;
-  }
+  String get cardNumber => getValue<String>('cardNumber')!
 
-  String get cardholderName {
-    return getValue<String>('cardholderName')!;
-  }
+  String get cardholderName => getValue<String>('cardholderName')!
 
-  String get expiryDate {
-    return getValue<String>('expiryDate')!;
-  }
+  String get expiryDate => getValue<String>('expiryDate')!
 
-  String get brand {
-    return getValue<String>('brand')!;
-  }
+  String get brand => getValue<String>('brand')!
 
   // Model conversion methods
   @override
@@ -175,50 +128,37 @@ class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
       throw AckException(getErrors()!);
     }
     return CreditCardPayment(
-        type: type,
-        limit: limit,
-        isDefault: isDefault,
-        cardNumber: cardNumber,
-        cardholderName: cardholderName,
-        expiryDate: expiryDate,
-        brand: brand);
+      type: type,
+      limit: limit,
+      isDefault: isDefault,
+      cardNumber: cardNumber,
+      cardholderName: cardholderName,
+      expiryDate: expiryDate,
+      brand: brand
+    );
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for BankTransferPayment extending PaymentMethodSchema
 /// Bank transfer payment with account details
-class BankTransferPaymentSchema
-    extends PaymentMethodSchema<BankTransferPayment> {
+class BankTransferPaymentSchema extends PaymentMethodSchema<BankTransferPayment> {
   // Constructor that validates input
   BankTransferPaymentSchema([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return PaymentMethodSchema.baseSchema.extend(
-      {
-        'accountNumber': Ack.string.notEmpty(),
+  static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
+    {
+      'accountNumber': Ack.string.notEmpty(),
         'routingNumber': Ack.string.notEmpty(),
         'bankName': Ack.string.notEmpty(),
         'accountHolderName': Ack.string.notEmpty()
-      },
-      required: [
-        'accountNumber',
-        'routingNumber',
-        'bankName',
-        'accountHolderName'
-      ],
-      additionalProperties: false,
-    );
-  }
+    },
+    required: ['accountNumber', 'routingNumber', 'bankName', 'accountHolderName'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -229,26 +169,16 @@ class BankTransferPaymentSchema
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   // Subclass-specific type-safe getters (base getters inherited)
-  String get accountNumber {
-    return getValue<String>('accountNumber')!;
-  }
+  String get accountNumber => getValue<String>('accountNumber')!
 
-  String get routingNumber {
-    return getValue<String>('routingNumber')!;
-  }
+  String get routingNumber => getValue<String>('routingNumber')!
 
-  String get bankName {
-    return getValue<String>('bankName')!;
-  }
+  String get bankName => getValue<String>('bankName')!
 
-  String get accountHolderName {
-    return getValue<String>('accountHolderName')!;
-  }
+  String get accountHolderName => getValue<String>('accountHolderName')!
 
   // Model conversion methods
   @override
@@ -257,44 +187,36 @@ class BankTransferPaymentSchema
       throw AckException(getErrors()!);
     }
     return BankTransferPayment(
-        type: type,
-        limit: limit,
-        isDefault: isDefault,
-        accountNumber: accountNumber,
-        routingNumber: routingNumber,
-        bankName: bankName,
-        accountHolderName: accountHolderName);
+      type: type,
+      limit: limit,
+      isDefault: isDefault,
+      accountNumber: accountNumber,
+      routingNumber: routingNumber,
+      bankName: bankName,
+      accountHolderName: accountHolderName
+    );
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for DigitalWalletPayment extending PaymentMethodSchema
 /// Digital wallet payment like PayPal, Apple Pay, etc.
-class DigitalWalletPaymentSchema
-    extends PaymentMethodSchema<DigitalWalletPayment> {
+class DigitalWalletPaymentSchema extends PaymentMethodSchema<DigitalWalletPayment> {
   // Constructor that validates input
   DigitalWalletPaymentSchema([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return PaymentMethodSchema.baseSchema.extend(
-      {
-        'provider': Ack.string.notEmpty(),
+  static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
+    {
+      'provider': Ack.string.notEmpty(),
         'walletId': Ack.string.email(),
         'metadata': Ack.object({}, additionalProperties: true)
-      },
-      required: ['provider', 'walletId'],
-      additionalProperties: false,
-    );
-  }
+    },
+    required: ['provider', 'walletId'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -305,22 +227,14 @@ class DigitalWalletPaymentSchema
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   // Subclass-specific type-safe getters (base getters inherited)
-  String get provider {
-    return getValue<String>('provider')!;
-  }
+  String get provider => getValue<String>('provider')!
 
-  String get walletId {
-    return getValue<String>('walletId')!;
-  }
+  String get walletId => getValue<String>('walletId')!
 
-  Map<String, dynamic> get metadata {
-    return getValue<Map<String, dynamic>>('metadata')!;
-  }
+  Map<String, dynamic> get metadata => getValue<Map<String, dynamic>>('metadata')!
 
   // Model conversion methods
   @override
@@ -329,17 +243,15 @@ class DigitalWalletPaymentSchema
       throw AckException(getErrors()!);
     }
     return DigitalWalletPayment(
-        type: type,
-        limit: limit,
-        isDefault: isDefault,
-        provider: provider,
-        walletId: walletId,
-        metadata: metadata);
+      type: type,
+      limit: limit,
+      isDefault: isDefault,
+      provider: provider,
+      walletId: walletId,
+      metadata: metadata
+    );
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }

@@ -1,11 +1,11 @@
 import 'package:analyzer/dart/element/element.dart';
 
-/// Information about a sealed class and its discriminated union structure
-class SealedClassInfo {
-  /// The sealed class element
-  final ClassElement sealedClass;
+/// Information about a class (sealed or abstract) and its discriminated union structure
+class DiscriminatedClassInfo {
+  /// The base class element (sealed or abstract)
+  final ClassElement baseClass;
 
-  /// List of subclass elements that extend the sealed class
+  /// List of subclass elements that extend the base class
   final List<ClassElement> subclasses;
 
   /// Mapping from discriminator values to their corresponding subclass elements
@@ -14,8 +14,8 @@ class SealedClassInfo {
   /// The discriminator key field name (e.g., 'type')
   final String discriminatorKey;
 
-  const SealedClassInfo({
-    required this.sealedClass,
+  const DiscriminatedClassInfo({
+    required this.baseClass,
     required this.subclasses,
     required this.discriminatorMapping,
     required this.discriminatorKey,
@@ -33,7 +33,7 @@ class SealedClassInfo {
       discriminatorMapping[value];
 
   @override
-  String toString() => 'SealedClassInfo(${sealedClass.name}, '
+  String toString() => 'DiscriminatedClassInfo(${baseClass.name}, '
       'subclasses: ${subclasses.length}, '
       'discriminatorKey: $discriminatorKey, '
       'values: ${discriminatorValues.join(', ')})';

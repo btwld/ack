@@ -16,33 +16,25 @@ class SealedBlockSchema<T extends SealedBlock> extends SchemaModel<T> {
   SealedBlockSchema([Object? value = null]) : super(value);
 
   // Main discriminated schema (default entry point for SealedBlock)
-  static final DiscriminatedObjectSchema schema = _createDiscriminatedSchema();
+    static final DiscriminatedObjectSchema schema = Ack.discriminated(
+    discriminatorKey: 'type',
+    schemas: {
+      'text': TextBlockSchema.schema,
+        'image': ImageBlockSchema.schema,
+        'widget': WidgetBlockSchema.schema,
+    },
+  );
 
-  static final ObjectSchema baseSchema = _createBaseSchema();
-
-  static ObjectSchema _createBaseSchema() {
-    return Ack.object(
-      {
+  static final ObjectSchema baseSchema = Ack.object(
+    {
         'type': Ack.string,
         'align': Ack.string.nullable(),
         'flex': Ack.int.nullable(),
         'scrollable': Ack.boolean.nullable(),
-      },
-      required: ['type'],
-      additionalProperties: false,
-    );
-  }
-
-  static DiscriminatedObjectSchema _createDiscriminatedSchema() {
-    return Ack.discriminated(
-      discriminatorKey: 'type',
-      schemas: {
-        'text': TextBlockSchema.schema,
-        'image': ImageBlockSchema.schema,
-        'widget': WidgetBlockSchema.schema,
-      },
-    );
-  }
+    },
+    required: ['type'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -57,66 +49,41 @@ class SealedBlockSchema<T extends SealedBlock> extends SchemaModel<T> {
 
   // Override to return the discriminated schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
-  String get type {
-    return getValue<String>('type')!;
-  }
+  String get type => getValue<String>('type')!
 
-  String? get align {
-    return getValue<String>('align');
-  }
+  String? get align => getValue<String>('align')
 
-  int? get flex {
-    return getValue<int>('flex');
-  }
+  int? get flex => getValue<int>('flex')
 
-  bool? get scrollable {
-    return getValue<bool>('scrollable');
-  }
+  bool? get scrollable => getValue<bool>('scrollable')
 
   R when<R>({
     required R Function(TextBlockSchema) text,
     required R Function(ImageBlockSchema) image,
     required R Function(WidgetBlockSchema) widget,
-  }) {
-    switch (type) {
-      case 'text':
-        return text(TextBlockSchema(data));
-      case 'image':
-        return image(ImageBlockSchema(data));
-      case 'widget':
-        return widget(WidgetBlockSchema(data));
-      default:
-        throw StateError('Unknown sealedblock type: $type');
-    }
-  }
+  }) => switch (type) {
+    'text' => text(TextBlockSchema(data)),
+    'image' => image(ImageBlockSchema(data)),
+    'widget' => widget(WidgetBlockSchema(data)),
+    _ => throw StateError('Unknown sealedblock type: $type'),
+  };
 
   R maybeWhen<R>({
     R Function(TextBlockSchema)? text,
     R Function(ImageBlockSchema)? image,
     R Function(WidgetBlockSchema)? widget,
     required R Function() orElse,
-  }) {
-    switch (type) {
-      case 'text':
-        return text?.call(TextBlockSchema(data)) ?? orElse();
-      case 'image':
-        return image?.call(ImageBlockSchema(data)) ?? orElse();
-      case 'widget':
-        return widget?.call(WidgetBlockSchema(data)) ?? orElse();
-      default:
-        return orElse();
-    }
-  }
+  }) => switch (type) {
+    'text' => text?.call(TextBlockSchema(data)) ?? orElse(),
+    'image' => image?.call(ImageBlockSchema(data)) ?? orElse(),
+    'widget' => widget?.call(WidgetBlockSchema(data)) ?? orElse(),
+    _ => orElse(),
+  };
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for TextBlock extending SealedBlockSchema
@@ -126,16 +93,13 @@ class TextBlockSchema extends SealedBlockSchema<TextBlock> {
   TextBlockSchema([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return SealedBlockSchema.baseSchema.extend(
-      {'content': Ack.string},
-      required: ['content'],
-      additionalProperties: false,
-    );
-  }
+  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+    {
+      'content': Ack.string
+    },
+    required: ['content'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -146,14 +110,10 @@ class TextBlockSchema extends SealedBlockSchema<TextBlock> {
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   // Subclass-specific type-safe getters (base getters inherited)
-  String get content {
-    return getValue<String>('content')!;
-  }
+  String get content => getValue<String>('content')!
 
   // Model conversion methods
   @override
@@ -162,18 +122,16 @@ class TextBlockSchema extends SealedBlockSchema<TextBlock> {
       throw AckException(getErrors()!);
     }
     return TextBlock(
-        type: type,
-        align: align,
-        flex: flex,
-        scrollable: scrollable,
-        content: content);
+      type: type,
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      content: content
+    );
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for ImageBlock extending SealedBlockSchema
@@ -183,21 +141,16 @@ class ImageBlockSchema extends SealedBlockSchema<ImageBlock> {
   ImageBlockSchema([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return SealedBlockSchema.baseSchema.extend(
-      {
-        'src': Ack.string,
+  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+    {
+      'src': Ack.string,
         'width': Ack.double.nullable(),
         'height': Ack.double.nullable(),
         'fit': Ack.string.nullable()
-      },
-      required: ['src'],
-      additionalProperties: false,
-    );
-  }
+    },
+    required: ['src'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -208,26 +161,16 @@ class ImageBlockSchema extends SealedBlockSchema<ImageBlock> {
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   // Subclass-specific type-safe getters (base getters inherited)
-  String get src {
-    return getValue<String>('src')!;
-  }
+  String get src => getValue<String>('src')!
 
-  double? get width {
-    return getValue<double>('width');
-  }
+  double? get width => getValue<double>('width')
 
-  double? get height {
-    return getValue<double>('height');
-  }
+  double? get height => getValue<double>('height')
 
-  String? get fit {
-    return getValue<String>('fit');
-  }
+  String? get fit => getValue<String>('fit')
 
   // Model conversion methods
   @override
@@ -236,21 +179,19 @@ class ImageBlockSchema extends SealedBlockSchema<ImageBlock> {
       throw AckException(getErrors()!);
     }
     return ImageBlock(
-        type: type,
-        align: align,
-        flex: flex,
-        scrollable: scrollable,
-        src: src,
-        width: width,
-        height: height,
-        fit: fit);
+      type: type,
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      src: src,
+      width: width,
+      height: height,
+      fit: fit
+    );
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for WidgetBlock extending SealedBlockSchema
@@ -260,19 +201,14 @@ class WidgetBlockSchema extends SealedBlockSchema<WidgetBlock> {
   WidgetBlockSchema([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return SealedBlockSchema.baseSchema.extend(
-      {
-        'name': Ack.string,
+  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+    {
+      'name': Ack.string,
         'properties': Ack.object({}, additionalProperties: true)
-      },
-      required: ['name'],
-      additionalProperties: false,
-    );
-  }
+    },
+    required: ['name'],
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -283,18 +219,12 @@ class WidgetBlockSchema extends SealedBlockSchema<WidgetBlock> {
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
   // Subclass-specific type-safe getters (base getters inherited)
-  String get name {
-    return getValue<String>('name')!;
-  }
+  String get name => getValue<String>('name')!
 
-  Map<String, dynamic> get properties {
-    return getValue<Map<String, dynamic>>('properties')!;
-  }
+  Map<String, dynamic> get properties => getValue<Map<String, dynamic>>('properties')!
 
   // Model conversion methods
   @override
@@ -303,17 +233,15 @@ class WidgetBlockSchema extends SealedBlockSchema<WidgetBlock> {
       throw AckException(getErrors()!);
     }
     return WidgetBlock(
-        type: type,
-        align: align,
-        flex: flex,
-        scrollable: scrollable,
-        name: name,
-        properties: properties);
+      type: type,
+      align: align,
+      flex: flex,
+      scrollable: scrollable,
+      name: name,
+      properties: properties
+    );
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }

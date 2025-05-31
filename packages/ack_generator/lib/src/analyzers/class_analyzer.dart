@@ -2,9 +2,9 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../models/class_info.dart';
+import '../models/discriminated_class_info.dart';
 import '../models/property_info.dart';
 import '../models/schema_data.dart';
-import '../models/sealed_class_info.dart';
 import 'property_analyzer.dart';
 
 /// Analyzes a class element and extracts comprehensive class information
@@ -115,14 +115,16 @@ class ClassAnalyzer {
     return dependencies;
   }
 
-  /// Analyze a sealed class and extract discriminated union information
-  /// Returns null if the class is not a sealed class with discriminated union setup
-  static SealedClassInfo? analyzeSealedClass(
+  /// Analyze a class for discriminated union pattern.
+  /// Works with both sealed and abstract classes that have a discriminatedKey.
+  /// Returns null if the class doesn't have a proper discriminated union setup.
+  static DiscriminatedClassInfo? analyzeDiscriminatedClass(
     ClassElement element,
     SchemaData schemaData,
   ) {
-    // Check if class is sealed and has discriminatedKey
-    if (!element.isSealed || schemaData.discriminatedKey == null) {
+    // Check if class has discriminatedKey and is either sealed or abstract
+    if (schemaData.discriminatedKey == null ||
+        (!element.isSealed && !element.isAbstract)) {
       return null;
     }
 
@@ -151,8 +153,8 @@ class ClassAnalyzer {
       return null;
     }
 
-    return SealedClassInfo(
-      sealedClass: element,
+    return DiscriminatedClassInfo(
+      baseClass: element,
       subclasses: subclasses,
       discriminatorMapping: discriminatorMapping,
       discriminatorKey: discriminatorKey,

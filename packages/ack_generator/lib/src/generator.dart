@@ -11,9 +11,9 @@ import 'analyzers/constraint_analyzer.dart';
 import 'analyzers/property_analyzer.dart';
 import 'analyzers/type_analyzer.dart';
 import 'models/class_info.dart';
+import 'models/discriminated_class_info.dart';
 import 'models/property_info.dart';
 import 'models/schema_data.dart';
-import 'models/sealed_class_info.dart';
 import 'models/type_name.dart';
 import 'utils/ack_types.dart';
 
@@ -54,14 +54,16 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
         ClassAnalyzer.findClassDependencies(classInfo.properties);
     classInfo = classInfo.withDependencies(dependencies);
 
-    // Special handling for sealed classes with discriminated unions
-    if (element.isSealed && schemaData.discriminatedKey != null) {
-      final sealedInfo = ClassAnalyzer.analyzeSealedClass(element, schemaData);
-      if (sealedInfo != null) {
+    // Special handling for discriminated unions (sealed or abstract classes)
+    if ((element.isSealed || element.isAbstract) &&
+        schemaData.discriminatedKey != null) {
+      final discriminatedInfo =
+          ClassAnalyzer.analyzeDiscriminatedClass(element, schemaData);
+      if (discriminatedInfo != null) {
         return _generateDiscriminatedUnionSchema(
           element,
           schemaData,
-          sealedInfo,
+          discriminatedInfo,
         );
       }
     }
@@ -120,10 +122,9 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
               ? ['/// ${schemaData.description}']
               : [],
         )
-        ..fields.add(_buildSchemaField())
+        ..fields.add(_buildSchemaField(classInfo, schemaData))
         ..constructors.add(_buildConstructor())
         ..methods.addAll([
-          _buildCreateSchemaMethod(classInfo, schemaData),
           _buildEnsureInitializeMethod(
             schemaClassName,
             modelClassName,
@@ -145,15 +146,32 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
     );
   }
 
-  Field _buildSchemaField() {
+  Field _buildSchemaField(ClassInfo classInfo, SchemaData schemaData) {
     return Field(
       (b) => b
         ..name = 'schema'
         ..static = true
         ..modifier = FieldModifier.final$
         ..type = refer(AckTypes.objectSchema)
-        ..assignment = const Code('_createSchema()'),
+        ..assignment = Code(_buildSchemaExpression(classInfo, schemaData)),
     );
+  }
+
+  String _buildSchemaExpression(ClassInfo classInfo, SchemaData schemaData) {
+    final properties = classInfo
+        .getPropertiesExcluding(schemaData.additionalPropertiesField)
+        .values;
+
+    final propertyCode = _buildPropertySchemaCode(properties);
+    final requiredProps = _buildRequiredPropsString(classInfo, schemaData);
+
+    return '''Ack.object(
+      {
+$propertyCode
+      },
+      required: [$requiredProps],
+      additionalProperties: ${schemaData.additionalProperties},
+    )''';
   }
 
   Constructor _buildConstructor() {
@@ -168,32 +186,6 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
           ),
         )
         ..initializers.add(const Code('super(value)')),
-    );
-  }
-
-  Method _buildCreateSchemaMethod(ClassInfo classInfo, SchemaData schemaData) {
-    final properties = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
-
-    final propertyCode = _buildPropertySchemaCode(properties);
-    final requiredProps = _buildRequiredPropsString(classInfo, schemaData);
-
-    final body = '''
-    return Ack.object(
-      {
-$propertyCode
-      },
-      required: [$requiredProps],
-      additionalProperties: ${schemaData.additionalProperties},
-    );''';
-
-    return Method(
-      (b) => b
-        ..name = '_createSchema'
-        ..static = true
-        ..returns = refer(AckTypes.objectSchema)
-        ..body = Code(body),
     );
   }
 
@@ -249,7 +241,8 @@ $propertyCode
         ..name = 'getSchema'
         ..returns = refer(AckTypes.ackSchema)
         ..annotations.add(refer('override'))
-        ..body = const Code('return schema;'),
+        ..body = const Code('schema')
+        ..lambda = true,
     );
   }
 
@@ -287,12 +280,17 @@ $propertyCode
       returnType = isNullable ? '$typeStr?' : typeStr;
     }
 
+    // Use arrow function for simple primitive getters
+    final isSimpleGetter = TypeAnalyzer.isPrimitiveType(property.typeName) &&
+        !typeStr.startsWith('List<');
+
     return Method(
       (b) => b
         ..name = property.name
         ..type = MethodType.getter
         ..returns = refer(returnType)
-        ..body = Code(body),
+        ..body = Code(body)
+        ..lambda = isSimpleGetter,
     );
   }
 
@@ -325,8 +323,8 @@ $propertyCode
         .toList();''';
     }
 
-    // Simple types
-    return "return getValue<$typeStr>('$propName')$nullSuffix;";
+    // Simple types - use arrow function for conciseness
+    return "getValue<$typeStr>('$propName')$nullSuffix";
   }
 
   Method _buildAdditionalPropertiesGetter(
@@ -450,53 +448,51 @@ $argsString
   }
 
   Method _buildToJsonSchemaMethod() {
-    final body = '''
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();''';
-
     return Method(
       (b) => b
         ..name = 'toJsonSchema'
         ..static = true
         ..returns = refer(AckTypes.mapStringObject)
         ..docs.add('/// Convert the schema to a JSON Schema')
-        ..body = Code(body),
+        ..body = const Code('JsonSchemaConverter(schema: schema).toSchema()')
+        ..lambda = true,
     );
   }
 
   String _generateDiscriminatedUnionSchema(
     ClassElement element,
     SchemaData schemaData,
-    SealedClassInfo sealedInfo,
+    DiscriminatedClassInfo discriminatedInfo,
   ) {
     final schemaClassName =
         schemaData.schemaClassName ?? '${element.name}Schema';
 
     // Generate base schema with inheritance support
-    final baseSchemaCode = _generateBaseSchema(element, schemaData, sealedInfo);
+    final baseSchemaCode =
+        _generateBaseSchema(element, schemaData, discriminatedInfo);
 
     // Generate base getters (reuse existing logic)
-    final baseGetters = _generateBaseGetters(element, sealedInfo);
+    final baseGetters = _generateBaseGetters(element, discriminatedInfo);
 
     // Generate pattern matching (reuse existing logic)
-    final patternMatching = _generatePatternMatching(sealedInfo);
+    final patternMatching = _generatePatternMatching(discriminatedInfo);
 
     // Generate discriminated schema method
     final discriminatedSchemaCode =
-        _generateDiscriminatedSchemaMethod(sealedInfo);
+        _generateDiscriminatedSchemaMethod(discriminatedInfo);
 
     // Generate dependencies
-    final dependencies = sealedInfo.subclasses
+    final dependencies = discriminatedInfo.subclasses
         .map((subclass) => '${subclass.name}Schema.ensureInitialize();')
         .join('\n    ');
 
     // Generate subclass schemas
     final subclassSchemas = <String>[];
-    for (final subclass in sealedInfo.subclasses) {
+    for (final subclass in discriminatedInfo.subclasses) {
       final subclassSchema = _generateSubclassSchema(
         subclass,
         element,
-        sealedInfo,
+        discriminatedInfo,
       );
       subclassSchemas.add(subclassSchema);
     }
@@ -510,11 +506,9 @@ class $schemaClassName<T extends ${element.name}> extends SchemaModel<T> {
   $schemaClassName([Object? value = null]) : super(value);
 
   // Main discriminated schema (default entry point for ${element.name})
-  static final DiscriminatedObjectSchema schema = _createDiscriminatedSchema();
+  $discriminatedSchemaCode
 
 $baseSchemaCode
-
-$discriminatedSchemaCode
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -527,19 +521,14 @@ $discriminatedSchemaCode
 
   // Override to return the discriminated schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
 $baseGetters
 
 $patternMatching
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }''';
 
     // Combine all schemas
@@ -575,7 +564,7 @@ $patternMatching
             .join();
   }
 
-  /// Check if a class is a subclass of a sealed discriminated union
+  /// Check if a class is a subclass of a discriminated union (sealed or abstract)
   /// This prevents duplicate generation of subclass schemas
   bool _isSubclassOfSealedDiscriminatedUnion(ClassElement element) {
     // Simple check: if this class has a discriminatedValue annotation,
@@ -587,12 +576,13 @@ $patternMatching
             reader.peek('discriminatedValue')?.stringValue;
         if (discriminatedValue != null) {
           // This class has a discriminatedValue, so it's part of a discriminated union
-          // Check if the superclass is sealed to confirm
+          // Check if the superclass is sealed or abstract to confirm
           final supertype = element.supertype;
           if (supertype != null) {
             final superElement = supertype.element;
-            if (superElement is ClassElement && superElement.isSealed) {
-              return true; // This is a subclass of a sealed discriminated union
+            if (superElement is ClassElement &&
+                (superElement.isSealed || superElement.isAbstract)) {
+              return true; // This is a subclass of a discriminated union
             }
           }
         }
@@ -607,12 +597,12 @@ $patternMatching
   String _generateBaseSchema(
     ClassElement element,
     SchemaData schemaData,
-    SealedClassInfo sealedInfo,
+    DiscriminatedClassInfo discriminatedInfo,
   ) {
     // Create enhanced ClassInfo with discriminator field
     final enhancedClassInfo = _addDiscriminatorToClassInfo(
       ClassAnalyzer.analyzeClass(element, schemaData.additionalPropertiesField),
-      sealedInfo.discriminatorKey,
+      discriminatedInfo.discriminatorKey,
     );
 
     // Reuse existing schema generation pattern
@@ -660,17 +650,13 @@ $patternMatching
     final requiredProps = _buildRequiredPropsString(classInfo, schemaData);
 
     return '''
-  static final ObjectSchema baseSchema = _createBaseSchema();
-
-  static ObjectSchema _createBaseSchema() {
-    return Ack.object(
-      {
+  static final ObjectSchema baseSchema = Ack.object(
+    {
 $propertyCode
-      },
-      required: [$requiredProps],
-      additionalProperties: ${schemaData.additionalProperties},
-    );
-  }''';
+    },
+    required: [$requiredProps],
+    additionalProperties: ${schemaData.additionalProperties},
+  );''';
   }
 
   /// Shared helper: Build property schema code from properties
@@ -712,12 +698,12 @@ $propertyCode
   /// Reuses existing _buildPropertyGetterString for all getters including discriminator
   String _generateBaseGetters(
     ClassElement element,
-    SealedClassInfo sealedInfo,
+    DiscriminatedClassInfo discriminatedInfo,
   ) {
     // Create enhanced ClassInfo with discriminator field for consistent handling
     final enhancedClassInfo = _addDiscriminatorToClassInfo(
       ClassAnalyzer.analyzeClass(element, null),
-      sealedInfo.discriminatorKey,
+      discriminatedInfo.discriminatorKey,
     );
 
     final getters = <String>[];
@@ -732,71 +718,66 @@ $propertyCode
 
   /// Generate pattern matching methods
   /// Reuses existing _toCamelCase for consistency
-  String _generatePatternMatching(SealedClassInfo sealedInfo) {
-    final whenParameters = sealedInfo.discriminatorMapping.entries
+  String _generatePatternMatching(DiscriminatedClassInfo discriminatedInfo) {
+    final whenParameters = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
               'required R Function(${entry.value.name}Schema) ${_toCamelCase(entry.key)}',
         )
         .join(',\n    ');
 
-    final whenCases = sealedInfo.discriminatorMapping.entries
+    final whenCases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "      case '${entry.key}':\n        return ${_toCamelCase(entry.key)}(${entry.value.name}Schema(data));",
+              "    '${entry.key}' => ${_toCamelCase(entry.key)}(${entry.value.name}Schema(data)),",
         )
         .join('\n');
 
-    final maybeWhenParameters = sealedInfo.discriminatorMapping.entries
+    final maybeWhenParameters = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
               'R Function(${entry.value.name}Schema)? ${_toCamelCase(entry.key)}',
         )
         .join(',\n    ');
 
-    final maybeWhenCases = sealedInfo.discriminatorMapping.entries
+    final maybeWhenCases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "      case '${entry.key}':\n        return ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema(data)) ?? orElse();",
+              "    '${entry.key}' => ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema(data)) ?? orElse(),",
         )
         .join('\n');
 
     return '''  R when<R>({
     $whenParameters,
-  }) {
-    switch (${sealedInfo.discriminatorKey}) {
+  }) => switch (${discriminatedInfo.discriminatorKey}) {
 $whenCases
-      default:
-        throw StateError('Unknown ${sealedInfo.sealedClass.name.toLowerCase()} type: \$${sealedInfo.discriminatorKey}');
-    }
-  }
+    _ => throw StateError('Unknown ${discriminatedInfo.baseClass.name.toLowerCase()} type: \$${discriminatedInfo.discriminatorKey}'),
+  };
 
   R maybeWhen<R>({
     $maybeWhenParameters,
     required R Function() orElse,
-  }) {
-    switch (${sealedInfo.discriminatorKey}) {
+  }) => switch (${discriminatedInfo.discriminatorKey}) {
 $maybeWhenCases
-      default:
-        return orElse();
-    }
-  }''';
+    _ => orElse(),
+  };''';
   }
 
   /// Generate discriminated schema method
-  String _generateDiscriminatedSchemaMethod(SealedClassInfo sealedInfo) {
-    final discriminatorMappingEntries = sealedInfo.discriminatorMapping.entries
+  String _generateDiscriminatedSchemaMethod(
+    DiscriminatedClassInfo discriminatedInfo,
+  ) {
+    final discriminatorMappingEntries = discriminatedInfo
+        .discriminatorMapping.entries
         .map((entry) => "'${entry.key}': ${entry.value.name}Schema.schema")
         .join(',\n        ');
 
-    return '''  static DiscriminatedObjectSchema _createDiscriminatedSchema() {
-    return Ack.discriminated(
-      discriminatorKey: '${sealedInfo.discriminatorKey}',
-      schemas: {
-        $discriminatorMappingEntries,
-      },
-    );
-  }''';
+    return '''  static final DiscriminatedObjectSchema schema = Ack.discriminated(
+    discriminatorKey: '${discriminatedInfo.discriminatorKey}',
+    schemas: {
+      $discriminatorMappingEntries,
+    },
+  );''';
   }
 
   /// Generate subclass schema that extends the base schema
@@ -804,7 +785,7 @@ $maybeWhenCases
   String _generateSubclassSchema(
     ClassElement subclassElement,
     ClassElement baseElement,
-    SealedClassInfo sealedInfo,
+    DiscriminatedClassInfo discriminatedInfo,
   ) {
     final subclassName = subclassElement.name;
     final baseName = baseElement.name;
@@ -845,18 +826,13 @@ class $schemaClassName extends ${baseName}Schema<$subclassName> {
   $schemaClassName([Object? value = null]) : super(value);
 
   // Extended schema that inherits from base schema
-  static final ObjectSchema schema = _createSchema();
-
-  // Create the validation schema by extending base schema
-  static ObjectSchema _createSchema() {
-    return ${baseName}Schema.baseSchema.extend(
-      {
-        ${propertySchemas.isNotEmpty ? propertySchemas : '// No additional properties'}
-      },
-      ${requiredFields.isNotEmpty ? 'required: [$requiredFields],' : ''}
-      additionalProperties: false,
-    );
-  }
+  static final ObjectSchema schema = ${baseName}Schema.baseSchema.extend(
+    {
+      ${propertySchemas.isNotEmpty ? propertySchemas : '// No additional properties'}
+    },
+    ${requiredFields.isNotEmpty ? 'required: [$requiredFields],' : ''}
+    additionalProperties: false,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -867,9 +843,7 @@ class $schemaClassName extends ${baseName}Schema<$subclassName> {
 
   // Override to return the extended schema for validation
   @override
-  AckSchema getSchema() {
-    return schema;
-  }
+  AckSchema getSchema() => schema;
 
 ${subclassGetters.isNotEmpty ? '  // Subclass-specific type-safe getters (base getters inherited)\n$subclassGetters\n' : ''}
   // Model conversion methods
@@ -884,10 +858,7 @@ ${subclassGetters.isNotEmpty ? '  // Subclass-specific type-safe getters (base g
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() {
-    final converter = JsonSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
+  static Map<String, Object?> toJsonSchema() => JsonSchemaConverter(schema: schema).toSchema();
 }''';
   }
 
