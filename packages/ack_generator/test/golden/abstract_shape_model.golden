@@ -58,9 +58,9 @@ class ShapeSchema<T extends Shape> extends SchemaModel<T> {
     required R Function(TriangleSchema) triangle,
   }) =>
       switch (type) {
-        'circle' => circle(CircleSchema(data)),
-        'rectangle' => rectangle(RectangleSchema(data)),
-        'triangle' => triangle(TriangleSchema(data)),
+        'circle' => circle(CircleSchema(toMap())),
+        'rectangle' => rectangle(RectangleSchema(toMap())),
+        'triangle' => triangle(TriangleSchema(toMap())),
         _ => throw StateError('Unknown shape type: $type'),
       };
 
@@ -71,9 +71,9 @@ class ShapeSchema<T extends Shape> extends SchemaModel<T> {
     required R Function() orElse,
   }) =>
       switch (type) {
-        'circle' => circle?.call(CircleSchema(data)) ?? orElse(),
-        'rectangle' => rectangle?.call(RectangleSchema(data)) ?? orElse(),
-        'triangle' => triangle?.call(TriangleSchema(data)) ?? orElse(),
+        'circle' => circle?.call(CircleSchema(toMap())) ?? orElse(),
+        'rectangle' => rectangle?.call(RectangleSchema(toMap())) ?? orElse(),
+        'triangle' => triangle?.call(TriangleSchema(toMap())) ?? orElse(),
         _ => orElse(),
       };
 
@@ -110,7 +110,7 @@ class CircleSchema extends ShapeSchema<Circle> {
     if (!isValid) {
       throw AckException(getErrors()!);
     }
-    return Circle(type: type, color: color, isFilled: isFilled, radius: radius);
+    return Circle(color: color, isFilled: isFilled, radius: radius);
   }
 
   /// Convert the schema to a JSON Schema
@@ -149,11 +149,7 @@ class RectangleSchema extends ShapeSchema<Rectangle> {
       throw AckException(getErrors()!);
     }
     return Rectangle(
-        type: type,
-        color: color,
-        isFilled: isFilled,
-        width: width,
-        height: height);
+        color: color, isFilled: isFilled, width: width, height: height);
   }
 
   /// Convert the schema to a JSON Schema
@@ -194,7 +190,6 @@ class TriangleSchema extends ShapeSchema<Triangle> {
       throw AckException(getErrors()!);
     }
     return Triangle(
-        type: type,
         color: color,
         isFilled: isFilled,
         sideA: sideA,

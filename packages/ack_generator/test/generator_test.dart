@@ -24,16 +24,18 @@ void main() {
     });
 
     test(
-        'generates correct output for discriminated unions with sealed classes',
-        () async {
-      await testGolden('payment_method_model');
-    });
+      'generates correct output for discriminated unions with sealed classes',
+      () async {
+        await testGolden('payment_method_model');
+      },
+    );
 
     test(
-        'generates correct output for discriminated unions with abstract classes',
-        () async {
-      await testGolden('abstract_shape_model');
-    });
+      'generates correct output for discriminated unions with abstract classes',
+      () async {
+        await testGolden('abstract_shape_model');
+      },
+    );
 
     if (Platform.environment['UPDATE_GOLDEN'] == 'true') {
       print('Golden files updated. Review changes before committing.');
@@ -59,8 +61,10 @@ Future<void> testGolden(String name) async {
   } else {
     // Test mode - compare with expected
     if (!goldenFile.existsSync()) {
-      throw Exception('Golden file not found: test/golden/$name.golden\n'
-          'Run with UPDATE_GOLDEN=true to create it.');
+      throw Exception(
+        'Golden file not found: test/golden/$name.golden\n'
+        'Run with UPDATE_GOLDEN=true to create it.',
+      );
     }
 
     final expected = goldenFile.readAsStringSync();

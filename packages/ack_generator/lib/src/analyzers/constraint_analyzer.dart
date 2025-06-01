@@ -115,9 +115,10 @@ class ConstraintAnalyzer {
     // Handle enum values
     final valuesReader = reader.peek('values');
     if (valuesReader?.isList == true) {
-      final values = valuesReader!.listValue
-          .map((v) => ConstantReader(v).stringValue)
-          .toList();
+      final values =
+          valuesReader!.listValue
+              .map((v) => ConstantReader(v).stringValue)
+              .toList();
       parameters['values'] = values;
     }
 

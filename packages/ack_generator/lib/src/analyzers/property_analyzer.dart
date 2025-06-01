@@ -39,8 +39,9 @@ class PropertyAnalyzer {
     );
 
     // Extract constraint annotations from field
-    final constraints =
-        ConstraintAnalyzer.extractAllConstraints(field.metadata);
+    final constraints = ConstraintAnalyzer.extractAllConstraints(
+      field.metadata,
+    );
     property.constraints.addAll(constraints);
 
     // Apply constraint effects on required/nullable status (annotations override inference)

@@ -25,10 +25,9 @@ class ClassInfo {
 
   /// Get required properties
   List<PropertyInfo> getRequiredProperties({String? excludeField}) {
-    return getPropertiesExcluding(excludeField)
-        .values
-        .where((prop) => prop.isRequired)
-        .toList();
+    return getPropertiesExcluding(
+      excludeField,
+    ).values.where((prop) => prop.isRequired).toList();
   }
 
   /// Update dependencies
@@ -42,6 +41,7 @@ class ClassInfo {
   }
 
   @override
-  String toString() => 'ClassInfo($name, properties: ${properties.length}, '
+  String toString() =>
+      'ClassInfo($name, properties: ${properties.length}, '
       'dependencies: ${dependencies.length})';
 }

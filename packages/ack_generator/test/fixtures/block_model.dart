@@ -17,9 +17,7 @@ class SectionBlock extends Block {
   const SectionBlock(this.columns);
 
   static final schema = Ack.object(
-    {
-      'columns': ColumnBlock.schema.list,
-    },
+    {'columns': ColumnBlock.schema.list},
     required: ['columns'],
   );
 }
@@ -32,9 +30,7 @@ class ColumnBlock extends Block {
   const ColumnBlock(this.content);
 
   static final schema = Ack.object(
-    {
-      'content': Ack.string,
-    },
+    {'content': Ack.string},
     required: ['content'],
   );
 }

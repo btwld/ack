@@ -61,9 +61,9 @@ class SealedBlockSchema<T extends SealedBlock> extends SchemaModel<T> {
     required R Function(WidgetBlockSchema) widget,
   }) =>
       switch (type) {
-        'text' => text(TextBlockSchema(data)),
-        'image' => image(ImageBlockSchema(data)),
-        'widget' => widget(WidgetBlockSchema(data)),
+        'text' => text(TextBlockSchema(toMap())),
+        'image' => image(ImageBlockSchema(toMap())),
+        'widget' => widget(WidgetBlockSchema(toMap())),
         _ => throw StateError('Unknown sealedblock type: $type'),
       };
 
@@ -74,9 +74,9 @@ class SealedBlockSchema<T extends SealedBlock> extends SchemaModel<T> {
     required R Function() orElse,
   }) =>
       switch (type) {
-        'text' => text?.call(TextBlockSchema(data)) ?? orElse(),
-        'image' => image?.call(ImageBlockSchema(data)) ?? orElse(),
-        'widget' => widget?.call(WidgetBlockSchema(data)) ?? orElse(),
+        'text' => text?.call(TextBlockSchema(toMap())) ?? orElse(),
+        'image' => image?.call(ImageBlockSchema(toMap())) ?? orElse(),
+        'widget' => widget?.call(WidgetBlockSchema(toMap())) ?? orElse(),
         _ => orElse(),
       };
 
@@ -114,11 +114,7 @@ class TextBlockSchema extends SealedBlockSchema<TextBlock> {
       throw AckException(getErrors()!);
     }
     return TextBlock(
-        type: type,
-        align: align,
-        flex: flex,
-        scrollable: scrollable,
-        content: content);
+        align: align, flex: flex, scrollable: scrollable, content: content);
   }
 
   /// Convert the schema to a JSON Schema
@@ -166,7 +162,6 @@ class ImageBlockSchema extends SealedBlockSchema<ImageBlock> {
       throw AckException(getErrors()!);
     }
     return ImageBlock(
-        type: type,
         align: align,
         flex: flex,
         scrollable: scrollable,
@@ -216,7 +211,6 @@ class WidgetBlockSchema extends SealedBlockSchema<WidgetBlock> {
       throw AckException(getErrors()!);
     }
     return WidgetBlock(
-        type: type,
         align: align,
         flex: flex,
         scrollable: scrollable,

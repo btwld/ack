@@ -17,11 +17,7 @@ abstract class Shape {
   /// Whether the shape is filled
   final bool isFilled;
 
-  const Shape({
-    required this.type,
-    this.color,
-    this.isFilled = false,
-  });
+  const Shape({required this.type, this.color, this.isFilled = false});
 
   /// Convert to JSON representation
   Map<String, dynamic> toJson();
@@ -36,11 +32,8 @@ class Circle extends Shape {
   /// Circle radius
   final double radius;
 
-  const Circle({
-    super.color,
-    super.isFilled,
-    required this.radius,
-  }) : super(type: 'circle');
+  const Circle({super.color, super.isFilled, required this.radius})
+    : super(type: 'circle');
 
   @override
   Map<String, dynamic> toJson() {

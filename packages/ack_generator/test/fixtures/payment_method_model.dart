@@ -19,11 +19,7 @@ sealed class PaymentMethod {
   /// Whether this payment method is the default
   final bool isDefault;
 
-  const PaymentMethod({
-    required this.type,
-    this.limit,
-    this.isDefault = false,
-  });
+  const PaymentMethod({required this.type, this.limit, this.isDefault = false});
 
   /// Convert to JSON representation
   Map<String, dynamic> toJson();

@@ -36,8 +36,9 @@ class TypeAnalyzer {
       return name;
     }
 
-    final typeArgs =
-        typeName.typeArguments.map((t) => getTypeString(t)).join(', ');
+    final typeArgs = typeName.typeArguments
+        .map((t) => getTypeString(t))
+        .join(', ');
 
     return '$name<$typeArgs>';
   }
@@ -86,9 +87,10 @@ class TypeAnalyzer {
       return 'Ack.boolean';
     } else if (typeStr == 'List') {
       // For lists, extract item type if possible
-      final itemType = typeName.typeArguments.isNotEmpty
-          ? getBaseSchemaType(typeName.typeArguments[0])
-          : 'Ack.string';
+      final itemType =
+          typeName.typeArguments.isNotEmpty
+              ? getBaseSchemaType(typeName.typeArguments[0])
+              : 'Ack.string';
       return 'Ack.list($itemType)';
     } else if (typeStr == 'Map') {
       // Default handling for Map

@@ -66,11 +66,7 @@ class Address {
   final String? zip;
 
   /// Constructor determines required fields
-  Address({
-    required this.street,
-    required this.city,
-    this.zip,
-  });
+  Address({required this.street, required this.city, this.zip});
 
   /// String representation of address
   @override

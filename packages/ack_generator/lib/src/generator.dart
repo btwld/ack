@@ -50,15 +50,18 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
     );
 
     // Add dependencies
-    final dependencies =
-        ClassAnalyzer.findClassDependencies(classInfo.properties);
+    final dependencies = ClassAnalyzer.findClassDependencies(
+      classInfo.properties,
+    );
     classInfo = classInfo.withDependencies(dependencies);
 
     // Special handling for discriminated unions (sealed or abstract classes)
     if ((element.isSealed || element.isAbstract) &&
         schemaData.discriminatedKey != null) {
-      final discriminatedInfo =
-          ClassAnalyzer.analyzeDiscriminatedClass(element, schemaData);
+      final discriminatedInfo = ClassAnalyzer.analyzeDiscriminatedClass(
+        element,
+        schemaData,
+      );
       if (discriminatedInfo != null) {
         return _generateDiscriminatedUnionSchema(
           element,
@@ -113,54 +116,57 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
         schemaData.schemaClassName ?? '${modelClassName}Schema';
 
     return Class(
-      (b) => b
-        ..name = schemaClassName
-        ..extend = refer('SchemaModel<$modelClassName>')
-        ..docs.add('/// Generated schema for $modelClassName')
-        ..docs.addAll(
-          schemaData.description != null
-              ? ['/// ${schemaData.description}']
-              : [],
-        )
-        ..fields.add(_buildSchemaField(classInfo, schemaData))
-        ..constructors.add(_buildConstructor())
-        ..methods.addAll([
-          _buildEnsureInitializeMethod(
-            schemaClassName,
-            modelClassName,
-            classInfo,
-          ),
-          _buildGetSchemaMethod(),
-          ..._buildPropertyGetters(classInfo, schemaData),
-          if (schemaData.additionalPropertiesField != null)
-            _buildAdditionalPropertiesGetter(classInfo, schemaData),
-          _buildToModelMethod(
-            modelClassName,
-            classInfo,
-            schemaData,
-            isAbstract,
-            element,
-          ),
-          _buildToJsonSchemaMethod(),
-        ]),
+      (b) =>
+          b
+            ..name = schemaClassName
+            ..extend = refer('SchemaModel<$modelClassName>')
+            ..docs.add('/// Generated schema for $modelClassName')
+            ..docs.addAll(
+              schemaData.description != null
+                  ? ['/// ${schemaData.description}']
+                  : [],
+            )
+            ..fields.add(_buildSchemaField(classInfo, schemaData))
+            ..constructors.add(_buildConstructor())
+            ..methods.addAll([
+              _buildEnsureInitializeMethod(
+                schemaClassName,
+                modelClassName,
+                classInfo,
+              ),
+              _buildGetSchemaMethod(),
+              ..._buildPropertyGetters(classInfo, schemaData),
+              if (schemaData.additionalPropertiesField != null)
+                _buildAdditionalPropertiesGetter(classInfo, schemaData),
+              _buildToModelMethod(
+                modelClassName,
+                classInfo,
+                schemaData,
+                isAbstract,
+                element,
+              ),
+              _buildToJsonSchemaMethod(),
+            ]),
     );
   }
 
   Field _buildSchemaField(ClassInfo classInfo, SchemaData schemaData) {
     return Field(
-      (b) => b
-        ..name = 'schema'
-        ..static = true
-        ..modifier = FieldModifier.final$
-        ..type = refer(AckTypes.objectSchema)
-        ..assignment = Code(_buildSchemaExpression(classInfo, schemaData)),
+      (b) =>
+          b
+            ..name = 'schema'
+            ..static = true
+            ..modifier = FieldModifier.final$
+            ..type = refer(AckTypes.objectSchema)
+            ..assignment = Code(_buildSchemaExpression(classInfo, schemaData)),
     );
   }
 
   String _buildSchemaExpression(ClassInfo classInfo, SchemaData schemaData) {
-    final properties = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
+    final properties =
+        classInfo
+            .getPropertiesExcluding(schemaData.additionalPropertiesField)
+            .values;
 
     final propertyCode = _buildPropertySchemaCode(properties);
     final requiredProps = _buildRequiredPropsString(classInfo, schemaData);
@@ -176,16 +182,18 @@ $propertyCode
 
   Constructor _buildConstructor() {
     return Constructor(
-      (b) => b
-        ..optionalParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'value'
-              ..type = refer(AckTypes.objectType)
-              ..defaultTo = const Code('null'),
-          ),
-        )
-        ..initializers.add(const Code('super(value)')),
+      (b) =>
+          b
+            ..optionalParameters.add(
+              Parameter(
+                (p) =>
+                    p
+                      ..name = 'value'
+                      ..type = refer(AckTypes.objectType)
+                      ..defaultTo = const Code('null'),
+              ),
+            )
+            ..initializers.add(const Code('super(value)')),
     );
   }
 
@@ -225,24 +233,27 @@ $propertyCode
     }
 
     return Method(
-      (b) => b
-        ..name = 'ensureInitialize'
-        ..static = true
-        ..returns = refer('void')
-        ..docs
-            .add('/// Ensures this schema and its dependencies are registered')
-        ..body = Code(bodyParts.join('\n')),
+      (b) =>
+          b
+            ..name = 'ensureInitialize'
+            ..static = true
+            ..returns = refer('void')
+            ..docs.add(
+              '/// Ensures this schema and its dependencies are registered',
+            )
+            ..body = Code(bodyParts.join('\n')),
     );
   }
 
   Method _buildGetSchemaMethod() {
     return Method(
-      (b) => b
-        ..name = 'getSchema'
-        ..returns = refer(AckTypes.ackSchema)
-        ..annotations.add(refer('override'))
-        ..body = const Code('schema')
-        ..lambda = true,
+      (b) =>
+          b
+            ..name = 'getSchema'
+            ..returns = refer(AckTypes.ackSchema)
+            ..annotations.add(refer('override'))
+            ..body = const Code('schema')
+            ..lambda = true,
     );
   }
 
@@ -250,9 +261,10 @@ $propertyCode
     ClassInfo classInfo,
     SchemaData schemaData,
   ) {
-    final properties = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
+    final properties =
+        classInfo
+            .getPropertiesExcluding(schemaData.additionalPropertiesField)
+            .values;
 
     return properties.map((prop) => _buildPropertyGetter(prop)).toList();
   }
@@ -281,16 +293,18 @@ $propertyCode
     }
 
     // Use arrow function for simple primitive getters
-    final isSimpleGetter = TypeAnalyzer.isPrimitiveType(property.typeName) &&
+    final isSimpleGetter =
+        TypeAnalyzer.isPrimitiveType(property.typeName) &&
         !typeStr.startsWith('List<');
 
     return Method(
-      (b) => b
-        ..name = property.name
-        ..type = MethodType.getter
-        ..returns = refer(returnType)
-        ..body = Code(body)
-        ..lambda = isSimpleGetter,
+      (b) =>
+          b
+            ..name = property.name
+            ..type = MethodType.getter
+            ..returns = refer(returnType)
+            ..body = Code(body)
+            ..lambda = isSimpleGetter,
     );
   }
 
@@ -332,11 +346,12 @@ $propertyCode
     SchemaData schemaData,
   ) {
     final fieldName = schemaData.additionalPropertiesField!;
-    final knownFields = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values
-        .map((p) => "'${p.name}'")
-        .toSet();
+    final knownFields =
+        classInfo
+            .getPropertiesExcluding(schemaData.additionalPropertiesField)
+            .values
+            .map((p) => "'${p.name}'")
+            .toSet();
 
     final body = '''
     final map = toMap();
@@ -346,11 +361,12 @@ $propertyCode
     );''';
 
     return Method(
-      (b) => b
-        ..name = fieldName
-        ..type = MethodType.getter
-        ..returns = refer(AckTypes.mapStringObject)
-        ..body = Code(body),
+      (b) =>
+          b
+            ..name = fieldName
+            ..type = MethodType.getter
+            ..returns = refer(AckTypes.mapStringObject)
+            ..body = Code(body),
     );
   }
 
@@ -381,11 +397,12 @@ $propertyCode
     }
 
     return Method(
-      (b) => b
-        ..name = 'toModel'
-        ..returns = refer(modelClassName)
-        ..annotations.add(refer('override'))
-        ..body = Code('$validationCheck\n$modelCreation'),
+      (b) =>
+          b
+            ..name = 'toModel'
+            ..returns = refer(modelClassName)
+            ..annotations.add(refer('override'))
+            ..body = Code('$validationCheck\n$modelCreation'),
     );
   }
 
@@ -400,16 +417,17 @@ $propertyCode
       return 'return $modelClassName();';
     }
 
-    final args = constructor.parameters
-        .map((param) {
-          final property = classInfo.properties[param.name];
-          if (property == null) return null;
+    final args =
+        constructor.parameters
+            .map((param) {
+              final property = classInfo.properties[param.name];
+              if (property == null) return null;
 
-          final conversion = _getPropertyConversion(property, schemaData);
-          return param.isNamed ? '${param.name}: $conversion' : conversion;
-        })
-        .whereType<String>()
-        .toList();
+              final conversion = _getPropertyConversion(property, schemaData);
+              return param.isNamed ? '${param.name}: $conversion' : conversion;
+            })
+            .whereType<String>()
+            .toList();
 
     final argsString = args.map((arg) => '      $arg,').join('\n');
     return '''
@@ -449,13 +467,16 @@ $argsString
 
   Method _buildToJsonSchemaMethod() {
     return Method(
-      (b) => b
-        ..name = 'toJsonSchema'
-        ..static = true
-        ..returns = refer(AckTypes.mapStringObject)
-        ..docs.add('/// Convert the schema to a JSON Schema')
-        ..body = const Code('JsonSchemaConverter(schema: schema).toSchema()')
-        ..lambda = true,
+      (b) =>
+          b
+            ..name = 'toJsonSchema'
+            ..static = true
+            ..returns = refer(AckTypes.mapStringObject)
+            ..docs.add('/// Convert the schema to a JSON Schema')
+            ..body = const Code(
+              'JsonSchemaConverter(schema: schema).toSchema()',
+            )
+            ..lambda = true,
     );
   }
 
@@ -468,8 +489,11 @@ $argsString
         schemaData.schemaClassName ?? '${element.name}Schema';
 
     // Generate base schema with inheritance support
-    final baseSchemaCode =
-        _generateBaseSchema(element, schemaData, discriminatedInfo);
+    final baseSchemaCode = _generateBaseSchema(
+      element,
+      schemaData,
+      discriminatedInfo,
+    );
 
     // Generate base getters (reuse existing logic)
     final baseGetters = _generateBaseGetters(element, discriminatedInfo);
@@ -478,8 +502,9 @@ $argsString
     final patternMatching = _generatePatternMatching(discriminatedInfo);
 
     // Generate discriminated schema method
-    final discriminatedSchemaCode =
-        _generateDiscriminatedSchemaMethod(discriminatedInfo);
+    final discriminatedSchemaCode = _generateDiscriminatedSchemaMethod(
+      discriminatedInfo,
+    );
 
     // Generate dependencies
     final dependencies = discriminatedInfo.subclasses
@@ -543,7 +568,9 @@ $patternMatching
         .where((line) => !line.trim().startsWith('//'))
         .map((line) {
           final trimmed = line.trim();
-          if (trimmed.contains('=>') && trimmed.isNotEmpty && !trimmed.endsWith(';')) {
+          if (trimmed.contains('=>') &&
+              trimmed.isNotEmpty &&
+              !trimmed.endsWith(';')) {
             return '  $line;';
           }
           return '  $line';
@@ -559,9 +586,10 @@ $patternMatching
         parts
             .skip(1)
             .map(
-              (p) => p.isEmpty
-                  ? ''
-                  : p[0].toUpperCase() + p.substring(1).toLowerCase(),
+              (p) =>
+                  p.isEmpty
+                      ? ''
+                      : p[0].toUpperCase() + p.substring(1).toLowerCase(),
             )
             .join();
   }
@@ -624,8 +652,9 @@ $patternMatching
     );
 
     // Add discriminator to properties map
-    final enhancedProperties =
-        Map<String, PropertyInfo>.from(classInfo.properties);
+    final enhancedProperties = Map<String, PropertyInfo>.from(
+      classInfo.properties,
+    );
     enhancedProperties[discriminatorKey] = discriminatorProperty;
 
     return ClassInfo(
@@ -642,9 +671,10 @@ $patternMatching
     SchemaData schemaData,
   ) {
     // Reuse existing property generation logic from _buildCreateSchemaMethod
-    final properties = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
+    final properties =
+        classInfo
+            .getPropertiesExcluding(schemaData.additionalPropertiesField)
+            .values;
 
     final propertyCode = _buildPropertySchemaCode(properties);
     final requiredProps = _buildRequiredPropsString(classInfo, schemaData);
@@ -661,10 +691,12 @@ $propertyCode
 
   /// Shared helper: Build property schema code from properties
   String _buildPropertySchemaCode(Iterable<PropertyInfo> properties) {
-    return properties.map((prop) {
-      final schemaExpr = _buildPropertySchemaExpression(prop);
-      return "        '${prop.name}': $schemaExpr,";
-    }).join('\n');
+    return properties
+        .map((prop) {
+          final schemaExpr = _buildPropertySchemaExpression(prop);
+          return "        '${prop.name}': $schemaExpr,";
+        })
+        .join('\n');
   }
 
   /// Shared helper: Build required properties string for schema generation
@@ -729,7 +761,7 @@ $propertyCode
     final whenCases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "    '${entry.key}' => ${_toCamelCase(entry.key)}(${entry.value.name}Schema(data)),",
+              "    '${entry.key}' => ${_toCamelCase(entry.key)}(${entry.value.name}Schema(toMap())),",
         )
         .join('\n');
 
@@ -743,7 +775,7 @@ $propertyCode
     final maybeWhenCases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "    '${entry.key}' => ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema(data)) ?? orElse(),",
+              "    '${entry.key}' => ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema(toMap())) ?? orElse(),",
         )
         .join('\n');
 
@@ -768,7 +800,8 @@ $maybeWhenCases
     DiscriminatedClassInfo discriminatedInfo,
   ) {
     final discriminatorMappingEntries = discriminatedInfo
-        .discriminatorMapping.entries
+        .discriminatorMapping
+        .entries
         .map((entry) => "'${entry.key}': ${entry.value.name}Schema.schema")
         .join(',\n        ');
 
@@ -799,13 +832,15 @@ $maybeWhenCases
     final basePropertyNames = baseClassInfo.properties.keys.toSet();
 
     // Get subclass-specific properties (excluding base properties)
-    final subclassProperties = subclassInfo.properties.values
-        .where((prop) => !basePropertyNames.contains(prop.name))
-        .toList();
+    final subclassProperties =
+        subclassInfo.properties.values
+            .where((prop) => !basePropertyNames.contains(prop.name))
+            .toList();
 
     // Build subclass property schema strings using shared helper
-    final propertySchemas =
-        _buildSubclassPropertySchemaCode(subclassProperties);
+    final propertySchemas = _buildSubclassPropertySchemaCode(
+      subclassProperties,
+    );
 
     // Build required fields for subclass using shared helper
     final requiredFields = _buildRequiredFieldsString(subclassProperties);
@@ -849,7 +884,7 @@ ${subclassGetters.isNotEmpty ? '$subclassGetters\n' : ''}
       throw AckException(getErrors()!);
     }
     return $subclassName(
-      ${_generateToModelParameters(subclassInfo, baseElement)}
+      ${_generateToModelParameters(subclassInfo, baseElement, discriminatedInfo)}
     );
   }
 
@@ -873,19 +908,25 @@ ${subclassGetters.isNotEmpty ? '$subclassGetters\n' : ''}
   String _generateToModelParameters(
     ClassInfo classInfo,
     ClassElement baseElement,
+    DiscriminatedClassInfo discriminatedInfo,
   ) {
     // Get base properties
     final baseClassInfo = ClassAnalyzer.analyzeClass(baseElement, null);
     final allProperties = <PropertyInfo>[];
 
-    // Add base properties first
-    allProperties.addAll(baseClassInfo.properties.values);
+    // Add base properties first (excluding discriminator)
+    allProperties.addAll(
+      baseClassInfo.properties.values.where(
+        (prop) => prop.name != discriminatedInfo.discriminatorKey,
+      ),
+    );
 
     // Add subclass-specific properties
     final basePropertyNames = baseClassInfo.properties.keys.toSet();
     allProperties.addAll(
-      classInfo.properties.values
-          .where((prop) => !basePropertyNames.contains(prop.name)),
+      classInfo.properties.values.where(
+        (prop) => !basePropertyNames.contains(prop.name),
+      ),
     );
 
     return allProperties

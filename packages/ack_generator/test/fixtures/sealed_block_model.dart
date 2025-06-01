@@ -61,8 +61,9 @@ class TextBlock extends SealedBlock {
 
 /// Image block with image source
 @Schema(
-    description: 'An image block with image source and attributes',
-    discriminatedValue: 'image')
+  description: 'An image block with image source and attributes',
+  discriminatedValue: 'image',
+)
 class ImageBlock extends SealedBlock {
   /// The image path or URL
   final String src;

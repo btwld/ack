@@ -34,8 +34,9 @@ class ClassAnalyzer {
     // Analyze the parameters
     if (primaryConstructor != null) {
       for (final param in primaryConstructor.parameters) {
-        final propertyInfo =
-            PropertyAnalyzer.analyzeConstructorParameter(param);
+        final propertyInfo = PropertyAnalyzer.analyzeConstructorParameter(
+          param,
+        );
         constructorParams[param.name] = propertyInfo;
       }
     }
@@ -47,8 +48,9 @@ class ClassAnalyzer {
   static ConstructorElement? findPrimaryConstructor(ClassElement classElement) {
     // First look for a constructor annotated with @SchemaConstructor
     for (final constructor in classElement.constructors) {
-      if (constructor.metadata
-          .any((m) => m.element?.displayName == 'SchemaConstructor')) {
+      if (constructor.metadata.any(
+        (m) => m.element?.displayName == 'SchemaConstructor',
+      )) {
         return constructor;
       }
     }
