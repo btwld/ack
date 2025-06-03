@@ -29,7 +29,7 @@ class User {
 }
 
 // Mock schema model for testing
-class UserSchema extends SchemaModel<User> {
+class UserSchema extends BaseSchema {
   UserSchema(super.data) {
     if (isValid) {
       _initialize();
@@ -56,27 +56,6 @@ class UserSchema extends SchemaModel<User> {
       'name',
       'age'
     ]);
-  }
-
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return User(
-      name: name,
-      age: age,
-      email: email,
-    );
-  }
-
-  static UserSchema fromModel(User user) {
-    return UserSchema({
-      'name': user.name,
-      'age': user.age,
-      'email': user.email,
-    });
   }
 }
 
@@ -142,17 +121,16 @@ void main() {
         final userSchema = UserSchema(jsonMap);
         expect(userSchema.isValid, isTrue);
 
-        // Convert to a typed model
-        final user = userSchema.toModel();
-        expect(user.name, equals('John'));
-        expect(user.age, equals(30));
-        expect(user.email, equals('john@example.com'));
+        // Access typed properties directly
+        expect(userSchema.name, equals('John'));
+        expect(userSchema.age, equals(30));
+        expect(userSchema.email, equals('john@example.com'));
 
-        // Convert back to a schema
-        final recreatedSchema = UserSchema.fromModel(user);
-        expect(recreatedSchema.name, equals('John'));
-        expect(recreatedSchema.age, equals(30));
-        expect(recreatedSchema.email, equals('john@example.com'));
+        // Get raw data if needed
+        final data = userSchema.toMap();
+        expect(data['name'], equals('John'));
+        expect(data['age'], equals(30));
+        expect(data['email'], equals('john@example.com'));
       });
     });
 

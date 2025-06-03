@@ -11,8 +11,8 @@ part of 'user_model.dart';
 
 /// Generated schema for User
 /// A user model with validation
-class UserSchema extends SchemaModel<User> {
-  UserSchema([Object? value = null]) : super(value);
+class UserSchema extends BaseSchema {
+  UserSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -28,7 +28,7 @@ class UserSchema extends SchemaModel<User> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<User, UserSchema>(
+    SchemaRegistry.register<UserSchema>(
       (data) => UserSchema(data),
     );
     // Register schema dependencies
@@ -47,7 +47,7 @@ class UserSchema extends SchemaModel<User> {
   String? get password => getValue<String>('password');
 
   AddressSchema get address {
-    return AddressSchema(getValue<Map<String, dynamic>>('address')!);
+    return AddressSchema(getValue<Map<String, Object?>>('address')!);
   }
 
   Map<String, Object?> get metadata {
@@ -57,29 +57,14 @@ class UserSchema extends SchemaModel<User> {
         map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return User(
-      email: email,
-      name: name,
-      age: age,
-      password: password,
-      address: address.toModel(),
-      metadata: metadata,
-    );
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
       JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for Address
-class AddressSchema extends SchemaModel<Address> {
-  AddressSchema([Object? value = null]) : super(value);
+class AddressSchema extends BaseSchema {
+  AddressSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -93,7 +78,7 @@ class AddressSchema extends SchemaModel<Address> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Address, AddressSchema>(
+    SchemaRegistry.register<AddressSchema>(
       (data) => AddressSchema(data),
     );
   }
@@ -106,18 +91,6 @@ class AddressSchema extends SchemaModel<Address> {
   String get city => getValue<String>('city')!;
 
   String? get zip => getValue<String>('zip');
-
-  @override
-  Address toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return Address(
-      street: street,
-      city: city,
-      zip: zip,
-    );
-  }
 
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>

@@ -16,7 +16,7 @@ class ConstraintAnalyzer {
     return applyConstraint(expression, constraint);
   }
 
-  /// Extract constraint from annotation (simplified approach)
+  /// Extract constraint from annotation
   static PropertyConstraintInfo? _extractConstraint(
     ElementAnnotation metadata,
   ) {
@@ -43,8 +43,11 @@ class ConstraintAnalyzer {
 
   /// Map annotation names to constraint keys
   static String? _getConstraintKeyFromAnnotationName(String annotationName) {
+    // Transform legacy names to standard format
+    final standardName = _transformLegacyAnnotationName(annotationName);
+
     const mapping = {
-      // New 'Is' prefix annotations
+      // Standard 'Is' prefix annotations
       'IsRequired': 'required',
       'IsNullable': 'nullable',
       'IsEmail': 'email',
@@ -64,29 +67,47 @@ class ConstraintAnalyzer {
       'IsMaxItems': 'maxItems',
       'IsUniqueItems': 'uniqueItems',
 
-      // Legacy annotations (for backward compatibility)
-      'Required': 'required',
-      'Nullable': 'nullable',
-      'MinLength': 'minLength',
-      'MaxLength': 'maxLength',
-      'Pattern': 'pattern',
-      'EnumValues': 'enumValues',
-      'Min': 'min',
-      'Max': 'max',
-      'MultipleOf': 'multipleOf',
-      'MinItems': 'minItems',
-      'MaxItems': 'maxItems',
-      'UniqueItems': 'uniqueItems',
-
       // Special annotations
       'Description': 'description',
       'FieldType': 'fieldType',
     };
 
-    return mapping[annotationName];
+    return mapping[standardName];
   }
 
-  /// Extract parameters using simple, direct approach
+  /// Transform legacy annotation names to standard 'Is' prefix format
+  static String _transformLegacyAnnotationName(String annotationName) {
+    // List of known legacy names that should be prefixed with 'Is'
+    const legacyNames = {
+      'Required',
+      'Nullable',
+      'MinLength',
+      'MaxLength',
+      'Pattern',
+      'EnumValues',
+      'Min',
+      'Max',
+      'MultipleOf',
+      'MinItems',
+      'MaxItems',
+      'UniqueItems',
+      'Email',
+      'NotEmpty',
+      'Date',
+      'DateTime',
+      'Positive',
+      'Negative',
+    };
+
+    // If it's a legacy name without 'Is' prefix, add it
+    if (legacyNames.contains(annotationName)) {
+      return 'Is$annotationName';
+    }
+
+    return annotationName;
+  }
+
+  /// Extract parameters from ConstantReader
   static Map<String, Object?> _extractParameters(ConstantReader reader) {
     final parameters = <String, Object?>{};
 
@@ -115,10 +136,9 @@ class ConstraintAnalyzer {
     // Handle enum values
     final valuesReader = reader.peek('values');
     if (valuesReader?.isList == true) {
-      final values =
-          valuesReader!.listValue
-              .map((v) => ConstantReader(v).stringValue)
-              .toList();
+      final values = valuesReader!.listValue
+          .map((v) => ConstantReader(v).stringValue)
+          .toList();
       parameters['values'] = values;
     }
 
@@ -139,7 +159,6 @@ class ConstraintAnalyzer {
     final key = constraint.constraintKey;
     final params = constraint.parameters;
 
-    // Direct mapping without function abstractions
     switch (key) {
       // String constraints
       case 'email':
@@ -186,26 +205,6 @@ class ConstraintAnalyzer {
         return '$expr.maxItems(${params['count']})';
       case 'uniqueItems':
         return '$expr.uniqueItems()';
-
-      // Legacy support (backward compatibility)
-      case 'isEmail':
-        return '$expr.email()';
-      case 'isNotEmpty':
-        return '$expr.notEmpty()';
-      case 'isDate':
-        return '$expr.date()';
-      case 'isDateTime':
-        return '$expr.dateTime()';
-      case 'string_not_empty':
-        return '$expr.notEmpty()';
-      case 'string_enum':
-        final values = (params['values'] as List).cast<String>();
-        final enumList = values.map((v) => "'$v'").join(', ');
-        return '$expr.enumValues([$enumList])';
-      case 'string_pattern_email':
-        return '$expr.email()';
-      case 'datetime':
-        return '$expr.dateTime()';
 
       default:
         return expr; // Return unchanged if not supported

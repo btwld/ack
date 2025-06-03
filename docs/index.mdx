@@ -109,29 +109,39 @@ final Map<String, dynamic> payload = {
 
 Generated schemas provide three main capabilities:
 
-**1. Direct model validation and conversion**
-
-```dart
-// Validate and convert to a type-safe model
-final userSchema = UserSchema(payload);
-if (userSchema.isValid) {
-  final User user = userSchema.toModel();
-  print('Hello ${user.name}!');  // Type-safe model access
-} else {
-  print('Validation failed: ${userSchema.getErrors()}');
-}
-```
-
-**2. Type-safe access through the schema**
+**1. Type-safe property access**
 
 ```dart
 // Access typed properties directly from the schema
 final userSchema = UserSchema(payload);
 if (userSchema.isValid) {
-  String name = userSchema.name;  // Typed as String
-  int age = userSchema.age;       // Typed as int
-  print('$name is $age years old');
+  String name = userSchema.name;    // Typed as String
+  String email = userSchema.email;  // Typed as String
+  int age = userSchema.age;         // Typed as int
+  print('$name ($email) is $age years old');
+  
+  // Create model when needed
+  final user = User(name: name, email: email, age: age);
 }
+```
+
+**2. Flexible model creation patterns**
+
+```dart
+// Add factory method to your model
+class User {
+  // ... existing fields ...
+  
+  factory User.fromSchema(UserSchema schema) {
+    if (!schema.isValid) {
+      throw AckException(schema.getErrors()!);
+    }
+    return User(name: schema.name, email: schema.email, age: schema.age);
+  }
+}
+
+// Usage
+final user = User.fromSchema(UserSchema(payload));
 ```
 
 **3. JSON Schema generation for documentation**

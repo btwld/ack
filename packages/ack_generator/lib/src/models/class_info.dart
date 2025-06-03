@@ -41,7 +41,6 @@ class ClassInfo {
   }
 
   @override
-  String toString() =>
-      'ClassInfo($name, properties: ${properties.length}, '
+  String toString() => 'ClassInfo($name, properties: ${properties.length}, '
       'dependencies: ${dependencies.length})';
 }

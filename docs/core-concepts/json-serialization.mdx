@@ -101,22 +101,27 @@ if (result.isOk) {
 
 **Using Code Generation:**
 
-If you use Ack's code generation, the generated schema class provides `toModel()` methods for seamless conversion.
+If you use Ack's code generation, the generated schema class provides typed getters for seamless access to validated data.
 
 ```dart
 // Assumes user.dart and user.schema.dart (generated) exist
 import 'user.dart';
 import 'user.schema.dart';
 
-// Inside the validation success block:
-if (result.isOk) {
-  // Create schema instance with the validated data
-  final userSchemaInstance = UserSchema(result.getOrThrow());
-  // Convert the schema instance to the User model instance
-  if (userSchemaInstance.isValid) {
-    final userModelInstance = userSchemaInstance.toModel();
-    print('Created User model via generator: ${userModelInstance.name}');
-  }
+// Create schema instance (validation happens automatically)
+final userSchemaInstance = UserSchema(jsonData);
+
+if (userSchemaInstance.isValid) {
+  // Access validated data through typed getters
+  print('Name: ${userSchemaInstance.name}');
+  print('Email: ${userSchemaInstance.email}');
+  
+  // Create model using your preferred pattern
+  final user = User(
+    name: userSchemaInstance.name,
+    email: userSchemaInstance.email,
+  );
+  print('Created User model via generator: ${user.name}');
 }
 ```
 

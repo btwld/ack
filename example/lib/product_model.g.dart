@@ -11,7 +11,7 @@ part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
-class ProductSchema extends SchemaModel<Product> {
+class ProductSchema extends BaseSchema<Product> {
   // Constructor that validates input
   ProductSchema([Object? value = null]) : super(value);
 
@@ -192,7 +192,7 @@ class ProductSchema extends SchemaModel<Product> {
 
 /// Generated schema for Category
 /// A category for organizing products
-class CategorySchema extends SchemaModel<Category> {
+class CategorySchema extends BaseSchema<Category> {
   // Constructor that validates input
   CategorySchema([Object? value = null]) : super(value);
 

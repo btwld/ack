@@ -18,8 +18,7 @@ class PropertyInfo {
   });
 
   @override
-  String toString() =>
-      'PropertyInfo($name: $typeName, '
+  String toString() => 'PropertyInfo($name: $typeName, '
       'required: $isRequired, nullable: $isNullable, '
       'constraints: ${constraints.length})';
 

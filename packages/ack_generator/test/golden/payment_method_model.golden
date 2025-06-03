@@ -11,8 +11,8 @@ part of 'payment_method_model.dart';
 
 /// Generated base schema for PaymentMethod with inheritance support
 /// A payment method that can be credit card, bank transfer, or digital wallet
-class PaymentMethodSchema<T extends PaymentMethod> extends SchemaModel<T> {
-  PaymentMethodSchema([Object? value = null]) : super(value);
+class PaymentMethodSchema extends BaseSchema {
+  PaymentMethodSchema([Object? super.value = null]);
 
   static final DiscriminatedObjectSchema schema = Ack.discriminated(
     discriminatorKey: 'type',
@@ -35,7 +35,7 @@ class PaymentMethodSchema<T extends PaymentMethod> extends SchemaModel<T> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<PaymentMethod, PaymentMethodSchema>(
+    SchemaRegistry.register<PaymentMethodSchema>(
       (data) => PaymentMethodSchema(data),
     );
     CreditCardPaymentSchema.ensureInitialize();
@@ -87,8 +87,8 @@ class PaymentMethodSchema<T extends PaymentMethod> extends SchemaModel<T> {
 
 /// Generated schema for CreditCardPayment extending PaymentMethodSchema
 /// Credit card payment with card details
-class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
-  CreditCardPaymentSchema([Object? value = null]) : super(value);
+class CreditCardPaymentSchema extends PaymentMethodSchema {
+  CreditCardPaymentSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
     {
@@ -103,7 +103,7 @@ class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<CreditCardPayment, CreditCardPaymentSchema>(
+    SchemaRegistry.register<CreditCardPaymentSchema>(
       (data) => CreditCardPaymentSchema(data),
     );
   }
@@ -119,20 +119,6 @@ class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
 
   String get brand => getValue<String>('brand')!;
 
-  @override
-  CreditCardPayment toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return CreditCardPayment(
-        limit: limit,
-        isDefault: isDefault,
-        cardNumber: cardNumber,
-        cardholderName: cardholderName,
-        expiryDate: expiryDate,
-        brand: brand);
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
       JsonSchemaConverter(schema: schema).toSchema();
@@ -140,9 +126,8 @@ class CreditCardPaymentSchema extends PaymentMethodSchema<CreditCardPayment> {
 
 /// Generated schema for BankTransferPayment extending PaymentMethodSchema
 /// Bank transfer payment with account details
-class BankTransferPaymentSchema
-    extends PaymentMethodSchema<BankTransferPayment> {
-  BankTransferPaymentSchema([Object? value = null]) : super(value);
+class BankTransferPaymentSchema extends PaymentMethodSchema {
+  BankTransferPaymentSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
     {
@@ -162,7 +147,7 @@ class BankTransferPaymentSchema
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<BankTransferPayment, BankTransferPaymentSchema>(
+    SchemaRegistry.register<BankTransferPaymentSchema>(
       (data) => BankTransferPaymentSchema(data),
     );
   }
@@ -178,20 +163,6 @@ class BankTransferPaymentSchema
 
   String get accountHolderName => getValue<String>('accountHolderName')!;
 
-  @override
-  BankTransferPayment toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return BankTransferPayment(
-        limit: limit,
-        isDefault: isDefault,
-        accountNumber: accountNumber,
-        routingNumber: routingNumber,
-        bankName: bankName,
-        accountHolderName: accountHolderName);
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
       JsonSchemaConverter(schema: schema).toSchema();
@@ -199,9 +170,8 @@ class BankTransferPaymentSchema
 
 /// Generated schema for DigitalWalletPayment extending PaymentMethodSchema
 /// Digital wallet payment like PayPal, Apple Pay, etc.
-class DigitalWalletPaymentSchema
-    extends PaymentMethodSchema<DigitalWalletPayment> {
-  DigitalWalletPaymentSchema([Object? value = null]) : super(value);
+class DigitalWalletPaymentSchema extends PaymentMethodSchema {
+  DigitalWalletPaymentSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
     {
@@ -215,7 +185,7 @@ class DigitalWalletPaymentSchema
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<DigitalWalletPayment, DigitalWalletPaymentSchema>(
+    SchemaRegistry.register<DigitalWalletPaymentSchema>(
       (data) => DigitalWalletPaymentSchema(data),
     );
   }
@@ -228,20 +198,7 @@ class DigitalWalletPaymentSchema
   String get walletId => getValue<String>('walletId')!;
 
   Map<String, dynamic> get metadata =>
-      getValue<Map<String, dynamic>>('metadata')!;
-
-  @override
-  DigitalWalletPayment toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return DigitalWalletPayment(
-        limit: limit,
-        isDefault: isDefault,
-        provider: provider,
-        walletId: walletId,
-        metadata: metadata);
-  }
+      getValue<Map<String, Object?>>('metadata')!;
 
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>

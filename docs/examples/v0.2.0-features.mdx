@@ -1,270 +1,180 @@
----
-title: Ack 0.2.0 Features and Examples
----
+# Ack 0.2.0 Feature Examples
 
-# Ack 0.2.0 Features and Examples
+This document provides comprehensive examples of all the new features introduced in Ack 0.2.0, including code generation and automatic property inference.
 
-This document showcases the new features and improvements introduced in Ack 0.2.0, with practical examples to help you get started quickly.
+## Code Generation with Annotations
 
-## Direct Schema Definition with Ack.object
-
-Ack provides a fluent API for defining schemas directly using the `Ack` class.
-
-### Defining Schemas with Nested Objects and Enums
+The following example demonstrates all the major features of Ack's code generation with automatic inference:
 
 ```dart
-import 'package:ack/ack.dart';
-
-// Define an enum for user roles
-enum UserRole { admin, user, guest }
-
-// Define a profile schema
-final profileSchema = Ack.object(
-  {
-    'firstName': Ack.string.minLength(2),
-    'lastName': Ack.string.minLength(2),
-    'bio': Ack.string.nullable(),
-  },
-  required: [
-    'firstName',
-    'lastName'
-  ],
-);
-
-// Create a schema for role validation using the enum
-final roleSchema = Ack.enumValues(UserRole.values);
-
-// Define a schema for a user object
-final userSchema = Ack.object(
-  {
-    'username': Ack.string.minLength(3).maxLength(20),
-    'email': Ack.string.email(),
-    'age': Ack.int.min(18).max(120).nullable(),
-    'isActive': Ack.boolean.defaultValue(true),
-    'roles': Ack.list(roleSchema),
-    'profile': profileSchema,
-  },
-  required: [
-    'username',
-    'email'
-  ],
-);
-
-// Using the schema
-void main() {
-  final userData = {
-    'username': 'john_doe',
-    'email': 'john@example.com',
-    'age': 30,
-    'isActive': true,
-    'roles': ['user', 'admin'],
-    'profile': {
-      'firstName': 'John',
-      'lastName': 'Doe',
-      'bio': 'Software developer'
-    }
-  };
-
-  // Validate the data
-  final result = userSchema.validate(userData);
-
-  if (result.isOk) {
-    final validData = result.getOrThrow();
-    print('Valid user: $validData');
-
-    // Access specific fields
-    final username = validData['username'];
-    final email = validData['email'];
-    final profile = validData['profile'] as Map<String, Object?>;
-    final firstName = profile['firstName'];
-
-    print('Username: $username, Email: $email, First Name: $firstName');
-  } else {
-    final error = result.getError();
-    print('Validation failed: ${error.message}');
-  }
-}
-```
-
-## SchemaModel API with Code Generation
-
-Ack 0.2.0 introduces the SchemaModel API with code generation support, which provides a more intuitive and type-safe way to work with schemas and models.
-
-### Key Features
-
-1. **Type-Safe Model Integration**: Seamlessly work with your Dart models
-2. **Automatic Validation**: Validation happens automatically when a SchemaModel is created
-3. **Simplified Error Handling**: Easy access to validation errors through `isValid` and `getErrors()`
-4. **Better Type Safety**: Uses `Object?` instead of `dynamic` for better type safety
-5. **Code Generation**: Generate schema classes from annotated models
-
-### Using Code Generation with User Schema
-
-Let's see how to use code generation to create a UserSchema from a User model.
-
-#### 1. Define Your Models with Enums and Nested Objects
-
-```dart
-// file: user_role.dart
-enum UserRole {
-  admin,
-  user,
-  guest
-}
-
-// file: profile.dart
+// file: user.dart
 import 'package:ack_generator/ack_generator.dart';
 
-part 'profile.schema.dart';
+part 'user.g.dart';
 
-@Schema(
-  description: 'User profile information',
-)
+// Simple enum for roles
+enum UserRole { admin, user, moderator }
+
+// Nested model with its own validation
+@Schema()
 class Profile {
-  @MinLength(2)
+  @MinLength(1)
   final String firstName;
-
-  @MinLength(2)
+  
+  @MinLength(1)
   final String lastName;
-
-  @Nullable()
+  
+  @MaxLength(500)
   final String? bio;
-
+  
   Profile({
     required this.firstName,
     required this.lastName,
     this.bio,
   });
+  
+  factory Profile.fromSchema(ProfileSchema schema) {
+    return Profile(
+      firstName: schema.firstName,
+      lastName: schema.lastName,
+      bio: schema.bio,
+    );
+  }
 }
 
-// file: user.dart
-import 'package:ack_generator/ack_generator.dart';
-import 'profile.dart';
-import 'user_role.dart';
-
-part 'user.schema.dart';
-
+// Main user model with comprehensive validation and automatic inference
 @Schema(
-  description: 'User account with validation',
+  description: 'A user account with profile information',
   additionalProperties: true,
-  additionalPropertiesField: 'metadata',
+  additionalPropertiesField: 'metadata'
 )
 class User {
-  @IsNotEmpty()
   @MinLength(3)
   @MaxLength(20)
+  @Pattern(r'^[a-zA-Z0-9_]+$')
   final String username;
 
   @IsEmail()
   final String email;
 
-  @Min(18)
+  @Min(13)
   @Max(120)
-  @Nullable()
-  final int? age;
+  final int age;
 
   @DefaultValue(true)
   final bool isActive;
 
-  // Using the enum from user_role.dart
+  @UniqueItems()
   final List<UserRole> roles;
 
-  // Nested object
   final Profile profile;
 
-  // Additional properties
+  @MaxItems(10)
+  final List<String>? tags;
+
+  @MinLength(8)
+  @Pattern(r'^(?=.*[A-Za-z])(?=.*\d)')
+  final String? password;
+
   final Map<String, dynamic> metadata;
 
   User({
     required this.username,
     required this.email,
-    this.age,
+    required this.age,
     this.isActive = true,
-    this.roles = const [UserRole.user],
+    required this.roles,
     required this.profile,
+    this.tags,
+    this.password,
     Map<String, dynamic>? metadata,
   }) : metadata = metadata ?? {};
+  
+  factory User.fromSchema(UserSchema schema) {
+    return User(
+      username: schema.username,
+      email: schema.email,
+      age: schema.age,
+      isActive: schema.isActive,
+      roles: schema.roles,
+      profile: Profile.fromSchema(schema.profile),
+      tags: schema.tags,
+      password: schema.password,
+      metadata: schema.metadata,
+    );
+  }
 }
 ```
 
-#### 2. Generate Schema Classes
+## Automatic Inference in Action
 
-Run the build_runner command:
+With automatic inference, Ack determines:
+- **Required fields** from `required` constructor parameters
+- **Optional fields** from optional constructor parameters
+- **Nullable fields** from nullable types (e.g., `String?`)
+- **Non-nullable fields** from non-nullable types (e.g., `String`)
 
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
+No need for `@Required()` or `@Nullable()` annotations unless you want to override the default behavior!
 
-This will generate `user.schema.dart` and `profile.schema.dart` files with `UserSchema` and `ProfileSchema` classes.
-
-#### 3. Use the Generated Schema Classes
+## Working with Generated Schemas
 
 ```dart
-import 'user.dart';
-import 'user.schema.dart';
-import 'profile.dart';
-import 'profile.schema.dart';
+// file: main.dart
 import 'dart:convert';
+import 'user.dart';
+import 'user.schema.dart'; // Import the generated file
 
 void main() {
-  // Sample data
+  // 1. Create test data
   final userData = {
     'username': 'john_doe',
     'email': 'john@example.com',
-    'age': 30,
+    'age': 25,
     'isActive': true,
-    'roles': ['user', 'admin'],
+    'roles': ['user', 'moderator'],
     'profile': {
       'firstName': 'John',
       'lastName': 'Doe',
       'bio': 'Software developer'
     },
-    'lastLogin': '2023-01-01T12:00:00Z', // Additional property captured in metadata
-    'preferences': {'theme': 'dark', 'notifications': true} // Additional property captured in metadata
-  };
-
-  // Invalid data example
-  final invalidUserData = {
-    'username': 'j', // Too short, fails MinLength(3)
-    'email': 'not-an-email', // Invalid email format
-    'age': 15, // Below minimum age of 18
-    'profile': {
-      'firstName': 'J', // Too short, fails MinLength(2)
-      'lastName': 'Doe'
+    'tags': ['flutter', 'dart', 'mobile'],
+    'password': 'SecurePass123',
+    // Additional properties captured by metadata
+    'lastLogin': '2023-01-15T10:30:00Z',
+    'preferences': {
+      'theme': 'dark',
+      'notifications': true
     }
   };
 
-  // 1. Validate and create schema instance
+  // 2. Create schema instance (validation happens automatically)
   final userSchema = UserSchema(userData);
-  final invalidUserSchema = UserSchema(invalidUserData);
 
-  // 2. Check validation results
-  print('Valid user schema? ${userSchema.isValid}'); // true
-  print('Invalid user schema? ${invalidUserSchema.isValid}'); // false
-
-  // 3. Get validation errors for invalid data
-  if (!invalidUserSchema.isValid) {
-    final errors = invalidUserSchema.getErrors();
-    print('Validation errors:');
-    print('- Error type: ${errors?.name}');
+  // 3. Check validation and access properties
+  if (!userSchema.isValid) {
+    final errors = userSchema.getErrors();
+    print('Validation failed:');
+    print('- Error name: ${errors?.name}');
     print('- Error message: ${errors?.message}');
     print('- Error path: ${errors?.path}');
   }
 
-  // 4. Convert valid schema to model
+  // 4. Access validated data through typed getters
   if (userSchema.isValid) {
-    final user = userSchema.toModel();
-
-    // Use the strongly-typed model
-    print('User: ${user.username}, Email: ${user.email}');
-    print('Name: ${user.profile.firstName} ${user.profile.lastName}');
+    // Direct property access
+    print('User: ${userSchema.username}, Email: ${userSchema.email}');
+    print('Name: ${userSchema.profile.firstName} ${userSchema.profile.lastName}');
 
     // Access additional properties via metadata
-    print('Last Login: ${user.metadata['lastLogin']}');
-    print('Theme Preference: ${user.metadata['preferences']['theme']}');
+    print('Last Login: ${userSchema.metadata['lastLogin']}');
+    print('Theme Preference: ${userSchema.metadata['preferences']['theme']}');
+    
+    // Create model when needed
+    final user = User.fromSchema(userSchema);
+    print('Created user model: ${user.username}');
   }
 
-  // 5. Convert model to schema (using toMap() method)
+  // 5. Create model and convert to schema
   final userModelInstance = User(
     username: 'jane_smith',
     email: 'jane@example.com',
@@ -299,322 +209,300 @@ void main() {
 
 ## String Validation Improvements
 
-### `matches()` Method for Full Pattern Validation
-
-The `matches()` method validates that a string fully matches a pattern (automatically anchored with ^ and $).
-
+### Email Validation
 ```dart
-// Define a schema with pattern validation
-final usernameSchema = Ack.string.matches(r'[a-z0-9_]{3,16}');
+@Schema()
+class Contact {
+  @IsEmail()
+  final String email;
+  
+  Contact({required this.email});
+}
 
-// Validate strings
-print(usernameSchema.validate('user_123').isOk); // true
-print(usernameSchema.validate('user@123').isOk); // false - contains @
-print(usernameSchema.validate('ab').isOk); // false - too short
-print(usernameSchema.validate('user_123!').isOk); // false - contains !
+// Valid emails
+final validEmails = [
+  'user@example.com',
+  'test.email+tag@example.co.uk',
+  'user123@subdomain.example.com'
+];
 
-// Password validation with complex pattern
-final passwordSchema = Ack.string
-  .minLength(8)
-  .matches(r'(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+');
-
-// Validate passwords
-print(passwordSchema.validate('Abcd123!').isOk); // true - meets all requirements
-print(passwordSchema.validate('abcd123!').isOk); // false - no uppercase letter
-print(passwordSchema.validate('ABCD123!').isOk); // false - no lowercase letter
-print(passwordSchema.validate('Abcdefgh').isOk); // false - no special character
+// Invalid emails
+final invalidEmails = [
+  'invalid.email',
+  '@example.com',
+  'user@',
+  'user @example.com'
+];
 ```
 
-### `contains()` Method for Partial Pattern Matching
-
-The `contains()` method validates that a string contains a pattern anywhere within it.
-
+### Date Format Validation
 ```dart
-// Password must contain at least one uppercase letter
-final passwordSchema = Ack.string.contains(r'[A-Z]');
+@Schema()
+class Event {
+  @IsDate()  // YYYY-MM-DD format
+  final String date;
+  
+  @IsDateTime()  // ISO 8601 format
+  final String timestamp;
+  
+  Event({required this.date, required this.timestamp});
+}
 
-print(passwordSchema.validate('Password123').isOk); // true - contains uppercase
-print(passwordSchema.validate('password123').isOk); // false - no uppercase
-```
-
-### Combining String Validations
-
-You can combine multiple string validations for more complex requirements:
-
-```dart
-// Email validation with domain restriction
-final workEmailSchema = Ack.string
-  .email()
-  .contains(r'@company\.com');
-
-print(workEmailSchema.validate('user@company.com').isOk); // true
-print(workEmailSchema.validate('user@gmail.com').isOk); // false - wrong domain
-
-// Username with multiple constraints
-final usernameSchema = Ack.string
-  .minLength(3)
-  .maxLength(20)
-  .matches(r'[a-z][a-z0-9_]*'); // Must start with letter, then letters, numbers, underscores
-
-print(usernameSchema.validate('user123').isOk); // true
-print(usernameSchema.validate('123user').isOk); // false - starts with number
-```
-
-## JSON Schema Integration
-
-The SchemaModel provides methods for generating JSON Schema specifications, making it easy to document your API.
-
-### Using Generated Schema for JSON Schema
-
-```dart
-// Get JSON Schema as a Map
-final userSchema = UserSchema.toJsonSchema();
-final profileSchema = ProfileSchema.toJsonSchema();
-
-// Convert to JSON string if needed
-final jsonString = jsonEncode(userSchema);
-print('User Schema JSON:\n$jsonString');
-
-// Example of using the definition in a larger API documentation
-final apiDoc = {
-  '$schema': 'http://json-schema.org/draft-07/schema#',
-  'title': 'User API Schema',
-  'description': 'JSON Schema for the User API',
-  'definitions': {
-    'User': userSchema,
-    'Profile': profileSchema
-  },
-  'endpoints': {
-    '/users': {
-      'post': {
-        'summary': 'Create a new user',
-        'requestSchema': {
-          '$ref': '#/definitions/User'
-        },
-        'responseSchema': {
-          '$ref': '#/definitions/User'
-        }
-      },
-      'get': {
-        'summary': 'List all users',
-        'responseSchema': {
-          'type': 'array',
-          'items': {
-            '$ref': '#/definitions/User'
-          }
-        }
-      }
-    }
-  }
+// Valid examples
+final validEvent = {
+  'date': '2023-12-25',
+  'timestamp': '2023-12-25T10:30:00Z'
 };
 
-// Convert to JSON for documentation tools
-final apiJson = jsonEncode(apiDoc);
+// Invalid examples
+final invalidEvent = {
+  'date': '12/25/2023',  // Wrong format
+  'timestamp': '2023-12-25 10:30:00'  // Not ISO 8601
+};
 ```
 
-### Direct Schema to JSON Schema Conversion
-
-You can also convert schemas defined with `Ack.object` directly to JSON Schema:
-
+### Pattern Matching
 ```dart
-import 'package:ack/ack.dart';
-import 'package:ack/json_schema.dart';
-
-// Define a schema
-final userSchema = Ack.object(
-  {
-    'username': Ack.string.minLength(3).maxLength(20),
-    'email': Ack.string.email(),
-    'age': Ack.int.min(18).nullable(),
-  },
-  required: [
-    'username',
-    'email'
-  ],
-);
-
-// Convert to JSON Schema
-final jsonSchemaDefinition = userSchema.toJsonSchema();
-print(jsonEncode(jsonSchemaDefinition));
-
-/* Output:
-{
-  "type": "object",
-  "required": ["username", "email"],
-  "properties": {
-    "username": {
-      "type": "string",
-      "minLength": 3,
-      "maxLength": 20
-    },
-    "email": {
-      "type": "string",
-      "format": "email"
-    },
-    "age": {
-      "type": "integer",
-      "minimum": 18,
-      "nullable": true
-    }
-  }
+@Schema()
+class Account {
+  @Pattern(r'^[A-Z][0-9]{6}$')  // e.g., A123456
+  final String accountId;
+  
+  @Pattern(r'^\+?[1-9]\d{1,14}$')  // E.164 phone format
+  final String? phoneNumber;
+  
+  Account({required this.accountId, this.phoneNumber});
 }
-*/
+```
+
+## List Validation Features
+
+### Unique Items
+```dart
+@Schema()
+class TaggedContent {
+  @UniqueItems()
+  @MinItems(1)
+  @MaxItems(10)
+  final List<String> tags;
+  
+  TaggedContent({required this.tags});
+}
+
+// Valid
+final valid = TaggedContent(tags: ['dart', 'flutter', 'mobile']);
+
+// Invalid - duplicate tags
+final invalid = TaggedContent(tags: ['dart', 'flutter', 'dart']);
+```
+
+### Length Constraints
+```dart
+@Schema()
+class Team {
+  @Length(5)  // Exactly 5 members
+  final List<String> members;
+  
+  @MinItems(2)
+  @MaxItems(4)
+  final List<String> substitutes;
+  
+  Team({required this.members, required this.substitutes});
+}
+```
+
+## Boolean and Number Validation
+
+### Boolean Fields
+```dart
+@Schema()
+class Settings {
+  @DefaultValue(false)
+  final bool darkMode;
+  
+  @DefaultValue(true)
+  final bool notifications;
+  
+  final bool? betaFeatures;  // Optional boolean
+  
+  Settings({
+    this.darkMode = false,
+    this.notifications = true,
+    this.betaFeatures,
+  });
+}
+```
+
+### Number Constraints
+```dart
+@Schema()
+class Product {
+  @Min(0)
+  @Max(1000000)
+  final double price;
+  
+  @MultipleOf(5)
+  final int quantity;
+  
+  @IsPositive()
+  final double? discount;
+  
+  Product({
+    required this.price,
+    required this.quantity,
+    this.discount,
+  });
+}
 ```
 
 ## Working with Nested Models
 
-The code generator handles nested models elegantly.
-
+### Complex Nested Structure
 ```dart
-// Define models with nesting
 @Schema()
 class Address {
   @IsNotEmpty()
   final String street;
-
+  
   @IsNotEmpty()
   final String city;
-
-  @IsNotEmpty()
-  final String country;
-
+  
+  @Pattern(r'^\d{5}(-\d{4})?$')  // US ZIP code
+  final String zipCode;
+  
   Address({
     required this.street,
     required this.city,
-    required this.country
+    required this.zipCode,
   });
+  
+  factory Address.fromSchema(AddressSchema schema) {
+    return Address(
+      street: schema.street,
+      city: schema.city,
+      zipCode: schema.zipCode,
+    );
+  }
 }
 
 @Schema()
 class Customer {
-  @IsNotEmpty()
-  final String id;
-
-  @MinLength(2)
   final String name;
-
-  @IsEmail()
-  final String email;
-
-  // Nested model
   final Address billingAddress;
-
-  // Optional nested model
   final Address? shippingAddress;
-
-  // List of nested models
-  final List<Address>? additionalAddresses;
-
+  
+  @MinItems(1)
+  final List<Address>? previousAddresses;
+  
   Customer({
-    required this.id,
     required this.name,
-    required this.email,
     required this.billingAddress,
     this.shippingAddress,
-    this.additionalAddresses
+    this.previousAddresses,
   });
+  
+  factory Customer.fromSchema(CustomerSchema schema) {
+    return Customer(
+      name: schema.name,
+      billingAddress: Address.fromSchema(schema.billingAddress),
+      shippingAddress: schema.shippingAddress != null
+          ? Address.fromSchema(schema.shippingAddress!)
+          : null,
+      previousAddresses: schema.previousAddresses
+          ?.map((addr) => Address.fromSchema(addr))
+          .toList(),
+    );
+  }
 }
+```
 
-// Usage
+Using nested schemas:
+```dart
 final customerData = {
-  'id': 'cust-123',
-  'name': 'John Doe',
-  'email': 'john@example.com',
+  'name': 'John Smith',
   'billingAddress': {
     'street': '123 Main St',
     'city': 'New York',
-    'country': 'USA'
+    'zipCode': '10001'
   },
   'shippingAddress': {
-    'street': '456 Park Ave',
-    'city': 'New York',
-    'country': 'USA'
-  },
-  'additionalAddresses': [
-    {
-      'street': '789 Work Blvd',
-      'city': 'New York',
-      'country': 'USA'
-    }
-  ]
+    'street': '456 Oak Ave',
+    'city': 'Boston',
+    'zipCode': '02101'
+  }
 };
 
 // Create schema instance
 final customerSchema = CustomerSchema(customerData);
 
-// Convert to model if valid
+// Access nested properties directly
 if (customerSchema.isValid) {
-  final customer = customerSchema.toModel();
-
-  // Access nested models
-  print('Billing City: ${customer.billingAddress.city}');
-
-  // Access optional nested model
-  if (customer.shippingAddress != null) {
-    print('Shipping City: ${customer.shippingAddress!.city}');
+  // Access nested schemas
+  print('Billing City: ${customerSchema.billingAddress.city}');
+  
+  // Access optional nested schema
+  if (customerSchema.shippingAddress != null) {
+    print('Shipping City: ${customerSchema.shippingAddress!.city}');
   }
-
-  // Access list of nested models
-  if (customer.additionalAddresses != null) {
-    for (final address in customer.additionalAddresses!) {
-      print('Additional Address: ${address.street}, ${address.city}');
-    }
-  }
+  
+  // Create model when needed
+  final customer = Customer.fromSchema(customerSchema);
 }
 ```
 
-## SchemaRegistry
+## Schema Registry Usage
 
-The SchemaRegistry is a utility for managing SchemaModel factories, allowing you to create SchemaModel instances dynamically based on a model type.
+The `SchemaRegistry` allows dynamic schema creation:
 
 ```dart
-// Register a factory for creating UserSchema instances
-SchemaRegistry.register<User, UserSchema>((data) => UserSchema(data));
+// Register schemas
+SchemaRegistry.register<UserSchema>((data) => UserSchema(data));
+SchemaRegistry.register<ProfileSchema>((data) => ProfileSchema(data));
+
+// Use registry to create schemas dynamically
+final userData = {'name': 'John', 'email': 'john@example.com'};
 
 // Create a UserSchema instance using the registered factory
-final schema = SchemaRegistry.createSchema(User, userData);
+final schema = SchemaRegistry.createSchema<UserSchema>(userData);
 
 if (schema != null && schema.isValid) {
-  final user = (schema as UserSchema).toModel();
-  print('Created via registry: ${user.name}');
+  print('Name: ${schema.name}');
+  print('Email: ${schema.email}');
 }
 ```
 
-## Key SchemaModel Methods
+## Key BaseSchema Methods
 
-The SchemaModel class provides several useful methods:
+Every generated schema class provides these methods:
 
 ```dart
-// Check if the data is valid
-bool get isValid => _isValid;
+// Check if data is valid
+bool get isValid;
 
-// Get validation errors if any
-SchemaError? getErrors() => _error;
+// Get validation errors (null if valid)
+SchemaError? getErrors();
 
-// Get a value with type safety
-V? getValue<V>(String key);
-
-// Get raw data
-Map<String, Object?> toMap();
+// Access validated data as a map
+Map<String, dynamic> toMap();
 
 // Convert to JSON string
 String toJson();
 
-// Convert to model instance
-T toModel();
+// Access typed properties through generated getters
+// e.g., schema.name, schema.email, etc.
 ```
 
 ## Conclusion
 
 Ack 0.2.0 introduces several powerful new features:
 
-1. **Direct Schema Definition**: The fluent API with `Ack.object` for defining schemas directly
-2. **SchemaModel API**: A new type-safe way to work with schemas and models with automatic validation
-3. **Code Generation**: Generate schema classes from annotated Dart models
-4. **String Validation Improvements**: Enhanced string validation with the `matches()` method
-5. **JSON Schema Integration**: Generate JSON Schema specifications from your schemas
-6. **Nested Model Support**: Elegant handling of nested models with code generation
+1. **Code Generation**: Automatically generate schema classes from annotated models
+2. **Automatic Inference**: Required/optional fields determined from constructors, nullable types from field declarations
+3. **Enhanced String Validation**: Email, date, and pattern matching
+4. **List Validation**: Unique items, length constraints
+5. **Nested Model Support**: Seamless validation of complex object graphs
+6. **Additional Properties**: Capture and validate dynamic fields
+7. **Schema Registry**: Dynamic schema creation and management
+8. **Direct Property Access**: Type-safe access to validated data through generated getters
 
-These features make Ack a powerful tool for building robust applications with strong data validation. The automatic validation, improved error handling, and better type safety simplify working with complex data structures.
-
-For more information, check out the [SchemaModel Class API](../core-concepts/schema-model-class.mdx) and [Code Generation](../guides/code-generation.mdx) guides.
+These features make Ack a powerful and flexible validation library that works seamlessly with Dart's type system while maintaining simplicity and ease of use.

@@ -33,8 +33,7 @@ class DiscriminatedClassInfo {
       discriminatorMapping[value];
 
   @override
-  String toString() =>
-      'DiscriminatedClassInfo(${baseClass.name}, '
+  String toString() => 'DiscriminatedClassInfo(${baseClass.name}, '
       'subclasses: ${subclasses.length}, '
       'discriminatorKey: $discriminatorKey, '
       'values: ${discriminatorValues.join(', ')})';

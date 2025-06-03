@@ -33,7 +33,7 @@ class Circle extends Shape {
   final double radius;
 
   const Circle({super.color, super.isFilled, required this.radius})
-    : super(type: 'circle');
+      : super(type: 'circle');
 
   @override
   Map<String, dynamic> toJson() {

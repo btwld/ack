@@ -1,21 +1,22 @@
-# SchemaModel Class API
+# BaseSchema Class API
 
-This document describes the `SchemaModel` API in Ack, which provides a way to create schema-based models with automatic validation. While you can implement SchemaModel classes manually, the recommended approach is to use code generation.
+This document describes the `BaseSchema` API in Ack, which provides a way to create schema-based models with automatic validation. While you can implement BaseSchema classes manually, the recommended approach is to use code generation.
 
 ## Overview
 
-The `SchemaModel` class is a base class for creating schema-based models that can validate data against a schema. It provides a simple and intuitive API for creating, validating, and converting data to models.
+The `BaseSchema` class is a base class for creating schema-based models that can validate data against a schema. It provides a simple and intuitive API for creating, validating, and accessing typed data.
 
 ## Key Features
 
-- **Automatic Validation**: Validation happens automatically when a SchemaModel is created
+- **Automatic Validation**: Validation happens automatically when a BaseSchema is created
 - **Simple Error Handling**: Easy access to validation errors through `isValid` and `getErrors()`
 - **Type Safety**: Uses `Object?` instead of `dynamic` for better type safety
 - **Code Generation**: Generate schema models automatically from annotated classes
+- **Direct Property Access**: Access validated data directly through typed getters
 
 ## Using Code Generation (Recommended Approach)
 
-The easiest way to use SchemaModel is with code generation. This approach lets you define your models as regular Dart classes with annotations, and the generator creates the corresponding SchemaModel classes for you.
+The easiest way to use BaseSchema is with code generation. This approach lets you define your models as regular Dart classes with annotations, and the generator creates the corresponding BaseSchema classes for you.
 
 ### 1. Define Your Model Class
 
@@ -46,13 +47,13 @@ Run the build_runner command to generate the schema class:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-This generates a `user.schema.dart` file with a `UserSchema` class that extends `SchemaModel<User>`.
+This generates a `user.schema.dart` file with a `UserSchema` class that extends `BaseSchema`.
 
 ### 3. Use the Generated Schema Class
 
-There are two main ways to use the generated schema class:
+There are several ways to use the generated schema class:
 
-#### Approach 1: Using the constructor (instance-based validation)
+#### Approach 1: Direct Property Access
 
 ```dart
 // file: main.dart
@@ -71,9 +72,15 @@ void main() {
 
   // Check if the data is valid
   if (userSchema.isValid) {
-    // Convert to the User model
-    final user = userSchema.toModel();
-    print('Valid User: ${user.name}, ${user.email}, Age: ${user.age}');
+    // Access properties directly from the schema
+    print('Valid User: ${userSchema.name}, ${userSchema.email}, Age: ${userSchema.age}');
+    
+    // Create a User model if needed
+    final user = User(
+      name: userSchema.name,
+      email: userSchema.email,
+      age: userSchema.age,
+    );
   } else {
     // Handle validation errors
     print('Validation errors: ${userSchema.getErrors()}');
@@ -81,33 +88,68 @@ void main() {
 }
 ```
 
-#### Approach 2: Converting existing models to schema data
+#### Approach 2: Factory Method Pattern
 
 ```dart
-// file: main.dart
-import 'user.dart';
-import 'user.schema.dart'; // Import the generated file
+// file: user.dart
+class User {
+  final String name;
+  final String email;
+  final int? age;
+  
+  User({required this.name, required this.email, this.age});
+  
+  // Add a factory method to create from schema
+  factory User.fromSchema(UserSchema schema) {
+    if (!schema.isValid) {
+      throw AckException(schema.getErrors()!);
+    }
+    
+    return User(
+      name: schema.name,
+      email: schema.email,
+      age: schema.age,
+    );
+  }
+}
 
+// Usage
 void main() {
-  // Create a User model
-  final userModelInstance = User(
-    name: 'Jane Doe',
-    email: 'jane@example.com',
-  );
-
-  // Convert model to map data for schema validation using toMap()
-  final userData = userModelInstance.toMap();
   final userSchema = UserSchema(userData);
+  final user = User.fromSchema(userSchema); // Throws if invalid
+}
+```
 
-  // Convert back to a Map for serialization
-  final map = userSchema.toMap();
-  print('Serialized: $map');
+#### Approach 3: Extension Methods
+
+```dart
+// file: user_extensions.dart
+extension UserSchemaExtensions on UserSchema {
+  User toUser() {
+    if (!isValid) {
+      throw AckException(getErrors()!);
+    }
+    
+    return User(
+      name: name,
+      email: email,
+      age: age,
+    );
+  }
+}
+
+// Usage
+void main() {
+  final userSchema = UserSchema(userData);
+  if (userSchema.isValid) {
+    final user = userSchema.toUser();
+  }
 }
 ```
 
 ## Generated Schema Class API
 
-When you use code generation, the generated schema class extends the base SchemaModel class and adds some static methods and properties for convenience. Here's what you'll find in a generated schema class:
+When you use code generation, the generated schema class extends the base BaseSchema class and adds typed property getters, static methods and properties for convenience. Here's what you'll find in a generated schema class:
 
 ### Static Properties and Methods
 
@@ -119,10 +161,6 @@ Returns the `AckSchema` instance that defines the validation rules for the model
 final userSchema = UserSchema.schema;
 print('Schema: ${userSchema}');
 ```
-
-
-
-
 
 #### `static Map<String, Object?> toJsonSchema()`
 
@@ -137,22 +175,20 @@ final jsonString = jsonEncode(jsonSchema);
 print('JSON String:\n$jsonString');
 ```
 
-### Instance Methods
+### Instance Properties
 
-#### `User toModel()`
-
-Converts the schema instance to a model instance.
+The generated schema provides typed getters for each property in your model:
 
 ```dart
-// Using constructor + toModel
 final schema = UserSchema(userData);
 if (schema.isValid) {
-  final user = schema.toModel();
-  print('User: ${user.name}');
-} else {
-  print('Validation failed: ${schema.getErrors()}');
+  String name = schema.name;        // Non-nullable property
+  String email = schema.email;      // Non-nullable property
+  int? age = schema.age;            // Nullable property
 }
 ```
+
+### Instance Methods
 
 #### `Map<String, dynamic> toMap()`
 
@@ -203,6 +239,13 @@ class Address {
   final String city;
 
   Address({required this.street, required this.city});
+  
+  factory Address.fromSchema(AddressSchema schema) {
+    return Address(
+      street: schema.street,
+      city: schema.city,
+    );
+  }
 }
 
 // file: user.dart
@@ -215,6 +258,13 @@ class User {
   final Address address;
 
   User({required this.name, required this.address});
+  
+  factory User.fromSchema(UserSchema schema) {
+    return User(
+      name: schema.name,
+      address: Address.fromSchema(schema.address),
+    );
+  }
 }
 ```
 
@@ -232,19 +282,21 @@ final userData = {
 // Create schema instance - validation happens automatically
 final userSchema = UserSchema(userData);
 
-// Check if valid and convert to model
+// Check if valid and access properties
 if (userSchema.isValid) {
-  final user = userSchema.toModel();
-  print('User: ${user.name}, City: ${user.address.city}');
+  print('User: ${userSchema.name}, City: ${userSchema.address.city}');
+  
+  // Create model if needed
+  final user = User.fromSchema(userSchema);
 }
 ```
 
 ## Manual Implementation (Advanced)
 
-While code generation is recommended, you can also implement `SchemaModel` manually for more control. The manual implementation follows the same pattern as the base SchemaModel class, with validation happening automatically in the constructor.
+While code generation is recommended, you can also implement `BaseSchema` manually for more control. The manual implementation follows the same pattern as the base BaseSchema class, with validation happening automatically in the constructor.
 
 ```dart
-class UserSchema extends SchemaModel<User> {
+class UserSchema extends BaseSchema {
   UserSchema(Object? data) : super(data);
 
   @override
@@ -258,37 +310,35 @@ class UserSchema extends SchemaModel<User> {
       required: ['name', 'email'],
     );
   }
-
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return User(
-      name: getValue<String>('name')!,
-      email: getValue<String>('email')!,
-      age: getValue<int?>('age'),
-    );
-  }
+  
+  // Add typed getters
+  String get name => getValue<String>('name')!;
+  String get email => getValue<String>('email')!;
+  int? get age => getValue<int?>('age');
 }
 ```
 
 ## SchemaRegistry
 
-The `SchemaRegistry` is an optional utility for managing `SchemaModel` factories. It allows you to create `SchemaModel` instances dynamically based on a model type.
+The `SchemaRegistry` is an optional utility for managing `BaseSchema` factories. It allows you to create `BaseSchema` instances dynamically based on a schema type.
 
 ```dart
 // Register a factory for creating UserSchema instances
-SchemaRegistry.register<User, UserSchema>((data) => UserSchema(data));
+SchemaRegistry.register<UserSchema>((data) => UserSchema(data));
 
 // Create a UserSchema instance using the registered factory
-final schema = SchemaRegistry.createSchema(User, userData);
+final schema = SchemaRegistry.createSchema<UserSchema>(userData);
 
 if (schema != null && schema.isValid) {
-  final user = (schema as UserSchema).toModel();
-  print('Created via registry: ${user.name}');
+  print('Name: ${schema.name}');
+  
+  // Create model using your preferred pattern
+  final user = User(name: schema.name, email: schema.email);
 }
 ```
 
 *Note: Using `SchemaRegistry` is optional and useful in scenarios where you need to handle schema creation dynamically.*
+
+## Migration from v1.x
+
+If you're upgrading from v1.x where schemas had a `toModel()` method, see the migration patterns shown above. The key change is that schemas no longer create model instances - they only validate and provide typed access to data. This gives you complete control over how you create your model instances.

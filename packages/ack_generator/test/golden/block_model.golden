@@ -11,8 +11,8 @@ part of 'block_model.dart';
 
 /// Generated schema for Block
 /// Base class for blocks that make up a slide
-class BlockSchema extends SchemaModel<Block> {
-  BlockSchema([Object? value = null]) : super(value);
+class BlockSchema extends BaseSchema {
+  BlockSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {},
@@ -22,22 +22,13 @@ class BlockSchema extends SchemaModel<Block> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Block, BlockSchema>(
+    SchemaRegistry.register<BlockSchema>(
       (data) => BlockSchema(data),
     );
   }
 
   @override
   AckSchema getSchema() => schema;
-
-  @override
-  Block toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    throw UnimplementedError(
-        'Cannot instantiate abstract class Block. Use a concrete subclass instead.');
-  }
 
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
@@ -46,8 +37,8 @@ class BlockSchema extends SchemaModel<Block> {
 
 /// Generated schema for SectionBlock
 /// A section block that contains multiple columns
-class SectionBlockSchema extends SchemaModel<SectionBlock> {
-  SectionBlockSchema([Object? value = null]) : super(value);
+class SectionBlockSchema extends BaseSchema {
+  SectionBlockSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -59,7 +50,7 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<SectionBlock, SectionBlockSchema>(
+    SchemaRegistry.register<SectionBlockSchema>(
       (data) => SectionBlockSchema(data),
     );
     // Register schema dependencies
@@ -70,19 +61,10 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
   AckSchema getSchema() => schema;
 
   List<ColumnBlockSchema> get columns {
-    return getValue<List<dynamic>>('columns')!
-        .map((item) => ColumnBlockSchema(item as Map<String, dynamic>))
+    return getValue<List>('columns')!
+        .whereType<Map<String, Object?>>()
+        .map((item) => ColumnBlockSchema(item))
         .toList();
-  }
-
-  @override
-  SectionBlock toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return SectionBlock(
-      columns.map((item) => item.toModel()).toList(),
-    );
   }
 
   /// Convert the schema to a JSON Schema
@@ -92,8 +74,8 @@ class SectionBlockSchema extends SchemaModel<SectionBlock> {
 
 /// Generated schema for ColumnBlock
 /// A column block that contains markdown content
-class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
-  ColumnBlockSchema([Object? value = null]) : super(value);
+class ColumnBlockSchema extends BaseSchema {
+  ColumnBlockSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -105,7 +87,7 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<ColumnBlock, ColumnBlockSchema>(
+    SchemaRegistry.register<ColumnBlockSchema>(
       (data) => ColumnBlockSchema(data),
     );
   }
@@ -114,16 +96,6 @@ class ColumnBlockSchema extends SchemaModel<ColumnBlock> {
   AckSchema getSchema() => schema;
 
   String get content => getValue<String>('content')!;
-
-  @override
-  ColumnBlock toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return ColumnBlock(
-      content,
-    );
-  }
 
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>

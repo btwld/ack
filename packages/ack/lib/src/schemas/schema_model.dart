@@ -1,15 +1,16 @@
 // lib/src/schema/schema_model.dart
 import 'dart:convert';
 
-import 'package:ack/src/builder_helpers/schema_converter.dart';
 import 'package:ack/src/schemas/schema.dart';
-import 'package:ack/src/validation/ack_exception.dart';
 import 'package:ack/src/validation/schema_error.dart';
 import 'package:ack/src/validation/schema_result.dart';
 import 'package:meta/meta.dart';
 
+@Deprecated('Use BaseSchema instead')
+typedef SchemaModel = BaseSchema;
+
 /// Base class for type-safe schema models
-abstract class SchemaModel<T> {
+abstract class BaseSchema {
   /// The data stored in this model (protected access for subclasses)
   @protected
   final Map<String, Object?> _data = {};
@@ -17,13 +18,13 @@ abstract class SchemaModel<T> {
   late final SchemaError? _error;
 
   /// Create from any value, validating it automatically
-  SchemaModel(Object? value) {
+  BaseSchema(Object? value) {
     _initialize(value);
   }
 
   /// Create from pre-validated data (internal use)
   @protected
-  SchemaModel.validated(Map<String, Object?> validatedData) {
+  BaseSchema.validated(Map<String, Object?> validatedData) {
     _data.addAll(validatedData);
     _isValid = true;
     _error = null;
@@ -57,11 +58,14 @@ abstract class SchemaModel<T> {
   /// Get validation errors if any
   SchemaError? getErrors() => _error;
 
-  /// Get a value with type safety
+  /// Get a value from the validated data.
+  /// For primitives, returns the value directly (already converted by schema validation).
+  /// For complex types, returns raw value - conversion handled by generated getters.
+  @protected
   V? getValue<V>(String key) {
     final value = _data[key];
 
-    return SchemaConverter.convertValue(value);
+    return value as V?;
   }
 
   /// Access via subscript operator
@@ -70,22 +74,9 @@ abstract class SchemaModel<T> {
   /// Get raw data
   Map<String, Object?> toMap() => Map.from(_data);
 
-  /// Convert this schema to a model instance.
-  /// This is implemented by generated code for each schema type.
-  ///
-  /// Throws an [AckException] if the schema is not valid.
-  T toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    // Implementation provided by subclasses
-    throw UnimplementedError('Subclasses must implement toModel()');
-  }
-
   // NOTE: parse() and tryParse() are now implemented as static methods
   // on generated schema classes, as per the documented API design.
-  // They are no longer instance methods on the base SchemaModel class.
+  // They are no longer instance methods on the base BaseSchema class.
 
   /// Convert to JSON string
   String toJson() => jsonEncode(_data);

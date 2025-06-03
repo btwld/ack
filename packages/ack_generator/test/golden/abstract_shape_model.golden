@@ -11,8 +11,8 @@ part of 'abstract_shape_model.dart';
 
 /// Generated base schema for Shape with inheritance support
 /// A shape that can be a circle, rectangle, or triangle
-class ShapeSchema<T extends Shape> extends SchemaModel<T> {
-  ShapeSchema([Object? value = null]) : super(value);
+class ShapeSchema extends BaseSchema {
+  ShapeSchema([Object? super.value = null]);
 
   static final DiscriminatedObjectSchema schema = Ack.discriminated(
     discriminatorKey: 'type',
@@ -35,7 +35,7 @@ class ShapeSchema<T extends Shape> extends SchemaModel<T> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Shape, ShapeSchema>(
+    SchemaRegistry.register<ShapeSchema>(
       (data) => ShapeSchema(data),
     );
     CircleSchema.ensureInitialize();
@@ -84,8 +84,8 @@ class ShapeSchema<T extends Shape> extends SchemaModel<T> {
 
 /// Generated schema for Circle extending ShapeSchema
 /// A circular shape with radius
-class CircleSchema extends ShapeSchema<Circle> {
-  CircleSchema([Object? value = null]) : super(value);
+class CircleSchema extends ShapeSchema {
+  CircleSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
     {'radius': Ack.double},
@@ -95,7 +95,7 @@ class CircleSchema extends ShapeSchema<Circle> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Circle, CircleSchema>(
+    SchemaRegistry.register<CircleSchema>(
       (data) => CircleSchema(data),
     );
   }
@@ -105,14 +105,6 @@ class CircleSchema extends ShapeSchema<Circle> {
 
   double get radius => getValue<double>('radius')!;
 
-  @override
-  Circle toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return Circle(color: color, isFilled: isFilled, radius: radius);
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
       JsonSchemaConverter(schema: schema).toSchema();
@@ -120,8 +112,8 @@ class CircleSchema extends ShapeSchema<Circle> {
 
 /// Generated schema for Rectangle extending ShapeSchema
 /// A rectangular shape with width and height
-class RectangleSchema extends ShapeSchema<Rectangle> {
-  RectangleSchema([Object? value = null]) : super(value);
+class RectangleSchema extends ShapeSchema {
+  RectangleSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
     {'width': Ack.double, 'height': Ack.double},
@@ -131,7 +123,7 @@ class RectangleSchema extends ShapeSchema<Rectangle> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Rectangle, RectangleSchema>(
+    SchemaRegistry.register<RectangleSchema>(
       (data) => RectangleSchema(data),
     );
   }
@@ -143,15 +135,6 @@ class RectangleSchema extends ShapeSchema<Rectangle> {
 
   double get height => getValue<double>('height')!;
 
-  @override
-  Rectangle toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return Rectangle(
-        color: color, isFilled: isFilled, width: width, height: height);
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
       JsonSchemaConverter(schema: schema).toSchema();
@@ -159,8 +142,8 @@ class RectangleSchema extends ShapeSchema<Rectangle> {
 
 /// Generated schema for Triangle extending ShapeSchema
 /// A triangular shape with three sides
-class TriangleSchema extends ShapeSchema<Triangle> {
-  TriangleSchema([Object? value = null]) : super(value);
+class TriangleSchema extends ShapeSchema {
+  TriangleSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
     {'sideA': Ack.double, 'sideB': Ack.double, 'sideC': Ack.double},
@@ -170,7 +153,7 @@ class TriangleSchema extends ShapeSchema<Triangle> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Triangle, TriangleSchema>(
+    SchemaRegistry.register<TriangleSchema>(
       (data) => TriangleSchema(data),
     );
   }
@@ -183,19 +166,6 @@ class TriangleSchema extends ShapeSchema<Triangle> {
   double get sideB => getValue<double>('sideB')!;
 
   double get sideC => getValue<double>('sideC')!;
-
-  @override
-  Triangle toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return Triangle(
-        color: color,
-        isFilled: isFilled,
-        sideA: sideA,
-        sideB: sideB,
-        sideC: sideC);
-  }
 
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>

@@ -94,7 +94,9 @@ abstract class SchemaResult<T extends Object> {
   /// If this instance is a [Fail], it calls [onFail] with its list of errors.
   /// Otherwise, it does nothing.
   void onFail(void Function(SchemaError error) onFail) {
-    match(onOk: (_) {}, onFail: onFail);
+    if (isFail) {
+      onFail(getError());
+    }
   }
 
   /// Invokes [onOk] if this result is successful.

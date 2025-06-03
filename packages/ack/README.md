@@ -495,13 +495,13 @@ Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is ei
 
 Happy validating with ACK!
 
-## SchemaModel API
+## BaseSchema API
 
-ACK provides a `SchemaModel` base class for creating schema-based models with automatic validation.
+ACK provides a `BaseSchema` base class for creating schema-based models with automatic validation.
 
 ```dart
-// Define a schema model
-class UserSchema extends SchemaModel<User> {
+// Define a schema model manually (or use code generation)
+class UserSchema extends BaseSchema {
   UserSchema(Object? data) : super(data);
 
   @override
@@ -512,19 +512,11 @@ class UserSchema extends SchemaModel<User> {
       'age': Ack.int.min(0).nullable(),
     }, required: ['name', 'email']);
   }
-
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return User(
-      name: getValue<String>('name')!,
-      email: getValue<String>('email')!,
-      age: getValue<int?>('age'),
-    );
-  }
+  
+  // Getters for typed access to properties
+  String get name => getValue<String>('name')!;
+  String get email => getValue<String>('email')!;
+  int? get age => getValue<int?>('age');
 }
 
 // Using the schema model - Constructor approach
@@ -538,40 +530,48 @@ final userSchema = UserSchema(userData);
 
 // Check if the schema is valid
 if (userSchema.isValid) {
-  // Convert to model
-  final user = userSchema.toModel();
-  print('User: ${user.name}, ${user.email}, ${user.age}');
+  // Access properties directly from the schema
+  print('User: ${userSchema.name}, ${userSchema.email}, ${userSchema.age}');
+  
+  // Create a model instance manually
+  final user = User(
+    name: userSchema.name,
+    email: userSchema.email,
+    age: userSchema.age,
+  );
 } else {
   // Handle validation errors
   print('Validation errors: ${userSchema.getErrors()}');
 }
 
-// Using the static parse method (throws on validation error)
+// Creating and validating schemas
 try {
-  // Parse directly to a model instance in one step
-  final user = UserSchema.parse(userData);
-  print('User: ${user.name}, ${user.email}, ${user.age}');
+  // Create schema and validate
+  final userSchema = UserSchema(userData);
+  if (userSchema.isValid) {
+    print('User: ${userSchema.name}, ${userSchema.email}, ${userSchema.age}');
+  } else {
+    print('Validation failed: ${userSchema.getErrors()}');
+  }
 } catch (e) {
-  print('Validation failed: $e');
+  print('Unexpected error: $e');
 }
 
-// Using the static tryParse method (null-safe)
-final maybeUser = UserSchema.tryParse({
-  'name': 'J', // Too short, will fail validation
-  'email': 'invalid-email'
-});
-
-if (maybeUser != null) {
-  print('Valid user: ${maybeUser.name}');
-} else {
-  print('Validation failed');
+// Create your model class however you prefer
+class User {
+  final String name;
+  final String email;
+  final int? age;
+  
+  User({required this.name, required this.email, this.age});
 }
 ```
+
 
 ## Documentation
 
 For detailed guides on using Ack effectively, check out the documentation:
 
-- [SchemaModel API](https://docs.page/leofarias/ack/core-concepts/schema-model-class) - Learn how to use the SchemaModel API
+- [BaseSchema API](https://docs.page/leofarias/ack/core-concepts/schema-model-class) - Learn how to use the BaseSchema API
 
 ## License

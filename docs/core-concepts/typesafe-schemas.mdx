@@ -91,24 +91,58 @@ if (!userSchema.isValid) {
 }
 ```
 
-### 2. Model Conversion and Validation
+### 2. Model Creation Patterns
 
-For converting validated data to your model, use the instance-based approach:
+You have complete control over how to create model instances from validated data:
 
+#### Direct Property Access
 ```dart
-// Create schema instance and validate
 final userSchema = UserSchema(data);
 
 if (userSchema.isValid) {
-  // Convert to your fully typed model
-  final User user = userSchema.toModel();
+  // Work directly with schema properties
+  print('Hello ${userSchema.name}! You are ${userSchema.age} years old');
+  
+  // Create model when needed
+  final user = User(
+    name: userSchema.name,
+    email: userSchema.email,
+    age: userSchema.age,
+  );
+}
+```
 
-  // Work with your fully typed model
-  print('Hello ${user.name}! You are ${user.age} years old');
-} else {
-  // Handle validation errors
-  final error = userSchema.getErrors();
-  print('Invalid data: ${error?.message}');
+#### Factory Method Pattern
+```dart
+// Add to your model class
+class User {
+  // ... existing code ...
+  
+  factory User.fromSchema(UserSchema schema) {
+    if (!schema.isValid) {
+      throw AckException(schema.getErrors()!);
+    }
+    return User(
+      name: schema.name,
+      email: schema.email,
+      age: schema.age,
+    );
+  }
+}
+
+// Usage
+final user = User.fromSchema(UserSchema(data));
+```
+
+#### Extension Method Pattern
+```dart
+extension UserSchemaX on UserSchema {
+  User toUser() => User(name: name, email: email, age: age);
+}
+
+// Usage
+if (userSchema.isValid) {
+  final user = userSchema.toUser();
 }
 ```
 
@@ -164,6 +198,10 @@ class Address {
   final String city;
 
   Address({required this.street, required this.city});
+  
+  factory Address.fromSchema(AddressSchema schema) {
+    return Address(street: schema.street, city: schema.city);
+  }
 }
 
 // file: customer.dart
@@ -188,6 +226,16 @@ class Customer {
     required this.address,
     this.secondaryAddresses
   });
+  
+  factory Customer.fromSchema(CustomerSchema schema) {
+    return Customer(
+      name: schema.name,
+      address: Address.fromSchema(schema.address),
+      secondaryAddresses: schema.secondaryAddresses
+          ?.map((addr) => Address.fromSchema(addr))
+          .toList(),
+    );
+  }
 }
 ```
 
@@ -223,6 +271,9 @@ if (customerSchema.isValid) {
       print('Secondary: ${addr.street}, ${addr.city}');
     }
   }
+  
+  // Create model when needed
+  final customer = Customer.fromSchema(customerSchema);
 }
 ```
 
@@ -344,7 +395,7 @@ class AdvancedUser {
 While code generation is recommended, you can also implement schemas manually:
 
 ```dart
-class UserSchema extends SchemaModel<User> {
+class UserSchema extends BaseSchema {
   UserSchema(Object? data) : super(data);
 
   @override
@@ -358,23 +409,20 @@ class UserSchema extends SchemaModel<User> {
       required: ['name', 'email', 'age'],
     );
   }
-
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return User(
-      name: getValue<String>('name')!,
-      email: getValue<String>('email')!,
-      age: getValue<int>('age')!,
-    );
-  }
   
-  // You can add typed getters manually too
+  // Add typed getters
   String get name => getValue<String>('name')!;
   String get email => getValue<String>('email')!;
   int get age => getValue<int>('age')!;
+}
+
+// Usage
+final schema = UserSchema(data);
+if (schema.isValid) {
+  final user = User(
+    name: schema.name,
+    email: schema.email,
+    age: schema.age,
+  );
 }
 ```

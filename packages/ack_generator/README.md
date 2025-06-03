@@ -1,4 +1,96 @@
-# ACK Generator - Setup Instructions
+# ACK Generator
+
+Code generator for the ACK validation framework. This generator creates type-safe schema classes from your Dart model classes, providing validation without serialization.
+
+## Breaking Changes in v2.0
+
+The `toModel()` method has been removed from generated schemas. ACK is now a pure validation library, giving you complete control over how you create model instances from validated data.
+
+### Migration Guide
+
+#### Before (v1.x)
+```dart
+final schema = UserSchema(jsonData);
+if (schema.isValid) {
+  final user = schema.toModel(); // This method no longer exists
+}
+```
+
+#### After (v2.0)
+
+**Option 1: Direct Property Access**
+```dart
+final schema = UserSchema(jsonData);
+if (schema.isValid) {
+  // Access properties directly
+  print(schema.name);
+  print(schema.email);
+  
+  // Create model manually
+  final user = User(
+    name: schema.name,
+    email: schema.email,
+    address: Address(
+      street: schema.address.street,
+      city: schema.address.city,
+    ),
+  );
+}
+```
+
+**Option 2: Factory Method Pattern**
+```dart
+class User {
+  factory User.fromSchema(UserSchema schema) {
+    if (!schema.isValid) {
+      throw AckException(schema.getErrors()!);
+    }
+    return User(
+      name: schema.name,
+      email: schema.email,
+      address: Address.fromSchema(schema.address),
+    );
+  }
+}
+
+// Usage
+final user = User.fromSchema(schema);
+```
+
+**Option 3: Extension Methods**
+```dart
+extension UserSchemaX on UserSchema {
+  User toUser() {
+    if (!isValid) throw AckException(getErrors()!);
+    return User(name: name, email: email);
+  }
+}
+
+// Usage
+final user = schema.toUser();
+```
+
+**Option 4: With Other Serialization Libraries**
+```dart
+// Works seamlessly with json_serializable, freezed, etc.
+factory User.fromJson(Map<String, dynamic> json) {
+  // Validate first
+  final schema = UserSchema(json);
+  if (!schema.isValid) {
+    throw AckException(schema.getErrors()!);
+  }
+  // Then use your preferred serialization
+  return _$UserFromJson(json);
+}
+```
+
+## Benefits of This Change
+
+1. **Flexibility**: Choose your own serialization strategy
+2. **Smaller Generated Code**: ~30% reduction in file size
+3. **Better Separation of Concerns**: Validation is separate from object creation
+4. **Framework Agnostic**: Works with any Dart serialization library
+5. **Simpler Mental Model**: Schemas validate, they don't create
 
 ## Implementation Status
 ✅ Core files created:

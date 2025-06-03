@@ -16,7 +16,7 @@ class User {
   }) : metadata = metadata ?? {};
 }
 
-class UserSchema extends SchemaModel<User> {
+class UserSchema extends BaseSchema {
   static final ObjectSchema schema = Ack.object({
     'email': Ack.string.email(),
     'name': Ack.string.minLength(3).maxLength(50),
@@ -37,28 +37,14 @@ class UserSchema extends SchemaModel<User> {
     return schema;
   }
 
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
+  String get email => getValue<String>('email')!;
+  String get name => getValue<String>('name')!;
+  int? get age => getValue<int?>('age');
 
-    return User(
-      email: getValue<String>('email')!,
-      name: getValue<String>('name')!,
-      age: getValue<int?>('age'),
-      metadata: Map<String, dynamic>.from(toMap())
-        ..removeWhere((key, _) => ['email', 'name', 'age'].contains(key)),
-    );
-  }
-
-  static UserSchema fromModel(User user) {
-    return UserSchema({
-      'email': user.email,
-      'name': user.name,
-      if (user.age != null) 'age': user.age,
-      ...user.metadata,
-    });
+  Map<String, dynamic> get metadata {
+    final map = toMap();
+    map.removeWhere((key, _) => ['email', 'name', 'age'].contains(key));
+    return Map<String, dynamic>.from(map);
   }
 }
 
@@ -69,7 +55,7 @@ class Address {
   Address({required this.street, required this.city});
 }
 
-class AddressSchema extends SchemaModel<Address> {
+class AddressSchema extends BaseSchema {
   static final ObjectSchema schema = Ack.object({
     'street': Ack.string,
     'city': Ack.string,
@@ -85,24 +71,8 @@ class AddressSchema extends SchemaModel<Address> {
     return schema;
   }
 
-  @override
-  Address toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return Address(
-      street: getValue<String>('street')!,
-      city: getValue<String>('city')!,
-    );
-  }
-
-  static AddressSchema fromModel(Address address) {
-    return AddressSchema({
-      'street': address.street,
-      'city': address.city,
-    });
-  }
+  String get street => getValue<String>('street')!;
+  String get city => getValue<String>('city')!;
 }
 
 void main() {
@@ -144,30 +114,27 @@ void main() {
       final userSchema = UserSchema(userData);
       expect(userSchema.isValid, isTrue);
 
-      // Convert schema to model
-      final user = userSchema.toModel();
+      // Access the strongly-typed properties directly
+      expect(userSchema.name, equals('John Doe'));
+      expect(userSchema.email, equals('user@example.com'));
+      expect(userSchema.age, equals(25));
 
-      // Access the strongly-typed properties
-      expect(user.name, equals('John Doe'));
-      expect(user.email, equals('user@example.com'));
-      expect(user.age, equals(25));
-
-      // Access additional properties
-      expect(user.metadata['role'], equals('admin'));
+      // Access additional properties through metadata
+      expect(userSchema.metadata['role'], equals('admin'));
     });
 
-    test('Converting Models to Schema Objects', () {
-      // Create a model instance
-      final user = User(
-        email: 'new@example.com',
-        name: 'New User',
-        age: 30,
-      );
+    test('Creating Schema from Data', () {
+      // Create schema from raw data
+      final userData = {
+        'email': 'new@example.com',
+        'name': 'New User',
+        'age': 30,
+      };
 
-      // Convert to schema for validation or serialization
-      final schema = UserSchema.fromModel(user);
+      final schema = UserSchema(userData);
+      expect(schema.isValid, isTrue);
 
-      // Convert back to JSON
+      // Get back to JSON
       final json = schema.toMap();
 
       expect(json['email'], equals('new@example.com'));
@@ -183,9 +150,8 @@ void main() {
 
       final addressSchema = AddressSchema(addressData);
       expect(addressSchema.isValid, isTrue);
-      final address = addressSchema.toModel();
-      expect(address.street, equals('123 Main St'));
-      expect(address.city, equals('Anytown'));
+      expect(addressSchema.street, equals('123 Main St'));
+      expect(addressSchema.city, equals('Anytown'));
     });
   });
 }

@@ -11,8 +11,8 @@ part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
-class ProductSchema extends SchemaModel<Product> {
-  ProductSchema([Object? value = null]) : super(value);
+class ProductSchema extends BaseSchema {
+  ProductSchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -29,7 +29,7 @@ class ProductSchema extends SchemaModel<Product> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Product, ProductSchema>(
+    SchemaRegistry.register<ProductSchema>(
       (data) => ProductSchema(data),
     );
     // Register schema dependencies
@@ -50,7 +50,7 @@ class ProductSchema extends SchemaModel<Product> {
   String? get imageUrl => getValue<String>('imageUrl');
 
   CategorySchema get category {
-    return CategorySchema(getValue<Map<String, dynamic>>('category')!);
+    return CategorySchema(getValue<Map<String, Object?>>('category')!);
   }
 
   Map<String, Object?> get metadata {
@@ -67,22 +67,6 @@ class ProductSchema extends SchemaModel<Product> {
         map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-  @override
-  Product toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return Product(
-      id: id,
-      name: name,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      category: category.toModel(),
-      metadata: metadata,
-    );
-  }
-
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
       JsonSchemaConverter(schema: schema).toSchema();
@@ -90,8 +74,8 @@ class ProductSchema extends SchemaModel<Product> {
 
 /// Generated schema for Category
 /// A category for organizing products
-class CategorySchema extends SchemaModel<Category> {
-  CategorySchema([Object? value = null]) : super(value);
+class CategorySchema extends BaseSchema {
+  CategorySchema([Object? super.value = null]);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -105,7 +89,7 @@ class CategorySchema extends SchemaModel<Category> {
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Category, CategorySchema>(
+    SchemaRegistry.register<CategorySchema>(
       (data) => CategorySchema(data),
     );
   }
@@ -124,19 +108,6 @@ class CategorySchema extends SchemaModel<Category> {
     final knownFields = {'id', 'name', 'description'};
     return Map.fromEntries(
         map.entries.where((e) => !knownFields.contains(e.key)));
-  }
-
-  @override
-  Category toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return Category(
-      id: id,
-      name: name,
-      description: description,
-      metadata: metadata,
-    );
   }
 
   /// Convert the schema to a JSON Schema
