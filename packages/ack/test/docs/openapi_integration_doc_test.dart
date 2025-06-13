@@ -11,7 +11,7 @@ void main() {
         final createUserSchema = Ack.object(
           {
             'name': Ack.string.minLength(2).maxLength(50),
-            'email': Ack.string.isEmail(),
+            'email': Ack.string.email(),
             'role': Ack.string.nullable(),
             'preferences': Ack.object(
               {
@@ -34,7 +34,7 @@ void main() {
         final createUserSchema = Ack.object(
           {
             'name': Ack.string.minLength(2).maxLength(50),
-            'email': Ack.string.isEmail(),
+            'email': Ack.string.email(),
             'role': Ack.string.nullable(),
           },
           required: ['name', 'email'],
@@ -64,7 +64,7 @@ void main() {
         final userSchema = Ack.object(
           {
             'name': Ack.string.minLength(2),
-            'email': Ack.string.isEmail(),
+            'email': Ack.string.email(),
             'preferences': Ack.object(
               {
                 'darkMode': Ack.boolean.nullable(),
@@ -101,7 +101,7 @@ void main() {
         // Define schema
         final weatherQuerySchema = Ack.object({
           'location': Ack.string.minLength(2).maxLength(100),
-          'unit': Ack.string.isEnum(['celsius', 'fahrenheit']).nullable(),
+          'unit': Ack.string.enumValues(['celsius', 'fahrenheit']).nullable(),
           'date': Ack.string
               .constrain(StringRegexConstraint(
                   patternName: 'iso_date',

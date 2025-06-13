@@ -1,0 +1,98 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'user_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated schema for User
+/// A user model with validation
+class UserSchema extends BaseSchema {
+  UserSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = Ack.object(
+    {
+      'email': Ack.string.email(),
+      'name': Ack.string.notEmpty(),
+      'age': Ack.int.nullable(),
+      'password': Ack.string.minLength(8).nullable(),
+      'address': AddressSchema.schema,
+    },
+    required: ['email', 'name', 'password', 'address'],
+    additionalProperties: true,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<UserSchema>(
+      (data) => UserSchema(data),
+    );
+    // Register schema dependencies
+    AddressSchema.ensureInitialize();
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get email => getValue<String>('email')!;
+
+  String get name => getValue<String>('name')!;
+
+  int? get age => getValue<int>('age');
+
+  String? get password => getValue<String>('password');
+
+  AddressSchema get address {
+    return AddressSchema(getValue<Map<String, Object?>>('address')!);
+  }
+
+  Map<String, Object?> get metadata {
+    final map = toMap();
+    final knownFields = {'email', 'name', 'age', 'password', 'address'};
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for Address
+class AddressSchema extends BaseSchema {
+  AddressSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = Ack.object(
+    {
+      'street': Ack.string.notEmpty(),
+      'city': Ack.string.notEmpty(),
+      'zip': Ack.string.nullable(),
+    },
+    required: ['street', 'city'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<AddressSchema>(
+      (data) => AddressSchema(data),
+    );
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get street => getValue<String>('street')!;
+
+  String get city => getValue<String>('city')!;
+
+  String? get zip => getValue<String>('zip');
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}

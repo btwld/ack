@@ -29,7 +29,7 @@ class User {
 }
 
 // Mock schema model for testing
-class UserSchema extends SchemaModel<User> {
+class UserSchema extends BaseSchema {
   UserSchema(super.data) {
     if (isValid) {
       _initialize();
@@ -51,32 +51,11 @@ class UserSchema extends SchemaModel<User> {
     return Ack.object({
       'name': Ack.string.minLength(2),
       'age': Ack.int.min(0).max(120),
-      'email': Ack.string.isEmail().nullable(),
+      'email': Ack.string.email().nullable(),
     }, required: [
       'name',
       'age'
     ]);
-  }
-
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return User(
-      name: name,
-      age: age,
-      email: email,
-    );
-  }
-
-  static UserSchema fromModel(User user) {
-    return UserSchema({
-      'name': user.name,
-      'age': user.age,
-      'email': user.email,
-    });
   }
 }
 
@@ -88,7 +67,7 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string.minLength(2),
           'age': Ack.int.min(0).max(120),
-          'email': Ack.string.isEmail().nullable(),
+          'email': Ack.string.email().nullable(),
         }, required: [
           'name',
           'age'
@@ -112,7 +91,7 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string.minLength(2),
           'age': Ack.int.min(0).max(120),
-          'email': Ack.string.isEmail().nullable(),
+          'email': Ack.string.email().nullable(),
         }, required: [
           'name',
           'age'
@@ -142,17 +121,16 @@ void main() {
         final userSchema = UserSchema(jsonMap);
         expect(userSchema.isValid, isTrue);
 
-        // Convert to a typed model
-        final user = userSchema.toModel();
-        expect(user.name, equals('John'));
-        expect(user.age, equals(30));
-        expect(user.email, equals('john@example.com'));
+        // Access typed properties directly
+        expect(userSchema.name, equals('John'));
+        expect(userSchema.age, equals(30));
+        expect(userSchema.email, equals('john@example.com'));
 
-        // Convert back to a schema
-        final recreatedSchema = UserSchema.fromModel(user);
-        expect(recreatedSchema.name, equals('John'));
-        expect(recreatedSchema.age, equals(30));
-        expect(recreatedSchema.email, equals('john@example.com'));
+        // Get raw data if needed
+        final data = userSchema.toMap();
+        expect(data['name'], equals('John'));
+        expect(data['age'], equals(30));
+        expect(data['email'], equals('john@example.com'));
       });
     });
 
@@ -161,7 +139,7 @@ void main() {
         final orderSchema = Ack.object({
           'id': Ack.string,
           'customer':
-              Ack.object({'name': Ack.string, 'email': Ack.string.isEmail()}),
+              Ack.object({'name': Ack.string, 'email': Ack.string.email()}),
           'items': Ack.list(Ack.object({
             'productId': Ack.string,
             'quantity': Ack.int.min(1),
@@ -198,7 +176,7 @@ void main() {
         final orderSchema = Ack.object({
           'id': Ack.string,
           'customer':
-              Ack.object({'name': Ack.string, 'email': Ack.string.isEmail()}),
+              Ack.object({'name': Ack.string, 'email': Ack.string.email()}),
           'items': Ack.list(Ack.object({
             'productId': Ack.string,
             'quantity': Ack.int.min(1),
@@ -239,7 +217,7 @@ void main() {
           'age'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         final openApiSchema = converter.toSchema();
 
         expect(openApiSchema['type'], equals('object'));
@@ -272,7 +250,7 @@ void main() {
           'age'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
 
         // Simulated LLM response
         final llmResponse = '''
@@ -301,7 +279,7 @@ void main() {
           'age'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
 
         // Simulated LLM response with missing required field
         final llmResponse = '''
@@ -316,7 +294,7 @@ void main() {
         // Parse and validate the response
         expect(
           () => converter.parseResponse(llmResponse),
-          throwsA(isA<OpenApiConverterException>()),
+          throwsA(isA<JsonSchemaConverterException>()),
         );
       });
     });

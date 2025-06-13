@@ -19,7 +19,7 @@ import 'package:ack/ack.dart';
 final userSchema = Ack.object({
   'name': Ack.string,
   'age': Ack.int.min(0),
-  'email': Ack.string.isEmail().nullable(),
+  'email': Ack.string.email().nullable(),
 }, required: ['name']);
 
 void processApiResponse(String jsonString) {
@@ -101,21 +101,28 @@ if (result.isOk) {
 
 **Using Code Generation:**
 
-If you use Ack's code generation, the generated schema class provides `toModel()` and `fromModel()` methods for seamless conversion.
+If you use Ack's code generation, the generated schema class provides typed getters for seamless access to validated data.
 
 ```dart
 // Assumes user.dart and user.schema.dart (generated) exist
 import 'user.dart';
 import 'user.schema.dart';
 
-// Inside the validation success block:
-if (result.isOk) {
-  // Parse the validated data into the generated schema instance
-  final userSchemaInstance = UserSchema.parse(result.getOrThrow());
-  // Convert the schema instance to the User model instance
-  final user = userSchemaInstance.toModel(); 
+// Create schema instance (validation happens automatically)
+final userSchemaInstance = UserSchema(jsonData);
+
+if (userSchemaInstance.isValid) {
+  // Access validated data through typed getters
+  print('Name: ${userSchemaInstance.name}');
+  print('Email: ${userSchemaInstance.email}');
+  
+  // Create model using your preferred pattern
+  final user = User(
+    name: userSchemaInstance.name,
+    email: userSchemaInstance.email,
+  );
   print('Created User model via generator: ${user.name}');
-} 
+}
 ```
 
 *See the [Code Generation Guide](../guides/code-generation.mdx) for more details.*
@@ -151,15 +158,18 @@ print('Serialized JSON: $jsonString');
 
 **Using Code Generation:**
 
-The generated schema class handles this.
+The generated schema class handles this using the model's `toMap()` method.
 
 ```dart
-// Assume userModel is an instance of User
-// 1. Convert Model to Schema instance
-final userSchemaInstance = UserSchema.fromModel(userModel);
-// 2. Convert Schema instance to Map
+// Assume userModelInstance is an instance of User
+// 1. Convert Model to Map data using toMap()
+final userData = userModelInstance.toMap();
+
+// 2. Create Schema instance from Map
+final userSchemaInstance = UserSchema(userData);
+// 3. Convert Schema instance to Map
 final userMap = userSchemaInstance.toMap();
-// 3. Encode Map to JSON
+// 4. Encode Map to JSON
 final jsonString = jsonEncode(userMap);
 print('Serialized JSON via generator: $jsonString');
 ```

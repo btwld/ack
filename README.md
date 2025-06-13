@@ -40,7 +40,7 @@ import 'package:ack/ack.dart';
 // Define a schema for a user object
 final userSchema = Ack.object({
   'name': Ack.string.minLength(2).maxLength(50),
-  'email': Ack.string.isEmail(),
+  'email': Ack.string.email(),
   'age': Ack.int.min(0).max(120).nullable(),
 }, required: ['name', 'email']);
 
@@ -76,7 +76,7 @@ Define a model with annotations:
 ```dart
 import 'package:ack_generator/ack_generator.dart';
 
-part 'user.schema.dart'; // Generated file
+part 'user.g.dart'; // Generated file
 
 @Schema()
 class User {
@@ -89,8 +89,7 @@ class User {
 
   @Min(0)
   @Max(120)
-  @Nullable()
-  final int? age;
+  final int? age; // Nullable types are automatically detected
 
   User({required this.name, required this.email, this.age});
 }
@@ -113,9 +112,15 @@ final userSchema = UserSchema({
 });
 
 if (userSchema.isValid) {
-  // Convert to strongly-typed model
-  final user = userSchema.toModel();
-  print('User: ${user.name}, ${user.email}');
+  // Access strongly-typed properties directly
+  print('User: ${userSchema.name}, ${userSchema.email}');
+  
+  // Create your model manually
+  final user = User(
+    name: userSchema.name,
+    email: userSchema.email,
+    age: userSchema.age,
+  );
 }
 ```
 

@@ -5,7 +5,7 @@ import 'schema_error.dart';
 ///
 /// A [SchemaResult] encapsulates a successful value (an [Ok] instance)
 /// or a failure (a [Fail] instance containing a list of [SchemaError]s).
-sealed class SchemaResult<T extends Object> {
+abstract class SchemaResult<T extends Object> {
   /// Creates a new [SchemaResult] instance.
   const SchemaResult();
 
@@ -94,7 +94,9 @@ sealed class SchemaResult<T extends Object> {
   /// If this instance is a [Fail], it calls [onFail] with its list of errors.
   /// Otherwise, it does nothing.
   void onFail(void Function(SchemaError error) onFail) {
-    match(onOk: (_) {}, onFail: onFail);
+    if (isFail) {
+      onFail(getError());
+    }
   }
 
   /// Invokes [onOk] if this result is successful.
@@ -102,7 +104,13 @@ sealed class SchemaResult<T extends Object> {
   /// If this instance is an [Ok], it calls [onOk] with its contained value.
   /// Otherwise, it does nothing.
   void onOk(void Function(T value) onOk) {
-    match(onOk: (value) => value == null ? () : onOk(value), onFail: (_) {});
+    if (this is Ok<T>) {
+      final ok = this as Ok<T>;
+      final value = ok._value;
+      if (value != null) {
+        onOk(value);
+      }
+    }
   }
 }
 
@@ -110,7 +118,7 @@ sealed class SchemaResult<T extends Object> {
 ///
 /// An [Ok] instance indicates that an operation succeeded and may contain a value.
 /// If no meaningful value is provided, [getOrNull] returns `null`.
-final class Ok<T extends Object> extends SchemaResult<T> {
+class Ok<T extends Object> extends SchemaResult<T> {
   final T? _value;
 
   const Ok(this._value);

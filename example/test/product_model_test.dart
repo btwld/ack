@@ -17,10 +17,16 @@ void main() {
         'name': 'Test Product',
         'description': 'A test product',
         'price': 19.99,
+        'contactEmail': 'test@example.com',
         'category': {
           'id': 'cat1',
           'name': 'Test Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 100,
+        'status': 'published',
+        'productCode': 'ABC-1234',
       };
 
       // Create schema with the data
@@ -44,28 +50,19 @@ void main() {
       expect(categoryData['id'], equals('cat1'));
       expect(categoryData['name'], equals('Test Category'));
 
-      // Skip model conversion which is causing issues
-      // Instead manually create a Product to verify the data works
-      final product = Product(
-        id: schema.id,
-        name: schema.name,
-        description: schema.description,
-        price: schema.price,
-        imageUrl: schema.imageUrl,
-        category: Category(
-          id: categoryData['id'] as String,
-          name: categoryData['name'] as String,
-        ),
-      );
-
-      // Verify the product was created correctly
-      expect(product.id, equals('123'));
-      expect(product.name, equals('Test Product'));
-      expect(product.description, equals('A test product'));
-      expect(product.price, equals(19.99));
-      expect(product.imageUrl, isNull);
-      expect(product.category.id, equals('cat1'));
-      expect(product.category.name, equals('Test Category'));
+      // Access properties directly from schema (no toModel() method in new architecture)
+      expect(schema.id, equals('123'));
+      expect(schema.name, equals('Test Product'));
+      expect(schema.description, equals('A test product'));
+      expect(schema.price, equals(19.99));
+      expect(schema.contactEmail, equals('test@example.com'));
+      expect(schema.releaseDate, equals('2024-01-15'));
+      expect(schema.createdAt, equals('2024-01-15T10:30:00Z'));
+      expect(schema.stockQuantity, equals(100));
+      expect(schema.status, equals('published'));
+      expect(schema.productCode, equals('ABC-1234'));
+      expect(schema.category.id, equals('cat1'));
+      expect(schema.category.name, equals('Test Category'));
     });
 
     test('should reject invalid product data', () {
@@ -81,14 +78,12 @@ void main() {
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);
 
-      // Trying to convert to model should throw
-      expect(
-        () => schema.toModel(),
-        throwsA(isA<AckException>()),
-      );
+      // Schema should store validation errors
+      expect(schema.isValid, isFalse);
+      expect(schema.getErrors(), isNotNull);
     });
 
-    test('SchemaModel should validate and transform data', () {
+    test('BaseSchema should validate and transform data', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
@@ -98,6 +93,11 @@ void main() {
           'id': 'cat2',
           'name': 'Transform Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 25,
+        'status': 'published',
+        'productCode': 'TRN-4567',
       };
 
       // Create schema with the data
@@ -116,7 +116,7 @@ void main() {
       expect(schema.category, isA<CategorySchema>());
     });
 
-    test('Using direct constructor instead of SchemaModel.get', () {
+    test('Using direct constructor instead of BaseSchema.get', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
@@ -126,12 +126,17 @@ void main() {
           'id': 'cat2',
           'name': 'Transform Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 15,
+        'status': 'draft',
+        'productCode': 'DIR-8901',
       };
 
       print('ProductSchema type: $ProductSchema');
       print('Registration in schema would use: Product, ProductSchema');
 
-      // Using direct constructor instead of SchemaModel.get
+      // Using direct constructor instead of BaseSchema.get
       final schema = ProductSchema(productData);
       print('Schema created successfully: $schema');
 
@@ -159,7 +164,7 @@ void main() {
 
       print('CategorySchema type: $CategorySchema');
 
-      // Using direct constructor instead of SchemaModel.get
+      // Using direct constructor instead of BaseSchema.get
       final schema = CategorySchema(categoryData);
       print('Schema created successfully: $schema');
 
@@ -190,19 +195,27 @@ void main() {
       Type staticTypeParam = TypeHelper.getTypeParam<Product>();
       print('Static generic method - Product: $staticTypeParam');
 
-      // Check what happens with runtime types
-      dynamic productInstance = Product(
-        id: '789',
-        name: 'Type Test',
-        description: 'Testing type parameters',
-        price: 99.99,
-        category: Category(id: 'cat9', name: 'Type Tests'),
-      );
-      print('Runtime type of instance: ${productInstance.runtimeType}');
+      // Check what happens with runtime types using schema
+      final testData = {
+        'id': '789',
+        'name': 'Type Test',
+        'description': 'Testing type parameters',
+        'price': 99.99,
+        'category': {'id': 'cat9', 'name': 'Type Tests'},
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 10,
+        'status': 'draft',
+        'productCode': 'TST-1234',
+      };
+      final testSchema = ProductSchema(testData);
+      // Test schema validation and property access
+      expect(testSchema.isValid, isTrue);
+      print('Schema type: ${testSchema.runtimeType}');
 
-      // Compare what the SchemaModel.get method is doing
+      // Compare what the BaseSchema.get method is doing
       print(
-        'SchemaModel.get<ProductSchema> uses Type.toString(): $ProductSchema',
+        'BaseSchema.get<ProductSchema> uses Type.toString(): $ProductSchema',
       );
 
       // Check what's happening in direct registry
@@ -210,7 +223,7 @@ void main() {
         'Is Product registered directly? ${SchemaRegistry.isRegistered<Product>()}',
       );
 
-      // Test creating the same issue as in SchemaModel.get
+      // Test creating the same issue as in BaseSchema.get
       void testGenericTypeIssue<S>() {
         print('Inside generic method, type S: $S');
       }
@@ -228,6 +241,11 @@ void main() {
           'id': 'cat4',
           'name': 'Custom Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 5,
+        'status': 'archived',
+        'productCode': 'CUS-2468',
       };
 
       // With our new implementation, we can use the constructor directly

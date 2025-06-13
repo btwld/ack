@@ -91,29 +91,58 @@ if (!userSchema.isValid) {
 }
 ```
 
-### 2. Model Conversion and Validation
+### 2. Model Creation Patterns
 
-For a more streamlined approach, the generated schema provides methods to directly parse and convert data to your model:
+You have complete control over how to create model instances from validated data:
 
+#### Direct Property Access
 ```dart
-// Option 1: Exception-based parsing (most convenient)
-try {
-  // Parse data directly to a typed model
-  final User user = UserSchema.parse(data);
+final userSchema = UserSchema(data);
+
+if (userSchema.isValid) {
+  // Work directly with schema properties
+  print('Hello ${userSchema.name}! You are ${userSchema.age} years old');
   
-  // Work with your fully typed model 
-  print('Hello ${user.name}! You are ${user.age} years old');
-} catch (e) {
-  print('Invalid data: $e');
+  // Create model when needed
+  final user = User(
+    name: userSchema.name,
+    email: userSchema.email,
+    age: userSchema.age,
+  );
+}
+```
+
+#### Factory Method Pattern
+```dart
+// Add to your model class
+class User {
+  // ... existing code ...
+  
+  factory User.fromSchema(UserSchema schema) {
+    if (!schema.isValid) {
+      throw AckException(schema.getErrors()!);
+    }
+    return User(
+      name: schema.name,
+      email: schema.email,
+      age: schema.age,
+    );
+  }
 }
 
-// Option 2: Null-safe parsing
-final User? user = UserSchema.tryParse(data);
-if (user != null) {
-  // Work with your validated model
-  print('Hello ${user.name}!');
-} else {
-  print('Validation failed');
+// Usage
+final user = User.fromSchema(UserSchema(data));
+```
+
+#### Extension Method Pattern
+```dart
+extension UserSchemaX on UserSchema {
+  User toUser() => User(name: name, email: email, age: age);
+}
+
+// Usage
+if (userSchema.isValid) {
+  final user = userSchema.toUser();
 }
 ```
 
@@ -169,6 +198,10 @@ class Address {
   final String city;
 
   Address({required this.street, required this.city});
+  
+  factory Address.fromSchema(AddressSchema schema) {
+    return Address(street: schema.street, city: schema.city);
+  }
 }
 
 // file: customer.dart
@@ -193,6 +226,16 @@ class Customer {
     required this.address,
     this.secondaryAddresses
   });
+  
+  factory Customer.fromSchema(CustomerSchema schema) {
+    return Customer(
+      name: schema.name,
+      address: Address.fromSchema(schema.address),
+      secondaryAddresses: schema.secondaryAddresses
+          ?.map((addr) => Address.fromSchema(addr))
+          .toList(),
+    );
+  }
 }
 ```
 
@@ -228,6 +271,9 @@ if (customerSchema.isValid) {
       print('Secondary: ${addr.street}, ${addr.city}');
     }
   }
+  
+  // Create model when needed
+  final customer = Customer.fromSchema(customerSchema);
 }
 ```
 
@@ -265,20 +311,20 @@ Ack provides a wide range of validation annotations for your model properties:
 
 - `@MinLength(int)`: String must have at least n characters
 - `@MaxLength(int)`: String must have at most n characters
-- `@Length(int)`: String must have exactly n characters
 - `@IsEmail()`: String must be a valid email address
-- `@IsUrl()`: String must be a valid URL
-- `@Matches(pattern)`: String must match the regular expression pattern
+- `@Pattern(pattern)`: String must match the regular expression pattern
 - `@IsNotEmpty()`: String must not be empty
 - `@EnumValues(values)`: String must be one of the specified values
+- `@IsDate()`: String must be a valid date in YYYY-MM-DD format
+- `@IsDateTime()`: String must be a valid date-time in ISO 8601 format
 
 ### Number Validation
 
 - `@Min(n)`: Number must be greater than or equal to n
 - `@Max(n)`: Number must be less than or equal to n
-- `@Positive()`: Number must be positive
-- `@Negative()`: Number must be negative
 - `@MultipleOf(n)`: Number must be a multiple of n
+- `@IsPositive()`: Number must be greater than 0
+- `@IsNegative()`: Number must be less than 0
 
 ### List Validation
 
@@ -290,17 +336,66 @@ Ack provides a wide range of validation annotations for your model properties:
 
 ### Common Validation
 
-- `@Nullable()`: Field is allowed to be null
-- `@Required()`: Field is required (useful for nullable types that must be provided)
+- `@Nullable()`: Override annotation - makes a non-nullable field accept null values in validation
+- `@Required()`: Override annotation - makes an optional constructor parameter required in validation
 - `@DefaultValue(value)`: Default value if the field is not provided
 - `@Description(text)`: Description for documentation
+
+**Automatic Inference**: With Ack's enhanced automatic inference, `@Required()` and `@Nullable()` annotations are rarely needed. The generator automatically determines:
+
+- **Required status** from constructor parameters: `required this.field` → field is required
+- **Nullable status** from field types: `String?` → field is nullable
+
+Use override annotations only when you need to override the automatic inference behavior.
+
+#### Automatic Inference Examples
+
+```dart
+@Schema()
+class User {
+  // ✅ Automatic inference - no annotations needed
+  final String name;        // Non-nullable field
+  final String? email;      // Nullable field
+  final int age;           // Non-nullable field
+
+  User({
+    required this.name,    // → Automatically inferred as required
+    this.email,           // → Automatically inferred as optional
+    required this.age,    // → Automatically inferred as required
+  });
+}
+
+// Generated schema automatically creates:
+// required: ['name', 'age']  // From constructor parameters
+// 'email': Ack.string.nullable()  // From String? type
+```
+
+#### Override Annotation Examples
+
+```dart
+@Schema()
+class AdvancedUser {
+  // Override: Make optional constructor param required in validation
+  @Required()
+  final String? nickname;   // Optional in constructor, required in validation
+
+  // Override: Make non-nullable field accept null in validation
+  @Nullable()
+  final String internalId; // Non-nullable type, but validation allows null
+
+  AdvancedUser({
+    this.nickname,         // Optional in constructor
+    required this.internalId, // Required in constructor
+  });
+}
+```
 
 ## Manual Implementation (Advanced)
 
 While code generation is recommended, you can also implement schemas manually:
 
 ```dart
-class UserSchema extends SchemaModel<User> {
+class UserSchema extends BaseSchema {
   UserSchema(Object? data) : super(data);
 
   @override
@@ -308,29 +403,26 @@ class UserSchema extends SchemaModel<User> {
     return Ack.object(
       {
         'name': Ack.string.minLength(2),
-        'email': Ack.string.isEmail(),
+        'email': Ack.string.email(),
         'age': Ack.int.min(18),
       },
       required: ['name', 'email', 'age'],
     );
   }
-
-  @override
-  User toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return User(
-      name: getValue<String>('name')!,
-      email: getValue<String>('email')!,
-      age: getValue<int>('age')!,
-    );
-  }
   
-  // You can add typed getters manually too
+  // Add typed getters
   String get name => getValue<String>('name')!;
   String get email => getValue<String>('email')!;
   int get age => getValue<int>('age')!;
+}
+
+// Usage
+final schema = UserSchema(data);
+if (schema.isValid) {
+  final user = User(
+    name: schema.name,
+    email: schema.email,
+    age: schema.age,
+  );
 }
 ```

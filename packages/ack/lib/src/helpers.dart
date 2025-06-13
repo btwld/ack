@@ -88,8 +88,7 @@ int levenshtein(String s, String t) {
       v1[j + 1] = [
         v1[j] + 1, // Insertion
         v0[j + 1] + 1, // Deletion
-        v0[j] + cost // Substitution
-        ,
+        v0[j] + cost, // Substitution
       ].reduce((a, b) => a < b ? a : b);
     }
 
@@ -179,16 +178,15 @@ extension TruthyCheck on Object? {
     final value = this;
     if (value == null) return false;
 
-    return switch (value) {
-      String v => v.isNotEmpty,
-      Iterable v => v.isNotEmpty,
-      Map v => v.isNotEmpty,
-      bool v => v,
-      num v => v != 0,
-      Duration v => v != Duration.zero,
-      Uri v => v.toString().isNotEmpty,
-      RegExp r => r.pattern.isNotEmpty,
-      _ => true,
-    };
+    if (value is String) return value.isNotEmpty;
+    if (value is Iterable) return value.isNotEmpty;
+    if (value is Map) return value.isNotEmpty;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is Duration) return value != Duration.zero;
+    if (value is Uri) return value.toString().isNotEmpty;
+    if (value is RegExp) return value.pattern.isNotEmpty;
+
+    return true;
   }
 }

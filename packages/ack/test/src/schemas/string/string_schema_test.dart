@@ -84,7 +84,7 @@ void main() {
       });
 
       test('schema validation works with email validator', () {
-        final schema = StringSchema().isEmail();
+        final schema = StringSchema().email();
         expect(schema.validate('test@example.com').isOk, isTrue);
 
         final result = schema.validate('not-an-email');
@@ -119,7 +119,7 @@ void main() {
       });
 
       test('schema validation works with hex color validator', () {
-        final schema = StringSchema().isHexColor();
+        final schema = StringSchema().hexColor();
         expect(schema.validate('#00ff55').isOk, isTrue);
 
         final result = schema.validate('not-a-color');
@@ -147,8 +147,8 @@ void main() {
         expect(validator.isValid('not empty'), isFalse);
       });
 
-      test('schema validation works with isEmpty validator', () {
-        final schema = StringSchema().isEmpty();
+      test('schema validation works with empty validator', () {
+        final schema = StringSchema().empty();
         expect(schema.validate('').isOk, isTrue);
 
         final result = schema.validate('not empty');
@@ -274,7 +274,7 @@ void main() {
       });
 
       test('schema validation works with notEmpty validator', () {
-        final schema = StringSchema().isNotEmpty();
+        final schema = StringSchema().notEmpty();
         expect(schema.validate('not empty').isOk, isTrue);
 
         final result = schema.validate('');
@@ -305,7 +305,7 @@ void main() {
       });
 
       test('schema validation works with datetime validator', () {
-        final schema = StringSchema().isDateTime();
+        final schema = StringSchema().dateTime();
         expect(schema.validate('2023-01-01T00:00:00.000Z').isOk, isTrue);
 
         final result = schema.validate('not-a-date');
@@ -337,7 +337,7 @@ void main() {
       });
 
       test('schema validation works with date validator', () {
-        final schema = StringSchema().isDate();
+        final schema = StringSchema().date();
         expect(schema.validate('2023-01-01').isOk, isTrue);
 
         final result = schema.validate('not-a-date');
@@ -371,7 +371,7 @@ void main() {
 
       test('schema validation works with enum validator', () {
         final schema =
-            StringSchema().isEnum(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+            StringSchema().enumValues(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
         expect(schema.validate('DRAFT').isOk, isTrue);
 
         final result = schema.validate('PENDING');

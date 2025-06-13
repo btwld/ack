@@ -11,7 +11,7 @@ class TestModel {
 }
 
 /// Test schema class for TestModel
-class TestSchema extends SchemaModel<TestModel> {
+class TestSchema extends BaseSchema {
   TestSchema(super.data);
 
   @override
@@ -25,16 +25,8 @@ class TestSchema extends SchemaModel<TestModel> {
     ]);
   }
 
-  @override
-  TestModel toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return TestModel(
-      name: this['name'] as String,
-      value: this['value'] as int,
-    );
-  }
+  String get name => getValue<String>('name')!;
+  int get value => getValue<int>('value')!;
 }
 
 /// Another test model for testing multiple registrations
@@ -46,7 +38,7 @@ class AnotherModel {
 }
 
 /// Test schema class for AnotherModel
-class AnotherSchema extends SchemaModel<AnotherModel> {
+class AnotherSchema extends BaseSchema {
   AnotherSchema(super.data);
 
   @override
@@ -60,16 +52,16 @@ class AnotherSchema extends SchemaModel<AnotherModel> {
     ]);
   }
 
+  String get title => getValue<String>('title')!;
+  double get amount => getValue<double>('amount')!;
+}
+
+/// Unregistered schema class for testing
+class UnregisteredSchema extends BaseSchema {
+  UnregisteredSchema(super.data);
+
   @override
-  AnotherModel toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-    return AnotherModel(
-      title: this['title'] as String,
-      amount: this['amount'] as double,
-    );
-  }
+  AckSchema getSchema() => Ack.object({});
 }
 
 /// Unregistered model class for testing
@@ -87,145 +79,116 @@ void main() {
     group('Registration', () {
       test('register adds factory to registry', () {
         // Register a schema factory
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
 
         // Check if it's registered
-        expect(SchemaRegistry.isRegistered<TestModel>(), isTrue);
+        expect(SchemaRegistry.isRegistered<TestSchema>(), isTrue);
       });
 
       test('register can handle multiple schema types', () {
         // Register multiple schema factories
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
-        SchemaRegistry.register<AnotherModel, AnotherSchema>(
-            (data) => AnotherSchema(data));
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        SchemaRegistry.register<AnotherSchema>((data) => AnotherSchema(data));
 
         // Verify both are registered
-        expect(SchemaRegistry.isRegistered<TestModel>(), isTrue);
-        expect(SchemaRegistry.isRegistered<AnotherModel>(), isTrue);
+        expect(SchemaRegistry.isRegistered<TestSchema>(), isTrue);
+        expect(SchemaRegistry.isRegistered<AnotherSchema>(), isTrue);
       });
 
-      test('register updates TypeService mappings', () {
+      test('register updates TypeService for schema types', () {
         // Register a schema factory
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
 
-        // Check TypeService mappings were updated
-        expect(TypeService.getSchemaType(TestModel), equals(TestSchema));
-        expect(TypeService.getModelType(TestSchema), equals(TestModel));
+        // Check TypeService knows about the schema type
+        expect(TypeService.isSchemaType(TestSchema), isTrue);
       });
 
       test('isRegistered returns false for unregistered types', () {
-        // Check unregistered model is not registered
-        expect(SchemaRegistry.isRegistered<UnregisteredModel>(), isFalse);
+        // Check unregistered schema is not registered
+        expect(SchemaRegistry.isRegistered<UnregisteredSchema>(), isFalse);
       });
 
-      test('register overwrites existing factory for same model type', () {
-        // Skip this test for now as it's not compatible with the new SchemaModel implementation
-        // The new implementation validates the data and only keeps valid properties
-        // So we can't add custom properties that aren't part of the schema
+      test('register overwrites existing factory for same schema type', () {
+        // First factory - creates a regular TestSchema
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
 
-        // Instead, let's verify that registering a new factory overwrites the old one
-        // by using a different validation approach
+        // Create initial schema to verify first factory works
+        var data = {'name': 'Test1', 'value': 1};
+        var schema = SchemaRegistry.createSchema<TestSchema>(data);
+        expect(schema?.name, equals('Test1'));
 
-        // First factory - accepts any data
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
+        // Second factory - creates schema but modifies data first
+        SchemaRegistry.register<TestSchema>((data) {
+          // Modify the data before creating schema
+          if (data is Map<String, dynamic>) {
+            data = Map<String, dynamic>.from(data);
+            data['name'] = 'Modified';
+          }
+          return TestSchema(data);
+        });
 
-        // Second factory - only accepts data with name='Custom'
-        TestSchema customFactory(Object? data) {
-          final schema = TestSchema(data);
-          // We'll check if the name is 'Custom' to verify this factory was used
-          return schema;
-        }
+        // Create schema with second factory
+        data = {'name': 'Test2', 'value': 2};
+        schema = SchemaRegistry.createSchema<TestSchema>(data);
 
-        SchemaRegistry.register<TestModel, TestSchema>(customFactory);
-
-        // Create a schema using the factory
-        final data = {'name': 'Custom', 'value': 42};
-        final schema =
-            SchemaRegistry.createSchema(TestModel, data) as TestSchema?;
-
-        // Verify the schema was created
-        expect(schema, isNotNull);
-        expect(schema!.isValid, isTrue);
-        expect(schema['name'], equals('Custom'));
-      });
-
-      test('register adds factory to registry using named parameter', () {
-        // Register a schema factory using the new method
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
-
-        // Check if it's registered
-        expect(SchemaRegistry.isRegistered<TestModel>(), isTrue);
-
-        // Create a schema to verify it works
-        final data = {'name': 'Test', 'value': 42};
-        final schema = SchemaRegistry.createSchema(TestModel, data);
-
-        // Verify schema creation
-        expect(schema, isA<TestSchema>());
-        expect(schema!['name'], equals('Test'));
-        expect(schema['value'], equals(42));
+        // Should use the second factory which modifies the name
+        expect(schema?.name, equals('Modified'));
       });
     });
 
     group('Schema Creation', () {
       setUp(() {
         // Register test schemas before each test
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
-        SchemaRegistry.register<AnotherModel, AnotherSchema>(
-            (data) => AnotherSchema(data));
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        SchemaRegistry.register<AnotherSchema>((data) => AnotherSchema(data));
       });
 
-      test('createSchema returns correct schema for registered model type', () {
+      test('createSchema returns correct schema for registered schema type',
+          () {
         // Test data
         final data = {'name': 'Test', 'value': 42};
 
         // Create schema
-        final schema = SchemaRegistry.createSchema(TestModel, data);
+        final schema = SchemaRegistry.createSchema<TestSchema>(data);
 
         // Verify schema creation
         expect(schema, isA<TestSchema>());
         expect(schema!['name'], equals('Test'));
         expect(schema['value'], equals(42));
 
-        // Convert to model to verify full pipeline
-        final model = (schema as TestSchema).toModel();
-        expect(model.name, equals('Test'));
-        expect(model.value, equals(42));
+        // Verify property access
+        expect(schema.name, equals('Test'));
+        expect(schema.value, equals(42));
       });
 
-      test('createSchema returns correct schema for different model types', () {
-        // Test data for TestModel
+      test('createSchema returns correct schema for different schema types',
+          () {
+        // Test data for TestSchema
         final testData = {'name': 'Test', 'value': 42};
 
-        // Test data for AnotherModel
+        // Test data for AnotherSchema
         final anotherData = {'title': 'Another', 'amount': 99.99};
 
         // Create schemas
-        final testSchema = SchemaRegistry.createSchema(TestModel, testData);
+        final testSchema = SchemaRegistry.createSchema<TestSchema>(testData);
         final anotherSchema =
-            SchemaRegistry.createSchema(AnotherModel, anotherData);
+            SchemaRegistry.createSchema<AnotherSchema>(anotherData);
 
         // Verify first schema
         expect(testSchema, isA<TestSchema>());
-        expect(testSchema!['name'], equals('Test'));
+        expect(testSchema!.name, equals('Test'));
 
         // Verify second schema
         expect(anotherSchema, isA<AnotherSchema>());
-        expect(anotherSchema!['title'], equals('Another'));
+        expect(anotherSchema!.title, equals('Another'));
       });
 
-      test('createSchema returns null for unregistered model type', () {
+      test('createSchema returns null for unregistered schema type', () {
         // Test data
         final data = {'property': 'value'};
 
         // Try to create schema
-        final schema = SchemaRegistry.createSchema(UnregisteredModel, data);
+        final schema = SchemaRegistry.createSchema<UnregisteredSchema>(data);
 
         // Should return null for unregistered type
         expect(schema, isNull);
@@ -236,8 +199,7 @@ void main() {
         final emptyData = <String, dynamic>{};
 
         // Create schema with empty data
-        final schema =
-            SchemaRegistry.createSchema(TestModel, emptyData) as TestSchema?;
+        final schema = SchemaRegistry.createSchema<TestSchema>(emptyData);
 
         // Schema should be created but invalid
         expect(schema, isNotNull);
@@ -249,8 +211,7 @@ void main() {
         final dataWithNulls = {'name': null, 'value': null};
 
         // Create schema
-        final schema = SchemaRegistry.createSchema(TestModel, dataWithNulls)
-            as TestSchema?;
+        final schema = SchemaRegistry.createSchema<TestSchema>(dataWithNulls);
 
         // Schema should be created
         expect(schema, isNotNull);
@@ -262,27 +223,24 @@ void main() {
         expect(schema['name'], isNull);
         expect(schema['value'], isNull);
 
-        // But converting to model should throw AckException because of validation errors
-        expect(() => schema.toModel(), throwsA(isA<AckException>()));
+        // Validation errors should be available
+        expect(schema.getErrors(), isNotNull);
       });
     });
 
     group('Integration with TypeService', () {
       setUp(() {
         // Register test schemas before each test
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
       });
 
       test('SchemaRegistry and TypeService work together', () {
         // Check type mappings
         expect(TypeService.isSchemaType(TestSchema), isTrue);
-        expect(TypeService.getModelType(TestSchema), equals(TestModel));
-        expect(TypeService.getSchemaType(TestModel), equals(TestSchema));
 
         // Create schema
         final data = {'name': 'Test', 'value': 42};
-        final schema = SchemaRegistry.createSchema(TestModel, data);
+        final schema = SchemaRegistry.createSchema<TestSchema>(data);
 
         // Schema should be created correctly
         expect(schema, isA<TestSchema>());
@@ -292,21 +250,19 @@ void main() {
     group('Error Cases', () {
       test('createSchema handles invalid data gracefully', () {
         // Register schema
-        SchemaRegistry.register<TestModel, TestSchema>(
-            (data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
 
         // Create invalid data (wrong types)
         final invalidData = {'name': 123, 'value': 'not an int'};
 
         // Create schema with invalid data
-        final schema =
-            SchemaRegistry.createSchema(TestModel, invalidData) as TestSchema?;
+        final schema = SchemaRegistry.createSchema<TestSchema>(invalidData);
 
         // Schema should be created
         expect(schema, isNotNull);
 
-        // But converting to model should throw type errors
-        expect(() => schema!.toModel(), throwsA(isA<AckException>()));
+        // But should be invalid due to type errors
+        expect(schema!.isValid, isFalse);
       });
     });
   });

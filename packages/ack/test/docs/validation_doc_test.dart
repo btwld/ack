@@ -272,7 +272,7 @@ void main() {
   group('Built-in Validation Documentation Examples', () {
     group('String Validators', () {
       test('Email validation', () {
-        final emailSchema = Ack.string.isEmail();
+        final emailSchema = Ack.string.email();
 
         // Valid emails
         expect(emailSchema.validate('user@example.com').isOk, isTrue);
@@ -319,7 +319,7 @@ void main() {
       });
 
       test('Not empty validation', () {
-        final requiredSchema = Ack.string.isNotEmpty();
+        final requiredSchema = Ack.string.notEmpty();
 
         // Valid non-empty strings
         expect(requiredSchema.validate('a').isOk, isTrue);
@@ -550,7 +550,7 @@ void main() {
         final userSchema = Ack.object({
           'id': Ack.string,
           'name': Ack.string,
-          'email': Ack.string.isEmail(),
+          'email': Ack.string.email(),
           'age': Ack.int.nullable(),
         });
 

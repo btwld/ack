@@ -41,10 +41,10 @@ Ensures the string has exactly `exactLength` characters.
 Ack.string.length(10)
 ```
 
-### `isNotEmpty()`
+### `notEmpty()`
 Ensures the string is not empty (`''`). Equivalent to `minLength(1)`.
 ```dart
-Ack.string.isNotEmpty()
+Ack.string.notEmpty()
 ```
 
 ### `matches(String pattern, {String? example})`
@@ -67,66 +67,48 @@ Ack.string.contains(r'[A-Z]')
 Ack.string.contains(r'[0-9]')
 ```
 
-### `isEmail()`
+### `email()`
 Ensures the string is a valid email address format.
 ```dart
-Ack.string.isEmail()
+Ack.string.email()
 ```
 
-### `isUrl()`
-Ensures the string is a valid URL format.
-```dart
-Ack.string.isUrl()
-```
 
-### `isDate()`
+
+### `date()`
 Ensures the string is a valid date format (YYYY-MM-DD).
 ```dart
-Ack.string.isDate()
+Ack.string.date()
 ```
 
-### `isDateTime()`
+### `dateTime()`
 Ensures the string is a valid date-time format (ISO 8601).
 ```dart
-Ack.string.isDateTime()
+Ack.string.dateTime()
 ```
 
-### `isEnum(List<String> allowedValues)`
+### `enumValues(List<String> allowedValues)`
 Ensures the string is one of the `allowedValues`.
 ```dart
-Ack.string.isEnum(['active', 'inactive', 'pending'])
+Ack.string.enumValues(['active', 'inactive', 'pending'])
 ```
 
 ## Number Constraints (Int and Double)
 
 Apply these to [`Ack.int`](./schemas.mdx#number-schemas) and [`Ack.double`](./schemas.mdx#number-schemas) schemas.
 
-### `min(num limit, {bool exclusive = false})`
-Ensures the number is greater than (`exclusive: true`) or equal to (`exclusive: false`) the `limit`.
+### `min(num limit)`
+Ensures the number is greater than or equal to the `limit`.
 ```dart
 Ack.int.min(0) // >= 0
-Ack.double.min(0, exclusive: true) // > 0
+Ack.double.min(0.0) // >= 0.0
 ```
 
-### `max(num limit, {bool exclusive = false})`
-Ensures the number is less than (`exclusive: true`) or equal to (`exclusive: false`) the `limit`.
+### `max(num limit)`
+Ensures the number is less than or equal to the `limit`.
 ```dart
 Ack.int.max(100) // <= 100
-Ack.double.max(100, exclusive: true) // < 100
-```
-
-### `positive()`
-Ensures the number is greater than 0. Shortcut for `min(0, exclusive: true)`.
-```dart
-Ack.int.positive()
-Ack.double.positive()
-```
-
-### `negative()`
-Ensures the number is less than 0. Shortcut for `max(0, exclusive: true)`.
-```dart
-Ack.int.negative()
-Ack.double.negative()
+Ack.double.max(100.0) // <= 100.0
 ```
 
 ### `multipleOf(num factor)`
@@ -134,6 +116,20 @@ Ensures the number is a multiple of the `factor`.
 ```dart
 Ack.int.multipleOf(5) // Must be divisible by 5
 Ack.double.multipleOf(0.01) // Allows up to 2 decimal places
+```
+
+### `positive()`
+Ensures the number is positive (greater than 0).
+```dart
+Ack.int.positive() // > 0
+Ack.double.positive() // > 0.0
+```
+
+### `negative()`
+Ensures the number is negative (less than 0).
+```dart
+Ack.int.negative() // < 0
+Ack.double.negative() // < 0.0
 ```
 
 ## List Constraints
@@ -158,10 +154,10 @@ Ensures the list has exactly `exactLength` items.
 Ack.list(Ack.boolean).length(5)
 ```
 
-### `isNotEmpty()`
+### `notEmpty()`
 Ensures the list is not empty. Equivalent to `minItems(1)`.
 ```dart
-Ack.list(Ack.object({...})).isNotEmpty()
+Ack.list(Ack.object({...})).notEmpty()
 ```
 
 ### `uniqueItems()`
@@ -179,7 +175,7 @@ final usernameSchema = Ack.string
   .minLength(3)        // First check min length
   .maxLength(20)       // Then check max length
   .matches(r'[a-z0-9_]+') // Then check pattern (lowercase alphanumeric/underscore)
-  .isNotEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
+  .notEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
 
 final quantitySchema = Ack.int
   .min(1)              // Must be at least 1

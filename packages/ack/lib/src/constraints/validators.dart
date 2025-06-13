@@ -6,7 +6,7 @@ import 'package:meta/meta.dart';
 
 import '../schemas/schema.dart';
 
-final class InvalidTypeConstraint extends Constraint<Object>
+class InvalidTypeConstraint extends Constraint<Object>
     with WithConstraintError<Object> {
   /// The expected type of the value.
   final Type expectedType;
@@ -23,7 +23,7 @@ final class InvalidTypeConstraint extends Constraint<Object>
       'Invalid type: (${value.runtimeType}). Expected type: ($expectedType)';
 }
 
-final class NonNullableConstraint extends Constraint<Object>
+class NonNullableConstraint extends Constraint<Object>
     with WithConstraintError<Object?> {
   NonNullableConstraint()
       : super(
@@ -45,7 +45,7 @@ class StringDateTimeConstraint extends Constraint<String>
   /// {@macro string_datetime_validator}
   const StringDateTimeConstraint()
       : super(
-          constraintKey: 'string_date_time',
+          constraintKey: 'datetime',
           description: 'Must be a valid date time string',
         );
 
@@ -56,7 +56,7 @@ class StringDateTimeConstraint extends Constraint<String>
   String buildMessage(String value) => 'Invalid date-time (ISO 8601 required)';
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'format': 'date-time'};
+  Map<String, Object?> toJsonSchema() => {'format': 'date-time'};
 }
 
 /// {@template string_date_validator}
@@ -69,7 +69,7 @@ class StringDateConstraint extends Constraint<String>
   /// {@macro string_date_validator}
   const StringDateConstraint()
       : super(
-          constraintKey: 'string_date',
+          constraintKey: 'date',
           description: 'Must be a valid date string in YYYY-MM-DD format',
         );
 
@@ -95,7 +95,7 @@ class StringDateConstraint extends Constraint<String>
       'Invalid date. YYYY-MM-DD required. Ex: 2017-07-21';
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'format': 'date'};
+  Map<String, Object?> toJsonSchema() => {'format': 'date'};
 }
 
 /// {@template string_enum_validator}
@@ -136,7 +136,7 @@ class StringEnumConstraint extends Constraint<String>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'enum': enumValues};
+  Map<String, Object?> toJsonSchema() => {'enum': enumValues};
 }
 
 /// {@template string_email_validator}
@@ -298,7 +298,7 @@ class StringRegexConstraint extends Constraint<String>
   Map<String, Object?> toMap() => {'pattern': pattern, 'name': constraintKey};
 
   @override
-  Map<String, Object?> toOpenApiSpec() =>
+  Map<String, Object?> toJsonSchema() =>
       {'pattern': pattern, 'name': constraintKey};
 }
 
@@ -350,7 +350,7 @@ class StringMinLengthConstraint extends Constraint<String>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'minLength': min};
+  Map<String, Object?> toJsonSchema() => {'minLength': min};
 }
 
 /// {@template string_max_length_validator}
@@ -380,7 +380,7 @@ class StringMaxLengthConstraint extends Constraint<String>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'maxLength': max};
+  Map<String, Object?> toJsonSchema() => {'maxLength': max};
 }
 
 /// {@template list_unique_items_validator}
@@ -413,7 +413,7 @@ class ListUniqueItemsConstraint<T extends Object> extends Constraint<List<T>>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'uniqueItems': true};
+  Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
 }
 
 /// {@template list_min_items_validator}
@@ -442,7 +442,7 @@ class ListMinItemsConstraint<T extends Object> extends Constraint<List<T>>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'minItems': min};
+  Map<String, Object?> toJsonSchema() => {'minItems': min};
 }
 
 /// {@template list_max_items_validator}
@@ -471,7 +471,7 @@ class ListMaxItemsConstraint<T extends Object> extends Constraint<List<T>>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'maxItems': max};
+  Map<String, Object?> toJsonSchema() => {'maxItems': max};
 }
 
 /// {@template number_min_validator}
@@ -508,7 +508,7 @@ class NumberMinConstraint<T extends num> extends Constraint<T>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {
+  Map<String, Object?> toJsonSchema() => {
         'minimum': min,
         if (exclusive) 'exclusiveMinimum': exclusive,
       };
@@ -538,7 +538,7 @@ class NumberMultipleOfConstraint<T extends num> extends Constraint<T>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'multipleOf': multiple};
+  Map<String, Object?> toJsonSchema() => {'multipleOf': multiple};
 }
 
 /// {@template number_max_validator}
@@ -576,7 +576,7 @@ class NumberMaxConstraint<T extends num> extends Constraint<T>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {
+  Map<String, Object?> toJsonSchema() => {
         'maximum': max,
         if (exclusive) 'exclusiveMaximum': exclusive,
       };
@@ -620,7 +620,7 @@ class NumberRangeConstraint<T extends num> extends Constraint<T>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {
+  Map<String, Object?> toJsonSchema() => {
         'minimum': min,
         'maximum': max,
         if (exclusive) 'exclusiveMinimum': exclusive,
@@ -654,7 +654,7 @@ class ObjectMinPropertiesConstraint extends Constraint<MapValue>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'minProperties': min};
+  Map<String, Object?> toJsonSchema() => {'minProperties': min};
 }
 
 /// {@template object_max_properties_validator}
@@ -683,7 +683,7 @@ class ObjectMaxPropertiesConstraint extends Constraint<MapValue>
   }
 
   @override
-  Map<String, Object?> toOpenApiSpec() => {'maxProperties': max};
+  Map<String, Object?> toJsonSchema() => {'maxProperties': max};
 }
 
 /// {@template object_unallowed_property_validator}
