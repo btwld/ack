@@ -41,11 +41,10 @@ void main() {
       expect(schema.status, equals('published'));
       expect(schema.productCode, equals('ABC-1234'));
       
-      // Test model conversion
-      final product = schema.toModel();
-      expect(product.id, equals('prod123'));
-      expect(product.name, equals('Valid Product Name'));
-      expect(product.contactEmail, equals('test@example.com'));
+      // Test direct property access (new architecture)
+      expect(schema.id, equals('prod123'));
+      expect(schema.name, equals('Valid Product Name'));
+      expect(schema.contactEmail, equals('test@example.com'));
     });
 
     test('should reject data violating @IsMinLength constraint', () {

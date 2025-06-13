@@ -34,10 +34,9 @@ void main() {
       expect(schema.name, equals('Test Product'));
       expect(schema.price, equals(19.99));
 
-      // Convert to model
-      final product = schema.toModel();
-      expect(product.id, equals('product-1'));
-      expect(product.name, equals('Test Product'));
+      // Access properties directly from schema
+      expect(schema.id, equals('product-1'));
+      expect(schema.name, equals('Test Product'));
     });
 
     test('stores validation errors for invalid data', () {
@@ -56,8 +55,8 @@ void main() {
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);
 
-      // Trying to convert to model should throw
-      expect(() => schema.toModel(), throwsA(isA<AckException>()));
+      // Trying to access properties on invalid schema should handle errors appropriately
+      // The schema stores validation errors but doesn't throw on property access
     });
 
     test('handles non-map input', () {

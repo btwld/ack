@@ -50,22 +50,19 @@ void main() {
       expect(categoryData['id'], equals('cat1'));
       expect(categoryData['name'], equals('Test Category'));
 
-      // Use the generated toModel() method instead of manual constructor
-      final product = schema.toModel();
-
-      // Verify the product was created correctly
-      expect(product.id, equals('123'));
-      expect(product.name, equals('Test Product'));
-      expect(product.description, equals('A test product'));
-      expect(product.price, equals(19.99));
-      expect(product.contactEmail, equals('test@example.com'));
-      expect(product.releaseDate, equals('2024-01-15'));
-      expect(product.createdAt, equals('2024-01-15T10:30:00Z'));
-      expect(product.stockQuantity, equals(100));
-      expect(product.status, equals('published'));
-      expect(product.productCode, equals('ABC-1234'));
-      expect(product.category.id, equals('cat1'));
-      expect(product.category.name, equals('Test Category'));
+      // Access properties directly from schema (no toModel() method in new architecture)
+      expect(schema.id, equals('123'));
+      expect(schema.name, equals('Test Product'));
+      expect(schema.description, equals('A test product'));
+      expect(schema.price, equals(19.99));
+      expect(schema.contactEmail, equals('test@example.com'));
+      expect(schema.releaseDate, equals('2024-01-15'));
+      expect(schema.createdAt, equals('2024-01-15T10:30:00Z'));
+      expect(schema.stockQuantity, equals(100));
+      expect(schema.status, equals('published'));
+      expect(schema.productCode, equals('ABC-1234'));
+      expect(schema.category.id, equals('cat1'));
+      expect(schema.category.name, equals('Test Category'));
     });
 
     test('should reject invalid product data', () {
@@ -81,11 +78,9 @@ void main() {
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);
 
-      // Trying to convert to model should throw
-      expect(
-        () => schema.toModel(),
-        throwsA(isA<AckException>()),
-      );
+      // Schema should store validation errors
+      expect(schema.isValid, isFalse);
+      expect(schema.getErrors(), isNotNull);
     });
 
     test('BaseSchema should validate and transform data', () {
@@ -214,8 +209,9 @@ void main() {
         'productCode': 'TST-1234',
       };
       final testSchema = ProductSchema(testData);
-      dynamic productInstance = testSchema.toModel();
-      print('Runtime type of instance: ${productInstance.runtimeType}');
+      // Test schema validation and property access
+      expect(testSchema.isValid, isTrue);
+      print('Schema type: ${testSchema.runtimeType}');
 
       // Compare what the BaseSchema.get method is doing
       print(
