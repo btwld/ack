@@ -4,8 +4,8 @@ void main() {
   /// Object Example
   final addressSchema = Ack.object(
     {
-      'street': Ack.string.isNotEmpty(),
-      'city': Ack.string.isNotEmpty(),
+      'street': Ack.string.notEmpty(),
+      'city': Ack.string.notEmpty(),
       'zip': Ack.string.nullable(),
     },
     required: ['street', 'city'],
@@ -13,8 +13,8 @@ void main() {
 
   final userSchema = Ack.object(
     {
-      'name': Ack.string.isNotEmpty(),
-      'email': Ack.string.isEmail(),
+      'name': Ack.string.notEmpty(),
+      'email': Ack.string.email(),
       'age': Ack.int.min(18),
       'address': addressSchema,
     },

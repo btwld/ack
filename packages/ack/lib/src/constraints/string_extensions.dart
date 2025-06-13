@@ -1,5 +1,6 @@
 import '../schemas/schema.dart';
 import 'constraint.dart';
+import 'string/literal_constraint.dart';
 import 'validators.dart';
 
 /// Extension methods for [StringSchema] to provide additional validation capabilities.
@@ -8,13 +9,25 @@ extension StringSchemaExtensions on StringSchema {
       withConstraints([validator]);
 
   /// {@macro email_validator}
-  StringSchema isEmail() => _add(StringEmailConstraint());
+  StringSchema email() => _add(StringEmailConstraint());
+
+  /// {@macro email_validator}
+  @Deprecated('Use email() instead for consistent naming')
+  StringSchema isEmail() => email();
 
   /// {@macro hex_color_validator}
-  StringSchema isHexColor() => _add(StringHexColorValidator());
+  StringSchema hexColor() => _add(StringHexColorValidator());
+
+  /// {@macro hex_color_validator}
+  @Deprecated('Use hexColor() instead for consistent naming')
+  StringSchema isHexColor() => hexColor();
 
   /// {@macro is_empty_validator}
-  StringSchema isEmpty() => _add(const StringEmptyConstraint());
+  StringSchema empty() => _add(const StringEmptyConstraint());
+
+  /// {@macro is_empty_validator}
+  @Deprecated('Use empty() instead for consistent naming')
+  StringSchema isEmpty() => empty();
 
   /// {@macro min_length_validator}
   StringSchema minLength(int min) => _add(StringMinLengthConstraint(min));
@@ -27,20 +40,44 @@ extension StringSchemaExtensions on StringSchema {
       _add(StringNotOneOfValidator(values));
 
   /// {@macro is_json_validator}
-  StringSchema isJson() => _add(const StringJsonValidator());
+  StringSchema json() => _add(const StringJsonValidator());
+
+  /// {@macro is_json_validator}
+  @Deprecated('Use json() instead for consistent naming')
+  StringSchema isJson() => json();
 
   /// {@macro enum_validator}
-  StringSchema isEnum(List<String> values) =>
+  StringSchema enumValues(List<String> values) =>
       _add(StringEnumConstraint(values));
 
+  /// {@macro enum_validator}
+  @Deprecated('Use enumValues() instead for consistent naming')
+  StringSchema isEnum(List<String> values) => enumValues(values);
+
   /// {@macro not_empty_validator}
-  StringSchema isNotEmpty() => _add(const StringNotEmptyValidator());
+  StringSchema notEmpty() => _add(const StringNotEmptyValidator());
+
+  /// {@macro not_empty_validator}
+  @Deprecated('Use notEmpty() instead for consistent naming')
+  StringSchema isNotEmpty() => notEmpty();
 
   /// {@macro date_time_validator}
-  StringSchema isDateTime() => _add(const StringDateTimeConstraint());
+  StringSchema dateTime() => _add(const StringDateTimeConstraint());
 
   /// {@macro date_validator}
-  StringSchema isDate() => _add(const StringDateConstraint());
+  StringSchema date() => _add(const StringDateConstraint());
+
+  /// {@macro date_time_validator}
+  @Deprecated('Use dateTime() instead for consistent naming')
+  StringSchema isDateTime() => dateTime();
+
+  /// {@macro date_time_validator}
+  @Deprecated('Use dateTime() instead for proper camelCase naming')
+  StringSchema datetime() => dateTime();
+
+  /// {@macro date_validator}
+  @Deprecated('Use date() instead for consistent naming')
+  StringSchema isDate() => date();
 
   /// Validates that the string fully matches a pattern.
   ///
@@ -99,5 +136,18 @@ extension StringSchemaExtensions on StringSchema {
         example: example ?? 'Example containing $pattern',
       ),
     );
+  }
+
+  /// Validates that the string exactly equals the provided value.
+  ///
+  /// This is particularly useful for discriminator fields in discriminated schemas.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Type must be exactly 'user'
+  /// final typeSchema = Ack.string.literal('user');
+  /// ```
+  StringSchema literal(String value) {
+    return _add(StringLiteralConstraint(value));
   }
 }

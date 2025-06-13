@@ -1,24 +1,7 @@
-# Create a build.yaml file that properly registers the builder
 builders:
-  schema_model_builder:
+  ack_schema:
     import: "package:ack_generator/builder.dart"
-    builder_factories: ["schemaModelBuilder"]
+    builder_factories: ["ackSchemaBuilder"]
     build_extensions: {".dart": [".g.dart"]}
     auto_apply: dependents
     build_to: source
-    applies_builders: []
-
-targets:
-  $default:
-    builders:
-      ack_generator|schema_model_builder:
-        enabled: true
-        generate_for:
-          include:
-            - lib/src/models/**
-            - test/models/test_model.dart
-            - test/models/user_model.dart
-            - test/models/product_model.dart
-        options:
-          verify_types: true
-          generate_for_nullable: true 

@@ -1,0 +1,187 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'sealed_block_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated base schema for SealedBlock with inheritance support
+/// Base block class with polymorphic subclasses
+class SealedBlockSchema extends BaseSchema {
+  SealedBlockSchema([Object? super.value = null]);
+
+  static final DiscriminatedObjectSchema schema = Ack.discriminated(
+    discriminatorKey: 'type',
+    schemas: {
+      'text': TextBlockSchema.schema,
+      'image': ImageBlockSchema.schema,
+      'widget': WidgetBlockSchema.schema,
+    },
+  );
+
+  static final ObjectSchema baseSchema = Ack.object(
+    {
+      'type': Ack.string,
+      'align': Ack.string.nullable(),
+      'flex': Ack.int.nullable(),
+      'scrollable': Ack.boolean.nullable(),
+    },
+    required: ['type'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<SealedBlockSchema>(
+      (data) => SealedBlockSchema(data),
+    );
+    TextBlockSchema.ensureInitialize();
+    ImageBlockSchema.ensureInitialize();
+    WidgetBlockSchema.ensureInitialize();
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get type => getValue<String>('type')!;
+
+  String? get align => getValue<String>('align');
+
+  int? get flex => getValue<int>('flex');
+
+  bool? get scrollable => getValue<bool>('scrollable');
+
+  R when<R>({
+    required R Function(TextBlockSchema) text,
+    required R Function(ImageBlockSchema) image,
+    required R Function(WidgetBlockSchema) widget,
+  }) =>
+      switch (type) {
+        'text' => text(TextBlockSchema(toMap())),
+        'image' => image(ImageBlockSchema(toMap())),
+        'widget' => widget(WidgetBlockSchema(toMap())),
+        _ => throw StateError('Unknown sealedblock type: $type'),
+      };
+
+  R maybeWhen<R>({
+    R Function(TextBlockSchema)? text,
+    R Function(ImageBlockSchema)? image,
+    R Function(WidgetBlockSchema)? widget,
+    required R Function() orElse,
+  }) =>
+      switch (type) {
+        'text' => text?.call(TextBlockSchema(toMap())) ?? orElse(),
+        'image' => image?.call(ImageBlockSchema(toMap())) ?? orElse(),
+        'widget' => widget?.call(WidgetBlockSchema(toMap())) ?? orElse(),
+        _ => orElse(),
+      };
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for TextBlock extending SealedBlockSchema
+/// A text block with markdown content
+class TextBlockSchema extends SealedBlockSchema {
+  TextBlockSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+    {'content': Ack.string},
+    required: ['content'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<TextBlockSchema>(
+      (data) => TextBlockSchema(data),
+    );
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get content => getValue<String>('content')!;
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for ImageBlock extending SealedBlockSchema
+/// An image block with image source and attributes
+class ImageBlockSchema extends SealedBlockSchema {
+  ImageBlockSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+    {
+      'src': Ack.string,
+      'width': Ack.double.nullable(),
+      'height': Ack.double.nullable(),
+      'fit': Ack.string.nullable()
+    },
+    required: ['src'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<ImageBlockSchema>(
+      (data) => ImageBlockSchema(data),
+    );
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get src => getValue<String>('src')!;
+
+  double? get width => getValue<double>('width');
+
+  double? get height => getValue<double>('height');
+
+  String? get fit => getValue<String>('fit');
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for WidgetBlock extending SealedBlockSchema
+/// A widget block with custom properties
+class WidgetBlockSchema extends SealedBlockSchema {
+  WidgetBlockSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+    {
+      'name': Ack.string,
+      'properties': Ack.object({}, additionalProperties: true)
+    },
+    required: ['name'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<WidgetBlockSchema>(
+      (data) => WidgetBlockSchema(data),
+    );
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get name => getValue<String>('name')!;
+
+  Map<String, dynamic> get properties =>
+      getValue<Map<String, Object?>>('properties')!;
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}

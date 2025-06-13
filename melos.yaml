@@ -1,6 +1,8 @@
 name: ack_workspace
 repository: https://github.com/btwld/ack
 
+# sdkPath: .fvm/flutter_sdk  # Commented out for CI compatibility
+
 packages:
   - packages/**
   - example/*

@@ -34,7 +34,7 @@ import 'package:ack/ack.dart';
 final userSchema = Ack.object({
   'name': Ack.string.minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
   'age': Ack.int.min(0).max(120),                // Age must be an integer between 0 and 120.
-  'email': Ack.string.isEmail().nullable(),      // Email must be a valid format, but can be null.
+  'email': Ack.string.email().nullable(),      // Email must be a valid format, but can be null.
 }, required: ['name', 'age']); // Name and age are mandatory fields.
 
 // Data to validate.
@@ -77,19 +77,24 @@ Turn any Dart class into a validating schema with annotations:
 import 'package:ack_generator/ack_generator.dart';
 import 'dart:convert';
 
-// Define a model with validation
+// Define a model with validation and automatic inference
 @Schema()
 class User {
-  @MinLength(2)
-  final String name;
+  @MinLength(2)                    // Validation rule
+  final String name;               // Non-nullable, required from constructor
 
-  @IsEmail()
-  final String email;
+  @IsEmail()                       // Validation rule
+  final String email;              // Non-nullable, required from constructor
 
-  @Min(18)
-  final int age;
+  @Min(18)                         // Validation rule
+  final int age;                   // Non-nullable, required from constructor
 
-  User({required this.name, required this.email, required this.age});
+  // Constructor parameters automatically determine required/optional status
+  User({
+    required this.name,            // → Automatically inferred as required
+    required this.email,           // → Automatically inferred as required
+    required this.age,             // → Automatically inferred as required
+  });
 }
 
 // Dynamic payload from API, form, etc.
@@ -100,26 +105,43 @@ final Map<String, dynamic> payload = {
 };
 ```
 
+**Automatic Inference**: Ack automatically determines which fields are required or optional based on your constructor parameters (`required this.field` vs `this.field`) and field types (`String` vs `String?`). No need for redundant `@Required` or `@Nullable` annotations in most cases!
+
 Generated schemas provide three main capabilities:
 
-**1. Direct model validation and conversion**
-
-```dart
-// Validate and convert to a type-safe model in one step
-final User user = UserSchema.parse(payload);
-print('Hello ${user.name}!');  // Type-safe model access
-```
-
-**2. Type-safe access through the schema**
+**1. Type-safe property access**
 
 ```dart
 // Access typed properties directly from the schema
 final userSchema = UserSchema(payload);
 if (userSchema.isValid) {
-  String name = userSchema.name;  // Typed as String
-  int age = userSchema.age;       // Typed as int
-  print('$name is $age years old');
+  String name = userSchema.name;    // Typed as String
+  String email = userSchema.email;  // Typed as String
+  int age = userSchema.age;         // Typed as int
+  print('$name ($email) is $age years old');
+  
+  // Create model when needed
+  final user = User(name: name, email: email, age: age);
 }
+```
+
+**2. Flexible model creation patterns**
+
+```dart
+// Add factory method to your model
+class User {
+  // ... existing fields ...
+  
+  factory User.fromSchema(UserSchema schema) {
+    if (!schema.isValid) {
+      throw AckException(schema.getErrors()!);
+    }
+    return User(name: schema.name, email: schema.email, age: schema.age);
+  }
+}
+
+// Usage
+final user = User.fromSchema(UserSchema(payload));
 ```
 
 **3. JSON Schema generation for documentation**

@@ -22,10 +22,10 @@ final usernameSchema = Ack.string
   .matches(r'[a-zA-Z0-9_]+', example: 'user_123'); // Regex: letters, numbers, underscore
 
 // Email validation
-final emailSchema = Ack.string.isEmail();
+final emailSchema = Ack.string.email();
 
 // Enum values (select from options)
-final roleSchema = Ack.string.isEnum(['admin', 'user', 'guest']);
+final roleSchema = Ack.string.enumValues(['admin', 'user', 'guest']);
 
 // Note: For more constraints (e.g., regex patterns), see the [Validation](./validation.mdx) page.
 // For custom constraints, see the [Custom Validation](../guides/custom-validation.mdx) page.
@@ -43,10 +43,10 @@ final ageSchema = Ack.int
 
 // Double/decimal validation
 final priceSchema = Ack.double
-  .min(0.0, exclusive: true) // Must be greater than 0.0
+  .min(0.0) // Must be >= 0.0
   .multipleOf(0.01); // Allow only 2 decimal places
 
-// Note: See the [Validation](./validation.mdx) page for more number constraints (e.g., positive, negative).
+// Note: See the [Validation](./validation.mdx) page for more number constraints.
 ```
 
 ### Boolean Schema
@@ -63,10 +63,10 @@ Validate date and time values using specialized string constraints:
 
 ```dart
 // Basic date validation (YYYY-MM-DD)
-final birthdateSchema = Ack.string.isDate();
+final birthdateSchema = Ack.string.date();
 
 // Date-time validation (ISO 8601 format)
-final appointmentSchema = Ack.string.isDateTime();
+final appointmentSchema = Ack.string.dateTime();
 
 // For date range validation or custom formats, see the [Custom Validation](../guides/custom-validation.mdx) page.
 ```
@@ -126,7 +126,7 @@ final userSchema = Ack.object(
     // Define properties and their schemas
     'name': Ack.string.minLength(1),
     'age': Ack.int.min(0),
-    'email': Ack.string.isEmail(),
+    'email': Ack.string.email(),
     // Nested object for address
     'address': Ack.object(
       {
@@ -215,11 +215,11 @@ final updatedUser = user.copyWith(
 );
 
 // If using generated schemas, you might convert back for re-validation
-// final updatedSchema = UserSchema.fromModel(updatedUser);
-// final validationResult = UserSchema.schema.validate(updatedSchema.toMap());
+// final userData = updatedUser.toMap();
+// final validationResult = UserSchema.schema.validate(userData);
 ```
 
-*For more details on using generated schemas (like `UserSchema.fromModel`), see the [Code Generation](../guides/code-generation.mdx) guide.*
+*For more details on using generated schemas, see the [Code Generation](../guides/code-generation.mdx) guide.*
 
 ### Allowing Additional Properties
 
@@ -270,7 +270,7 @@ Any schema type can be made nullable by appending `.nullable()`. This means the 
 final middleNameSchema = Ack.string.nullable();
 
 // Nullable date
-final optionalDateSchema = Ack.string.isDate().nullable();
+final optionalDateSchema = Ack.string.date().nullable();
 
 // Nullable object (the entire address object can be null)
 final optionalAddressSchema = Ack.object(

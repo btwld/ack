@@ -1,3 +1,4 @@
 {
-  "flutter": "stable"
+  "flutter": "3.32.4",
+  "flavors": {}
 }

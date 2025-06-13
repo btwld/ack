@@ -22,7 +22,7 @@ Use the `required` parameter in [`Ack.object`](./schemas.mdx#object-schema) to s
 Ack.object({
   'id': Ack.int,
   'name': Ack.string,
-  'email': Ack.string.isEmail().nullable() // Email is optional because nullable
+  'email': Ack.string.email().nullable() // Email is optional because nullable
 }, required: ['id', 'name']); // id and name are required
 ```
 

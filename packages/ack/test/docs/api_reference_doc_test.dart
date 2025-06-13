@@ -35,13 +35,13 @@ void main() {
         expect(maxLengthSchema.validate('abcde').isOk, isTrue);
         expect(maxLengthSchema.validate('abcdef').isOk, isFalse);
 
-        // Test isNotEmpty
-        final notEmptySchema = Ack.string.isNotEmpty();
+        // Test notEmpty
+        final notEmptySchema = Ack.string.notEmpty();
         expect(notEmptySchema.validate('a').isOk, isTrue);
         expect(notEmptySchema.validate('').isOk, isFalse);
 
-        // Test isEmail
-        final emailSchema = Ack.string.isEmail();
+        // Test email
+        final emailSchema = Ack.string.email();
         expect(emailSchema.validate('user@example.com').isOk, isTrue);
         expect(emailSchema.validate('invalid-email').isOk, isFalse);
       });
@@ -139,7 +139,7 @@ void main() {
           'name'
         ]);
 
-        final converter = OpenApiSchemaConverter(schema: schema);
+        final converter = JsonSchemaConverter(schema: schema);
         final openApiSchema = converter.toSchema();
 
         expect(openApiSchema, isA<Map<String, dynamic>>());

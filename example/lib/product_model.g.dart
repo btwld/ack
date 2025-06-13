@@ -5,225 +5,151 @@
 
 part of 'product_model.dart';
 
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
 /// Generated schema for Product
 /// A product model with validation
-class ProductSchema extends SchemaModel<Product> {
-  // Schema definition moved to a static field for easier access
-  static final ObjectSchema schema = _createSchema();
+class ProductSchema extends BaseSchema {
+  ProductSchema([Object? super.value = null]);
 
-  // Create the validation schema
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'id': Ack.string.isNotEmpty(),
-        'name': Ack.string.isNotEmpty(),
-        'description': Ack.string.isNotEmpty(),
-        'price': Ack.double,
-        'imageUrl': Ack.string.nullable(),
-        'category': CategorySchema.schema,
-      },
-      required: ['id', 'name', 'description', 'price', 'category'],
-      additionalProperties: true,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {
+      'id': Ack.string.notEmpty(),
+      'name': Ack.string.notEmpty().minLength(3).maxLength(100),
+      'description': Ack.string.notEmpty().maxLength(500),
+      'price': Ack.double.min(0.01).max(999999.99),
+      'contactEmail': Ack.string.email().nullable(),
+      'imageUrl': Ack.string.nullable(),
+      'category': CategorySchema.schema,
+      'releaseDate': Ack.string.date(),
+      'createdAt': Ack.string.dateTime(),
+      'updatedAt': Ack.string.dateTime().nullable(),
+      'stockQuantity': Ack.int.positive(),
+      'status': Ack.string.enumValues(['draft', 'published', 'archived']),
+      'productCode': Ack.string.matches('^[A-Z]{2,3}-\\d{4}\$'),
+    },
+    required: [
+      'id',
+      'name',
+      'description',
+      'price',
+      'category',
+      'releaseDate',
+      'createdAt',
+      'stockQuantity',
+      'status',
+      'productCode'
+    ],
+    additionalProperties: true,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Product, ProductSchema>(
+    SchemaRegistry.register<ProductSchema>(
       (data) => ProductSchema(data),
     );
     // Register schema dependencies
     CategorySchema.ensureInitialize();
   }
 
-  // Override to return the schema for validation
   @override
   AckSchema getSchema() => schema;
 
-  // Constructor that validates input
-  ProductSchema([Object? value]) : super(value);
-
-  // Type-safe getters
   String get id => getValue<String>('id')!;
+
   String get name => getValue<String>('name')!;
+
   String get description => getValue<String>('description')!;
+
   double get price => getValue<double>('price')!;
+
+  String? get contactEmail => getValue<String>('contactEmail');
+
   String? get imageUrl => getValue<String>('imageUrl');
+
   CategorySchema get category {
-    return CategorySchema(getValue<Map<String, dynamic>>('category')!);
+    return CategorySchema(getValue<Map<String, Object?>>('category')!);
   }
 
-  // Get metadata with fallback
+  String get releaseDate => getValue<String>('releaseDate')!;
+
+  String get createdAt => getValue<String>('createdAt')!;
+
+  String? get updatedAt => getValue<String>('updatedAt');
+
+  int get stockQuantity => getValue<int>('stockQuantity')!;
+
+  String get status => getValue<String>('status')!;
+
+  String get productCode => getValue<String>('productCode')!;
+
   Map<String, Object?> get metadata {
-    final result = <String, Object?>{};
-    final knownFields = [
+    final map = toMap();
+    final knownFields = {
       'id',
       'name',
       'description',
       'price',
+      'contactEmail',
       'imageUrl',
-      'category'
-    ];
-
-    for (final key in toMap().keys) {
-      if (!knownFields.contains(key)) {
-        result[key] = toMap()[key];
-      }
-    }
-    return result;
-  }
-
-  // Model conversion methods
-  @override
-  Product toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return Product(
-      id: id,
-      name: name,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      category: category.toModel(),
-      metadata: metadata,
-    );
-  }
-
-  /// Convert from a model instance to a schema
-  static ProductSchema fromModel(Product model) {
-    return ProductSchema(toMapFromModel(model));
-  }
-
-  /// Static version of toMap to maintain compatibility
-  static Map<String, Object?> toMapFromModel(Product instance) {
-    final Map<String, Object?> result = {
-      'id': instance.id,
-      'name': instance.name,
-      'description': instance.description,
-      'price': instance.price,
-      'imageUrl': instance.imageUrl,
-      'category': CategorySchema.toMapFromModel(instance.category),
+      'category',
+      'releaseDate',
+      'createdAt',
+      'updatedAt',
+      'stockQuantity',
+      'status',
+      'productCode'
     };
-
-    // Include additional properties
-    if (instance.metadata.isNotEmpty) {
-      result.addAll(instance.metadata);
-    }
-
-    return result;
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
-
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
-  }
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }
 
 /// Generated schema for Category
 /// A category for organizing products
-class CategorySchema extends SchemaModel<Category> {
-  // Schema definition moved to a static field for easier access
-  static final ObjectSchema schema = _createSchema();
+class CategorySchema extends BaseSchema {
+  CategorySchema([Object? super.value = null]);
 
-  // Create the validation schema
-  static ObjectSchema _createSchema() {
-    return Ack.object(
-      {
-        'id': Ack.string.isNotEmpty(),
-        'name': Ack.string.isNotEmpty(),
-        'description': Ack.string.nullable(),
-      },
-      required: ['id', 'name'],
-      additionalProperties: true,
-    );
-  }
+  static final ObjectSchema schema = Ack.object(
+    {
+      'id': Ack.string.notEmpty(),
+      'name': Ack.string.notEmpty(),
+      'description': Ack.string.nullable(),
+    },
+    required: ['id', 'name'],
+    additionalProperties: true,
+  );
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
-    SchemaRegistry.register<Category, CategorySchema>(
+    SchemaRegistry.register<CategorySchema>(
       (data) => CategorySchema(data),
     );
   }
 
-  // Override to return the schema for validation
   @override
   AckSchema getSchema() => schema;
 
-  // Constructor that validates input
-  CategorySchema([Object? value]) : super(value);
-
-  // Type-safe getters
   String get id => getValue<String>('id')!;
+
   String get name => getValue<String>('name')!;
+
   String? get description => getValue<String>('description');
 
-  // Get metadata with fallback
   Map<String, Object?> get metadata {
-    final result = <String, Object?>{};
-    final knownFields = ['id', 'name', 'description'];
-
-    for (final key in toMap().keys) {
-      if (!knownFields.contains(key)) {
-        result[key] = toMap()[key];
-      }
-    }
-    return result;
+    final map = toMap();
+    final knownFields = {'id', 'name', 'description'};
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
   }
 
-  // Model conversion methods
-  @override
-  Category toModel() {
-    if (!isValid) {
-      throw AckException(getErrors()!);
-    }
-
-    return Category(
-      id: id,
-      name: name,
-      description: description,
-      metadata: metadata,
-    );
-  }
-
-  /// Convert from a model instance to a schema
-  static CategorySchema fromModel(Category model) {
-    return CategorySchema(toMapFromModel(model));
-  }
-
-  /// Static version of toMap to maintain compatibility
-  static Map<String, Object?> toMapFromModel(Category instance) {
-    final Map<String, Object?> result = {
-      'id': instance.id,
-      'name': instance.name,
-      'description': instance.description,
-    };
-
-    // Include additional properties
-    if (instance.metadata.isNotEmpty) {
-      result.addAll(instance.metadata);
-    }
-
-    return result;
-  }
-
-  /// Convert the schema to an OpenAPI definition
-  static Map<String, Object?> toDefinition() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchema();
-  }
-
-  /// Convert the schema to an OpenAPI definition JSON string
-  static String toDefinitionString() {
-    final converter = OpenApiSchemaConverter(schema: schema);
-    return converter.toSchemaString();
-  }
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
 }

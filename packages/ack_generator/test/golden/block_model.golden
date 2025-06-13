@@ -1,0 +1,103 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'block_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated schema for Block
+/// Base class for blocks that make up a slide
+class BlockSchema extends BaseSchema {
+  BlockSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = Ack.object(
+    {},
+    required: [],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<BlockSchema>(
+      (data) => BlockSchema(data),
+    );
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for SectionBlock
+/// A section block that contains multiple columns
+class SectionBlockSchema extends BaseSchema {
+  SectionBlockSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = Ack.object(
+    {
+      'columns': Ack.list(ColumnBlockSchema.schema),
+    },
+    required: ['columns'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<SectionBlockSchema>(
+      (data) => SectionBlockSchema(data),
+    );
+    // Register schema dependencies
+    ColumnBlockSchema.ensureInitialize();
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  List<ColumnBlockSchema> get columns {
+    return getValue<List>('columns')!
+        .whereType<Map<String, Object?>>()
+        .map((item) => ColumnBlockSchema(item))
+        .toList();
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}
+
+/// Generated schema for ColumnBlock
+/// A column block that contains markdown content
+class ColumnBlockSchema extends BaseSchema {
+  ColumnBlockSchema([Object? super.value = null]);
+
+  static final ObjectSchema schema = Ack.object(
+    {
+      'content': Ack.string,
+    },
+    required: ['content'],
+    additionalProperties: false,
+  );
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<ColumnBlockSchema>(
+      (data) => ColumnBlockSchema(data),
+    );
+  }
+
+  @override
+  AckSchema getSchema() => schema;
+
+  String get content => getValue<String>('content')!;
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}

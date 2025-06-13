@@ -42,9 +42,7 @@ void main() {
         'name': Ack.string.minLength(2).maxLength(50),
         'age': Ack.int.min(0).max(
             120), // min/max are the current API (minValue/maxValue are deprecated)
-        'email': Ack.string
-            .isEmail()
-            .nullable(), // isEmail is the current API (email is deprecated or a typo)
+        'email': Ack.string.email().nullable(), // email is the current API
       }, required: [
         'name',
         'age'
@@ -94,7 +92,7 @@ void main() {
       expect(stringSchema.validate('ab').isOk, isFalse); // Too short
 
       // Test email validation
-      final emailSchema = Ack.string.isEmail();
+      final emailSchema = Ack.string.email();
       expect(emailSchema.validate('test@example.com').isOk, isTrue);
       expect(
           emailSchema.validate('notanemail').isOk, isFalse); // Not email format

@@ -40,8 +40,8 @@ Schema for validating strings. See [String Constraints](../core-concepts/validat
 - [`contains(...)`](../core-concepts/validation.mdx#containsstring-pattern-string-example)
 - [`isEmail(...)`](../core-concepts/validation.mdx#isemail)
 - [`isUrl(...)`](../core-concepts/validation.mdx#isurl)
-- [`isDate(...)`](../core-concepts/validation.mdx#isdate)
-- [`isDateTime(...)`](../core-concepts/validation.mdx#isdatetime)
+- [`date(...)`](../core-concepts/validation.mdx#date)
+- [`datetime(...)`](../core-concepts/validation.mdx#datetime)
 - [`isEnum(...)`](../core-concepts/validation.mdx#isenumliststring-allowedvalues)
 
 ## `IntSchema` / `DoubleSchema` (Number Schemas)
@@ -111,6 +111,6 @@ Annotations for use on model classes when using code generation. See [Code Gener
 
 **Class Annotations:** `@Schema(...)`
 
-**Property Annotations:** `@Required`, `@Nullable`, `@Description`, `@IsEmail`, `@IsUrl`, `@IsDate`, `@IsDateTime`, `@MinLength`, `@MaxLength`, `@Length`, `@Matches`, `@Contains`, `@IsNotEmpty`, `@EnumValues`, `@Min`, `@Max`, `@Positive`, `@Negative`, `@MultipleOf`, `@MinItems`, `@MaxItems`, `@UniqueItems`.
+**Property Annotations:** `@Required`, `@Nullable`, `@Description`, `@IsEmail`, `@IsDate`, `@IsDateTime`, `@MinLength`, `@MaxLength`, `@Pattern`, `@IsNotEmpty`, `@EnumValues`, `@Min`, `@Max`, `@IsPositive`, `@IsNegative`, `@MultipleOf`, `@MinItems`, `@MaxItems`, `@UniqueItems`.
 
 *Refer to the individual guides for detailed usage and examples.*

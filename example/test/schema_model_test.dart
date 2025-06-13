@@ -3,7 +3,7 @@ import 'package:ack_example/product_model.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('SchemaModel', () {
+  group('BaseSchema', () {
     test('validates data on construction', () {
       // Valid data
       final validData = {
@@ -15,6 +15,11 @@ void main() {
           'id': 'category-1',
           'name': 'Test Category',
         },
+        'releaseDate': '2024-01-15',
+        'createdAt': '2024-01-15T10:30:00Z',
+        'stockQuantity': 50,
+        'status': 'published',
+        'productCode': 'PRD-1111',
       };
 
       // Create schema with valid data
@@ -29,10 +34,9 @@ void main() {
       expect(schema.name, equals('Test Product'));
       expect(schema.price, equals(19.99));
 
-      // Convert to model
-      final product = schema.toModel();
-      expect(product.id, equals('product-1'));
-      expect(product.name, equals('Test Product'));
+      // Access properties directly from schema
+      expect(schema.id, equals('product-1'));
+      expect(schema.name, equals('Test Product'));
     });
 
     test('stores validation errors for invalid data', () {
@@ -51,8 +55,8 @@ void main() {
       expect(schema.isValid, isFalse);
       expect(schema.getErrors(), isNotNull);
 
-      // Trying to convert to model should throw
-      expect(() => schema.toModel(), throwsA(isA<AckException>()));
+      // Trying to access properties on invalid schema should handle errors appropriately
+      // The schema stores validation errors but doesn't throw on property access
     });
 
     test('handles non-map input', () {

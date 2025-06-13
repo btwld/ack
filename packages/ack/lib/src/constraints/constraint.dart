@@ -15,7 +15,7 @@ abstract class Constraint<T extends Object> {
   String toString() => '$runtimeType: $constraintKey: $description';
 }
 
-final class ConstraintError {
+class ConstraintError {
   final Constraint constraint;
 
   final String message;
@@ -47,7 +47,14 @@ final class ConstraintError {
 }
 
 mixin OpenApiSpec<T extends Object> on Constraint<T> {
-  Map<String, Object?> toOpenApiSpec();
+  @Deprecated(
+    'This method will be removed in future versions. Use toJsonSchema() instead.',
+  )
+  Map<String, Object?> toOpenApiSpec() {
+    return toJsonSchema();
+  }
+
+  Map<String, Object?> toJsonSchema();
 }
 
 mixin Validator<T extends Object> on Constraint<T> {
