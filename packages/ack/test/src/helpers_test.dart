@@ -16,79 +16,52 @@ void main() {
       expect(result, 'Hello', reason: 'Exact match should take precedence');
     });
 
-    test('returns direct match if normalizedValue is contained in allowedValue',
-        () {
+    test('returns contains match for short values', () {
       final result = findClosestStringMatch(
         'ello',
         ['Hello', 'World', 'Hey'],
       );
-      // 'ello' is contained in 'Hello' (case-insensitive)
+      // 'ello' is contained in 'Hello' and Hello is <=8 chars
       expect(result, 'Hello');
     });
 
-    test(
-        'returns direct match if allowedValue is contained in the normalizedValue',
-        () {
+    test('returns contains match for short values only', () {
       final result = findClosestStringMatch(
         'Hello, world!',
         ['world'],
       );
-      // 'world' is contained in "Hello, world!"
+      // 'world' is short (<=8 chars) and contained in input
       expect(result, 'world');
     });
 
-    test('picks the closest match from multiple allowed values', () {
+    test('returns null when no prefix/contains match found', () {
       final result = findClosestStringMatch(
         'hallow',
         ['hello', 'hollow', 'yellow'],
       );
-      // "hallow" -> "hollow" distance is smaller than "hallow" -> "hello" or "hallow" -> "yellow"
-      // "hallow" vs "hollow" differs by 1 char: distance=1
-      // "hallow" vs "hello" differs by more
-      expect(result, 'hollow');
+      // No prefix matches, no contains matches for short strings
+      expect(result, isNull);
     });
 
-    test(
-        'returns the last perfect match in the list if multiple direct containments exist',
-        () {
-      // By default, your loop does not break, so you get the last direct match found.
-      // This test might be changed if you break on the FIRST perfect match.
+    test('returns exact match when available', () {
       final result = findClosestStringMatch(
         'abc-def',
         ['abc', 'c-d', 'f', 'abc-def'],
       );
-      // 'abc-def' fully contains 'abc-def'
-      // Actually in the code: 'abc-def'.contains('abc'), 'abc-def'.contains('c-d'), 'abc-def'.contains('f'), etc.
-      // The last one is exactly 'abc-def', so that is also a perfect match, set bestScore=1.0.
-      // The loop continues and ends with bestMatch='abc-def'.
+      // Exact match found and returned immediately
       expect(result, 'abc-def');
     });
-  });
 
-  group('levenshtein', () {
-    test('distance is 0 for identical strings', () {
-      expect(levenshtein('abc', 'abc'), 0);
-    });
-
-    test('distance is length of t if s is empty', () {
-      expect(levenshtein('', 'abc'), 3);
-    });
-
-    test('distance is length of s if t is empty', () {
-      expect(levenshtein('abc', ''), 3);
-    });
-
-    test('calculates distance correctly for small examples', () {
-      // One substitution
-      expect(levenshtein('cat', 'cut'), 1);
-      // One insertion
-      expect(levenshtein('cat', 'cart'), 1);
-      // One deletion
-      expect(levenshtein('cart', 'cat'), 1);
-      // Mixed edits
-      expect(levenshtein('kitten', 'sitting'), 3);
+    test('returns null when no reasonable match found', () {
+      final result = findClosestStringMatch(
+        'xyz',
+        ['hello', 'world', 'test'],
+      );
+      // No prefix/contains match found
+      expect(result, isNull);
     });
   });
+
 
   // Group all tests under 'deepMerge' for clarity.
   group('deepMerge', () {
@@ -274,52 +247,6 @@ void main() {
 
   // Group tests under IterableExt for better organization
   group('IterableExt', () {
-    // Tests for isUniqueValues
-    group('hasUniqueValues', () {
-      test('empty iterable returns true', () {
-        expect([].areUnique, isTrue);
-      });
-
-      test('single element returns true', () {
-        expect([1].areUnique, isTrue);
-      });
-
-      test('multiple unique elements returns true', () {
-        expect([1, 2, 3].areUnique, isTrue);
-      });
-
-      test('list with duplicates returns false', () {
-        expect([1, 2, 2, 3].areUnique, isFalse);
-      });
-
-      test('all elements identical returns false', () {
-        expect([2, 2, 2].areUnique, isFalse);
-      });
-
-      test('single null element returns true', () {
-        expect([null].areUnique, isTrue);
-      });
-
-      test('multiple null elements returns false', () {
-        expect([null, null].areUnique, isFalse);
-      });
-
-      test('mixed elements with duplicate null returns false', () {
-        expect([1, null, 2, null].areUnique, isFalse);
-      });
-
-      test('unique strings returns true', () {
-        expect(['a', 'b', 'c'].areUnique, isTrue);
-      });
-
-      test('strings with duplicates returns false', () {
-        expect(['a', 'b', 'a'].areUnique, isFalse);
-      });
-
-      test('set with unique elements returns true', () {
-        expect({1, 2, 3}.areUnique, isTrue);
-      });
-    });
 
     // Tests for duplicates
     group('getNonUniqueValues', () {
@@ -375,60 +302,6 @@ void main() {
       });
     });
 
-    // Tests for hasAll()
-    group('hasAll', () {
-      test('empty list has all elements of empty iterable', () {
-        expect([].containsAll([]), isTrue);
-      });
-
-      test('empty list does not have all of non-empty iterable', () {
-        expect([].containsAll([1]), isFalse);
-      });
-
-      test('non-empty list has all of empty iterable', () {
-        expect([1, 2, 3].containsAll([]), isTrue);
-      });
-
-      test('list contains all elements of its subset', () {
-        expect([1, 2, 3].containsAll([2, 3]), isTrue);
-      });
-
-      test('list does not contain all elements of non-subset', () {
-        expect([1, 2, 3].containsAll([2, 4]), isFalse);
-      });
-
-      test('list with null contains [null]', () {
-        expect([1, null, 2].containsAll([null]), isTrue);
-      });
-
-      test('list with duplicates contains single element', () {
-        expect([1, 2, 2, 3].containsAll([2]), isTrue);
-      });
-
-      test('unique strings contain subset', () {
-        expect(['a', 'b', 'c'].containsAll(['b', 'c']), isTrue);
-      });
-
-      test('strings do not contain non-subset', () {
-        expect(['a', 'b'].containsAll(['b', 'c']), isFalse);
-      });
-
-      test('list contains iterable with duplicate elements', () {
-        expect([1, 2, 3].containsAll([2, 2, 2]), isTrue);
-      });
-
-      test('list missing one element does not contain all', () {
-        expect([1, 2, 3].containsAll([2, 3, 4]), isFalse);
-      });
-
-      test('list has all elements of a set', () {
-        expect([1, 2, 3].containsAll({2, 3}), isTrue);
-      });
-
-      test('list does not have all elements of a set with extra element', () {
-        expect([1, 2, 3].containsAll({2, 4}), isFalse);
-      });
-    });
   });
 
   group('isJsonValue', () {

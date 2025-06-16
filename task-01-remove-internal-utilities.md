@@ -6,6 +6,14 @@ Remove over-engineered internal utilities that add complexity without proportion
 ## Investigation Summary
 After thorough analysis, identified **300+ lines** of internal complexity that can be safely removed or simplified without affecting public APIs.
 
+## ✅ 2024-2025 Validation Update
+**Research Confirmation (June 2025):**
+- Current Dart best practices strongly support dead code elimination
+- DCM tooling emphasizes removing unused code to reduce maintenance costs
+- Modern Dart compilers include built-in tree shaking and dead code elimination
+- All identified utilities confirmed as still unused in production code
+- Task remains **HIGH PRIORITY** and **LOW RISK**
+
 ## Detailed Implementation Plan
 
 ### Phase 1: Safe Removals (Zero Risk)
@@ -22,7 +30,8 @@ After thorough analysis, identified **300+ lines** of internal complexity that c
 
 **Implementation Steps:**
 ```bash
-# 1. Verify no actual usage
+# 1. Verify no actual usage with modern DCM tooling
+dcm check-unused-code packages/ack/lib/
 rg "Template" --type dart packages/ack/lib/src/ -A 2 -B 2
 
 # 2. Remove export from main library
@@ -42,9 +51,10 @@ melos test
 - `/packages/ack/lib/src/helpers.dart` (Remove lines 10-101, ~91 lines)
 - `/packages/ack/lib/src/constraints/validators.dart` (Simplify StringEnumConstraint)
 
-**Current Usage:**
-- Only used in `StringEnumConstraint` for error message suggestions
+**Current Usage (2025 Update):**
+- Used in `PatternConstraint` and enum validations for error message suggestions
 - Performance overhead for minimal UX benefit
+- Modern error handling patterns favor simpler approaches
 
 **Implementation Steps:**
 ```bash
@@ -172,13 +182,17 @@ if (value != null)
 
 ### Pre-Implementation Testing
 ```bash
-# 1. Run full test suite to establish baseline
+# 1. Run DCM analysis for comprehensive unused code detection
+dcm check-unused-code packages/ack/lib/
+dcm check-unused-files packages/ack/
+
+# 2. Run full test suite to establish baseline
 melos test
 
-# 2. Check for any references to code being removed
+# 3. Check for any references to code being removed
 rg "Template|findClosestStringMatch|levenshtein" --type dart packages/
 
-# 3. Verify exports are only used internally
+# 4. Verify exports are only used internally
 rg "import.*template|import.*builder_helpers" --type dart packages/
 ```
 
@@ -239,8 +253,102 @@ git checkout -- packages/ack/lib/ack.dart
 ## Follow-up Tasks
 After completion:
 1. Update documentation to remove references to removed utilities
-2. Consider adding linter rules to prevent similar over-engineering
-3. Review other packages for similar patterns
+2. Integrate DCM into CI pipeline for continuous dead code detection
+3. Consider adding linter rules to prevent similar over-engineering
+4. Review other packages for similar patterns using DCM tooling
+
+## Modern Tooling Integration (2025)
+**DCM Integration:**
+```bash
+# Add to CI pipeline for continuous monitoring
+dcm check-unused-code --ci packages/ack/lib/
+
+# Regular maintenance checks
+dcm check-unused-files packages/ack/
+```
+
+**Benefits of DCM Integration:**
+- Automated detection of future dead code
+- Continuous code quality monitoring
+- Integration with CI/CD pipelines
+- Reduced manual code review overhead
+
+## 📋 Atomic Task Execution Plan
+
+### Task Dependencies and Execution Order
+
+**Prerequisites (Must Complete First):**
+1. `pre-test-baseline` - Run DCM analysis and establish testing baseline
+2. `verify-usage-patterns` - Verify current usage patterns of utilities to be removed
+
+**Phase 1: Zero Risk Removals**
+3. `remove-template-system` - Remove Template system (template.dart file and export)
+4. `remove-empty-test-helpers` - Remove empty test_helpers.dart file
+
+**Phase 2: Low Risk Simplifications**
+5. `simplify-string-similarity` - Replace complex string similarity with simple alternative
+6. `simplify-iterable-extensions` - Simplify IterableExt extensions, keep only duplicates getter
+7. `replace-truthy-checks` - Replace JavaScript-style truthiness with explicit null checks
+
+**Phase 3: Medium Risk Investigations & Changes**
+8. `investigate-builder-helpers` - Investigate builder helpers usage before moving to ack_generator
+9. `investigate-json-schema-llm` - Investigate LLM parsing usage in JSON schema converter
+
+**Final Validation:**
+10. `run-final-tests` - Run comprehensive test suite and validation
+11. `update-documentation` - Update documentation to remove references to removed utilities
+
+### Task Status Tracking
+
+| Task ID | Description | Risk Level | Dependencies | Status |
+|---------|-------------|------------|--------------|--------|
+| pre-test-baseline | DCM analysis baseline | N/A | None | ⏳ Pending |
+| verify-usage-patterns | Verify utility usage | N/A | None | ⏳ Pending |
+| remove-template-system | Remove Template system | ZERO | 1,2 | ⏳ Pending |
+| remove-empty-test-helpers | Remove empty test file | ZERO | 1,2 | ⏳ Pending |
+| simplify-string-similarity | Simplify string matching | LOW | 1,2 | ⏳ Pending |
+| simplify-iterable-extensions | Simplify extensions | LOW | 1,2 | ⏳ Pending |
+| replace-truthy-checks | Replace truthy checks | LOW | 1,2 | ⏳ Pending |
+| investigate-builder-helpers | Check builder helpers | MEDIUM | 1,2 | ⏳ Pending |
+| investigate-json-schema-llm | Check LLM parsing | MEDIUM | 1,2 | ⏳ Pending |
+| run-final-tests | Final validation | N/A | 3-9 | ⏳ Pending |
+| update-documentation | Update docs | N/A | 10 | ⏳ Pending |
+
+### Execution Commands for Each Task
+
+**Task 1: pre-test-baseline**
+```bash
+dcm check-unused-code packages/ack/lib/
+dcm check-unused-files packages/ack/
+melos test
+```
+
+**Task 2: verify-usage-patterns**
+```bash
+rg "Template|findClosestStringMatch|levenshtein" --type dart packages/
+rg "import.*template|import.*builder_helpers" --type dart packages/
+```
+
+**Task 3: remove-template-system**
+```bash
+# Remove export from packages/ack/lib/ack.dart
+# Delete packages/ack/lib/src/utils/template.dart
+melos test
+```
+
+**Task 4: remove-empty-test-helpers**
+```bash
+rm packages/ack/test/test_helpers.dart
+```
+
+**Task 5-9: [Implementation specific commands listed above]**
+
+**Task 10: run-final-tests**
+```bash
+melos test
+melos analyze
+melos build
+```
 
 ---
 

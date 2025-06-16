@@ -70,9 +70,9 @@ class SchemaConstraintsError extends SchemaError {
           value: context.value,
         );
 
-  bool get isInvalidType => getConstraint<InvalidTypeConstraint>().isTruthy;
+  bool get isInvalidType => getConstraint<InvalidTypeConstraint>() != null;
 
-  bool get isNonNullable => getConstraint<NonNullableConstraint>().isTruthy;
+  bool get isNonNullable => getConstraint<NonNullableConstraint>() != null;
 
   ConstraintError? getConstraint<S extends Constraint>() {
     final constraint = constraints.firstWhereOrNull((e) => e.type == S);

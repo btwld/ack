@@ -7,98 +7,49 @@ String prettyJson(Map<String, dynamic> json) {
   return encoder.convert(json);
 }
 
+/// Simple string matching for suggestions - prioritizes prefix matches and short values.
 String? findClosestStringMatch(
   String value,
   List<String> allowedValues, {
-  double threshold = 0.6, // Add a threshold parameter with default
+  double threshold =
+      0.6, // Kept for compatibility but not used in simplified logic
 }) {
-  // Normalize the input value
-  final normalizedValue = value.toLowerCase().trim();
-
-  // If there are no allowed values, there's nothing to match against
+  // Note: threshold parameter kept for API compatibility but not used in simplified logic
   if (allowedValues.isEmpty) return null;
 
-  String? bestMatch;
-  double bestScore = 0.0;
+  final normalizedValue = value.toLowerCase().trim();
 
+  // First pass: exact matches
+  for (final allowed in allowedValues) {
+    if (allowed.toLowerCase().trim() == normalizedValue) {
+      return allowed;
+    }
+  }
+
+  // Second pass: prefix matches (most useful for suggestions)
   for (final allowed in allowedValues) {
     final normalizedAllowed = allowed.toLowerCase().trim();
-    double similarity = 0.0;
-
-    // Check for exact match first
-    if (normalizedValue == normalizedAllowed) {
-      return allowed; // Return immediately for exact matches
-    }
-
-    // Check for containment with more nuanced scoring
-    if (normalizedValue.contains(normalizedAllowed) ||
-        normalizedAllowed.contains(normalizedValue)) {
-      // Calculate length ratio for a more nuanced containment score
-      final ratio = normalizedValue.length / normalizedAllowed.length;
-      if (ratio >= 0.5 && ratio <= 2.0) {
-        // Only consider it high similarity if lengths are reasonably close
-        similarity = 0.8 + (0.2 * (1.0 - (ratio > 1 ? 1 / ratio : ratio)));
-      } else {
-        // Otherwise, still give it a boost but not perfect
-        similarity = 0.6;
-      }
-    } else {
-      // Calculate similarity using the Levenshtein distance
-      final distance = levenshtein(normalizedValue, normalizedAllowed);
-      final maxLen = normalizedValue.length > normalizedAllowed.length
-          ? normalizedValue.length
-          : normalizedAllowed.length;
-
-      // Convert distance to a similarity score (1.0 = perfect match)
-      similarity = maxLen == 0 ? 1.0 : 1.0 - (distance / maxLen);
-    }
-
-    // Update best score & match if this is better
-    if (similarity > bestScore) {
-      bestScore = similarity;
-      bestMatch = allowed;
+    if (normalizedAllowed.startsWith(normalizedValue) ||
+        normalizedValue.startsWith(normalizedAllowed)) {
+      return allowed;
     }
   }
 
-  // Only return the match if it meets the threshold
-  return bestScore >= threshold ? bestMatch : null;
-}
-
-int levenshtein(String s, String t) {
-  // If strings are equal, distance is 0
-  if (s == t) return 0;
-
-  // If one is empty, distance is length of the other
-  if (s.isEmpty) return t.length;
-  if (t.isEmpty) return s.length;
-
-  // Create two work vectors of integer distances
-  List<int> v0 = List.generate(t.length + 1, (i) => i);
-  List<int> v1 = List.filled(t.length + 1, 0);
-
-  for (int i = 0; i < s.length; i++) {
-    // The first element of v1 is the distance from s[0..i] to an empty t
-    v1[0] = i + 1;
-
-    for (int j = 0; j < t.length; j++) {
-      // Cost is 0 if the current characters match, otherwise 1
-      final cost = s[i] == t[j] ? 0 : 1;
-
-      // Take the minimum of insertion, deletion, or substitution
-      v1[j + 1] = [
-        v1[j] + 1, // Insertion
-        v0[j + 1] + 1, // Deletion
-        v0[j] + cost, // Substitution
-      ].reduce((a, b) => a < b ? a : b);
+  // Third pass: contains matches for shorter strings only
+  for (final allowed in allowedValues) {
+    final normalizedAllowed = allowed.toLowerCase().trim();
+    if (normalizedAllowed.length <= 8 && // Only suggest short values
+        (normalizedAllowed.contains(normalizedValue) ||
+            normalizedValue.contains(normalizedAllowed))) {
+      return allowed;
     }
-
-    // Copy v1 to v0 for the next iteration
-    v0 = List.of(v1);
   }
 
-  // The final distance is in v1[t.length]
-  return v1[t.length];
+  return null; // No reasonable suggestion found
 }
+
+// Removed complex Levenshtein distance algorithm - no longer needed
+// String matching now uses simpler prefix/contains logic
 
 /// Merges two maps recursively.
 ///
@@ -125,13 +76,8 @@ Map<String, Object?> deepMerge(
 }
 
 extension IterableExt<T> on Iterable<T> {
-  bool get areUnique => duplicates.isEmpty;
-
-  bool get areNotUnique => !areUnique;
-
-  Iterable<T> get duplicates => _getNonUniqueValues();
-
-  Iterable<T> _getNonUniqueValues() {
+  /// Returns duplicate elements in this iterable.
+  Iterable<T> get duplicates {
     final duplicates = <T>[];
     final seen = <T>{};
     for (final element in this) {
@@ -145,11 +91,17 @@ extension IterableExt<T> on Iterable<T> {
     return duplicates;
   }
 
+  /// Returns true if this iterable has duplicate elements.
+  bool get areNotUnique => duplicates.isNotEmpty;
+
+  /// Returns true if all elements in [iterable] are contained in this.
   bool containsAll(Iterable<T> iterable) => iterable.every(contains);
 
+  /// Returns elements from [iterable] that are not contained in this.
   Iterable<T> getNonContainedValues(Iterable<T> iterable) =>
       iterable.where((e) => !contains(e));
 
+  /// Returns the first element that satisfies [test], or null if none found.
   T? firstWhereOrNull(bool Function(T) test) {
     for (final element in this) {
       if (test(element)) return element;
@@ -170,23 +122,4 @@ bool looksLikeJson(String value) {
   // Check if starts with { and ends with } or starts with [ and ends with ]
   return (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
       (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'));
-}
-
-/// Extension to check if an object is considered "truthy"
-extension TruthyCheck on Object? {
-  bool get isTruthy {
-    final value = this;
-    if (value == null) return false;
-
-    if (value is String) return value.isNotEmpty;
-    if (value is Iterable) return value.isNotEmpty;
-    if (value is Map) return value.isNotEmpty;
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is Duration) return value != Duration.zero;
-    if (value is Uri) return value.toString().isNotEmpty;
-    if (value is RegExp) return value.pattern.isNotEmpty;
-
-    return true;
-  }
 }

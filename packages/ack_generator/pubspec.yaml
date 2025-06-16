@@ -1,7 +1,11 @@
 name: ack_generator
 description: Code generator for ACK validation schemas
 version: 0.1.0
-publish_to: none
+repository: https://github.com/btwld/ack
+issue_tracker: https://github.com/btwld/ack/issues
+homepage: https://docs.page/btwld/ack
+
+publish_to: none # Internal package, not published
 
 environment:
   sdk: ^3.3.0
