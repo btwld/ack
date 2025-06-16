@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../constraint.dart';
 import '../../helpers.dart';
+import '../constraint.dart';
 
 /// Type of pattern matching operation to perform.
 enum PatternType { regex, enumValues, notEnumValues, format }
@@ -48,8 +48,11 @@ class PatternConstraint extends Constraint<String>
         );
 
   // Factory methods for regex patterns
-  static PatternConstraint regex(String pattern,
-          {String? patternName, String? example}) =>
+  static PatternConstraint regex(
+    String pattern, {
+    String? patternName,
+    String? example,
+  }) =>
       PatternConstraint(
         type: PatternType.regex,
         pattern: RegExp(pattern),
@@ -139,7 +142,10 @@ class PatternConstraint extends Constraint<String>
         type: PatternType.format,
         formatValidator: (value) {
           try {
-            return looksLikeJson(value) && jsonDecode(value) != null;
+            // Try to decode as JSON - if successful, it's valid JSON
+            jsonDecode(value);
+
+            return true;
           } catch (e) {
             return false;
           }
@@ -168,10 +174,7 @@ class PatternConstraint extends Constraint<String>
     if (type == PatternType.enumValues && allowedValues != null) {
       final closestMatch = findClosestStringMatch(value, allowedValues!);
 
-      return {
-        'closestMatch': closestMatch,
-        'allowedValues': allowedValues,
-      };
+      return {'closestMatch': closestMatch, 'allowedValues': allowedValues};
     }
 
     return super.buildContext(value);
@@ -219,7 +222,7 @@ class PatternConstraint extends Constraint<String>
         return {'enum': allowedValues};
       case PatternType.notEnumValues:
         return {
-          'not': {'enum': allowedValues}
+          'not': {'enum': allowedValues},
         };
       case PatternType.format:
         if (constraintKey == 'datetime') {
