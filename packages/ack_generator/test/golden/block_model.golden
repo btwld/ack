@@ -11,14 +11,31 @@ part of 'block_model.dart';
 
 /// Generated schema for Block
 /// Base class for blocks that make up a slide
-class BlockSchema extends BaseSchema {
-  BlockSchema([Object? super.value = null]);
+class BlockSchema extends BaseSchema<BlockSchema> {
+  /// Default constructor for parser instances
+  const BlockSchema();
+
+  /// Private constructor for validated instances
+  const BlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {},
     required: [],
     additionalProperties: false,
   );
+
+  /// Parse with validation - core implementation
+  @override
+  BlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return BlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -28,7 +45,7 @@ class BlockSchema extends BaseSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   /// Convert the schema to a JSON Schema
   static Map<String, Object?> toJsonSchema() =>
@@ -37,8 +54,13 @@ class BlockSchema extends BaseSchema {
 
 /// Generated schema for SectionBlock
 /// A section block that contains multiple columns
-class SectionBlockSchema extends BaseSchema {
-  SectionBlockSchema([Object? super.value = null]);
+class SectionBlockSchema extends BaseSchema<SectionBlockSchema> {
+  /// Default constructor for parser instances
+  const SectionBlockSchema();
+
+  /// Private constructor for validated instances
+  const SectionBlockSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -47,6 +69,19 @@ class SectionBlockSchema extends BaseSchema {
     required: ['columns'],
     additionalProperties: false,
   );
+
+  /// Parse with validation - core implementation
+  @override
+  SectionBlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return SectionBlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -58,7 +93,7 @@ class SectionBlockSchema extends BaseSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   List<ColumnBlockSchema> get columns {
     return getValue<List>('columns')!
@@ -74,8 +109,12 @@ class SectionBlockSchema extends BaseSchema {
 
 /// Generated schema for ColumnBlock
 /// A column block that contains markdown content
-class ColumnBlockSchema extends BaseSchema {
-  ColumnBlockSchema([Object? super.value = null]);
+class ColumnBlockSchema extends BaseSchema<ColumnBlockSchema> {
+  /// Default constructor for parser instances
+  const ColumnBlockSchema();
+
+  /// Private constructor for validated instances
+  const ColumnBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -85,6 +124,19 @@ class ColumnBlockSchema extends BaseSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  ColumnBlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return ColumnBlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ColumnBlockSchema>(
@@ -93,7 +145,7 @@ class ColumnBlockSchema extends BaseSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get content => getValue<String>('content')!;
 

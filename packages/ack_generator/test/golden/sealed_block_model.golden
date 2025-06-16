@@ -11,8 +11,12 @@ part of 'sealed_block_model.dart';
 
 /// Generated base schema for SealedBlock with inheritance support
 /// Base block class with polymorphic subclasses
-class SealedBlockSchema extends BaseSchema {
-  SealedBlockSchema([Object? super.value = null]);
+class SealedBlockSchema extends BaseSchema<SealedBlockSchema> {
+  /// Default constructor for parser instances
+  const SealedBlockSchema();
+
+  /// Private constructor for validated instances
+  const SealedBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final DiscriminatedObjectSchema schema = Ack.discriminated(
     discriminatorKey: 'type',
@@ -34,6 +38,19 @@ class SealedBlockSchema extends BaseSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  SealedBlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return SealedBlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<SealedBlockSchema>(
@@ -45,7 +62,7 @@ class SealedBlockSchema extends BaseSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get type => getValue<String>('type')!;
 
@@ -88,13 +105,30 @@ class SealedBlockSchema extends BaseSchema {
 /// Generated schema for TextBlock extending SealedBlockSchema
 /// A text block with markdown content
 class TextBlockSchema extends SealedBlockSchema {
-  TextBlockSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const TextBlockSchema();
+
+  /// Private constructor for validated instances
+  const TextBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
     {'content': Ack.string},
     required: ['content'],
     additionalProperties: false,
   );
+
+  /// Parse with validation - core implementation
+  @override
+  TextBlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return TextBlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -104,7 +138,7 @@ class TextBlockSchema extends SealedBlockSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get content => getValue<String>('content')!;
 
@@ -116,7 +150,11 @@ class TextBlockSchema extends SealedBlockSchema {
 /// Generated schema for ImageBlock extending SealedBlockSchema
 /// An image block with image source and attributes
 class ImageBlockSchema extends SealedBlockSchema {
-  ImageBlockSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const ImageBlockSchema();
+
+  /// Private constructor for validated instances
+  const ImageBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
     {
@@ -129,6 +167,19 @@ class ImageBlockSchema extends SealedBlockSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  ImageBlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return ImageBlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ImageBlockSchema>(
@@ -137,7 +188,7 @@ class ImageBlockSchema extends SealedBlockSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get src => getValue<String>('src')!;
 
@@ -155,7 +206,11 @@ class ImageBlockSchema extends SealedBlockSchema {
 /// Generated schema for WidgetBlock extending SealedBlockSchema
 /// A widget block with custom properties
 class WidgetBlockSchema extends SealedBlockSchema {
-  WidgetBlockSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const WidgetBlockSchema();
+
+  /// Private constructor for validated instances
+  const WidgetBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
     {
@@ -166,6 +221,19 @@ class WidgetBlockSchema extends SealedBlockSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  WidgetBlockSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return WidgetBlockSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<WidgetBlockSchema>(
@@ -174,7 +242,7 @@ class WidgetBlockSchema extends SealedBlockSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get name => getValue<String>('name')!;
 
