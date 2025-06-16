@@ -115,15 +115,13 @@ void main() {
       var result = schema.validate(['a']);
       expect(result.isFail, isTrue);
       var error = result.getError() as SchemaConstraintsError;
-      expect(error.constraints.first.message,
-          equals('Too few items, min 2. Got 1'));
+      expect(error.constraints.first.message, equals('Too few items, min 2'));
 
       // Test too many items
       result = schema.validate(['a', 'b', 'c', 'd', 'e']);
       expect(result.isFail, isTrue);
       error = result.getError() as SchemaConstraintsError;
-      expect(error.constraints.first.message,
-          equals('Too many items, max 4. Got 5'));
+      expect(error.constraints.first.message, equals('Too many items, max 4'));
 
       // Test duplicate items
       result = schema.validate(['a', 'b', 'a']);

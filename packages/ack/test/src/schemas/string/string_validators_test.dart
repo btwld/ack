@@ -53,7 +53,7 @@ void main() {
 
         final result = validator.validate('not-a-color');
         expect(
-            result?.message, equals('Invalid hex_color format. Ex: #f0f0f0'));
+            result?.message, equals('Invalid hex color format. Ex: #f0f0f0'));
       });
     });
 
@@ -75,7 +75,7 @@ void main() {
         expect(validator.isValid(''), isTrue);
 
         final result = validator.validate('not empty');
-        expect(result?.message, contains('length'));
+        expect(result?.message, equals('Must be exactly 0 characters'));
       });
     });
 
@@ -170,7 +170,8 @@ void main() {
       });
 
       test('schema validation works with enum validator', () {
-        final validator = PatternConstraint.enumValues(['red', 'green', 'blue']);
+        final validator =
+            PatternConstraint.enumValues(['red', 'green', 'blue']);
         expect(validator.isValid('red'), isTrue);
 
         final result = validator.validate('yellow');
@@ -196,7 +197,7 @@ void main() {
         expect(validator.isValid('hello'), isTrue);
 
         final result = validator.validate('');
-        expect(result?.message, contains('length'));
+        expect(result?.message, equals('Too short, min 1 characters'));
       });
     });
 

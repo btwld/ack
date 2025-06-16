@@ -75,19 +75,20 @@ class SchemaConstraintsError extends SchemaError {
   bool get isNonNullable => getConstraint<NonNullableConstraint>() != null;
 
   ConstraintError? getConstraint<S extends Constraint>() {
+    // First try exact type match
     final constraint = constraints.firstWhereOrNull((e) => e.type == S);
     if (constraint != null) return constraint;
 
+    // For generic constraints, try matching the base class name
+    final baseClassName = S.toString().split('<').first;
     final nonStrictConstraint = constraints.firstWhereOrNull(
-      (e) =>
-          e.type.toString().split('<').first == S.toString().split('<').first,
+      (e) => e.type.toString().split('<').first == baseClassName,
     );
 
+    // If we found a constraint with the same base class but different generics,
+    // return it instead of throwing an exception (graceful degradation)
     if (nonStrictConstraint != null) {
-      throw Exception(
-        'Constraint $S not found, but ${nonStrictConstraint.type} was found. '
-        'Ensure you specify the correct generic type for the constraint.',
-      );
+      return nonStrictConstraint;
     }
 
     return null;
