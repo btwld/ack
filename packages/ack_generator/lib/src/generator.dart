@@ -120,7 +120,7 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
     return Class(
       (b) => b
         ..name = schemaClassName
-        ..extend = refer('BaseSchema')
+        ..extend = refer('BaseSchema<$schemaClassName>')
         ..docs.add('/// Generated schema for $modelClassName')
         ..docs.addAll(
           schemaData.description != null
@@ -128,14 +128,18 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
               : [],
         )
         ..fields.add(_buildSchemaField(classInfo, schemaData))
-        ..constructors.add(_buildConstructor())
+        ..constructors.addAll([
+          _buildDefaultConstructor(),
+          _buildValidConstructor(),
+        ])
         ..methods.addAll([
+          _buildParseMethod(schemaClassName),
           _buildEnsureInitializeMethod(
             schemaClassName,
             modelClassName,
             classInfo,
           ),
-          _buildGetSchemaMethod(),
+          _buildDefinitionMethod(),
           ..._buildPropertyGetters(classInfo, schemaData),
           if (schemaData.additionalPropertiesField != null)
             _buildAdditionalPropertiesGetter(classInfo, schemaData),
@@ -172,18 +176,67 @@ $propertyCode
     )''';
   }
 
-  Constructor _buildConstructor() {
+  Constructor _buildDefaultConstructor() {
     return Constructor(
       (b) => b
-        ..optionalParameters.add(
+        ..constant = true
+        ..docs.add('/// Default constructor for parser instances'),
+    );
+  }
+
+  Constructor _buildValidConstructor() {
+    return Constructor(
+      (b) => b
+        ..name = '_valid'
+        ..constant = true
+        ..requiredParameters.add(
           Parameter(
             (p) => p
-              ..name = 'value'
-              ..toSuper = true
-              ..type = refer(AckTypes.objectType)
-              ..defaultTo = const Code('null'),
+              ..name = 'data'
+              ..type = refer('Map<String, Object?>'),
           ),
-        ),
+        )
+        ..initializers.add(const Code('super.valid(data)'))
+        ..docs.add('/// Private constructor for validated instances'),
+    );
+  }
+
+  Method _buildParseMethod(String schemaClassName) {
+    return Method(
+      (b) => b
+        ..name = 'parse'
+        ..returns = refer(schemaClassName)
+        ..annotations.add(refer('override'))
+        ..requiredParameters.add(
+          Parameter(
+            (p) => p
+              ..name = 'data'
+              ..type = refer('Object?'),
+          ),
+        )
+        ..docs.add('/// Parse with validation - core implementation')
+        ..body = Code('''
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow() as Map<String, Object?>,
+      );
+      return $schemaClassName._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  '''),
+    );
+  }
+
+  Method _buildDefinitionMethod() {
+    return Method(
+      (b) => b
+        ..name = 'definition'
+        ..type = MethodType.getter
+        ..returns = refer('ObjectSchema')
+        ..annotations.add(refer('override'))
+        ..body = const Code('schema')
+        ..lambda = true,
     );
   }
 
@@ -230,17 +283,6 @@ $propertyCode
           '/// Ensures this schema and its dependencies are registered',
         )
         ..body = Code(bodyParts.join('\n')),
-    );
-  }
-
-  Method _buildGetSchemaMethod() {
-    return Method(
-      (b) => b
-        ..name = 'getSchema'
-        ..returns = refer(AckTypes.ackSchema)
-        ..annotations.add(refer('override'))
-        ..body = const Code('schema')
-        ..lambda = true,
     );
   }
 
@@ -483,22 +525,26 @@ $propertyCode
     return Class(
       (b) => b
         ..name = schemaClassName
-        ..extend = refer('BaseSchema')
+        ..extend = refer('BaseSchema<$schemaClassName>')
         ..docs.addAll([
           '/// Generated base schema for ${element.name} with inheritance support',
           if (schemaData.description != null) '/// ${schemaData.description}',
         ])
-        ..constructors.add(_buildConstructor())
+        ..constructors.addAll([
+          _buildDefaultConstructor(),
+          _buildValidConstructor(),
+        ])
         ..fields.addAll([
           _buildDiscriminatedSchemaField(discriminatedInfo),
           _buildBaseSchemaField(element, schemaData, discriminatedInfo),
         ])
         ..methods.addAll([
+          _buildParseMethod(schemaClassName),
           _buildDiscriminatedEnsureInitializeMethod(
             schemaClassName,
             discriminatedInfo,
           ),
-          _buildGetSchemaMethod(),
+          _buildDefinitionMethod(),
           ..._buildDiscriminatedGetters(element, discriminatedInfo),
           ..._buildPatternMatchingMethods(discriminatedInfo),
           _buildToJsonSchemaMethod(),
@@ -816,7 +862,10 @@ $propertyCode
           '/// Generated schema for $subclassName extending ${baseName}Schema',
           if (description != null) '/// $description',
         ])
-        ..constructors.add(_buildConstructor())
+        ..constructors.addAll([
+          _buildDefaultConstructor(),
+          _buildValidConstructor(),
+        ])
         ..fields.add(
           _buildSubclassSchemaField(
             baseName,
@@ -824,8 +873,9 @@ $propertyCode
           ),
         )
         ..methods.addAll([
+          _buildParseMethod(schemaClassName),
           _buildSubclassEnsureInitializeMethod(schemaClassName),
-          _buildGetSchemaMethod(),
+          _buildDefinitionMethod(),
           ...subclassProperties.map((prop) => _buildPropertyGetter(prop)),
           _buildToJsonSchemaMethod(),
         ]);
