@@ -201,20 +201,19 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       return customMessageBuilder!(value, valueExtractor(value));
     }
 
-    final extracted = valueExtractor(value);
     switch (type) {
       case ComparisonType.gt:
-        return 'Must be greater than $threshold. Got $extracted';
+        return 'Must be greater than $threshold';
       case ComparisonType.gte:
-        return 'Must be at least $threshold. Got $extracted';
+        return 'Must be at least $threshold';
       case ComparisonType.lt:
-        return 'Must be less than $threshold. Got $extracted';
+        return 'Must be less than $threshold';
       case ComparisonType.lte:
-        return 'Must be at most $threshold. Got $extracted';
+        return 'Must be at most $threshold';
       case ComparisonType.eq:
-        return 'Must equal $threshold. Got $extracted';
+        return 'Must equal $threshold';
       case ComparisonType.range:
-        return 'Must be between $threshold and ${maxThreshold ?? threshold}. Got $extracted';
+        return 'Must be between $threshold and ${maxThreshold ?? threshold}';
     }
   }
 

@@ -52,7 +52,7 @@ void main() {
         expect(constraint.isValid(9), isFalse);
         expect(constraint.isValid(0), isFalse);
 
-        expect(constraint.buildMessage(5), 'Must be at least 10. Got 5');
+        expect(constraint.buildMessage(5), 'Must be at least 10');
         expect(constraint.constraintKey, 'number_min');
         expect(constraint.toJsonSchema(), {'minimum': 10});
       });
@@ -65,7 +65,7 @@ void main() {
         expect(constraint.isValid(11), isFalse);
         expect(constraint.isValid(100), isFalse);
 
-        expect(constraint.buildMessage(15), 'Must be at most 10. Got 15');
+        expect(constraint.buildMessage(15), 'Must be at most 10');
         expect(constraint.constraintKey, 'number_max');
         expect(constraint.toJsonSchema(), {'maximum': 10});
       });
@@ -79,8 +79,7 @@ void main() {
         expect(constraint.isValid(9), isFalse);
         expect(constraint.isValid(21), isFalse);
 
-        expect(
-            constraint.buildMessage(25), 'Must be between 10 and 20. Got 25');
+        expect(constraint.buildMessage(25), 'Must be between 10 and 20');
         expect(constraint.constraintKey, 'number_range');
         expect(constraint.toJsonSchema(), {'minimum': 10, 'maximum': 20});
       });
@@ -92,7 +91,7 @@ void main() {
         expect(constraint.isValid(10), isFalse);
         expect(constraint.isValid(9), isFalse);
 
-        expect(constraint.buildMessage(10), 'Must be greater than 10. Got 10');
+        expect(constraint.buildMessage(10), 'Must be greater than 10');
         expect(constraint.constraintKey, 'number_exclusive_min');
         expect(constraint.toJsonSchema(), {'exclusiveMinimum': 10});
       });
@@ -104,7 +103,7 @@ void main() {
         expect(constraint.isValid(10), isFalse);
         expect(constraint.isValid(11), isFalse);
 
-        expect(constraint.buildMessage(10), 'Must be less than 10. Got 10');
+        expect(constraint.buildMessage(10), 'Must be less than 10');
         expect(constraint.constraintKey, 'number_exclusive_max');
         expect(constraint.toJsonSchema(), {'exclusiveMaximum': 10});
       });

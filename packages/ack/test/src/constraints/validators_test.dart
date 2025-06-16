@@ -38,7 +38,7 @@ void main() {
       final message = validator.buildMessage([1, 2]);
       expect(
         message,
-        'Too few items, min 3. Got 2',
+        'Too few items, min 3',
       );
     });
   });
