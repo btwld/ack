@@ -301,12 +301,9 @@ void main() {
       });
 
       test('Pattern matching (regex)', () {
-        // Note: Documentation uses matches() but the actual API might use a different method
-        // We'll use constrain with a StringRegexConstraint instead
-        final alphanumericSchema = Ack.string.constrain(StringRegexConstraint(
-            patternName: 'alphanumeric',
-            pattern: r'^[a-zA-Z0-9]+$',
-            example: 'abc123'));
+        final alphanumericSchema = Ack.string.matches(
+            r'[a-zA-Z0-9]+',
+            example: 'abc123');
 
         // Valid alphanumeric strings
         expect(alphanumericSchema.validate('abc123').isOk, isTrue);
@@ -350,45 +347,38 @@ void main() {
         // without making assertions about its behavior
 
         // Date validation with custom constraint
-        final dateSchema = Ack.string.constrain(StringRegexConstraint(
-            patternName: 'date',
-            pattern: r'^\d{4}-\d{2}-\d{2}$',
-            example: '2023-01-01'));
+        final dateSchema = Ack.string.matches(
+            r'\d{4}-\d{2}-\d{2}',
+            example: '2023-01-01');
         expect(dateSchema.validate('2023-01-01').isOk, isTrue);
         expect(dateSchema.validate('not-a-date').isOk, isFalse);
 
         // DateTime validation with custom constraint
-        final datetimeSchema = Ack.string.constrain(StringRegexConstraint(
-            patternName: 'datetime',
-            pattern:
-                r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$',
-            example: '2023-01-01T12:00:00Z'));
+        final datetimeSchema = Ack.string.matches(
+            r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})',
+            example: '2023-01-01T12:00:00Z');
         expect(datetimeSchema.validate('2023-01-01T12:00:00Z').isOk, isTrue);
         expect(datetimeSchema.validate('not-a-datetime').isOk, isFalse);
 
         // UUID validation with custom constraint
-        final uuidSchema = Ack.string.constrain(StringRegexConstraint(
-            patternName: 'uuid',
-            pattern:
-                r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-            example: '123e4567-e89b-12d3-a456-426614174000'));
+        final uuidSchema = Ack.string.matches(
+            r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+            example: '123e4567-e89b-12d3-a456-426614174000');
         expect(uuidSchema.validate('123e4567-e89b-12d3-a456-426614174000').isOk,
             isTrue);
         expect(uuidSchema.validate('not-a-uuid').isOk, isFalse);
 
         // URL validation with custom constraint
-        final urlSchema = Ack.string.constrain(StringRegexConstraint(
-            patternName: 'url',
-            pattern: r'^https?://[a-zA-Z0-9][-a-zA-Z0-9.]*\.[a-z]{2,}(/.*)?$',
-            example: 'https://example.com'));
+        final urlSchema = Ack.string.matches(
+            r'https?://[a-zA-Z0-9][-a-zA-Z0-9.]*\.[a-z]{2,}(/.*)?',
+            example: 'https://example.com');
         expect(urlSchema.validate('https://example.com').isOk, isTrue);
         expect(urlSchema.validate('not-a-url').isOk, isFalse);
 
         // Hex color validation with custom constraint
-        final hexColorSchema = Ack.string.constrain(StringRegexConstraint(
-            patternName: 'hex_color',
-            pattern: r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$',
-            example: '#FF0000'));
+        final hexColorSchema = Ack.string.matches(
+            r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})',
+            example: '#FF0000');
         expect(hexColorSchema.validate('#FF0000').isOk, isTrue);
         expect(hexColorSchema.validate('red').isOk, isFalse);
       });

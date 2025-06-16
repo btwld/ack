@@ -1,4 +1,5 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/core/comparison_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -12,14 +13,14 @@ void main() {
 
     test('copyWith changes constraints', () {
       final schema = ListSchema<int>(IntegerSchema(),
-          constraints: [ListMaxItemsConstraint(5)]);
+          constraints: [ComparisonConstraint.listMaxItems<int>(5)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<ListMaxItemsConstraint>());
+      expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
       final newSchema =
-          schema.copyWith(constraints: [ListMinItemsConstraint(1)]);
+          schema.copyWith(constraints: [ComparisonConstraint.listMinItems<int>(1)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<ListMinItemsConstraint>());
+      expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });
 
     group('ListSchema Basic Validation', () {
@@ -81,13 +82,13 @@ void main() {
 
     group('MinItemsValidator', () {
       test('List with length >= min passes validation', () {
-        final validator = ListMinItemsConstraint(3);
+        final validator = ComparisonConstraint.listMinItems<int>(3);
         expect(validator.isValid([1, 2, 3]), isTrue);
         expect(validator.isValid([1, 2, 3, 4]), isTrue);
       });
 
       test('List with length < min fails validation', () {
-        final validator = ListMinItemsConstraint(3);
+        final validator = ComparisonConstraint.listMinItems<int>(3);
         expect(validator.isValid([1, 2]), isFalse);
       });
 
@@ -103,7 +104,7 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<ListMinItemsConstraint<int>>(),
+          constraintsError.getConstraint<ComparisonConstraint<List<int>>>(),
           isNotNull,
         );
       });
@@ -111,13 +112,13 @@ void main() {
 
     group('MaxItemsValidator', () {
       test('List with length <= max passes validation', () {
-        final validator = ListMaxItemsConstraint(3);
+        final validator = ComparisonConstraint.listMaxItems<int>(3);
         expect(validator.isValid([1, 2]), isTrue);
         expect(validator.isValid([1, 2, 3]), isTrue);
       });
 
       test('List with length > max fails validation', () {
-        final validator = ListMaxItemsConstraint(3);
+        final validator = ComparisonConstraint.listMaxItems<int>(3);
         expect(validator.isValid([1, 2, 3, 4]), isFalse);
       });
 
@@ -133,7 +134,7 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<ListMaxItemsConstraint<int>>(),
+          constraintsError.getConstraint<ComparisonConstraint<List<int>>>(),
           isNotNull,
         );
       });

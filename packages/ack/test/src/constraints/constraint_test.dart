@@ -1,27 +1,27 @@
-import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/core/comparison_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('ConstraintValidator', () {
     test('toMap() returns name and description', () {
-      final validator = StringNotEmptyValidator();
+      final validator = ComparisonConstraint.stringMinLength(1); // equivalent to notEmpty
       final map = validator.toMap();
 
       expect(map, {
-        'constraintKey': 'string_not_empty',
-        'description': 'String cannot be empty',
+        'constraintKey': 'string_min_length',
+        'description': 'String must be at least 1 characters',
       });
     });
 
     test('toString() returns JSON representation', () {
-      final validator = StringNotEmptyValidator();
+      final validator = ComparisonConstraint.stringMinLength(1);
       expect(
         validator.toString(),
-        contains('not_empty'),
+        contains('min_length'),
       );
       expect(
         validator.toString(),
-        contains('String cannot be empty'),
+        contains('String must be at least 1 characters'),
       );
     });
   });
