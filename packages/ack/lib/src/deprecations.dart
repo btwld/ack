@@ -16,78 +16,11 @@ typedef ConstraintValidator<T extends Object> = Validator<T>;
 @Deprecated('Use Validator<T> instead')
 typedef OpenApiConstraintValidator<T extends Object> = Validator<T>;
 
-@Deprecated('Use StringEmailConstraint instead')
-typedef EmailStringValidator = StringEmailConstraint;
-
-@Deprecated('Use StringHexColorValidator instead')
-typedef HexColorStringValidator = StringHexColorValidator;
-
-@Deprecated('Use StringEmptyConstraint instead')
-typedef IsEmptyStringValidator = StringEmptyConstraint;
-
-@Deprecated('Use StringMinLengthConstraint instead')
-typedef MinLengthStringValidator = StringMinLengthConstraint;
-
-@Deprecated('Use StringMaxLengthConstraint instead')
-typedef MaxLengthStringValidator = StringMaxLengthConstraint;
-
-@Deprecated('Use StringEnumConstraint instead')
-typedef OneOfStringValidator = StringEnumConstraint;
-
-@Deprecated('Use StringNotOneOfValidator instead')
-typedef NotOneOfStringValidator = StringNotOneOfValidator;
-
-@Deprecated('Use StringEnumConstraint instead')
-typedef EnumStringValidator = StringEnumConstraint;
-
-@Deprecated('Use StringNotEmptyValidator instead')
-typedef NotEmptyStringValidator = StringNotEmptyValidator;
-
-@Deprecated('Use StringDateTimeConstraint instead')
-typedef DateTimeStringValidator = StringDateTimeConstraint;
-
-@Deprecated('Use StringDateConstraint instead')
-typedef DateStringValidator = StringDateConstraint;
-
 // --- List Validators ---
 
 @Deprecated('Use ListUniqueItemsConstraint instead')
 typedef UniqueItemsListValidator<T extends Object>
     = ListUniqueItemsConstraint<T>;
-
-@Deprecated('Use ListMinItemsConstraint instead')
-typedef MinItemsListValidator<T extends Object> = ListMinItemsConstraint<T>;
-
-@Deprecated('Use ListMaxItemsConstraint instead')
-typedef MaxItemsListValidator<T extends Object> = ListMaxItemsConstraint<T>;
-
-// --- Number Validators ---
-
-@Deprecated('Use NumberMinConstraint instead')
-typedef MinNumValidator<T extends num> = NumberMinConstraint<T>;
-
-@Deprecated('Use NumberMaxConstraint instead')
-typedef MaxNumValidator<T extends num> = NumberMaxConstraint<T>;
-
-@Deprecated('Use NumberRangeConstraint instead')
-typedef RangeNumValidator<T extends num> = NumberRangeConstraint<T>;
-
-@Deprecated('Use NumberMultipleOfConstraint instead')
-typedef MultipleOfNumValidator<T extends num> = NumberMultipleOfConstraint<T>;
-
-// --- Object Validators ---
-
-@Deprecated('Use ObjectMinPropertiesConstraint instead')
-typedef MinPropertiesObjectValidator = ObjectMinPropertiesConstraint;
-
-@Deprecated('Use ObjectMaxPropertiesConstraint instead')
-typedef MaxPropertiesObjectValidator = ObjectMaxPropertiesConstraint;
-
-// --- Discriminated Object Validators ---
-// If you previously used DiscriminatedObjectSchemaError,
-// please migrate to the new discriminator constraints.
-@Deprecated('Use ObjectDiscriminatorStructureConstraint instead')
-typedef DiscriminatedObjectSchemaError = ObjectDiscriminatorStructureConstraint;
 
 // --- Exceptions ---
 
