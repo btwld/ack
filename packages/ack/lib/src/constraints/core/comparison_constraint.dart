@@ -219,18 +219,46 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
   @override
   Map<String, Object?> toJsonSchema() {
+    // Use constraint-specific keys based on constraintKey
+    final isStringLength = constraintKey.startsWith('string_') &&
+        (constraintKey.contains('length') || constraintKey.contains('exact'));
+    final isListItems = constraintKey.startsWith('list_');
+    final isObjectProperties = constraintKey.startsWith('object_');
+
     switch (type) {
       case ComparisonType.gt:
         return {'exclusiveMinimum': threshold};
       case ComparisonType.gte:
+        if (isStringLength) return {'minLength': threshold};
+        if (isListItems) return {'minItems': threshold};
+        if (isObjectProperties) return {'minProperties': threshold};
+
         return {'minimum': threshold};
       case ComparisonType.lt:
         return {'exclusiveMaximum': threshold};
       case ComparisonType.lte:
+        if (isStringLength) return {'maxLength': threshold};
+        if (isListItems) return {'maxItems': threshold};
+        if (isObjectProperties) return {'maxProperties': threshold};
+
         return {'maximum': threshold};
       case ComparisonType.eq:
+        if (isStringLength) {
+          return {'minLength': threshold, 'maxLength': threshold};
+        }
+
         return {'const': threshold};
       case ComparisonType.range:
+        if (isStringLength) {
+          return {'minLength': threshold, 'maxLength': maxThreshold};
+        }
+        if (isListItems) {
+          return {'minItems': threshold, 'maxItems': maxThreshold};
+        }
+        if (isObjectProperties) {
+          return {'minProperties': threshold, 'maxProperties': maxThreshold};
+        }
+
         return {'minimum': threshold, 'maximum': maxThreshold};
     }
   }

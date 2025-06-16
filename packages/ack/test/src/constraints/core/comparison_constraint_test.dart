@@ -14,7 +14,7 @@ void main() {
 
         expect(constraint.buildMessage('hi'), 'Too short, min 5 characters');
         expect(constraint.constraintKey, 'string_min_length');
-        expect(constraint.toJsonSchema(), {'minimum': 5});
+        expect(constraint.toJsonSchema(), {'minLength': 5});
       });
 
       test('stringMaxLength validates correctly', () {
@@ -27,7 +27,7 @@ void main() {
         expect(constraint.buildMessage('hello world'),
             'Too long, max 5 characters');
         expect(constraint.constraintKey, 'string_max_length');
-        expect(constraint.toJsonSchema(), {'maximum': 5});
+        expect(constraint.toJsonSchema(), {'maxLength': 5});
       });
 
       test('stringExactLength validates correctly', () {
@@ -39,7 +39,7 @@ void main() {
 
         expect(constraint.buildMessage('hi'), 'Must be exactly 5 characters');
         expect(constraint.constraintKey, 'string_exact_length');
-        expect(constraint.toJsonSchema(), {'const': 5});
+        expect(constraint.toJsonSchema(), {'minLength': 5, 'maxLength': 5});
       });
     });
 
@@ -146,7 +146,7 @@ void main() {
 
         expect(constraint.buildMessage([1, 2]), 'Too few items, min 3');
         expect(constraint.constraintKey, 'list_min_items');
-        expect(constraint.toJsonSchema(), {'minimum': 3});
+        expect(constraint.toJsonSchema(), {'minItems': 3});
       });
 
       test('listMaxItems validates correctly', () {
@@ -159,7 +159,7 @@ void main() {
 
         expect(constraint.buildMessage([1, 2, 3, 4]), 'Too many items, max 3');
         expect(constraint.constraintKey, 'list_max_items');
-        expect(constraint.toJsonSchema(), {'maximum': 3});
+        expect(constraint.toJsonSchema(), {'maxItems': 3});
       });
     });
 
@@ -174,7 +174,7 @@ void main() {
 
         expect(constraint.buildMessage({'a': 1}), 'Too few properties, min 2');
         expect(constraint.constraintKey, 'object_min_properties');
-        expect(constraint.toJsonSchema(), {'minimum': 2});
+        expect(constraint.toJsonSchema(), {'minProperties': 2});
       });
 
       test('objectMaxProperties validates correctly', () {
@@ -188,7 +188,7 @@ void main() {
         expect(constraint.buildMessage({'a': 1, 'b': 2, 'c': 3}),
             'Too many properties, max 2');
         expect(constraint.constraintKey, 'object_max_properties');
-        expect(constraint.toJsonSchema(), {'maximum': 2});
+        expect(constraint.toJsonSchema(), {'maxProperties': 2});
       });
     });
 
