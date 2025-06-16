@@ -7,14 +7,12 @@ String prettyJson(Map<String, dynamic> json) {
   return encoder.convert(json);
 }
 
-/// Simple string matching for suggestions - prioritizes prefix matches and short values.
+/// String matching for suggestions with edit distance support.
 String? findClosestStringMatch(
   String value,
   List<String> allowedValues, {
-  double threshold =
-      0.6, // Kept for compatibility but not used in simplified logic
+  double threshold = 0.6,
 }) {
-  // Note: threshold parameter kept for API compatibility but not used in simplified logic
   if (allowedValues.isEmpty) return null;
 
   final normalizedValue = value.toLowerCase().trim();
@@ -45,11 +43,73 @@ String? findClosestStringMatch(
     }
   }
 
+  // Fourth pass: edit distance for typos (only for reasonable length strings)
+  if (normalizedValue.length >= 3 && normalizedValue.length <= 10) {
+    String? bestMatch;
+    double bestSimilarity = 0.0;
+
+    for (final allowed in allowedValues) {
+      final normalizedAllowed = allowed.toLowerCase().trim();
+      if (normalizedAllowed.length <= 10) {
+        // Only check reasonable length strings
+        final similarity =
+            _calculateSimilarity(normalizedValue, normalizedAllowed);
+        if (similarity >= threshold && similarity > bestSimilarity) {
+          bestSimilarity = similarity;
+          bestMatch = allowed;
+        }
+      }
+    }
+
+    return bestMatch;
+  }
+
   return null; // No reasonable suggestion found
 }
 
-// Removed complex Levenshtein distance algorithm - no longer needed
-// String matching now uses simpler prefix/contains logic
+/// Calculate similarity between two strings using a simple edit distance approach.
+double _calculateSimilarity(String a, String b) {
+  if (a == b) return 1.0;
+  if (a.isEmpty || b.isEmpty) return 0.0;
+
+  final maxLength = a.length > b.length ? a.length : b.length;
+  final editDistance = _levenshteinDistance(a, b);
+
+  return 1.0 - (editDistance / maxLength);
+}
+
+/// Calculate Levenshtein distance between two strings.
+int _levenshteinDistance(String a, String b) {
+  if (a.isEmpty) return b.length;
+  if (b.isEmpty) return a.length;
+
+  final matrix = List.generate(
+    a.length + 1,
+    (i) => List.filled(b.length + 1, 0),
+  );
+
+  // Initialize first row and column
+  for (int i = 0; i <= a.length; i++) {
+    matrix[i][0] = i;
+  }
+  for (int j = 0; j <= b.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Fill the matrix
+  for (int i = 1; i <= a.length; i++) {
+    for (int j = 1; j <= b.length; j++) {
+      final cost = a[i - 1] == b[j - 1] ? 0 : 1;
+      matrix[i][j] = [
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost, // substitution
+      ].reduce((a, b) => a < b ? a : b);
+    }
+  }
+
+  return matrix[a.length][b.length];
+}
 
 /// Merges two maps recursively.
 ///

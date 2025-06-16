@@ -34,13 +34,13 @@ void main() {
       expect(result, 'world');
     });
 
-    test('returns null when no prefix/contains match found', () {
+    test('returns closest match when edit distance is reasonable', () {
       final result = findClosestStringMatch(
         'hallow',
         ['hello', 'hollow', 'yellow'],
       );
-      // No prefix matches, no contains matches for short strings
-      expect(result, isNull);
+      // 'hallow' is very similar to 'hollow' (1 character difference)
+      expect(result, 'hollow');
     });
 
     test('returns exact match when available', () {
@@ -61,7 +61,6 @@ void main() {
       expect(result, isNull);
     });
   });
-
 
   // Group all tests under 'deepMerge' for clarity.
   group('deepMerge', () {
@@ -247,7 +246,6 @@ void main() {
 
   // Group tests under IterableExt for better organization
   group('IterableExt', () {
-
     // Tests for duplicates
     group('getNonUniqueValues', () {
       test('empty iterable returns empty list', () {
@@ -301,7 +299,6 @@ void main() {
         expect({1, 2, 3}.duplicates, isEmpty);
       });
     });
-
   });
 
   group('isJsonValue', () {
