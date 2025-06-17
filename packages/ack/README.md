@@ -495,13 +495,13 @@ Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is ei
 
 Happy validating with ACK!
 
-## BaseSchema API
+## SchemaModel API
 
-ACK provides a `BaseSchema` base class for creating schema-based models with automatic validation.
+ACK provides a `SchemaModel` base class for creating schema-based models with automatic validation.
 
 ```dart
 // Define a schema model manually (or use code generation)
-class UserSchema extends BaseSchema {
+class UserSchema extends SchemaModel {
   UserSchema(Object? data) : super(data);
 
   @override
@@ -572,6 +572,6 @@ class User {
 
 For detailed guides on using Ack effectively, check out the documentation:
 
-- [BaseSchema API](https://docs.page/leofarias/ack/core-concepts/schema-model-class) - Learn how to use the BaseSchema API
+- [SchemaModel API](https://docs.page/leofarias/ack/core-concepts/schema-model-class) - Learn how to use the SchemaModel API
 
 ## License

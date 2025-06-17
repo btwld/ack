@@ -13,7 +13,8 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   NumSchema<T> max(T max) => _add(ComparisonConstraint.numberMax(max));
 
   /// {@macro range_num_validator}
-  NumSchema<T> range(T min, T max) => _add(ComparisonConstraint.numberRange(min, max));
+  NumSchema<T> range(T min, T max) =>
+      _add(ComparisonConstraint.numberRange(min, max));
 
   /// {@macro multiple_of_num_validator}
   NumSchema<T> multipleOf(T multiple) =>
@@ -49,4 +50,3 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
     return this.min(min).max(max);
   }
 }
-

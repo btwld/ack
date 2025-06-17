@@ -10,7 +10,7 @@ class TestModel {
 }
 
 // Test schema for the old constructor pattern tests
-class TestSchema extends BaseSchema<TestSchema> {
+class TestSchema extends SchemaModel<TestSchema> {
   const TestSchema() : super();
   const TestSchema._valid(Map<String, Object?> data) : super.valid(data);
 
@@ -40,7 +40,7 @@ class TestSchema extends BaseSchema<TestSchema> {
 }
 
 void main() {
-  group('BaseSchema Instance-Based Validation', () {
+  group('SchemaModel Instance-Based Validation', () {
     group('instance validation with property access', () {
       test('returns valid properties for valid input', () {
         final data = {'name': 'John', 'age': 30};

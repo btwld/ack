@@ -1,14 +1,14 @@
-# BaseSchema Class API
+# SchemaModel Class API
 
-This document describes the `BaseSchema` API in Ack, which provides a way to create schema-based models with automatic validation. While you can implement BaseSchema classes manually, the recommended approach is to use code generation.
+This document describes the `SchemaModel` API in Ack, which provides a way to create schema-based models with automatic validation. While you can implement SchemaModel classes manually, the recommended approach is to use code generation.
 
 ## Overview
 
-The `BaseSchema` class is a base class for creating schema-based models that can validate data against a schema. It provides a simple and intuitive API for creating, validating, and accessing typed data.
+The `SchemaModel` class is a base class for creating schema-based models that can validate data against a schema. It provides a simple and intuitive API for creating, validating, and accessing typed data.
 
 ## Key Features
 
-- **Automatic Validation**: Validation happens automatically when a BaseSchema is created
+- **Automatic Validation**: Validation happens automatically when a SchemaModel is created
 - **Simple Error Handling**: Easy access to validation errors through `isValid` and `getErrors()`
 - **Type Safety**: Uses `Object?` instead of `dynamic` for better type safety
 - **Code Generation**: Generate schema models automatically from annotated classes
@@ -16,7 +16,7 @@ The `BaseSchema` class is a base class for creating schema-based models that can
 
 ## Using Code Generation (Recommended Approach)
 
-The easiest way to use BaseSchema is with code generation. This approach lets you define your models as regular Dart classes with annotations, and the generator creates the corresponding BaseSchema classes for you.
+The easiest way to use SchemaModel is with code generation. This approach lets you define your models as regular Dart classes with annotations, and the generator creates the corresponding SchemaModel classes for you.
 
 ### 1. Define Your Model Class
 
@@ -47,7 +47,7 @@ Run the build_runner command to generate the schema class:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-This generates a `user.schema.dart` file with a `UserSchema` class that extends `BaseSchema`.
+This generates a `user.schema.dart` file with a `UserSchema` class that extends `SchemaModel`.
 
 ### 3. Use the Generated Schema Class
 
@@ -149,7 +149,7 @@ void main() {
 
 ## Generated Schema Class API
 
-When you use code generation, the generated schema class extends the base BaseSchema class and adds typed property getters, static methods and properties for convenience. Here's what you'll find in a generated schema class:
+When you use code generation, the generated schema class extends the base SchemaModel class and adds typed property getters, static methods and properties for convenience. Here's what you'll find in a generated schema class:
 
 ### Static Properties and Methods
 
@@ -293,10 +293,10 @@ if (userSchema.isValid) {
 
 ## Manual Implementation (Advanced)
 
-While code generation is recommended, you can also implement `BaseSchema` manually for more control. The manual implementation follows the same pattern as the base BaseSchema class, with validation happening automatically in the constructor.
+While code generation is recommended, you can also implement `SchemaModel` manually for more control. The manual implementation follows the same pattern as the base SchemaModel class, with validation happening automatically in the constructor.
 
 ```dart
-class UserSchema extends BaseSchema {
+class UserSchema extends SchemaModel {
   UserSchema(Object? data) : super(data);
 
   @override
@@ -320,7 +320,7 @@ class UserSchema extends BaseSchema {
 
 ## SchemaRegistry
 
-The `SchemaRegistry` is an optional utility for managing `BaseSchema` factories. It allows you to create `BaseSchema` instances dynamically based on a schema type.
+The `SchemaRegistry` is an optional utility for managing `SchemaModel` factories. It allows you to create `SchemaModel` instances dynamically based on a schema type.
 
 ```dart
 // Register a factory for creating UserSchema instances

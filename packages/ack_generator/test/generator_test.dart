@@ -91,7 +91,7 @@ void main() {
       ''';
 
       var foundError = false;
-      
+
       // Should generate no output and report error for non-class elements
       await testBuilder(
         ackSchemaBuilder(BuilderOptions.empty),
@@ -106,8 +106,13 @@ void main() {
           }
         },
       );
-      
-      expect(foundError, isTrue, reason: 'Expected error message about "Generator cannot target" not found');
+
+      expect(
+        foundError,
+        isTrue,
+        reason:
+            'Expected error message about "Generator cannot target" not found',
+      );
     });
   });
 

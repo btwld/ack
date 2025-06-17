@@ -11,7 +11,7 @@ part of 'abstract_shape_model.dart';
 
 /// Generated base schema for Shape with inheritance support
 /// A shape that can be a circle, rectangle, or triangle
-class ShapeSchema extends BaseSchema<ShapeSchema> {
+class ShapeSchema extends SchemaModel<ShapeSchema> {
   /// Default constructor for parser instances
   const ShapeSchema();
 

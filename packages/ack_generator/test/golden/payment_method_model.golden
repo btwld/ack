@@ -11,7 +11,7 @@ part of 'payment_method_model.dart';
 
 /// Generated base schema for PaymentMethod with inheritance support
 /// A payment method that can be credit card, bank transfer, or digital wallet
-class PaymentMethodSchema extends BaseSchema<PaymentMethodSchema> {
+class PaymentMethodSchema extends SchemaModel<PaymentMethodSchema> {
   /// Default constructor for parser instances
   const PaymentMethodSchema();
 

@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "basicString": {
+      "type": "string"
+    },
+    "emailString": {
+      "type": "string",
+      "format": "email"
+    },
+    "uuidString": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dateTimeString": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "uriString": {
+      "type": "string",
+      "format": "uri"
+    },
+    "enumString": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user",
+        "guest"
+      ]
+    },
+    "patternString": {
+      "type": "string",
+      "pattern": "^[A-Z][a-z]+$"
+    },
+    "lengthString": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50
+    },
+    "literalString": {
+      "type": "string",
+      "enum": [
+        "fixed-value"
+      ]
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "basicString",
+    "emailString"
+  ],
+  "additionalProperties": false
+}

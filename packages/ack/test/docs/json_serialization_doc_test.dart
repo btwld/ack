@@ -29,7 +29,7 @@ class User {
 }
 
 // Mock schema model for testing
-class UserSchema extends BaseSchema<UserSchema> {
+class UserSchema extends SchemaModel<UserSchema> {
   const UserSchema() : super();
   const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 

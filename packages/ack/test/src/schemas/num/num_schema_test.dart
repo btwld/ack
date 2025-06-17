@@ -12,7 +12,8 @@ void main() {
     });
 
     test('copyWith changes validators', () {
-      final schema = DoubleSchema(constraints: [ComparisonConstraint.numberMax(5.0)]);
+      final schema =
+          DoubleSchema(constraints: [ComparisonConstraint.numberMax(5.0)]);
       expect(schema.getConstraints().length, equals(1));
       expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
@@ -162,8 +163,7 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<ComparisonConstraint>(),
-            isNotNull);
+        expect(error.getConstraint<ComparisonConstraint>(), isNotNull);
       });
     });
   });
@@ -177,11 +177,13 @@ void main() {
     });
 
     test('copyWith changes constraints', () {
-      final schema = IntegerSchema(constraints: [ComparisonConstraint.numberMax(5)]);
+      final schema =
+          IntegerSchema(constraints: [ComparisonConstraint.numberMax(5)]);
       expect(schema.getConstraints().length, equals(1));
       expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
-      final newSchema = schema.copyWith(constraints: [ComparisonConstraint.numberMin(1)]);
+      final newSchema =
+          schema.copyWith(constraints: [ComparisonConstraint.numberMin(1)]);
       expect(newSchema.getConstraints().length, equals(1));
       expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });
@@ -265,7 +267,6 @@ void main() {
         final validator = ComparisonConstraint.numberMax(5);
         expect(validator.isValid(6), isFalse);
       });
-
     });
 
     group('RangeValidator', () {

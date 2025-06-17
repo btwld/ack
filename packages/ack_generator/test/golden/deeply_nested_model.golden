@@ -11,7 +11,7 @@ part of 'deeply_nested_model.dart';
 
 /// Generated schema for Level1
 /// Top level model for deep nesting test
-class Level1Schema extends BaseSchema<Level1Schema> {
+class Level1Schema extends SchemaModel<Level1Schema> {
   /// Default constructor for parser instances
   const Level1Schema();
 
@@ -66,7 +66,7 @@ class Level1Schema extends BaseSchema<Level1Schema> {
 
 /// Generated schema for Level2
 /// Second level nested model
-class Level2Schema extends BaseSchema<Level2Schema> {
+class Level2Schema extends SchemaModel<Level2Schema> {
   /// Default constructor for parser instances
   const Level2Schema();
 
@@ -124,7 +124,7 @@ class Level2Schema extends BaseSchema<Level2Schema> {
 
 /// Generated schema for Level3
 /// Third level deeply nested model
-class Level3Schema extends BaseSchema<Level3Schema> {
+class Level3Schema extends SchemaModel<Level3Schema> {
   /// Default constructor for parser instances
   const Level3Schema();
 
@@ -182,7 +182,7 @@ class Level3Schema extends BaseSchema<Level3Schema> {
 
 /// Generated schema for Level4
 /// Fourth level deepest nested model
-class Level4Schema extends BaseSchema<Level4Schema> {
+class Level4Schema extends SchemaModel<Level4Schema> {
   /// Default constructor for parser instances
   const Level4Schema();
 

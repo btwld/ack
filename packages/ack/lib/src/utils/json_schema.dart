@@ -63,6 +63,7 @@ class JsonSchemaConverter {
   final String stopSequence;
   final String startDelimeter;
   final String endDelimeter;
+  final bool includeSchemaVersion;
   final ObjectSchema _schema;
 
   const JsonSchemaConverter({
@@ -70,6 +71,7 @@ class JsonSchemaConverter {
     this.startDelimeter = '<response>',
     this.endDelimeter = '</response>',
     this.stopSequence = '<stop_response>',
+    this.includeSchemaVersion = true,
     String? customResponseInstruction,
   }) : _schema = schema;
 
@@ -87,7 +89,16 @@ $stopSequence
   }
 
   Map<String, Object?> toSchema() {
-    return _convertSchema(_schema);
+    final schema = _convertSchema(_schema);
+
+    if (includeSchemaVersion) {
+      return {
+        '\$schema': 'http://json-schema.org/draft-07/schema#',
+        ...schema,
+      };
+    }
+
+    return schema;
   }
 
   String toSchemaString() => prettyJson(toSchema());
@@ -149,15 +160,24 @@ JSON _convertObjectSchema(ObjectSchema schema) {
 
 JSON _convertDiscriminatedObjectSchema(DiscriminatedObjectSchema schema) {
   final discriminatorKey = schema.getDiscriminatorKey();
-  final schemas = schema.getSchemas();
+  final schemasMap = schema.getSchemasMap();
 
-  // Create the oneOf array with each schema
-  final oneOfSchemas = schemas.map((schema) => _convertSchema(schema)).toList();
+  final conditions = <Map<String, Object?>>[];
 
-  return {
-    'discriminator': {'propertyName': discriminatorKey},
-    'oneOf': oneOfSchemas,
-  };
+  for (final entry in schemasMap.entries) {
+    conditions.add({
+      'if': {
+        'type': 'object',
+        'properties': {
+          discriminatorKey: {'const': entry.key},
+        },
+        'required': [discriminatorKey],
+      },
+      'then': _convertSchema(entry.value),
+    });
+  }
+
+  return conditions.length == 1 ? conditions.first : {'allOf': conditions};
 }
 
 JSON _convertListSchema(ListSchema schema) => {
@@ -165,23 +185,29 @@ JSON _convertListSchema(ListSchema schema) => {
     };
 
 JSON _convertSchema(AckSchema schema) {
-  final type = _convertSchemaType(schema.getSchemaTypeValue());
+  final baseType = _convertSchemaType(schema.getSchemaTypeValue());
   final nullable = schema.getNullableValue();
   final description = schema.getDescriptionValue();
   final defaultValue = schema.getDefaultValue();
 
+  // Use type arrays for nullable in JSON Schema draft-7
+  Object? type;
+  if (baseType.isNotEmpty) {
+    type = nullable ? <String>[baseType, 'null'] : baseType;
+  }
+
   JSON schemaMap = {
-    if (type.isNotEmpty) 'type': type,
-    // Nullable is false by default
-    if (nullable) 'nullable': nullable,
+    if (type != null) 'type': type,
     if (description.isNotEmpty) 'description': description,
     if (defaultValue != null) 'default': defaultValue,
   };
 
-  if (schema is ObjectSchema) {
-    schemaMap = deepMerge(schemaMap, _convertObjectSchema(schema));
-  } else if (schema is DiscriminatedObjectSchema) {
+  // Handle discriminated objects differently as they don't have a base type
+  if (schema is DiscriminatedObjectSchema) {
+    schemaMap.remove('type');
     schemaMap = deepMerge(schemaMap, _convertDiscriminatedObjectSchema(schema));
+  } else if (schema is ObjectSchema) {
+    schemaMap = deepMerge(schemaMap, _convertObjectSchema(schema));
   } else if (schema is ListSchema) {
     schemaMap = deepMerge(schemaMap, _convertListSchema(schema));
   }
@@ -213,20 +239,20 @@ String _convertSchemaType(SchemaType type) {
   }
 }
 
-/// Merges the JSON schemas from a list of [Validator<T>].
+/// Merges the JSON schemas from a list of [JsonSchemaSpec<T>].
 ///
-/// This function converts each validator to its schema representation using
+/// This function converts each constraint to its schema representation using
 /// [toJsonSchema()] and combines them into a single schema map using [deepMerge].
 /// If a call to [toJsonSchema()] fails, the error is logged and the schema is skipped.
 ///
-/// [constraints] - The list of OpenAPI constraint validators to merge.
+/// [constraints] - The list of JSON Schema constraint validators to merge.
 /// Returns a merged schema map, or an empty map if no valid schemas are provided.
 JSON _getMergeJsonSchemaConstraints<T extends Object>(
   List<Constraint<T>> constraints,
 ) {
-  final openApiConstraints = constraints.whereType<OpenApiSpec<T>>();
+  final jsonSchemaConstraints = constraints.whereType<JsonSchemaSpec<T>>();
 
-  return openApiConstraints.fold<JSON>({}, (previousValue, element) {
+  return jsonSchemaConstraints.fold<JSON>({}, (previousValue, element) {
     try {
       final schema = element.toJsonSchema();
 

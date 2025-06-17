@@ -17,6 +17,7 @@ void main() {
         expect(
           converter.toSchema(),
           equals({
+            '\$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'object',
             'properties': {
               'string': {'type': 'string'},
@@ -37,6 +38,7 @@ void main() {
         expect(
           converter.toSchema(),
           equals({
+            '\$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'object',
             'properties': {
               'items': {
@@ -75,28 +77,46 @@ void main() {
         expect(
           converter.toSchema(),
           equals({
+            '\$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'object',
             'properties': {
               'pet': {
-                'discriminator': {'propertyName': 'animalType'},
-                'oneOf': [
+                'allOf': [
                   {
-                    'type': 'object',
-                    'properties': {
-                      'animalType': {'type': 'string'},
-                      'name': {'type': 'string'},
+                    'if': {
+                      'type': 'object',
+                      'properties': {
+                        'animalType': {'const': 'dog'}
+                      },
+                      'required': ['animalType']
                     },
-                    'required': ['animalType', 'name'],
-                    'additionalProperties': false,
+                    'then': {
+                      'type': 'object',
+                      'properties': {
+                        'animalType': {'type': 'string'},
+                        'name': {'type': 'string'},
+                      },
+                      'required': ['animalType', 'name'],
+                      'additionalProperties': false,
+                    }
                   },
                   {
-                    'type': 'object',
-                    'properties': {
-                      'animalType': {'type': 'string'},
-                      'breed': {'type': 'string'},
+                    'if': {
+                      'type': 'object',
+                      'properties': {
+                        'animalType': {'const': 'cat'}
+                      },
+                      'required': ['animalType']
                     },
-                    'required': ['animalType', 'breed'],
-                    'additionalProperties': false,
+                    'then': {
+                      'type': 'object',
+                      'properties': {
+                        'animalType': {'type': 'string'},
+                        'breed': {'type': 'string'},
+                      },
+                      'required': ['animalType', 'breed'],
+                      'additionalProperties': false,
+                    }
                   },
                 ],
               },
@@ -152,7 +172,9 @@ void main() {
         final converter = JsonSchemaConverter(schema: containerSchema);
         final result = converter.toSchema();
 
-        // Fixed null safety issues by using null-aware operators or assertion
+        // Verify the schema structure with new JSON Schema draft-7 format
+        expect(result['\$schema'],
+            equals('http://json-schema.org/draft-07/schema#'));
         expect(result['type'], equals('object'));
         final properties = result['properties'] as Map<String, dynamic>;
         expect(properties['id']!['type'], equals('string'));
@@ -160,18 +182,22 @@ void main() {
 
         final shapesSchema =
             properties['shapes']!['items'] as Map<String, dynamic>;
-        expect(shapesSchema['discriminator']!['propertyName'], equals('type'));
+        expect(shapesSchema['allOf'], isA<List>());
 
-        final oneOf = shapesSchema['oneOf'] as List;
-        expect(oneOf.length, equals(2));
+        final allOf = shapesSchema['allOf'] as List;
+        expect(allOf.length, equals(2));
 
-        // Verify the discriminated schemas are included correctly
-        final circleSchemaInResult = oneOf[0] as Map<String, dynamic>;
-        final rectangleSchemaInResult = oneOf[1] as Map<String, dynamic>;
+        // Verify the discriminated schemas use if/then/else pattern
+        final circleCondition = allOf[0] as Map<String, dynamic>;
+        final rectangleCondition = allOf[1] as Map<String, dynamic>;
 
-        expect(circleSchemaInResult['properties']!['radius']!['type'],
+        expect(circleCondition['if']['properties']['type']['const'],
+            equals('circle'));
+        expect(circleCondition['then']['properties']['radius']['type'],
             equals('number'));
-        expect(rectangleSchemaInResult['properties']!['width']!['type'],
+        expect(rectangleCondition['if']['properties']['type']['const'],
+            equals('rectangle'));
+        expect(rectangleCondition['then']['properties']['width']['type'],
             equals('number'));
       });
     });
@@ -185,11 +211,11 @@ void main() {
         expect(
           converter.toSchema(),
           equals({
+            '\$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'object',
             'properties': {
               'optional': {
-                'type': 'string',
-                'nullable': true,
+                'type': ['string', 'null'],
               },
             },
             'additionalProperties': false,
@@ -205,6 +231,7 @@ void main() {
         expect(
           converter.toSchema(),
           equals({
+            '\$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'object',
             'properties': {
               'name': {
@@ -225,12 +252,33 @@ void main() {
         expect(
           converter.toSchema(),
           equals({
+            '\$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'object',
             'properties': {
               'active': {
                 'type': 'boolean',
                 'default': true,
               },
+            },
+            'additionalProperties': false,
+          }),
+        );
+      });
+
+      test('can disable schema declaration for backward compatibility', () {
+        final schema = ObjectSchema({
+          'name': StringSchema(),
+        });
+        final converter = JsonSchemaConverter(
+          schema: schema,
+          includeSchemaVersion: false,
+        );
+        expect(
+          converter.toSchema(),
+          equals({
+            'type': 'object',
+            'properties': {
+              'name': {'type': 'string'},
             },
             'additionalProperties': false,
           }),

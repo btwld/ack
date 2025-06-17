@@ -11,7 +11,7 @@ part of 'block_model.dart';
 
 /// Generated schema for Block
 /// Base class for blocks that make up a slide
-class BlockSchema extends BaseSchema<BlockSchema> {
+class BlockSchema extends SchemaModel<BlockSchema> {
   /// Default constructor for parser instances
   const BlockSchema();
 
@@ -54,7 +54,7 @@ class BlockSchema extends BaseSchema<BlockSchema> {
 
 /// Generated schema for SectionBlock
 /// A section block that contains multiple columns
-class SectionBlockSchema extends BaseSchema<SectionBlockSchema> {
+class SectionBlockSchema extends SchemaModel<SectionBlockSchema> {
   /// Default constructor for parser instances
   const SectionBlockSchema();
 
@@ -109,7 +109,7 @@ class SectionBlockSchema extends BaseSchema<SectionBlockSchema> {
 
 /// Generated schema for ColumnBlock
 /// A column block that contains markdown content
-class ColumnBlockSchema extends BaseSchema<ColumnBlockSchema> {
+class ColumnBlockSchema extends SchemaModel<ColumnBlockSchema> {
   /// Default constructor for parser instances
   const ColumnBlockSchema();
 
