@@ -113,3 +113,22 @@ scripts:
     description: Run only golden tests
     packageFilters:
       dirExists: test/golden
+
+  # JSON Schema Draft-7 validation with AJV
+  validate-json-schema:
+    run: |
+      echo "🔧 Installing Node.js dependencies..."
+      cd tools && npm install
+      echo "🧪 Running AJV JSON Schema Draft-7 validation tests..."
+      cd packages/ack && dart test test/src/utils/ajv_compatibility_test.dart
+    description: Validate JSON Schema Draft-7 specifications using AJV
+
+  validate-json-schema:batch:
+    run: |
+      cd tools && npm install
+      node ajv-validator.js validate-batch --input test-fixtures/schema-validation-config.json
+    description: Run batch JSON Schema Draft-7 validation with AJV
+
+  validate-json-schema:setup:
+    run: cd tools && npm install
+    description: Install Node.js dependencies for JSON Schema validation
