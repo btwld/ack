@@ -9,27 +9,44 @@ import 'utils/mock_ack_package.dart';
 
 void main() {
   group('AckBuilder', () {
-    test('generates correct output for user model', () async {
-      await testGolden('user_model');
-    });
+    test(
+      'generates correct output for user model',
+      () async {
+        await testGolden('user_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('generates correct output for product model', () async {
-      await testGolden('product_model');
-    });
+    test(
+      'generates correct output for product model',
+      () async {
+        await testGolden('product_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('generates correct output for nested models', () async {
-      await testGolden('block_model');
-    });
+    test(
+      'generates correct output for nested models',
+      () async {
+        await testGolden('block_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('generates correct output for sealed classes', () async {
-      await testGolden('sealed_block_model');
-    });
+    test(
+      'generates correct output for sealed classes',
+      () async {
+        await testGolden('sealed_block_model');
+      },
+      tags: ['golden'],
+    );
 
     test(
       'generates correct output for discriminated unions with sealed classes',
       () async {
         await testGolden('payment_method_model');
       },
+      tags: ['golden'],
     );
 
     test(
@@ -37,6 +54,7 @@ void main() {
       () async {
         await testGolden('abstract_shape_model');
       },
+      tags: ['golden'],
     );
 
     if (Platform.environment['UPDATE_GOLDEN'] == 'true') {
@@ -156,13 +174,21 @@ void main() {
   });
 
   group('complex scenarios', () {
-    test('handles deeply nested models', () async {
-      await testGolden('deeply_nested_model');
-    });
+    test(
+      'handles deeply nested models',
+      () async {
+        await testGolden('deeply_nested_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('handles models with many properties', () async {
-      await testGolden('large_model');
-    });
+    test(
+      'handles models with many properties',
+      () async {
+        await testGolden('large_model');
+      },
+      tags: ['golden'],
+    );
 
     test('verifies deep nesting dependency registration', () async {
       final inputFile = File('test/fixtures/deeply_nested_model.dart');
