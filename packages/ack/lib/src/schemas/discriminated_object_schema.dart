@@ -59,11 +59,12 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final discrimnatorValue = _getDiscriminator(mapValue);
+    final discriminatorValue = _getDiscriminator(mapValue);
 
-    final discriminatedSchema = _schemas[discrimnatorValue]!;
+    final discriminatedSchema = _schemas[discriminatorValue]!;
 
-    return discriminatedSchema.validate(mapValue, debugName: discrimnatorValue);
+    return discriminatedSchema.validate(mapValue,
+        debugName: discriminatorValue);
   }
 
   @override

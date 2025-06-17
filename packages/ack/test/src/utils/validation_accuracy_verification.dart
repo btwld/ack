@@ -8,22 +8,24 @@ import 'package:test/test.dart';
 void main() {
   group('Validation Accuracy Verification', () {
     late Directory tempDir;
-    
+
     setUpAll(() async {
       await _ensureNodeDependencies();
     });
-    
+
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('ack_accuracy_test_');
     });
-    
+
     tearDown(() async {
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }
     });
 
-    test('PROOF: AJV correctly validates against JSON Schema Draft-7 meta-schema', () async {
+    test(
+        'PROOF: AJV correctly validates against JSON Schema Draft-7 meta-schema',
+        () async {
       // Test 1: Valid JSON Schema Draft-7
       final validSchema = {
         '\$schema': 'http://json-schema.org/draft-07/schema#',
@@ -50,7 +52,10 @@ void main() {
         '\$schema': 'http://json-schema.org/draft-07/schema#',
         'type': 'object',
         'properties': {
-          'name': {'type': 'string', 'minLength': 'invalid'}, // Should be number
+          'name': {
+            'type': 'string',
+            'minLength': 'invalid'
+          }, // Should be number
         },
       };
 
@@ -59,7 +64,8 @@ void main() {
 
       try {
         final invalidResult = await _runSchemaValidation(invalidFile.path);
-        expect(invalidResult['valid'], isFalse, reason: 'Invalid schema should fail');
+        expect(invalidResult['valid'], isFalse,
+            reason: 'Invalid schema should fail');
         print('✅ PROOF: Invalid schema correctly failed AJV validation');
       } catch (e) {
         // AJV might throw an error for severely malformed schemas
@@ -81,31 +87,45 @@ void main() {
               'notifications': Ack.boolean,
             }),
           }),
-          'roles': Ack.list(Ack.string.enumValues(['admin', 'user', 'guest'])).uniqueItems(),
-        }, required: ['id', 'email', 'profile']),
+          'roles': Ack.list(Ack.string.enumValues(['admin', 'user', 'guest']))
+              .uniqueItems(),
+        }, required: [
+          'id',
+          'email',
+          'profile'
+        ]),
         'metadata': Ack.object({
           'created': Ack.string.dateTime(),
           'updated': Ack.string.dateTime().nullable(),
           'version': Ack.int.min(1),
-        }, required: ['created', 'version']),
-      }, required: ['user', 'metadata']);
+        }, required: [
+          'created',
+          'version'
+        ]),
+      }, required: [
+        'user',
+        'metadata'
+      ]);
 
       final jsonSchema = JsonSchemaConverter(schema: complexSchema).toSchema();
-      
+
       final complexFile = File(path.join(tempDir.path, 'complex-schema.json'));
-      await complexFile.writeAsString(JsonEncoder.withIndent('  ').convert(jsonSchema));
+      await complexFile
+          .writeAsString(JsonEncoder.withIndent('  ').convert(jsonSchema));
 
       final result = await _runSchemaValidation(complexFile.path);
-      
-      expect(result['valid'], isTrue, reason: 'Complex Ack schema should be valid');
+
+      expect(result['valid'], isTrue,
+          reason: 'Complex Ack schema should be valid');
       expect(result['validationType'], equals('compilation'));
-      
+
       print('✅ PROOF: Complex Ack-generated schema passed AJV validation');
       print('Schema size: ${jsonEncode(jsonSchema).length} characters');
       print('Properties count: ${(jsonSchema['properties'] as Map).length}');
     });
 
-    test('PROOF: AJV detects specific JSON Schema Draft-7 violations', () async {
+    test('PROOF: AJV detects specific JSON Schema Draft-7 violations',
+        () async {
       final testCases = [
         {
           'name': 'Invalid type value',
@@ -135,20 +155,21 @@ void main() {
       ];
 
       for (final testCase in testCases) {
-        final testFile = File(path.join(tempDir.path, '${testCase['name']}.json'));
+        final testFile =
+            File(path.join(tempDir.path, '${testCase['name']}.json'));
         await testFile.writeAsString(jsonEncode(testCase['schema']));
 
         try {
           final result = await _runSchemaValidation(testFile.path);
           final shouldFail = testCase['shouldFail'] as bool;
-          
+
           if (shouldFail) {
-            expect(result['valid'], isFalse, 
-              reason: '${testCase['name']} should fail validation');
+            expect(result['valid'], isFalse,
+                reason: '${testCase['name']} should fail validation');
             print('✅ PROOF: ${testCase['name']} correctly failed');
           } else {
-            expect(result['valid'], isTrue, 
-              reason: '${testCase['name']} should pass validation');
+            expect(result['valid'], isTrue,
+                reason: '${testCase['name']} should pass validation');
             print('✅ PROOF: ${testCase['name']} correctly passed');
           }
         } catch (e) {
@@ -161,32 +182,45 @@ void main() {
       }
     });
 
-    test('PROOF: External validation with online JSON Schema validator', () async {
+    test('PROOF: External validation with online JSON Schema validator',
+        () async {
       // Generate a schema and show it can be validated externally
       final schema = Ack.object({
         'product': Ack.object({
           'id': Ack.string.uuid(),
           'name': Ack.string.minLength(1),
           'price': Ack.double.min(0.0),
-          'category': Ack.string.enumValues(['electronics', 'clothing', 'books']),
+          'category':
+              Ack.string.enumValues(['electronics', 'clothing', 'books']),
           'inStock': Ack.boolean,
           'tags': Ack.list(Ack.string).uniqueItems().nullable(),
-        }, required: ['id', 'name', 'price', 'category']),
-      }, required: ['product']);
+        }, required: [
+          'id',
+          'name',
+          'price',
+          'category'
+        ]),
+      }, required: [
+        'product'
+      ]);
 
       final jsonSchema = JsonSchemaConverter(schema: schema).toSchema();
-      
+
       // Save for external validation
-      final externalFile = File(path.join(tempDir.path, 'external-validation-schema.json'));
-      await externalFile.writeAsString(JsonEncoder.withIndent('  ').convert(jsonSchema));
-      
+      final externalFile =
+          File(path.join(tempDir.path, 'external-validation-schema.json'));
+      await externalFile
+          .writeAsString(JsonEncoder.withIndent('  ').convert(jsonSchema));
+
       // Validate with our AJV
       final result = await _runSchemaValidation(externalFile.path);
-      expect(result['valid'], isTrue, reason: 'Schema should be valid for external validation');
-      
+      expect(result['valid'], isTrue,
+          reason: 'Schema should be valid for external validation');
+
       print('✅ PROOF: Schema ready for external validation');
       print('📄 Schema saved to: ${externalFile.path}');
-      print('🌐 You can validate this at: https://www.jsonschemavalidator.net/');
+      print(
+          '🌐 You can validate this at: https://www.jsonschemavalidator.net/');
       print('📋 Schema preview:');
       print(JsonEncoder.withIndent('  ').convert(jsonSchema));
     });
@@ -200,7 +234,14 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
 
   final result = await Process.run(
     'node',
-    [validatorScript, 'validate-schema', '--schema', schemaPath, '--json', '--silent'],
+    [
+      validatorScript,
+      'validate-schema',
+      '--schema',
+      schemaPath,
+      '--json',
+      '--silent'
+    ],
     workingDirectory: projectRoot,
   );
 
@@ -217,7 +258,9 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
     final stderr = result.stderr.toString();
     return {
       'valid': false,
-      'errors': [{'message': stderr}],
+      'errors': [
+        {'message': stderr}
+      ],
       'validationType': 'error',
     };
   }
@@ -228,12 +271,14 @@ Future<void> _ensureNodeDependencies() async {
   final projectRoot = _findProjectRoot();
   final toolsDir = path.join(projectRoot, 'tools');
   final nodeModulesDir = Directory(path.join(toolsDir, 'node_modules'));
-  
+
   if (!await nodeModulesDir.exists()) {
     print('Installing Node.js dependencies...');
-    final result = await Process.run('npm', ['install'], workingDirectory: toolsDir);
+    final result =
+        await Process.run('npm', ['install'], workingDirectory: toolsDir);
     if (result.exitCode != 0) {
-      throw Exception('Failed to install Node.js dependencies: ${result.stderr}');
+      throw Exception(
+          'Failed to install Node.js dependencies: ${result.stderr}');
     }
   }
 }

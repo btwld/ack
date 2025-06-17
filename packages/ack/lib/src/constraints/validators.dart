@@ -217,9 +217,9 @@ class ObjectDiscriminatorValueConstraint extends Constraint<MapValue>
     // Get the discriminator value
     final discriminatorValue = value[discriminatorKey];
 
-    // Check if value is convertible to string and matches a schema
-    return discriminatorValue != null &&
-        schemas.containsKey(discriminatorValue.toString());
+    // Check if value is a string and matches a schema
+    return discriminatorValue is String &&
+        schemas.containsKey(discriminatorValue);
   }
 
   @override
@@ -227,8 +227,14 @@ class ObjectDiscriminatorValueConstraint extends Constraint<MapValue>
     final discriminatorValue = value[discriminatorKey];
     final validSchemaKeys = schemas.keys.toList();
 
-    return discriminatorValue != null
-        ? 'Invalid discriminator: $discriminatorValue. Allowed: ($validSchemaKeys)'
-        : 'Missing discriminator "$discriminatorKey"';
+    if (discriminatorValue == null) {
+      return 'Missing discriminator "$discriminatorKey"';
+    }
+
+    if (discriminatorValue is! String) {
+      return 'Discriminator "$discriminatorKey" must be a string, got ${discriminatorValue.runtimeType}';
+    }
+
+    return 'Invalid discriminator: $discriminatorValue. Allowed: ($validSchemaKeys)';
   }
 }

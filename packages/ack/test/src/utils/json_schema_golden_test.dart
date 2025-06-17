@@ -9,23 +9,23 @@ void main() {
   group('JSON Schema Golden File Tests', () {
     late Directory tempDir;
     late Directory goldenDir;
-    
+
     setUpAll(() async {
       // Ensure Node.js dependencies are installed
       await _ensureNodeDependencies();
-      
+
       // Create golden files directory
       goldenDir = Directory('test/golden/json_schema');
       if (!await goldenDir.exists()) {
         await goldenDir.create(recursive: true);
       }
     });
-    
+
     setUp(() async {
       // Create temporary directory for test files
       tempDir = await Directory.systemTemp.createTemp('ack_golden_test_');
     });
-    
+
     tearDown(() async {
       // Clean up temporary files
       if (await tempDir.exists()) {
@@ -46,8 +46,11 @@ void main() {
           'lengthString': Ack.string.minLength(2).maxLength(50),
           'literalString': Ack.string.literal('fixed-value'),
           'nullableString': Ack.string.nullable(),
-        }, required: ['basicString', 'emailString']);
-        
+        }, required: [
+          'basicString',
+          'emailString'
+        ]);
+
         await _validateGoldenFile(schema, 'string_constraints_schema');
       });
 
@@ -64,23 +67,27 @@ void main() {
           'multipleDouble': Ack.double.multipleOf(0.5),
           'nullableDouble': Ack.double.nullable(),
         });
-        
+
         await _validateGoldenFile(schema, 'numeric_constraints_schema');
       });
 
       test('array schemas with constraints match golden file', () async {
         final schema = Ack.object({
           'basicArray': Ack.list(Ack.string),
-          'constrainedArray': Ack.list(Ack.string.minLength(1)).minItems(1).maxItems(10),
+          'constrainedArray':
+              Ack.list(Ack.string.minLength(1)).minItems(1).maxItems(10),
           'uniqueArray': Ack.list(Ack.string).uniqueItems(),
           'nestedArray': Ack.list(Ack.list(Ack.int)),
           'objectArray': Ack.list(Ack.object({
             'id': Ack.string.uuid(),
             'name': Ack.string,
-          }, required: ['id', 'name'])),
+          }, required: [
+            'id',
+            'name'
+          ])),
           'nullableArray': Ack.list(Ack.string).nullable(),
         });
-        
+
         await _validateGoldenFile(schema, 'array_constraints_schema');
       });
 
@@ -94,7 +101,10 @@ void main() {
             'name': Ack.string,
             'email': Ack.string.email(),
             'age': Ack.int.nullable(),
-          }, required: ['name', 'email']),
+          }, required: [
+            'name',
+            'email'
+          ]),
           'strictObject': Ack.object({
             'name': Ack.string,
           }, additionalProperties: false),
@@ -110,7 +120,7 @@ void main() {
             }),
           }),
         });
-        
+
         await _validateGoldenFile(schema, 'object_constraints_schema');
       });
 
@@ -122,11 +132,17 @@ void main() {
               'user': Ack.object({
                 'type': Ack.string.literal('user'),
                 'name': Ack.string,
-              }, required: ['type', 'name']),
+              }, required: [
+                'type',
+                'name'
+              ]),
               'admin': Ack.object({
                 'type': Ack.string.literal('admin'),
                 'level': Ack.int.min(1).max(10),
-              }, required: ['type', 'level']),
+              }, required: [
+                'type',
+                'level'
+              ]),
             },
           ),
           'complexUnion': Ack.discriminated(
@@ -139,7 +155,10 @@ void main() {
                   'author': Ack.string,
                   'created': Ack.string.dateTime(),
                 }).nullable(),
-              }, required: ['kind', 'content']),
+              }, required: [
+                'kind',
+                'content'
+              ]),
               'image': Ack.object({
                 'kind': Ack.string.literal('image'),
                 'src': Ack.string.uri(),
@@ -147,15 +166,20 @@ void main() {
                   'width': Ack.int.min(1),
                   'height': Ack.int.min(1),
                 }),
-              }, required: ['kind', 'src', 'dimensions']),
+              }, required: [
+                'kind',
+                'src',
+                'dimensions'
+              ]),
             },
           ),
         });
-        
+
         await _validateGoldenFile(schema, 'discriminated_union_schema');
       });
 
-      test('comprehensive schema with all features matches golden file', () async {
+      test('comprehensive schema with all features matches golden file',
+          () async {
         final schema = Ack.object({
           // Basic types with constraints
           'id': Ack.string.uuid(),
@@ -163,22 +187,23 @@ void main() {
           'age': Ack.int.min(0).max(150).nullable(),
           'score': Ack.double.min(0.0).max(100.0),
           'active': Ack.boolean,
-          
+
           // String formats
           'email': Ack.string.email(),
           'website': Ack.string.uri().nullable(),
           'created': Ack.string.dateTime(),
           'phone': Ack.string.matches(r'^\+?[\d\s\-\(\)]+$').nullable(),
-          
+
           // Enums
           'role': Ack.string.enumValues(['admin', 'user', 'guest']),
           'status': Ack.string.enumValues(['active', 'inactive', 'pending']),
-          
+
           // Arrays with constraints
           'tags': Ack.list(Ack.string).uniqueItems().maxItems(10),
           'scores': Ack.list(Ack.double.min(0.0).max(100.0)).nullable(),
-          'permissions': Ack.list(Ack.string.enumValues(['read', 'write', 'admin'])),
-          
+          'permissions':
+              Ack.list(Ack.string.enumValues(['read', 'write', 'admin'])),
+
           // Complex nested structures
           'profile': Ack.object({
             'bio': Ack.string.maxLength(500).nullable(),
@@ -189,7 +214,7 @@ void main() {
               'language': Ack.string.matches(r'^[a-z]{2}(-[A-Z]{2})?$'),
             }),
           }),
-          
+
           // Discriminated union
           'content': Ack.discriminated(
             discriminatorKey: 'type',
@@ -201,21 +226,37 @@ void main() {
                   'bold': Ack.boolean,
                   'italic': Ack.boolean,
                 }).nullable(),
-              }, required: ['type', 'value']),
+              }, required: [
+                'type',
+                'value'
+              ]),
               'number': Ack.object({
                 'type': Ack.string.literal('number'),
                 'value': Ack.double,
                 'precision': Ack.int.min(0).max(10).nullable(),
-              }, required: ['type', 'value']),
+              }, required: [
+                'type',
+                'value'
+              ]),
               'list': Ack.object({
                 'type': Ack.string.literal('list'),
                 'items': Ack.list(Ack.string).minItems(1),
                 'ordered': Ack.boolean,
-              }, required: ['type', 'items']),
+              }, required: [
+                'type',
+                'items'
+              ]),
             },
           ),
-        }, required: ['id', 'name', 'role', 'status', 'profile', 'content']);
-        
+        }, required: [
+          'id',
+          'name',
+          'role',
+          'status',
+          'profile',
+          'content'
+        ]);
+
         await _validateGoldenFile(schema, 'comprehensive_schema');
       });
     });
@@ -227,30 +268,31 @@ Future<void> _validateGoldenFile(ObjectSchema schema, String testName) async {
   // Generate JSON schema
   final jsonSchema = JsonSchemaConverter(schema: schema).toSchema();
   final jsonString = JsonEncoder.withIndent('  ').convert(jsonSchema);
-  
+
   // Golden file path
   final goldenFile = File('test/golden/json_schema/$testName.json');
-  
+
   // Check if golden file exists
   if (await goldenFile.exists()) {
     // Compare with existing golden file
     final expectedContent = await goldenFile.readAsString();
-    expect(jsonString, equals(expectedContent), 
-      reason: 'Generated schema should match golden file for $testName');
+    expect(jsonString, equals(expectedContent),
+        reason: 'Generated schema should match golden file for $testName');
   } else {
     // Create new golden file
     await goldenFile.writeAsString(jsonString);
     print('Created new golden file: ${goldenFile.path}');
   }
-  
+
   // Validate with AJV that the schema is valid JSON Schema Draft-7
   final tempFile = File('${Directory.systemTemp.path}/$testName.json');
   await tempFile.writeAsString(jsonString);
-  
+
   final result = await _runSchemaValidation(tempFile.path);
-  expect(result['valid'], isTrue, 
-    reason: 'Golden file schema $testName should be valid JSON Schema Draft-7. Errors: ${result['errors']}');
-  
+  expect(result['valid'], isTrue,
+      reason:
+          'Golden file schema $testName should be valid JSON Schema Draft-7. Errors: ${result['errors']}');
+
   // Clean up temp file
   if (await tempFile.exists()) {
     await tempFile.delete();
@@ -289,7 +331,8 @@ Future<void> _ensureNodeDependencies() async {
   final packageJsonFile = File(path.join(toolsDir, 'package.json'));
 
   if (!await packageJsonFile.exists()) {
-    throw Exception('tools/package.json not found. Please ensure the tools directory is set up.');
+    throw Exception(
+        'tools/package.json not found. Please ensure the tools directory is set up.');
   }
 
   final nodeModulesDir = Directory(path.join(toolsDir, 'node_modules'));
@@ -302,7 +345,8 @@ Future<void> _ensureNodeDependencies() async {
     );
 
     if (result.exitCode != 0) {
-      throw Exception('Failed to install Node.js dependencies: ${result.stderr}');
+      throw Exception(
+          'Failed to install Node.js dependencies: ${result.stderr}');
     }
   }
 }
