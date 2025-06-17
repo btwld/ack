@@ -232,7 +232,7 @@ void _validateComprehensiveFeatures(
 Future<Map<String, dynamic>> _runBatchSchemaValidation(
     String configPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
   final outputFile =
       path.join(Directory.systemTemp.path, 'golden-validation-results.json');
 

@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
-  group('AJV JSON Schema Draft-7 Validation Tests', () {
+  group('JSON Schema Draft-7 Validation Tests', () {
     late Directory tempDir;
 
     setUpAll(() async {
@@ -16,7 +16,7 @@ void main() {
 
     setUp(() async {
       // Create temporary directory for test files
-      tempDir = await Directory.systemTemp.createTemp('ack_ajv_test_');
+      tempDir = await Directory.systemTemp.createTemp('ack_jsonschema_test_');
     });
 
     tearDown(() async {
@@ -197,10 +197,11 @@ Future<void> _ensureNodeDependencies() async {
   }
 }
 
-/// Run AJV schema validation for a single JSON schema specification
+/// Run JSON Schema validation for a single JSON schema specification
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript =
+      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',
@@ -209,7 +210,7 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   );
 
   if (result.exitCode != 0) {
-    throw Exception('AJV schema validation failed: ${result.stderr}');
+    throw Exception('JSON Schema validation failed: ${result.stderr}');
   }
 
   // Parse the validation result from stdout
@@ -226,9 +227,10 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
 Future<Map<String, dynamic>> _runBatchSchemaValidation(
     String configPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript =
+      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
   final outputFile =
-      path.join(Directory.systemTemp.path, 'ajv-schema-batch-results.json');
+      path.join(Directory.systemTemp.path, 'jsonschema-batch-results.json');
 
   final result = await Process.run(
     'node',
@@ -244,7 +246,7 @@ Future<Map<String, dynamic>> _runBatchSchemaValidation(
   );
 
   if (result.exitCode != 0) {
-    throw Exception('AJV batch schema validation failed: ${result.stderr}');
+    throw Exception('JSON Schema batch validation failed: ${result.stderr}');
   }
 
   final resultsContent = await File(outputFile).readAsString();

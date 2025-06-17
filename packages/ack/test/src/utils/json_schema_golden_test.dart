@@ -263,7 +263,7 @@ void main() {
   });
 }
 
-/// Validate schema against golden file and AJV
+/// Validate schema against golden file and JSON Schema validator
 Future<void> _validateGoldenFile(ObjectSchema schema, String testName) async {
   // Generate JSON schema
   final jsonSchema = JsonSchemaConverter(schema: schema).toSchema();
@@ -284,7 +284,7 @@ Future<void> _validateGoldenFile(ObjectSchema schema, String testName) async {
     print('Created new golden file: ${goldenFile.path}');
   }
 
-  // Validate with AJV that the schema is valid JSON Schema Draft-7
+  // Validate with JSON Schema validator that the schema is valid JSON Schema Draft-7
   final tempFile = File('${Directory.systemTemp.path}/$testName.json');
   await tempFile.writeAsString(jsonString);
 
@@ -299,10 +299,11 @@ Future<void> _validateGoldenFile(ObjectSchema schema, String testName) async {
   }
 }
 
-/// Run AJV schema validation for a single JSON schema specification
+/// Run JSON Schema validation for a single JSON schema specification
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript =
+      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',
@@ -311,7 +312,7 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   );
 
   if (result.exitCode != 0) {
-    throw Exception('AJV schema validation failed: ${result.stderr}');
+    throw Exception('JSON Schema validation failed: ${result.stderr}');
   }
 
   // Parse the validation result from stdout

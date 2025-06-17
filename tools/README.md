@@ -1,6 +1,6 @@
 # Ack JSON Schema Draft-7 Validation Tools
 
-This directory contains tools for validating that Ack-generated JSON schemas conform to JSON Schema Draft-7 specifications using AJV (Another JSON Schema Validator).
+This directory contains tools for validating that Ack-generated JSON schemas conform to JSON Schema Draft-7 specifications using industry-standard JSON Schema validation.
 
 ## Setup
 
@@ -11,9 +11,9 @@ cd tools
 npm install
 ```
 
-## AJV Schema Validator
+## JSON Schema Validator
 
-The `ajv-validator.js` script validates that Ack-generated JSON schemas are valid JSON Schema Draft-7 specifications using AJV's meta-schema validation.
+The `jsonschema-validator.js` script validates that Ack-generated JSON schemas are valid JSON Schema Draft-7 specifications using industry-standard JSON Schema validation.
 
 ### Usage
 
@@ -22,7 +22,7 @@ The `ajv-validator.js` script validates that Ack-generated JSON schemas are vali
 Validate a single JSON schema specification:
 
 ```bash
-node ajv-validator.js validate-schema --schema schema.json --output results.json
+node jsonschema-validator.js validate-schema --schema schema.json --output results.json
 ```
 
 #### Batch Schema Validation
@@ -30,7 +30,7 @@ node ajv-validator.js validate-schema --schema schema.json --output results.json
 Run multiple schema validation tests from a configuration file:
 
 ```bash
-node ajv-validator.js validate-batch --input batch-config.json --output results.json
+node jsonschema-validator.js validate-batch --input batch-config.json --output results.json
 ```
 
 #### Legacy Mode
@@ -38,7 +38,7 @@ node ajv-validator.js validate-batch --input batch-config.json --output results.
 For backward compatibility:
 
 ```bash
-node ajv-validator.js schema.json [output.json]
+node jsonschema-validator.js schema.json [output.json]
 ```
 
 ### Test Fixtures
@@ -52,12 +52,12 @@ The `test-fixtures/` directory contains:
 
 ### Integration with Dart Tests
 
-The validator can be called from Dart tests to create golden file tests that ensure Ack's validation behavior matches AJV's behavior.
+The validator can be called from Dart tests to create golden file tests that ensure Ack's validation behavior matches JSON Schema validation standards.
 
 Example Dart test:
 
 ```dart
-test('AJV compatibility for user schema', () async {
+test('JSON Schema compatibility for user schema', () async {
   // Generate JSON schema from Ack schema
   final ackSchema = Ack.object({
     'name': Ack.string.minLength(2),
@@ -70,19 +70,19 @@ test('AJV compatibility for user schema', () async {
   final schemaFile = File('temp/user-schema.json');
   await schemaFile.writeAsString(jsonEncode(jsonSchema));
   
-  // Run AJV validation
+  // Run JSON Schema validation
   final result = await Process.run('node', [
-    'tools/ajv-validator.js',
+    'tools/jsonschema-validator.js',
     'batch',
     '--input', 'tools/test-fixtures/batch-config.json',
-    '--output', 'temp/ajv-results.json'
+    '--output', 'temp/jsonschema-results.json'
   ]);
-  
+
   expect(result.exitCode, equals(0));
-  
+
   // Compare with golden file
-  final results = jsonDecode(await File('temp/ajv-results.json').readAsString());
-  await expectLater(results, matchesGoldenFile('ajv-validation-results.golden'));
+  final results = jsonDecode(await File('temp/jsonschema-results.json').readAsString());
+  await expectLater(results, matchesGoldenFile('jsonschema-validation-results.golden'));
 });
 ```
 
@@ -142,4 +142,4 @@ The validator outputs structured JSON results:
 
 ## Integration with Melos
 
-The validator can be integrated into the Melos workflow for automated testing. See the main project's `melos.yaml` for the `validate-json-schema` script.
+The validator can be integrated into the Melos workflow for automated testing. See the main project's `melos.yaml` for the `validate-jsonschema` script.

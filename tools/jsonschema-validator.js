@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * AJV JSON Schema Draft-7 Validator for Ack
+ * JSON Schema Draft-7 Validator for Ack
  *
  * This script validates that Ack-generated JSON schemas are valid JSON Schema Draft-7
- * specifications using AJV's meta-schema validation.
+ * specifications using industry-standard JSON Schema validation.
  *
  * Usage:
- *   node tools/ajv-validator.js validate-schema --schema schema.json [--output results.json]
- *   node tools/ajv-validator.js validate-batch --input batch-config.json [--output results.json]
+ *   node tools/jsonschema-validator.js validate-schema --schema schema.json [--output results.json]
+ *   node tools/jsonschema-validator.js validate-batch --input batch-config.json [--output results.json]
  *
  * Batch config format:
  * {
@@ -33,7 +33,7 @@ const fs = require("fs");
 const path = require("path");
 const { program } = require("commander");
 
-// Configure AJV with JSON Schema Draft 7 support
+// Configure JSON Schema validator with Draft 7 support
 const ajv = new Ajv({
   strict: false,
   allErrors: true,
@@ -204,10 +204,8 @@ function runBatchSchemaValidation(configPath, outputPath) {
 
 // CLI setup
 program
-  .name("ajv-validator")
-  .description(
-    "Validate Ack-generated JSON Schema Draft-7 specifications using AJV"
-  )
+  .name("jsonschema-validator")
+  .description("Validate Ack-generated JSON Schema Draft-7 specifications")
   .version("1.0.0");
 
 program
@@ -258,12 +256,12 @@ if (
     "-V",
   ].includes(process.argv[2])
 ) {
-  // Legacy mode: node ajv-validator.js schema.json [output.json]
+  // Legacy mode: node jsonschema-validator.js schema.json [output.json]
   const [, , schemaPath, outputPath] = process.argv;
 
   if (!schemaPath) {
     console.error(
-      "❌ Usage: node ajv-validator.js <schema.json> [output.json]"
+      "❌ Usage: node jsonschema-validator.js <schema.json> [output.json]"
     );
     process.exit(1);
   }

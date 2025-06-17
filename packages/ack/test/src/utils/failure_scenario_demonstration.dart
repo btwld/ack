@@ -297,10 +297,10 @@ void main() {
   });
 }
 
-/// Run AJV schema validation with error handling
+/// Run JSON Schema validation with error handling
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',

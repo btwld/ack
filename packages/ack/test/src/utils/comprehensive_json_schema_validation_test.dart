@@ -435,7 +435,7 @@ Future<void> _validateSchemaGeneration(
   final schemaFile = File(path.join(tempDir.path, '$testName.json'));
   await schemaFile.writeAsString(jsonEncode(jsonSchema));
 
-  // Validate using AJV
+  // Validate using JSON Schema validator
   final result = await _runSchemaValidation(schemaFile.path);
 
   expect(result['valid'], isTrue,
@@ -445,10 +445,11 @@ Future<void> _validateSchemaGeneration(
   expect(result['validationType'], equals('compilation'));
 }
 
-/// Run AJV schema validation for a single JSON schema specification
+/// Run JSON Schema validation for a single JSON schema specification
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript =
+      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',
@@ -457,7 +458,7 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   );
 
   if (result.exitCode != 0) {
-    throw Exception('AJV schema validation failed: ${result.stderr}');
+    throw Exception('JSON Schema validation failed: ${result.stderr}');
   }
 
   // Parse the validation result from stdout

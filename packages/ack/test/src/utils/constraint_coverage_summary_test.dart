@@ -350,10 +350,10 @@ Map<String, int> _analyzeConstraintCoverage(Map<String, dynamic> jsonSchema) {
   return coverage;
 }
 
-/// Run AJV schema validation
+/// Run JSON Schema validation
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',

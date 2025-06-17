@@ -770,10 +770,10 @@ Map<String, dynamic> _getProperty(
   return properties[propertyName] as Map<String, dynamic>;
 }
 
-/// Run AJV schema validation
+/// Run JSON Schema validation
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'ajv-validator.js');
+  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',
@@ -782,7 +782,7 @@ Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   );
 
   if (result.exitCode != 0) {
-    throw Exception('AJV schema validation failed: ${result.stderr}');
+    throw Exception('JSON Schema validation failed: ${result.stderr}');
   }
 
   final lines = result.stdout.toString().split('\n');

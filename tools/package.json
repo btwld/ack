@@ -1,19 +1,19 @@
 {
   "name": "ack-json-schema-validator",
   "version": "1.0.0",
-  "description": "AJV-based JSON Schema validator for Ack library compatibility testing",
-  "main": "ajv-validator.js",
+  "description": "JSON Schema validator for Ack library compatibility testing",
+  "main": "jsonschema-validator.js",
   "bin": {
-    "ajv-validator": "./ajv-validator.js"
+    "jsonschema-validator": "./jsonschema-validator.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "validate": "node ajv-validator.js",
+    "validate": "node jsonschema-validator.js",
     "install-deps": "npm install"
   },
   "keywords": [
     "json-schema",
-    "ajv",
+    "jsonschema",
     "validation",
     "ack",
     "testing"
