@@ -111,9 +111,14 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`maxLength(n)`](../core-concepts/validation.mdx#maxlengthint-max)           | `maxLength: n`           | String                                 |
 | [`pattern(p)`](../core-concepts/validation.mdx#patternstring-pattern--string-patternname-string-example)             | `pattern: p`             | String                                 |
 | [`email()`](../core-concepts/validation.mdx#email)              | `format: email`          | String                                 |
-| [`isUrl()`](../core-concepts/validation.mdx#isurl)                | `format: url`            | String (Note: format is informational) |
 | [`date()`](../core-concepts/validation.mdx#date)               | `format: date`           | String                                 |
 | [`dateTime()`](../core-concepts/validation.mdx#datetime)           | `format: date-time`      | String                                 |
+| [`time()`](../core-concepts/validation.mdx#time)               | `format: time`           | String                                 |
+| [`uri()`](../core-concepts/validation.mdx#uri)                | `format: uri`            | String                                 |
+| [`uuid()`](../core-concepts/validation.mdx#uuid)               | `format: uuid`           | String                                 |
+| [`ipv4()`](../core-concepts/validation.mdx#ipv4)               | `format: ipv4`           | String                                 |
+| [`ipv6()`](../core-concepts/validation.mdx#ipv6)               | `format: ipv6`           | String                                 |
+| [`hostname()`](../core-concepts/validation.mdx#hostname)           | `format: hostname`       | String                                 |
 | [`enumValues([...])`](../core-concepts/validation.mdx#enumvalues)          | `enum: [...]`            | String                                 |
 | [`min(n)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false)                 | `minimum: n`             | Number (Int/Double)                    |
 | [`max(n)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false)                 | `maximum: n`             | Number (Int/Double)                    |
@@ -136,7 +141,6 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 **Limitations:**
 
 -   **Custom Constraints:** [`SchemaConstraint`](./custom-validation.mdx) instances added via `.constrain()` are **not** translated to JSON Schema as there's no standard way to represent arbitrary logic.
--   **Complex Formats:** Some specific formats (like UUID, achieved via `pattern`) don't have direct JSON Schema `format` equivalents and are translated based on their base type (`type: string`). You might add a `description` or use vendor extensions in your schema definition manually if needed.
 -   **`additionalProperties`:** The translation of `additionalProperties` might need review depending on the exact JSON Schema behavior desired (e.g., `additionalProperties: true` vs `additionalProperties: {}` vs `additionalProperties: <Schema>`).
 
 ## Integrating into API Documentation
