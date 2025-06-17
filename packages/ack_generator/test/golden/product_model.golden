@@ -11,8 +11,12 @@ part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
-class ProductSchema extends BaseSchema {
-  ProductSchema([Object? super.value = null]);
+class ProductSchema extends BaseSchema<ProductSchema> {
+  /// Default constructor for parser instances
+  const ProductSchema();
+
+  /// Private constructor for validated instances
+  const ProductSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -27,17 +31,30 @@ class ProductSchema extends BaseSchema {
     additionalProperties: true,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  ProductSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return ProductSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ProductSchema>(
-      (data) => ProductSchema(data),
+      (data) => const ProductSchema().parse(data),
     );
     // Register schema dependencies
     CategorySchema.ensureInitialize();
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get id => getValue<String>('id')!;
 
@@ -50,7 +67,8 @@ class ProductSchema extends BaseSchema {
   String? get imageUrl => getValue<String>('imageUrl');
 
   CategorySchema get category {
-    return CategorySchema(getValue<Map<String, Object?>>('category')!);
+    return const CategorySchema()
+        .parse(getValue<Map<String, Object?>>('category')!);
   }
 
   Map<String, Object?> get metadata {
@@ -74,8 +92,12 @@ class ProductSchema extends BaseSchema {
 
 /// Generated schema for Category
 /// A category for organizing products
-class CategorySchema extends BaseSchema {
-  CategorySchema([Object? super.value = null]);
+class CategorySchema extends BaseSchema<CategorySchema> {
+  /// Default constructor for parser instances
+  const CategorySchema();
+
+  /// Private constructor for validated instances
+  const CategorySchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -87,15 +109,28 @@ class CategorySchema extends BaseSchema {
     additionalProperties: true,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  CategorySchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return CategorySchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<CategorySchema>(
-      (data) => CategorySchema(data),
+      (data) => const CategorySchema().parse(data),
     );
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get id => getValue<String>('id')!;
 

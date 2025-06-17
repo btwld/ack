@@ -11,8 +11,12 @@ part of 'user_model.dart';
 
 /// Generated schema for User
 /// A user model with validation
-class UserSchema extends BaseSchema {
-  UserSchema([Object? super.value = null]);
+class UserSchema extends BaseSchema<UserSchema> {
+  /// Default constructor for parser instances
+  const UserSchema();
+
+  /// Private constructor for validated instances
+  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -26,17 +30,30 @@ class UserSchema extends BaseSchema {
     additionalProperties: true,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  UserSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return UserSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<UserSchema>(
-      (data) => UserSchema(data),
+      (data) => const UserSchema().parse(data),
     );
     // Register schema dependencies
     AddressSchema.ensureInitialize();
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get email => getValue<String>('email')!;
 
@@ -47,7 +64,8 @@ class UserSchema extends BaseSchema {
   String? get password => getValue<String>('password');
 
   AddressSchema get address {
-    return AddressSchema(getValue<Map<String, Object?>>('address')!);
+    return const AddressSchema()
+        .parse(getValue<Map<String, Object?>>('address')!);
   }
 
   Map<String, Object?> get metadata {
@@ -63,8 +81,12 @@ class UserSchema extends BaseSchema {
 }
 
 /// Generated schema for Address
-class AddressSchema extends BaseSchema {
-  AddressSchema([Object? super.value = null]);
+class AddressSchema extends BaseSchema<AddressSchema> {
+  /// Default constructor for parser instances
+  const AddressSchema();
+
+  /// Private constructor for validated instances
+  const AddressSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = Ack.object(
     {
@@ -76,15 +98,28 @@ class AddressSchema extends BaseSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  AddressSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return AddressSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<AddressSchema>(
-      (data) => AddressSchema(data),
+      (data) => const AddressSchema().parse(data),
     );
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get street => getValue<String>('street')!;
 

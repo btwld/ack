@@ -1,0 +1,13 @@
+# Configuration for dart test runner
+tags:
+  golden:
+    skip: false
+    
+# Set timeout for code generation tests
+timeout: 2m
+
+# Use expanded reporter for better error visibility
+reporter: expanded
+
+# Run tests on VM only (not browser)
+test_on: "vm"

@@ -1,4 +1,6 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/core/comparison_constraint.dart';
+import 'package:ack/src/constraints/core/pattern_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -11,14 +13,14 @@ void main() {
     });
 
     test('copyWith changes validators', () {
-      final schema = StringSchema(constraints: [StringMaxLengthConstraint(5)]);
+      final schema = StringSchema(constraints: [ComparisonConstraint.stringMaxLength(5)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<StringMaxLengthConstraint>());
+      expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
       final newSchema =
-          schema.copyWith(constraints: [StringMinLengthConstraint(10)]);
+          schema.copyWith(constraints: [ComparisonConstraint.stringMinLength(10)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<StringMinLengthConstraint>());
+      expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });
 
     group('StringSchema Basic Validation', () {
@@ -68,7 +70,7 @@ void main() {
     });
 
     group('EmailValidator', () {
-      final validator = StringEmailConstraint();
+      final validator = PatternConstraint.email();
 
       test('Valid emails pass validation', () {
         expect(validator.isValid('test@example.com'), isTrue);
@@ -95,14 +97,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringEmailConstraint>(),
+          constraintsError.getConstraint<PatternConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('HexColorValidator', () {
-      final validator = StringHexColorValidator();
+      final validator = PatternConstraint.hexColor();
 
       test('Valid hex colors pass validation', () {
         expect(validator.isValid('#fff'), isTrue);
@@ -130,14 +132,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringHexColorValidator>(),
+          constraintsError.getConstraint<PatternConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('IsEmptyValidator', () {
-      final validator = StringEmptyConstraint();
+      final validator = ComparisonConstraint.stringExactLength(0);
 
       test('Empty string passes validation', () {
         expect(validator.isValid(''), isTrue);
@@ -159,14 +161,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringEmptyConstraint>(),
+          constraintsError.getConstraint<ComparisonConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('MinLengthValidator', () {
-      final validator = StringMinLengthConstraint(3);
+      final validator = ComparisonConstraint.stringMinLength(3);
 
       test('String longer than min length passes validation', () {
         expect(validator.isValid('abcd'), isTrue);
@@ -192,14 +194,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringMinLengthConstraint>(),
+          constraintsError.getConstraint<ComparisonConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('MaxLengthValidator', () {
-      final validator = StringMaxLengthConstraint(3);
+      final validator = ComparisonConstraint.stringMaxLength(3);
 
       test('String shorter than max length passes validation', () {
         expect(validator.isValid('ab'), isTrue);
@@ -225,14 +227,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringMaxLengthConstraint>(),
+          constraintsError.getConstraint<ComparisonConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('NotOneOfValidator', () {
-      final validator = StringNotOneOfValidator(['red', 'green', 'blue']);
+      final validator = PatternConstraint.notEnumValues(['red', 'green', 'blue']);
 
       test('Value not in disallowed list passes validation', () {
         expect(validator.isValid('yellow'), isTrue);
@@ -256,14 +258,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringNotOneOfValidator>(),
+          constraintsError.getConstraint<PatternConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('NotEmptyValidator', () {
-      final validator = StringNotEmptyValidator();
+      final validator = ComparisonConstraint.stringMinLength(1);
 
       test('Non-empty string passes validation', () {
         expect(validator.isValid('not empty'), isTrue);
@@ -285,14 +287,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringNotEmptyValidator>(),
+          constraintsError.getConstraint<ComparisonConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('DateTimeValidator', () {
-      final validator = StringDateTimeConstraint();
+      final validator = PatternConstraint.dateTime();
 
       test('Valid ISO 8601 datetime passes validation', () {
         expect(validator.isValid('2023-01-01T00:00:00.000Z'), isTrue);
@@ -316,14 +318,14 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringDateTimeConstraint>(),
+          constraintsError.getConstraint<PatternConstraint>(),
           isNotNull,
         );
       });
     });
 
     group('DateValidator', () {
-      final validator = StringDateConstraint();
+      final validator = PatternConstraint.date();
 
       test('Valid date string passes validation', () {
         expect(validator.isValid('2023-01-01'), isTrue);
@@ -348,7 +350,7 @@ void main() {
 
         final constraintsError = error as SchemaConstraintsError;
         expect(
-          constraintsError.getConstraint<StringDateConstraint>(),
+          constraintsError.getConstraint<PatternConstraint>(),
           isNotNull,
         );
       });
@@ -356,7 +358,7 @@ void main() {
 
     group('EnumValidator', () {
       final validator =
-          StringEnumConstraint(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+          PatternConstraint.enumValues(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 
       test('Valid enum value passes validation', () {
         expect(validator.isValid('DRAFT'), isTrue);

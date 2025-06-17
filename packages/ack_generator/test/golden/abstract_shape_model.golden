@@ -11,8 +11,12 @@ part of 'abstract_shape_model.dart';
 
 /// Generated base schema for Shape with inheritance support
 /// A shape that can be a circle, rectangle, or triangle
-class ShapeSchema extends BaseSchema {
-  ShapeSchema([Object? super.value = null]);
+class ShapeSchema extends BaseSchema<ShapeSchema> {
+  /// Default constructor for parser instances
+  const ShapeSchema();
+
+  /// Private constructor for validated instances
+  const ShapeSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final DiscriminatedObjectSchema schema = Ack.discriminated(
     discriminatorKey: 'type',
@@ -33,10 +37,23 @@ class ShapeSchema extends BaseSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  ShapeSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return ShapeSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ShapeSchema>(
-      (data) => ShapeSchema(data),
+      (data) => const ShapeSchema().parse(data),
     );
     CircleSchema.ensureInitialize();
     RectangleSchema.ensureInitialize();
@@ -44,7 +61,7 @@ class ShapeSchema extends BaseSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get type => getValue<String>('type')!;
 
@@ -58,9 +75,9 @@ class ShapeSchema extends BaseSchema {
     required R Function(TriangleSchema) triangle,
   }) =>
       switch (type) {
-        'circle' => circle(CircleSchema(toMap())),
-        'rectangle' => rectangle(RectangleSchema(toMap())),
-        'triangle' => triangle(TriangleSchema(toMap())),
+        'circle' => circle(const CircleSchema().parse(toMap())),
+        'rectangle' => rectangle(const RectangleSchema().parse(toMap())),
+        'triangle' => triangle(const TriangleSchema().parse(toMap())),
         _ => throw StateError('Unknown shape type: $type'),
       };
 
@@ -71,9 +88,12 @@ class ShapeSchema extends BaseSchema {
     required R Function() orElse,
   }) =>
       switch (type) {
-        'circle' => circle?.call(CircleSchema(toMap())) ?? orElse(),
-        'rectangle' => rectangle?.call(RectangleSchema(toMap())) ?? orElse(),
-        'triangle' => triangle?.call(TriangleSchema(toMap())) ?? orElse(),
+        'circle' =>
+          circle?.call(const CircleSchema().parse(toMap())) ?? orElse(),
+        'rectangle' =>
+          rectangle?.call(const RectangleSchema().parse(toMap())) ?? orElse(),
+        'triangle' =>
+          triangle?.call(const TriangleSchema().parse(toMap())) ?? orElse(),
         _ => orElse(),
       };
 
@@ -85,13 +105,30 @@ class ShapeSchema extends BaseSchema {
 /// Generated schema for Circle extending ShapeSchema
 /// A circular shape with radius
 class CircleSchema extends ShapeSchema {
-  CircleSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const CircleSchema();
+
+  /// Private constructor for validated instances
+  const CircleSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
     {'radius': Ack.double},
     required: ['radius'],
     additionalProperties: false,
   );
+
+  /// Parse with validation - core implementation
+  @override
+  CircleSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return CircleSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -101,7 +138,7 @@ class CircleSchema extends ShapeSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   double get radius => getValue<double>('radius')!;
 
@@ -113,13 +150,30 @@ class CircleSchema extends ShapeSchema {
 /// Generated schema for Rectangle extending ShapeSchema
 /// A rectangular shape with width and height
 class RectangleSchema extends ShapeSchema {
-  RectangleSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const RectangleSchema();
+
+  /// Private constructor for validated instances
+  const RectangleSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
     {'width': Ack.double, 'height': Ack.double},
     required: ['width', 'height'],
     additionalProperties: false,
   );
+
+  /// Parse with validation - core implementation
+  @override
+  RectangleSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return RectangleSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -129,7 +183,7 @@ class RectangleSchema extends ShapeSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   double get width => getValue<double>('width')!;
 
@@ -143,13 +197,30 @@ class RectangleSchema extends ShapeSchema {
 /// Generated schema for Triangle extending ShapeSchema
 /// A triangular shape with three sides
 class TriangleSchema extends ShapeSchema {
-  TriangleSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const TriangleSchema();
+
+  /// Private constructor for validated instances
+  const TriangleSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   static final ObjectSchema schema = ShapeSchema.baseSchema.extend(
     {'sideA': Ack.double, 'sideB': Ack.double, 'sideC': Ack.double},
     required: ['sideA', 'sideB', 'sideC'],
     additionalProperties: false,
   );
+
+  /// Parse with validation - core implementation
+  @override
+  TriangleSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return TriangleSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
@@ -159,7 +230,7 @@ class TriangleSchema extends ShapeSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   double get sideA => getValue<double>('sideA')!;
 

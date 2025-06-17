@@ -11,8 +11,13 @@ part of 'payment_method_model.dart';
 
 /// Generated base schema for PaymentMethod with inheritance support
 /// A payment method that can be credit card, bank transfer, or digital wallet
-class PaymentMethodSchema extends BaseSchema {
-  PaymentMethodSchema([Object? super.value = null]);
+class PaymentMethodSchema extends BaseSchema<PaymentMethodSchema> {
+  /// Default constructor for parser instances
+  const PaymentMethodSchema();
+
+  /// Private constructor for validated instances
+  const PaymentMethodSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
 
   static final DiscriminatedObjectSchema schema = Ack.discriminated(
     discriminatorKey: 'type',
@@ -33,10 +38,23 @@ class PaymentMethodSchema extends BaseSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  PaymentMethodSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return PaymentMethodSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<PaymentMethodSchema>(
-      (data) => PaymentMethodSchema(data),
+      (data) => const PaymentMethodSchema().parse(data),
     );
     CreditCardPaymentSchema.ensureInitialize();
     BankTransferPaymentSchema.ensureInitialize();
@@ -44,7 +62,7 @@ class PaymentMethodSchema extends BaseSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get type => getValue<String>('type')!;
 
@@ -58,9 +76,12 @@ class PaymentMethodSchema extends BaseSchema {
     required R Function(DigitalWalletPaymentSchema) digitalWallet,
   }) =>
       switch (type) {
-        'credit_card' => creditCard(CreditCardPaymentSchema(toMap())),
-        'bank_transfer' => bankTransfer(BankTransferPaymentSchema(toMap())),
-        'digital_wallet' => digitalWallet(DigitalWalletPaymentSchema(toMap())),
+        'credit_card' =>
+          creditCard(const CreditCardPaymentSchema().parse(toMap())),
+        'bank_transfer' =>
+          bankTransfer(const BankTransferPaymentSchema().parse(toMap())),
+        'digital_wallet' =>
+          digitalWallet(const DigitalWalletPaymentSchema().parse(toMap())),
         _ => throw StateError('Unknown paymentmethod type: $type'),
       };
 
@@ -72,11 +93,14 @@ class PaymentMethodSchema extends BaseSchema {
   }) =>
       switch (type) {
         'credit_card' =>
-          creditCard?.call(CreditCardPaymentSchema(toMap())) ?? orElse(),
-        'bank_transfer' =>
-          bankTransfer?.call(BankTransferPaymentSchema(toMap())) ?? orElse(),
-        'digital_wallet' =>
-          digitalWallet?.call(DigitalWalletPaymentSchema(toMap())) ?? orElse(),
+          creditCard?.call(const CreditCardPaymentSchema().parse(toMap())) ??
+              orElse(),
+        'bank_transfer' => bankTransfer
+                ?.call(const BankTransferPaymentSchema().parse(toMap())) ??
+            orElse(),
+        'digital_wallet' => digitalWallet
+                ?.call(const DigitalWalletPaymentSchema().parse(toMap())) ??
+            orElse(),
         _ => orElse(),
       };
 
@@ -88,7 +112,12 @@ class PaymentMethodSchema extends BaseSchema {
 /// Generated schema for CreditCardPayment extending PaymentMethodSchema
 /// Credit card payment with card details
 class CreditCardPaymentSchema extends PaymentMethodSchema {
-  CreditCardPaymentSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const CreditCardPaymentSchema();
+
+  /// Private constructor for validated instances
+  const CreditCardPaymentSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
 
   static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
     {
@@ -101,6 +130,19 @@ class CreditCardPaymentSchema extends PaymentMethodSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  CreditCardPaymentSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return CreditCardPaymentSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<CreditCardPaymentSchema>(
@@ -109,7 +151,7 @@ class CreditCardPaymentSchema extends PaymentMethodSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get cardNumber => getValue<String>('cardNumber')!;
 
@@ -127,7 +169,12 @@ class CreditCardPaymentSchema extends PaymentMethodSchema {
 /// Generated schema for BankTransferPayment extending PaymentMethodSchema
 /// Bank transfer payment with account details
 class BankTransferPaymentSchema extends PaymentMethodSchema {
-  BankTransferPaymentSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const BankTransferPaymentSchema();
+
+  /// Private constructor for validated instances
+  const BankTransferPaymentSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
 
   static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
     {
@@ -145,6 +192,19 @@ class BankTransferPaymentSchema extends PaymentMethodSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  BankTransferPaymentSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return BankTransferPaymentSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<BankTransferPaymentSchema>(
@@ -153,7 +213,7 @@ class BankTransferPaymentSchema extends PaymentMethodSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get accountNumber => getValue<String>('accountNumber')!;
 
@@ -171,7 +231,12 @@ class BankTransferPaymentSchema extends PaymentMethodSchema {
 /// Generated schema for DigitalWalletPayment extending PaymentMethodSchema
 /// Digital wallet payment like PayPal, Apple Pay, etc.
 class DigitalWalletPaymentSchema extends PaymentMethodSchema {
-  DigitalWalletPaymentSchema([Object? super.value = null]);
+  /// Default constructor for parser instances
+  const DigitalWalletPaymentSchema();
+
+  /// Private constructor for validated instances
+  const DigitalWalletPaymentSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
 
   static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
     {
@@ -183,6 +248,19 @@ class DigitalWalletPaymentSchema extends PaymentMethodSchema {
     additionalProperties: false,
   );
 
+  /// Parse with validation - core implementation
+  @override
+  DigitalWalletPaymentSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return DigitalWalletPaymentSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<DigitalWalletPaymentSchema>(
@@ -191,7 +269,7 @@ class DigitalWalletPaymentSchema extends PaymentMethodSchema {
   }
 
   @override
-  AckSchema getSchema() => schema;
+  ObjectSchema get definition => schema;
 
   String get provider => getValue<String>('provider')!;
 

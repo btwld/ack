@@ -1,0 +1,198 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'large_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated schema for LargeModel
+/// Large model with many properties for performance testing
+class LargeModelSchema extends BaseSchema<LargeModelSchema> {
+  /// Default constructor for parser instances
+  const LargeModelSchema();
+
+  /// Private constructor for validated instances
+  const LargeModelSchema._valid(Map<String, Object?> data) : super.valid(data);
+
+  static final ObjectSchema schema = Ack.object(
+    {
+      'field1': Ack.string.notEmpty(),
+      'field2': Ack.string.email(),
+      'field3': Ack.string.minLength(5),
+      'field4': Ack.string.notEmpty(),
+      'field5': Ack.string.minLength(3),
+      'field6': Ack.int,
+      'field7': Ack.double,
+      'field8': Ack.int,
+      'field9': Ack.double,
+      'field10': Ack.int,
+      'field11': Ack.boolean,
+      'field12': Ack.boolean,
+      'field13': Ack.boolean,
+      'field14': DateTimeSchema.schema,
+      'field15': DateTimeSchema.schema,
+      'field16': Ack.string.nullable(),
+      'field17': Ack.string.nullable(),
+      'field18': Ack.int.nullable(),
+      'field19': Ack.boolean.nullable(),
+      'field20': DateTimeSchema.schema.nullable(),
+      'field21': Ack.list(Ack.string),
+      'field22': Ack.list(Ack.int),
+      'field23': Ack.object({}, additionalProperties: true),
+      'field24': Ack.list(Ack.boolean),
+    },
+    required: [
+      'field1',
+      'field2',
+      'field3',
+      'field4',
+      'field5',
+      'field6',
+      'field7',
+      'field8',
+      'field9',
+      'field10',
+      'field11',
+      'field12',
+      'field13',
+      'field14',
+      'field15',
+      'field17',
+      'field19',
+      'field21',
+      'field22',
+      'field23',
+      'field24'
+    ],
+    additionalProperties: true,
+  );
+
+  /// Parse with validation - core implementation
+  @override
+  LargeModelSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return LargeModelSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<LargeModelSchema>(
+      (data) => const LargeModelSchema().parse(data),
+    );
+    // Register schema dependencies
+    DateTimeSchema.ensureInitialize();
+  }
+
+  @override
+  ObjectSchema get definition => schema;
+
+  String get field1 => getValue<String>('field1')!;
+
+  String get field2 => getValue<String>('field2')!;
+
+  String get field3 => getValue<String>('field3')!;
+
+  String get field4 => getValue<String>('field4')!;
+
+  String get field5 => getValue<String>('field5')!;
+
+  int get field6 => getValue<int>('field6')!;
+
+  double get field7 => getValue<double>('field7')!;
+
+  int get field8 => getValue<int>('field8')!;
+
+  double get field9 => getValue<double>('field9')!;
+
+  int get field10 => getValue<int>('field10')!;
+
+  bool get field11 => getValue<bool>('field11')!;
+
+  bool get field12 => getValue<bool>('field12')!;
+
+  bool get field13 => getValue<bool>('field13')!;
+
+  DateTimeSchema get field14 {
+    return const DateTimeSchema()
+        .parse(getValue<Map<String, Object?>>('field14')!);
+  }
+
+  DateTimeSchema get field15 {
+    return const DateTimeSchema()
+        .parse(getValue<Map<String, Object?>>('field15')!);
+  }
+
+  String? get field16 => getValue<String>('field16');
+
+  String? get field17 => getValue<String>('field17');
+
+  int? get field18 => getValue<int>('field18');
+
+  bool? get field19 => getValue<bool>('field19');
+
+  DateTimeSchema? get field20 {
+    final data = getValue<Map<String, Object?>>('field20');
+    return data != null ? const DateTimeSchema().parse(data) : null;
+  }
+
+  List<String> get field21 {
+    return getValue<List>('field21')!.cast<String>();
+  }
+
+  List<int> get field22 {
+    return getValue<List>('field22')!.cast<int>();
+  }
+
+  Map<String, dynamic> get field23 =>
+      getValue<Map<String, Object?>>('field23')!;
+
+  List<bool> get field24 {
+    return getValue<List>('field24')!.cast<bool>();
+  }
+
+  Map<String, Object?> get extraData {
+    final map = toMap();
+    final knownFields = {
+      'field1',
+      'field2',
+      'field3',
+      'field4',
+      'field5',
+      'field6',
+      'field7',
+      'field8',
+      'field9',
+      'field10',
+      'field11',
+      'field12',
+      'field13',
+      'field14',
+      'field15',
+      'field16',
+      'field17',
+      'field18',
+      'field19',
+      'field20',
+      'field21',
+      'field22',
+      'field23',
+      'field24'
+    };
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
+  }
+
+  /// Convert the schema to a JSON Schema
+  static Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: schema).toSchema();
+}

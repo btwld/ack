@@ -3,57 +3,61 @@ import 'dart:convert';
 
 import 'package:ack/src/schemas/schema.dart';
 import 'package:ack/src/validation/schema_error.dart';
-import 'package:ack/src/validation/schema_result.dart';
 import 'package:meta/meta.dart';
 
 @Deprecated('Use BaseSchema instead')
-typedef SchemaModel = BaseSchema;
+typedef SchemaModel<Self extends BaseSchema<Self>> = BaseSchema<Self>;
 
-/// Base class for type-safe schema models
-abstract class BaseSchema {
+/// Base class for type-safe schema models with generic type parameter for type-safe parse methods
+abstract class BaseSchema<Self extends BaseSchema<Self>> {
   /// The data stored in this model (protected access for subclasses)
   @protected
-  final Map<String, Object?> _data = {};
-  late final bool _isValid;
-  late final SchemaError? _error;
+  final Map<String, Object?> _data;
+  final bool _isValid;
+  final SchemaError? _error;
 
-  /// Create from any value, validating it automatically
-  BaseSchema(Object? value) {
-    _initialize(value);
-  }
+  // Default constructor for parser instances
+  const BaseSchema()
+      : _data = const {},
+        _isValid = false,
+        _error = null;
 
-  /// Create from pre-validated data (internal use)
   @protected
-  BaseSchema.validated(Map<String, Object?> validatedData) {
-    _data.addAll(validatedData);
-    _isValid = true;
-    _error = null;
-  }
+  const BaseSchema.internal(this._data, this._isValid, this._error);
 
-  void _initialize(Object? value) {
-    // Run validation on the schema
-    final result = _validateValue(value);
-    _isValid = result.isOk;
-    _error = result.isFail ? result.getError() : null;
+  @protected
+  const BaseSchema.valid(Map<String, Object?> data)
+      : _data = data,
+        _isValid = true,
+        _error = null;
 
-    // Store the validated data if valid
-    if (result.isOk && result.getOrNull() is Map<String, Object?>) {
-      _data.addAll(result.getOrNull() as Map<String, Object?>);
-    }
-  }
+  BaseSchema.invalid(SchemaError error)
+      : _data = const {},
+        _isValid = false,
+        _error = error;
 
-  /// Internal validation method
-  SchemaResult _validateValue(Object? value) {
-    final schema = getSchema();
-
-    return schema.validate(value);
-  }
+  ObjectSchema get definition;
 
   /// Check if the value is valid
   bool get isValid => _isValid;
 
-  /// Abstract method to get the schema for validation
-  AckSchema getSchema();
+  /// Access to underlying data map for testing purposes only
+  @visibleForTesting
+  Map<String, Object?> get testData => Map.from(_data);
+
+  /// Parse with validation - core implementation
+  /// Returns a validated instance of the concrete schema type
+  Self parse(Object? data);
+
+  /// Non-throwing parse - convenience wrapper around parse()
+  /// Returns null if validation fails
+  Self? tryParse(Object? data) {
+    try {
+      return parse(data);
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Get validation errors if any
   SchemaError? getErrors() => _error;
@@ -63,13 +67,15 @@ abstract class BaseSchema {
   /// For complex types, returns raw value - conversion handled by generated getters.
   @protected
   V? getValue<V>(String key) {
+    if (isValid == false) {
+      throw StateError(
+        'Schema is not valid, cannot access value for key: $key',
+      );
+    }
     final value = _data[key];
 
     return value as V?;
   }
-
-  /// Access via subscript operator
-  Object? operator [](String key) => _data[key];
 
   /// Get raw data
   Map<String, Object?> toMap() => Map.from(_data);
@@ -80,9 +86,6 @@ abstract class BaseSchema {
 
   /// Convert to JSON string
   String toJson() => jsonEncode(_data);
-
-  /// Check if a property exists in the schema
-  bool containsKey(String key) => _data.containsKey(key);
 }
 
 // Using AckException from validation/ack_exception.dart

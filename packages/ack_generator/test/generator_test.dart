@@ -5,29 +5,48 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import 'utils/mock_ack_package.dart';
+
 void main() {
   group('AckBuilder', () {
-    test('generates correct output for user model', () async {
-      await testGolden('user_model');
-    });
+    test(
+      'generates correct output for user model',
+      () async {
+        await testGolden('user_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('generates correct output for product model', () async {
-      await testGolden('product_model');
-    });
+    test(
+      'generates correct output for product model',
+      () async {
+        await testGolden('product_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('generates correct output for nested models', () async {
-      await testGolden('block_model');
-    });
+    test(
+      'generates correct output for nested models',
+      () async {
+        await testGolden('block_model');
+      },
+      tags: ['golden'],
+    );
 
-    test('generates correct output for sealed classes', () async {
-      await testGolden('sealed_block_model');
-    });
+    test(
+      'generates correct output for sealed classes',
+      () async {
+        await testGolden('sealed_block_model');
+      },
+      tags: ['golden'],
+    );
 
     test(
       'generates correct output for discriminated unions with sealed classes',
       () async {
         await testGolden('payment_method_model');
       },
+      tags: ['golden'],
     );
 
     test(
@@ -35,11 +54,201 @@ void main() {
       () async {
         await testGolden('abstract_shape_model');
       },
+      tags: ['golden'],
     );
 
     if (Platform.environment['UPDATE_GOLDEN'] == 'true') {
       print('Golden files updated. Review changes before committing.');
     }
+  });
+
+  group('error handling', () {
+    test('handles missing @Schema annotation gracefully', () async {
+      const input = '''
+        class InvalidModel {
+          final String name;
+          InvalidModel({required this.name});
+        }
+      ''';
+
+      // Should not generate any output for classes without @Schema
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/invalid.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {},
+      );
+    });
+
+    test('reports error for non-class elements with @Schema', () async {
+      const input = '''
+        import 'package:ack/ack.dart';
+
+        @Schema()
+        enum InvalidEnum { value1, value2 }
+      ''';
+
+      // Should throw InvalidGenerationSourceError for non-class elements
+      expect(
+        () => testBuilder(
+          ackSchemaBuilder(BuilderOptions.empty),
+          {
+            'ack_generator|lib/invalid_enum.dart': input,
+            ...getMockAckPackage(),
+          },
+          outputs: {},
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Generator cannot target'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('builder configuration', () {
+    test('handles custom BuilderOptions', () async {
+      final customOptions = BuilderOptions({
+        'generate_for': ['**/*.dart'],
+        'exclude': ['**/*.g.dart'],
+      });
+
+      final inputFile = File('test/fixtures/user_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(customOptions),
+        {
+          'ack_generator|lib/user_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/user_model.g.dart': isNotEmpty,
+        },
+      );
+    });
+
+    test('handles empty BuilderOptions', () async {
+      final emptyOptions = BuilderOptions({});
+
+      final inputFile = File('test/fixtures/user_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(emptyOptions),
+        {
+          'ack_generator|lib/user_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/user_model.g.dart': isNotEmpty,
+        },
+      );
+    });
+
+    test('handles BuilderOptions with null values', () async {
+      final nullOptions = BuilderOptions({
+        'some_option': null,
+        'another_option': '',
+      });
+
+      final inputFile = File('test/fixtures/product_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(nullOptions),
+        {
+          'ack_generator|lib/product_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/product_model.g.dart': isNotEmpty,
+        },
+      );
+    });
+  });
+
+  group('complex scenarios', () {
+    test(
+      'handles deeply nested models',
+      () async {
+        await testGolden('deeply_nested_model');
+      },
+      tags: ['golden'],
+    );
+
+    test(
+      'handles models with many properties',
+      () async {
+        await testGolden('large_model');
+      },
+      tags: ['golden'],
+    );
+
+    test('verifies deep nesting dependency registration', () async {
+      final inputFile = File('test/fixtures/deeply_nested_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/deeply_nested_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/deeply_nested_model.g.dart':
+              predicate<List<int>>((content) {
+            final generated = String.fromCharCodes(content);
+            return generated.contains('Level1Schema') &&
+                generated.contains('Level2Schema') &&
+                generated.contains('Level3Schema') &&
+                generated.contains('Level4Schema') &&
+                generated.contains('Level2Schema.ensureInitialize()') &&
+                generated.contains('Level3Schema.ensureInitialize()') &&
+                generated.contains('Level4Schema.ensureInitialize()');
+          }),
+        },
+      );
+    });
+
+    test('verifies large model performance characteristics', () async {
+      final stopwatch = Stopwatch()..start();
+
+      final inputFile = File('test/fixtures/large_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/large_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/large_model.g.dart':
+              predicate<List<int>>((content) {
+            final generated = String.fromCharCodes(content);
+            return generated.contains('LargeModelSchema') &&
+                generated.contains('field1') &&
+                generated.contains('field24') &&
+                generated.contains('extraData');
+          }),
+        },
+      );
+
+      stopwatch.stop();
+
+      // Should process large model efficiently (under 2 seconds)
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(2000),
+        reason: 'Large model generation should complete in under 2 seconds',
+      );
+    });
   });
 }
 
@@ -72,53 +281,7 @@ Future<void> testGolden(String name) async {
       ackSchemaBuilder(BuilderOptions.empty),
       {
         'ack_generator|lib/$name.dart': input,
-        // Provide ack package dependency
-        'ack|lib/ack.dart': '''
-export 'src/annotations.dart';
-export 'src/ack.dart';
-export 'src/schema_model.dart';
-export 'src/schema_registry.dart';
-export 'src/json_schema_converter.dart';
-export 'src/ack_exception.dart';
-''',
-        'ack|lib/src/annotations.dart': '''
-class Schema {
-  final String? description;
-  final bool additionalProperties;
-  final String? additionalPropertiesField;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
-
-  const Schema({
-    this.description,
-    this.additionalProperties = false,
-    this.additionalPropertiesField,
-    this.discriminatedKey,
-    this.discriminatedValue,
-  });
-}
-
-class IsEmail {
-  const IsEmail();
-}
-
-class IsNotEmpty {
-  const IsNotEmpty();
-}
-
-class Required {
-  const Required();
-}
-
-class MinLength {
-  final int length;
-  const MinLength(this.length);
-}
-
-class Nullable {
-  const Nullable();
-}
-''',
+        ...getMockAckPackage(),
       },
       outputs: {'ack_generator|lib/$name.g.dart': expected},
     );

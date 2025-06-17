@@ -4,20 +4,20 @@ import 'package:ack/src/builder_helpers/type_service.dart';
 import '../schemas/schema_model.dart';
 
 // Type definition for schema factory
-typedef SchemaFactory = BaseSchema Function(Object?);
+typedef SchemaFactory = dynamic Function(Object?);
 
 class SchemaRegistry {
   // Map of schema types to schema factories
   static final Map<Type, SchemaFactory> _factories = {};
 
   // Register a schema factory
-  static void register<S extends BaseSchema>(S Function(Object?) factory) {
+  static void register<S extends BaseSchema<S>>(S Function(Object?) factory) {
     _factories[S] = factory;
     TypeService.registerSchemaType<S>();
   }
 
   // Create schema by type
-  static S? createSchema<S extends BaseSchema>(Object? data) {
+  static S? createSchema<S extends BaseSchema<S>>(Object? data) {
     final factory = _factories[S];
     if (factory != null) {
       return factory(data) as S;
@@ -27,7 +27,7 @@ class SchemaRegistry {
   }
 
   // Create schema by runtime type
-  static BaseSchema? createSchemaByType(Type schemaType, Object? data) {
+  static dynamic createSchemaByType(Type schemaType, Object? data) {
     final factory = _factories[schemaType];
 
     return factory?.call(data);
