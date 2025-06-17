@@ -36,7 +36,7 @@ class UserSchema extends BaseSchema<UserSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return UserSchema._valid(validatedData);
     }
@@ -46,7 +46,7 @@ class UserSchema extends BaseSchema<UserSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<UserSchema>(
-      (data) => UserSchema(data),
+      (data) => const UserSchema().parse(data),
     );
     // Register schema dependencies
     AddressSchema.ensureInitialize();
@@ -64,7 +64,8 @@ class UserSchema extends BaseSchema<UserSchema> {
   String? get password => getValue<String>('password');
 
   AddressSchema get address {
-    return AddressSchema(getValue<Map<String, Object?>>('address')!);
+    return const AddressSchema()
+        .parse(getValue<Map<String, Object?>>('address')!);
   }
 
   Map<String, Object?> get metadata {
@@ -103,7 +104,7 @@ class AddressSchema extends BaseSchema<AddressSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return AddressSchema._valid(validatedData);
     }
@@ -113,7 +114,7 @@ class AddressSchema extends BaseSchema<AddressSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<AddressSchema>(
-      (data) => AddressSchema(data),
+      (data) => const AddressSchema().parse(data),
     );
   }
 

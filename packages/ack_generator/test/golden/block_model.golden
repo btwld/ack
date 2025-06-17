@@ -30,7 +30,7 @@ class BlockSchema extends BaseSchema<BlockSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return BlockSchema._valid(validatedData);
     }
@@ -40,7 +40,7 @@ class BlockSchema extends BaseSchema<BlockSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<BlockSchema>(
-      (data) => BlockSchema(data),
+      (data) => const BlockSchema().parse(data),
     );
   }
 
@@ -76,7 +76,7 @@ class SectionBlockSchema extends BaseSchema<SectionBlockSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return SectionBlockSchema._valid(validatedData);
     }
@@ -86,7 +86,7 @@ class SectionBlockSchema extends BaseSchema<SectionBlockSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<SectionBlockSchema>(
-      (data) => SectionBlockSchema(data),
+      (data) => const SectionBlockSchema().parse(data),
     );
     // Register schema dependencies
     ColumnBlockSchema.ensureInitialize();
@@ -98,7 +98,7 @@ class SectionBlockSchema extends BaseSchema<SectionBlockSchema> {
   List<ColumnBlockSchema> get columns {
     return getValue<List>('columns')!
         .whereType<Map<String, Object?>>()
-        .map((item) => ColumnBlockSchema(item))
+        .map((item) => const ColumnBlockSchema().parse(item))
         .toList();
   }
 
@@ -130,7 +130,7 @@ class ColumnBlockSchema extends BaseSchema<ColumnBlockSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return ColumnBlockSchema._valid(validatedData);
     }
@@ -140,7 +140,7 @@ class ColumnBlockSchema extends BaseSchema<ColumnBlockSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ColumnBlockSchema>(
-      (data) => ColumnBlockSchema(data),
+      (data) => const ColumnBlockSchema().parse(data),
     );
   }
 

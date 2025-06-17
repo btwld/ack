@@ -33,7 +33,7 @@ class Level1Schema extends BaseSchema<Level1Schema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return Level1Schema._valid(validatedData);
     }
@@ -43,7 +43,7 @@ class Level1Schema extends BaseSchema<Level1Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level1Schema>(
-      (data) => Level1Schema(data),
+      (data) => const Level1Schema().parse(data),
     );
     // Register schema dependencies
     Level2Schema.ensureInitialize();
@@ -55,7 +55,8 @@ class Level1Schema extends BaseSchema<Level1Schema> {
   String get name => getValue<String>('name')!;
 
   Level2Schema get level2 {
-    return Level2Schema(getValue<Map<String, Object?>>('level2')!);
+    return const Level2Schema()
+        .parse(getValue<Map<String, Object?>>('level2')!);
   }
 
   /// Convert the schema to a JSON Schema
@@ -88,7 +89,7 @@ class Level2Schema extends BaseSchema<Level2Schema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return Level2Schema._valid(validatedData);
     }
@@ -98,7 +99,7 @@ class Level2Schema extends BaseSchema<Level2Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level2Schema>(
-      (data) => Level2Schema(data),
+      (data) => const Level2Schema().parse(data),
     );
     // Register schema dependencies
     Level3Schema.ensureInitialize();
@@ -110,7 +111,8 @@ class Level2Schema extends BaseSchema<Level2Schema> {
   String get email => getValue<String>('email')!;
 
   Level3Schema get level3 {
-    return Level3Schema(getValue<Map<String, Object?>>('level3')!);
+    return const Level3Schema()
+        .parse(getValue<Map<String, Object?>>('level3')!);
   }
 
   String? get description => getValue<String>('description');
@@ -145,7 +147,7 @@ class Level3Schema extends BaseSchema<Level3Schema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return Level3Schema._valid(validatedData);
     }
@@ -155,7 +157,7 @@ class Level3Schema extends BaseSchema<Level3Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level3Schema>(
-      (data) => Level3Schema(data),
+      (data) => const Level3Schema().parse(data),
     );
     // Register schema dependencies
     Level4Schema.ensureInitialize();
@@ -169,7 +171,8 @@ class Level3Schema extends BaseSchema<Level3Schema> {
   int get count => getValue<int>('count')!;
 
   Level4Schema get level4 {
-    return Level4Schema(getValue<Map<String, Object?>>('level4')!);
+    return const Level4Schema()
+        .parse(getValue<Map<String, Object?>>('level4')!);
   }
 
   /// Convert the schema to a JSON Schema
@@ -203,7 +206,7 @@ class Level4Schema extends BaseSchema<Level4Schema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return Level4Schema._valid(validatedData);
     }
@@ -213,7 +216,7 @@ class Level4Schema extends BaseSchema<Level4Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level4Schema>(
-      (data) => Level4Schema(data),
+      (data) => const Level4Schema().parse(data),
     );
     // Register schema dependencies
     DateTimeSchema.ensureInitialize();
@@ -225,7 +228,8 @@ class Level4Schema extends BaseSchema<Level4Schema> {
   bool get isActive => getValue<bool>('isActive')!;
 
   DateTimeSchema get timestamp {
-    return DateTimeSchema(getValue<Map<String, Object?>>('timestamp')!);
+    return const DateTimeSchema()
+        .parse(getValue<Map<String, Object?>>('timestamp')!);
   }
 
   List<String> get tags {

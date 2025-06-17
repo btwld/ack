@@ -44,7 +44,7 @@ class PaymentMethodSchema extends BaseSchema<PaymentMethodSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return PaymentMethodSchema._valid(validatedData);
     }
@@ -54,7 +54,7 @@ class PaymentMethodSchema extends BaseSchema<PaymentMethodSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<PaymentMethodSchema>(
-      (data) => PaymentMethodSchema(data),
+      (data) => const PaymentMethodSchema().parse(data),
     );
     CreditCardPaymentSchema.ensureInitialize();
     BankTransferPaymentSchema.ensureInitialize();
@@ -76,9 +76,12 @@ class PaymentMethodSchema extends BaseSchema<PaymentMethodSchema> {
     required R Function(DigitalWalletPaymentSchema) digitalWallet,
   }) =>
       switch (type) {
-        'credit_card' => creditCard(CreditCardPaymentSchema(toMap())),
-        'bank_transfer' => bankTransfer(BankTransferPaymentSchema(toMap())),
-        'digital_wallet' => digitalWallet(DigitalWalletPaymentSchema(toMap())),
+        'credit_card' =>
+          creditCard(const CreditCardPaymentSchema().parse(toMap())),
+        'bank_transfer' =>
+          bankTransfer(const BankTransferPaymentSchema().parse(toMap())),
+        'digital_wallet' =>
+          digitalWallet(const DigitalWalletPaymentSchema().parse(toMap())),
         _ => throw StateError('Unknown paymentmethod type: $type'),
       };
 
@@ -90,11 +93,14 @@ class PaymentMethodSchema extends BaseSchema<PaymentMethodSchema> {
   }) =>
       switch (type) {
         'credit_card' =>
-          creditCard?.call(CreditCardPaymentSchema(toMap())) ?? orElse(),
-        'bank_transfer' =>
-          bankTransfer?.call(BankTransferPaymentSchema(toMap())) ?? orElse(),
-        'digital_wallet' =>
-          digitalWallet?.call(DigitalWalletPaymentSchema(toMap())) ?? orElse(),
+          creditCard?.call(const CreditCardPaymentSchema().parse(toMap())) ??
+              orElse(),
+        'bank_transfer' => bankTransfer
+                ?.call(const BankTransferPaymentSchema().parse(toMap())) ??
+            orElse(),
+        'digital_wallet' => digitalWallet
+                ?.call(const DigitalWalletPaymentSchema().parse(toMap())) ??
+            orElse(),
         _ => orElse(),
       };
 
@@ -130,7 +136,7 @@ class CreditCardPaymentSchema extends PaymentMethodSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return CreditCardPaymentSchema._valid(validatedData);
     }
@@ -192,7 +198,7 @@ class BankTransferPaymentSchema extends PaymentMethodSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return BankTransferPaymentSchema._valid(validatedData);
     }
@@ -248,7 +254,7 @@ class DigitalWalletPaymentSchema extends PaymentMethodSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return DigitalWalletPaymentSchema._valid(validatedData);
     }

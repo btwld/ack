@@ -43,7 +43,7 @@ class ShapeSchema extends BaseSchema<ShapeSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return ShapeSchema._valid(validatedData);
     }
@@ -53,7 +53,7 @@ class ShapeSchema extends BaseSchema<ShapeSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ShapeSchema>(
-      (data) => ShapeSchema(data),
+      (data) => const ShapeSchema().parse(data),
     );
     CircleSchema.ensureInitialize();
     RectangleSchema.ensureInitialize();
@@ -75,9 +75,9 @@ class ShapeSchema extends BaseSchema<ShapeSchema> {
     required R Function(TriangleSchema) triangle,
   }) =>
       switch (type) {
-        'circle' => circle(CircleSchema(toMap())),
-        'rectangle' => rectangle(RectangleSchema(toMap())),
-        'triangle' => triangle(TriangleSchema(toMap())),
+        'circle' => circle(const CircleSchema().parse(toMap())),
+        'rectangle' => rectangle(const RectangleSchema().parse(toMap())),
+        'triangle' => triangle(const TriangleSchema().parse(toMap())),
         _ => throw StateError('Unknown shape type: $type'),
       };
 
@@ -88,9 +88,12 @@ class ShapeSchema extends BaseSchema<ShapeSchema> {
     required R Function() orElse,
   }) =>
       switch (type) {
-        'circle' => circle?.call(CircleSchema(toMap())) ?? orElse(),
-        'rectangle' => rectangle?.call(RectangleSchema(toMap())) ?? orElse(),
-        'triangle' => triangle?.call(TriangleSchema(toMap())) ?? orElse(),
+        'circle' =>
+          circle?.call(const CircleSchema().parse(toMap())) ?? orElse(),
+        'rectangle' =>
+          rectangle?.call(const RectangleSchema().parse(toMap())) ?? orElse(),
+        'triangle' =>
+          triangle?.call(const TriangleSchema().parse(toMap())) ?? orElse(),
         _ => orElse(),
       };
 
@@ -120,7 +123,7 @@ class CircleSchema extends ShapeSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return CircleSchema._valid(validatedData);
     }
@@ -165,7 +168,7 @@ class RectangleSchema extends ShapeSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return RectangleSchema._valid(validatedData);
     }
@@ -212,7 +215,7 @@ class TriangleSchema extends ShapeSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return TriangleSchema._valid(validatedData);
     }

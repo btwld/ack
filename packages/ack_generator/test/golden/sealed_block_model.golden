@@ -44,7 +44,7 @@ class SealedBlockSchema extends BaseSchema<SealedBlockSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return SealedBlockSchema._valid(validatedData);
     }
@@ -54,7 +54,7 @@ class SealedBlockSchema extends BaseSchema<SealedBlockSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<SealedBlockSchema>(
-      (data) => SealedBlockSchema(data),
+      (data) => const SealedBlockSchema().parse(data),
     );
     TextBlockSchema.ensureInitialize();
     ImageBlockSchema.ensureInitialize();
@@ -78,9 +78,9 @@ class SealedBlockSchema extends BaseSchema<SealedBlockSchema> {
     required R Function(WidgetBlockSchema) widget,
   }) =>
       switch (type) {
-        'text' => text(TextBlockSchema(toMap())),
-        'image' => image(ImageBlockSchema(toMap())),
-        'widget' => widget(WidgetBlockSchema(toMap())),
+        'text' => text(const TextBlockSchema().parse(toMap())),
+        'image' => image(const ImageBlockSchema().parse(toMap())),
+        'widget' => widget(const WidgetBlockSchema().parse(toMap())),
         _ => throw StateError('Unknown sealedblock type: $type'),
       };
 
@@ -91,9 +91,12 @@ class SealedBlockSchema extends BaseSchema<SealedBlockSchema> {
     required R Function() orElse,
   }) =>
       switch (type) {
-        'text' => text?.call(TextBlockSchema(toMap())) ?? orElse(),
-        'image' => image?.call(ImageBlockSchema(toMap())) ?? orElse(),
-        'widget' => widget?.call(WidgetBlockSchema(toMap())) ?? orElse(),
+        'text' =>
+          text?.call(const TextBlockSchema().parse(toMap())) ?? orElse(),
+        'image' =>
+          image?.call(const ImageBlockSchema().parse(toMap())) ?? orElse(),
+        'widget' =>
+          widget?.call(const WidgetBlockSchema().parse(toMap())) ?? orElse(),
         _ => orElse(),
       };
 
@@ -123,7 +126,7 @@ class TextBlockSchema extends SealedBlockSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return TextBlockSchema._valid(validatedData);
     }
@@ -173,7 +176,7 @@ class ImageBlockSchema extends SealedBlockSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return ImageBlockSchema._valid(validatedData);
     }
@@ -227,7 +230,7 @@ class WidgetBlockSchema extends SealedBlockSchema {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return WidgetBlockSchema._valid(validatedData);
     }

@@ -77,7 +77,7 @@ class LargeModelSchema extends BaseSchema<LargeModelSchema> {
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return LargeModelSchema._valid(validatedData);
     }
@@ -87,7 +87,7 @@ class LargeModelSchema extends BaseSchema<LargeModelSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<LargeModelSchema>(
-      (data) => LargeModelSchema(data),
+      (data) => const LargeModelSchema().parse(data),
     );
     // Register schema dependencies
     DateTimeSchema.ensureInitialize();
@@ -123,11 +123,13 @@ class LargeModelSchema extends BaseSchema<LargeModelSchema> {
   bool get field13 => getValue<bool>('field13')!;
 
   DateTimeSchema get field14 {
-    return DateTimeSchema(getValue<Map<String, Object?>>('field14')!);
+    return const DateTimeSchema()
+        .parse(getValue<Map<String, Object?>>('field14')!);
   }
 
   DateTimeSchema get field15 {
-    return DateTimeSchema(getValue<Map<String, Object?>>('field15')!);
+    return const DateTimeSchema()
+        .parse(getValue<Map<String, Object?>>('field15')!);
   }
 
   String? get field16 => getValue<String>('field16');
@@ -140,7 +142,7 @@ class LargeModelSchema extends BaseSchema<LargeModelSchema> {
 
   DateTimeSchema? get field20 {
     final data = getValue<Map<String, Object?>>('field20');
-    return data != null ? DateTimeSchema(data) : null;
+    return data != null ? const DateTimeSchema().parse(data) : null;
   }
 
   List<String> get field21 {

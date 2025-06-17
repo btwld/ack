@@ -219,7 +219,7 @@ $propertyCode
     final result = definition.validate(data);
     if (result.isOk) {
       final validatedData = Map<String, Object?>.from(
-        result.getOrThrow() as Map<String, Object?>,
+        result.getOrThrow(),
       );
       return $schemaClassName._valid(validatedData);
     }
@@ -263,7 +263,7 @@ $propertyCode
   ) {
     final bodyParts = <String>[
       '    SchemaRegistry.register<$schemaClassName>(',
-      '      (data) => $schemaClassName(data),',
+      '      (data) => const $schemaClassName().parse(data),',
       '    );',
     ];
 
@@ -356,9 +356,9 @@ $propertyCode
       final schemaType = '${property.typeName.name}Schema';
       if (isNullable) {
         return '''final data = getValue<Map<String, Object?>>('$propName');
-    return data != null ? $schemaType(data) : null;''';
+    return data != null ? const $schemaType().parse(data) : null;''';
       }
-      return "return $schemaType(getValue<Map<String, Object?>>('$propName')!);";
+      return "return const $schemaType().parse(getValue<Map<String, Object?>>('$propName')!);";
     }
 
     // List types
@@ -383,14 +383,14 @@ $propertyCode
           return '''final data = getValue<List?>('$propName');
     if (data != null) {
       return data.whereType<Map<String, Object?>>()
-          .map((item) => $schemaType(item))
+          .map((item) => const $schemaType().parse(item))
           .toList();
     }
     return null;''';
         }
         return '''return getValue<List>('$propName')!
         .whereType<Map<String, Object?>>()
-        .map((item) => $schemaType(item))
+        .map((item) => const $schemaType().parse(item))
         .toList();''';
       }
 
@@ -415,7 +415,7 @@ $propertyCode
       if (innerType.endsWith('Schema')) {
         return '''return getValue<List>('$propName')!
         .whereType<Map<String, dynamic>>()
-        .map((item) => $innerType(item))
+        .map((item) => const $innerType().parse(item))
         .toList();''';
       }
 
@@ -627,7 +627,7 @@ $propertyCode
             .add('/// Ensures this schema and its dependencies are registered')
         ..body = Code('''
     SchemaRegistry.register<$schemaClassName>(
-      (data) => $schemaClassName(data),
+      (data) => const $schemaClassName().parse(data),
     );
     $dependencies'''),
     );
@@ -678,7 +678,7 @@ $propertyCode
     final cases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "'${entry.key}' => ${_toCamelCase(entry.key)}(${entry.value.name}Schema(toMap())),",
+              "'${entry.key}' => ${_toCamelCase(entry.key)}(const ${entry.value.name}Schema().parse(toMap())),",
         )
         .join('\n        ');
 
@@ -718,7 +718,7 @@ $propertyCode
     final cases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "'${entry.key}' => ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema(toMap())) ?? orElse(),",
+              "'${entry.key}' => ${_toCamelCase(entry.key)}?.call(const ${entry.value.name}Schema().parse(toMap())) ?? orElse(),",
         )
         .join('\n        ');
 
