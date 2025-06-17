@@ -1,5 +1,6 @@
 import '../schemas/schema.dart';
 import 'validators.dart';
+import 'core/comparison_constraint.dart';
 
 /// Extension methods for [ListSchema] to provide additional validation capabilities.
 extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
@@ -20,7 +21,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
   /// final schema = Ack.list(Ack.string).minItems(2);
   /// ```
   ListSchema<T> minItems(int min) =>
-      withConstraints([ListMinItemsConstraint(min)]);
+      withConstraints([ComparisonConstraint.listMinItems<T>(min)]);
 
   /// {@macro max_items_list_validator}
   ///
@@ -29,7 +30,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
   /// final schema = Ack.list(Ack.string).maxItems(3);
   /// ```
   ListSchema<T> maxItems(int max) =>
-      withConstraints([ListMaxItemsConstraint(max)]);
+      withConstraints([ComparisonConstraint.listMaxItems<T>(max)]);
 
   /// Validates that a list has exactly the specified number of items.
   ///

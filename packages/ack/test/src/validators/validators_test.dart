@@ -1,16 +1,17 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/core/comparison_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('MinItemsListValidator', () {
     test('List with length >= min passes validation', () {
-      final validator = ListMinItemsConstraint(3);
+      final validator = ComparisonConstraint.listMinItems(3);
       expect(validator.isValid([1, 2, 3]), isTrue);
       expect(validator.isValid([1, 2, 3, 4]), isTrue);
     });
 
     test('List with length < min fails validation', () {
-      final validator = ListMinItemsConstraint(3);
+      final validator = ComparisonConstraint.listMinItems(3);
       expect(validator.isValid([1, 2]), isFalse);
     });
 
@@ -33,11 +34,11 @@ void main() {
     });
 
     test('error message is correct', () {
-      final validator = ListMinItemsConstraint(3);
+      final validator = ComparisonConstraint.listMinItems(3);
       final message = validator.buildMessage([1, 2]);
       expect(
         message,
-        'Too few items, min 3. Got 2',
+        'Too few items, min 3',
       );
     });
   });

@@ -321,6 +321,31 @@ mixin SchemaFluentMethods<S extends AckSchema<T>, T extends Object>
   }
 }
 
+/// {@template scalar_schema}
+/// Base class for scalar value schemas (String, Boolean, Integer, Double).
+///
+/// ScalarSchema provides shared functionality for primitive type validation:
+/// - **Type conversion**: Automatic parsing from compatible types (String ↔ num ↔ bool)
+/// - **Strict mode**: Option to disable automatic type conversion
+/// - **Builder pattern**: Consistent API for creating schema variants
+/// - **Fluent methods**: Chainable methods like `.nullable()`, `.strict()`
+///
+/// This abstraction eliminates code duplication across primitive schemas while
+/// maintaining type safety and consistent behavior.
+///
+/// Example usage:
+/// ```dart
+/// // Flexible parsing (default)
+/// final schema = Ack.int;
+/// schema.validate("123"); // ✅ Parses to 123
+/// schema.validate(123);   // ✅ Already correct type
+///
+/// // Strict parsing
+/// final strict = Ack.int.strict();
+/// strict.validate("123"); // ❌ Only accepts int
+/// strict.validate(123);   // ✅ Correct type
+/// ```
+/// {@endtemplate}
 sealed class ScalarSchema<Self extends ScalarSchema<Self, T>, T extends Object>
     extends AckSchema<T> with SchemaFluentMethods<Self, T> {
   /// Whether parsing should be strict, only accepting values of type [T].

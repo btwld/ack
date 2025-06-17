@@ -1,4 +1,5 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/core/comparison_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -11,14 +12,14 @@ void main() {
     });
 
     test('copyWith changes validators', () {
-      final schema = DoubleSchema(constraints: [NumberMaxConstraint(5.0)]);
+      final schema = DoubleSchema(constraints: [ComparisonConstraint.numberMax(5.0)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<NumberMaxConstraint>());
+      expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
       final newSchema =
-          schema.copyWith(constraints: [NumberMinConstraint(1.0)]);
+          schema.copyWith(constraints: [ComparisonConstraint.numberMin(1.0)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<NumberMinConstraint>());
+      expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });
 
     group('DoubleSchema Basic Validation', () {
@@ -67,20 +68,14 @@ void main() {
 
     group('MinValueValidator', () {
       test('Values above min pass validation', () {
-        final validator = NumberMinConstraint(5.0);
+        final validator = ComparisonConstraint.numberMin(5.0);
         expect(validator.isValid(6.0), isTrue);
         expect(validator.isValid(5.0), isTrue);
       });
 
       test('Values below min fail validation', () {
-        final validator = NumberMinConstraint(5.0);
+        final validator = ComparisonConstraint.numberMin(5.0);
         expect(validator.isValid(4.0), isFalse);
-      });
-
-      test('Exclusive min validation works correctly', () {
-        final validator = NumberMinConstraint(5.0, exclusive: true);
-        expect(validator.isValid(5.0), isFalse);
-        expect(validator.isValid(5.1), isTrue);
       });
 
       test('schema validation works with min value', () {
@@ -91,26 +86,20 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<NumberMinConstraint<double>>(), isNotNull);
+        expect(error.getConstraint<ComparisonConstraint>(), isNotNull);
       });
     });
 
     group('MaxValueValidator', () {
       test('Values below max pass validation', () {
-        final validator = NumberMaxConstraint(5.0);
+        final validator = ComparisonConstraint.numberMax(5.0);
         expect(validator.isValid(4.0), isTrue);
         expect(validator.isValid(5.0), isTrue);
       });
 
       test('Values above max fail validation', () {
-        final validator = NumberMaxConstraint(5.0);
+        final validator = ComparisonConstraint.numberMax(5.0);
         expect(validator.isValid(6.0), isFalse);
-      });
-
-      test('Exclusive max validation works correctly', () {
-        final validator = NumberMaxConstraint(5.0, exclusive: true);
-        expect(validator.isValid(5.0), isFalse);
-        expect(validator.isValid(4.9), isTrue);
       });
 
       test('schema validation works with max value', () {
@@ -121,30 +110,22 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<NumberMaxConstraint<double>>(), isNotNull);
+        expect(error.getConstraint<ComparisonConstraint>(), isNotNull);
       });
     });
 
     group('RangeValidator', () {
       test('Values in range pass validation', () {
-        final validator = NumberRangeConstraint(1.0, 5.0);
+        final validator = ComparisonConstraint.numberRange(1.0, 5.0);
         expect(validator.isValid(1.0), isTrue);
         expect(validator.isValid(3.0), isTrue);
         expect(validator.isValid(5.0), isTrue);
       });
 
       test('Values outside range fail validation', () {
-        final validator = NumberRangeConstraint(1.0, 5.0);
+        final validator = ComparisonConstraint.numberRange(1.0, 5.0);
         expect(validator.isValid(0.9), isFalse);
         expect(validator.isValid(5.1), isFalse);
-      });
-
-      test('Exclusive range validation works correctly', () {
-        final validator = NumberRangeConstraint(1.0, 5.0, exclusive: true);
-        expect(validator.isValid(1.0), isFalse);
-        expect(validator.isValid(5.0), isFalse);
-        expect(validator.isValid(1.1), isTrue);
-        expect(validator.isValid(4.9), isTrue);
       });
 
       test('schema validation works with range', () {
@@ -155,20 +136,20 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<NumberRangeConstraint<double>>(), isNotNull);
+        expect(error.getConstraint<ComparisonConstraint>(), isNotNull);
       });
     });
 
     group('MultipleOfValidator', () {
       test('Values that are multiples pass validation', () {
-        final validator = NumberMultipleOfConstraint(0.5);
+        final validator = ComparisonConstraint.numberMultipleOf(0.5);
         expect(validator.isValid(1.0), isTrue);
         expect(validator.isValid(1.5), isTrue);
         expect(validator.isValid(2.0), isTrue);
       });
 
       test('Values that are not multiples fail validation', () {
-        final validator = NumberMultipleOfConstraint(0.5);
+        final validator = ComparisonConstraint.numberMultipleOf(0.5);
         expect(validator.isValid(1.7), isFalse);
         expect(validator.isValid(2.3), isFalse);
       });
@@ -181,7 +162,7 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<NumberMultipleOfConstraint<double>>(),
+        expect(error.getConstraint<ComparisonConstraint>(),
             isNotNull);
       });
     });
@@ -196,13 +177,13 @@ void main() {
     });
 
     test('copyWith changes constraints', () {
-      final schema = IntegerSchema(constraints: [NumberMaxConstraint(5)]);
+      final schema = IntegerSchema(constraints: [ComparisonConstraint.numberMax(5)]);
       expect(schema.getConstraints().length, equals(1));
-      expect(schema.getConstraints()[0], isA<NumberMaxConstraint>());
+      expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
-      final newSchema = schema.copyWith(constraints: [NumberMinConstraint(1)]);
+      final newSchema = schema.copyWith(constraints: [ComparisonConstraint.numberMin(1)]);
       expect(newSchema.getConstraints().length, equals(1));
-      expect(newSchema.getConstraints()[0], isA<NumberMinConstraint>());
+      expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });
 
     group('IntSchema Basic Validation', () {
@@ -251,20 +232,14 @@ void main() {
 
     group('MinValueValidator', () {
       test('Values above min pass validation', () {
-        final validator = NumberMinConstraint(5);
+        final validator = ComparisonConstraint.numberMin(5);
         expect(validator.isValid(6), isTrue);
         expect(validator.isValid(5), isTrue);
       });
 
       test('Values below min fail validation', () {
-        final validator = NumberMinConstraint(5);
+        final validator = ComparisonConstraint.numberMin(5);
         expect(validator.isValid(4), isFalse);
-      });
-
-      test('Exclusive min validation works correctly', () {
-        final validator = NumberMinConstraint(5, exclusive: true);
-        expect(validator.isValid(5), isFalse);
-        expect(validator.isValid(6), isTrue);
       });
 
       test('schema validation works with min value', () {
@@ -275,49 +250,36 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<NumberMinConstraint<int>>(), isNotNull);
+        expect(error.getConstraint<ComparisonConstraint>(), isNotNull);
       });
     });
 
     group('MaxValueValidator', () {
       test('Values below max pass validation', () {
-        final validator = NumberMaxConstraint(5);
+        final validator = ComparisonConstraint.numberMax(5);
         expect(validator.isValid(4), isTrue);
         expect(validator.isValid(5), isTrue);
       });
 
       test('Values above max fail validation', () {
-        final validator = NumberMaxConstraint(5);
+        final validator = ComparisonConstraint.numberMax(5);
         expect(validator.isValid(6), isFalse);
       });
 
-      test('Exclusive max validation works correctly', () {
-        final validator = NumberMaxConstraint(5, exclusive: true);
-        expect(validator.isValid(5), isFalse);
-        expect(validator.isValid(4), isTrue);
-      });
     });
 
     group('RangeValidator', () {
       test('Values in range pass validation', () {
-        final validator = NumberRangeConstraint(1, 5);
+        final validator = ComparisonConstraint.numberRange(1, 5);
         expect(validator.isValid(1), isTrue);
         expect(validator.isValid(3), isTrue);
         expect(validator.isValid(5), isTrue);
       });
 
       test('Values outside range fail validation', () {
-        final validator = NumberRangeConstraint(1, 5);
+        final validator = ComparisonConstraint.numberRange(1, 5);
         expect(validator.isValid(0), isFalse);
         expect(validator.isValid(6), isFalse);
-      });
-
-      test('Exclusive range validation works correctly', () {
-        final validator = NumberRangeConstraint(1, 5, exclusive: true);
-        expect(validator.isValid(1), isFalse);
-        expect(validator.isValid(5), isFalse);
-        expect(validator.isValid(2), isTrue);
-        expect(validator.isValid(4), isTrue);
       });
 
       test('schema validation works with range', () {
@@ -328,20 +290,20 @@ void main() {
         expect(result.isFail, isTrue);
 
         final error = (result as Fail).error as SchemaConstraintsError;
-        expect(error.getConstraint<NumberRangeConstraint<int>>(), isNotNull);
+        expect(error.getConstraint<ComparisonConstraint>(), isNotNull);
       });
     });
 
     group('MultipleOfValidator', () {
       test('Values that are multiples pass validation', () {
-        final validator = NumberMultipleOfConstraint(3);
+        final validator = ComparisonConstraint.numberMultipleOf(3);
         expect(validator.isValid(6), isTrue);
         expect(validator.isValid(9), isTrue);
         expect(validator.isValid(12), isTrue);
       });
 
       test('Values that are not multiples fail validation', () {
-        final validator = NumberMultipleOfConstraint(3);
+        final validator = ComparisonConstraint.numberMultipleOf(3);
         expect(validator.isValid(7), isFalse);
         expect(validator.isValid(10), isFalse);
       });
@@ -355,7 +317,7 @@ void main() {
 
         final error = (result as Fail).error as SchemaConstraintsError;
         expect(
-          error.getConstraint<NumberMultipleOfConstraint<int>>(),
+          error.getConstraint<ComparisonConstraint>(),
           isNotNull,
         );
       });

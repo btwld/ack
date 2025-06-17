@@ -29,25 +29,12 @@ class User {
 }
 
 // Mock schema model for testing
-class UserSchema extends BaseSchema {
-  UserSchema(super.data) {
-    if (isValid) {
-      _initialize();
-    }
-  }
-
-  late final String name;
-  late final int age;
-  late final String? email;
-
-  void _initialize() {
-    name = getValue<String>('name')!;
-    age = getValue<int>('age')!;
-    email = getValue<String>('email');
-  }
+class UserSchema extends BaseSchema<UserSchema> {
+  const UserSchema() : super();
+  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   @override
-  AckSchema getSchema() {
+  ObjectSchema get definition {
     return Ack.object({
       'name': Ack.string.minLength(2),
       'age': Ack.int.min(0).max(120),
@@ -57,6 +44,22 @@ class UserSchema extends BaseSchema {
       'age'
     ]);
   }
+
+  @override
+  UserSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return UserSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
+  String get name => getValue<String>('name')!;
+  int get age => getValue<int>('age')!;
+  String? get email => getValue<String>('email');
 }
 
 void main() {
@@ -118,7 +121,7 @@ void main() {
         };
 
         // Create a schema object from the data
-        final userSchema = UserSchema(jsonMap);
+        final userSchema = const UserSchema().parse(jsonMap);
         expect(userSchema.isValid, isTrue);
 
         // Access typed properties directly

@@ -1,7 +1,8 @@
 import '../schemas/schema.dart';
 import 'constraint.dart';
 import 'string/literal_constraint.dart';
-import 'validators.dart';
+import 'core/comparison_constraint.dart';
+import 'core/pattern_constraint.dart';
 
 /// Extension methods for [StringSchema] to provide additional validation capabilities.
 extension StringSchemaExtensions on StringSchema {
@@ -9,38 +10,38 @@ extension StringSchemaExtensions on StringSchema {
       withConstraints([validator]);
 
   /// {@macro email_validator}
-  StringSchema email() => _add(StringEmailConstraint());
+  StringSchema email() => _add(PatternConstraint.email());
 
   /// {@macro email_validator}
   @Deprecated('Use email() instead for consistent naming')
   StringSchema isEmail() => email();
 
   /// {@macro hex_color_validator}
-  StringSchema hexColor() => _add(StringHexColorValidator());
+  StringSchema hexColor() => _add(PatternConstraint.hexColor());
 
   /// {@macro hex_color_validator}
   @Deprecated('Use hexColor() instead for consistent naming')
   StringSchema isHexColor() => hexColor();
 
   /// {@macro is_empty_validator}
-  StringSchema empty() => _add(const StringEmptyConstraint());
+  StringSchema empty() => _add(ComparisonConstraint.stringExactLength(0));
 
   /// {@macro is_empty_validator}
   @Deprecated('Use empty() instead for consistent naming')
   StringSchema isEmpty() => empty();
 
   /// {@macro min_length_validator}
-  StringSchema minLength(int min) => _add(StringMinLengthConstraint(min));
+  StringSchema minLength(int min) => _add(ComparisonConstraint.stringMinLength(min));
 
   /// {@macro max_length_validator}
-  StringSchema maxLength(int max) => _add(StringMaxLengthConstraint(max));
+  StringSchema maxLength(int max) => _add(ComparisonConstraint.stringMaxLength(max));
 
   /// {@macro not_one_of_validator}
   StringSchema notOneOf(List<String> values) =>
-      _add(StringNotOneOfValidator(values));
+      _add(PatternConstraint.notEnumValues(values));
 
   /// {@macro is_json_validator}
-  StringSchema json() => _add(const StringJsonValidator());
+  StringSchema json() => _add(PatternConstraint.json());
 
   /// {@macro is_json_validator}
   @Deprecated('Use json() instead for consistent naming')
@@ -48,24 +49,24 @@ extension StringSchemaExtensions on StringSchema {
 
   /// {@macro enum_validator}
   StringSchema enumValues(List<String> values) =>
-      _add(StringEnumConstraint(values));
+      _add(PatternConstraint.enumValues(values));
 
   /// {@macro enum_validator}
   @Deprecated('Use enumValues() instead for consistent naming')
   StringSchema isEnum(List<String> values) => enumValues(values);
 
   /// {@macro not_empty_validator}
-  StringSchema notEmpty() => _add(const StringNotEmptyValidator());
+  StringSchema notEmpty() => minLength(1);
 
   /// {@macro not_empty_validator}
   @Deprecated('Use notEmpty() instead for consistent naming')
   StringSchema isNotEmpty() => notEmpty();
 
   /// {@macro date_time_validator}
-  StringSchema dateTime() => _add(const StringDateTimeConstraint());
+  StringSchema dateTime() => _add(PatternConstraint.dateTime());
 
   /// {@macro date_validator}
-  StringSchema date() => _add(const StringDateConstraint());
+  StringSchema date() => _add(PatternConstraint.date());
 
   /// {@macro date_time_validator}
   @Deprecated('Use dateTime() instead for consistent naming')
@@ -106,9 +107,9 @@ extension StringSchemaExtensions on StringSchema {
     }
 
     return constrain(
-      StringRegexConstraint(
+      PatternConstraint.regex(
+        fullPattern,
         patternName: 'matches',
-        pattern: fullPattern,
         example: example ?? 'Example matching $pattern',
       ),
     );
@@ -130,9 +131,9 @@ extension StringSchemaExtensions on StringSchema {
     final wrappedPattern = r'^.*' + cleanPattern + r'.*$';
 
     return constrain(
-      StringRegexConstraint(
+      PatternConstraint.regex(
+        wrappedPattern,
         patternName: 'contains',
-        pattern: wrappedPattern,
         example: example ?? 'Example containing $pattern',
       ),
     );

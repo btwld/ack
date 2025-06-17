@@ -7,11 +7,9 @@ void main() {
   group('Custom Validation Documentation Examples', () {
     test('Option 1: Combine Built-in Validators', () {
       // Username validation: 3-20 characters, alphanumeric, starts with a letter
-      final usernameSchema = Ack.string.minLength(3).maxLength(20).constrain(
-          StringRegexConstraint(
-              patternName: 'starts_with_letter_alphanumeric',
-              pattern: r'^[a-zA-Z][a-zA-Z0-9_]*$',
-              example: 'Starts with letter, alphanumeric or underscore'));
+      final usernameSchema = Ack.string.minLength(3).maxLength(20).matches(
+          r'[a-zA-Z][a-zA-Z0-9_]*',
+          example: 'Starts with letter, alphanumeric or underscore');
 
       // Valid cases
       expect(usernameSchema.validate('user123').isOk, isTrue);
@@ -109,11 +107,10 @@ void main() {
     });
 
     test('Advanced Custom Constraints: Regex Pattern Matching', () {
-      // Using the StringRegexConstraint
-      final nameSchema = Ack.string.constrain(StringRegexConstraint(
-          patternName: 'letters_and_spaces',
-          pattern: r'^[A-Za-z\s]+$',
-          example: 'John Doe'));
+      // Using the matches method
+      final nameSchema = Ack.string.matches(
+          r'[A-Za-z\s]+',
+          example: 'John Doe');
 
       // Test valid values
       expect(nameSchema.validate('John Doe').isOk, isTrue);

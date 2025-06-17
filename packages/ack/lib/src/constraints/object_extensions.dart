@@ -1,5 +1,5 @@
 import '../schemas/schema.dart';
-import 'validators.dart';
+import 'core/comparison_constraint.dart';
 
 /// Extension methods for [ObjectSchema] to provide additional validation capabilities.
 extension ObjectSchemaExtensions on ObjectSchema {
@@ -12,7 +12,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
   /// }).minProperties(1);
   /// ```
   ObjectSchema minProperties(int min) {
-    return withConstraints([ObjectMinPropertiesConstraint(min: min)]);
+    return withConstraints([ComparisonConstraint.objectMinProperties(min)]);
   }
 
   /// {@macro object_max_properties_validator}
@@ -24,7 +24,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
   /// }).maxProperties(3);
   /// ```
   ObjectSchema maxProperties(int max) {
-    return withConstraints([ObjectMaxPropertiesConstraint(max: max)]);
+    return withConstraints([ComparisonConstraint.objectMaxProperties(max)]);
   }
 
   /// Validates that an object has exactly the specified number of properties.

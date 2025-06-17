@@ -1,5 +1,4 @@
-import 'package:ack/src/constraints/validators.dart';
-
+import 'constraints/core/pattern_constraint.dart';
 import 'schemas/schema.dart';
 
 class Ack {
@@ -42,7 +41,7 @@ class Ack {
   }
 
   static StringSchema enumString(List<String> values) {
-    return StringSchema(constraints: [StringEnumConstraint(values)]);
+    return StringSchema(constraints: [PatternConstraint.enumValues(values)]);
   }
 
   static StringSchema enumValues(List<Enum> values) {

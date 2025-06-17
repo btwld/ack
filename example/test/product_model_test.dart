@@ -30,7 +30,7 @@ void main() {
       };
 
       // Create schema with the data
-      final schema = ProductSchema(productData);
+      final schema = const ProductSchema().parse(productData);
 
       // Check if schema is valid
       expect(schema.isValid, isTrue);
@@ -45,10 +45,9 @@ void main() {
       expect(schema.price, equals(19.99));
       expect(schema.imageUrl, isNull);
 
-      // Access category directly from the map
-      final categoryData = schema.getValue('category') as Map<String, dynamic>;
-      expect(categoryData['id'], equals('cat1'));
-      expect(categoryData['name'], equals('Test Category'));
+      // Access category through the public property
+      expect(schema.category.id, equals('cat1'));
+      expect(schema.category.name, equals('Test Category'));
 
       // Access properties directly from schema (no toModel() method in new architecture)
       expect(schema.id, equals('123'));
@@ -71,16 +70,8 @@ void main() {
         'price': 'not a number', // Wrong type
       };
 
-      // Create a schema instance with invalid data
-      final schema = ProductSchema(invalidData);
-
-      // Check that it's invalid
-      expect(schema.isValid, isFalse);
-      expect(schema.getErrors(), isNotNull);
-
-      // Schema should store validation errors
-      expect(schema.isValid, isFalse);
-      expect(schema.getErrors(), isNotNull);
+      // Create a schema instance with invalid data should throw exception
+      expect(() => const ProductSchema().parse(invalidData), throwsException);
     });
 
     test('BaseSchema should validate and transform data', () {
@@ -101,7 +92,7 @@ void main() {
       };
 
       // Create schema with the data
-      final schema = ProductSchema(productData);
+      final schema = const ProductSchema().parse(productData);
 
       // Check if schema is valid
       expect(schema.isValid, isTrue);
@@ -137,7 +128,7 @@ void main() {
       print('Registration in schema would use: Product, ProductSchema');
 
       // Using direct constructor instead of BaseSchema.get
-      final schema = ProductSchema(productData);
+      final schema = const ProductSchema().parse(productData);
       print('Schema created successfully: $schema');
 
       // Check if schema is valid
@@ -165,7 +156,7 @@ void main() {
       print('CategorySchema type: $CategorySchema');
 
       // Using direct constructor instead of BaseSchema.get
-      final schema = CategorySchema(categoryData);
+      final schema = const CategorySchema().parse(categoryData);
       print('Schema created successfully: $schema');
 
       // Check if schema is valid
@@ -208,7 +199,7 @@ void main() {
         'status': 'draft',
         'productCode': 'TST-1234',
       };
-      final testSchema = ProductSchema(testData);
+      final testSchema = const ProductSchema().parse(testData);
       // Test schema validation and property access
       expect(testSchema.isValid, isTrue);
       print('Schema type: ${testSchema.runtimeType}');
@@ -249,7 +240,7 @@ void main() {
       };
 
       // With our new implementation, we can use the constructor directly
-      final schema = ProductSchema(productData);
+      final schema = const ProductSchema().parse(productData);
       print('Direct constructor works: ${schema.id}');
 
       // We can also verify properties
@@ -262,8 +253,8 @@ void main() {
 
       // We can also use a type map if needed for more complex scenarios
       Map<Type, Function> typeFactoryMap = {
-        ProductSchema: (Object? data) => ProductSchema(data),
-        CategorySchema: (Object? data) => CategorySchema(data),
+        ProductSchema: (Object? data) => const ProductSchema().parse(data),
+        CategorySchema: (Object? data) => const CategorySchema().parse(data),
       };
 
       try {
