@@ -107,9 +107,12 @@ void main() {
         },
       );
 
-      expect(foundError, isTrue,
-          reason:
-              'Expected error message about "Generator cannot target" not found');
+      expect(
+        foundError,
+        isTrue,
+        reason:
+            'Expected error message about "Generator cannot target" not found',
+      );
     });
   });
 
