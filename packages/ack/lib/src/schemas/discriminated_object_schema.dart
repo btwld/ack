@@ -29,6 +29,10 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   /// Returns the schemas for the discriminated object schema.
   List<ObjectSchema> getSchemas() => _schemas.values.toList();
 
+  /// Returns the schema mapping for the discriminated object schema.
+  /// This method is required for proper JSON Schema if/then/else conversion.
+  Map<String, ObjectSchema> getSchemasMap() => _schemas;
+
   @override
   SchemaResult<MapValue> validateValue(Object? value) {
     final result = super.validateValue(value);
