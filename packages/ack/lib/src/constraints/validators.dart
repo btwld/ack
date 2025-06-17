@@ -38,7 +38,7 @@ class NonNullableConstraint extends Constraint<Object>
 /// Equivalent of calling `list.toSet().length == list.length`
 /// {@endtemplate}
 class ListUniqueItemsConstraint<T extends Object> extends Constraint<List<T>>
-    with Validator<List<T>>, OpenApiSpec<List<T>> {
+    with Validator<List<T>>, JsonSchemaSpec<List<T>> {
   /// {@macro list_unique_items_validator}
   const ListUniqueItemsConstraint()
       : super(

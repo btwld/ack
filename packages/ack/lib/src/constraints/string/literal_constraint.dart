@@ -6,7 +6,7 @@ import 'package:ack/src/constraints/constraint.dart';
 /// This is particularly useful for discriminator fields in discriminated schemas.
 /// {@endtemplate}
 class StringLiteralConstraint extends Constraint<String>
-    with Validator<String>, OpenApiSpec<String> {
+    with Validator<String>, JsonSchemaSpec<String> {
   /// The expected string value
   final String expectedValue;
 
