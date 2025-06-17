@@ -17,8 +17,8 @@ void main() {
       expect(schema.getConstraints().length, equals(1));
       expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
-      final newSchema =
-          schema.copyWith(constraints: [ComparisonConstraint.listMinItems<int>(1)]);
+      final newSchema = schema
+          .copyWith(constraints: [ComparisonConstraint.listMinItems<int>(1)]);
       expect(newSchema.getConstraints().length, equals(1));
       expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });

@@ -74,7 +74,7 @@ void main() {
       expect(() => const ProductSchema().parse(invalidData), throwsException);
     });
 
-    test('BaseSchema should validate and transform data', () {
+    test('SchemaModel should validate and transform data', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
@@ -107,7 +107,7 @@ void main() {
       expect(schema.category, isA<CategorySchema>());
     });
 
-    test('Using direct constructor instead of BaseSchema.get', () {
+    test('Using direct constructor instead of SchemaModel.get', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
@@ -127,7 +127,7 @@ void main() {
       print('ProductSchema type: $ProductSchema');
       print('Registration in schema would use: Product, ProductSchema');
 
-      // Using direct constructor instead of BaseSchema.get
+      // Using direct constructor instead of SchemaModel.get
       final schema = const ProductSchema().parse(productData);
       print('Schema created successfully: $schema');
 
@@ -155,7 +155,7 @@ void main() {
 
       print('CategorySchema type: $CategorySchema');
 
-      // Using direct constructor instead of BaseSchema.get
+      // Using direct constructor instead of SchemaModel.get
       final schema = const CategorySchema().parse(categoryData);
       print('Schema created successfully: $schema');
 
@@ -204,9 +204,9 @@ void main() {
       expect(testSchema.isValid, isTrue);
       print('Schema type: ${testSchema.runtimeType}');
 
-      // Compare what the BaseSchema.get method is doing
+      // Compare what the SchemaModel.get method is doing
       print(
-        'BaseSchema.get<ProductSchema> uses Type.toString(): $ProductSchema',
+        'SchemaModel.get<ProductSchema> uses Type.toString(): $ProductSchema',
       );
 
       // Check what's happening in direct registry
@@ -214,7 +214,7 @@ void main() {
         'Is Product registered directly? ${SchemaRegistry.isRegistered<Product>()}',
       );
 
-      // Test creating the same issue as in BaseSchema.get
+      // Test creating the same issue as in SchemaModel.get
       void testGenericTypeIssue<S>() {
         print('Inside generic method, type S: $S');
       }

@@ -1,0 +1,37 @@
+{
+  "name": "ack-json-schema-validator",
+  "version": "1.0.0",
+  "description": "JSON Schema validator for Ack library compatibility testing",
+  "main": "jsonschema-validator.js",
+  "bin": {
+    "jsonschema-validator": "./jsonschema-validator.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "validate": "node jsonschema-validator.js",
+    "install-deps": "npm install"
+  },
+  "keywords": [
+    "json-schema",
+    "jsonschema",
+    "validation",
+    "ack",
+    "testing"
+  ],
+  "author": "Ack Team",
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/btwld/ack.git",
+    "directory": "tools"
+  }
+}

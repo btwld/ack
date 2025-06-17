@@ -11,7 +11,7 @@ part of 'user_model.dart';
 
 /// Generated schema for User
 /// A user model with validation
-class UserSchema extends BaseSchema<UserSchema> {
+class UserSchema extends SchemaModel<UserSchema> {
   /// Default constructor for parser instances
   const UserSchema();
 
@@ -81,7 +81,7 @@ class UserSchema extends BaseSchema<UserSchema> {
 }
 
 /// Generated schema for Address
-class AddressSchema extends BaseSchema<AddressSchema> {
+class AddressSchema extends SchemaModel<AddressSchema> {
   /// Default constructor for parser instances
   const AddressSchema();
 

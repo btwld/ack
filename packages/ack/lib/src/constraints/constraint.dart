@@ -46,6 +46,24 @@ class ConstraintError {
   String toString() => '$runtimeType: $constraintKey: $message';
 }
 
+/// Mixin for constraints that can be converted to JSON Schema representation.
+///
+/// This mixin provides the contract for converting constraint validation rules
+/// into JSON Schema draft-7 compliant format.
+mixin JsonSchemaSpec<T extends Object> on Constraint<T> {
+  /// Converts this constraint to its JSON Schema representation.
+  ///
+  /// Returns a map containing JSON Schema keywords that represent
+  /// this constraint according to JSON Schema draft-7 specification.
+  Map<String, Object?> toJsonSchema();
+}
+
+/// Deprecated alias for JsonSchemaSpec mixin.
+///
+/// Use [JsonSchemaSpec] instead for JSON Schema draft-7 compliance.
+@Deprecated(
+  'Use JsonSchemaSpec instead. Will be removed in next major version.',
+)
 mixin OpenApiSpec<T extends Object> on Constraint<T> {
   @Deprecated(
     'This method will be removed in future versions. Use toJsonSchema() instead.',

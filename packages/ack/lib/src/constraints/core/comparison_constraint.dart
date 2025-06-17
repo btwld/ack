@@ -8,7 +8,7 @@ enum ComparisonType { gt, gte, lt, lte, eq, range }
 /// This constraint consolidates multiple specific comparison constraints into a single
 /// flexible implementation that can compare any extractable numeric value.
 class ComparisonConstraint<T extends Object> extends Constraint<T>
-    with Validator<T>, OpenApiSpec<T> {
+    with Validator<T>, JsonSchemaSpec<T> {
   /// The type of comparison to perform.
   final ComparisonType type;
 
@@ -17,6 +17,9 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
   /// The maximum threshold for range comparisons.
   final num? maxThreshold;
+
+  /// The multiple value for multipleOf constraints.
+  final num? multipleValue;
 
   /// Function to extract a numeric value from the input for comparison.
   final num Function(T) valueExtractor;
@@ -28,6 +31,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     required this.type,
     required this.threshold,
     this.maxThreshold,
+    this.multipleValue,
     required this.valueExtractor,
     required super.constraintKey,
     required super.description,
@@ -38,6 +42,11 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
         );
 
   // Factory methods for string constraints
+
+  /// {@template min_length_validator}
+  /// Validates that the string has at least the specified minimum length.
+  /// Useful for ensuring passwords, usernames, or other fields meet length requirements.
+  /// {@endtemplate}
   static ComparisonConstraint<String> stringMinLength(int min) =>
       ComparisonConstraint<String>(
         type: ComparisonType.gte,
@@ -49,6 +58,10 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
             'Too short, min $min characters',
       );
 
+  /// {@template max_length_validator}
+  /// Validates that the string does not exceed the specified maximum length.
+  /// Useful for database field limits or UI constraints.
+  /// {@endtemplate}
   static ComparisonConstraint<String> stringMaxLength(int max) =>
       ComparisonConstraint<String>(
         type: ComparisonType.lte,
@@ -60,6 +73,15 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
             'Too long, max $max characters',
       );
 
+  /// {@template is_empty_validator}
+  /// Validates that the string is empty (has zero length).
+  /// Equivalent to checking if string.length == 0.
+  /// {@endtemplate}
+  ///
+  /// {@template not_empty_validator}
+  /// Validates that the string is not empty (has at least one character).
+  /// Equivalent to checking if string.length > 0.
+  /// {@endtemplate}
   static ComparisonConstraint<String> stringExactLength(int length) =>
       ComparisonConstraint<String>(
         type: ComparisonType.eq,
@@ -122,6 +144,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonConstraint<T>(
         type: ComparisonType.eq,
         threshold: 0,
+        multipleValue: multiple,
         valueExtractor: (value) => value.remainder(multiple),
         constraintKey: 'number_multiple_of',
         description: 'Number must be a multiple of $multiple',
@@ -219,44 +242,62 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    // Use constraint-specific keys based on constraintKey
+    // Improved constraint-specific key detection
     final isStringLength = constraintKey.startsWith('string_') &&
         (constraintKey.contains('length') || constraintKey.contains('exact'));
     final isListItems = constraintKey.startsWith('list_');
     final isObjectProperties = constraintKey.startsWith('object_');
+    final isMultipleOf = constraintKey == 'number_multiple_of';
 
     switch (type) {
       case ComparisonType.gt:
         return {'exclusiveMinimum': threshold};
       case ComparisonType.gte:
-        if (isStringLength) return {'minLength': threshold};
-        if (isListItems) return {'minItems': threshold};
-        if (isObjectProperties) return {'minProperties': threshold};
+        if (isStringLength) return {'minLength': threshold.toInt()};
+        if (isListItems) return {'minItems': threshold.toInt()};
+        if (isObjectProperties) return {'minProperties': threshold.toInt()};
 
         return {'minimum': threshold};
       case ComparisonType.lt:
         return {'exclusiveMaximum': threshold};
       case ComparisonType.lte:
-        if (isStringLength) return {'maxLength': threshold};
-        if (isListItems) return {'maxItems': threshold};
-        if (isObjectProperties) return {'maxProperties': threshold};
+        if (isStringLength) return {'maxLength': threshold.toInt()};
+        if (isListItems) return {'maxItems': threshold.toInt()};
+        if (isObjectProperties) return {'maxProperties': threshold.toInt()};
 
         return {'maximum': threshold};
       case ComparisonType.eq:
+        // Handle multipleOf constraint (uses eq with remainder check)
+        if (isMultipleOf && multipleValue != null) {
+          return {'multipleOf': multipleValue};
+        }
+
         if (isStringLength) {
-          return {'minLength': threshold, 'maxLength': threshold};
+          return {
+            'minLength': threshold.toInt(),
+            'maxLength': threshold.toInt(),
+          };
         }
 
         return {'const': threshold};
       case ComparisonType.range:
         if (isStringLength) {
-          return {'minLength': threshold, 'maxLength': maxThreshold};
+          return {
+            'minLength': threshold.toInt(),
+            'maxLength': maxThreshold!.toInt(),
+          };
         }
         if (isListItems) {
-          return {'minItems': threshold, 'maxItems': maxThreshold};
+          return {
+            'minItems': threshold.toInt(),
+            'maxItems': maxThreshold!.toInt(),
+          };
         }
         if (isObjectProperties) {
-          return {'minProperties': threshold, 'maxProperties': maxThreshold};
+          return {
+            'minProperties': threshold.toInt(),
+            'maxProperties': maxThreshold!.toInt(),
+          };
         }
 
         return {'minimum': threshold, 'maximum': maxThreshold};

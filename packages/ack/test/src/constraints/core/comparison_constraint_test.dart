@@ -120,7 +120,7 @@ void main() {
 
         expect(constraint.buildMessage(7), 'Must be a multiple of 5');
         expect(constraint.constraintKey, 'number_multiple_of');
-        expect(constraint.toJsonSchema(), {'const': 0});
+        expect(constraint.toJsonSchema(), {'multipleOf': 5});
       });
 
       test('numberMultipleOf works with decimals', () {

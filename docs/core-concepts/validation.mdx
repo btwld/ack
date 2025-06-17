@@ -87,6 +87,42 @@ Ensures the string is a valid date-time format (ISO 8601).
 Ack.string.dateTime()
 ```
 
+### `time()`
+Ensures the string is a valid time format (HH:MM:SS).
+```dart
+Ack.string.time()
+```
+
+### `uri()`
+Ensures the string is a valid URI according to RFC 3986.
+```dart
+Ack.string.uri()
+```
+
+### `uuid()`
+Ensures the string is a valid UUID according to RFC 4122.
+```dart
+Ack.string.uuid()
+```
+
+### `ipv4()`
+Ensures the string is a valid IPv4 address.
+```dart
+Ack.string.ipv4()
+```
+
+### `ipv6()`
+Ensures the string is a valid IPv6 address.
+```dart
+Ack.string.ipv6()
+```
+
+### `hostname()`
+Ensures the string is a valid hostname according to RFC 1123.
+```dart
+Ack.string.hostname()
+```
+
 ### `enumValues(List<String> allowedValues)`
 Ensures the string is one of the `allowedValues`.
 ```dart

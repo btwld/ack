@@ -120,7 +120,7 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
     return Class(
       (b) => b
         ..name = schemaClassName
-        ..extend = refer('BaseSchema<$schemaClassName>')
+        ..extend = refer('SchemaModel<$schemaClassName>')
         ..docs.add('/// Generated schema for $modelClassName')
         ..docs.addAll(
           schemaData.description != null
@@ -241,7 +241,7 @@ $propertyCode
   }
 
   String _buildPropertySchemaExpression(PropertyInfo property) {
-    var expr = TypeAnalyzer.getBaseSchemaType(property.typeName);
+    var expr = TypeAnalyzer.getSchemaModelType(property.typeName);
 
     // Apply constraints
     for (final constraint in property.constraints) {
@@ -525,7 +525,7 @@ $propertyCode
     return Class(
       (b) => b
         ..name = schemaClassName
-        ..extend = refer('BaseSchema<$schemaClassName>')
+        ..extend = refer('SchemaModel<$schemaClassName>')
         ..docs.addAll([
           '/// Generated base schema for ${element.name} with inheritance support',
           if (schemaData.description != null) '/// ${schemaData.description}',
@@ -536,7 +536,7 @@ $propertyCode
         ])
         ..fields.addAll([
           _buildDiscriminatedSchemaField(discriminatedInfo),
-          _buildBaseSchemaField(element, schemaData, discriminatedInfo),
+          _buildSchemaModelField(element, schemaData, discriminatedInfo),
         ])
         ..methods.addAll([
           _buildParseMethod(schemaClassName),
@@ -575,7 +575,7 @@ $propertyCode
     );
   }
 
-  Field _buildBaseSchemaField(
+  Field _buildSchemaModelField(
     ClassElement element,
     SchemaData schemaData,
     DiscriminatedClassInfo discriminatedInfo,

@@ -1,0 +1,9 @@
+{
+  "schemas": [
+    {
+      "name": "user-schema",
+      "path": "test-fixtures/schemas/user-schema.json",
+      "description": "User schema with string, email, integer, boolean, and array validation"
+    }
+  ]
+}

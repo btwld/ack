@@ -4,7 +4,8 @@ import 'package:test/test.dart';
 void main() {
   group('ConstraintValidator', () {
     test('toMap() returns name and description', () {
-      final validator = ComparisonConstraint.stringMinLength(1); // equivalent to notEmpty
+      final validator =
+          ComparisonConstraint.stringMinLength(1); // equivalent to notEmpty
       final map = validator.toMap();
 
       expect(map, {

@@ -2,7 +2,7 @@ import 'package:ack_example/product_model.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('BaseSchema', () {
+  group('SchemaModel', () {
     test('validates data on construction', () {
       // Valid data
       final validData = {

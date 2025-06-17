@@ -11,7 +11,7 @@ class TestModel {
 }
 
 /// Test schema class for TestModel
-class TestSchema extends BaseSchema<TestSchema> {
+class TestSchema extends SchemaModel<TestSchema> {
   const TestSchema() : super();
   const TestSchema._valid(Map<String, Object?> data) : super.valid(data);
   TestSchema._invalid(SchemaError error) : super.invalid(error);
@@ -52,7 +52,7 @@ class AnotherModel {
 }
 
 /// Test schema class for AnotherModel
-class AnotherSchema extends BaseSchema<AnotherSchema> {
+class AnotherSchema extends SchemaModel<AnotherSchema> {
   const AnotherSchema() : super();
   const AnotherSchema._valid(Map<String, Object?> data) : super.valid(data);
 
@@ -84,7 +84,7 @@ class AnotherSchema extends BaseSchema<AnotherSchema> {
 }
 
 /// Unregistered schema class for testing
-class UnregisteredSchema extends BaseSchema<UnregisteredSchema> {
+class UnregisteredSchema extends SchemaModel<UnregisteredSchema> {
   const UnregisteredSchema() : super();
   const UnregisteredSchema._valid(Map<String, Object?> data)
       : super.valid(data);

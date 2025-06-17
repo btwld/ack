@@ -1,8 +1,8 @@
 import '../schemas/schema.dart';
 import 'constraint.dart';
-import 'string/literal_constraint.dart';
 import 'core/comparison_constraint.dart';
 import 'core/pattern_constraint.dart';
+import 'string/literal_constraint.dart';
 
 /// Extension methods for [StringSchema] to provide additional validation capabilities.
 extension StringSchemaExtensions on StringSchema {
@@ -31,10 +31,12 @@ extension StringSchemaExtensions on StringSchema {
   StringSchema isEmpty() => empty();
 
   /// {@macro min_length_validator}
-  StringSchema minLength(int min) => _add(ComparisonConstraint.stringMinLength(min));
+  StringSchema minLength(int min) =>
+      _add(ComparisonConstraint.stringMinLength(min));
 
   /// {@macro max_length_validator}
-  StringSchema maxLength(int max) => _add(ComparisonConstraint.stringMaxLength(max));
+  StringSchema maxLength(int max) =>
+      _add(ComparisonConstraint.stringMaxLength(max));
 
   /// {@macro not_one_of_validator}
   StringSchema notOneOf(List<String> values) =>
@@ -79,6 +81,24 @@ extension StringSchemaExtensions on StringSchema {
   /// {@macro date_validator}
   @Deprecated('Use date() instead for consistent naming')
   StringSchema isDate() => date();
+
+  /// {@macro time_validator}
+  StringSchema time() => _add(PatternConstraint.time());
+
+  /// {@macro uri_validator}
+  StringSchema uri() => _add(PatternConstraint.uri());
+
+  /// {@macro uuid_validator}
+  StringSchema uuid() => _add(PatternConstraint.uuid());
+
+  /// {@macro ipv4_validator}
+  StringSchema ipv4() => _add(PatternConstraint.ipv4());
+
+  /// {@macro ipv6_validator}
+  StringSchema ipv6() => _add(PatternConstraint.ipv6());
+
+  /// {@macro hostname_validator}
+  StringSchema hostname() => _add(PatternConstraint.hostname());
 
   /// Validates that the string fully matches a pattern.
   ///

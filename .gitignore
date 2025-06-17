@@ -46,3 +46,11 @@ packages/*/coverage/*
 .claude/
 CLAUDE.md
 .idea
+
+# Node.js dependencies for tools
+tools/node_modules/
+tools/package-lock.json
+
+# Temporary test files
+temp/
+*.tmp
