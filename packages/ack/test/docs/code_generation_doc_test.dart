@@ -16,7 +16,7 @@ class User {
   }) : metadata = metadata ?? {};
 }
 
-class UserSchema extends BaseSchema<UserSchema> {
+class UserSchema extends SchemaModel<UserSchema> {
   const UserSchema() : super();
   const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
@@ -66,7 +66,7 @@ class Address {
   Address({required this.street, required this.city});
 }
 
-class AddressSchema extends BaseSchema<AddressSchema> {
+class AddressSchema extends SchemaModel<AddressSchema> {
   const AddressSchema() : super();
   const AddressSchema._valid(Map<String, Object?> data) : super.valid(data);
 

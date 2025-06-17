@@ -72,7 +72,7 @@ class TypeAnalyzer {
   }
 
   /// Get the base schema type for a property type
-  static String getBaseSchemaType(TypeName typeName) {
+  static String getSchemaModelType(TypeName typeName) {
     final typeStr = typeName.name;
 
     if (typeStr == 'String') {
@@ -86,7 +86,7 @@ class TypeAnalyzer {
     } else if (typeStr == 'List') {
       // For lists, extract item type if possible
       final itemType = typeName.typeArguments.isNotEmpty
-          ? getBaseSchemaType(typeName.typeArguments[0])
+          ? getSchemaModelType(typeName.typeArguments[0])
           : 'Ack.string';
       return 'Ack.list($itemType)';
     } else if (typeStr == 'Map') {

@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 // Test schema to verify type safety
-class UserSchema extends BaseSchema<UserSchema> {
+class UserSchema extends SchemaModel<UserSchema> {
   const UserSchema() : super();
   const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
@@ -42,7 +42,7 @@ void main() {
         'age': 30,
       };
 
-      // This should return UserSchema, not BaseSchema
+      // This should return UserSchema, not SchemaModel
       final user = const UserSchema().parse(data);
 
       // Verify it's the correct type

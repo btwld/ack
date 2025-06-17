@@ -11,7 +11,7 @@ part of 'sealed_block_model.dart';
 
 /// Generated base schema for SealedBlock with inheritance support
 /// Base block class with polymorphic subclasses
-class SealedBlockSchema extends BaseSchema<SealedBlockSchema> {
+class SealedBlockSchema extends SchemaModel<SealedBlockSchema> {
   /// Default constructor for parser instances
   const SealedBlockSchema();
 

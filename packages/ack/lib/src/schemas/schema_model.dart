@@ -5,11 +5,8 @@ import 'package:ack/src/schemas/schema.dart';
 import 'package:ack/src/validation/schema_error.dart';
 import 'package:meta/meta.dart';
 
-@Deprecated('Use BaseSchema instead')
-typedef SchemaModel<Self extends BaseSchema<Self>> = BaseSchema<Self>;
-
 /// Base class for type-safe schema models with generic type parameter for type-safe parse methods
-abstract class BaseSchema<Self extends BaseSchema<Self>> {
+abstract class SchemaModel<Self extends SchemaModel<Self>> {
   /// The data stored in this model (protected access for subclasses)
   @protected
   final Map<String, Object?> _data;
@@ -17,21 +14,21 @@ abstract class BaseSchema<Self extends BaseSchema<Self>> {
   final SchemaError? _error;
 
   // Default constructor for parser instances
-  const BaseSchema()
+  const SchemaModel()
       : _data = const {},
         _isValid = false,
         _error = null;
 
   @protected
-  const BaseSchema.internal(this._data, this._isValid, this._error);
+  const SchemaModel.internal(this._data, this._isValid, this._error);
 
   @protected
-  const BaseSchema.valid(Map<String, Object?> data)
+  const SchemaModel.valid(Map<String, Object?> data)
       : _data = data,
         _isValid = true,
         _error = null;
 
-  BaseSchema.invalid(SchemaError error)
+  SchemaModel.invalid(SchemaError error)
       : _data = const {},
         _isValid = false,
         _error = error;
@@ -82,7 +79,7 @@ abstract class BaseSchema<Self extends BaseSchema<Self>> {
 
   // NOTE: parse() and tryParse() are now implemented as static methods
   // on generated schema classes, as per the documented API design.
-  // They are no longer instance methods on the base BaseSchema class.
+  // They are no longer instance methods on the base SchemaModel class.
 
   /// Convert to JSON string
   String toJson() => jsonEncode(_data);

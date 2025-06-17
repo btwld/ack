@@ -11,13 +11,13 @@ class SchemaRegistry {
   static final Map<Type, SchemaFactory> _factories = {};
 
   // Register a schema factory
-  static void register<S extends BaseSchema<S>>(S Function(Object?) factory) {
+  static void register<S extends SchemaModel<S>>(S Function(Object?) factory) {
     _factories[S] = factory;
     TypeService.registerSchemaType<S>();
   }
 
   // Create schema by type
-  static S? createSchema<S extends BaseSchema<S>>(Object? data) {
+  static S? createSchema<S extends SchemaModel<S>>(Object? data) {
     final factory = _factories[S];
     if (factory != null) {
       return factory(data) as S;

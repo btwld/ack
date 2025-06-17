@@ -11,7 +11,7 @@ part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
-class ProductSchema extends BaseSchema<ProductSchema> {
+class ProductSchema extends SchemaModel<ProductSchema> {
   /// Default constructor for parser instances
   const ProductSchema();
 
@@ -92,7 +92,7 @@ class ProductSchema extends BaseSchema<ProductSchema> {
 
 /// Generated schema for Category
 /// A category for organizing products
-class CategorySchema extends BaseSchema<CategorySchema> {
+class CategorySchema extends SchemaModel<CategorySchema> {
   /// Default constructor for parser instances
   const CategorySchema();
 

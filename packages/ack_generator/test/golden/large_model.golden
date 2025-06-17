@@ -11,7 +11,7 @@ part of 'large_model.dart';
 
 /// Generated schema for LargeModel
 /// Large model with many properties for performance testing
-class LargeModelSchema extends BaseSchema<LargeModelSchema> {
+class LargeModelSchema extends SchemaModel<LargeModelSchema> {
   /// Default constructor for parser instances
   const LargeModelSchema();
 
