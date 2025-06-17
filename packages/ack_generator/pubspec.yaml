@@ -18,8 +18,7 @@ dependencies:
   dart_style: ^2.3.4
   recase: ^4.1.0
   collection: ^1.18.0
-  ack:
-    path: ../ack
+  ack: 0.2.0-beta.1
 
 dev_dependencies:
   build_runner: ^2.4.6
