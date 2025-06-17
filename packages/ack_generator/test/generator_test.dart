@@ -90,24 +90,24 @@ void main() {
         enum InvalidEnum { value1, value2 }
       ''';
 
-      // Should throw InvalidGenerationSourceError for non-class elements
-      expect(
-        () => testBuilder(
-          ackSchemaBuilder(BuilderOptions.empty),
-          {
-            'ack_generator|lib/invalid_enum.dart': input,
-            ...getMockAckPackage(),
-          },
-          outputs: {},
-        ),
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Generator cannot target'),
-          ),
-        ),
+      var foundError = false;
+      
+      // Should generate no output and report error for non-class elements
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/invalid_enum.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {},
+        onLog: (log) {
+          if (log.message.contains('Generator cannot target')) {
+            foundError = true;
+          }
+        },
       );
+      
+      expect(foundError, isTrue, reason: 'Expected error message about "Generator cannot target" not found');
     });
   });
 
@@ -301,7 +301,6 @@ Future<String> runBuilder(String name, String input) async {
         return true;
       }),
     },
-    reader: await PackageAssetReader.currentIsolate(),
   );
 
   if (generatedOutput.isEmpty) {
