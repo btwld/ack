@@ -1,4 +1,6 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/core/comparison_constraint.dart';
+import 'package:ack/src/constraints/core/pattern_constraint.dart';
 import 'package:ack/src/context.dart';
 import 'package:test/test.dart';
 
@@ -77,7 +79,7 @@ void main() {
     });
 
     test('Enum validation error messages', () {
-      final constraint = StringEnumConstraint(['red', 'green', 'blue']);
+      final constraint = PatternConstraint.enumValues(['red', 'green', 'blue']);
       final schema = Ack.string.constrain(constraint);
 
       var result = schema.validate('yellow');
@@ -90,7 +92,7 @@ void main() {
     });
 
     test('Date validation error messages', () {
-      final constraint = StringDateConstraint();
+      final constraint = PatternConstraint.date();
       final schema = Ack.string.constrain(constraint);
 
       var result = schema.validate('2023-13-45');
@@ -101,8 +103,8 @@ void main() {
     });
 
     test('List validation error messages', () {
-      final minItems = ListMinItemsConstraint(2);
-      final maxItems = ListMaxItemsConstraint(4);
+      final minItems = ComparisonConstraint.listMinItems<Object>(2);
+      final maxItems = ComparisonConstraint.listMaxItems<Object>(4);
       final uniqueItems = ListUniqueItemsConstraint();
       final schema = Ack.list(Ack.string)
           .constrain(minItems)
@@ -113,15 +115,13 @@ void main() {
       var result = schema.validate(['a']);
       expect(result.isFail, isTrue);
       var error = result.getError() as SchemaConstraintsError;
-      expect(error.constraints.first.message,
-          equals('Too few items, min 2. Got 1'));
+      expect(error.constraints.first.message, equals('Too few items, min 2'));
 
       // Test too many items
       result = schema.validate(['a', 'b', 'c', 'd', 'e']);
       expect(result.isFail, isTrue);
       error = result.getError() as SchemaConstraintsError;
-      expect(error.constraints.first.message,
-          equals('Too many items, max 4. Got 5'));
+      expect(error.constraints.first.message, equals('Too many items, max 4'));
 
       // Test duplicate items
       result = schema.validate(['a', 'b', 'a']);

@@ -1,4 +1,3 @@
-import 'package:ack/ack.dart';
 import 'package:ack_example/product_model.dart';
 import 'package:test/test.dart';
 
@@ -23,11 +22,10 @@ void main() {
       };
 
       // Create schema with valid data
-      final schema = ProductSchema(validData);
+      final schema = const ProductSchema().parse(validData);
 
-      // Check that validation was performed
+      // Check that validation was performed (no exception thrown)
       expect(schema.isValid, isTrue);
-      expect(schema.getErrors(), isNull);
 
       // Access properties
       expect(schema.id, equals('product-1'));
@@ -39,7 +37,7 @@ void main() {
       expect(schema.name, equals('Test Product'));
     });
 
-    test('stores validation errors for invalid data', () {
+    test('throws exception for invalid data', () {
       // Invalid data (missing required fields)
       final invalidData = {
         'id': 'product-1',
@@ -48,36 +46,21 @@ void main() {
         'price': 'not-a-number', // Wrong type
       };
 
-      // Create schema with invalid data
-      final schema = ProductSchema(invalidData);
-
-      // Check that validation was performed
-      expect(schema.isValid, isFalse);
-      expect(schema.getErrors(), isNotNull);
-
-      // Trying to access properties on invalid schema should handle errors appropriately
-      // The schema stores validation errors but doesn't throw on property access
+      // Create schema with invalid data should throw exception
+      expect(() => const ProductSchema().parse(invalidData), throwsException);
     });
 
-    test('handles non-map input', () {
+    test('throws exception for non-map input', () {
       // Non-map input
       final nonMapInput = 'not-a-map';
 
-      // Create schema with non-map input
-      final schema = ProductSchema(nonMapInput);
-
-      // Check that validation was performed
-      expect(schema.isValid, isFalse);
-      expect(schema.getErrors(), isNotNull);
+      // Create schema with non-map input should throw exception
+      expect(() => const ProductSchema().parse(nonMapInput), throwsException);
     });
 
-    test('handles null input', () {
-      // Null input
-      final schema = ProductSchema(null);
-
-      // Check that validation was performed
-      expect(schema.isValid, isFalse);
-      expect(schema.getErrors(), isNotNull);
+    test('throws exception for null input', () {
+      // Null input should throw exception
+      expect(() => const ProductSchema().parse(null), throwsException);
     });
   });
 }

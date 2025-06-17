@@ -9,44 +9,34 @@ class TestModel {
   TestModel({required this.name, required this.age});
 }
 
-// Create a test schema class that extends BaseSchema
-class TestSchema extends BaseSchema {
-  static final ObjectSchema schema = Ack.object({
-    'name': Ack.string,
-    'age': Ack.int,
-  }, required: [
-    'name',
-    'age'
-  ]);
-
-  TestSchema([Object? value]) : super(value);
+// Test schema for the old constructor pattern tests
+class TestSchema extends BaseSchema<TestSchema> {
+  const TestSchema() : super();
+  const TestSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   @override
-  ObjectSchema getSchema() => schema;
+  ObjectSchema get definition => Ack.object({
+        'name': Ack.string.minLength(2),
+        'age': Ack.int.min(0),
+      }, required: [
+        'name',
+        'age'
+      ]);
+
+  @override
+  TestSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return TestSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 
   String get name => getValue<String>('name')!;
   int get age => getValue<int>('age')!;
-
-  // Implement the static parseModel method for backward compatibility
-  static TestModel parseModel(Map<String, Object?> data) {
-    final schema = TestSchema(data);
-    if (!schema.isValid) {
-      throw AckException(schema.getErrors()!);
-    }
-    return TestModel(name: schema.name, age: schema.age);
-  }
-
-  // Implement the static tryParseModel method for backward compatibility
-  static TestModel? tryParseModel(Map<String, Object?> data) {
-    try {
-      final schema = TestSchema(data);
-      return schema.isValid
-          ? TestModel(name: schema.name, age: schema.age)
-          : null;
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
 void main() {
@@ -54,93 +44,77 @@ void main() {
     group('instance validation with property access', () {
       test('returns valid properties for valid input', () {
         final data = {'name': 'John', 'age': 30};
-        final schema = TestSchema(data);
+        final schema = const TestSchema().parse(data);
 
         expect(schema.isValid, isTrue);
         expect(schema.name, equals('John'));
         expect(schema.age, equals(30));
       });
 
-      test('schema is invalid for missing required fields', () {
+      test('schema throws for missing required fields', () {
         final data = {'name': 'John'}; // missing required 'age'
-        final schema = TestSchema(data);
-
-        expect(schema.isValid, isFalse);
-        expect(schema.getErrors(), isNotNull);
+        expect(
+            () => const TestSchema().parse(data), throwsA(isA<AckException>()));
       });
 
       test('provides error details for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
-        final schema = TestSchema(data);
-
-        expect(schema.isValid, isFalse);
-        final errors = schema.getErrors();
-        expect(errors, isNotNull);
-        // Just verify we get an error, don't check specific content
-        expect(errors.toString(), isNotEmpty);
+        expect(
+            () => const TestSchema().parse(data), throwsA(isA<AckException>()));
       });
     });
 
     group('safe validation pattern', () {
       test('creates model when valid', () {
         final data = {'name': 'John', 'age': 30};
-        final schema = TestSchema(data);
+        final schema = const TestSchema().parse(data);
 
-        TestModel? model;
-        if (schema.isValid) {
-          model = TestModel(name: schema.name, age: schema.age);
-        }
-
-        expect(model, isNotNull);
-        expect(model!.name, equals('John'));
-        expect(model.age, equals(30));
-      });
-
-      test('returns null when invalid', () {
-        final data = {'name': 'John'}; // missing required 'age'
-        final schema = TestSchema(data);
-
-        TestModel? model;
-        if (schema.isValid) {
-          model = TestModel(name: schema.name, age: schema.age);
-        }
-
-        expect(model, isNull);
-      });
-    });
-
-    group('static parse methods', () {
-      test('parseModel returns model for valid input', () {
-        final data = {'name': 'John', 'age': 30};
-        final model = TestSchema.parseModel(data);
+        final model = TestModel(name: schema.name, age: schema.age);
 
         expect(model.name, equals('John'));
         expect(model.age, equals(30));
       });
 
-      test('parseModel throws for invalid input', () {
+      test('returns null when invalid', () {
+        final data = {'name': 'John'}; // missing required 'age'
+        final schema = const TestSchema().tryParse(data);
+
+        expect(schema, isNull);
+      });
+    });
+
+    group('parse methods', () {
+      test('parse returns schema for valid input', () {
+        final data = {'name': 'John', 'age': 30};
+        final schema = const TestSchema().parse(data);
+
+        expect(schema.name, equals('John'));
+        expect(schema.age, equals(30));
+      });
+
+      test('parse throws for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
 
         expect(
-          () => TestSchema.parseModel(data),
+          () => const TestSchema().parse(data),
           throwsA(isA<AckException>()),
         );
       });
 
-      test('tryParseModel returns model for valid input', () {
+      test('tryParse returns schema for valid input', () {
         final data = {'name': 'John', 'age': 30};
-        final model = TestSchema.tryParseModel(data);
+        final schema = const TestSchema().tryParse(data);
 
-        expect(model, isNotNull);
-        expect(model!.name, equals('John'));
-        expect(model.age, equals(30));
+        expect(schema, isNotNull);
+        expect(schema!.name, equals('John'));
+        expect(schema.age, equals(30));
       });
 
-      test('tryParseModel returns null for invalid input', () {
+      test('tryParse returns null for invalid input', () {
         final data = {'name': 'John'}; // missing required 'age'
-        final model = TestSchema.tryParseModel(data);
+        final schema = const TestSchema().tryParse(data);
 
-        expect(model, isNull);
+        expect(schema, isNull);
       });
     });
   });

@@ -86,3 +86,30 @@ scripts:
       melos version --yes
       melos publish --no-dry-run --yes
     description: One-step version and publish
+
+  # ACK Generator specific test commands
+  test:gen:
+    run: melos exec -c 1 -- dart test
+    description: Run generator tests
+    packageFilters:
+      scope: ack_generator
+
+  test:gen:watch:
+    run: melos exec -c 1 -- dart test --watch
+    description: Run generator tests in watch mode
+    packageFilters:
+      scope: ack_generator
+
+  update-golden:
+    run: cd packages/ack_generator && dart tool/update_goldens.dart
+    description: Update golden test files (interactive - specify test names)
+
+  update-golden:all:
+    run: cd packages/ack_generator && dart tool/update_goldens.dart --all
+    description: Update all golden test files
+
+  test:golden:
+    run: melos exec -c 1 -- dart test --tags=golden
+    description: Run only golden tests
+    packageFilters:
+      dirExists: test/golden

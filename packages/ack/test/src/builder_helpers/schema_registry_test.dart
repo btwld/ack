@@ -11,11 +11,13 @@ class TestModel {
 }
 
 /// Test schema class for TestModel
-class TestSchema extends BaseSchema {
-  TestSchema(super.data);
+class TestSchema extends BaseSchema<TestSchema> {
+  const TestSchema() : super();
+  const TestSchema._valid(Map<String, Object?> data) : super.valid(data);
+  TestSchema._invalid(SchemaError error) : super.invalid(error);
 
   @override
-  AckSchema getSchema() {
+  ObjectSchema get definition {
     return Ack.object({
       'name': Ack.string,
       'value': Ack.int,
@@ -23,6 +25,18 @@ class TestSchema extends BaseSchema {
       'name',
       'value'
     ]);
+  }
+
+  @override
+  TestSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return TestSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
   }
 
   String get name => getValue<String>('name')!;
@@ -38,11 +52,12 @@ class AnotherModel {
 }
 
 /// Test schema class for AnotherModel
-class AnotherSchema extends BaseSchema {
-  AnotherSchema(super.data);
+class AnotherSchema extends BaseSchema<AnotherSchema> {
+  const AnotherSchema() : super();
+  const AnotherSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   @override
-  AckSchema getSchema() {
+  ObjectSchema get definition {
     return Ack.object({
       'title': Ack.string,
       'amount': Ack.double,
@@ -52,16 +67,42 @@ class AnotherSchema extends BaseSchema {
     ]);
   }
 
+  @override
+  AnotherSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return AnotherSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
   String get title => getValue<String>('title')!;
   double get amount => getValue<double>('amount')!;
 }
 
 /// Unregistered schema class for testing
-class UnregisteredSchema extends BaseSchema {
-  UnregisteredSchema(super.data);
+class UnregisteredSchema extends BaseSchema<UnregisteredSchema> {
+  const UnregisteredSchema() : super();
+  const UnregisteredSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
 
   @override
-  AckSchema getSchema() => Ack.object({});
+  ObjectSchema get definition => Ack.object({});
+
+  @override
+  UnregisteredSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return UnregisteredSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
 }
 
 /// Unregistered model class for testing
@@ -79,7 +120,8 @@ void main() {
     group('Registration', () {
       test('register adds factory to registry', () {
         // Register a schema factory
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>(
+            (data) => const TestSchema().parse(data));
 
         // Check if it's registered
         expect(SchemaRegistry.isRegistered<TestSchema>(), isTrue);
@@ -87,8 +129,10 @@ void main() {
 
       test('register can handle multiple schema types', () {
         // Register multiple schema factories
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
-        SchemaRegistry.register<AnotherSchema>((data) => AnotherSchema(data));
+        SchemaRegistry.register<TestSchema>(
+            (data) => const TestSchema().parse(data));
+        SchemaRegistry.register<AnotherSchema>(
+            (data) => const AnotherSchema().parse(data));
 
         // Verify both are registered
         expect(SchemaRegistry.isRegistered<TestSchema>(), isTrue);
@@ -97,7 +141,8 @@ void main() {
 
       test('register updates TypeService for schema types', () {
         // Register a schema factory
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>(
+            (data) => const TestSchema().parse(data));
 
         // Check TypeService knows about the schema type
         expect(TypeService.isSchemaType(TestSchema), isTrue);
@@ -110,7 +155,8 @@ void main() {
 
       test('register overwrites existing factory for same schema type', () {
         // First factory - creates a regular TestSchema
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>(
+            (data) => const TestSchema().parse(data));
 
         // Create initial schema to verify first factory works
         var data = {'name': 'Test1', 'value': 1};
@@ -124,7 +170,7 @@ void main() {
             data = Map<String, dynamic>.from(data);
             data['name'] = 'Modified';
           }
-          return TestSchema(data);
+          return const TestSchema().parse(data);
         });
 
         // Create schema with second factory
@@ -139,8 +185,10 @@ void main() {
     group('Schema Creation', () {
       setUp(() {
         // Register test schemas before each test
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
-        SchemaRegistry.register<AnotherSchema>((data) => AnotherSchema(data));
+        SchemaRegistry.register<TestSchema>(
+            (data) => const TestSchema().parse(data));
+        SchemaRegistry.register<AnotherSchema>(
+            (data) => const AnotherSchema().parse(data));
       });
 
       test('createSchema returns correct schema for registered schema type',
@@ -153,8 +201,8 @@ void main() {
 
         // Verify schema creation
         expect(schema, isA<TestSchema>());
-        expect(schema!['name'], equals('Test'));
-        expect(schema['value'], equals(42));
+        expect(schema!.testData['name'], equals('Test'));
+        expect(schema.testData['value'], equals(42));
 
         // Verify property access
         expect(schema.name, equals('Test'));
@@ -195,6 +243,21 @@ void main() {
       });
 
       test('createSchema handles empty data properly', () {
+        // Register schema with error handling for this test
+        SchemaRegistry.register<TestSchema>((data) {
+          try {
+            return const TestSchema().parse(data);
+          } catch (e) {
+            // Return an invalid schema instance for testing
+            if (e is AckException) {
+              return TestSchema._invalid(e.error);
+            } else {
+              // Create a mock error for non-AckException cases
+              return TestSchema._invalid(SchemaMockError());
+            }
+          }
+        });
+
         // Empty data map
         final emptyData = <String, dynamic>{};
 
@@ -207,6 +270,19 @@ void main() {
       });
 
       test('createSchema handles null fields properly', () {
+        // Register schema with error handling for this test
+        SchemaRegistry.register<TestSchema>((data) {
+          try {
+            return const TestSchema().parse(data);
+          } catch (e) {
+            if (e is AckException) {
+              return TestSchema._invalid(e.error);
+            } else {
+              return TestSchema._invalid(SchemaMockError());
+            }
+          }
+        });
+
         // Data with null fields
         final dataWithNulls = {'name': null, 'value': null};
 
@@ -219,9 +295,9 @@ void main() {
         // Schema should be invalid
         expect(schema!.isValid, isFalse);
 
-        // Accessing null fields should not throw
-        expect(schema['name'], isNull);
-        expect(schema['value'], isNull);
+        // Accessing null fields through testData should not throw
+        expect(schema.testData['name'], isNull);
+        expect(schema.testData['value'], isNull);
 
         // Validation errors should be available
         expect(schema.getErrors(), isNotNull);
@@ -231,7 +307,8 @@ void main() {
     group('Integration with TypeService', () {
       setUp(() {
         // Register test schemas before each test
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        SchemaRegistry.register<TestSchema>(
+            (data) => const TestSchema().parse(data));
       });
 
       test('SchemaRegistry and TypeService work together', () {
@@ -249,8 +326,18 @@ void main() {
 
     group('Error Cases', () {
       test('createSchema handles invalid data gracefully', () {
-        // Register schema
-        SchemaRegistry.register<TestSchema>((data) => TestSchema(data));
+        // Register schema with error handling
+        SchemaRegistry.register<TestSchema>((data) {
+          try {
+            return const TestSchema().parse(data);
+          } catch (e) {
+            if (e is AckException) {
+              return TestSchema._invalid(e.error);
+            } else {
+              return TestSchema._invalid(SchemaMockError());
+            }
+          }
+        });
 
         // Create invalid data (wrong types)
         final invalidData = {'name': 123, 'value': 'not an int'};

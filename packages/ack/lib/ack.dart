@@ -12,7 +12,6 @@ export 'src/deprecations.dart';
 export 'src/schemas/schema.dart';
 export 'src/schemas/schema_model.dart';
 export 'src/utils/json_schema.dart';
-export 'src/utils/template.dart';
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 export 'src/validation/schema_result.dart';

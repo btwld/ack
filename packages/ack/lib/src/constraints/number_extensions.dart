@@ -1,23 +1,23 @@
 import '../schemas/schema.dart';
 import 'constraint.dart';
-import 'validators.dart';
+import 'core/comparison_constraint.dart';
 
 /// Extension methods for [NumSchema] to provide additional validation capabilities.
 extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   NumSchema<T> _add(Validator<T> validator) => withConstraints([validator]);
 
   /// {@macro min_num_validator}
-  NumSchema<T> min(T min) => _add(NumberMinConstraint(min));
+  NumSchema<T> min(T min) => _add(ComparisonConstraint.numberMin(min));
 
   /// {@macro max_num_validator}
-  NumSchema<T> max(T max) => _add(NumberMaxConstraint(max));
+  NumSchema<T> max(T max) => _add(ComparisonConstraint.numberMax(max));
 
   /// {@macro range_num_validator}
-  NumSchema<T> range(T min, T max) => _add(NumberRangeConstraint(min, max));
+  NumSchema<T> range(T min, T max) => _add(ComparisonConstraint.numberRange(min, max));
 
   /// {@macro multiple_of_num_validator}
   NumSchema<T> multipleOf(T multiple) =>
-      _add(NumberMultipleOfConstraint(multiple));
+      _add(ComparisonConstraint.numberMultipleOf(multiple));
 
   /// Validates that a number is positive (greater than 0).
   ///
@@ -26,7 +26,7 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   /// final priceSchema = Ack.double.positive();
   /// ```
   NumSchema<T> positive() {
-    return constrain(NumberExclusiveMinConstraint(0 as T));
+    return constrain(ComparisonConstraint.numberExclusiveMin(0 as T));
   }
 
   /// Validates that a number is negative (less than 0).
@@ -36,7 +36,7 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   /// final temperatureSchema = Ack.double.negative();
   /// ```
   NumSchema<T> negative() {
-    return constrain(NumberExclusiveMaxConstraint(0 as T));
+    return constrain(ComparisonConstraint.numberExclusiveMax(0 as T));
   }
 
   /// Validates that a number is within a range (inclusive by default).
@@ -50,46 +50,3 @@ extension NumSchemaExtensions<T extends num> on NumSchema<T> {
   }
 }
 
-/// Constraint for validating that a number is strictly greater than a minimum value.
-class NumberExclusiveMinConstraint<T extends num> extends Constraint<T>
-    with Validator<T>, OpenApiSpec<T> {
-  final T min;
-
-  const NumberExclusiveMinConstraint(this.min)
-      : super(
-          constraintKey: 'number_exclusive_min',
-          description: 'Must be greater than $min',
-        );
-
-  @override
-  bool isValid(T value) => value > min;
-
-  @override
-  String buildMessage(T value) => 'Must be greater than $min';
-
-  @override
-  Map<String, Object?> toJsonSchema() =>
-      {'minimum': min, 'exclusiveMinimum': true};
-}
-
-/// Constraint for validating that a number is strictly less than a maximum value.
-class NumberExclusiveMaxConstraint<T extends num> extends Constraint<T>
-    with Validator<T>, OpenApiSpec<T> {
-  final T max;
-
-  const NumberExclusiveMaxConstraint(this.max)
-      : super(
-          constraintKey: 'number_exclusive_max',
-          description: 'Must be less than $max',
-        );
-
-  @override
-  bool isValid(T value) => value < max;
-
-  @override
-  String buildMessage(T value) => 'Must be less than $max';
-
-  @override
-  Map<String, Object?> toJsonSchema() =>
-      {'maximum': max, 'exclusiveMaximum': true};
-}

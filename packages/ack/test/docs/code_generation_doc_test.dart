@@ -16,7 +16,10 @@ class User {
   }) : metadata = metadata ?? {};
 }
 
-class UserSchema extends BaseSchema {
+class UserSchema extends BaseSchema<UserSchema> {
+  const UserSchema() : super();
+  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
+
   static final ObjectSchema schema = Ack.object({
     'email': Ack.string.email(),
     'name': Ack.string.minLength(3).maxLength(50),
@@ -26,15 +29,23 @@ class UserSchema extends BaseSchema {
     'name'
   ], additionalProperties: true);
 
-  UserSchema([Object? data]) : super(data ?? {});
-
   static SchemaResult validateData(Map<String, Object?> data) {
     return schema.validate(data);
   }
 
   @override
-  AckSchema getSchema() {
-    return schema;
+  ObjectSchema get definition => schema;
+
+  @override
+  UserSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return UserSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
   }
 
   String get email => getValue<String>('email')!;
@@ -55,7 +66,10 @@ class Address {
   Address({required this.street, required this.city});
 }
 
-class AddressSchema extends BaseSchema {
+class AddressSchema extends BaseSchema<AddressSchema> {
+  const AddressSchema() : super();
+  const AddressSchema._valid(Map<String, Object?> data) : super.valid(data);
+
   static final ObjectSchema schema = Ack.object({
     'street': Ack.string,
     'city': Ack.string,
@@ -64,11 +78,19 @@ class AddressSchema extends BaseSchema {
     'city'
   ]);
 
-  AddressSchema([Object? data]) : super(data ?? {});
+  @override
+  ObjectSchema get definition => schema;
 
   @override
-  AckSchema getSchema() {
-    return schema;
+  AddressSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return AddressSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
   }
 
   String get street => getValue<String>('street')!;
@@ -111,7 +133,7 @@ void main() {
       };
 
       // Create a schema object from the data
-      final userSchema = UserSchema(userData);
+      final userSchema = const UserSchema().parse(userData);
       expect(userSchema.isValid, isTrue);
 
       // Access the strongly-typed properties directly
@@ -131,7 +153,7 @@ void main() {
         'age': 30,
       };
 
-      final schema = UserSchema(userData);
+      final schema = const UserSchema().parse(userData);
       expect(schema.isValid, isTrue);
 
       // Get back to JSON
@@ -148,7 +170,7 @@ void main() {
         'city': 'Anytown',
       };
 
-      final addressSchema = AddressSchema(addressData);
+      final addressSchema = const AddressSchema().parse(addressData);
       expect(addressSchema.isValid, isTrue);
       expect(addressSchema.street, equals('123 Main St'));
       expect(addressSchema.city, equals('Anytown'));
