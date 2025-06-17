@@ -92,6 +92,138 @@ void main() {
       );
     });
   });
+
+  group('builder configuration', () {
+    test('handles custom BuilderOptions', () async {
+      final customOptions = BuilderOptions({
+        'generate_for': ['**/*.dart'],
+        'exclude': ['**/*.g.dart'],
+      });
+
+      final inputFile = File('test/fixtures/user_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(customOptions),
+        {
+          'ack_generator|lib/user_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/user_model.g.dart': isNotEmpty,
+        },
+      );
+    });
+
+    test('handles empty BuilderOptions', () async {
+      final emptyOptions = BuilderOptions({});
+
+      final inputFile = File('test/fixtures/user_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(emptyOptions),
+        {
+          'ack_generator|lib/user_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/user_model.g.dart': isNotEmpty,
+        },
+      );
+    });
+
+    test('handles BuilderOptions with null values', () async {
+      final nullOptions = BuilderOptions({
+        'some_option': null,
+        'another_option': '',
+      });
+
+      final inputFile = File('test/fixtures/product_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(nullOptions),
+        {
+          'ack_generator|lib/product_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/product_model.g.dart': isNotEmpty,
+        },
+      );
+    });
+  });
+
+  group('complex scenarios', () {
+    test('handles deeply nested models', () async {
+      await testGolden('deeply_nested_model');
+    });
+
+    test('handles models with many properties', () async {
+      await testGolden('large_model');
+    });
+
+    test('verifies deep nesting dependency registration', () async {
+      final inputFile = File('test/fixtures/deeply_nested_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/deeply_nested_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/deeply_nested_model.g.dart':
+              predicate<List<int>>((content) {
+            final generated = String.fromCharCodes(content);
+            return generated.contains('Level1Schema') &&
+                generated.contains('Level2Schema') &&
+                generated.contains('Level3Schema') &&
+                generated.contains('Level4Schema') &&
+                generated.contains('Level2Schema.ensureInitialize()') &&
+                generated.contains('Level3Schema.ensureInitialize()') &&
+                generated.contains('Level4Schema.ensureInitialize()');
+          }),
+        },
+      );
+    });
+
+    test('verifies large model performance characteristics', () async {
+      final stopwatch = Stopwatch()..start();
+
+      final inputFile = File('test/fixtures/large_model.dart');
+      final input = inputFile.readAsStringSync();
+
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/large_model.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {
+          'ack_generator|lib/large_model.g.dart':
+              predicate<List<int>>((content) {
+            final generated = String.fromCharCodes(content);
+            return generated.contains('LargeModelSchema') &&
+                generated.contains('field1') &&
+                generated.contains('field24') &&
+                generated.contains('extraData');
+          }),
+        },
+      );
+
+      stopwatch.stop();
+
+      // Should process large model efficiently (under 2 seconds)
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(2000),
+        reason: 'Large model generation should complete in under 2 seconds',
+      );
+    });
+  });
 }
 
 Future<void> testGolden(String name) async {
