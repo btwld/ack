@@ -4,6 +4,7 @@ import 'type_name.dart';
 /// Information about a property in a class
 class PropertyInfo {
   final String name;
+  final String? jsonKey;
   final TypeName typeName;
   bool isRequired;
   bool isNullable;
@@ -11,6 +12,7 @@ class PropertyInfo {
 
   PropertyInfo({
     required this.name,
+    this.jsonKey,
     required this.typeName,
     this.isRequired = false,
     this.isNullable = false,
@@ -19,7 +21,7 @@ class PropertyInfo {
 
   @override
   String toString() => 'PropertyInfo($name: $typeName, '
-      'required: $isRequired, nullable: $isNullable, '
+      'jsonKey: $jsonKey, required: $isRequired, nullable: $isNullable, '
       'constraints: ${constraints.length})';
 
   @override
@@ -28,6 +30,7 @@ class PropertyInfo {
       other is PropertyInfo &&
           runtimeType == other.runtimeType &&
           name == other.name &&
+          jsonKey == other.jsonKey &&
           typeName == other.typeName &&
           isRequired == other.isRequired &&
           isNullable == other.isNullable &&
@@ -36,6 +39,7 @@ class PropertyInfo {
   @override
   int get hashCode =>
       name.hashCode ^
+      jsonKey.hashCode ^
       typeName.hashCode ^
       isRequired.hashCode ^
       isNullable.hashCode ^

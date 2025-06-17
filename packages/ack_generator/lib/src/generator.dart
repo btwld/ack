@@ -336,7 +336,7 @@ $propertyCode
   }
 
   String _generateGetterBody(PropertyInfo property, String typeStr) {
-    final propName = property.name;
+    final propName = property.jsonKey ?? property.name;
     final isNullable = property.isNullable;
 
     // Primitives - use getValue
@@ -435,7 +435,7 @@ $propertyCode
     final knownFields = classInfo
         .getPropertiesExcluding(schemaData.additionalPropertiesField)
         .values
-        .map((p) => "'${p.name}'")
+        .map((p) => "'${p.jsonKey ?? p.name}'")
         .toSet();
 
     final body = '''
@@ -767,6 +767,25 @@ $propertyCode
             final superElement = supertype.element;
             if (superElement is ClassElement &&
                 (superElement.isSealed || superElement.isAbstract)) {
+              // Verify parent has discriminatedKey annotation
+              final parentHasDiscriminator = superElement.metadata.any(
+                (ann) =>
+                    ann.element?.displayName == 'Schema' &&
+                    ConstantReader(ann.computeConstantValue())
+                            .peek('discriminatedKey')
+                            ?.stringValue !=
+                        null,
+              );
+
+              if (!parentHasDiscriminator) {
+                throw InvalidGenerationSourceError(
+                  '${element.name} has discriminatedValue but '
+                  '${superElement.name} is not a discriminated union. '
+                  'Parent class must have @Schema(discriminatedKey: "...") annotation.',
+                  element: element,
+                );
+              }
+
               return true;
             }
           }
@@ -813,7 +832,8 @@ $propertyCode
   }) {
     return properties.map((prop) {
       final schemaExpr = _buildPropertySchemaExpression(prop);
-      final entry = "$indent'${prop.name}': $schemaExpr";
+      final key = prop.jsonKey ?? prop.name;
+      final entry = "$indent'$key': $schemaExpr";
       return includeTrailingComma ? '$entry,' : entry;
     }).join(includeTrailingComma ? '\n' : ',\n');
   }
@@ -824,7 +844,7 @@ $propertyCode
         .getRequiredProperties(
           excludeField: schemaData.additionalPropertiesField,
         )
-        .map((p) => "'${p.name}'")
+        .map((p) => "'${p.jsonKey ?? p.name}'")
         .join(', ');
   }
 
@@ -905,13 +925,14 @@ $propertyCode
     // Build property map code
     final propertyEntries = subclassProperties.map((prop) {
       final schemaExpr = _buildPropertySchemaExpression(prop);
-      return "'${prop.name}': $schemaExpr";
+      final key = prop.jsonKey ?? prop.name;
+      return "'$key': $schemaExpr";
     }).join(',\n      ');
 
     // Build required fields
     final requiredFields = subclassProperties
         .where((prop) => prop.isRequired)
-        .map((prop) => "'${prop.name}'")
+        .map((prop) => "'${prop.jsonKey ?? prop.name}'")
         .join(', ');
 
     final schemaCode = '''${baseName}Schema.baseSchema.extend(

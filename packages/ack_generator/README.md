@@ -70,7 +70,40 @@ extension UserSchemaX on UserSchema {
 final user = schema.toUser();
 ```
 
-**Option 4: With Other Serialization Libraries**
+**Option 4: With dart_mappable Integration**
+```dart
+import 'package:dart_mappable/dart_mappable.dart';
+import 'package:ack/ack.dart';
+
+part 'user.mapper.dart';  // dart_mappable
+part 'user.g.dart';       // ack_generator
+
+@MappableClass(caseStyle: CaseStyle.snakeCase)
+@Schema()
+class User with UserMappable {
+  final String firstName;   // -> 'first_name' in both JSON and schema
+  final String lastName;    // -> 'last_name' in both JSON and schema
+
+  @MappableField(key: 'email_address')
+  @IsEmail()
+  final String email;       // -> 'email_address' in both
+
+  User({required this.firstName, required this.lastName, required this.email});
+}
+
+// Validation and serialization use the same field names automatically
+factory User.fromJson(Map<String, dynamic> json) {
+  // Validate first with transformed field names
+  final schema = UserSchema(json);
+  if (!schema.isValid) {
+    throw AckException(schema.getErrors()!);
+  }
+  // Then deserialize with dart_mappable (same field names)
+  return UserMapper.fromMap(json);
+}
+```
+
+**Option 5: With Other Serialization Libraries**
 ```dart
 // Works seamlessly with json_serializable, freezed, etc.
 factory User.fromJson(Map<String, dynamic> json) {
@@ -84,6 +117,46 @@ factory User.fromJson(Map<String, dynamic> json) {
 }
 ```
 
+## dart_mappable Integration
+
+ACK Generator now provides seamless integration with [dart_mappable](https://pub.dev/packages/dart_mappable), automatically synchronizing field names and case styles between validation schemas and serialization.
+
+### Key Features
+
+- **Automatic Case Style Transformation**: Supports snake_case, camelCase, kebab-case, and all other dart_mappable case styles
+- **Custom Field Key Support**: Respects `@MappableField(key: 'custom_name')` annotations
+- **Zero Configuration**: Just add dart_mappable annotations and ACK automatically applies the same transformations
+- **Backward Compatible**: Existing schemas continue to work unchanged
+
+### Supported Case Styles
+
+- `camelCase` (default, no transformation)
+- `snake_case`
+- `kebab-case` / `param-case`
+- `PascalCase`
+- `CONSTANT_CASE`
+- `dot.case`
+- `path/case`
+- `Sentence case`
+- `Header-Case`
+
+### Example
+
+```dart
+@MappableClass(caseStyle: CaseStyle.snakeCase)
+@Schema()
+class User with UserMappable {
+  final String firstName;   // Becomes 'first_name' in JSON and schema
+  final String lastName;    // Becomes 'last_name' in JSON and schema
+
+  @MappableField(key: 'email_addr')
+  @IsEmail()
+  final String email;       // Becomes 'email_addr' in JSON and schema
+}
+```
+
+Both dart_mappable serialization and ACK validation will use the same transformed field names automatically.
+
 ## Benefits of This Change
 
 1. **Flexibility**: Choose your own serialization strategy
@@ -91,6 +164,7 @@ factory User.fromJson(Map<String, dynamic> json) {
 3. **Better Separation of Concerns**: Validation is separate from object creation
 4. **Framework Agnostic**: Works with any Dart serialization library
 5. **Simpler Mental Model**: Schemas validate, they don't create
+6. **dart_mappable Integration**: Seamless compatibility with automatic field name synchronization
 
 ## Implementation Status
 ✅ Core files created:
