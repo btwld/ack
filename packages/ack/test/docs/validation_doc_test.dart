@@ -301,9 +301,8 @@ void main() {
       });
 
       test('Pattern matching (regex)', () {
-        final alphanumericSchema = Ack.string.matches(
-            r'[a-zA-Z0-9]+',
-            example: 'abc123');
+        final alphanumericSchema =
+            Ack.string.matches(r'[a-zA-Z0-9]+', example: 'abc123');
 
         // Valid alphanumeric strings
         expect(alphanumericSchema.validate('abc123').isOk, isTrue);
@@ -347,9 +346,8 @@ void main() {
         // without making assertions about its behavior
 
         // Date validation with custom constraint
-        final dateSchema = Ack.string.matches(
-            r'\d{4}-\d{2}-\d{2}',
-            example: '2023-01-01');
+        final dateSchema =
+            Ack.string.matches(r'\d{4}-\d{2}-\d{2}', example: '2023-01-01');
         expect(dateSchema.validate('2023-01-01').isOk, isTrue);
         expect(dateSchema.validate('not-a-date').isOk, isFalse);
 
@@ -376,9 +374,8 @@ void main() {
         expect(urlSchema.validate('not-a-url').isOk, isFalse);
 
         // Hex color validation with custom constraint
-        final hexColorSchema = Ack.string.matches(
-            r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})',
-            example: '#FF0000');
+        final hexColorSchema = Ack.string
+            .matches(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})', example: '#FF0000');
         expect(hexColorSchema.validate('#FF0000').isOk, isTrue);
         expect(hexColorSchema.validate('red').isOk, isFalse);
       });

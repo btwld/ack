@@ -13,12 +13,13 @@ void main() {
     });
 
     test('copyWith changes validators', () {
-      final schema = StringSchema(constraints: [ComparisonConstraint.stringMaxLength(5)]);
+      final schema =
+          StringSchema(constraints: [ComparisonConstraint.stringMaxLength(5)]);
       expect(schema.getConstraints().length, equals(1));
       expect(schema.getConstraints()[0], isA<ComparisonConstraint>());
 
-      final newSchema =
-          schema.copyWith(constraints: [ComparisonConstraint.stringMinLength(10)]);
+      final newSchema = schema
+          .copyWith(constraints: [ComparisonConstraint.stringMinLength(10)]);
       expect(newSchema.getConstraints().length, equals(1));
       expect(newSchema.getConstraints()[0], isA<ComparisonConstraint>());
     });
@@ -234,7 +235,8 @@ void main() {
     });
 
     group('NotOneOfValidator', () {
-      final validator = PatternConstraint.notEnumValues(['red', 'green', 'blue']);
+      final validator =
+          PatternConstraint.notEnumValues(['red', 'green', 'blue']);
 
       test('Value not in disallowed list passes validation', () {
         expect(validator.isValid('yellow'), isTrue);

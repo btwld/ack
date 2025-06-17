@@ -12,57 +12,57 @@ class LargeModel {
   // String fields with various validations
   @IsNotEmpty()
   final String field1;
-  
+
   @IsEmail()
   final String field2;
-  
+
   @MinLength(5)
   final String field3;
-  
+
   @IsNotEmpty()
   final String field4;
-  
+
   @MinLength(3)
   final String field5;
-  
+
   // Numeric fields
   final int field6;
   final double field7;
   final int field8;
   final double field9;
   final int field10;
-  
+
   // Boolean fields
   final bool field11;
   final bool field12;
   final bool field13;
-  
+
   // DateTime fields
   final DateTime field14;
   final DateTime field15;
-  
+
   // Optional fields with various constraints
   @Nullable()
   final String? field16;
-  
+
   @Required()
   final String? field17;
-  
+
   @Nullable()
   final int? field18;
-  
+
   @Required()
   final bool? field19;
-  
+
   @Nullable()
   final DateTime? field20;
-  
+
   // Collection fields
   final List<String> field21;
   final List<int> field22;
   final Map<String, dynamic> field23;
   final List<bool> field24;
-  
+
   // Additional properties field
   final Map<String, dynamic> extraData;
 

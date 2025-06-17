@@ -108,9 +108,8 @@ void main() {
 
     test('Advanced Custom Constraints: Regex Pattern Matching', () {
       // Using the matches method
-      final nameSchema = Ack.string.matches(
-          r'[A-Za-z\s]+',
-          example: 'John Doe');
+      final nameSchema =
+          Ack.string.matches(r'[A-Za-z\s]+', example: 'John Doe');
 
       // Test valid values
       expect(nameSchema.validate('John Doe').isOk, isTrue);
