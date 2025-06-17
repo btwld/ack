@@ -1,4 +1,6 @@
+import 'package:ack/ack.dart';
 import 'package:test/test.dart';
+
 import '../lib/product_model.dart';
 
 void main() {
@@ -23,10 +25,11 @@ void main() {
         'productCode': 'ABC-1234', // matches pattern
       };
 
-      final schema = ProductSchema(validData);
-      
-      expect(schema.isValid, isTrue, reason: 'Schema should be valid with correct data');
-      
+      final schema = const ProductSchema().parse(validData);
+
+      expect(schema.isValid, isTrue,
+          reason: 'Schema should be valid with correct data');
+
       // Test all field values
       expect(schema.id, equals('prod123'));
       expect(schema.name, equals('Valid Product Name'));
@@ -40,7 +43,7 @@ void main() {
       expect(schema.stockQuantity, equals(50));
       expect(schema.status, equals('published'));
       expect(schema.productCode, equals('ABC-1234'));
-      
+
       // Test direct property access (new architecture)
       expect(schema.id, equals('prod123'));
       expect(schema.name, equals('Valid Product Name'));
@@ -61,8 +64,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsEmail constraint', () {
@@ -80,8 +83,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsMin/@IsMax constraints', () {
@@ -98,8 +101,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsPositive constraint', () {
@@ -116,8 +119,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsEnumValues constraint', () {
@@ -130,12 +133,13 @@ void main() {
         'releaseDate': '2024-01-15',
         'createdAt': '2024-01-15T10:30:00Z',
         'stockQuantity': 50,
-        'status': 'invalid-status', // Not in enum ['draft', 'published', 'archived']
+        'status':
+            'invalid-status', // Not in enum ['draft', 'published', 'archived']
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsPattern constraint', () {
@@ -149,11 +153,12 @@ void main() {
         'createdAt': '2024-01-15T10:30:00Z',
         'stockQuantity': 50,
         'status': 'published',
-        'productCode': 'invalid-code', // Doesn't match pattern ^[A-Z]{2,3}-\d{4}$
+        'productCode':
+            'invalid-code', // Doesn't match pattern ^[A-Z]{2,3}-\d{4}$
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsDate constraint', () {
@@ -170,8 +175,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should reject data violating @IsDateTime constraint', () {
@@ -188,8 +193,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(invalidData);
-      expect(schema.isValid, isFalse);
+      expect(() => const ProductSchema().parse(invalidData),
+          throwsA(isA<AckException>()));
     });
 
     test('should handle nullable fields correctly', () {
@@ -209,7 +214,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema(dataWithNulls);
+      final schema = const ProductSchema().parse(dataWithNulls);
       expect(schema.isValid, isTrue);
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);
