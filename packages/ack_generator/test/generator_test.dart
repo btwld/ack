@@ -5,6 +5,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import 'utils/mock_ack_package.dart';
+
 void main() {
   group('AckBuilder', () {
     test('generates correct output for user model', () async {
@@ -41,6 +43,55 @@ void main() {
       print('Golden files updated. Review changes before committing.');
     }
   });
+
+  group('error handling', () {
+    test('handles missing @Schema annotation gracefully', () async {
+      const input = '''
+        class InvalidModel {
+          final String name;
+          InvalidModel({required this.name});
+        }
+      ''';
+
+      // Should not generate any output for classes without @Schema
+      await testBuilder(
+        ackSchemaBuilder(BuilderOptions.empty),
+        {
+          'ack_generator|lib/invalid.dart': input,
+          ...getMockAckPackage(),
+        },
+        outputs: {},
+      );
+    });
+
+    test('reports error for non-class elements with @Schema', () async {
+      const input = '''
+        import 'package:ack/ack.dart';
+
+        @Schema()
+        enum InvalidEnum { value1, value2 }
+      ''';
+
+      // Should throw InvalidGenerationSourceError for non-class elements
+      expect(
+        () => testBuilder(
+          ackSchemaBuilder(BuilderOptions.empty),
+          {
+            'ack_generator|lib/invalid_enum.dart': input,
+            ...getMockAckPackage(),
+          },
+          outputs: {},
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Generator cannot target'),
+          ),
+        ),
+      );
+    });
+  });
 }
 
 Future<void> testGolden(String name) async {
@@ -72,53 +123,7 @@ Future<void> testGolden(String name) async {
       ackSchemaBuilder(BuilderOptions.empty),
       {
         'ack_generator|lib/$name.dart': input,
-        // Provide ack package dependency
-        'ack|lib/ack.dart': '''
-export 'src/annotations.dart';
-export 'src/ack.dart';
-export 'src/schema_model.dart';
-export 'src/schema_registry.dart';
-export 'src/json_schema_converter.dart';
-export 'src/ack_exception.dart';
-''',
-        'ack|lib/src/annotations.dart': '''
-class Schema {
-  final String? description;
-  final bool additionalProperties;
-  final String? additionalPropertiesField;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
-
-  const Schema({
-    this.description,
-    this.additionalProperties = false,
-    this.additionalPropertiesField,
-    this.discriminatedKey,
-    this.discriminatedValue,
-  });
-}
-
-class IsEmail {
-  const IsEmail();
-}
-
-class IsNotEmpty {
-  const IsNotEmpty();
-}
-
-class Required {
-  const Required();
-}
-
-class MinLength {
-  final int length;
-  const MinLength(this.length);
-}
-
-class Nullable {
-  const Nullable();
-}
-''',
+        ...getMockAckPackage(),
       },
       outputs: {'ack_generator|lib/$name.g.dart': expected},
     );
