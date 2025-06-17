@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "api": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "baseUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^/[a-zA-Z0-9/_-]*$"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "DELETE",
+                  "PATCH"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "parameters": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "array",
+                        "object"
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "type",
+                    "required"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "responses": {
+                "type": "object",
+                "properties": {
+                  "200": {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "schema": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {},
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "description"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "400": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "enum": [
+                          "Bad Request"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "description"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "500": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "enum": [
+                          "Internal Server Error"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "description"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "200"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "path",
+              "method",
+              "responses"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "version",
+        "baseUrl",
+        "endpoints"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "api"
+  ],
+  "additionalProperties": false,
+  "_sample_valid_data": {
+    "example": "This would contain valid sample data for testing",
+    "note": "Replace with actual valid data matching the schema"
+  },
+  "_sample_invalid_data": {
+    "example": "This would contain invalid sample data for testing",
+    "note": "Replace with actual invalid data that should fail validation"
+  }
+}

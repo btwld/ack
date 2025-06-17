@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "profile": {
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "lastName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dateOfBirth": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "avatar": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            }
+          },
+          "required": [
+            "firstName",
+            "lastName"
+          ],
+          "additionalProperties": false
+        },
+        "account": {
+          "allOf": [
+            {
+              "if": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "free"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "free"
+                    ]
+                  },
+                  "limitations": {
+                    "type": "object",
+                    "properties": {
+                      "maxProjects": {
+                        "type": "integer",
+                        "minimum": 3,
+                        "maximum": 3
+                      },
+                      "storageGB": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "limitations"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "if": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "premium"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "premium"
+                    ]
+                  },
+                  "subscription": {
+                    "type": "object",
+                    "properties": {
+                      "plan": {
+                        "type": "string",
+                        "enum": [
+                          "monthly",
+                          "yearly"
+                        ]
+                      },
+                      "price": {
+                        "type": "number",
+                        "minimum": 0.0
+                      },
+                      "renewsAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "subscription"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "if": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "enterprise"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "enterprise"
+                    ]
+                  },
+                  "organization": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "seats": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "customDomain": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "organization"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "profile",
+        "account"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "user"
+  ],
+  "additionalProperties": false,
+  "_sample_valid_data": {
+    "example": "This would contain valid sample data for testing",
+    "note": "Replace with actual valid data matching the schema"
+  },
+  "_sample_invalid_data": {
+    "example": "This would contain invalid sample data for testing",
+    "note": "Replace with actual invalid data that should fail validation"
+  }
+}
