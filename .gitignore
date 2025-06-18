@@ -58,6 +58,4 @@ temp/
 # AI Agent workspace
 .augment/
 
-# Setup and build configuration files (do not commit)
-setup.sh
-code_builder_improvements.md
+
