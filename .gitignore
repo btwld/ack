@@ -54,3 +54,8 @@ tools/package-lock.json
 # Temporary test files
 temp/
 *.tmp
+
+# AI Agent workspace
+.augment/
+
+

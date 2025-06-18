@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,29 +14,19 @@ part of 'sealed_block_model.dart';
 /// Base block class with polymorphic subclasses
 class SealedBlockSchema extends SchemaModel<SealedBlockSchema> {
   /// Default constructor for parser instances
-  const SealedBlockSchema();
+  SealedBlockSchema();
 
   /// Private constructor for validated instances
-  const SealedBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
+  SealedBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final DiscriminatedObjectSchema schema = Ack.discriminated(
+  @override
+  late final definition = Ack.discriminated(
     discriminatorKey: 'type',
     schemas: {
-      'text': TextBlockSchema.schema,
-      'image': ImageBlockSchema.schema,
-      'widget': WidgetBlockSchema.schema,
+      'text': TextBlockSchema().definition,
+      'image': ImageBlockSchema().definition,
+      'widget': WidgetBlockSchema().definition,
     },
-  );
-
-  static final ObjectSchema baseSchema = Ack.object(
-    {
-      'type': Ack.string,
-      'align': Ack.string.nullable(),
-      'flex': Ack.int.nullable(),
-      'scrollable': Ack.boolean.nullable(),
-    },
-    required: ['type'],
-    additionalProperties: false,
   );
 
   /// Parse with validation - core implementation
@@ -54,15 +45,12 @@ class SealedBlockSchema extends SchemaModel<SealedBlockSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<SealedBlockSchema>(
-      (data) => const SealedBlockSchema().parse(data),
+      (data) => SealedBlockSchema().parse(data),
     );
     TextBlockSchema.ensureInitialize();
     ImageBlockSchema.ensureInitialize();
     WidgetBlockSchema.ensureInitialize();
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get type => getValue<String>('type')!;
 
@@ -78,9 +66,9 @@ class SealedBlockSchema extends SchemaModel<SealedBlockSchema> {
     required R Function(WidgetBlockSchema) widget,
   }) =>
       switch (type) {
-        'text' => text(const TextBlockSchema().parse(toMap())),
-        'image' => image(const ImageBlockSchema().parse(toMap())),
-        'widget' => widget(const WidgetBlockSchema().parse(toMap())),
+        'text' => text(TextBlockSchema().parse(toMap())),
+        'image' => image(ImageBlockSchema().parse(toMap())),
+        'widget' => widget(WidgetBlockSchema().parse(toMap())),
         _ => throw StateError('Unknown sealedblock type: $type'),
       };
 
@@ -91,30 +79,29 @@ class SealedBlockSchema extends SchemaModel<SealedBlockSchema> {
     required R Function() orElse,
   }) =>
       switch (type) {
-        'text' =>
-          text?.call(const TextBlockSchema().parse(toMap())) ?? orElse(),
-        'image' =>
-          image?.call(const ImageBlockSchema().parse(toMap())) ?? orElse(),
+        'text' => text?.call(TextBlockSchema().parse(toMap())) ?? orElse(),
+        'image' => image?.call(ImageBlockSchema().parse(toMap())) ?? orElse(),
         'widget' =>
-          widget?.call(const WidgetBlockSchema().parse(toMap())) ?? orElse(),
+          widget?.call(WidgetBlockSchema().parse(toMap())) ?? orElse(),
         _ => orElse(),
       };
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for TextBlock extending SealedBlockSchema
 /// A text block with markdown content
 class TextBlockSchema extends SealedBlockSchema {
   /// Default constructor for parser instances
-  const TextBlockSchema();
+  TextBlockSchema();
 
   /// Private constructor for validated instances
-  const TextBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
+  TextBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+  @override
+  late final definition = SealedBlockSchema().definition.extend(
     {'content': Ack.string},
     required: ['content'],
     additionalProperties: false,
@@ -140,26 +127,24 @@ class TextBlockSchema extends SealedBlockSchema {
     );
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get content => getValue<String>('content')!;
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for ImageBlock extending SealedBlockSchema
 /// An image block with image source and attributes
 class ImageBlockSchema extends SealedBlockSchema {
   /// Default constructor for parser instances
-  const ImageBlockSchema();
+  ImageBlockSchema();
 
   /// Private constructor for validated instances
-  const ImageBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
+  ImageBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+  @override
+  late final definition = SealedBlockSchema().definition.extend(
     {
       'src': Ack.string,
       'width': Ack.double.nullable(),
@@ -190,9 +175,6 @@ class ImageBlockSchema extends SealedBlockSchema {
     );
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get src => getValue<String>('src')!;
 
   double? get width => getValue<double>('width');
@@ -202,20 +184,21 @@ class ImageBlockSchema extends SealedBlockSchema {
   String? get fit => getValue<String>('fit');
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for WidgetBlock extending SealedBlockSchema
 /// A widget block with custom properties
 class WidgetBlockSchema extends SealedBlockSchema {
   /// Default constructor for parser instances
-  const WidgetBlockSchema();
+  WidgetBlockSchema();
 
   /// Private constructor for validated instances
-  const WidgetBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
+  WidgetBlockSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = SealedBlockSchema.baseSchema.extend(
+  @override
+  late final definition = SealedBlockSchema().definition.extend(
     {
       'name': Ack.string,
       'properties': Ack.object({}, additionalProperties: true)
@@ -244,15 +227,12 @@ class WidgetBlockSchema extends SealedBlockSchema {
     );
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get name => getValue<String>('name')!;
 
   Map<String, dynamic> get properties =>
       getValue<Map<String, Object?>>('properties')!;
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,18 +14,19 @@ part of 'user_model.dart';
 /// A user model with validation
 class UserSchema extends SchemaModel<UserSchema> {
   /// Default constructor for parser instances
-  const UserSchema();
+  UserSchema();
 
   /// Private constructor for validated instances
-  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
+  UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'email': Ack.string.email(),
       'name': Ack.string.notEmpty(),
       'age': Ack.int.nullable(),
       'password': Ack.string.minLength(8).nullable(),
-      'address': AddressSchema.schema,
+      'address': AddressSchema().definition,
     },
     required: ['email', 'name', 'password', 'address'],
     additionalProperties: true,
@@ -46,14 +48,11 @@ class UserSchema extends SchemaModel<UserSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<UserSchema>(
-      (data) => const UserSchema().parse(data),
+      (data) => UserSchema().parse(data),
     );
     // Register schema dependencies
     AddressSchema.ensureInitialize();
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get email => getValue<String>('email')!;
 
@@ -64,8 +63,7 @@ class UserSchema extends SchemaModel<UserSchema> {
   String? get password => getValue<String>('password');
 
   AddressSchema get address {
-    return const AddressSchema()
-        .parse(getValue<Map<String, Object?>>('address')!);
+    return AddressSchema().parse(getValue<Map<String, Object?>>('address')!);
   }
 
   Map<String, Object?> get metadata {
@@ -76,19 +74,20 @@ class UserSchema extends SchemaModel<UserSchema> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for Address
 class AddressSchema extends SchemaModel<AddressSchema> {
   /// Default constructor for parser instances
-  const AddressSchema();
+  AddressSchema();
 
   /// Private constructor for validated instances
-  const AddressSchema._valid(Map<String, Object?> data) : super.valid(data);
+  AddressSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'street': Ack.string.notEmpty(),
       'city': Ack.string.notEmpty(),
@@ -114,12 +113,9 @@ class AddressSchema extends SchemaModel<AddressSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<AddressSchema>(
-      (data) => const AddressSchema().parse(data),
+      (data) => AddressSchema().parse(data),
     );
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get street => getValue<String>('street')!;
 
@@ -128,6 +124,6 @@ class AddressSchema extends SchemaModel<AddressSchema> {
   String? get zip => getValue<String>('zip');
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

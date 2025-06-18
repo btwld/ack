@@ -25,7 +25,7 @@ void main() {
         'productCode': 'ABC-1234', // matches pattern
       };
 
-      final schema = const ProductSchema().parse(validData);
+      final schema = ProductSchema().parse(validData);
 
       expect(schema.isValid, isTrue,
           reason: 'Schema should be valid with correct data');
@@ -64,7 +64,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -83,7 +83,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -101,7 +101,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -119,7 +119,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -138,7 +138,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -157,7 +157,7 @@ void main() {
             'invalid-code', // Doesn't match pattern ^[A-Z]{2,3}-\d{4}$
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -175,7 +175,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -193,7 +193,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData),
+      expect(() => ProductSchema().parse(invalidData),
           throwsA(isA<AckException>()));
     });
 
@@ -214,7 +214,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = const ProductSchema().parse(dataWithNulls);
+      final schema = ProductSchema().parse(dataWithNulls);
       expect(schema.isValid, isTrue);
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);

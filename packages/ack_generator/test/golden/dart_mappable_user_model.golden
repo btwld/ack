@@ -1,0 +1,141 @@
+// dart format width=80
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
+// ignore_for_file: lines_longer_than_80_chars, unnecessary_null_checks, non_constant_identifier_names
+
+part of 'dart_mappable_user_model.dart';
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+/// Generated schema for DartMappableUser
+/// A user model with dart_mappable snake_case integration
+class DartMappableUserSchema extends SchemaModel<DartMappableUserSchema> {
+  /// Default constructor for parser instances
+  DartMappableUserSchema();
+
+  /// Private constructor for validated instances
+  DartMappableUserSchema._valid(Map<String, Object?> data) : super.valid(data);
+
+  @override
+  late final definition = Ack.object(
+    {
+      'first_name': Ack.string.notEmpty(),
+      'last_name': Ack.string.notEmpty(),
+      'email_address': Ack.string.email(),
+      'user_age': Ack.int.nullable(),
+      'phone_number': Ack.string.nullable(),
+      'user_preferences': Ack.object({}, additionalProperties: true).nullable(),
+    },
+    required: ['first_name', 'last_name', 'email_address'],
+    additionalProperties: true,
+  );
+
+  /// Parse with validation - core implementation
+  @override
+  DartMappableUserSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return DartMappableUserSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<DartMappableUserSchema>(
+      (data) => DartMappableUserSchema().parse(data),
+    );
+  }
+
+  String get firstName => getValue<String>('first_name')!;
+
+  String get lastName => getValue<String>('last_name')!;
+
+  String get email => getValue<String>('email_address')!;
+
+  int? get userAge => getValue<int>('user_age');
+
+  String? get phoneNumber => getValue<String>('phone_number');
+
+  Map<String, dynamic>? get userPreferences =>
+      getValue<Map<String, Object?>>('user_preferences');
+
+  Map<String, Object?> get metadata {
+    final map = toMap();
+    final knownFields = {
+      'first_name',
+      'last_name',
+      'email_address',
+      'user_age',
+      'phone_number',
+      'user_preferences'
+    };
+    return Map.fromEntries(
+        map.entries.where((e) => !knownFields.contains(e.key)));
+  }
+
+  /// Convert the schema to a JSON Schema
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
+}
+
+/// Generated schema for DartMappableAddress
+/// Address with camelCase field names
+class DartMappableAddressSchema extends SchemaModel<DartMappableAddressSchema> {
+  /// Default constructor for parser instances
+  DartMappableAddressSchema();
+
+  /// Private constructor for validated instances
+  DartMappableAddressSchema._valid(Map<String, Object?> data)
+      : super.valid(data);
+
+  @override
+  late final definition = Ack.object(
+    {
+      'streetAddress': Ack.string.notEmpty(),
+      'cityName': Ack.string.notEmpty(),
+      'zipCode': Ack.string.nullable(),
+      'countryCode': Ack.string.minLength(2),
+    },
+    required: ['streetAddress', 'cityName', 'countryCode'],
+    additionalProperties: false,
+  );
+
+  /// Parse with validation - core implementation
+  @override
+  DartMappableAddressSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return DartMappableAddressSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
+  }
+
+  /// Ensures this schema and its dependencies are registered
+  static void ensureInitialize() {
+    SchemaRegistry.register<DartMappableAddressSchema>(
+      (data) => DartMappableAddressSchema().parse(data),
+    );
+  }
+
+  String get streetAddress => getValue<String>('streetAddress')!;
+
+  String get cityName => getValue<String>('cityName')!;
+
+  String? get postalCode => getValue<String>('zipCode');
+
+  String get countryCode => getValue<String>('countryCode')!;
+
+  /// Convert the schema to a JSON Schema
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
+}

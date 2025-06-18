@@ -94,6 +94,6 @@ class TypeAnalyzer {
       return 'Ack.object({}, additionalProperties: true)';
     }
     // For custom types, reference their schema
-    return '${typeStr}Schema.schema';
+    return '${typeStr}Schema().definition';
   }
 }
