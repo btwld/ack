@@ -22,7 +22,7 @@ The easiest way to use SchemaModel is with code generation. This approach lets y
 
 ```dart
 // file: user.dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema()
 class User {
@@ -231,7 +231,7 @@ The code generator automatically handles nested models if the nested type is als
 
 ```dart
 // file: address.dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 @Schema()
 class Address {
@@ -249,7 +249,7 @@ class Address {
 }
 
 // file: user.dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 import 'address.dart';
 
 @Schema()
