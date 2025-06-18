@@ -101,18 +101,22 @@ final usersListSchema = Ack.list(
 While Ack doesn't have a dedicated `Ack.map` schema, you can validate key-value maps using an `Ack.object` with `additionalProperties`:
 
 ```dart
-// Map with string keys to integer values (e.g., scores)
+// Map that allows any additional properties
 final scoresSchema = Ack.object(
   {}, // No predefined properties expected
-  additionalProperties: Ack.int.min(0).max(100) // All values must be ints between 0-100
+  additionalProperties: true // Allow any additional properties
 );
 
 // Validate a scores map
 final result = scoresSchema.validate({'math': 95, 'history': 88});
 print(result.isOk); // true
 
-final invalidResult = scoresSchema.validate({'english': 105}); // Value out of range
-print(invalidResult.isOk); // false
+// Note: To validate the types of additional properties,
+// define them explicitly in the properties map instead
+final typedScoresSchema = Ack.object({
+  'math': Ack.int.min(0).max(100),
+  'history': Ack.int.min(0).max(100),
+});
 ```
 
 ## Object Schema
@@ -216,7 +220,7 @@ final updatedUser = user.copyWith(
 
 // If using generated schemas, you might convert back for re-validation
 // final userData = updatedUser.toMap();
-// final validationResult = UserSchema.schema.validate(userData);
+// final validationResult = UserSchema().definition.validate(userData);
 ```
 
 *For more details on using generated schemas, see the [Code Generation](../guides/code-generation.mdx) guide.*
@@ -230,14 +234,14 @@ final flexibleSchema = Ack.object(
   {
     'id': Ack.int,
   },
-  // Allow any other properties, as long as their values are strings
-  additionalProperties: Ack.string,
+  // Allow any other properties
+  additionalProperties: true,
 );
 
-final data = {'id': 1, 'name': 'Gadget', 'color': 'blue', 'status': 123};
+final data = {'id': 1, 'name': 'Gadget', 'color': 'blue'};
 final result = flexibleSchema.validate(data);
 
-print(result.isOk); // false (because 'status' is not a string)
+print(result.isOk); // true
 
 final validated = flexibleSchema.validate({'id': 1, 'name': 'Gadget'}).getOrThrow();
 print(validated); // {id: 1, name: Gadget} - Extra properties are included
@@ -258,7 +262,7 @@ final dataWithExtra = {'id': 1, 'name': 'Test', 'extra': 'disallowed'};
 final result = strictSchema.validate(dataWithExtra);
 
 print(result.isOk); // false
-print(result.getError()?.message); // Contains info about disallowed property 'extra'
+print(result.getError()); // Contains info about disallowed property 'extra'
 ```
 
 ## Making Schemas Nullable

@@ -264,7 +264,7 @@ Ack provides multiple methods for validating and parsing data, each offering dif
 
 The `validate()` method uses a Result pattern, returning a `SchemaResult<T>` which can be either:
 - `Ok<T>`: Contains the validated value, accessible via `getOrNull()` or `getOrThrow()`
-- `Fail<T>`: Contains validation errors, accessible via `getErrors()`
+- `Fail<T>`: Contains validation errors, accessible via `getError()`
 
 This approach gives you fine-grained control over error handling and access to the full error details.
 
@@ -287,13 +287,11 @@ if (result.isOk) {
   print("Valid user: ${validData['name']}");
 } else {
   // Access detailed validation errors
-  final errors = result.getErrors();
-  print("Validation failed: ${errors.name}");
-  
-  // You can inspect specific errors
-  for (final issue in errors.issues) {
-    print(" - ${issue.path}: ${issue.message}");
-  }
+  final error = result.getError();
+  print("Validation failed: ${error.name}");
+
+  // You can inspect the error details
+  print("Error details: $error");
 }
 ```
 
@@ -476,7 +474,7 @@ print(jsonPayload);
 
 Every call to `.validate(value)` returns a `SchemaResult<T>` object, which is either `Ok<T>` or `Fail<T>`:
 - `Ok`: Access the data via `getOrNull()` or `getOrThrow()`
-- `Fail`: Inspect `getErrors()` for a list of `SchemaError` describing the failures
+- `Fail`: Inspect `getError()` for a `SchemaError` describing the failure
 
 ### Quick Reference
 
@@ -501,60 +499,63 @@ ACK provides a `SchemaModel` base class for creating schema-based models with au
 
 ```dart
 // Define a schema model manually (or use code generation)
-class UserSchema extends SchemaModel {
-  UserSchema(Object? data) : super(data);
+class UserSchema extends SchemaModel<UserSchema> {
+  const UserSchema() : super();
+  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   @override
-  AckSchema getSchema() {
-    return Ack.object({
-      'name': Ack.string.minLength(2),
-      'email': Ack.string.email(),
-      'age': Ack.int.min(0).nullable(),
-    }, required: ['name', 'email']);
+  ObjectSchema get definition => Ack.object({
+    'name': Ack.string.minLength(2),
+    'email': Ack.string.email(),
+    'age': Ack.int.min(0).nullable(),
+  }, required: ['name', 'email']);
+
+  @override
+  UserSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return UserSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
   }
-  
+
   // Getters for typed access to properties
   String get name => getValue<String>('name')!;
   String get email => getValue<String>('email')!;
   int? get age => getValue<int?>('age');
 }
 
-// Using the schema model - Constructor approach
+// Using the schema model - Parse approach
 final userData = {
   'name': 'John Doe',
   'email': 'john@example.com',
   'age': 30,
 };
 
-final userSchema = UserSchema(userData);
+final userSchema = const UserSchema().parse(userData);
 
 // Check if the schema is valid
 if (userSchema.isValid) {
   // Access properties directly from the schema
   print('User: ${userSchema.name}, ${userSchema.email}, ${userSchema.age}');
-  
+
   // Create a model instance manually
   final user = User(
     name: userSchema.name,
     email: userSchema.email,
     age: userSchema.age,
   );
-} else {
-  // Handle validation errors
-  print('Validation errors: ${userSchema.getErrors()}');
 }
 
-// Creating and validating schemas
-try {
-  // Create schema and validate
-  final userSchema = UserSchema(userData);
-  if (userSchema.isValid) {
-    print('User: ${userSchema.name}, ${userSchema.email}, ${userSchema.age}');
-  } else {
-    print('Validation failed: ${userSchema.getErrors()}');
-  }
-} catch (e) {
-  print('Unexpected error: $e');
+// Alternative: Safe parsing with tryParse
+final userSchemaOrNull = const UserSchema().tryParse(userData);
+if (userSchemaOrNull != null) {
+  print('User: ${userSchemaOrNull.name}, ${userSchemaOrNull.email}, ${userSchemaOrNull.age}');
+} else {
+  print('Validation failed');
 }
 
 // Create your model class however you prefer
@@ -572,6 +573,6 @@ class User {
 
 For detailed guides on using Ack effectively, check out the documentation:
 
-- [SchemaModel API](https://docs.page/leofarias/ack/core-concepts/schema-model-class) - Learn how to use the SchemaModel API
+- [SchemaModel API](https://docs.page/btwld/ack/core-concepts/schema-model-class) - Learn how to use the SchemaModel API
 
 ## License

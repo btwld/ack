@@ -10,7 +10,7 @@ The `toModel()` method has been removed from generated schemas. ACK is now a pur
 
 #### Before (v1.x)
 ```dart
-final schema = UserSchema(jsonData);
+final schema = UserSchema().parse(jsonData);
 if (schema.isValid) {
   final user = schema.toModel(); // This method no longer exists
 }
@@ -20,12 +20,12 @@ if (schema.isValid) {
 
 **Option 1: Direct Property Access**
 ```dart
-final schema = UserSchema(jsonData);
+final schema = UserSchema().parse(jsonData);
 if (schema.isValid) {
   // Access properties directly
   print(schema.name);
   print(schema.email);
-  
+
   // Create model manually
   final user = User(
     name: schema.name,

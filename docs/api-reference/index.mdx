@@ -75,15 +75,15 @@ Schema for validating objects (maps). See [Object Schema](../core-concepts/schem
 - Constructed using `Ack.object(...)`.
 - Configuration includes `properties`, `required`, `additionalProperties`.
 
-## `Result<T>`
+## `SchemaResult<T>`
 
-Object returned by `validate()`. See [The Result Object](../core-concepts/error-handling.mdx#the-result-object).
+Object returned by `validate()`. See [The SchemaResult Object](../core-concepts/error-handling.mdx#the-schemaresult-object).
 
 - `bool isOk`
 - `bool isFail`
 - `T getOrThrow()`
 - `T? getOrNull()`
-- `SchemaError? getError()`
+- `SchemaError getError()`
 - `T getOrElse(T Function() defaultValue)`
 
 ## `SchemaError` (and Subclasses)
@@ -91,10 +91,9 @@ Object returned by `validate()`. See [The Result Object](../core-concepts/error-
 Object representing a validation failure. See [Understanding SchemaError](../core-concepts/error-handling.mdx#understanding-schemaerror) and [Error Types](../core-concepts/error-handling.mdx#error-types).
 
 - `String name`
-- `String message`
-- `List<String> path`
-- `dynamic value`
-- `dynamic expected`
+- `String errorKey`
+- `Object? value`
+- `AckSchema schema`
 
 **Subclasses:** `SchemaTypeError`, `SchemaRequiredError`, `SchemaConstraintsError`, `SchemaNestedError`.
 
