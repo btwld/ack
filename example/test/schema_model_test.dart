@@ -22,7 +22,7 @@ void main() {
       };
 
       // Create schema with valid data
-      final schema = const ProductSchema().parse(validData);
+      final schema = ProductSchema().parse(validData);
 
       // Check that validation was performed (no exception thrown)
       expect(schema.isValid, isTrue);
@@ -47,7 +47,7 @@ void main() {
       };
 
       // Create schema with invalid data should throw exception
-      expect(() => const ProductSchema().parse(invalidData), throwsException);
+      expect(() => ProductSchema().parse(invalidData), throwsException);
     });
 
     test('throws exception for non-map input', () {
@@ -55,12 +55,12 @@ void main() {
       final nonMapInput = 'not-a-map';
 
       // Create schema with non-map input should throw exception
-      expect(() => const ProductSchema().parse(nonMapInput), throwsException);
+      expect(() => ProductSchema().parse(nonMapInput), throwsException);
     });
 
     test('throws exception for null input', () {
       // Null input should throw exception
-      expect(() => const ProductSchema().parse(null), throwsException);
+      expect(() => ProductSchema().parse(null), throwsException);
     });
   });
 }

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,13 +14,13 @@ part of 'dart_mappable_user_model.dart';
 /// A user model with dart_mappable snake_case integration
 class DartMappableUserSchema extends SchemaModel<DartMappableUserSchema> {
   /// Default constructor for parser instances
-  const DartMappableUserSchema();
+  DartMappableUserSchema();
 
   /// Private constructor for validated instances
-  const DartMappableUserSchema._valid(Map<String, Object?> data)
-      : super.valid(data);
+  DartMappableUserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'first_name': Ack.string.notEmpty(),
       'last_name': Ack.string.notEmpty(),
@@ -48,12 +49,9 @@ class DartMappableUserSchema extends SchemaModel<DartMappableUserSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<DartMappableUserSchema>(
-      (data) => const DartMappableUserSchema().parse(data),
+      (data) => DartMappableUserSchema().parse(data),
     );
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get firstName => getValue<String>('first_name')!;
 
@@ -83,21 +81,22 @@ class DartMappableUserSchema extends SchemaModel<DartMappableUserSchema> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for DartMappableAddress
 /// Address with camelCase field names
 class DartMappableAddressSchema extends SchemaModel<DartMappableAddressSchema> {
   /// Default constructor for parser instances
-  const DartMappableAddressSchema();
+  DartMappableAddressSchema();
 
   /// Private constructor for validated instances
-  const DartMappableAddressSchema._valid(Map<String, Object?> data)
+  DartMappableAddressSchema._valid(Map<String, Object?> data)
       : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'streetAddress': Ack.string.notEmpty(),
       'cityName': Ack.string.notEmpty(),
@@ -124,12 +123,9 @@ class DartMappableAddressSchema extends SchemaModel<DartMappableAddressSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<DartMappableAddressSchema>(
-      (data) => const DartMappableAddressSchema().parse(data),
+      (data) => DartMappableAddressSchema().parse(data),
     );
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get streetAddress => getValue<String>('streetAddress')!;
 
@@ -140,6 +136,6 @@ class DartMappableAddressSchema extends SchemaModel<DartMappableAddressSchema> {
   String get countryCode => getValue<String>('countryCode')!;
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

@@ -307,7 +307,10 @@ Future<String> runBuilder(String name, String input) async {
 
   await testBuilder(
     ackSchemaBuilder(BuilderOptions.empty),
-    {'ack_generator|lib/$name.dart': input},
+    {
+      'ack_generator|lib/$name.dart': input,
+      ...getMockAckPackage(),
+    },
     outputs: {
       'ack_generator|lib/$name.g.dart': predicate<List<int>>((content) {
         generatedOutput = String.fromCharCodes(content);

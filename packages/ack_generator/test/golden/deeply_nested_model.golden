@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,15 +14,16 @@ part of 'deeply_nested_model.dart';
 /// Top level model for deep nesting test
 class Level1Schema extends SchemaModel<Level1Schema> {
   /// Default constructor for parser instances
-  const Level1Schema();
+  Level1Schema();
 
   /// Private constructor for validated instances
-  const Level1Schema._valid(Map<String, Object?> data) : super.valid(data);
+  Level1Schema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'name': Ack.string.notEmpty(),
-      'level2': Level2Schema.schema,
+      'level2': Level2Schema().definition,
     },
     required: ['name', 'level2'],
     additionalProperties: false,
@@ -43,40 +45,37 @@ class Level1Schema extends SchemaModel<Level1Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level1Schema>(
-      (data) => const Level1Schema().parse(data),
+      (data) => Level1Schema().parse(data),
     );
     // Register schema dependencies
     Level2Schema.ensureInitialize();
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get name => getValue<String>('name')!;
 
   Level2Schema get level2 {
-    return const Level2Schema()
-        .parse(getValue<Map<String, Object?>>('level2')!);
+    return Level2Schema().parse(getValue<Map<String, Object?>>('level2')!);
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for Level2
 /// Second level nested model
 class Level2Schema extends SchemaModel<Level2Schema> {
   /// Default constructor for parser instances
-  const Level2Schema();
+  Level2Schema();
 
   /// Private constructor for validated instances
-  const Level2Schema._valid(Map<String, Object?> data) : super.valid(data);
+  Level2Schema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'email': Ack.string.email(),
-      'level3': Level3Schema.schema,
+      'level3': Level3Schema().definition,
       'description': Ack.string.nullable(),
     },
     required: ['email', 'level3'],
@@ -99,43 +98,40 @@ class Level2Schema extends SchemaModel<Level2Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level2Schema>(
-      (data) => const Level2Schema().parse(data),
+      (data) => Level2Schema().parse(data),
     );
     // Register schema dependencies
     Level3Schema.ensureInitialize();
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get email => getValue<String>('email')!;
 
   Level3Schema get level3 {
-    return const Level3Schema()
-        .parse(getValue<Map<String, Object?>>('level3')!);
+    return Level3Schema().parse(getValue<Map<String, Object?>>('level3')!);
   }
 
   String? get description => getValue<String>('description');
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for Level3
 /// Third level deeply nested model
 class Level3Schema extends SchemaModel<Level3Schema> {
   /// Default constructor for parser instances
-  const Level3Schema();
+  Level3Schema();
 
   /// Private constructor for validated instances
-  const Level3Schema._valid(Map<String, Object?> data) : super.valid(data);
+  Level3Schema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'value': Ack.string.minLength(5),
       'count': Ack.int,
-      'level4': Level4Schema.schema,
+      'level4': Level4Schema().definition,
     },
     required: ['value', 'count', 'level4'],
     additionalProperties: false,
@@ -157,42 +153,39 @@ class Level3Schema extends SchemaModel<Level3Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level3Schema>(
-      (data) => const Level3Schema().parse(data),
+      (data) => Level3Schema().parse(data),
     );
     // Register schema dependencies
     Level4Schema.ensureInitialize();
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get value => getValue<String>('value')!;
 
   int get count => getValue<int>('count')!;
 
   Level4Schema get level4 {
-    return const Level4Schema()
-        .parse(getValue<Map<String, Object?>>('level4')!);
+    return Level4Schema().parse(getValue<Map<String, Object?>>('level4')!);
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for Level4
 /// Fourth level deepest nested model
 class Level4Schema extends SchemaModel<Level4Schema> {
   /// Default constructor for parser instances
-  const Level4Schema();
+  Level4Schema();
 
   /// Private constructor for validated instances
-  const Level4Schema._valid(Map<String, Object?> data) : super.valid(data);
+  Level4Schema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'isActive': Ack.boolean,
-      'timestamp': DateTimeSchema.schema,
+      'timestamp': DateTimeSchema().definition,
       'tags': Ack.list(Ack.string),
       'metadata': Ack.string.nullable(),
     },
@@ -216,20 +209,16 @@ class Level4Schema extends SchemaModel<Level4Schema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<Level4Schema>(
-      (data) => const Level4Schema().parse(data),
+      (data) => Level4Schema().parse(data),
     );
     // Register schema dependencies
     DateTimeSchema.ensureInitialize();
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   bool get isActive => getValue<bool>('isActive')!;
 
   DateTimeSchema get timestamp {
-    return const DateTimeSchema()
-        .parse(getValue<Map<String, Object?>>('timestamp')!);
+    return DateTimeSchema().parse(getValue<Map<String, Object?>>('timestamp')!);
   }
 
   List<String> get tags {
@@ -239,6 +228,6 @@ class Level4Schema extends SchemaModel<Level4Schema> {
   String? get metadata => getValue<String>('metadata');
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,12 +14,13 @@ part of 'large_model.dart';
 /// Large model with many properties for performance testing
 class LargeModelSchema extends SchemaModel<LargeModelSchema> {
   /// Default constructor for parser instances
-  const LargeModelSchema();
+  LargeModelSchema();
 
   /// Private constructor for validated instances
-  const LargeModelSchema._valid(Map<String, Object?> data) : super.valid(data);
+  LargeModelSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'field1': Ack.string.notEmpty(),
       'field2': Ack.string.email(),
@@ -33,13 +35,13 @@ class LargeModelSchema extends SchemaModel<LargeModelSchema> {
       'field11': Ack.boolean,
       'field12': Ack.boolean,
       'field13': Ack.boolean,
-      'field14': DateTimeSchema.schema,
-      'field15': DateTimeSchema.schema,
+      'field14': DateTimeSchema().definition,
+      'field15': DateTimeSchema().definition,
       'field16': Ack.string.nullable(),
       'field17': Ack.string.nullable(),
       'field18': Ack.int.nullable(),
       'field19': Ack.boolean.nullable(),
-      'field20': DateTimeSchema.schema.nullable(),
+      'field20': DateTimeSchema().definition.nullable(),
       'field21': Ack.list(Ack.string),
       'field22': Ack.list(Ack.int),
       'field23': Ack.object({}, additionalProperties: true),
@@ -87,14 +89,11 @@ class LargeModelSchema extends SchemaModel<LargeModelSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<LargeModelSchema>(
-      (data) => const LargeModelSchema().parse(data),
+      (data) => LargeModelSchema().parse(data),
     );
     // Register schema dependencies
     DateTimeSchema.ensureInitialize();
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get field1 => getValue<String>('field1')!;
 
@@ -123,13 +122,11 @@ class LargeModelSchema extends SchemaModel<LargeModelSchema> {
   bool get field13 => getValue<bool>('field13')!;
 
   DateTimeSchema get field14 {
-    return const DateTimeSchema()
-        .parse(getValue<Map<String, Object?>>('field14')!);
+    return DateTimeSchema().parse(getValue<Map<String, Object?>>('field14')!);
   }
 
   DateTimeSchema get field15 {
-    return const DateTimeSchema()
-        .parse(getValue<Map<String, Object?>>('field15')!);
+    return DateTimeSchema().parse(getValue<Map<String, Object?>>('field15')!);
   }
 
   String? get field16 => getValue<String>('field16');
@@ -142,7 +139,7 @@ class LargeModelSchema extends SchemaModel<LargeModelSchema> {
 
   DateTimeSchema? get field20 {
     final data = getValue<Map<String, Object?>>('field20');
-    return data != null ? const DateTimeSchema().parse(data) : null;
+    return data != null ? DateTimeSchema().parse(data) : null;
   }
 
   List<String> get field21 {
@@ -193,6 +190,6 @@ class LargeModelSchema extends SchemaModel<LargeModelSchema> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

@@ -14,7 +14,7 @@ dependencies:
   analyzer: ^6.3.0
   build: ^2.4.1
   code_builder: ^4.10.0
-  source_gen: ^1.4.0
+  source_gen: ^2.0.0
   dart_style: ^2.3.4
   recase: ^4.1.0
   collection: ^1.18.0
