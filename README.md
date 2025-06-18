@@ -179,6 +179,23 @@ melos publish-dry
 melos publish
 ```
 
+### Development Tools
+
+The project includes additional development tools for maintainers:
+
+```bash
+# JSON Schema validation (ensures compatibility with JSON Schema Draft-7)
+melos validate-jsonschema
+
+# API compatibility checking (for semantic versioning)
+melos api-check:dev
+
+# See all available scripts
+melos list-scripts
+```
+
+> **Note**: Additional development documentation is available in the `tools/` directory for project maintainers.
+
 ## Versioning and Publishing
 
 This project uses GitHub Releases to manage versioning and publishing. For detailed instructions on how to create releases and publish packages, see [PUBLISHING.md](./PUBLISHING.md).

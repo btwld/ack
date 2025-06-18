@@ -58,4 +58,11 @@ temp/
 # AI Agent workspace
 .augment/
 
+# dart_apitool generated files
+api-model-*.json
+api-baseline-*.json
+api-compatibility-report.md
+api-diff-*.md
+pre-release-validation-report.md
+
 
