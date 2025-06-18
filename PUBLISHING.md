@@ -57,7 +57,8 @@ This release introduces [brief description of major changes].
 
 6. Choose whether this is a pre-release:
    - Check "This is a pre-release" if you're releasing a beta or RC version
-   - Pre-releases won't be published to pub.dev
+   - Pre-releases WILL be published to pub.dev as pre-release versions
+   - Only draft releases won't be published to pub.dev
 
 7. Click "Publish release"
 
@@ -70,7 +71,7 @@ When you publish the release, the GitHub Actions workflow will automatically:
 3. Update version numbers in all package pubspec.yaml files
 4. Add a simple changelog entry to each package's CHANGELOG.md with a link to the GitHub release
 5. Commit and push these changes back to the repository
-6. Publish packages to pub.dev (unless it's marked as a pre-release)
+6. Publish packages to pub.dev (both regular releases and pre-releases, but not drafts)
 
 The auto-generated changelog entry will look like:
 

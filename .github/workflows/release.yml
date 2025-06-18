@@ -93,9 +93,7 @@ jobs:
           git commit -m "chore: update versions and changelogs to ${{ env.VERSION }} [skip ci]"
           git push origin main
 
-      # Publish to pub.dev if the release is not a draft or prerelease
       - name: Publish to pub.dev
         if: ${{ !github.event.release.draft }}
         run: |
-          # Melos will handle the dependency order automatically
           melos publish --no-dry-run --yes

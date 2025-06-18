@@ -22,7 +22,7 @@ All from a single model definition with validation annotations.
 
 ```dart
 // file: user.dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 // Use the part directive to include the generated code
 part 'user.g.dart';
@@ -185,7 +185,7 @@ TypeSafe Schemas handle nested models automatically, providing deep validation:
 
 ```dart
 // file: address.dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 part 'address.g.dart';
 
@@ -205,7 +205,7 @@ class Address {
 }
 
 // file: customer.dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 import 'address.dart';
 
 part 'customer.g.dart';

@@ -74,7 +74,7 @@ dart pub add dev:ack_generator dev:build_runner
 Define a model with annotations:
 
 ```dart
-import 'package:ack_generator/ack_generator.dart';
+import 'package:ack/ack.dart';
 
 part 'user.g.dart'; // Generated file
 
