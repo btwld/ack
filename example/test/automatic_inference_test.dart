@@ -20,7 +20,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = const ProductSchema().parse(validData);
+      final schema = ProductSchema().parse(validData);
       expect(schema.isValid, isTrue, reason: 'All required fields provided');
     });
 
@@ -41,7 +41,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => const ProductSchema().parse(invalidData), throwsException);
+      expect(() => ProductSchema().parse(invalidData), throwsException);
     });
 
     test('should allow optional fields to be null (inferred from constructor)',
@@ -61,7 +61,7 @@ void main() {
         // contactEmail, imageUrl, updatedAt are optional
       };
 
-      final schema = const ProductSchema().parse(dataWithOptionalFieldsOmitted);
+      final schema = ProductSchema().parse(dataWithOptionalFieldsOmitted);
       expect(schema.isValid, isTrue, reason: 'Optional fields can be omitted');
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);
@@ -86,7 +86,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = const ProductSchema().parse(dataWithNulls);
+      final schema = ProductSchema().parse(dataWithNulls);
       expect(schema.isValid, isTrue, reason: 'Nullable fields can be null');
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);
@@ -101,7 +101,7 @@ void main() {
         // description is optional
       };
 
-      final schema = const CategorySchema().parse(categoryData);
+      final schema = CategorySchema().parse(categoryData);
       expect(schema.isValid, isTrue);
       expect(schema.description, isNull);
     });
@@ -114,7 +114,7 @@ void main() {
         'description': null, // Explicitly null due to @IsNullable
       };
 
-      final schema = const CategorySchema().parse(categoryData);
+      final schema = CategorySchema().parse(categoryData);
       expect(schema.isValid, isTrue);
       expect(schema.description, isNull);
     });

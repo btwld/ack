@@ -19,6 +19,23 @@ import 'utils/ack_types.dart';
 class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
   final _formatter = DartFormatter();
 
+  /// Validates and formats generated Dart code using DartFormatter
+  /// This is the standard approach used by most Dart code generators
+  String _validateAndFormatCode(String code, String className) {
+    try {
+      // Use DartFormatter to validate syntax and format the code
+      // This will throw a FormatterException if the code has syntax errors
+      return _formatter.format(code);
+    } catch (e) {
+      throw Exception(
+        'Code generation failed for $className. '
+        'The generator produced invalid Dart code that could not be formatted.\n'
+        'Error: $e\n'
+        'Generated code:\n$code',
+      );
+    }
+  }
+
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -82,16 +99,7 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
     final code =
         library.accept(DartEmitter(useNullSafetySyntax: true)).toString();
 
-    try {
-      return _formatter.format(code);
-    } catch (e) {
-      throw Exception(
-        'Failed to format generated code for ${element.name}. '
-        'This usually indicates a syntax error in the generated code.\n'
-        'Error: $e\n'
-        'Generated code:\n$code',
-      );
-    }
+    return _validateAndFormatCode(code, element.name);
   }
 
   SchemaData _extractSchemaData(ConstantReader annotation) {
@@ -127,7 +135,7 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
               ? ['/// ${schemaData.description}']
               : [],
         )
-        ..fields.add(_buildSchemaField(classInfo, schemaData))
+        ..fields.add(_buildDefinitionField(classInfo, schemaData))
         ..constructors.addAll([
           _buildDefaultConstructor(),
           _buildValidConstructor(),
@@ -139,7 +147,6 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
             modelClassName,
             classInfo,
           ),
-          _buildDefinitionMethod(),
           ..._buildPropertyGetters(classInfo, schemaData),
           if (schemaData.additionalPropertiesField != null)
             _buildAdditionalPropertiesGetter(classInfo, schemaData),
@@ -148,13 +155,13 @@ class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
     );
   }
 
-  Field _buildSchemaField(ClassInfo classInfo, SchemaData schemaData) {
+  Field _buildDefinitionField(ClassInfo classInfo, SchemaData schemaData) {
     return Field(
       (b) => b
-        ..name = 'schema'
-        ..static = true
+        ..name = 'definition'
         ..modifier = FieldModifier.final$
-        ..type = refer(AckTypes.objectSchema)
+        ..late = true
+        ..annotations.add(refer('override'))
         ..assignment = Code(_buildSchemaExpression(classInfo, schemaData)),
     );
   }
@@ -178,9 +185,7 @@ $propertyCode
 
   Constructor _buildDefaultConstructor() {
     return Constructor(
-      (b) => b
-        ..constant = true
-        ..docs.add('/// Default constructor for parser instances'),
+      (b) => b..docs.add('/// Default constructor for parser instances'),
     );
   }
 
@@ -188,7 +193,6 @@ $propertyCode
     return Constructor(
       (b) => b
         ..name = '_valid'
-        ..constant = true
         ..requiredParameters.add(
           Parameter(
             (p) => p
@@ -228,15 +232,66 @@ $propertyCode
     );
   }
 
-  Method _buildDefinitionMethod() {
-    return Method(
+  Field _buildDiscriminatedDefinitionField(
+    DiscriminatedClassInfo discriminatedInfo,
+  ) {
+    final discriminatorMappingCode =
+        discriminatedInfo.discriminatorMapping.entries
+            .map(
+              (entry) =>
+                  "'${entry.key}': ${entry.value.name}Schema().definition",
+            )
+            .join(',\n        ');
+
+    final schemaCode = '''Ack.discriminated(
+      discriminatorKey: '${discriminatedInfo.discriminatorKey}',
+      schemas: {
+        $discriminatorMappingCode,
+      },
+    )''';
+
+    return Field(
       (b) => b
         ..name = 'definition'
-        ..type = MethodType.getter
-        ..returns = refer('ObjectSchema')
+        ..modifier = FieldModifier.final$
+        ..late = true
         ..annotations.add(refer('override'))
-        ..body = const Code('schema')
-        ..lambda = true,
+        ..assignment = Code(schemaCode),
+    );
+  }
+
+  Field _buildSubclassDefinitionField(
+    String baseName,
+    List<PropertyInfo> subclassProperties,
+  ) {
+    // Build property map code
+    final propertyEntries = subclassProperties.map((prop) {
+      final schemaExpr = _buildPropertySchemaExpression(prop);
+      final key = prop.jsonKey ?? prop.name;
+      return "'$key': $schemaExpr";
+    }).join(',\n      ');
+
+    // Build required fields
+    final requiredFields = subclassProperties
+        .where((prop) => prop.isRequired)
+        .map((prop) => "'${prop.jsonKey ?? prop.name}'")
+        .join(', ');
+
+    final schemaCode = '''${baseName}Schema().definition.extend(
+      {
+        ${propertyEntries.isNotEmpty ? propertyEntries : '// No additional properties'}
+      },
+      ${requiredFields.isNotEmpty ? 'required: [$requiredFields],' : ''}
+      additionalProperties: false,
+    )''';
+
+    return Field(
+      (b) => b
+        ..name = 'definition'
+        ..modifier = FieldModifier.final$
+        ..late = true
+        ..annotations.add(refer('override'))
+        ..assignment = Code(schemaCode),
     );
   }
 
@@ -263,7 +318,7 @@ $propertyCode
   ) {
     final bodyParts = <String>[
       '    SchemaRegistry.register<$schemaClassName>(',
-      '      (data) => const $schemaClassName().parse(data),',
+      '      (data) => $schemaClassName().parse(data),',
       '    );',
     ];
 
@@ -336,7 +391,7 @@ $propertyCode
   }
 
   String _generateGetterBody(PropertyInfo property, String typeStr) {
-    final propName = property.name;
+    final propName = property.jsonKey ?? property.name;
     final isNullable = property.isNullable;
 
     // Primitives - use getValue
@@ -356,9 +411,9 @@ $propertyCode
       final schemaType = '${property.typeName.name}Schema';
       if (isNullable) {
         return '''final data = getValue<Map<String, Object?>>('$propName');
-    return data != null ? const $schemaType().parse(data) : null;''';
+    return data != null ? $schemaType().parse(data) : null;''';
       }
-      return "return const $schemaType().parse(getValue<Map<String, Object?>>('$propName')!);";
+      return "return $schemaType().parse(getValue<Map<String, Object?>>('$propName')!);";
     }
 
     // List types
@@ -383,14 +438,14 @@ $propertyCode
           return '''final data = getValue<List?>('$propName');
     if (data != null) {
       return data.whereType<Map<String, Object?>>()
-          .map((item) => const $schemaType().parse(item))
+          .map((item) => $schemaType().parse(item))
           .toList();
     }
     return null;''';
         }
         return '''return getValue<List>('$propName')!
         .whereType<Map<String, Object?>>()
-        .map((item) => const $schemaType().parse(item))
+        .map((item) => $schemaType().parse(item))
         .toList();''';
       }
 
@@ -415,7 +470,7 @@ $propertyCode
       if (innerType.endsWith('Schema')) {
         return '''return getValue<List>('$propName')!
         .whereType<Map<String, dynamic>>()
-        .map((item) => const $innerType().parse(item))
+        .map((item) => $innerType().parse(item))
         .toList();''';
       }
 
@@ -435,7 +490,7 @@ $propertyCode
     final knownFields = classInfo
         .getPropertiesExcluding(schemaData.additionalPropertiesField)
         .values
-        .map((p) => "'${p.name}'")
+        .map((p) => "'${p.jsonKey ?? p.name}'")
         .toSet();
 
     final body = '''
@@ -458,11 +513,10 @@ $propertyCode
     return Method(
       (b) => b
         ..name = 'toJsonSchema'
-        ..static = true
         ..returns = refer(AckTypes.mapStringObject)
         ..docs.add('/// Convert the schema to a JSON Schema')
         ..body = const Code(
-          'JsonSchemaConverter(schema: schema).toSchema()',
+          'JsonSchemaConverter(schema: definition).toSchema()',
         )
         ..lambda = true,
     );
@@ -500,17 +554,7 @@ $propertyCode
     final baseCode =
         library.accept(DartEmitter(useNullSafetySyntax: true)).toString();
 
-    final String formattedBase;
-    try {
-      formattedBase = _formatter.format(baseCode);
-    } catch (e) {
-      throw Exception(
-        'Failed to format generated code for discriminated base ${element.name}. '
-        'This usually indicates a syntax error in the generated code.\n'
-        'Error: $e\n'
-        'Generated code:\n$baseCode',
-      );
-    }
+    final formattedBase = _validateAndFormatCode(baseCode, element.name);
 
     // Combine all schemas
     return [formattedBase, ...subclassSchemas].join('\n\n');
@@ -530,13 +574,10 @@ $propertyCode
           '/// Generated base schema for ${element.name} with inheritance support',
           if (schemaData.description != null) '/// ${schemaData.description}',
         ])
+        ..fields.add(_buildDiscriminatedDefinitionField(discriminatedInfo))
         ..constructors.addAll([
           _buildDefaultConstructor(),
           _buildValidConstructor(),
-        ])
-        ..fields.addAll([
-          _buildDiscriminatedSchemaField(discriminatedInfo),
-          _buildSchemaModelField(element, schemaData, discriminatedInfo),
         ])
         ..methods.addAll([
           _buildParseMethod(schemaClassName),
@@ -544,69 +585,10 @@ $propertyCode
             schemaClassName,
             discriminatedInfo,
           ),
-          _buildDefinitionMethod(),
           ..._buildDiscriminatedGetters(element, discriminatedInfo),
           ..._buildPatternMatchingMethods(discriminatedInfo),
           _buildToJsonSchemaMethod(),
         ]),
-    );
-  }
-
-  Field _buildDiscriminatedSchemaField(
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    final discriminatorMappingCode = discriminatedInfo
-        .discriminatorMapping.entries
-        .map((entry) => "'${entry.key}': ${entry.value.name}Schema.schema")
-        .join(',\n        ');
-
-    return Field(
-      (b) => b
-        ..name = 'schema'
-        ..static = true
-        ..modifier = FieldModifier.final$
-        ..type = refer('DiscriminatedObjectSchema')
-        ..assignment = Code('''Ack.discriminated(
-    discriminatorKey: '${discriminatedInfo.discriminatorKey}',
-    schemas: {
-      $discriminatorMappingCode,
-    },
-  )'''),
-    );
-  }
-
-  Field _buildSchemaModelField(
-    ClassElement element,
-    SchemaData schemaData,
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    // Create enhanced ClassInfo with discriminator field
-    final enhancedClassInfo = _addDiscriminatorToClassInfo(
-      ClassAnalyzer.analyzeClass(element, schemaData.additionalPropertiesField),
-      discriminatedInfo.discriminatorKey,
-    );
-
-    final properties = enhancedClassInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
-
-    final propertyCode = _buildPropertySchemaCode(properties);
-    final requiredProps =
-        _buildRequiredPropsString(enhancedClassInfo, schemaData);
-
-    return Field(
-      (b) => b
-        ..name = 'baseSchema'
-        ..static = true
-        ..modifier = FieldModifier.final$
-        ..type = refer('ObjectSchema')
-        ..assignment = Code('''Ack.object(
-    {
-$propertyCode
-    },
-    required: [$requiredProps],
-    additionalProperties: ${schemaData.additionalProperties},
-  )'''),
     );
   }
 
@@ -627,7 +609,7 @@ $propertyCode
             .add('/// Ensures this schema and its dependencies are registered')
         ..body = Code('''
     SchemaRegistry.register<$schemaClassName>(
-      (data) => const $schemaClassName().parse(data),
+      (data) => $schemaClassName().parse(data),
     );
     $dependencies'''),
     );
@@ -678,7 +660,7 @@ $propertyCode
     final cases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "'${entry.key}' => ${_toCamelCase(entry.key)}(const ${entry.value.name}Schema().parse(toMap())),",
+              "'${entry.key}' => ${_toCamelCase(entry.key)}(${entry.value.name}Schema().parse(toMap())),",
         )
         .join('\n        ');
 
@@ -718,7 +700,7 @@ $propertyCode
     final cases = discriminatedInfo.discriminatorMapping.entries
         .map(
           (entry) =>
-              "'${entry.key}' => ${_toCamelCase(entry.key)}?.call(const ${entry.value.name}Schema().parse(toMap())) ?? orElse(),",
+              "'${entry.key}' => ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema().parse(toMap())) ?? orElse(),",
         )
         .join('\n        ');
 
@@ -767,6 +749,25 @@ $propertyCode
             final superElement = supertype.element;
             if (superElement is ClassElement &&
                 (superElement.isSealed || superElement.isAbstract)) {
+              // Verify parent has discriminatedKey annotation
+              final parentHasDiscriminator = superElement.metadata.any(
+                (ann) =>
+                    ann.element?.displayName == 'Schema' &&
+                    ConstantReader(ann.computeConstantValue())
+                            .peek('discriminatedKey')
+                            ?.stringValue !=
+                        null,
+              );
+
+              if (!parentHasDiscriminator) {
+                throw InvalidGenerationSourceError(
+                  '${element.name} has discriminatedValue but '
+                  '${superElement.name} is not a discriminated union. '
+                  'Parent class must have @Schema(discriminatedKey: "...") annotation.',
+                  element: element,
+                );
+              }
+
               return true;
             }
           }
@@ -813,7 +814,8 @@ $propertyCode
   }) {
     return properties.map((prop) {
       final schemaExpr = _buildPropertySchemaExpression(prop);
-      final entry = "$indent'${prop.name}': $schemaExpr";
+      final key = prop.jsonKey ?? prop.name;
+      final entry = "$indent'$key': $schemaExpr";
       return includeTrailingComma ? '$entry,' : entry;
     }).join(includeTrailingComma ? '\n' : ',\n');
   }
@@ -824,7 +826,7 @@ $propertyCode
         .getRequiredProperties(
           excludeField: schemaData.additionalPropertiesField,
         )
-        .map((p) => "'${p.name}'")
+        .map((p) => "'${p.jsonKey ?? p.name}'")
         .join(', ');
   }
 
@@ -862,20 +864,15 @@ $propertyCode
           '/// Generated schema for $subclassName extending ${baseName}Schema',
           if (description != null) '/// $description',
         ])
+        ..fields
+            .add(_buildSubclassDefinitionField(baseName, subclassProperties))
         ..constructors.addAll([
           _buildDefaultConstructor(),
           _buildValidConstructor(),
         ])
-        ..fields.add(
-          _buildSubclassSchemaField(
-            baseName,
-            subclassProperties,
-          ),
-        )
         ..methods.addAll([
           _buildParseMethod(schemaClassName),
           _buildSubclassEnsureInitializeMethod(schemaClassName),
-          _buildDefinitionMethod(),
           ...subclassProperties.map((prop) => _buildPropertyGetter(prop)),
           _buildToJsonSchemaMethod(),
         ]);
@@ -886,50 +883,7 @@ $propertyCode
     final code =
         library.accept(DartEmitter(useNullSafetySyntax: true)).toString();
 
-    try {
-      return _formatter.format(code);
-    } catch (e) {
-      throw Exception(
-        'Failed to format generated code for subclass ${subclassElement.name}. '
-        'This usually indicates a syntax error in the generated code.\n'
-        'Error: $e\n'
-        'Generated code:\n$code',
-      );
-    }
-  }
-
-  Field _buildSubclassSchemaField(
-    String baseName,
-    List<PropertyInfo> subclassProperties,
-  ) {
-    // Build property map code
-    final propertyEntries = subclassProperties.map((prop) {
-      final schemaExpr = _buildPropertySchemaExpression(prop);
-      return "'${prop.name}': $schemaExpr";
-    }).join(',\n      ');
-
-    // Build required fields
-    final requiredFields = subclassProperties
-        .where((prop) => prop.isRequired)
-        .map((prop) => "'${prop.name}'")
-        .join(', ');
-
-    final schemaCode = '''${baseName}Schema.baseSchema.extend(
-    {
-      ${propertyEntries.isNotEmpty ? propertyEntries : '// No additional properties'}
-    },
-    ${requiredFields.isNotEmpty ? 'required: [$requiredFields],' : ''}
-    additionalProperties: false,
-  )''';
-
-    return Field(
-      (b) => b
-        ..name = 'schema'
-        ..static = true
-        ..modifier = FieldModifier.final$
-        ..type = refer('ObjectSchema')
-        ..assignment = Code(schemaCode),
-    );
+    return _validateAndFormatCode(code, subclassElement.name);
   }
 
   Method _buildSubclassEnsureInitializeMethod(String schemaClassName) {

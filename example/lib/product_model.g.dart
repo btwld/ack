@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,12 +14,13 @@ part of 'product_model.dart';
 /// A product model with validation
 class ProductSchema extends SchemaModel<ProductSchema> {
   /// Default constructor for parser instances
-  const ProductSchema();
+  ProductSchema();
 
   /// Private constructor for validated instances
-  const ProductSchema._valid(Map<String, Object?> data) : super.valid(data);
+  ProductSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'id': Ack.string.notEmpty(),
       'name': Ack.string.notEmpty().minLength(3).maxLength(100),
@@ -26,7 +28,7 @@ class ProductSchema extends SchemaModel<ProductSchema> {
       'price': Ack.double.min(0.01).max(999999.99),
       'contactEmail': Ack.string.email().nullable(),
       'imageUrl': Ack.string.nullable(),
-      'category': CategorySchema.schema,
+      'category': CategorySchema().definition,
       'releaseDate': Ack.string.date(),
       'createdAt': Ack.string.dateTime(),
       'updatedAt': Ack.string.dateTime().nullable(),
@@ -65,14 +67,11 @@ class ProductSchema extends SchemaModel<ProductSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<ProductSchema>(
-      (data) => const ProductSchema().parse(data),
+      (data) => ProductSchema().parse(data),
     );
     // Register schema dependencies
     CategorySchema.ensureInitialize();
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get id => getValue<String>('id')!;
 
@@ -87,8 +86,7 @@ class ProductSchema extends SchemaModel<ProductSchema> {
   String? get imageUrl => getValue<String>('imageUrl');
 
   CategorySchema get category {
-    return const CategorySchema()
-        .parse(getValue<Map<String, Object?>>('category')!);
+    return CategorySchema().parse(getValue<Map<String, Object?>>('category')!);
   }
 
   String get releaseDate => getValue<String>('releaseDate')!;
@@ -125,20 +123,21 @@ class ProductSchema extends SchemaModel<ProductSchema> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for Category
 /// A category for organizing products
 class CategorySchema extends SchemaModel<CategorySchema> {
   /// Default constructor for parser instances
-  const CategorySchema();
+  CategorySchema();
 
   /// Private constructor for validated instances
-  const CategorySchema._valid(Map<String, Object?> data) : super.valid(data);
+  CategorySchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = Ack.object(
+  @override
+  late final definition = Ack.object(
     {
       'id': Ack.string.notEmpty(),
       'name': Ack.string.notEmpty(),
@@ -164,12 +163,9 @@ class CategorySchema extends SchemaModel<CategorySchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<CategorySchema>(
-      (data) => const CategorySchema().parse(data),
+      (data) => CategorySchema().parse(data),
     );
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get id => getValue<String>('id')!;
 
@@ -185,6 +181,6 @@ class CategorySchema extends SchemaModel<CategorySchema> {
   }
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

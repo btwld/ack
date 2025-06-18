@@ -2,6 +2,7 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 
 import '../models/property_info.dart';
+import '../utils/dart_mappable_detector.dart';
 import 'constraint_analyzer.dart';
 import 'type_analyzer.dart';
 
@@ -29,9 +30,28 @@ class PropertyAnalyzer {
     // Determine nullable status from field type and parameter
     final isNullable = _inferNullable(field, matchingParam, isNullableField);
 
-    // Create property info
+    // Get the class element to check for dart_mappable annotations
+    final enclosingElement = field.enclosingElement3;
+    if (enclosingElement is! ClassElement) {
+      throw ArgumentError(
+        'Field "${field.name}" must belong to a class element, '
+        'but found ${enclosingElement.runtimeType}',
+      );
+    }
+    final classElement = enclosingElement;
+
+    // Check for dart_mappable field override
+    final customKey = DartMappableDetector.getFieldKey(field);
+
+    // Apply case transformation if dart_mappable is present
+    final caseStyle = DartMappableDetector.getCaseStyle(classElement);
+    final jsonKey = customKey ??
+        DartMappableDetector.transformFieldName(field.name, caseStyle);
+
+    // Create property info with jsonKey
     PropertyInfo property = PropertyInfo(
       name: field.name,
+      jsonKey: jsonKey == field.name ? null : jsonKey,
       typeName: typeName,
       isRequired: isRequired,
       isNullable: isNullable,

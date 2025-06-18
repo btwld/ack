@@ -5,7 +5,7 @@ repository: https://github.com/btwld/ack
 
 packages:
   - packages/**
-  - example/*
+  - example
 
 command:
   version:
@@ -29,6 +29,7 @@ scripts:
       scope:
         - ack
         - ack_generator
+        - ack_example
 
   fix:
     run: melos exec -- "dart fix --apply"
@@ -37,6 +38,7 @@ scripts:
       scope:
         - ack
         - ack_generator
+        - ack_example
       dependsOn:
         - "ack"  # This will ensure 'ack' is prioritized
 

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // ignore_for_file: unnecessary_this, unnecessary_new, unnecessary_const, prefer_collection_literals
@@ -13,29 +14,19 @@ part of 'payment_method_model.dart';
 /// A payment method that can be credit card, bank transfer, or digital wallet
 class PaymentMethodSchema extends SchemaModel<PaymentMethodSchema> {
   /// Default constructor for parser instances
-  const PaymentMethodSchema();
+  PaymentMethodSchema();
 
   /// Private constructor for validated instances
-  const PaymentMethodSchema._valid(Map<String, Object?> data)
-      : super.valid(data);
+  PaymentMethodSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final DiscriminatedObjectSchema schema = Ack.discriminated(
+  @override
+  late final definition = Ack.discriminated(
     discriminatorKey: 'type',
     schemas: {
-      'credit_card': CreditCardPaymentSchema.schema,
-      'bank_transfer': BankTransferPaymentSchema.schema,
-      'digital_wallet': DigitalWalletPaymentSchema.schema,
+      'credit_card': CreditCardPaymentSchema().definition,
+      'bank_transfer': BankTransferPaymentSchema().definition,
+      'digital_wallet': DigitalWalletPaymentSchema().definition,
     },
-  );
-
-  static final ObjectSchema baseSchema = Ack.object(
-    {
-      'type': Ack.string,
-      'limit': Ack.double.nullable(),
-      'isDefault': Ack.boolean,
-    },
-    required: ['type'],
-    additionalProperties: false,
   );
 
   /// Parse with validation - core implementation
@@ -54,15 +45,12 @@ class PaymentMethodSchema extends SchemaModel<PaymentMethodSchema> {
   /// Ensures this schema and its dependencies are registered
   static void ensureInitialize() {
     SchemaRegistry.register<PaymentMethodSchema>(
-      (data) => const PaymentMethodSchema().parse(data),
+      (data) => PaymentMethodSchema().parse(data),
     );
     CreditCardPaymentSchema.ensureInitialize();
     BankTransferPaymentSchema.ensureInitialize();
     DigitalWalletPaymentSchema.ensureInitialize();
   }
-
-  @override
-  ObjectSchema get definition => schema;
 
   String get type => getValue<String>('type')!;
 
@@ -76,12 +64,11 @@ class PaymentMethodSchema extends SchemaModel<PaymentMethodSchema> {
     required R Function(DigitalWalletPaymentSchema) digitalWallet,
   }) =>
       switch (type) {
-        'credit_card' =>
-          creditCard(const CreditCardPaymentSchema().parse(toMap())),
+        'credit_card' => creditCard(CreditCardPaymentSchema().parse(toMap())),
         'bank_transfer' =>
-          bankTransfer(const BankTransferPaymentSchema().parse(toMap())),
+          bankTransfer(BankTransferPaymentSchema().parse(toMap())),
         'digital_wallet' =>
-          digitalWallet(const DigitalWalletPaymentSchema().parse(toMap())),
+          digitalWallet(DigitalWalletPaymentSchema().parse(toMap())),
         _ => throw StateError('Unknown paymentmethod type: $type'),
       };
 
@@ -93,33 +80,33 @@ class PaymentMethodSchema extends SchemaModel<PaymentMethodSchema> {
   }) =>
       switch (type) {
         'credit_card' =>
-          creditCard?.call(const CreditCardPaymentSchema().parse(toMap())) ??
+          creditCard?.call(CreditCardPaymentSchema().parse(toMap())) ??
               orElse(),
-        'bank_transfer' => bankTransfer
-                ?.call(const BankTransferPaymentSchema().parse(toMap())) ??
-            orElse(),
-        'digital_wallet' => digitalWallet
-                ?.call(const DigitalWalletPaymentSchema().parse(toMap())) ??
-            orElse(),
+        'bank_transfer' =>
+          bankTransfer?.call(BankTransferPaymentSchema().parse(toMap())) ??
+              orElse(),
+        'digital_wallet' =>
+          digitalWallet?.call(DigitalWalletPaymentSchema().parse(toMap())) ??
+              orElse(),
         _ => orElse(),
       };
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for CreditCardPayment extending PaymentMethodSchema
 /// Credit card payment with card details
 class CreditCardPaymentSchema extends PaymentMethodSchema {
   /// Default constructor for parser instances
-  const CreditCardPaymentSchema();
+  CreditCardPaymentSchema();
 
   /// Private constructor for validated instances
-  const CreditCardPaymentSchema._valid(Map<String, Object?> data)
-      : super.valid(data);
+  CreditCardPaymentSchema._valid(Map<String, Object?> data) : super.valid(data);
 
-  static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
+  @override
+  late final definition = PaymentMethodSchema().definition.extend(
     {
       'cardNumber': Ack.string.minLength(4),
       'cardholderName': Ack.string.notEmpty(),
@@ -150,9 +137,6 @@ class CreditCardPaymentSchema extends PaymentMethodSchema {
     );
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get cardNumber => getValue<String>('cardNumber')!;
 
   String get cardholderName => getValue<String>('cardholderName')!;
@@ -162,21 +146,22 @@ class CreditCardPaymentSchema extends PaymentMethodSchema {
   String get brand => getValue<String>('brand')!;
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for BankTransferPayment extending PaymentMethodSchema
 /// Bank transfer payment with account details
 class BankTransferPaymentSchema extends PaymentMethodSchema {
   /// Default constructor for parser instances
-  const BankTransferPaymentSchema();
+  BankTransferPaymentSchema();
 
   /// Private constructor for validated instances
-  const BankTransferPaymentSchema._valid(Map<String, Object?> data)
+  BankTransferPaymentSchema._valid(Map<String, Object?> data)
       : super.valid(data);
 
-  static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
+  @override
+  late final definition = PaymentMethodSchema().definition.extend(
     {
       'accountNumber': Ack.string.notEmpty(),
       'routingNumber': Ack.string.notEmpty(),
@@ -212,9 +197,6 @@ class BankTransferPaymentSchema extends PaymentMethodSchema {
     );
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get accountNumber => getValue<String>('accountNumber')!;
 
   String get routingNumber => getValue<String>('routingNumber')!;
@@ -224,21 +206,22 @@ class BankTransferPaymentSchema extends PaymentMethodSchema {
   String get accountHolderName => getValue<String>('accountHolderName')!;
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }
 
 /// Generated schema for DigitalWalletPayment extending PaymentMethodSchema
 /// Digital wallet payment like PayPal, Apple Pay, etc.
 class DigitalWalletPaymentSchema extends PaymentMethodSchema {
   /// Default constructor for parser instances
-  const DigitalWalletPaymentSchema();
+  DigitalWalletPaymentSchema();
 
   /// Private constructor for validated instances
-  const DigitalWalletPaymentSchema._valid(Map<String, Object?> data)
+  DigitalWalletPaymentSchema._valid(Map<String, Object?> data)
       : super.valid(data);
 
-  static final ObjectSchema schema = PaymentMethodSchema.baseSchema.extend(
+  @override
+  late final definition = PaymentMethodSchema().definition.extend(
     {
       'provider': Ack.string.notEmpty(),
       'walletId': Ack.string.email(),
@@ -268,9 +251,6 @@ class DigitalWalletPaymentSchema extends PaymentMethodSchema {
     );
   }
 
-  @override
-  ObjectSchema get definition => schema;
-
   String get provider => getValue<String>('provider')!;
 
   String get walletId => getValue<String>('walletId')!;
@@ -279,6 +259,6 @@ class DigitalWalletPaymentSchema extends PaymentMethodSchema {
       getValue<Map<String, Object?>>('metadata')!;
 
   /// Convert the schema to a JSON Schema
-  static Map<String, Object?> toJsonSchema() =>
-      JsonSchemaConverter(schema: schema).toSchema();
+  Map<String, Object?> toJsonSchema() =>
+      JsonSchemaConverter(schema: definition).toSchema();
 }

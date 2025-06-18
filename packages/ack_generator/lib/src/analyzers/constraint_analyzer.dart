@@ -170,7 +170,8 @@ class ConstraintAnalyzer {
       case 'maxLength':
         return '$expr.maxLength(${params['length']})';
       case 'pattern':
-        final pattern = params['pattern'] as String;
+        final pattern = params['pattern'] as String?;
+        if (pattern == null) return expr;
         // Escape the pattern for Dart string literal
         final escapedPattern = pattern
             .replaceAll(r'\', r'\\')
