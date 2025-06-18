@@ -19,7 +19,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 
 Base class for all schema types.
 
-- [`Result<T> validate(dynamic data)`](../core-concepts/error-handling.mdx#the-result-object): Validates the input data against the schema.
+- [`SchemaResult<T> validate(dynamic data)`](../core-concepts/error-handling.mdx#the-schemaresult-object): Validates the input data against the schema.
 - [`AckSchema<T?> nullable()`](../core-concepts/schemas.mdx#making-schemas-nullable): Returns a new schema that also accepts `null`.
 - `AckSchema<T> description(String description)`: Adds a description (used by [`toJsonSchema()`](../guides/json-schema-integration.mdx)).
 - `AckSchema<T> defaultValue(T value)`: Sets a default value (used by [`toJsonSchema()`](../guides/json-schema-integration.mdx)).
@@ -64,7 +64,7 @@ Schema for validating lists. See [List Constraints](../core-concepts/validation.
 
 - [`minItems(...)`](../core-concepts/validation.mdx#minitemsint-min)
 - [`maxItems(...)`](../core-concepts/validation.mdx#maxitemsint-max)
-- [`length(...)`](../core-concepts/validation.mdx#lengthint-exactlength-1)
+- [`exactItems(...)`](../core-concepts/validation.mdx#exactitemsint-count)
 - [`isNotEmpty(...)`](../core-concepts/validation.mdx#isnotempty-1)
 - [`uniqueItems(...)`](../core-concepts/validation.mdx#uniqueitems)
 
@@ -97,12 +97,12 @@ Object representing a validation failure. See [Understanding SchemaError](../cor
 
 **Subclasses:** `SchemaTypeError`, `SchemaRequiredError`, `SchemaConstraintsError`, `SchemaNestedError`.
 
-## `SchemaConstraint<T>`
+## `Constraint<T>`
 
 Base class for creating custom validation rules. See [Custom Validation Guide](../guides/custom-validation.mdx).
 
-- `SchemaConstraint({required String name, required String message})`
-- `bool validate(T value, [Map<String, dynamic>? data])`
+- `Constraint({required String constraintKey, required String description})`
+- `bool isValid(T value)` (via `Validator<T>` mixin)
 
 ## Code Generation (`ack_generator`)
 

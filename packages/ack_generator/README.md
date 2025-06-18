@@ -43,7 +43,7 @@ if (schema.isValid) {
 class User {
   factory User.fromSchema(UserSchema schema) {
     if (!schema.isValid) {
-      throw AckException(schema.getErrors()!);
+      throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
     }
     return User(
       name: schema.name,
@@ -61,7 +61,7 @@ final user = User.fromSchema(schema);
 ```dart
 extension UserSchemaX on UserSchema {
   User toUser() {
-    if (!isValid) throw AckException(getErrors()!);
+    if (!isValid) throw AckException(getErrors() ?? throw StateError('Invalid schema with no error'));
     return User(name: name, email: email);
   }
 }
@@ -96,7 +96,7 @@ factory User.fromJson(Map<String, dynamic> json) {
   // Validate first with transformed field names
   final schema = UserSchema(json);
   if (!schema.isValid) {
-    throw AckException(schema.getErrors()!);
+    throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
   }
   // Then deserialize with dart_mappable (same field names)
   return UserMapper.fromMap(json);
@@ -110,7 +110,7 @@ factory User.fromJson(Map<String, dynamic> json) {
   // Validate first
   final schema = UserSchema(json);
   if (!schema.isValid) {
-    throw AckException(schema.getErrors()!);
+    throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
   }
   // Then use your preferred serialization
   return _$UserFromJson(json);
