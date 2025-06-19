@@ -10,9 +10,7 @@ This directory contains internal development tools and documentation for the Ack
 
 ## 📚 Documentation
 
-- **[Development Guide](../DEVELOPMENT.md)** - Complete development workflows
-
-> **Note**: For comprehensive development information, see the main [DEVELOPMENT.md](../DEVELOPMENT.md) guide.
+See the main project documentation for development workflows.
 
 ## Setup
 
