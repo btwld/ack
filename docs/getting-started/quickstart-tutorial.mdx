@@ -61,7 +61,7 @@ Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter p
     ```
 
 4.  **Validate Data:**
-    Use the `validate()` method of your schema to check the data. This returns a `Result` object.
+    Use the `validate()` method of your schema to check the data. This returns a `SchemaResult` object.
 
     ```dart
     final result1 = userSchema.validate(validData);
@@ -71,15 +71,15 @@ Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter p
     ```
 
 5.  **Handle the Result:**
-    Check the `isOk` property of the `Result`. If `true`, validation passed. If `false`, validation failed.
+    Check the `isOk` property of the `SchemaResult`. If `true`, validation passed. If `false`, validation failed.
 
     ```dart
-    void checkResult(Result result, dynamic originalData) {
+    void checkResult(result, dynamic originalData) {
       print('\nChecking: $originalData');
       if (result.isOk) {
         // Validation succeeded!
         // Safely get the validated data (type matches schema structure)
-        final validatedData = result.getOrThrow(); 
+        final validatedData = result.getOrThrow();
         print('  Result: OK');
         print('  Validated Data: $validatedData');
         // You can now confidently use validatedData
@@ -90,9 +90,8 @@ Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter p
         // Get the specific error details
         final error = result.getError();
         print('  Result: FAILED');
-        print('  Error Name: ${error?.name}'); 
-        print('  Error Message: ${error?.message}'); 
-        print('  Error Path: ${error?.path}'); // Shows where the error occurred
+        print('  Error Name: ${error.name}');
+        print('  Error Details: $error');
       }
     }
     
@@ -137,18 +136,17 @@ void main() {
 }
 
 // Helper function to print results
-void checkResult(Result result, dynamic originalData) {
+void checkResult(result, dynamic originalData) {
   print('\nChecking: $originalData');
   if (result.isOk) {
-    final validatedData = result.getOrThrow(); 
+    final validatedData = result.getOrThrow();
     print('  Result: OK');
     print('  Validated Data: $validatedData');
   } else {
     final error = result.getError();
     print('  Result: FAILED');
-    print('  Error Name: ${error?.name}'); 
-    print('  Error Message: ${error?.message}'); 
-    print('  Error Path: ${error?.path}');
+    print('  Error Name: ${error.name}');
+    print('  Error Details: $error');
   }
 }
 ```

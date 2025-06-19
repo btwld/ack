@@ -31,34 +31,32 @@ Ack.object({
 Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object-schema).
 
 ```dart
-// Allow any extra properties, validate their values as strings
+// Allow any extra properties (default behavior)
 Ack.object({
   'id': Ack.int
-}, additionalProperties: Ack.string);
+}, additionalProperties: true);
+// or simply:
+Ack.object({
+  'id': Ack.int
+});
 
 // Disallow any extra properties
 Ack.object({
   'id': Ack.int
 }, additionalProperties: false);
-
-// Allow extra properties, but don't validate their values (default behavior)
-Ack.object({
-  'id': Ack.int
-}, additionalProperties: true); 
-// or simply:
-Ack.object({
-  'id': Ack.int
-});
 ```
 
 ### Custom Error Messages
 
-Provide custom messages for built-in [validation rules](./validation.mdx) using the `message:` parameter.
+Built-in validation rules provide default error messages. For custom error messages, use custom constraints with the `.constrain()` method.
 See also: [Custom Error Messages in Error Handling](./error-handling.mdx#custom-error-messages).
 
 ```dart
-Ack.string.minLength(5, message: 'Must be 5 characters or more.');
-Ack.int.min(18, message: 'Must be at least 18 years old.');
+// Built-in constraints use default messages
+Ack.string.minLength(5); // Default: "Too short, min 5 characters"
+Ack.int.min(18); // Default: "Must be at least 18"
+
+// For custom messages, use custom constraints (see Custom Validation section below)
 ```
 
 ### Custom Validation Logic
@@ -66,17 +64,23 @@ Ack.int.min(18, message: 'Must be at least 18 years old.');
 Use `.constrain()` to add complex or reusable validation logic.
 
 ```dart
-class IsPositiveConstraint extends SchemaConstraint<num> {
-  IsPositiveConstraint() : super(name: 'is_positive', message: 'Number must be positive');
+class IsPositiveConstraint extends Constraint<double> with Validator<double> {
+  const IsPositiveConstraint() : super(
+    constraintKey: 'is_positive',
+    description: 'Number must be positive'
+  );
 
   @override
-  bool validate(num value, [Map<String, dynamic>? data]) {
+  bool isValid(double value) {
     return value > 0;
   }
+
+  @override
+  String buildMessage(double value) => 'Number must be positive';
 }
 
 // Apply the custom constraint
-Ack.double.constrain(IsPositiveConstraint()); 
+Ack.double.constrain(IsPositiveConstraint());
 ```
 *See the [Custom Validation Guide](../guides/custom-validation.mdx) for details.*
 

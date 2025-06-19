@@ -55,7 +55,7 @@ if (result.isOk) {
 } else {
   // Validation failed, access the detailed error.
   final error = result.getError();
-  print('Validation Error: ${error.message}'); // Or use error.toString() for full details.
+  print('Validation Error: $error'); // Use error.toString() for full details.
 }
 ```
 
@@ -113,13 +113,13 @@ Generated schemas provide three main capabilities:
 
 ```dart
 // Access typed properties directly from the schema
-final userSchema = UserSchema(payload);
+final userSchema = UserSchema().parse(payload);
 if (userSchema.isValid) {
   String name = userSchema.name;    // Typed as String
   String email = userSchema.email;  // Typed as String
   int age = userSchema.age;         // Typed as int
   print('$name ($email) is $age years old');
-  
+
   // Create model when needed
   final user = User(name: name, email: email, age: age);
 }
@@ -141,14 +141,14 @@ class User {
 }
 
 // Usage
-final user = User.fromSchema(UserSchema(payload));
+final user = User.fromSchema(UserSchema().parse(payload));
 ```
 
 **3. JSON Schema generation for documentation**
 
 ```dart
 // Generate JSON Schema from the same model definition
-final jsonSchema = UserSchema.toJsonSchema();
+final jsonSchema = UserSchema().toJsonSchema();
 print(jsonEncode(jsonSchema));  // Use in API docs or client validation
 ```
 
@@ -158,7 +158,6 @@ print(jsonEncode(jsonSchema));  // Use in API docs or client validation
 if (result.isFail) {
   // Get formatted error message (or the full error object)
   final error = result.getError();
-  print('${error.name}: ${error.message}'); // Specific message
-  // print(error); // Full error details including path
+  print('${error.name}: $error'); // Full error details
 }
 ```

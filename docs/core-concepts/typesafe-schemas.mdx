@@ -68,26 +68,25 @@ final Map<String, dynamic> data = {
   'age': 30
 };
 
-// Create a schema instance (validates automatically)
-final userSchema = UserSchema(data);
+// Create a schema instance using parse method
+final userSchema = UserSchema().parse(data);
 
 if (userSchema.isValid) {
   // Access fully typed properties directly through the schema
   String name = userSchema.name;     // Typed as String
-  String email = userSchema.email;   // Typed as String 
+  String email = userSchema.email;   // Typed as String
   int age = userSchema.age;          // Typed as int
 
   // Type checking prevents errors like:
   // age = "thirty";  // Compile error!
-  
+
   print('Valid user: $name ($email) is $age years old');
 }
 
 // Detailed error handling for invalid data
 if (!userSchema.isValid) {
   final error = userSchema.getErrors();
-  print('Validation failed: ${error?.message}');
-  print('Error path: ${error?.path}');
+  print('Validation failed: $error');
 }
 ```
 
@@ -97,12 +96,12 @@ You have complete control over how to create model instances from validated data
 
 #### Direct Property Access
 ```dart
-final userSchema = UserSchema(data);
+final userSchema = UserSchema().parse(data);
 
 if (userSchema.isValid) {
   // Work directly with schema properties
   print('Hello ${userSchema.name}! You are ${userSchema.age} years old');
-  
+
   // Create model when needed
   final user = User(
     name: userSchema.name,
@@ -131,7 +130,7 @@ class User {
 }
 
 // Usage
-final user = User.fromSchema(UserSchema(data));
+final user = User.fromSchema(UserSchema().parse(data));
 ```
 
 #### Extension Method Pattern
@@ -152,7 +151,7 @@ The same model definition can generate JSON Schema for documentation or client-s
 
 ```dart
 // Generate a JSON Schema definition from your model
-final jsonSchema = UserSchema.toJsonSchema();
+final jsonSchema = UserSchema().toJsonSchema();
 
 // Use in API documentation, client validation, etc.
 import 'dart:convert';
@@ -257,21 +256,21 @@ final customerData = {
 };
 
 // Type-safe access to nested properties
-final customerSchema = CustomerSchema(customerData);
+final customerSchema = CustomerSchema().parse(customerData);
 
 if (customerSchema.isValid) {
   // Access nested schema properties directly
   String name = customerSchema.name;
   String street = customerSchema.address.street;
   String city = customerSchema.address.city;
-  
+
   // Access nested lists
   if (customerSchema.secondaryAddresses != null) {
     for (final addr in customerSchema.secondaryAddresses!) {
       print('Secondary: ${addr.street}, ${addr.city}');
     }
   }
-  
+
   // Create model when needed
   final customer = Customer.fromSchema(customerSchema);
 }
@@ -395,21 +394,29 @@ class AdvancedUser {
 While code generation is recommended, you can also implement schemas manually:
 
 ```dart
-class UserSchema extends SchemaModel {
-  UserSchema(Object? data) : super(data);
+class UserSchema extends SchemaModel<UserSchema> {
+  const UserSchema() : super();
+  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
 
   @override
-  AckSchema getSchema() {
-    return Ack.object(
-      {
-        'name': Ack.string.minLength(2),
-        'email': Ack.string.email(),
-        'age': Ack.int.min(18),
-      },
-      required: ['name', 'email', 'age'],
-    );
+  ObjectSchema get definition => Ack.object({
+    'name': Ack.string.minLength(2),
+    'email': Ack.string.email(),
+    'age': Ack.int.min(18),
+  }, required: ['name', 'email', 'age']);
+
+  @override
+  UserSchema parse(Object? data) {
+    final result = definition.validate(data);
+    if (result.isOk) {
+      final validatedData = Map<String, Object?>.from(
+        result.getOrThrow(),
+      );
+      return UserSchema._valid(validatedData);
+    }
+    throw AckException(result.getError());
   }
-  
+
   // Add typed getters
   String get name => getValue<String>('name')!;
   String get email => getValue<String>('email')!;
@@ -417,7 +424,7 @@ class UserSchema extends SchemaModel {
 }
 
 // Usage
-final schema = UserSchema(data);
+final schema = UserSchema().parse(data);
 if (schema.isValid) {
   final user = User(
     name: schema.name,

@@ -62,7 +62,7 @@ final result = nameSchema.validate('John');
 if (result.isOk) {
   print('Valid: ${result.getOrThrow()}'); // Access the valid data
 } else {
-  print('Invalid: ${result.getError()?.message}'); // Get the error message
+  print('Invalid: ${result.getError()}'); // Get the error details
 }
 ```
 
