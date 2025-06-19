@@ -1,8 +1,12 @@
 name: Process Release
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.3.0-beta.1)'
+        required: true
+        type: string
 
 jobs:
   process-release:
@@ -31,14 +35,13 @@ jobs:
       - name: Run tests
         run: melos test
 
-      # Extract version from the release tag (e.g., 0.3.0-beta.1)
-      - name: Extract version
+      # Set version from workflow input
+      - name: Set version
         id: version
         run: |
-          TAG=${{ github.event.release.tag_name }}
-          VERSION=${TAG#v}
+          VERSION=${{ github.event.inputs.version }}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Version extracted: $VERSION"
+          echo "Version set to: $VERSION"
 
       # Version packages and update changelogs with a link to the release notes
       - name: Version packages and update changelogs
@@ -97,6 +100,5 @@ jobs:
           git push origin main
 
       - name: Publish to pub.dev
-        if: ${{ !github.event.release.draft }}
         run: |
           melos publish --no-dry-run --yes
