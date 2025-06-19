@@ -31,7 +31,7 @@ jobs:
       - name: Run tests
         run: melos test
 
-      # Extract version from the release tag (e.g., v1.2.3 -> 1.2.3)
+      # Extract version from the release tag (e.g., 0.3.0-beta.1)
       - name: Extract version
         id: version
         run: |
@@ -46,7 +46,7 @@ jobs:
           # Extract repository name for creating the release link
           REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
           REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
-          RELEASE_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/v${{ env.VERSION }}"
+          RELEASE_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/${{ env.VERSION }}"
           RELEASE_DATE=$(date +%Y-%m-%d)
           
           # Create a simple changelog entry with link to release notes
