@@ -4,10 +4,11 @@ This directory contains internal development tools and documentation for the Ack
 
 ## 📁 Directory Structure
 
-- `api-baseline.sh` - API compatibility management script
+- `API_COMPATIBILITY.md` - API compatibility guide and reference
 - `jsonschema-validator.js` - JSON Schema Draft-7 validation tool
 - `docs/` - **Internal development documentation** (not published)
 - `test-fixtures/` - Test data and configurations
+- `../scripts/api_check.dart` - Dart script for API compatibility checking
 
 ## 📚 Documentation
 
@@ -156,77 +157,61 @@ The validator outputs structured JSON results:
 
 ## API Compatibility Checking
 
-The `api-baseline.sh` script helps manage API compatibility checking using `dart_apitool` for development and release workflows.
+The Ack project uses a simplified single Dart script for API compatibility checking using `dart_apitool`.
 
-### Usage
+### Single Command Usage
 
-#### Create API Baseline
-
-Create a baseline from the current API state:
+Check API compatibility for all packages against any git tag:
 
 ```bash
-./tools/api-baseline.sh create
-# or via melos
-melos api:baseline:create
+# Via melos (recommended)
+melos api-check v0.2.0
+melos api-check v0.3.0-beta.1
+
+# Direct script usage
+dart scripts/api_check.dart v0.2.0                 # Check all packages
+dart scripts/api_check.dart ack v0.2.0             # Check specific package
+dart scripts/api_check.dart ack                    # Check against latest
 ```
 
-#### Check Changes
+### What it does:
+- ✅ Checks both `ack` and `ack_generator` packages automatically
+- ✅ Generates separate markdown reports for each package
+- ✅ Reports are saved in project root and gitignored
+- ✅ Shows exactly where reports were saved
 
-Check current API against the baseline:
-
+### Example Output:
 ```bash
-./tools/api-baseline.sh check
-# or via melos
-melos api:baseline:check
-```
+🚀 API Compatibility Check vs v0.2.0
+📦 Checking ack package...
+✅ ack: API check completed
+📄 Report saved: api-compat-ack-vs-v0.2.0.md
 
-#### Generate Report
+📦 Checking ack_generator package...  
+⚠️  ack_generator: API changes detected
+📄 Report saved: api-compat-ack_generator-vs-v0.2.0.md
 
-Generate a detailed markdown report of API changes:
-
-```bash
-./tools/api-baseline.sh report
-# or via melos
-melos api:baseline:report
-```
-
-#### Check Against Release
-
-Compare current API with the last published release:
-
-```bash
-./tools/api-baseline.sh release
-# or via melos
-melos api:release:check
+🎯 API compatibility check completed!
 ```
 
 ### Development Workflow
 
-1. **Start Development**: Create baseline before making changes
+1. **Check against last release**: 
    ```bash
-   melos api:baseline:create
+   melos api-check v0.2.0
    ```
 
-2. **During Development**: Check changes frequently
-   ```bash
-   melos api:baseline:check
-   ```
+2. **Review generated reports**: 
+   - `api-compat-ack-vs-v0.2.0.md`
+   - `api-compat-ack_generator-vs-v0.2.0.md`
 
-3. **Before Release**: Validate against last release
-   ```bash
-   melos api:release:check
-   ```
-
-4. **Generate Reports**: Create detailed analysis
-   ```bash
-   melos api:baseline:report
-   ```
+3. **Address any breaking changes** before release
 
 ## Integration with Melos
 
 Both tools are integrated into the Melos workflow:
 
-- **JSON Schema Validation**: `validate-jsonschema` scripts
-- **API Compatibility**: `api:*` scripts
+- **JSON Schema Validation**: `validate-jsonschema` scripts  
+- **API Compatibility**: `api-check` command
 
 See the main project's `melos.yaml` for all available commands.
