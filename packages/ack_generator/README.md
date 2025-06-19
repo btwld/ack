@@ -10,7 +10,7 @@ The `toModel()` method has been removed from generated schemas. ACK is now a pur
 
 #### Before (v1.x)
 ```dart
-final schema = UserSchema(jsonData);
+final schema = UserSchema().parse(jsonData);
 if (schema.isValid) {
   final user = schema.toModel(); // This method no longer exists
 }
@@ -20,12 +20,12 @@ if (schema.isValid) {
 
 **Option 1: Direct Property Access**
 ```dart
-final schema = UserSchema(jsonData);
+final schema = UserSchema().parse(jsonData);
 if (schema.isValid) {
   // Access properties directly
   print(schema.name);
   print(schema.email);
-  
+
   // Create model manually
   final user = User(
     name: schema.name,
@@ -43,7 +43,7 @@ if (schema.isValid) {
 class User {
   factory User.fromSchema(UserSchema schema) {
     if (!schema.isValid) {
-      throw AckException(schema.getErrors()!);
+      throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
     }
     return User(
       name: schema.name,
@@ -61,7 +61,7 @@ final user = User.fromSchema(schema);
 ```dart
 extension UserSchemaX on UserSchema {
   User toUser() {
-    if (!isValid) throw AckException(getErrors()!);
+    if (!isValid) throw AckException(getErrors() ?? throw StateError('Invalid schema with no error'));
     return User(name: name, email: email);
   }
 }
@@ -96,7 +96,7 @@ factory User.fromJson(Map<String, dynamic> json) {
   // Validate first with transformed field names
   final schema = UserSchema(json);
   if (!schema.isValid) {
-    throw AckException(schema.getErrors()!);
+    throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
   }
   // Then deserialize with dart_mappable (same field names)
   return UserMapper.fromMap(json);
@@ -110,7 +110,7 @@ factory User.fromJson(Map<String, dynamic> json) {
   // Validate first
   final schema = UserSchema(json);
   if (!schema.isValid) {
-    throw AckException(schema.getErrors()!);
+    throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
   }
   // Then use your preferred serialization
   return _$UserFromJson(json);

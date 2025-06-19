@@ -67,23 +67,20 @@ void main() {
     'age': 30,
   };
 
-  // Create schema instance - validation happens automatically in constructor
-  final userSchema = UserSchema(userData);
+  // Create schema instance - validation happens with parse method
+  final userSchema = UserSchema().parse(userData);
 
   // Check if the data is valid
   if (userSchema.isValid) {
     // Access properties directly from the schema
     print('Valid User: ${userSchema.name}, ${userSchema.email}, Age: ${userSchema.age}');
-    
+
     // Create a User model if needed
     final user = User(
       name: userSchema.name,
       email: userSchema.email,
       age: userSchema.age,
     );
-  } else {
-    // Handle validation errors
-    print('Validation errors: ${userSchema.getErrors()}');
   }
 }
 ```
@@ -115,7 +112,7 @@ class User {
 
 // Usage
 void main() {
-  final userSchema = UserSchema(userData);
+  final userSchema = UserSchema().parse(userData);
   final user = User.fromSchema(userSchema); // Throws if invalid
 }
 ```
@@ -140,7 +137,7 @@ extension UserSchemaExtensions on UserSchema {
 
 // Usage
 void main() {
-  final userSchema = UserSchema(userData);
+  final userSchema = UserSchema().parse(userData);
   if (userSchema.isValid) {
     final user = userSchema.toUser();
   }
@@ -153,21 +150,21 @@ When you use code generation, the generated schema class extends the base Schema
 
 ### Static Properties and Methods
 
-#### `static AckSchema get schema`
+#### `ObjectSchema get definition`
 
-Returns the `AckSchema` instance that defines the validation rules for the model, generated from your annotations.
+Returns the `ObjectSchema` instance that defines the validation rules for the model, generated from your annotations.
 
 ```dart
-final userSchema = UserSchema.schema;
+final userSchema = UserSchema().definition;
 print('Schema: ${userSchema}');
 ```
 
-#### `static Map<String, Object?> toJsonSchema()`
+#### `Map<String, Object?> toJsonSchema()`
 
 Converts the schema to a JSON Schema as a Map.
 
 ```dart
-final jsonSchema = UserSchema.toJsonSchema();
+final jsonSchema = UserSchema().toJsonSchema();
 print('JSON Schema: $jsonSchema');
 
 // Convert to JSON string if needed
@@ -180,7 +177,7 @@ print('JSON String:\n$jsonString');
 The generated schema provides typed getters for each property in your model:
 
 ```dart
-final schema = UserSchema(userData);
+final schema = UserSchema().parse(userData);
 if (schema.isValid) {
   String name = schema.name;        // Non-nullable property
   String email = schema.email;      // Non-nullable property
@@ -195,7 +192,7 @@ if (schema.isValid) {
 Converts the schema instance to a map, useful for serialization.
 
 ```dart
-final schema = UserSchema(userData);
+final schema = UserSchema().parse(userData);
 if (schema.isValid) {
   final map = schema.toMap();
   final json = jsonEncode(map);
@@ -208,7 +205,7 @@ if (schema.isValid) {
 Returns whether the data is valid according to the schema.
 
 ```dart
-final schema = UserSchema(userData);
+final schema = UserSchema().parse(userData);
 if (schema.isValid) {
   // Use schema...
 }
@@ -219,7 +216,7 @@ if (schema.isValid) {
 Returns the validation errors if the data is invalid, or `null` if the data is valid.
 
 ```dart
-final schema = UserSchema(userData);
+final schema = UserSchema().parse(userData);
 if (!schema.isValid) {
   print('Errors: ${schema.getErrors()}');
 }

@@ -2,7 +2,7 @@
 title: Validation Rules
 ---
 
-Ack provides a rich set of built-in validation rules (constraints) that you can chain onto schema types to enforce specific requirements. Most constraints also accept an optional `message:` parameter to customize the error message upon failure (see [Error Handling](./error-handling.mdx#custom-error-messages)).
+Ack provides a rich set of built-in validation rules (constraints) that you can chain onto schema types to enforce specific requirements. Built-in constraints provide default error messages. For custom error messages, use custom constraints (see [Custom Validation Guide](../guides/custom-validation.mdx)).
 
 ## Common Constraints (Applicable to Multiple Types)
 
@@ -35,10 +35,11 @@ Ensures the string has at most `max` characters.
 Ack.string.maxLength(100)
 ```
 
-### `length(int exactLength)`
-Ensures the string has exactly `exactLength` characters.
+### Exact Length
+To ensure a string has exactly a specific length, combine `minLength()` and `maxLength()`:
 ```dart
-Ack.string.length(10)
+// String must be exactly 10 characters
+Ack.string.minLength(10).maxLength(10)
 ```
 
 ### `notEmpty()`
@@ -117,11 +118,7 @@ Ensures the string is a valid IPv6 address.
 Ack.string.ipv6()
 ```
 
-### `hostname()`
-Ensures the string is a valid hostname according to RFC 1123.
-```dart
-Ack.string.hostname()
-```
+
 
 ### `enumValues(List<String> allowedValues)`
 Ensures the string is one of the `allowedValues`.
@@ -184,10 +181,10 @@ Ensures the list has at most `max` items.
 Ack.list(Ack.int).maxItems(10)
 ```
 
-### `length(int exactLength)`
-Ensures the list has exactly `exactLength` items.
+### `exactItems(int count)`
+Ensures the list has exactly `count` items.
 ```dart
-Ack.list(Ack.boolean).length(5)
+Ack.list(Ack.boolean).exactItems(5)
 ```
 
 ### `notEmpty()`
