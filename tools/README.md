@@ -1,19 +1,16 @@
 # Ack Development Tools
 
-This directory contains internal development tools and documentation for the Ack library, including JSON Schema validation and API compatibility checking.
+This directory contains internal development tools and documentation for the Ack library, focusing on JSON Schema validation.
 
 ## 📁 Directory Structure
 
-- `API_COMPATIBILITY.md` - API compatibility guide and reference
 - `jsonschema-validator.js` - JSON Schema Draft-7 validation tool
 - `docs/` - **Internal development documentation** (not published)
 - `test-fixtures/` - Test data and configurations
-- `../scripts/api_check.dart` - Dart script for API compatibility checking
 
 ## 📚 Documentation
 
-- **[Development Guide](../DEVELOPMENT.md)** - Complete development workflows and API compatibility guide
-- **[API Reference](docs/API_REFERENCE.md)** - Quick command reference for API compatibility tools
+- **[Development Guide](../DEVELOPMENT.md)** - Complete development workflows
 
 > **Note**: For comprehensive development information, see the main [DEVELOPMENT.md](../DEVELOPMENT.md) guide.
 
@@ -155,63 +152,8 @@ The validator outputs structured JSON results:
 4. Update `test-fixtures/batch-config.json` to include your new test case
 5. Run the validator to verify everything works
 
-## API Compatibility Checking
-
-The Ack project uses a simplified single Dart script for API compatibility checking using `dart_apitool`.
-
-### Single Command Usage
-
-Check API compatibility for all packages against any git tag:
-
-```bash
-# Via melos (recommended)
-melos api-check v0.2.0
-melos api-check v0.3.0-beta.1
-
-# Direct script usage
-dart scripts/api_check.dart v0.2.0                 # Check all packages
-dart scripts/api_check.dart ack v0.2.0             # Check specific package
-dart scripts/api_check.dart ack                    # Check against latest
-```
-
-### What it does:
-- ✅ Checks both `ack` and `ack_generator` packages automatically
-- ✅ Generates separate markdown reports for each package
-- ✅ Reports are saved in project root and gitignored
-- ✅ Shows exactly where reports were saved
-
-### Example Output:
-```bash
-🚀 API Compatibility Check vs v0.2.0
-📦 Checking ack package...
-✅ ack: API check completed
-📄 Report saved: api-compat-ack-vs-v0.2.0.md
-
-📦 Checking ack_generator package...  
-⚠️  ack_generator: API changes detected
-📄 Report saved: api-compat-ack_generator-vs-v0.2.0.md
-
-🎯 API compatibility check completed!
-```
-
-### Development Workflow
-
-1. **Check against last release**: 
-   ```bash
-   melos api-check v0.2.0
-   ```
-
-2. **Review generated reports**: 
-   - `api-compat-ack-vs-v0.2.0.md`
-   - `api-compat-ack_generator-vs-v0.2.0.md`
-
-3. **Address any breaking changes** before release
-
 ## Integration with Melos
 
-Both tools are integrated into the Melos workflow:
-
-- **JSON Schema Validation**: `validate-jsonschema` scripts  
-- **API Compatibility**: `api-check` command
+The JSON Schema validation tool is integrated into the Melos workflow with `validate-jsonschema` scripts.
 
 See the main project's `melos.yaml` for all available commands.
