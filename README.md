@@ -187,8 +187,8 @@ The project includes additional development tools for maintainers:
 # JSON Schema validation (ensures compatibility with JSON Schema Draft-7)
 melos validate-jsonschema
 
-# API compatibility checking (for semantic versioning)
-melos api-check:dev
+# API compatibility checking using Dart script (for semantic versioning)
+melos api-check v0.2.0
 
 # See all available scripts
 melos list-scripts

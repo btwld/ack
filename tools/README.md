@@ -1,20 +1,16 @@
 # Ack Development Tools
 
-This directory contains internal development tools and documentation for the Ack library, including JSON Schema validation and API compatibility checking.
+This directory contains internal development tools and documentation for the Ack library, focusing on JSON Schema validation.
 
 ## 📁 Directory Structure
 
-- `api-baseline.sh` - API compatibility management script
 - `jsonschema-validator.js` - JSON Schema Draft-7 validation tool
 - `docs/` - **Internal development documentation** (not published)
 - `test-fixtures/` - Test data and configurations
 
 ## 📚 Documentation
 
-- **[Development Guide](../DEVELOPMENT.md)** - Complete development workflows and API compatibility guide
-- **[API Reference](docs/API_REFERENCE.md)** - Quick command reference for API compatibility tools
-
-> **Note**: For comprehensive development information, see the main [DEVELOPMENT.md](../DEVELOPMENT.md) guide.
+See the main project documentation for development workflows.
 
 ## Setup
 
@@ -154,79 +150,8 @@ The validator outputs structured JSON results:
 4. Update `test-fixtures/batch-config.json` to include your new test case
 5. Run the validator to verify everything works
 
-## API Compatibility Checking
-
-The `api-baseline.sh` script helps manage API compatibility checking using `dart_apitool` for development and release workflows.
-
-### Usage
-
-#### Create API Baseline
-
-Create a baseline from the current API state:
-
-```bash
-./tools/api-baseline.sh create
-# or via melos
-melos api:baseline:create
-```
-
-#### Check Changes
-
-Check current API against the baseline:
-
-```bash
-./tools/api-baseline.sh check
-# or via melos
-melos api:baseline:check
-```
-
-#### Generate Report
-
-Generate a detailed markdown report of API changes:
-
-```bash
-./tools/api-baseline.sh report
-# or via melos
-melos api:baseline:report
-```
-
-#### Check Against Release
-
-Compare current API with the last published release:
-
-```bash
-./tools/api-baseline.sh release
-# or via melos
-melos api:release:check
-```
-
-### Development Workflow
-
-1. **Start Development**: Create baseline before making changes
-   ```bash
-   melos api:baseline:create
-   ```
-
-2. **During Development**: Check changes frequently
-   ```bash
-   melos api:baseline:check
-   ```
-
-3. **Before Release**: Validate against last release
-   ```bash
-   melos api:release:check
-   ```
-
-4. **Generate Reports**: Create detailed analysis
-   ```bash
-   melos api:baseline:report
-   ```
-
 ## Integration with Melos
 
-Both tools are integrated into the Melos workflow:
-
-- **JSON Schema Validation**: `validate-jsonschema` scripts
-- **API Compatibility**: `api:*` scripts
+The JSON Schema validation tool is integrated into the Melos workflow with `validate-jsonschema` scripts.
 
 See the main project's `melos.yaml` for all available commands.
