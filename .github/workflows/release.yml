@@ -1,4 +1,4 @@
-name: Process Release
+name: Publish to pub.dev
 
 on:
   push:
@@ -6,96 +6,9 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
-  process-release:
-    runs-on: ubuntu-latest
+  publish:
     permissions:
-      contents: write
-      id-token: write  # Required for pub.dev publishing
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Important for versioning to work properly
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Setup Dart and Melos
-      - uses: dart-lang/setup-dart@v1
-      - uses: bluefireteam/melos-action@v3
-        with:
-          run-bootstrap: true
-
-      # Run tests to ensure everything is working properly
-      - name: Analyze project source
-        run: melos analyze
-        env:
-          DART_GENERATE_WARNINGS_IN_GENERATED_FILES: false
-
-      - name: Run tests
-        run: melos test
-
-      # Extract version from tag
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Version extracted: $VERSION"
-
-      # Version packages and update changelogs with a link to the release notes
-      - name: Version packages and update changelogs
-        run: |
-          # Extract repository name for creating the release link
-          REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
-          RELEASE_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/tag/${{ env.VERSION }}"
-          RELEASE_DATE=$(date +%Y-%m-%d)
-          
-          # Create a simple changelog entry with link to release notes
-          echo -e "## ${{ env.VERSION }} ($RELEASE_DATE)\n\n* See [release notes]($RELEASE_URL) for details.\n" > changelog_entry.md
-          
-          # Loop through all packages and manually set their versions
-          for pkg in $(melos list --parsable); do
-            # Extract package name from pubspec.yaml
-            pkg_name=$(grep -m 1 "name:" "$pkg/pubspec.yaml" | awk '{print $2}')
-            echo "Setting version for $pkg_name to ${{ env.VERSION }}"
-            melos version "$pkg_name" ${{ env.VERSION }} --no-git-tag-version --yes
-          done
-          
-          # Now manually update all CHANGELOG.md files
-          for pkg in $(melos list --parsable); do
-            if [ -f "$pkg/CHANGELOG.md" ]; then
-              echo "Updating CHANGELOG.md for $pkg"
-              # Prepend the new changelog entry to the existing CHANGELOG.md
-              TEMP_CHANGELOG=$(mktemp)
-              cat changelog_entry.md > $TEMP_CHANGELOG
-              echo "" >> $TEMP_CHANGELOG
-              cat "$pkg/CHANGELOG.md" >> $TEMP_CHANGELOG
-              mv $TEMP_CHANGELOG "$pkg/CHANGELOG.md"
-            fi
-          done
-          
-          # Also update the root CHANGELOG.md if it exists
-          if [ -f "CHANGELOG.md" ]; then
-            echo "Updating root CHANGELOG.md"
-            TEMP_CHANGELOG=$(mktemp)
-            cat changelog_entry.md > $TEMP_CHANGELOG
-            echo "" >> $TEMP_CHANGELOG
-            cat "CHANGELOG.md" >> $TEMP_CHANGELOG
-            mv $TEMP_CHANGELOG "CHANGELOG.md"
-          fi
-          
-          # Commit the version and changelog updates
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
-          
-          # Add and commit changes first, then handle branch switching
-          git add .
-          git commit -m "chore: update versions and changelogs to ${{ env.VERSION }} [skip ci]"
-          
-          # Handle detached HEAD state by checking out main branch and merging changes
-          git checkout main
-          git merge --ff-only HEAD@{1}
-          git push origin main
-
-      - name: Publish to pub.dev
-        run: |
-          melos publish --no-dry-run --yes
+      id-token: write # Required for authentication using OIDC
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/ack
