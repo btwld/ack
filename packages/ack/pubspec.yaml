@@ -5,7 +5,6 @@ repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 homepage: https://docs.page/btwld/ack
 
-publish_to: "https://pub.dev"
 
 environment:
   sdk: ^3.3.0
