@@ -87,10 +87,13 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           
-          # Handle detached HEAD state by checking out main branch before committing
-          git checkout main
+          # Add and commit changes first, then handle branch switching
           git add .
           git commit -m "chore: update versions and changelogs to ${{ env.VERSION }} [skip ci]"
+          
+          # Handle detached HEAD state by checking out main branch and merging changes
+          git checkout main
+          git merge --ff-only HEAD@{1}
           git push origin main
 
       - name: Publish to pub.dev
