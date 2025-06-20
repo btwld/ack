@@ -295,6 +295,69 @@ void main() {
       });
     });
 
+    group('DateTimeValidator', () {
+      final validator = PatternConstraint.dateTime();
+
+      test('Valid ISO 8601 datetime passes validation', () {
+        expect(validator.isValid('2023-01-01T00:00:00.000Z'), isTrue);
+        expect(validator.isValid('2023-12-31T23:59:59.999Z'), isTrue);
+      });
+
+      test('Invalid datetime fails validation', () {
+        expect(validator.isValid('not-a-date'), isFalse);
+        expect(validator.isValid('2023-13-T12'), isFalse);
+      });
+
+      test('schema validation works with datetime validator', () {
+        final schema = StringSchema().dateTime();
+        expect(schema.validate('2023-01-01T00:00:00.000Z').isOk, isTrue);
+
+        final result = schema.validate('not-a-date');
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<PatternConstraint>(),
+          isNotNull,
+        );
+      });
+    });
+
+    group('DateValidator', () {
+      final validator = PatternConstraint.date();
+
+      test('Valid date string passes validation', () {
+        expect(validator.isValid('2023-01-01'), isTrue);
+        expect(validator.isValid('2023-12-31'), isTrue);
+      });
+
+      test('Invalid date string fails validation', () {
+        expect(validator.isValid('not-a-date'), isFalse);
+        expect(validator.isValid('2023-13-01'), isFalse);
+        expect(validator.isValid('2023/01/01'), isFalse);
+      });
+
+      test('schema validation works with date validator', () {
+        final schema = StringSchema().date();
+        expect(schema.validate('2023-01-01').isOk, isTrue);
+
+        final result = schema.validate('not-a-date');
+        expect(result.isFail, isTrue);
+
+        final error = (result as Fail).error;
+        expect(error, isA<SchemaConstraintsError>());
+
+        final constraintsError = error as SchemaConstraintsError;
+        expect(
+          constraintsError.getConstraint<PatternConstraint>(),
+          isNotNull,
+        );
+      });
+    });
+
     group('EnumValidator', () {
       final validator =
           PatternConstraint.enumValues(['DRAFT', 'PUBLISHED', 'ARCHIVED']);

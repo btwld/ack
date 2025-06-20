@@ -45,7 +45,7 @@ void main() {
       });
 
       test('dateTime format constraint generates valid JSON Schema', () async {
-        final schema = Ack.object({'timestamp': Ack.date.dateTime()});
+        final schema = Ack.object({'timestamp': Ack.string.dateTime()});
         final jsonSchema = await _generateAndValidateSchema(
             schema, 'datetime-format', tempDir);
 
@@ -66,7 +66,7 @@ void main() {
         final schema = Ack.object({
           'email': Ack.string.email(),
           'id': Ack.string.uuid(),
-          'created': Ack.date.dateTime(),
+          'created': Ack.string.dateTime(),
           'website': Ack.string.uri().nullable(),
         });
         final jsonSchema = await _generateAndValidateSchema(
@@ -773,8 +773,7 @@ Map<String, dynamic> _getProperty(
 /// Run JSON Schema validation
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript =
-      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
+  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',

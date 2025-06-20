@@ -95,8 +95,8 @@ void main() {
           'profile'
         ]),
         'metadata': Ack.object({
-          'created': Ack.date.dateTime(),
-          'updated': Ack.date.dateTime().nullable(),
+          'created': Ack.string.dateTime(),
+          'updated': Ack.string.dateTime().nullable(),
           'version': Ack.int.min(1),
         }, required: [
           'created',
@@ -230,8 +230,7 @@ void main() {
 /// Run JSON Schema validation with better error handling
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript =
-      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
+  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',
