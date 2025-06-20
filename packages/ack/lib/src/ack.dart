@@ -10,6 +10,8 @@ class Ack {
 
   static const double = DoubleSchema();
 
+  static const date = DateSchema();
+
   const Ack._();
 
   static ListSchema<T> list<T extends Object, S extends AckSchema<T>>(
