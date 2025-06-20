@@ -30,7 +30,7 @@ void main() {
         'basicString': Ack.string,
         'emailString': Ack.string.email(),
         'uuidString': Ack.string.uuid(),
-        'dateTimeString': Ack.string.dateTime(),
+        'dateTimeString': Ack.date.dateTime(),
         'uriString': Ack.string.uri(),
         'lengthString': Ack.string.minLength(2).maxLength(50),
         'patternString': Ack.string.matches(r'^[A-Z][a-z]+$'),
@@ -120,7 +120,7 @@ void main() {
               'content': Ack.string.minLength(1),
               'metadata': Ack.object({
                 'author': Ack.string,
-                'created': Ack.string.dateTime(),
+                'created': Ack.date.dateTime(),
               }).nullable(),
             }, required: [
               'kind',
@@ -353,7 +353,8 @@ Map<String, int> _analyzeConstraintCoverage(Map<String, dynamic> jsonSchema) {
 /// Run JSON Schema validation
 Future<Map<String, dynamic>> _runSchemaValidation(String schemaPath) async {
   final projectRoot = _findProjectRoot();
-  final validatorScript = path.join(projectRoot, 'tools', 'jsonschema-validator.js');
+  final validatorScript =
+      path.join(projectRoot, 'tools', 'jsonschema-validator.js');
 
   final result = await Process.run(
     'node',

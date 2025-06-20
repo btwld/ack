@@ -39,7 +39,7 @@ void main() {
           'basicString': Ack.string,
           'emailString': Ack.string.email(),
           'uuidString': Ack.string.uuid(),
-          'dateTimeString': Ack.string.dateTime(),
+          'dateTimeString': Ack.date.dateTime(),
           'uriString': Ack.string.uri(),
           'enumString': Ack.string.enumValues(['admin', 'user', 'guest']),
           'patternString': Ack.string.matches(r'^[A-Z][a-z]+$'),
@@ -153,7 +153,7 @@ void main() {
                 'content': Ack.string.minLength(1),
                 'metadata': Ack.object({
                   'author': Ack.string,
-                  'created': Ack.string.dateTime(),
+                  'created': Ack.date.dateTime(),
                 }).nullable(),
               }, required: [
                 'kind',
@@ -191,7 +191,7 @@ void main() {
           // String formats
           'email': Ack.string.email(),
           'website': Ack.string.uri().nullable(),
-          'created': Ack.string.dateTime(),
+          'created': Ack.date.dateTime(),
           'phone': Ack.string.matches(r'^\+?[\d\s\-\(\)]+$').nullable(),
 
           // Enums

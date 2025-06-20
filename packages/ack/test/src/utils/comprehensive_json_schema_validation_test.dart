@@ -54,7 +54,7 @@ void main() {
 
       test('string with date-time format generates valid JSON Schema Draft-7',
           () async {
-        final schema = Ack.string.dateTime();
+        final schema = Ack.date.dateTime();
         await _validateSchemaGeneration(
             schema, 'string-datetime-format', tempDir);
       });
@@ -247,8 +247,8 @@ void main() {
           'id': Ack.string.uuid(),
           'tags': Ack.list(Ack.string).uniqueItems(),
           'metadata': Ack.object({
-            'created': Ack.string.dateTime(),
-            'updated': Ack.string.dateTime().nullable(),
+            'created': Ack.date.dateTime(),
+            'updated': Ack.date.dateTime().nullable(),
           }).nullable(),
           'status': Ack.string.enumValues(['active', 'inactive', 'pending']),
         }, required: [
@@ -344,7 +344,7 @@ void main() {
           // String formats
           'email': Ack.string.email(),
           'website': Ack.string.uri().nullable(),
-          'created': Ack.string.dateTime(),
+          'created': Ack.date.dateTime(),
           'phone': Ack.string.matches(r'^\+?[\d\s\-\(\)]+$').nullable(),
 
           // Enums and patterns
