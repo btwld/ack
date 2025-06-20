@@ -7,6 +7,7 @@ export 'src/constraints/number_extensions.dart';
 export 'src/constraints/object_extensions.dart';
 export 'src/constraints/schema_extensions.dart';
 export 'src/constraints/string_extensions.dart';
+export 'src/constraints/date_extensions.dart';
 export 'src/constraints/validators.dart';
 export 'src/deprecations.dart';
 export 'src/schemas/schema.dart';
