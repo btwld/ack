@@ -11,6 +11,7 @@ import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
 part 'boolean_schema.dart';
+part 'date_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
@@ -25,6 +26,7 @@ enum SchemaType {
   object,
   discriminatedObject,
   list,
+  date,
 
   /// Used for unknown errors
   unknown,

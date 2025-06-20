@@ -64,24 +64,6 @@ extension StringSchemaExtensions on StringSchema {
   @Deprecated('Use notEmpty() instead for consistent naming')
   StringSchema isNotEmpty() => notEmpty();
 
-  /// {@macro date_time_validator}
-  StringSchema dateTime() => _add(PatternConstraint.dateTime());
-
-  /// {@macro date_validator}
-  StringSchema date() => _add(PatternConstraint.date());
-
-  /// {@macro date_time_validator}
-  @Deprecated('Use dateTime() instead for consistent naming')
-  StringSchema isDateTime() => dateTime();
-
-  /// {@macro date_time_validator}
-  @Deprecated('Use dateTime() instead for proper camelCase naming')
-  StringSchema datetime() => dateTime();
-
-  /// {@macro date_validator}
-  @Deprecated('Use date() instead for consistent naming')
-  StringSchema isDate() => date();
-
   /// {@macro time_validator}
   StringSchema time() => _add(PatternConstraint.time());
 
