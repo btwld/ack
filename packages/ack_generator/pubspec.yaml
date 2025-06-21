@@ -17,6 +17,8 @@ dependencies:
   # Our packages
   ack:
     path: ../ack
+  ack_annotations:
+    path: ../ack_annotations
   
   # Utilities
   collection: ^1.18.0

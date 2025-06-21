@@ -2,23 +2,10 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:source_gen/source_gen.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
 import '../models/field_info.dart';
 import '../models/constraint_info.dart';
-
-// TODO: Import from ack_annotations when available
-// Temporary annotation class
-class AckField {
-  final bool required;
-  final String? jsonKey;
-  final List<String> constraints;
-  
-  const AckField({
-    this.required = false,
-    this.jsonKey,
-    this.constraints = const [],
-  });
-}
 
 /// Analyzes individual fields in a model
 class FieldAnalyzer {
