@@ -5,6 +5,7 @@ import 'package:source_gen/source_gen.dart';
 import 'package:ack/ack.dart' show SchemaModel;
 
 import 'analyzer/model_analyzer.dart';
+import 'builders/schema_builder.dart';
 
 // TODO: Import from ack_annotations when available
 // For now, using a temporary annotation class
@@ -42,21 +43,8 @@ class AckSchemaGenerator extends GeneratorForAnnotation<AckModel> {
       final modelInfo = analyzer.analyze(element, annotation);
 
       // 2. Build the schema code
-      // TODO: Use SchemaBuilder when implemented
-      // final builder = SchemaBuilder();
-      // return builder.build(modelInfo);
-      
-      // Temporary implementation - generate basic schema
-      return '''
-// Generated schema for ${modelInfo.className}
-class ${modelInfo.schemaClassName} extends SchemaModel {
-  const ${modelInfo.schemaClassName}();
-  
-  // TODO: Add implementation
-  // Fields: ${modelInfo.fields.map((f) => f.name).join(', ')}
-  // Required: ${modelInfo.requiredFields.join(', ')}
-}
-''';
+      final builder = SchemaBuilder();
+      return builder.build(modelInfo);
     } catch (e) {
       throw InvalidGenerationSourceError(
         'Error generating schema for ${element.name}: $e',
