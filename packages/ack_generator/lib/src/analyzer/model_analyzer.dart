@@ -3,6 +3,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../models/model_info.dart';
 import '../models/field_info.dart';
+import '../utils/naming.dart';
 import 'field_analyzer.dart';
 
 /// Analyzes classes annotated with @AckModel
@@ -15,7 +16,7 @@ class ModelAnalyzer {
         ? null
         : annotation.read('schemaName').stringValue;
     
-    final schemaClassName = schemaName ?? _getSchemaClassName(element.name);
+    final schemaClassName = schemaName ?? NamingUtils.getSchemaClassName(element.name);
     
     // Extract description if provided
     final description = annotation.read('description').isNull
@@ -48,10 +49,5 @@ class ModelAnalyzer {
       fields: fields,
       requiredFields: requiredFields,
     );
-  }
-
-  /// Generate schema class name from model class name
-  String _getSchemaClassName(String className) {
-    return '${className}Schema';
   }
 }
