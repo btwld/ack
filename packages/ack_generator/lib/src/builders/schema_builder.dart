@@ -3,9 +3,11 @@ import 'package:dart_style/dart_style.dart';
 
 import '../models/model_info.dart';
 import '../models/field_info.dart';
+import 'method_builder.dart' as mb;
 
 /// Builds schema classes using code_builder
 class SchemaBuilder {
+  final _methodBuilder = mb.MethodBuilder();
   final _formatter = DartFormatter();
 
   String build(ModelInfo model) {
@@ -35,7 +37,8 @@ class SchemaBuilder {
 
     return _formatter.format('${library.accept(emitter)}');
   }
-}  List<Constructor> _buildConstructors(ModelInfo model) {
+
+  List<Constructor> _buildConstructors(ModelInfo model) {
     return [
       // Default constructor
       Constructor((b) => b
@@ -53,42 +56,12 @@ class SchemaBuilder {
       ),
     ];
   }
+
   List<Method> _buildMethods(ModelInfo model) {
-    // TODO: Use MethodBuilder when implemented
     return [
-      // parse method with covariant return type
-      Method((b) => b
-        ..name = 'parse'
-        ..annotations.add(const CodeExpression(Code('override')))
-        ..returns = refer(model.schemaClassName)
-        ..requiredParameters.add(Parameter((p) => p
-          ..name = 'input'
-          ..type = refer('Object?')
-        ))
-        ..body = Code('return super.parse(input) as ${model.schemaClassName};')
-      ),
-      // tryParse method with covariant return type
-      Method((b) => b
-        ..name = 'tryParse'
-        ..annotations.add(const CodeExpression(Code('override')))
-        ..returns = refer('${model.schemaClassName}?')
-        ..requiredParameters.add(Parameter((p) => p
-          ..name = 'input'
-          ..type = refer('Object?')
-        ))
-        ..body = Code('return super.tryParse(input) as ${model.schemaClassName}?;')
-      ),
-      // createValidated factory method
-      Method((b) => b
-        ..name = 'createValidated'
-        ..annotations.add(const CodeExpression(Code('override')))
-        ..returns = refer(model.schemaClassName)
-        ..requiredParameters.add(Parameter((p) => p
-          ..name = 'data'
-          ..type = refer('Map<String, Object?>')
-        ))
-        ..body = Code('return ${model.schemaClassName}._valid(data);')
-      ),
+      _methodBuilder.buildParseMethod(model),
+      _methodBuilder.buildTryParseMethod(model),
+      _methodBuilder.buildCreateValidatedMethod(model),
     ];
   }
   Field _buildDefinitionField(ModelInfo model) {
@@ -231,3 +204,4 @@ class SchemaBuilder {
       );
     }
   }
+}
