@@ -57,13 +57,6 @@ void main() {
       tags: ['golden'],
     );
 
-    test(
-      'generates correct output for dart_mappable integration',
-      () async {
-        await testGolden('dart_mappable_user_model');
-      },
-      tags: ['golden'],
-    );
 
     if (Platform.environment['UPDATE_GOLDEN'] == 'true') {
       print('Golden files updated. Review changes before committing.');

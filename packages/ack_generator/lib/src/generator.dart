@@ -267,14 +267,14 @@ $propertyCode
     // Build property map code
     final propertyEntries = subclassProperties.map((prop) {
       final schemaExpr = _buildPropertySchemaExpression(prop);
-      final key = prop.jsonKey ?? prop.name;
+      final key = prop.name;
       return "'$key': $schemaExpr";
     }).join(',\n      ');
 
     // Build required fields
     final requiredFields = subclassProperties
         .where((prop) => prop.isRequired)
-        .map((prop) => "'${prop.jsonKey ?? prop.name}'")
+        .map((prop) => "'${prop.name}'")
         .join(', ');
 
     final schemaCode = '''${baseName}Schema().definition.extend(
@@ -391,7 +391,7 @@ $propertyCode
   }
 
   String _generateGetterBody(PropertyInfo property, String typeStr) {
-    final propName = property.jsonKey ?? property.name;
+    final propName = property.name;
     final isNullable = property.isNullable;
 
     // Primitives - use getValue
@@ -490,7 +490,7 @@ $propertyCode
     final knownFields = classInfo
         .getPropertiesExcluding(schemaData.additionalPropertiesField)
         .values
-        .map((p) => "'${p.jsonKey ?? p.name}'")
+        .map((p) => "'${p.name}'")
         .toSet();
 
     final body = '''
@@ -814,7 +814,7 @@ $propertyCode
   }) {
     return properties.map((prop) {
       final schemaExpr = _buildPropertySchemaExpression(prop);
-      final key = prop.jsonKey ?? prop.name;
+      final key = prop.name;
       final entry = "$indent'$key': $schemaExpr";
       return includeTrailingComma ? '$entry,' : entry;
     }).join(includeTrailingComma ? '\n' : ',\n');
@@ -826,7 +826,7 @@ $propertyCode
         .getRequiredProperties(
           excludeField: schemaData.additionalPropertiesField,
         )
-        .map((p) => "'${p.jsonKey ?? p.name}'")
+        .map((p) => "'${p.name}'")
         .join(', ');
   }
 
