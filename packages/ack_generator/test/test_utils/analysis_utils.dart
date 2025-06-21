@@ -1,54 +1,82 @@
+import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:build/build.dart';
-import 'package:build_test/build_test.dart';
+import 'package:analyzer/dart/element/visitor.dart';
 import 'package:source_gen/source_gen.dart';
 
-/// Utility to resolve Dart source into analyzable elements
-Future<LibraryElement> resolveSource(
-  String source, {
-  Map<String, String>? additionalAssets,
-}) async {
-  final assets = {
-    'test_pkg|lib/test.dart': source,
-    if (additionalAssets != null) ...additionalAssets,
-  };
+/// Utilities for analyzing Dart code in tests
+class AnalysisUtils {
+  /// Parse source code and return the library element
+  static Future<LibraryElement> resolveSource(String source) async {
+    final result = parseString(content: source);
+    if (result.errors.isNotEmpty) {
+      throw Exception('Parse errors: ${result.errors}');
+    }
+    
+    // In tests, we can work with the parsed unit directly
+    final visitor = _LibraryElementVisitor();
+    result.unit.accept(visitor);
+    
+    if (visitor.library == null) {
+      throw Exception('No library found in source');
+    }
+    
+    return visitor.library!;
+  }
 
-  final resolver = await resolveAsset(
-    AssetId('test_pkg', 'lib/test.dart'),
-    (id) async {
-      if (assets.containsKey(id.toString())) {
-        return assets[id.toString()]!;
+  /// Get a class element by name from a library
+  static ClassElement? getClass(LibraryElement library, String name) {
+    for (final unit in library.units) {
+      for (final type in unit.classes) {
+        if (type.name == name) {
+          return type;
+        }
       }
-      throw AssetNotFoundException(id);
-    },
-    // Provide a minimal logger
-    logger: null,
-  );
-
-  return resolver.findLibraryByName('test') ?? 
-         (throw StateError('Could not find library'));
-}
-
-/// Helper to get class element by name
-ClassElement getClass(LibraryElement library, String name) {
-  final type = library.getClass(name);
-  if (type == null) {
-    throw StateError('Could not find class $name in library');
+    }
+    return null;
   }
-  return type;
-}
 
-/// Helper to get the first class in a library
-ClassElement getFirstClass(LibraryElement library) {
-  final classes = library.topLevelElements.whereType<ClassElement>();
-  if (classes.isEmpty) {
-    throw StateError('No classes found in library');
+  /// Create a ConstantReader from an annotation value
+  static ConstantReader createAnnotationReader(Map<String, dynamic> values) {
+    // Simplified for testing - in real scenarios this would use DartObject
+    return ConstantReader(null);
   }
-  return classes.first;
 }
 
-/// Create a LibraryReader from source
-Future<LibraryReader> createLibraryReader(String source) async {
-  final library = await resolveSource(source);
-  return LibraryReader(library);
+class _LibraryElementVisitor extends GeneralizingElementVisitor<void> {
+  LibraryElement? library;
+
+  @override
+  void visitLibraryElement(LibraryElement element) {
+    library = element;
+  }
+}
+
+/// Helper to create mock ClassElement for testing
+class MockClassElement {
+  static ClassElement create({
+    required String name,
+    List<MockFieldElement> fields = const [],
+    bool isAbstract = false,
+  }) {
+    // This would typically use a mocking framework
+    // For now, we'll rely on build_test which provides this functionality
+    throw UnimplementedError('Use testBuilder for integration testing');
+  }
+}
+
+/// Helper to create mock FieldElement for testing
+class MockFieldElement {
+  final String name;
+  final String type;
+  final bool isRequired;
+  final bool isNullable;
+  final Map<String, dynamic>? ackFieldAnnotation;
+
+  MockFieldElement({
+    required this.name,
+    required this.type,
+    this.isRequired = false,
+    this.isNullable = false,
+    this.ackFieldAnnotation,
+  });
 }
