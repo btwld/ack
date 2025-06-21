@@ -294,24 +294,35 @@ While code generation is recommended, you can also implement `SchemaModel` manua
 
 ```dart
 class UserSchema extends SchemaModel {
-  UserSchema(Object? data) : super(data);
+  const UserSchema() : super();
+  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
-  AckSchema getSchema() {
-    return Ack.object(
-      {
-        'name': Ack.string.minLength(2),
-        'email': Ack.string.email(),
-        'age': Ack.int.min(0).nullable(),
-      },
-      required: ['name', 'email'],
-    );
+  ObjectSchema get definition => Ack.object({
+    'name': Ack.string.minLength(2),
+    'email': Ack.string.email(),
+    'age': Ack.int.min(0).nullable(),
+  }, required: ['name', 'email']);
+
+  @override
+  UserSchema parse(Object? input) {
+    return super.parse(input) as UserSchema;
   }
-  
+
+  @override
+  UserSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UserSchema?;
+  }
+
+  @override
+  UserSchema createValidated(Map<String, Object?> data) {
+    return UserSchema._valid(data);
+  }
+
   // Add typed getters
-  String get name => getValue<String>('name')!;
-  String get email => getValue<String>('email')!;
-  int? get age => getValue<int?>('age');
+  String get name => getValue<String>('name');
+  String get email => getValue<String>('email');
+  int? get age => getValueOrNull<int>('age');
 }
 ```
 
@@ -321,14 +332,14 @@ The `SchemaRegistry` is an optional utility for managing `SchemaModel` factories
 
 ```dart
 // Register a factory for creating UserSchema instances
-SchemaRegistry.register<UserSchema>((data) => UserSchema(data));
+SchemaRegistry.register<UserSchema>((data) => UserSchema().parse(data));
 
 // Create a UserSchema instance using the registered factory
 final schema = SchemaRegistry.createSchema<UserSchema>(userData);
 
-if (schema != null && schema.isValid) {
+if (schema != null && schema.hasData) {
   print('Name: ${schema.name}');
-  
+
   // Create model using your preferred pattern
   final user = User(name: schema.name, email: schema.email);
 }

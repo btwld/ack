@@ -2,9 +2,9 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 // Test schema to verify type safety
-class UserSchema extends SchemaModel<UserSchema> {
+class UserSchema extends SchemaModel {
   const UserSchema() : super();
-  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   ObjectSchema get definition => Ack.object({
@@ -17,20 +17,23 @@ class UserSchema extends SchemaModel<UserSchema> {
       ]);
 
   @override
-  UserSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return UserSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  UserSchema parse(Object? input) {
+    return super.parse(input) as UserSchema;
   }
 
-  String get name => getValue<String>('name')!;
-  String get email => getValue<String>('email')!;
-  int? get age => getValue<int>('age');
+  @override
+  UserSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UserSchema?;
+  }
+
+  @override
+  UserSchema createValidated(Map<String, Object?> data) {
+    return UserSchema._valid(data);
+  }
+
+  String get name => getValue<String>('name');
+  String get email => getValue<String>('email');
+  int? get age => getValueOrNull<int>('age');
 }
 
 void main() {

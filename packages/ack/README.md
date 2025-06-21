@@ -499,9 +499,9 @@ ACK provides a `SchemaModel` base class for creating schema-based models with au
 
 ```dart
 // Define a schema model manually (or use code generation)
-class UserSchema extends SchemaModel<UserSchema> {
+class UserSchema extends SchemaModel {
   const UserSchema() : super();
-  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   ObjectSchema get definition => Ack.object({
@@ -511,21 +511,24 @@ class UserSchema extends SchemaModel<UserSchema> {
   }, required: ['name', 'email']);
 
   @override
-  UserSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return UserSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  UserSchema parse(Object? input) {
+    return super.parse(input) as UserSchema;
+  }
+
+  @override
+  UserSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UserSchema?;
+  }
+
+  @override
+  UserSchema createValidated(Map<String, Object?> data) {
+    return UserSchema._valid(data);
   }
 
   // Getters for typed access to properties
-  String get name => getValue<String>('name')!;
-  String get email => getValue<String>('email')!;
-  int? get age => getValue<int?>('age');
+  String get name => getValue<String>('name');
+  String get email => getValue<String>('email');
+  int? get age => getValueOrNull<int>('age');
 }
 
 // Using the schema model - Parse approach
@@ -537,8 +540,8 @@ final userData = {
 
 final userSchema = const UserSchema().parse(userData);
 
-// Check if the schema is valid
-if (userSchema.isValid) {
+// Check if the schema has data (is valid)
+if (userSchema.hasData) {
   // Access properties directly from the schema
   print('User: ${userSchema.name}, ${userSchema.email}, ${userSchema.age}');
 

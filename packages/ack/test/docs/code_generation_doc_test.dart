@@ -16,9 +16,9 @@ class User {
   }) : metadata = metadata ?? {};
 }
 
-class UserSchema extends SchemaModel<UserSchema> {
+class UserSchema extends SchemaModel {
   const UserSchema() : super();
-  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   static final ObjectSchema schema = Ack.object({
     'email': Ack.string.email(),
@@ -37,25 +37,28 @@ class UserSchema extends SchemaModel<UserSchema> {
   ObjectSchema get definition => schema;
 
   @override
-  UserSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return UserSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  UserSchema parse(Object? input) {
+    return super.parse(input) as UserSchema;
   }
 
-  String get email => getValue<String>('email')!;
-  String get name => getValue<String>('name')!;
-  int? get age => getValue<int?>('age');
+  @override
+  UserSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UserSchema?;
+  }
+
+  @override
+  UserSchema createValidated(Map<String, Object?> data) {
+    return UserSchema._valid(data);
+  }
+
+  String get email => getValue<String>('email');
+  String get name => getValue<String>('name');
+  int? get age => getValueOrNull<int>('age');
 
   Map<String, dynamic> get metadata {
-    final map = toMap();
+    final map = Map<String, dynamic>.from(toMap());
     map.removeWhere((key, _) => ['email', 'name', 'age'].contains(key));
-    return Map<String, dynamic>.from(map);
+    return map;
   }
 }
 
@@ -66,9 +69,9 @@ class Address {
   Address({required this.street, required this.city});
 }
 
-class AddressSchema extends SchemaModel<AddressSchema> {
+class AddressSchema extends SchemaModel {
   const AddressSchema() : super();
-  const AddressSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const AddressSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   static final ObjectSchema schema = Ack.object({
     'street': Ack.string,
@@ -82,19 +85,22 @@ class AddressSchema extends SchemaModel<AddressSchema> {
   ObjectSchema get definition => schema;
 
   @override
-  AddressSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return AddressSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  AddressSchema parse(Object? input) {
+    return super.parse(input) as AddressSchema;
   }
 
-  String get street => getValue<String>('street')!;
-  String get city => getValue<String>('city')!;
+  @override
+  AddressSchema? tryParse(Object? input) {
+    return super.tryParse(input) as AddressSchema?;
+  }
+
+  @override
+  AddressSchema createValidated(Map<String, Object?> data) {
+    return AddressSchema._valid(data);
+  }
+
+  String get street => getValue<String>('street');
+  String get city => getValue<String>('city');
 }
 
 void main() {

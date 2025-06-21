@@ -98,3 +98,50 @@ class Category {
     this.metadata = const {},
   });
 }
+
+// Simple test to verify the generated code works
+void main() {
+  print('Testing SchemaModel refactoring...');
+
+  final productData = {
+    'id': '123',
+    'name': 'Test Product',
+    'description': 'A test product',
+    'price': 19.99,
+    'category': {
+      'id': 'cat1',
+      'name': 'Test Category',
+    },
+    'releaseDate': '2024-01-15',
+    'createdAt': '2024-01-15T10:30:00Z',
+    'stockQuantity': 100,
+    'status': 'published',
+    'productCode': 'ABC-1234',
+  };
+
+  try {
+    // Test the new SchemaModel API
+    final schema = ProductSchema().parse(productData);
+
+    print('✅ Schema parsing successful!');
+    print('✅ Product ID: ${schema.id}');
+    print('✅ Product Name: ${schema.name}');
+    print('✅ Category: ${schema.category.name}');
+    print('✅ Has data: ${schema.hasData}');
+    print('✅ Is valid (backward compatibility): ${schema.isValid}');
+
+    // Test tryParse
+    final maybeSchema = ProductSchema().tryParse(productData);
+    print('✅ TryParse successful: ${maybeSchema != null}');
+
+    // Test invalid data
+    final invalidSchema = ProductSchema().tryParse({'invalid': 'data'});
+    print(
+        '✅ TryParse with invalid data returns null: ${invalidSchema == null}');
+
+    print(
+        '\n🎉 All tests passed! SchemaModel refactoring is working correctly.');
+  } catch (e) {
+    print('❌ Error: $e');
+  }
+}

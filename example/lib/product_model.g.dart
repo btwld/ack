@@ -12,12 +12,12 @@ part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
-class ProductSchema extends SchemaModel<ProductSchema> {
+class ProductSchema extends SchemaModel {
   /// Default constructor for parser instances
   ProductSchema();
 
   /// Private constructor for validated instances
-  ProductSchema._valid(Map<String, Object?> data) : super.valid(data);
+  ProductSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   late final definition = Ack.object(
@@ -51,17 +51,21 @@ class ProductSchema extends SchemaModel<ProductSchema> {
     additionalProperties: true,
   );
 
-  /// Parse with validation - core implementation
+  /// Override with covariant return type - returns ProductSchema!
   @override
-  ProductSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return ProductSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  ProductSchema parse(Object? input) {
+    return super.parse(input) as ProductSchema;
+  }
+
+  /// Override with covariant return type
+  @override
+  ProductSchema? tryParse(Object? input) {
+    return super.tryParse(input) as ProductSchema?;
+  }
+
+  @override
+  ProductSchema createValidated(Map<String, Object?> data) {
+    return ProductSchema._valid(data);
   }
 
   /// Ensures this schema and its dependencies are registered
@@ -73,33 +77,33 @@ class ProductSchema extends SchemaModel<ProductSchema> {
     CategorySchema.ensureInitialize();
   }
 
-  String get id => getValue<String>('id')!;
+  String get id => getValue<String>('id');
 
-  String get name => getValue<String>('name')!;
+  String get name => getValue<String>('name');
 
-  String get description => getValue<String>('description')!;
+  String get description => getValue<String>('description');
 
-  double get price => getValue<double>('price')!;
+  double get price => getValue<double>('price');
 
-  String? get contactEmail => getValue<String>('contactEmail');
+  String? get contactEmail => getValueOrNull<String>('contactEmail');
 
-  String? get imageUrl => getValue<String>('imageUrl');
+  String? get imageUrl => getValueOrNull<String>('imageUrl');
 
   CategorySchema get category {
-    return CategorySchema().parse(getValue<Map<String, Object?>>('category')!);
+    return CategorySchema().parse(getValue<Map<String, Object?>>('category'));
   }
 
-  String get releaseDate => getValue<String>('releaseDate')!;
+  String get releaseDate => getValue<String>('releaseDate');
 
-  String get createdAt => getValue<String>('createdAt')!;
+  String get createdAt => getValue<String>('createdAt');
 
-  String? get updatedAt => getValue<String>('updatedAt');
+  String? get updatedAt => getValueOrNull<String>('updatedAt');
 
-  int get stockQuantity => getValue<int>('stockQuantity')!;
+  int get stockQuantity => getValue<int>('stockQuantity');
 
-  String get status => getValue<String>('status')!;
+  String get status => getValue<String>('status');
 
-  String get productCode => getValue<String>('productCode')!;
+  String get productCode => getValue<String>('productCode');
 
   Map<String, Object?> get metadata {
     final map = toMap();
@@ -129,12 +133,12 @@ class ProductSchema extends SchemaModel<ProductSchema> {
 
 /// Generated schema for Category
 /// A category for organizing products
-class CategorySchema extends SchemaModel<CategorySchema> {
+class CategorySchema extends SchemaModel {
   /// Default constructor for parser instances
   CategorySchema();
 
   /// Private constructor for validated instances
-  CategorySchema._valid(Map<String, Object?> data) : super.valid(data);
+  CategorySchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   late final definition = Ack.object(
@@ -147,17 +151,21 @@ class CategorySchema extends SchemaModel<CategorySchema> {
     additionalProperties: true,
   );
 
-  /// Parse with validation - core implementation
+  /// Override with covariant return type - returns CategorySchema!
   @override
-  CategorySchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return CategorySchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  CategorySchema parse(Object? input) {
+    return super.parse(input) as CategorySchema;
+  }
+
+  /// Override with covariant return type
+  @override
+  CategorySchema? tryParse(Object? input) {
+    return super.tryParse(input) as CategorySchema?;
+  }
+
+  @override
+  CategorySchema createValidated(Map<String, Object?> data) {
+    return CategorySchema._valid(data);
   }
 
   /// Ensures this schema and its dependencies are registered
@@ -167,11 +175,11 @@ class CategorySchema extends SchemaModel<CategorySchema> {
     );
   }
 
-  String get id => getValue<String>('id')!;
+  String get id => getValue<String>('id');
 
-  String get name => getValue<String>('name')!;
+  String get name => getValue<String>('name');
 
-  String? get description => getValue<String>('description');
+  String? get description => getValueOrNull<String>('description');
 
   Map<String, Object?> get metadata {
     final map = toMap();
