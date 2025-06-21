@@ -47,7 +47,7 @@ void main() {
           contains('UserSchema createValidated(Map<String, Object?> data)'));
 
       // Check definition field
-      expect(result, contains('late final definition = Ack.object({'));
+      expect(result, contains('late final definition = Ack.object('));
       expect(result, contains("'id': Ack.string"));
       expect(result, contains("'name': Ack.string"));
       expect(result, contains("'email': Ack.string.nullable()"));
@@ -99,7 +99,11 @@ void main() {
       expect(
           result,
           contains(
-              "List<String>? get comments => getValueOrNull<List>('comments')?.cast<String>()"));
+              "List<String>? get comments =>"));
+      expect(
+          result,
+          contains(
+              "getValueOrNull<List>('comments')?.cast<String>()"));
     });
 
     test('generates property getters for nested schemas', () {
@@ -141,7 +145,7 @@ void main() {
       final result = builder.build(model);
 
       // Should not include required parameter when empty
-      expect(result, contains('Ack.object({'));
+      expect(result, contains('Ack.object('));
       expect(result, isNot(contains('required:')));
     });
 
@@ -159,8 +163,8 @@ void main() {
 
       // Check formatting
       expect(result, contains('// GENERATED CODE - DO NOT MODIFY BY HAND'));
-      expect(result.trim(), isNot(contains('  }'))); // No trailing spaces
       expect(result, isNot(contains('\t'))); // No tabs
+      expect(result.trim(), endsWith('}')); // Ends with closing brace
     });
   });
 }

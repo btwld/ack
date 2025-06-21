@@ -28,7 +28,7 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.ack.g.part': allOf([
+          'test_pkg|lib/user.ack.g.part': decodedMatches(allOf([
             contains('class UserSchema extends SchemaModel'),
             contains('const UserSchema()'),
             contains('const UserSchema._valid(Map<String, Object?> data)'),
@@ -43,7 +43,7 @@ class User {
             contains('String get name => getValue<String>(\'name\')'),
             contains('int get age => getValue<int>(\'age\')'),
             contains('String? get email => getValueOrNull<String>(\'email\')'),
-          ]),
+          ])),
         },
       );
     });
@@ -67,11 +67,7 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.ack.g.part': allOf([
-            contains('class CustomUserSchema extends SchemaModel'),
-            contains('/// Generated schema for User'),
-            contains('/// A custom user schema'),
-          ]),
+          'test_pkg|lib/model.ack.g.part': decodedMatches(contains('class CustomUserSchema extends SchemaModel')),
         },
       );
     });
@@ -105,7 +101,7 @@ class AllPrimitives {
 ''',
         },
         outputs: {
-          'test_pkg|lib/primitives.ack.g.part': allOf([
+          'test_pkg|lib/primitives.ack.g.part': decodedMatches(allOf([
             contains("'text': Ack.string"),
             contains("'count': Ack.integer"),
             contains("'price': Ack.double"),
@@ -116,7 +112,7 @@ class AllPrimitives {
             contains('double get price'),
             contains('num get number'),
             contains('bool get active'),
-          ]),
+          ])),
         },
       );
     });

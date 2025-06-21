@@ -1,0 +1,82 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+class OrderItemSchema extends SchemaModel {
+  const OrderItemSchema();
+
+  const OrderItemSchema._valid(Map<String, Object?> data)
+    : super.validated(data);
+
+  @override
+  late final definition = Ack.object(
+    {'productId': Ack.string, 'quantity': Ack.integer, 'price': Ack.double},
+    required: ['productId', 'quantity', 'price'],
+  );
+
+  @override
+  OrderItemSchema parse(Object? input) {
+    return super.parse(input) as OrderItemSchema;
+  }
+
+  @override
+  OrderItemSchema? tryParse(Object? input) {
+    return super.tryParse(input) as OrderItemSchema?;
+  }
+
+  @override
+  @protected
+  OrderItemSchema createValidated(Map<String, Object?> data) {
+    return OrderItemSchema._valid(data);
+  }
+
+  String get productId => getValue<String>('productId');
+
+  int get quantity => getValue<int>('quantity');
+
+  double get price => getValue<double>('price');
+}
+
+
+class OrderSchema extends SchemaModel {
+  const OrderSchema();
+
+  const OrderSchema._valid(Map<String, Object?> data) : super.validated(data);
+
+  @override
+  late final definition = Ack.object(
+    {
+      'id': Ack.string,
+      'items': Ack.list(OrderItemSchema().definition),
+      'createdAt': DateTimeSchema().definition,
+    },
+    required: ['id', 'items', 'createdAt'],
+  );
+
+  @override
+  OrderSchema parse(Object? input) {
+    return super.parse(input) as OrderSchema;
+  }
+
+  @override
+  OrderSchema? tryParse(Object? input) {
+    return super.tryParse(input) as OrderSchema?;
+  }
+
+  @override
+  @protected
+  OrderSchema createValidated(Map<String, Object?> data) {
+    return OrderSchema._valid(data);
+  }
+
+  String get id => getValue<String>('id');
+
+  List<OrderItem> get items => getValue<List>('items').cast<OrderItem>();
+
+  DateTimeSchema get createdAt {
+    final data = getValue<Map<String, Object?>>('createdAt');
+    return DateTimeSchema().parse(data);
+  }
+}

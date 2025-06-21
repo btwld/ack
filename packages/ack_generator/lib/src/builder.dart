@@ -7,7 +7,7 @@ import 'generator.dart';
 Builder ackGenerator(BuilderOptions options) {
   return SharedPartBuilder(
     [AckSchemaGenerator()],
-    'ack_generator',
-    formatOutput: (generated) => generated.replaceAll(RegExp(r'//.*\n'), ''),
+    'ack',
+    formatOutput: (generated, version) => generated.replaceAll(RegExp(r'//.*\n'), ''),
   );
 }

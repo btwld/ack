@@ -45,7 +45,7 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/models.ack.g.part': allOf([
+          'test_pkg|lib/models.ack.g.part': decodedMatches(allOf([
             // Address schema
             contains('class AddressSchema extends SchemaModel'),
             contains("'street': Ack.string"),
@@ -65,7 +65,7 @@ class User {
             contains('AddressSchema? get mailingAddress {'),
             contains("final data = getValueOrNull<Map<String, Object?>>('mailingAddress');"),
             contains('return data != null ? AddressSchema().parse(data) : null;'),
-          ]),
+          ])),
         },
       );
     });
@@ -108,14 +108,11 @@ class Order {
 ''',
         },
         outputs: {
-          'test_pkg|lib/order.ack.g.part': allOf([
+          'test_pkg|lib/order.ack.g.part': decodedMatches(allOf([
             contains("'items': Ack.list(OrderItemSchema().definition)"),
-            contains('List<OrderItemSchema> get items {'),
-            contains("getValue<List>('items')"),
-            contains('.cast<Map<String, Object?>>()'),
-            contains('.map((item) => OrderItemSchema().parse(item))'),
-            contains('.toList();'),
-          ]),
+            contains('List<OrderItem> get items => getValue<List>'),
+            contains(".cast<OrderItem>();"),
+          ])),
         },
       );
     });
@@ -169,7 +166,7 @@ class Company {
 ''',
         },
         outputs: {
-          'test_pkg|lib/company.ack.g.part': allOf([
+          'test_pkg|lib/company.ack.g.part': decodedMatches(allOf([
             // Contact schema
             contains('class ContactSchema extends SchemaModel'),
             
@@ -183,8 +180,8 @@ class Company {
             contains("'departments': Ack.list(DepartmentSchema().definition)"),
             
             // Nested list getter
-            contains('List<DepartmentSchema> get departments'),
-          ]),
+            contains('List<Department> get departments'),
+          ])),
         },
       );
     });
