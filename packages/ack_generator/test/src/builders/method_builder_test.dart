@@ -2,7 +2,7 @@ import 'package:test/test.dart';
 import 'package:ack_generator/src/builders/method_builder.dart';
 import 'package:ack_generator/src/models/model_info.dart';
 import 'package:ack_generator/src/models/field_info.dart';
-import 'package:code_builder/code_builder.dart';
+import 'package:code_builder/code_builder.dart' as cb;
 import 'package:dart_style/dart_style.dart';
 
 void main() {
@@ -73,7 +73,7 @@ void main() {
   });
 }
 
-String _methodToString(Method method) {
-  final emitter = DartEmitter();
+String _methodToString(cb.Method method) {
+  final emitter = cb.DartEmitter();
   return method.accept(emitter).toString();
 }
