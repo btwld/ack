@@ -1,17 +1,12 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 // ignore: unused_import
 import 'package:ack/ack.dart' show SchemaModel;
 
 import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
-
-// TODO: Import from ack_annotations when available
-// For now, using a temporary annotation class
-class AckModel {
-  const AckModel();
-}
 
 /// Generates SchemaModel implementations for classes annotated with @AckModel
 class AckSchemaGenerator extends GeneratorForAnnotation<AckModel> {
