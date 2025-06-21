@@ -1,14 +1,13 @@
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../models/model_info.dart';
 import '../models/field_info.dart';
+import 'field_analyzer.dart';
 
 /// Analyzes classes annotated with @AckModel
 class ModelAnalyzer {
-  // TODO: Add FieldAnalyzer when implemented
-  // final _fieldAnalyzer = FieldAnalyzer();
+  final _fieldAnalyzer = FieldAnalyzer();
 
   ModelInfo analyze(ClassElement element, ConstantReader annotation) {
     // Extract schema name from annotation or generate it
@@ -34,21 +33,7 @@ class ModelAnalyzer {
     ].where((field) => !field.isStatic && !field.isSynthetic);
 
     for (final field in allFields) {
-      // TODO: Use FieldAnalyzer when implemented
-      // final fieldInfo = _fieldAnalyzer.analyze(field);
-      
-      // Temporary implementation - create basic FieldInfo
-      final isNullable = field.type.nullabilitySuffix != NullabilitySuffix.none;
-      final fieldInfo = FieldInfo(
-        name: field.name,
-        jsonKey: field.name, // TODO: Extract from annotations
-        type: field.type,
-        isRequired: !isNullable && !field.hasInitializer,
-        isNullable: isNullable,
-        constraints: [], // TODO: Extract from annotations
-        defaultValue: null, // TODO: Extract default values
-      );
-      
+      final fieldInfo = _fieldAnalyzer.analyze(field);
       fields.add(fieldInfo);
       
       if (fieldInfo.isRequired) {
