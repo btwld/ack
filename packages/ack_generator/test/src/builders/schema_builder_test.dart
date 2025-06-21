@@ -1,9 +1,9 @@
-import 'package:test/test.dart';
 import 'package:ack_generator/src/builders/schema_builder.dart';
-import 'package:ack_generator/src/models/model_info.dart';
-import 'package:ack_generator/src/models/field_info.dart';
 import 'package:ack_generator/src/models/constraint_info.dart';
+import 'package:ack_generator/src/models/field_info.dart';
+import 'package:ack_generator/src/models/model_info.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('SchemaBuilder', () {
@@ -30,20 +30,22 @@ void main() {
 
       // Check class declaration
       expect(result, contains('class UserSchema extends SchemaModel'));
-      
+
       // Check documentation
       expect(result, contains('/// Generated schema for User'));
       expect(result, contains('/// User model for testing'));
-      
+
       // Check constructors
       expect(result, contains('const UserSchema()'));
-      expect(result, contains('const UserSchema._valid(Map<String, Object?> data)'));
-      
+      expect(result,
+          contains('const UserSchema._valid(Map<String, Object?> data)'));
+
       // Check methods
       expect(result, contains('UserSchema parse(Object? input)'));
       expect(result, contains('UserSchema? tryParse(Object? input)'));
-      expect(result, contains('UserSchema createValidated(Map<String, Object?> data)'));
-      
+      expect(result,
+          contains('UserSchema createValidated(Map<String, Object?> data)'));
+
       // Check definition field
       expect(result, contains('late final definition = Ack.object({'));
       expect(result, contains("'id': Ack.string"));
@@ -71,7 +73,10 @@ void main() {
       expect(result, contains("String get name => getValue<String>('name')"));
       expect(result, contains("double get price => getValue<double>('price')"));
       expect(result, contains("bool get inStock => getValue<bool>('inStock')"));
-      expect(result, contains("String? get description => getValueOrNull<String>('description')"));
+      expect(
+          result,
+          contains(
+              "String? get description => getValueOrNull<String>('description')"));
     });
 
     test('generates property getters for lists', () {
@@ -87,8 +92,14 @@ void main() {
 
       final result = builder.build(model);
 
-      expect(result, contains("List<String> get tags => getValue<List>('tags').cast<String>()"));
-      expect(result, contains("List<String>? get comments => getValueOrNull<List>('comments')?.cast<String>()"));
+      expect(
+          result,
+          contains(
+              "List<String> get tags => getValue<List>('tags').cast<String>()"));
+      expect(
+          result,
+          contains(
+              "List<String>? get comments => getValueOrNull<List>('comments')?.cast<String>()"));
     });
 
     test('generates property getters for nested schemas', () {
@@ -108,10 +119,12 @@ void main() {
       expect(result, contains('CustomerSchema get customer'));
       expect(result, contains("getValue<Map<String, Object?>>('customer')"));
       expect(result, contains('CustomerSchema().parse(data)'));
-      
+
       expect(result, contains('AddressSchema? get shippingAddress'));
-      expect(result, contains("getValueOrNull<Map<String, Object?>>('shippingAddress')"));
-      expect(result, contains('data != null ? AddressSchema().parse(data) : null'));
+      expect(result,
+          contains("getValueOrNull<Map<String, Object?>>('shippingAddress')"));
+      expect(result,
+          contains('data != null ? AddressSchema().parse(data) : null'));
     });
 
     test('handles empty required fields', () {
@@ -213,50 +226,50 @@ FieldInfo _createNestedField(
 class _MockFieldInfo implements FieldInfo {
   @override
   final String name;
-  
+
   @override
   final String jsonKey;
-  
+
   @override
   final bool isRequired;
-  
+
   @override
   final bool isNullable;
-  
+
   @override
   final List<ConstraintInfo> constraints;
-  
+
   @override
   final String? defaultValue;
-  
+
   @override
   final bool isPrimitive;
-  
+
   @override
   final bool isList;
-  
+
   @override
   final bool isMap;
-  
+
   final String typeName;
   final String? listItemTypeName;
-  
+
   _MockFieldInfo({
     required this.name,
     required this.typeName,
     required this.isRequired,
     required this.isNullable,
     required this.constraints,
+    this.defaultValue,
     required this.isPrimitive,
     required this.isList,
     required this.isMap,
     this.listItemTypeName,
-    this.defaultValue,
   }) : jsonKey = name;
-  
+
   @override
   bool get isNestedSchema => !isPrimitive && !isList && !isMap;
-  
+
   @override
   DartType get type => _MockDartType(typeName, listItemTypeName);
 }
@@ -264,26 +277,32 @@ class _MockFieldInfo implements FieldInfo {
 class _MockDartType implements DartType {
   final String typeName;
   final String? itemTypeName;
-  
+
   _MockDartType(this.typeName, this.itemTypeName);
-  
+
   @override
-  String getDisplayString({required bool withNullability}) => typeName;
-  
+  String getDisplayString({bool withNullability = true}) => typeName;
+
   @override
   bool get isDartCoreList => typeName.startsWith('List<');
-  
+
   @override
   bool get isDartCoreMap => typeName.startsWith('Map<');
-  
-  @override
+
+  // Add missing core type getters
+  bool get isDartCoreString => typeName == 'String';
+  bool get isDartCoreInt => typeName == 'int';
+  bool get isDartCoreDouble => typeName == 'double';
+  bool get isDartCoreBool => typeName == 'bool';
+  bool get isDartCoreNum => typeName == 'num';
+
   List<DartType> get typeArguments {
     if (itemTypeName != null) {
       return [_MockDartType(itemTypeName!, null)];
     }
     return [];
   }
-  
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

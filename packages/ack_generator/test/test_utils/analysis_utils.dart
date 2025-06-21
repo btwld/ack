@@ -1,26 +1,15 @@
-import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/visitor.dart';
 import 'package:source_gen/source_gen.dart';
 
 /// Utilities for analyzing Dart code in tests
 class AnalysisUtils {
   /// Parse source code and return the library element
+  /// Note: This is simplified for testing - use testBuilder for real integration tests
   static Future<LibraryElement> resolveSource(String source) async {
-    final result = parseString(content: source);
-    if (result.errors.isNotEmpty) {
-      throw Exception('Parse errors: ${result.errors}');
-    }
-    
-    // In tests, we can work with the parsed unit directly
-    final visitor = _LibraryElementVisitor();
-    result.unit.accept(visitor);
-    
-    if (visitor.library == null) {
-      throw Exception('No library found in source');
-    }
-    
-    return visitor.library!;
+    throw UnimplementedError(
+      'Use testBuilder with resolveSources for integration testing. '
+      'This method is a placeholder.',
+    );
   }
 
   /// Get a class element by name from a library
@@ -39,15 +28,6 @@ class AnalysisUtils {
   static ConstantReader createAnnotationReader(Map<String, dynamic> values) {
     // Simplified for testing - in real scenarios this would use DartObject
     return ConstantReader(null);
-  }
-}
-
-class _LibraryElementVisitor extends GeneralizingElementVisitor<void> {
-  LibraryElement? library;
-
-  @override
-  void visitLibraryElement(LibraryElement element) {
-    library = element;
   }
 }
 
