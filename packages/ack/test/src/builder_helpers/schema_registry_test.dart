@@ -11,10 +11,9 @@ class TestModel {
 }
 
 /// Test schema class for TestModel
-class TestSchema extends SchemaModel<TestSchema> {
+class TestSchema extends SchemaModel {
   const TestSchema() : super();
-  const TestSchema._valid(Map<String, Object?> data) : super.valid(data);
-  TestSchema._invalid(SchemaError error) : super.invalid(error);
+  const TestSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   ObjectSchema get definition {
@@ -28,19 +27,22 @@ class TestSchema extends SchemaModel<TestSchema> {
   }
 
   @override
-  TestSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return TestSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  TestSchema parse(Object? input) {
+    return super.parse(input) as TestSchema;
   }
 
-  String get name => getValue<String>('name')!;
-  int get value => getValue<int>('value')!;
+  @override
+  TestSchema? tryParse(Object? input) {
+    return super.tryParse(input) as TestSchema?;
+  }
+
+  @override
+  TestSchema createValidated(Map<String, Object?> data) {
+    return TestSchema._valid(data);
+  }
+
+  String get name => getValue<String>('name');
+  int get value => getValue<int>('value');
 }
 
 /// Another test model for testing multiple registrations
@@ -52,9 +54,9 @@ class AnotherModel {
 }
 
 /// Test schema class for AnotherModel
-class AnotherSchema extends SchemaModel<AnotherSchema> {
+class AnotherSchema extends SchemaModel {
   const AnotherSchema() : super();
-  const AnotherSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const AnotherSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   ObjectSchema get definition {
@@ -68,40 +70,46 @@ class AnotherSchema extends SchemaModel<AnotherSchema> {
   }
 
   @override
-  AnotherSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return AnotherSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  AnotherSchema parse(Object? input) {
+    return super.parse(input) as AnotherSchema;
   }
 
-  String get title => getValue<String>('title')!;
-  double get amount => getValue<double>('amount')!;
+  @override
+  AnotherSchema? tryParse(Object? input) {
+    return super.tryParse(input) as AnotherSchema?;
+  }
+
+  @override
+  AnotherSchema createValidated(Map<String, Object?> data) {
+    return AnotherSchema._valid(data);
+  }
+
+  String get title => getValue<String>('title');
+  double get amount => getValue<double>('amount');
 }
 
 /// Unregistered schema class for testing
-class UnregisteredSchema extends SchemaModel<UnregisteredSchema> {
+class UnregisteredSchema extends SchemaModel {
   const UnregisteredSchema() : super();
   const UnregisteredSchema._valid(Map<String, Object?> data)
-      : super.valid(data);
+      : super.validated(data);
 
   @override
   ObjectSchema get definition => Ack.object({});
 
   @override
-  UnregisteredSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return UnregisteredSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  UnregisteredSchema parse(Object? input) {
+    return super.parse(input) as UnregisteredSchema;
+  }
+
+  @override
+  UnregisteredSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UnregisteredSchema?;
+  }
+
+  @override
+  UnregisteredSchema createValidated(Map<String, Object?> data) {
+    return UnregisteredSchema._valid(data);
   }
 }
 
@@ -248,13 +256,8 @@ void main() {
           try {
             return const TestSchema().parse(data);
           } catch (e) {
-            // Return an invalid schema instance for testing
-            if (e is AckException) {
-              return TestSchema._invalid(e.error);
-            } else {
-              // Create a mock error for non-AckException cases
-              return TestSchema._invalid(SchemaMockError());
-            }
+            // Return null for invalid data since we no longer support invalid instances
+            return null;
           }
         });
 
@@ -264,9 +267,8 @@ void main() {
         // Create schema with empty data
         final schema = SchemaRegistry.createSchema<TestSchema>(emptyData);
 
-        // Schema should be created but invalid
-        expect(schema, isNotNull);
-        expect(schema!.isValid, isFalse);
+        // Schema should be null for invalid data
+        expect(schema, isNull);
       });
 
       test('createSchema handles null fields properly', () {
@@ -275,11 +277,8 @@ void main() {
           try {
             return const TestSchema().parse(data);
           } catch (e) {
-            if (e is AckException) {
-              return TestSchema._invalid(e.error);
-            } else {
-              return TestSchema._invalid(SchemaMockError());
-            }
+            // Return null for invalid data since we no longer support invalid instances
+            return null;
           }
         });
 
@@ -289,18 +288,8 @@ void main() {
         // Create schema
         final schema = SchemaRegistry.createSchema<TestSchema>(dataWithNulls);
 
-        // Schema should be created
-        expect(schema, isNotNull);
-
-        // Schema should be invalid
-        expect(schema!.isValid, isFalse);
-
-        // Accessing null fields through testData should not throw
-        expect(schema.testData['name'], isNull);
-        expect(schema.testData['value'], isNull);
-
-        // Validation errors should be available
-        expect(schema.getErrors(), isNotNull);
+        // Schema should be null for invalid data
+        expect(schema, isNull);
       });
     });
 
@@ -331,11 +320,8 @@ void main() {
           try {
             return const TestSchema().parse(data);
           } catch (e) {
-            if (e is AckException) {
-              return TestSchema._invalid(e.error);
-            } else {
-              return TestSchema._invalid(SchemaMockError());
-            }
+            // Return null for invalid data since we no longer support invalid instances
+            return null;
           }
         });
 
@@ -345,11 +331,8 @@ void main() {
         // Create schema with invalid data
         final schema = SchemaRegistry.createSchema<TestSchema>(invalidData);
 
-        // Schema should be created
-        expect(schema, isNotNull);
-
-        // But should be invalid due to type errors
-        expect(schema!.isValid, isFalse);
+        // Schema should be null for invalid data
+        expect(schema, isNull);
       });
     });
   });

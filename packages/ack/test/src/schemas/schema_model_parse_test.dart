@@ -10,9 +10,9 @@ class TestModel {
 }
 
 // Test schema for the old constructor pattern tests
-class TestSchema extends SchemaModel<TestSchema> {
+class TestSchema extends SchemaModel {
   const TestSchema() : super();
-  const TestSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const TestSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   ObjectSchema get definition => Ack.object({
@@ -24,19 +24,22 @@ class TestSchema extends SchemaModel<TestSchema> {
       ]);
 
   @override
-  TestSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return TestSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  TestSchema parse(Object? input) {
+    return super.parse(input) as TestSchema;
   }
 
-  String get name => getValue<String>('name')!;
-  int get age => getValue<int>('age')!;
+  @override
+  TestSchema? tryParse(Object? input) {
+    return super.tryParse(input) as TestSchema?;
+  }
+
+  @override
+  TestSchema createValidated(Map<String, Object?> data) {
+    return TestSchema._valid(data);
+  }
+
+  String get name => getValue<String>('name');
+  int get age => getValue<int>('age');
 }
 
 void main() {

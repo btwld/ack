@@ -29,9 +29,9 @@ class User {
 }
 
 // Mock schema model for testing
-class UserSchema extends SchemaModel<UserSchema> {
+class UserSchema extends SchemaModel {
   const UserSchema() : super();
-  const UserSchema._valid(Map<String, Object?> data) : super.valid(data);
+  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   ObjectSchema get definition {
@@ -46,20 +46,23 @@ class UserSchema extends SchemaModel<UserSchema> {
   }
 
   @override
-  UserSchema parse(Object? data) {
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return UserSchema._valid(validatedData);
-    }
-    throw AckException(result.getError());
+  UserSchema parse(Object? input) {
+    return super.parse(input) as UserSchema;
   }
 
-  String get name => getValue<String>('name')!;
-  int get age => getValue<int>('age')!;
-  String? get email => getValue<String>('email');
+  @override
+  UserSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UserSchema?;
+  }
+
+  @override
+  UserSchema createValidated(Map<String, Object?> data) {
+    return UserSchema._valid(data);
+  }
+
+  String get name => getValue<String>('name');
+  int get age => getValue<int>('age');
+  String? get email => getValueOrNull<String>('email');
 }
 
 void main() {
