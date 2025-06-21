@@ -1,0 +1,31 @@
+name: ack_generator
+description: Code generator for Ack schema validation models
+version: 0.3.0
+repository: https://github.com/leoafarias/ack
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # Core code generation dependencies
+  analyzer: ^6.0.0
+  build: ^2.4.0
+  source_gen: ^1.5.0
+  code_builder: ^4.10.0
+  
+  # Our packages
+  ack:
+    path: ../ack
+  
+  # Utilities
+  collection: ^1.18.0
+  path: ^1.9.0
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  build_test: ^2.2.0
+  test: ^1.25.0
+  
+  # Code quality
+  very_good_analysis: ^6.0.0
