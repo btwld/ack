@@ -4,10 +4,12 @@ import 'package:dart_style/dart_style.dart';
 import '../models/model_info.dart';
 import '../models/field_info.dart';
 import 'method_builder.dart' as mb;
+import 'field_builder.dart' as fb;
 
 /// Builds schema classes using code_builder
 class SchemaBuilder {
   final _methodBuilder = mb.MethodBuilder();
+  final _fieldBuilder = fb.FieldBuilder();
   final _formatter = DartFormatter();
 
   String build(ModelInfo model) {
@@ -82,8 +84,7 @@ class SchemaBuilder {
     
     // Build field definitions
     for (final field in model.fields) {
-      // TODO: Use FieldBuilder when implemented
-      final fieldSchema = _buildSimpleFieldSchema(field);
+      final fieldSchema = _fieldBuilder.buildFieldSchema(field);
       buffer.writeln("  '${field.jsonKey}': $fieldSchema,");
     }
     
@@ -100,38 +101,7 @@ class SchemaBuilder {
     
     return buffer.toString();
   }
-  // Temporary simple field schema builder
-  String _buildSimpleFieldSchema(FieldInfo field) {
-    final typeName = field.type.getDisplayString();
-    String schema;
-    
-    if (field.type.isDartCoreString) {
-      schema = 'Ack.string';
-    } else if (field.type.isDartCoreInt) {
-      schema = 'Ack.integer';
-    } else if (field.type.isDartCoreDouble) {
-      schema = 'Ack.double';
-    } else if (field.type.isDartCoreBool) {
-      schema = 'Ack.boolean';
-    } else if (field.type.isDartCoreNum) {
-      schema = 'Ack.number';
-    } else if (field.type.isDartCoreList) {
-      schema = 'Ack.list(Ack.any)'; // TODO: Extract item type
-    } else if (field.type.isDartCoreMap) {
-      schema = 'Ack.object({}, additionalProperties: true)';
-    } else {
-      // Assume it's a nested schema
-      final baseType = typeName.replaceAll('?', '');
-      schema = '${baseType}Schema().definition';
-    }
-    
-    // Apply nullable if needed
-    if (field.isNullable && !field.isRequired) {
-      schema = '$schema.nullable()';
-    }
-    
-    return schema;
-  }
+
   List<Method> _buildPropertyGetters(ModelInfo model) {
     final getters = <Method>[];
     
