@@ -102,22 +102,14 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
-  SchemaResult<MapValue> validateValue(Object? value) {
-    final result = super.validateValue(value);
-
-    if (result.isFail) return result;
-
-    final resultValue = result.getOrNull();
-
-    if (_nullable && resultValue == null) return SchemaResult.unit();
-
+  SchemaResult<MapValue> validateNonNullValue(MapValue value) {
     final violations = <SchemaError>[];
 
     for (final entry in _properties.entries) {
       final propKey = entry.key;
       final propSchema = entry.value;
 
-      final propValue = resultValue![propKey];
+      final propValue = value[propKey];
 
       final propResult = propSchema.validate(propValue, debugName: propKey);
 
@@ -126,7 +118,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    if (violations.isEmpty) return SchemaResult.ok(resultValue!);
+    if (violations.isEmpty) return SchemaResult.ok(value);
 
     return SchemaResult.fail(
       SchemaNestedError(errors: violations, context: context),
