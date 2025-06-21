@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 import 'package:build_test/build_test.dart';
+import 'package:build/build.dart';
 import 'package:ack_generator/builder.dart';
 
 import '../test_utils/test_assets.dart';
@@ -43,7 +44,7 @@ class User {
 }
 ''',
         },
-        generates: {
+        outputs: {
           'test_pkg|lib/models.ack.g.part': allOf([
             // Address schema
             contains('class AddressSchema extends SchemaModel'),
@@ -106,7 +107,7 @@ class Order {
 }
 ''',
         },
-        generates: {
+        outputs: {
           'test_pkg|lib/order.ack.g.part': allOf([
             contains("'items': Ack.list(OrderItemSchema().definition)"),
             contains('List<OrderItemSchema> get items {'),
@@ -167,7 +168,7 @@ class Company {
 }
 ''',
         },
-        generates: {
+        outputs: {
           'test_pkg|lib/company.ack.g.part': allOf([
             // Contact schema
             contains('class ContactSchema extends SchemaModel'),

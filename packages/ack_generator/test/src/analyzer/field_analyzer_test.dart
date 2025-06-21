@@ -1,5 +1,7 @@
 import 'package:test/test.dart';
 import 'package:build_test/build_test.dart';
+import 'package:build/build.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:ack_generator/src/analyzer/field_analyzer.dart';
 import 'package:ack_generator/src/models/field_info.dart';
 import 'package:ack_generator/src/models/constraint_info.dart';

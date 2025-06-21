@@ -255,7 +255,7 @@ class _MockDartType implements DartType {
   _MockDartType(this.typeName, this.itemTypeName);
   
   @override
-  String getDisplayString({required bool withNullability}) => typeName;
+  String getDisplayString({bool withNullability = true}) => typeName;
   
   @override
   bool get isDartCoreList => typeName.startsWith('List<');
@@ -263,7 +263,6 @@ class _MockDartType implements DartType {
   @override
   bool get isDartCoreMap => typeName.startsWith('Map<');
   
-  @override
   List<DartType> get typeArguments {
     if (itemTypeName != null) {
       return [_MockDartType(itemTypeName!, null)];
