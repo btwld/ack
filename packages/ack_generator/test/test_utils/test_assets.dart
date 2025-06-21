@@ -1,6 +1,28 @@
 /// Test assets for ack_generator tests
 /// Provides reusable mock file contents
 
+const metaAssets = {
+  'meta|lib/meta_meta.dart': '''
+enum TargetKind {
+  classType,
+  field,
+  function,
+  getter,
+  library,
+  method,
+  setter,
+  topLevelVariable,
+  type,
+  parameter,
+}
+
+class Target {
+  final Set<TargetKind> kinds;
+  const Target(this.kinds);
+}
+''',
+};
+
 const ackAnnotationsAsset = {
   'ack_annotations|lib/ack_annotations.dart': '''
 library ack_annotations;
@@ -152,6 +174,7 @@ abstract class SchemaModel {
 
 /// Combine all assets for easy use in tests
 Map<String, String> get allAssets => {
+  ...metaAssets,
   ...ackAnnotationsAsset,
   ...ackPackageAsset,
 };

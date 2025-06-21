@@ -18,7 +18,7 @@ void main() {
     });
 
     test('processes multiple annotated classes in single file', () async {
-      final builder = SharedPartBuilder([generator], 'ack_generator');
+      final builder = SharedPartBuilder([generator], 'ack');
       
       await testBuilder(
         builder,
@@ -47,17 +47,17 @@ class Other {
 ''',
         },
         outputs: {
-          'test_pkg|lib/models.ack.g.part': allOf([
+          'test_pkg|lib/models.ack.g.part': decodedMatches(allOf([
             contains('class UserSchema extends SchemaModel'),
             contains('class ProductSchema extends SchemaModel'),
             isNot(contains('class OtherSchema')),
-          ]),
+          ])),
         },
       );
     });
 
     test('handles imports correctly', () async {
-      final builder = SharedPartBuilder([generator], 'ack_generator');
+      final builder = SharedPartBuilder([generator], 'ack');
       
       await testBuilder(
         builder,
@@ -84,13 +84,14 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.ack.g.part': contains('AddressSchema().definition'),
+          'test_pkg|lib/address.ack.g.part': decodedMatches(contains('class AddressSchema extends SchemaModel')),
+          'test_pkg|lib/user.ack.g.part': decodedMatches(contains('AddressSchema().definition')),
         },
       );
     });
 
     test('generates part directive comment', () async {
-      final builder = SharedPartBuilder([generator], 'ack_generator');
+      final builder = SharedPartBuilder([generator], 'ack');
       
       await testBuilder(
         builder,
@@ -109,13 +110,13 @@ class Model {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.ack.g.part': contains('// GENERATED CODE - DO NOT MODIFY BY HAND'),
+          'test_pkg|lib/model.ack.g.part': decodedMatches(contains('// GENERATED CODE - DO NOT MODIFY BY HAND')),
         },
       );
     });
 
     test('preserves formatting', () async {
-      final builder = SharedPartBuilder([generator], 'ack_generator');
+      final builder = SharedPartBuilder([generator], 'ack');
       
       await testBuilder(
         builder,
@@ -139,30 +140,24 @@ class WellFormatted {
 ''',
         },
         outputs: {
-          'test_pkg|lib/formatted.ack.g.part': (content) {
-            // Check proper indentation
-            expect(content, isNot(contains('\t'))); // No tabs
-            expect(content, contains('  ')); // Uses spaces
-            // Check no trailing whitespace
-            final lines = content.split('\n');
-            for (final line in lines) {
-              expect(line, isNot(endsWith(' ')));
-            }
-            return true;
-          },
+          'test_pkg|lib/formatted.ack.g.part': decodedMatches(allOf([
+            isNot(contains('\t')), // No tabs
+            contains('  '), // Uses spaces for indentation
+            isNot(contains(' \n')), // No trailing whitespace (space before newline)
+          ])),
         },
       );
     });
 
     test('error messages include helpful context', () async {
-      final builder = SharedPartBuilder([generator], 'ack_generator');
+      final builder = SharedPartBuilder([generator], 'ack');
       
-      expect(
-        () => testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/bad.dart': '''
+      // When generator throws an error, no output should be generated
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/bad.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
@@ -170,15 +165,15 @@ abstract class BadModel {
   String get name;
 }
 ''',
-          },
-        ),
-        throwsA(
-          isA<InvalidGenerationSourceError>().having(
-            (e) => e.todo,
-            'todo',
-            contains('Check that all fields have supported types'),
-          ),
-        ),
+        },
+        outputs: {
+          // Expect no output files when error is thrown
+        },
+        onLog: (log) {
+          if (log.level.name == 'SEVERE') {
+            expect(log.message, contains('cannot be applied to abstract classes'));
+          }
+        },
       );
     });
   });

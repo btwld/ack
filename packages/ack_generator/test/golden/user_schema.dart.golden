@@ -1,0 +1,46 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+// **************************************************************************
+// AckSchemaGenerator
+// **************************************************************************
+
+class UserSchema extends SchemaModel {
+  const UserSchema();
+
+  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
+
+  @override
+  late final definition = Ack.object(
+    {
+      'id': Ack.string,
+      'name': Ack.string,
+      'email': Ack.string,
+      'age': Ack.integer.nullable(),
+    },
+    required: ['id', 'name', 'email'],
+  );
+
+  @override
+  UserSchema parse(Object? input) {
+    return super.parse(input) as UserSchema;
+  }
+
+  @override
+  UserSchema? tryParse(Object? input) {
+    return super.tryParse(input) as UserSchema?;
+  }
+
+  @override
+  @protected
+  UserSchema createValidated(Map<String, Object?> data) {
+    return UserSchema._valid(data);
+  }
+
+  String get id => getValue<String>('id');
+
+  String get name => getValue<String>('name');
+
+  String get email => getValue<String>('email');
+
+  int? get age => getValueOrNull<int>('age');
+}

@@ -1,8 +1,7 @@
 import 'package:ack_generator/src/builders/field_builder.dart';
 import 'package:ack_generator/src/models/constraint_info.dart';
-import 'package:ack_generator/src/models/field_info.dart';
-import 'package:analyzer/dart/element/type.dart';
 import 'package:test/test.dart';
+
 import '../test_utilities.dart';
 
 void main() {

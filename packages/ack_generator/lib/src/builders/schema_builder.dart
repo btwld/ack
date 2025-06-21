@@ -1,5 +1,6 @@
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
+import 'package:analyzer/dart/element/type.dart';
 
 import '../models/model_info.dart';
 import '../models/field_info.dart';
@@ -10,7 +11,9 @@ import 'field_builder.dart' as fb;
 class SchemaBuilder {
   final _methodBuilder = mb.MethodBuilder();
   final _fieldBuilder = fb.FieldBuilder();
-  final _formatter = DartFormatter();
+  final _formatter = DartFormatter(
+    languageVersion: DartFormatter.latestLanguageVersion,
+  );
 
   String build(ModelInfo model) {
     final schemaClass = Class((b) => b
@@ -32,7 +35,7 @@ class SchemaBuilder {
     );
 
     final emitter = DartEmitter(
-      allocator: Allocator.simplePrefixing(),
+      allocator: Allocator.none,
       orderDirectives: true,
       useNullSafetySyntax: true,
     );
@@ -71,7 +74,6 @@ class SchemaBuilder {
     
     return Field((b) => b
       ..name = 'definition'
-      ..type = refer('ObjectSchema', 'package:ack/ack.dart')
       ..modifier = FieldModifier.final$
       ..late = true
       ..annotations.add(const CodeExpression(Code('override')))
@@ -80,21 +82,23 @@ class SchemaBuilder {
   }
 
   String _buildSchemaDefinition(ModelInfo model) {
-    final buffer = StringBuffer('Ack.object({\n');
+    final buffer = StringBuffer();
     
     // Build field definitions
+    final fieldDefs = <String>[];
     for (final field in model.fields) {
       final fieldSchema = _fieldBuilder.buildFieldSchema(field);
-      buffer.writeln("  '${field.jsonKey}': $fieldSchema,");
+      fieldDefs.add("'${field.jsonKey}': $fieldSchema");
     }
     
+    buffer.write('Ack.object({');
+    buffer.write(fieldDefs.join(', '));
     buffer.write('}');
     
     // Add required fields if any
     if (model.requiredFields.isNotEmpty) {
-      buffer.write(', required: [');
-      buffer.write(model.requiredFields.map((f) => "'$f'").join(', '));
-      buffer.write(']');
+      final requiredList = model.requiredFields.map((f) => "'$f'").join(', ');
+      buffer.write(', required: [$requiredList]');
     }
     
     buffer.write(')');
@@ -119,29 +123,49 @@ class SchemaBuilder {
   }
 
   Method _buildPrimitiveGetter(FieldInfo field) {
-    final typeName = field.type.getDisplayString();
+    final baseTypeName = field.type.getDisplayString().replaceAll('?', '');
+    final returnTypeName = field.isNullable ? '$baseTypeName?' : baseTypeName;
     
     return Method((b) => b
       ..name = field.name
       ..type = MethodType.getter
-      ..returns = refer(typeName)
+      ..returns = refer(returnTypeName)
       ..lambda = true
       ..body = Code(field.isNullable
-          ? "getValueOrNull<${typeName.replaceAll('?', '')}>('${field.jsonKey}')"
-          : "getValue<${typeName}>('${field.jsonKey}')")
+          ? "getValueOrNull<$baseTypeName>('${field.jsonKey}')"
+          : "getValue<$baseTypeName>('${field.jsonKey}')")
     );
   }
   Method _buildListGetter(FieldInfo field) {
-    // For now, simple implementation - will improve with FieldBuilder
-    final typeName = field.type.getDisplayString();
+    final baseTypeName = field.type.getDisplayString().replaceAll('?', '');
+    final returnTypeName = field.isNullable ? '$baseTypeName?' : baseTypeName;
+    
+    // Extract the item type from List<ItemType>
+    String itemType = 'dynamic';
+    
+    // Try to get from ParameterizedType first
+    if (field.type is ParameterizedType) {
+      final paramType = field.type as ParameterizedType;
+      if (paramType.typeArguments.isNotEmpty) {
+        itemType = paramType.typeArguments.first.getDisplayString().replaceAll('?', '');
+      }
+    } else {
+      // Fallback: parse from type name string like "List<String>"
+      final typeStr = baseTypeName;
+      final match = RegExp(r'List<(.+)>').firstMatch(typeStr);
+      if (match != null) {
+        itemType = match.group(1) ?? 'dynamic';
+      }
+    }
+    
     final code = field.isNullable
-        ? "getValueOrNull<List>('${field.jsonKey}')?.cast<dynamic>()"
-        : "getValue<List>('${field.jsonKey}').cast<dynamic>()";
+        ? "getValueOrNull<List>('${field.jsonKey}')?.cast<$itemType>()"
+        : "getValue<List>('${field.jsonKey}').cast<$itemType>()";
     
     return Method((b) => b
       ..name = field.name
       ..type = MethodType.getter
-      ..returns = refer(typeName)
+      ..returns = refer(returnTypeName)
       ..lambda = true
       ..body = Code(code)
     );
