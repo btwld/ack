@@ -5,7 +5,6 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:ack_generator/src/analyzer/model_analyzer.dart';
-import 'package:ack_generator/src/models/model_info.dart';
 
 import '../../test_utils/test_assets.dart';
 
