@@ -34,20 +34,12 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   Map<String, ObjectSchema> getSchemasMap() => _schemas;
 
   @override
-  SchemaResult<MapValue> validateValue(Object? value) {
-    final result = super.validateValue(value);
-
-    if (result.isFail) return result;
-
-    final mapValue = result.getOrNull();
-
-    if (_nullable && mapValue == null) return SchemaResult.unit();
-
+  SchemaResult<MapValue> validateNonNullValue(MapValue value) {
     final violations = [
       ObjectDiscriminatorStructureConstraint(_discriminatorKey)
           .validate(_schemas),
       ObjectDiscriminatorValueConstraint(_discriminatorKey, _schemas)
-          .validate(mapValue!),
+          .validate(value),
     ].whereType<ConstraintError>();
 
     if (violations.isNotEmpty) {
@@ -59,12 +51,14 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final discriminatorValue = _getDiscriminator(mapValue);
+    final discriminatorValue = _getDiscriminator(value);
 
     final discriminatedSchema = _schemas[discriminatorValue]!;
 
-    return discriminatedSchema.validate(mapValue,
-        debugName: discriminatorValue);
+    return discriminatedSchema.validate(
+      value,
+      debugName: discriminatorValue,
+    );
   }
 
   @override

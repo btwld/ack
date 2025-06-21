@@ -32,26 +32,18 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   AckSchema<V> getItemSchema() => _itemSchema;
 
   @override
-  SchemaResult<List<V>> validateValue(Object? value) {
-    final result = super.validateValue(value);
-
-    if (result.isFail) return result;
-
-    final listValue = result.getOrNull();
-
-    if (_nullable && listValue == null) return SchemaResult.unit();
-
+  SchemaResult<List<V>> validateNonNullValue(List<V> value) {
     final itemsViolation = <SchemaError>[];
 
-    for (var i = 0; i < listValue!.length; i++) {
-      final itemResult = _itemSchema.validate(listValue[i], debugName: '$i');
+    for (var i = 0; i < value.length; i++) {
+      final itemResult = _itemSchema.validate(value[i], debugName: '$i');
 
       if (itemResult.isFail) {
         itemsViolation.add(itemResult.getError());
       }
     }
 
-    if (itemsViolation.isEmpty) return SchemaResult.ok(listValue);
+    if (itemsViolation.isEmpty) return SchemaResult.ok(value);
 
     return SchemaResult.fail(
       SchemaNestedError(errors: itemsViolation, context: context),

@@ -143,6 +143,20 @@ sealed class AckSchema<T extends Object> {
   /// Returns the default value of this schema.
   T? getDefaultValue() => _defaultValue;
 
+  /// Validates a non-null, properly typed value.
+  ///
+  /// This method is called by [validateValue] after null handling and type conversion
+  /// have been completed successfully. Subclasses can override this method to provide
+  /// additional validation logic for non-null values.
+  ///
+  /// The default implementation simply returns the value as successful.
+  /// Subclasses like [ListSchema], [ObjectSchema], and [DiscriminatedObjectSchema]
+  /// override this to perform additional validation (item validation, property validation, etc.).
+  @protected
+  SchemaResult<T> validateNonNullValue(T value) {
+    return SchemaResult.ok(value);
+  }
+
   /// Core validation logic for this schema.
   ///
   /// This method handles null values, type conversion, and constraint validation.
@@ -186,7 +200,8 @@ sealed class AckSchema<T extends Object> {
         );
       }
 
-      return SchemaResult.ok(typedValue);
+      // Delegate to subclass for additional validation
+      return validateNonNullValue(typedValue);
     } catch (e, stackTrace) {
       return SchemaResult.fail(
         SchemaUnknownError(
