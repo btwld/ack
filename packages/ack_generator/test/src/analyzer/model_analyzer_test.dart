@@ -1,5 +1,9 @@
 import 'package:test/test.dart';
 import 'package:build_test/build_test.dart';
+import 'package:build/build.dart';
+import 'package:analyzer/dart/element/element.dart';
+import 'package:source_gen/source_gen.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 import 'package:ack_generator/src/analyzer/model_analyzer.dart';
 import 'package:ack_generator/src/models/model_info.dart';
 
@@ -33,7 +37,7 @@ class TestModel {
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'TestModel');
         
-        final annotation = const TypeChecker.fromRuntime(AckModel)
+        final annotation = TypeChecker.fromRuntime(AckModel)
             .firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
         
@@ -63,7 +67,7 @@ class UserProfile {
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'UserProfile');
         
-        final annotation = const TypeChecker.fromRuntime(AckModel)
+        final annotation = TypeChecker.fromRuntime(AckModel)
             .firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
         
@@ -93,7 +97,7 @@ class User {
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
         
-        final annotation = const TypeChecker.fromRuntime(AckModel)
+        final annotation = TypeChecker.fromRuntime(AckModel)
             .firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
         
@@ -130,7 +134,7 @@ class ExtendedModel extends BaseModel {
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'ExtendedModel');
         
-        final annotation = const TypeChecker.fromRuntime(AckModel)
+        final annotation = TypeChecker.fromRuntime(AckModel)
             .firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
         
@@ -165,7 +169,7 @@ class Product {
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'Product');
         
-        final annotation = const TypeChecker.fromRuntime(AckModel)
+        final annotation = TypeChecker.fromRuntime(AckModel)
             .firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
         
