@@ -1,9 +1,3 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
-// **************************************************************************
-// AckSchemaGenerator
-// **************************************************************************
-
 class UserSchema extends SchemaModel {
   const UserSchema();
 

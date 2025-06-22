@@ -1,82 +1,44 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+// Generated code for Order and OrderItem schemas
+// This is a placeholder - replace with actual generator output
 
-// **************************************************************************
-// AckSchemaGenerator
-// **************************************************************************
+class OrderItemSchema extends SchemaModel<OrderItem> {
+  @override
+  ObjectSchema get definition => ObjectSchema({
+    'productId': Ack.string.notEmpty(),
+    'quantity': Ack.integer.positive(),
+    'price': Ack.double,
+  }, required: ['productId', 'quantity', 'price']);
 
-class OrderItemSchema extends SchemaModel {
   const OrderItemSchema();
 
-  const OrderItemSchema._valid(Map<String, Object?> data)
-    : super.validated(data);
+  OrderItemSchema._internal(Map<String, Object?> data) : super.validated(data);
 
   @override
-  late final definition = Ack.object(
-    {'productId': Ack.string, 'quantity': Ack.integer, 'price': Ack.double},
-    required: ['productId', 'quantity', 'price'],
-  );
+  OrderItemSchema createValidated(Map<String, Object?> data) => OrderItemSchema._internal(data);
 
-  @override
-  OrderItemSchema parse(Object? input) {
-    return super.parse(input) as OrderItemSchema;
-  }
-
-  @override
-  OrderItemSchema? tryParse(Object? input) {
-    return super.tryParse(input) as OrderItemSchema?;
-  }
-
-  @override
-  @protected
-  OrderItemSchema createValidated(Map<String, Object?> data) {
-    return OrderItemSchema._valid(data);
-  }
-
+  // Getters for validated data
   String get productId => getValue<String>('productId');
-
   int get quantity => getValue<int>('quantity');
-
   double get price => getValue<double>('price');
 }
 
+class OrderSchema extends SchemaModel<Order> {
+  @override
+  ObjectSchema get definition => ObjectSchema({
+    'id': Ack.string.notEmpty(),
+    'items': Ack.list(OrderItemSchema().definition),
+    'createdAt': DateTimeSchema().definition,
+  }, required: ['id', 'items', 'createdAt']);
 
-class OrderSchema extends SchemaModel {
   const OrderSchema();
 
-  const OrderSchema._valid(Map<String, Object?> data) : super.validated(data);
+  OrderSchema._internal(Map<String, Object?> data) : super.validated(data);
 
   @override
-  late final definition = Ack.object(
-    {
-      'id': Ack.string,
-      'items': Ack.list(OrderItemSchema().definition),
-      'createdAt': DateTimeSchema().definition,
-    },
-    required: ['id', 'items', 'createdAt'],
-  );
+  OrderSchema createValidated(Map<String, Object?> data) => OrderSchema._internal(data);
 
-  @override
-  OrderSchema parse(Object? input) {
-    return super.parse(input) as OrderSchema;
-  }
-
-  @override
-  OrderSchema? tryParse(Object? input) {
-    return super.tryParse(input) as OrderSchema?;
-  }
-
-  @override
-  @protected
-  OrderSchema createValidated(Map<String, Object?> data) {
-    return OrderSchema._valid(data);
-  }
-
+  // Getters for validated data
   String get id => getValue<String>('id');
-
-  List<OrderItem> get items => getValue<List>('items').cast<OrderItem>();
-
-  DateTimeSchema get createdAt {
-    final data = getValue<Map<String, Object?>>('createdAt');
-    return DateTimeSchema().parse(data);
-  }
+  List<OrderItem> get items => getValue<List<OrderItem>>('items');
+  DateTime get createdAt => getValue<DateTime>('createdAt');
 }
