@@ -20,6 +20,13 @@ Golden tests verify that the ACK Generator produces exactly the expected output 
    - Tests list types
    - Tests DateTime handling
 
+3. **product_with_metadata_schema.dart.golden** - Additional properties support
+   - Tests `additionalProperties: true` in schema definition
+   - Tests `additionalPropertiesField: 'metadata'` configuration
+   - Tests metadata getter generation with known fields filtering
+   - Tests exclusion of metadata field from schema properties
+   - Compares schema with and without additional properties
+
 ## Running Golden Tests
 
 ```bash
@@ -50,3 +57,6 @@ If the generator output changes intentionally:
 - Custom type handling (DateTime → DateTimeSchema)
 - Proper getter generation
 - Constructor patterns
+- Additional properties support and metadata field generation
+- Field exclusion from schema properties
+- Dynamic metadata getter with known fields filtering

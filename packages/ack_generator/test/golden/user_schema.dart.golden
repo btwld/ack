@@ -1,7 +1,7 @@
 class UserSchema extends SchemaModel {
-  const UserSchema();
+  UserSchema();
 
-  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
+  UserSchema._valid(Map<String, Object?> data) : super.validated(data);
 
   @override
   late final definition = Ack.object(

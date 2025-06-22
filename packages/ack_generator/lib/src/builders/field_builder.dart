@@ -1,11 +1,11 @@
-import '../models/field_info.dart';
 import '../models/constraint_info.dart';
+import '../models/field_info.dart';
 
 /// Builds field schema expressions
 class FieldBuilder {
   String buildFieldSchema(FieldInfo field) {
     String schema;
-    
+
     if (field.isPrimitive) {
       schema = _buildPrimitiveSchema(field);
     } else if (field.isList) {
@@ -15,17 +15,17 @@ class FieldBuilder {
     } else {
       schema = _buildNestedSchema(field);
     }
-    
+
     // Apply constraints
     for (final constraint in field.constraints) {
       schema = _applyConstraint(schema, constraint);
     }
-    
+
     // Apply nullable if needed
     if (field.isNullable && !field.isRequired) {
       schema = '$schema.nullable()';
     }
-    
+
     return schema;
   }
 
@@ -33,7 +33,7 @@ class FieldBuilder {
     if (field.type.isDartCoreString) {
       return 'Ack.string';
     } else if (field.type.isDartCoreInt) {
-      return 'Ack.integer';
+      return 'Ack.int';
     } else if (field.type.isDartCoreDouble) {
       return 'Ack.double';
     } else if (field.type.isDartCoreBool) {
@@ -42,8 +42,7 @@ class FieldBuilder {
       return 'Ack.number';
     } else {
       throw UnsupportedError(
-        'Unsupported primitive type: ${field.type.getDisplayString()}'
-      );
+          'Unsupported primitive type: ${field.type.getDisplayString()}');
     }
   }
 
@@ -51,12 +50,12 @@ class FieldBuilder {
     // Try to extract the list item type
     final typeStr = field.type.getDisplayString();
     final listMatch = RegExp(r'List<(.+)>').firstMatch(typeStr);
-    
+
     if (listMatch != null) {
       final itemType = listMatch.group(1)!.trim();
       // Remove nullability for type checking
       final baseItemType = itemType.replaceAll('?', '');
-      
+
       // Check if item type is primitive
       if (_isPrimitiveTypeName(baseItemType)) {
         final itemSchema = _buildPrimitiveSchemaForType(baseItemType);
@@ -66,7 +65,7 @@ class FieldBuilder {
         return 'Ack.list(${baseItemType}Schema().definition)';
       }
     }
-    
+
     // Fallback for untyped lists
     return 'Ack.list(Ack.any)';
   }
@@ -91,7 +90,7 @@ class FieldBuilder {
       case 'String':
         return 'Ack.string';
       case 'int':
-        return 'Ack.integer';
+        return 'Ack.int';
       case 'double':
         return 'Ack.double';
       case 'num':

@@ -1,0 +1,80 @@
+class ProductSchema extends SchemaModel {
+  ProductSchema();
+
+  ProductSchema._valid(Map<String, Object?> data) : super.validated(data);
+
+  @override
+  late final definition = Ack.object(
+    {
+      'name': Ack.string,
+      'price': Ack.double,
+      'description': Ack.string.nullable(),
+    },
+    required: ['name', 'price'],
+    additionalProperties: true,
+  );
+
+  @override
+  ProductSchema parse(Object? input) {
+    return super.parse(input) as ProductSchema;
+  }
+
+  @override
+  ProductSchema? tryParse(Object? input) {
+    return super.tryParse(input) as ProductSchema?;
+  }
+
+  @override
+  @protected
+  ProductSchema createValidated(Map<String, Object?> data) {
+    return ProductSchema._valid(data);
+  }
+
+  String get name => getValue<String>('name');
+
+  double get price => getValue<double>('price');
+
+  String? get description => getValueOrNull<String>('description');
+
+  Map<String, Object?> get metadata {
+    final map = toMap();
+    final knownFields = {'name', 'price', 'description'};
+    return Map.fromEntries(
+      map.entries.where((e) => !knownFields.contains(e.key)),
+    );
+  }
+}
+
+
+class SimpleProductSchema extends SchemaModel {
+  SimpleProductSchema();
+
+  SimpleProductSchema._valid(Map<String, Object?> data)
+    : super.validated(data);
+
+  @override
+  late final definition = Ack.object(
+    {'name': Ack.string, 'price': Ack.double},
+    required: ['name', 'price'],
+  );
+
+  @override
+  SimpleProductSchema parse(Object? input) {
+    return super.parse(input) as SimpleProductSchema;
+  }
+
+  @override
+  SimpleProductSchema? tryParse(Object? input) {
+    return super.tryParse(input) as SimpleProductSchema?;
+  }
+
+  @override
+  @protected
+  SimpleProductSchema createValidated(Map<String, Object?> data) {
+    return SimpleProductSchema._valid(data);
+  }
+
+  String get name => getValue<String>('name');
+
+  double get price => getValue<double>('price');
+}

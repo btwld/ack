@@ -307,6 +307,11 @@ mixin SchemaFluentMethods<S extends AckSchema<T>, T extends Object>
   /// to this schema.
   ListSchema<T> get list => ListSchema<T>(this);
 
+  /// Add description to the schema.
+  ///
+  ///  This method allows you to set a human-readable description for the schema,
+  S description(String description) => copyWith(description: description) as S;
+
   /// Creates a new schema of the same type that allows null values.
   ///
   /// This is a convenience method equivalent to calling `copyWith(nullable: true)`.

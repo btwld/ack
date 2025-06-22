@@ -1,9 +1,9 @@
+// ignore: unused_import
+import 'package:ack/ack.dart' show SchemaModel;
+import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-// ignore: unused_import
-import 'package:ack/ack.dart' show SchemaModel;
 
 import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
@@ -39,7 +39,8 @@ class AckSchemaGenerator extends GeneratorForAnnotation<AckModel> {
 
       // 2. Build the schema code
       final builder = SchemaBuilder();
-      return builder.build(modelInfo);
+      final sourceFileName = buildStep.inputId.path.split('/').last;
+      return builder.build(modelInfo, sourceFileName);
     } catch (e) {
       throw InvalidGenerationSourceError(
         'Error generating schema for ${element.name}: $e',

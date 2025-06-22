@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 
-import '../lib/product_model.dart';
+import '../lib/product_model.g.dart';
 
 void main() {
   group('Automatic Inference Tests', () {
@@ -21,7 +21,8 @@ void main() {
       };
 
       final schema = ProductSchema().parse(validData);
-      expect(schema.isValid, isTrue, reason: 'All required fields provided');
+      // No exception means valid - all required fields provided
+      expect(schema.id, equals('test123'));
     });
 
     test(
@@ -62,7 +63,7 @@ void main() {
       };
 
       final schema = ProductSchema().parse(dataWithOptionalFieldsOmitted);
-      expect(schema.isValid, isTrue, reason: 'Optional fields can be omitted');
+      // No exception means valid - optional fields can be omitted
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);
       expect(schema.updatedAt, isNull);
@@ -87,7 +88,7 @@ void main() {
       };
 
       final schema = ProductSchema().parse(dataWithNulls);
-      expect(schema.isValid, isTrue, reason: 'Nullable fields can be null');
+      // No exception means valid - nullable fields can be null
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);
       expect(schema.updatedAt, isNull);
@@ -102,7 +103,7 @@ void main() {
       };
 
       final schema = CategorySchema().parse(categoryData);
-      expect(schema.isValid, isTrue);
+      // No exception means valid
       expect(schema.description, isNull);
     });
 
@@ -115,7 +116,7 @@ void main() {
       };
 
       final schema = CategorySchema().parse(categoryData);
-      expect(schema.isValid, isTrue);
+      // No exception means valid
       expect(schema.description, isNull);
     });
   });

@@ -1,59 +1,27 @@
-import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
-// Add part directive for the generated code
-part 'product_model.g.dart';
+// Import generated schemas
+import 'product_model.g.dart';
 
-@Schema(
+@AckModel(
   description: 'A product model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
 )
 class Product {
-  @IsNotEmpty()
   final String id;
-
-  @IsNotEmpty()
-  @IsMinLength(3)
-  @IsMaxLength(100)
   final String name;
-
-  @IsNotEmpty()
-  @IsMaxLength(500)
   final String description;
-
-  @IsMin(0.01)
-  @IsMax(999999.99)
   final double price;
-
-  @IsNullable()
-  @IsEmail()
   final String? contactEmail;
-
-  @IsNullable()
   final String? imageUrl;
-
-  @IsRequired()
   final Category category;
-
-  @IsDate()
   final String releaseDate;
-
-  @IsDateTime()
   final String createdAt;
-
-  @IsNullable()
-  @IsDateTime()
   final String? updatedAt;
-
-  @IsPositive()
   final int stockQuantity;
-
-  @IsEnumValues(['draft', 'published', 'archived'])
   final String status;
-
-  @IsPattern('^[A-Z]{2,3}-\\d{4}\$')
   final String productCode;
-
   final Map<String, dynamic> metadata;
 
   Product({
@@ -74,21 +42,15 @@ class Product {
   });
 }
 
-@Schema(
+@AckModel(
   description: 'A category for organizing products',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
 )
 class Category {
-  @IsNotEmpty()
   final String id;
-
-  @IsNotEmpty()
   final String name;
-
-  @IsNullable()
   final String? description;
-
   final Map<String, dynamic> metadata;
 
   Category({
@@ -101,7 +63,7 @@ class Category {
 
 // Simple test to verify the generated code works
 void main() {
-  print('Testing SchemaModel refactoring...');
+  print('Testing Product Schema...');
 
   final productData = {
     'id': '123',
@@ -117,30 +79,21 @@ void main() {
     'stockQuantity': 100,
     'status': 'published',
     'productCode': 'ABC-1234',
+    // Additional properties stored in metadata
+    'brand': 'TestBrand',
+    'color': 'Blue',
   };
 
   try {
-    // Test the new SchemaModel API
     final schema = ProductSchema().parse(productData);
 
     print('✅ Schema parsing successful!');
     print('✅ Product ID: ${schema.id}');
     print('✅ Product Name: ${schema.name}');
     print('✅ Category: ${schema.category.name}');
-    print('✅ Has data: ${schema.hasData}');
-    print('✅ Is valid (backward compatibility): ${schema.isValid}');
+    print('✅ Additional properties: ${schema.metadata}');
 
-    // Test tryParse
-    final maybeSchema = ProductSchema().tryParse(productData);
-    print('✅ TryParse successful: ${maybeSchema != null}');
-
-    // Test invalid data
-    final invalidSchema = ProductSchema().tryParse({'invalid': 'data'});
-    print(
-        '✅ TryParse with invalid data returns null: ${invalidSchema == null}');
-
-    print(
-        '\n🎉 All tests passed! SchemaModel refactoring is working correctly.');
+    print('\n🎉 Product schema test passed!');
   } catch (e) {
     print('❌ Error: $e');
   }

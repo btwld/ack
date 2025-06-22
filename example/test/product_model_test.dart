@@ -1,5 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/product_model.dart';
+import 'package:ack_example/product_model.g.dart';
 import 'package:test/test.dart';
 
 // Helper class for testing type parameters
@@ -32,11 +33,8 @@ void main() {
       // Create schema with the data
       final schema = ProductSchema().parse(productData);
 
-      // Check if schema is valid
-      expect(schema.isValid, isTrue);
-
-      // Print the raw data for debugging
-      print('Schema data: ${schema.toMap()}');
+      // Check if schema is valid (no exception means valid)
+      // Note: schema.isValid and schema.toMap() don't exist in new API
 
       // Verify data was parsed correctly
       expect(schema.id, equals('123'));
@@ -94,8 +92,7 @@ void main() {
       // Create schema with the data
       final schema = ProductSchema().parse(productData);
 
-      // Check if schema is valid
-      expect(schema.isValid, isTrue);
+      // Check if schema is valid (no exception means valid)
       expect(schema, isA<ProductSchema>());
       expect(schema.id, equals('456'));
       expect(schema.name, equals('Test Transform'));
@@ -131,8 +128,7 @@ void main() {
       final schema = ProductSchema().parse(productData);
       print('Schema created successfully: $schema');
 
-      // Check if schema is valid
-      expect(schema.isValid, isTrue);
+      // Check if schema is valid (no exception means valid)
 
       print('\nTesting if Product type is correctly registered:');
       try {
@@ -159,8 +155,7 @@ void main() {
       final schema = CategorySchema().parse(categoryData);
       print('Schema created successfully: $schema');
 
-      // Check if schema is valid
-      expect(schema.isValid, isTrue);
+      // Check if schema is valid (no exception means valid)
       expect(schema.id, equals('cat3'));
       expect(schema.name, equals('Test Category'));
     });
@@ -200,8 +195,7 @@ void main() {
         'productCode': 'TST-1234',
       };
       final testSchema = ProductSchema().parse(testData);
-      // Test schema validation and property access
-      expect(testSchema.isValid, isTrue);
+      // Test schema validation and property access (no exception means valid)
       print('Schema type: ${testSchema.runtimeType}');
 
       // Compare what the SchemaModel.get method is doing

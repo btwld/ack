@@ -1,7 +1,7 @@
-import 'package:test/test.dart';
-import 'package:build_test/build_test.dart';
-import 'package:build/build.dart';
 import 'package:ack_generator/builder.dart';
+import 'package:build/build.dart';
+import 'package:build_test/build_test.dart';
+import 'package:test/test.dart';
 
 import '../test_utils/test_assets.dart';
 
@@ -9,7 +9,7 @@ void main() {
   group('Simple Model Integration Tests', () {
     test('generates schema for simple model with primitive fields', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -30,8 +30,8 @@ class User {
         outputs: {
           'test_pkg|lib/user.ack.g.part': decodedMatches(allOf([
             contains('class UserSchema extends SchemaModel'),
-            contains('const UserSchema()'),
-            contains('const UserSchema._valid(Map<String, Object?> data)'),
+            contains('UserSchema()'),
+            contains('UserSchema._valid(Map<String, Object?> data)'),
             contains('@override\n  UserSchema parse(Object? input)'),
             contains('return super.parse(input) as UserSchema;'),
             contains('@override\n  UserSchema? tryParse(Object? input)'),
@@ -50,7 +50,7 @@ class User {
 
     test('generates schema with custom schema name', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -67,14 +67,15 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.ack.g.part': decodedMatches(contains('class CustomUserSchema extends SchemaModel')),
+          'test_pkg|lib/model.ack.g.part': decodedMatches(
+              contains('class CustomUserSchema extends SchemaModel')),
         },
       );
     });
 
     test('handles all primitive types correctly', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {

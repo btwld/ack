@@ -37,7 +37,15 @@ import 'package:meta/meta_meta.dart';
 class AckModel {
   final String? schemaName;
   final String? description;
-  const AckModel({this.schemaName, this.description});
+  final bool additionalProperties;
+  final String? additionalPropertiesField;
+
+  const AckModel({
+    this.schemaName,
+    this.description,
+    this.additionalProperties = false,
+    this.additionalPropertiesField,
+  });
 }
 ''',
   'ack_annotations|lib/src/ack_field.dart': '''
@@ -76,8 +84,8 @@ class Ack {
   static const boolean = BooleanSchema();
   
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
-  static ObjectSchema object(Map<String, AckSchema> properties, {List<String>? required}) => 
-    ObjectSchema(properties, required: required);
+  static ObjectSchema object(Map<String, AckSchema> properties, {List<String>? required, bool additionalProperties = false}) =>
+    ObjectSchema(properties, required: required, additionalProperties: additionalProperties);
 }
 
 abstract class AckSchema<T> {}
@@ -116,7 +124,8 @@ class ListSchema<T> extends AckSchema<List<T>> {
 class ObjectSchema extends AckSchema<Map<String, Object?>> {
   final Map<String, AckSchema> properties;
   final List<String>? required;
-  const ObjectSchema(this.properties, {this.required});
+  final bool additionalProperties;
+  const ObjectSchema(this.properties, {this.required, this.additionalProperties = false});
 }
 ''',
   'ack|lib/src/schemas/schema_model.dart': '''
@@ -174,7 +183,7 @@ abstract class SchemaModel {
 
 /// Combine all assets for easy use in tests
 Map<String, String> get allAssets => {
-  ...metaAssets,
-  ...ackAnnotationsAsset,
-  ...ackPackageAsset,
-};
+      ...metaAssets,
+      ...ackAnnotationsAsset,
+      ...ackPackageAsset,
+    };

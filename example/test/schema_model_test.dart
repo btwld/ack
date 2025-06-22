@@ -1,4 +1,4 @@
-import 'package:ack_example/product_model.dart';
+import 'package:ack_example/product_model.g.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -24,8 +24,7 @@ void main() {
       // Create schema with valid data
       final schema = ProductSchema().parse(validData);
 
-      // Check that validation was performed (no exception thrown)
-      expect(schema.isValid, isTrue);
+      // Check that validation was performed (no exception thrown means valid)
 
       // Access properties
       expect(schema.id, equals('product-1'));

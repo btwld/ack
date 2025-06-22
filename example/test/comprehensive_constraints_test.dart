@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../lib/product_model.dart';
+import '../lib/product_model.g.dart';
 
 void main() {
   group('Comprehensive Constraint Annotations Test', () {
@@ -27,8 +27,7 @@ void main() {
 
       final schema = ProductSchema().parse(validData);
 
-      expect(schema.isValid, isTrue,
-          reason: 'Schema should be valid with correct data');
+      // No exception means schema is valid with correct data
 
       // Test all field values
       expect(schema.id, equals('prod123'));
@@ -215,7 +214,7 @@ void main() {
       };
 
       final schema = ProductSchema().parse(dataWithNulls);
-      expect(schema.isValid, isTrue);
+      // No exception means schema is valid
       expect(schema.contactEmail, isNull);
       expect(schema.imageUrl, isNull);
       expect(schema.updatedAt, isNull);
