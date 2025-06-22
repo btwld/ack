@@ -111,7 +111,7 @@ scripts:
     description: Update all golden test files
 
   test:golden:
-    run: melos exec -c 1 -- dart test --tags=golden
+    run: melos exec -c 1 -- dart test test/golden_test.dart
     description: Run only golden tests
     packageFilters:
       dirExists: test/golden
