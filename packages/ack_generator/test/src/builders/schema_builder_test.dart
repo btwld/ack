@@ -1,9 +1,8 @@
 import 'package:ack_generator/src/builders/schema_builder.dart';
-import 'package:ack_generator/src/models/constraint_info.dart';
-import 'package:ack_generator/src/models/field_info.dart';
 import 'package:ack_generator/src/models/model_info.dart';
-import 'package:analyzer/dart/element/type.dart';
 import 'package:test/test.dart';
+
+import '../test_utilities.dart';
 
 void main() {
   group('SchemaBuilder', () {
@@ -19,9 +18,9 @@ void main() {
         schemaClassName: 'UserSchema',
         description: 'User model for testing',
         fields: [
-          _createField('id', 'String', isRequired: true),
-          _createField('name', 'String', isRequired: true),
-          _createField('email', 'String', isNullable: true),
+          createField('id', 'String', isRequired: true),
+          createField('name', 'String', isRequired: true),
+          createField('email', 'String', isNullable: true),
         ],
         requiredFields: ['id', 'name'],
       );
@@ -59,10 +58,10 @@ void main() {
         className: 'Product',
         schemaClassName: 'ProductSchema',
         fields: [
-          _createField('name', 'String', isRequired: true),
-          _createField('price', 'double', isRequired: true),
-          _createField('inStock', 'bool', isRequired: true),
-          _createField('description', 'String', isNullable: true),
+          createField('name', 'String', isRequired: true),
+          createField('price', 'double', isRequired: true),
+          createField('inStock', 'bool', isRequired: true),
+          createField('description', 'String', isNullable: true),
         ],
         requiredFields: ['name', 'price', 'inStock'],
       );
@@ -84,8 +83,8 @@ void main() {
         className: 'Post',
         schemaClassName: 'PostSchema',
         fields: [
-          _createListField('tags', 'String', isRequired: true),
-          _createListField('comments', 'String', isNullable: true),
+          createListField('tags', 'String'),
+          createListField('comments', 'String', isNullable: true),
         ],
         requiredFields: ['tags'],
       );
@@ -96,14 +95,9 @@ void main() {
           result,
           contains(
               "List<String> get tags => getValue<List>('tags').cast<String>()"));
+      expect(result, contains("List<String>? get comments =>"));
       expect(
-          result,
-          contains(
-              "List<String>? get comments =>"));
-      expect(
-          result,
-          contains(
-              "getValueOrNull<List>('comments')?.cast<String>()"));
+          result, contains("getValueOrNull<List>('comments')?.cast<String>()"));
     });
 
     test('generates property getters for nested schemas', () {
@@ -111,8 +105,8 @@ void main() {
         className: 'Order',
         schemaClassName: 'OrderSchema',
         fields: [
-          _createNestedField('customer', 'Customer', isRequired: true),
-          _createNestedField('shippingAddress', 'Address', isNullable: true),
+          createField('customer', 'Customer', isRequired: true),
+          createField('shippingAddress', 'Address', isNullable: true),
         ],
         requiredFields: ['customer'],
       );
@@ -136,8 +130,8 @@ void main() {
         className: 'Config',
         schemaClassName: 'ConfigSchema',
         fields: [
-          _createField('theme', 'String', isNullable: true),
-          _createField('timeout', 'int', isNullable: true),
+          createField('theme', 'String', isNullable: true),
+          createField('timeout', 'int', isNullable: true),
         ],
         requiredFields: [],
       );
@@ -154,7 +148,7 @@ void main() {
         className: 'Simple',
         schemaClassName: 'SimpleSchema',
         fields: [
-          _createField('value', 'String', isRequired: true),
+          createField('value', 'String', isRequired: true),
         ],
         requiredFields: ['value'],
       );
@@ -167,146 +161,4 @@ void main() {
       expect(result.trim(), endsWith('}')); // Ends with closing brace
     });
   });
-}
-
-// Helper functions
-FieldInfo _createField(
-  String name,
-  String typeName, {
-  bool isRequired = false,
-  bool isNullable = false,
-  List<ConstraintInfo> constraints = const [],
-}) {
-  return _MockFieldInfo(
-    name: name,
-    typeName: typeName,
-    isRequired: isRequired,
-    isNullable: isNullable,
-    constraints: constraints,
-    isPrimitive: ['String', 'int', 'double', 'num', 'bool'].contains(typeName),
-    isList: false,
-    isMap: false,
-  );
-}
-
-FieldInfo _createListField(
-  String name,
-  String itemTypeName, {
-  bool isRequired = false,
-  bool isNullable = false,
-}) {
-  return _MockFieldInfo(
-    name: name,
-    typeName: 'List<$itemTypeName>',
-    isRequired: isRequired,
-    isNullable: isNullable,
-    constraints: [],
-    isPrimitive: false,
-    isList: true,
-    isMap: false,
-    listItemTypeName: itemTypeName,
-  );
-}
-
-FieldInfo _createNestedField(
-  String name,
-  String typeName, {
-  bool isRequired = false,
-  bool isNullable = false,
-}) {
-  return _MockFieldInfo(
-    name: name,
-    typeName: typeName,
-    isRequired: isRequired,
-    isNullable: isNullable,
-    constraints: [],
-    isPrimitive: false,
-    isList: false,
-    isMap: false,
-  );
-}
-
-// Mock implementation matching field_builder_test.dart
-class _MockFieldInfo implements FieldInfo {
-  @override
-  final String name;
-
-  @override
-  final String jsonKey;
-
-  @override
-  final bool isRequired;
-
-  @override
-  final bool isNullable;
-
-  @override
-  final List<ConstraintInfo> constraints;
-
-  @override
-  final String? defaultValue;
-
-  @override
-  final bool isPrimitive;
-
-  @override
-  final bool isList;
-
-  @override
-  final bool isMap;
-
-  final String typeName;
-  final String? listItemTypeName;
-
-  _MockFieldInfo({
-    required this.name,
-    required this.typeName,
-    required this.isRequired,
-    required this.isNullable,
-    required this.constraints,
-    this.defaultValue,
-    required this.isPrimitive,
-    required this.isList,
-    required this.isMap,
-    this.listItemTypeName,
-  }) : jsonKey = name;
-
-  @override
-  bool get isNestedSchema => !isPrimitive && !isList && !isMap;
-
-  @override
-  DartType get type => _MockDartType(typeName, listItemTypeName);
-}
-
-class _MockDartType implements DartType {
-  final String typeName;
-  final String? itemTypeName;
-
-  _MockDartType(this.typeName, this.itemTypeName);
-
-  @override
-  String getDisplayString({bool withNullability = true}) => typeName;
-
-  @override
-  bool get isDartCoreList => typeName.startsWith('List<');
-
-  @override
-  bool get isDartCoreMap => typeName.startsWith('Map<');
-
-  // Add missing core type getters
-  bool get isDartCoreString => typeName == 'String';
-  bool get isDartCoreInt => typeName == 'int';
-  bool get isDartCoreDouble => typeName == 'double';
-  bool get isDartCoreBool => typeName == 'bool';
-  bool get isDartCoreNum => typeName == 'num';
-
-  List<DartType> get typeArguments {
-    if (itemTypeName != null) {
-      return [_MockDartType(itemTypeName!, null)];
-    }
-    return [];
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
