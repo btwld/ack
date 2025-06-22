@@ -40,6 +40,10 @@ class Ack {
     );
   }
 
+  static ObjectSchema anyObject() {
+    return ObjectSchema({}, additionalProperties: true);
+  }
+
   static StringSchema enumString(List<String> values) {
     return StringSchema(constraints: [PatternConstraint.enumString(values)]);
   }
