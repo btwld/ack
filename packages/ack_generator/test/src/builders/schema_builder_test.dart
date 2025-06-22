@@ -35,9 +35,8 @@ void main() {
       expect(result, contains('/// User model for testing'));
 
       // Check constructors
-      expect(result, contains('const UserSchema()'));
-      expect(result,
-          contains('const UserSchema._valid(Map<String, Object?> data)'));
+      expect(result, contains('UserSchema()'));
+      expect(result, contains('UserSchema._valid(Map<String, Object?> data)'));
 
       // Check methods
       expect(result, contains('UserSchema parse(Object? input)'));

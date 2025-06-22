@@ -1,8 +1,7 @@
-import 'package:test/test.dart';
-import 'package:build_test/build_test.dart';
-import 'package:build/build.dart';
-import 'package:source_gen/source_gen.dart';
 import 'package:ack_generator/builder.dart';
+import 'package:build/build.dart';
+import 'package:build_test/build_test.dart';
+import 'package:test/test.dart';
 
 import '../test_utils/test_assets.dart';
 
@@ -10,7 +9,7 @@ void main() {
   group('Edge Cases and Error Handling', () {
     test('throws error on abstract class', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       // When generator throws an error, no output should be generated
       await testBuilder(
         builder,
@@ -30,7 +29,8 @@ abstract class AbstractModel {
         },
         onLog: (log) {
           if (log.level.name == 'SEVERE') {
-            expect(log.message, contains('cannot be applied to abstract classes'));
+            expect(
+                log.message, contains('cannot be applied to abstract classes'));
           }
         },
       );
@@ -38,7 +38,7 @@ abstract class AbstractModel {
 
     test('throws error on non-class element', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       // When generator throws an error, no output should be generated
       await testBuilder(
         builder,
@@ -64,7 +64,7 @@ enum Status { active, inactive }
 
     test('ignores classes without AckModel annotation', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -83,7 +83,7 @@ class RegularClass {
 
     test('handles empty class', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -107,7 +107,7 @@ class Empty {}
 
     test('handles class with only static fields', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -135,7 +135,7 @@ class Constants {
 
     test('handles inherited fields correctly', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -168,7 +168,8 @@ class User extends BaseEntity {
           'test_pkg|lib/inheritance.ack.g.part': decodedMatches(allOf([
             // Should include inherited fields
             contains("'id': Ack.string"),
-            contains("'createdAt': DateTimeSchema().definition"), // DateTime uses schema
+            contains(
+                "'createdAt': DateTimeSchema().definition"), // DateTime uses schema
             contains("'name': Ack.string"),
             contains("'email': Ack.string"),
             contains("required: ["),
@@ -183,7 +184,7 @@ class User extends BaseEntity {
 
     test('handles generic types gracefully', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {

@@ -8,6 +8,8 @@ class ModelInfo {
   final List<FieldInfo> fields;
   final List<String> requiredFields;
   final bool hasDiscriminator;
+  final bool additionalProperties;
+  final String? additionalPropertiesField;
 
   const ModelInfo({
     required this.className,
@@ -16,5 +18,7 @@ class ModelInfo {
     required this.fields,
     required this.requiredFields,
     this.hasDiscriminator = false,
+    this.additionalProperties = false,
+    this.additionalPropertiesField,
   });
 }

@@ -2,10 +2,9 @@ builders:
   ack_generator:
     import: "package:ack_generator/builder.dart"
     builder_factories: ["ackGenerator"]
-    build_extensions: {".dart": [".ack.g.part"]}
+    build_extensions: {".dart": [".g.dart"]}
     auto_apply: dependents
-    build_to: cache
-    applies_builders: ["source_gen|combining_builder"]
+    build_to: source
     required_inputs: [".dart"]
 
 # Global configuration for performance
