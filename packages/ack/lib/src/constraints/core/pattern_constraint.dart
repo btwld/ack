@@ -4,7 +4,7 @@ import '../../helpers.dart';
 import '../constraint.dart';
 
 /// Type of pattern matching operation to perform.
-enum PatternType { regex, enumValues, notEnumValues, format }
+enum PatternType { regex, enumString, notEnumString, format }
 
 /// A generic constraint that handles all pattern/format matching operations.
 ///
@@ -41,8 +41,8 @@ class PatternConstraint extends Constraint<String>
     this.example,
   }) : assert(
           (type == PatternType.regex && pattern != null) ||
-              (type == PatternType.enumValues && allowedValues != null) ||
-              (type == PatternType.notEnumValues && allowedValues != null) ||
+              (type == PatternType.enumString && allowedValues != null) ||
+              (type == PatternType.notEnumString && allowedValues != null) ||
               (type == PatternType.format && formatValidator != null),
           'Pattern, allowedValues, or formatValidator must be provided based on type',
         );
@@ -100,8 +100,8 @@ class PatternConstraint extends Constraint<String>
   /// Validates that the string is one of the specified allowed values.
   /// Useful for validating against a predefined set of options.
   /// {@endtemplate}
-  static PatternConstraint enumValues(List<String> values) => PatternConstraint(
-        type: PatternType.enumValues,
+  static PatternConstraint enumString(List<String> values) => PatternConstraint(
+        type: PatternType.enumString,
         allowedValues: values,
         constraintKey: 'string_enum',
         description: 'Must be one of: $values',
@@ -121,7 +121,7 @@ class PatternConstraint extends Constraint<String>
   /// {@endtemplate}
   static PatternConstraint notEnumValues(List<String> values) =>
       PatternConstraint(
-        type: PatternType.notEnumValues,
+        type: PatternType.notEnumString,
         allowedValues: values,
         constraintKey: 'not_one_of',
         description: 'Must not be one of: $values',
@@ -313,7 +313,7 @@ class PatternConstraint extends Constraint<String>
       'uuid',
       'ipv4',
       'ipv6',
-      'hostname'
+      'hostname',
     }.contains(format);
   }
 
@@ -348,14 +348,14 @@ class PatternConstraint extends Constraint<String>
   @override
   bool isValid(String value) => switch (type) {
         PatternType.regex => pattern!.hasMatch(value),
-        PatternType.enumValues => allowedValues!.contains(value),
-        PatternType.notEnumValues => !allowedValues!.contains(value),
+        PatternType.enumString => allowedValues!.contains(value),
+        PatternType.notEnumString => !allowedValues!.contains(value),
         PatternType.format => formatValidator!(value),
       };
 
   @override
   Map<String, Object?> buildContext(String value) {
-    if (type == PatternType.enumValues && allowedValues != null) {
+    if (type == PatternType.enumString && allowedValues != null) {
       final closestMatch = findClosestStringMatch(value, allowedValues!);
 
       return {'closestMatch': closestMatch, 'allowedValues': allowedValues};
@@ -374,9 +374,9 @@ class PatternConstraint extends Constraint<String>
       PatternType.regex => example != null
           ? 'Invalid format. Example: $example'
           : 'Does not match required pattern',
-      PatternType.enumValues =>
+      PatternType.enumString =>
         'Must be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}',
-      PatternType.notEnumValues =>
+      PatternType.notEnumString =>
         'Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}',
       PatternType.format => 'Invalid format',
     };
@@ -385,8 +385,8 @@ class PatternConstraint extends Constraint<String>
   @override
   Map<String, Object?> toJsonSchema() => switch (type) {
         PatternType.regex => _buildRegexSchema(),
-        PatternType.enumValues => {'enum': allowedValues},
-        PatternType.notEnumValues => {
+        PatternType.enumString => {'enum': allowedValues},
+        PatternType.notEnumString => {
             'not': {'enum': allowedValues},
           },
         PatternType.format => _buildFormatSchema(),

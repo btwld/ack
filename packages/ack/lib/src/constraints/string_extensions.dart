@@ -50,12 +50,12 @@ extension StringSchemaExtensions on StringSchema {
   StringSchema isJson() => json();
 
   /// {@macro enum_validator}
-  StringSchema enumValues(List<String> values) =>
-      _add(PatternConstraint.enumValues(values));
+  StringSchema enumString(List<String> values) =>
+      _add(PatternConstraint.enumString(values));
 
   /// {@macro enum_validator}
-  @Deprecated('Use enumValues() instead for consistent naming')
-  StringSchema isEnum(List<String> values) => enumValues(values);
+  @Deprecated('Use enumString() instead for consistent naming')
+  StringSchema isEnum(List<String> values) => enumString(values);
 
   /// {@macro not_empty_validator}
   StringSchema notEmpty() => minLength(1);

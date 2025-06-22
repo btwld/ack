@@ -154,6 +154,7 @@ class StringEnumConstraint extends Constraint<String>
   @override
   Map<String, Object?> buildContext(String value) {
     final closestMatch = findClosestStringMatch(value, enumValues);
+
     return {'closestMatch': closestMatch, 'allowedValues': enumValues};
   }
 
@@ -206,6 +207,7 @@ class StringRegexConstraint extends Constraint<String>
   bool isValid(String value) {
     try {
       final regex = RegExp(pattern);
+
       return regex.hasMatch(value);
     } catch (e) {
       return false;
@@ -518,9 +520,8 @@ class NumberRangeConstraint<T extends num> extends Constraint<T>
   bool isValid(num value) {
     if (exclusive) {
       return value > min && value < max;
-    } else {
-      return value >= min && value <= max;
     }
+    return value >= min && value <= max;
   }
 
   @override
@@ -613,7 +614,7 @@ class LegacyConstraints {
   /// Create a StringEnumConstraint (deprecated)
   @Deprecated('Use PatternConstraint.enumValues() instead')
   static PatternConstraint stringEnum(List<String> values) =>
-      PatternConstraint.enumValues(values);
+      PatternConstraint.enumString(values);
 
   /// Create a StringEmailConstraint (deprecated)
   @Deprecated('Use PatternConstraint.email() instead')
@@ -660,12 +661,12 @@ class LegacyConstraints {
   /// Create a ListMinItemsConstraint (deprecated)
   @Deprecated('Use ComparisonConstraint.listMinItems() instead')
   static ComparisonConstraint<List<T>> listMinItems<T>(int min) =>
-      ComparisonConstraint.listMinItems<T>(min);
+      ComparisonConstraint.listMinItems(min);
 
   /// Create a ListMaxItemsConstraint (deprecated)
   @Deprecated('Use ComparisonConstraint.listMaxItems() instead')
   static ComparisonConstraint<List<T>> listMaxItems<T>(int max) =>
-      ComparisonConstraint.listMaxItems<T>(max);
+      ComparisonConstraint.listMaxItems(max);
 
   /// Create a NumberMinConstraint (deprecated)
   @Deprecated('Use ComparisonConstraint.numberMin() instead')

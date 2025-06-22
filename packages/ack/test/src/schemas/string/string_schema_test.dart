@@ -360,7 +360,7 @@ void main() {
 
     group('EnumValidator', () {
       final validator =
-          PatternConstraint.enumValues(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+          PatternConstraint.enumString(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 
       test('Valid enum value passes validation', () {
         expect(validator.isValid('DRAFT'), isTrue);

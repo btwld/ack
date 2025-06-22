@@ -41,7 +41,7 @@ class Ack {
   }
 
   static StringSchema enumString(List<String> values) {
-    return StringSchema(constraints: [PatternConstraint.enumValues(values)]);
+    return StringSchema(constraints: [PatternConstraint.enumString(values)]);
   }
 
   static StringSchema enumValues(List<Enum> values) {
