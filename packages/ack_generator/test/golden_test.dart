@@ -1,9 +1,10 @@
 import 'dart:io';
-import 'package:test/test.dart';
-import 'package:build_test/build_test.dart';
-import 'package:build/build.dart';
-import 'package:path/path.dart' as p;
+
 import 'package:ack_generator/builder.dart';
+import 'package:build/build.dart';
+import 'package:build_test/build_test.dart';
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 
 import 'test_utils/test_assets.dart';
 
@@ -11,11 +12,12 @@ void main() {
   group('Golden Tests', () {
     test('user schema golden test', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       // Read the golden file
-      final goldenFile = File(p.join('test', 'golden', 'user_schema.dart.golden'));
+      final goldenFile =
+          File(p.join('test', 'golden', 'user_schema.dart.golden'));
       final expectedContent = await goldenFile.readAsString();
-      
+
       await testBuilder(
         builder,
         {
@@ -44,8 +46,10 @@ class User {
             predicate<String>(
               (actual) {
                 // Normalize whitespace for comparison
-                final normalizedActual = actual.trim().replaceAll(RegExp(r'\s+'), ' ');
-                final normalizedExpected = expectedContent.trim().replaceAll(RegExp(r'\s+'), ' ');
+                final normalizedActual =
+                    actual.trim().replaceAll(RegExp(r'\s+'), ' ');
+                final normalizedExpected =
+                    expectedContent.trim().replaceAll(RegExp(r'\s+'), ' ');
                 return normalizedActual.contains(normalizedExpected.substring(
                   normalizedExpected.indexOf('class UserSchema'),
                 ));
@@ -59,11 +63,7 @@ class User {
 
     test('complex nested schema golden test', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
-      // Read the golden file
-      final goldenFile = File(p.join('test', 'golden', 'order_schema.dart.golden'));
-      final expectedContent = await goldenFile.readAsString();
-      
+
       await testBuilder(
         builder,
         {
@@ -103,22 +103,26 @@ class Order {
             predicate<String>(
               (actual) {
                 // Check that both schemas are present
-                final containsOrderItem = actual.contains('class OrderItemSchema extends SchemaModel');
-                final containsOrder = actual.contains('class OrderSchema extends SchemaModel');
-                
+                final containsOrderItem = actual
+                    .contains('class OrderItemSchema extends SchemaModel');
+                final containsOrder =
+                    actual.contains('class OrderSchema extends SchemaModel');
+
                 // Check key content
-                final hasOrderItemFields = 
-                  actual.contains("'productId': Ack.string") &&
-                  actual.contains("'quantity': Ack.integer") &&
-                  actual.contains("'price': Ack.double");
-                  
-                final hasOrderFields = 
-                  actual.contains("'id': Ack.string") &&
-                  actual.contains("'items': Ack.list(OrderItemSchema().definition)") &&
-                  actual.contains("'createdAt': DateTimeSchema().definition");
-                
-                return containsOrderItem && containsOrder && 
-                       hasOrderItemFields && hasOrderFields;
+                final hasOrderItemFields =
+                    actual.contains("'productId': Ack.string") &&
+                        actual.contains("'quantity': Ack.integer") &&
+                        actual.contains("'price': Ack.double");
+
+                final hasOrderFields = actual.contains("'id': Ack.string") &&
+                    actual.contains(
+                        "'items': Ack.list(OrderItemSchema().definition)") &&
+                    actual.contains("'createdAt': DateTimeSchema().definition");
+
+                return containsOrderItem &&
+                    containsOrder &&
+                    hasOrderItemFields &&
+                    hasOrderFields;
               },
               'matches order golden file content',
             ),
