@@ -56,7 +56,7 @@ void main() {
     group('Enum patterns', () {
       test('enumValues validates correctly', () {
         final constraint =
-            PatternConstraint.enumValues(['small', 'medium', 'large']);
+            PatternConstraint.enumString(['small', 'medium', 'large']);
 
         expect(constraint.isValid('small'), isTrue);
         expect(constraint.isValid('medium'), isTrue);
@@ -74,7 +74,7 @@ void main() {
 
       test('enumValues provides closest match suggestions', () {
         final constraint =
-            PatternConstraint.enumValues(['red', 'green', 'blue']);
+            PatternConstraint.enumString(['red', 'green', 'blue']);
 
         expect(
             constraint.buildMessage('gren'), contains('Did you mean "green"?'));
@@ -302,7 +302,7 @@ void main() {
 
         expect(
           () => PatternConstraint(
-            type: PatternType.enumValues,
+            type: PatternType.enumString,
             // allowedValues is missing
             constraintKey: 'test',
             description: 'test',

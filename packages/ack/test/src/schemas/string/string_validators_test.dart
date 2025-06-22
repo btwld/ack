@@ -155,7 +155,7 @@ void main() {
     });
 
     group('EnumValidator', () {
-      final validator = PatternConstraint.enumValues(['red', 'green', 'blue']);
+      final validator = PatternConstraint.enumString(['red', 'green', 'blue']);
 
       test('Strings in enum pass validation', () {
         expect(validator.isValid('red'), isTrue);
@@ -171,7 +171,7 @@ void main() {
 
       test('schema validation works with enum validator', () {
         final validator =
-            PatternConstraint.enumValues(['red', 'green', 'blue']);
+            PatternConstraint.enumString(['red', 'green', 'blue']);
         expect(validator.isValid('red'), isTrue);
 
         final result = validator.validate('yellow');

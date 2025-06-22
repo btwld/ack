@@ -79,7 +79,7 @@ void main() {
     });
 
     test('Enum validation error messages', () {
-      final constraint = PatternConstraint.enumValues(['red', 'green', 'blue']);
+      final constraint = PatternConstraint.enumString(['red', 'green', 'blue']);
       final schema = Ack.string.constrain(constraint);
 
       var result = schema.validate('yellow');
