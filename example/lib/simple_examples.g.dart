@@ -2,7 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 // **************************************************************************
-// AckFileGenerator
+// AckSchemaGenerator
 // **************************************************************************
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
