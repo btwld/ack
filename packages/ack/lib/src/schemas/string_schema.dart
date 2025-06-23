@@ -29,7 +29,7 @@ final class StringSchema extends AckSchema<String> {
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: [
           InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
-              .validate(inputValue)!,
+              .validate(inputValue),
         ],
         context: context,
       ));
@@ -44,7 +44,7 @@ final class StringSchema extends AckSchema<String> {
     return SchemaResult.fail(SchemaConstraintsError(
       constraints: [
         InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
-            .validate(inputValue)!,
+            .validate(inputValue),
       ],
       context: context,
     ));
@@ -61,7 +61,7 @@ final class StringSchema extends AckSchema<String> {
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: [
           InvalidTypeConstraint(expectedType: String, inputValue: null)
-              .validate(null)!,
+              .validate(null),
         ],
         context: context,
       ));

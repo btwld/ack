@@ -93,6 +93,28 @@ class ListUniqueItemsConstraint<E> extends Constraint<List<E>?>
   Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
 }
 
+/// A generic constraint that validates a value against a custom pattern function.
+class PatternConstraint<T> extends Constraint<T> with Validator<T> {
+  final String expectedPattern;
+  final bool Function(T value) _isValid;
+
+  const PatternConstraint(this._isValid, this.expectedPattern)
+      : super(
+          constraintKey: 'pattern',
+          description: 'Value must match the expected pattern.',
+        );
+
+  @override
+  bool isValid(T value) {
+    return _isValid(value);
+  }
+
+  @override
+  String buildMessage(T value) {
+    return 'Value does not match the expected pattern: $expectedPattern.';
+  }
+}
+
 // --- Object Specific Constraints ---
 // These classes are used to create typed `ConstraintError` instances inside
 // `ObjectSchema`'s validation logic. They do not need a `Validator` mixin.
