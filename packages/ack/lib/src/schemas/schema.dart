@@ -16,6 +16,7 @@ part 'mixins/fluent_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
 part 'string_schema.dart';
+part 'transformed_schema.dart';
 
 enum SchemaType {
   string,
@@ -118,9 +119,16 @@ sealed class AckSchema<DartType extends Object> {
         _onConvert(inputValue, context);
     if (convertedResult.isFail) return convertedResult;
 
-    final convertedValue = convertedResult.getOrNull()!;
+    final convertedValue = convertedResult.getOrNull();
 
-    final constraintViolations = _checkConstraints(convertedValue, context);
+    if (convertedValue == null) {
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+    }
+
+    final constraintViolations =
+        _checkConstraints(convertedValue as DartType, context);
     if (constraintViolations.isNotEmpty) {
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: constraintViolations,
@@ -182,7 +190,6 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   Map<String, Object?> toJsonSchema();
-  String toJsonSchemaString() => prettyJson(toJsonSchema());
 
   Map<String, Object?> toMap() {
     return {

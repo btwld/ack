@@ -17,8 +17,27 @@ final class StringSchema extends AckSchema<String>
   @override
   @protected
   SchemaResult<String> _onConvert(Object? inputValue, SchemaContext context) {
+    if (inputValue == null) {
+      // This can happen if a nullable schema has a non-null default value,
+      // and the input is explicitly null. The base `parseAndValidate` allows it.
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: [
+            InvalidTypeConstraint(expectedType: String, inputValue: null)
+                .validate(null)!,
+          ],
+          context: context,
+        ),
+      );
+    }
     if (inputValue is String) {
       return SchemaResult.ok(inputValue);
+    }
+
+    if (!strictPrimitiveParsing) {
+      if (inputValue is int || inputValue is double || inputValue is bool) {
+        return SchemaResult.ok(inputValue.toString());
+      }
     }
 
     final constraintError = InvalidTypeConstraint(

@@ -7,10 +7,17 @@ import '../schemas/schema.dart';
 
 @immutable
 abstract class SchemaError {
+  final String message;
   final SchemaContext context;
-  final String errorKey;
+  final Object? cause;
+  final StackTrace? stackTrace;
 
-  const SchemaError({required this.context, required this.errorKey});
+  const SchemaError(
+    this.message, {
+    required this.context,
+    this.cause,
+    this.stackTrace,
+  });
 
   String get name => context.name;
   AckSchema get schema => context.schema;
@@ -18,7 +25,7 @@ abstract class SchemaError {
 
   Map<String, Object?> toMap() {
     return {
-      'errorKey': errorKey,
+      'message': message,
       'name': name,
       'value': value,
       'schemaType': schema.schemaType.name,
@@ -26,33 +33,40 @@ abstract class SchemaError {
   }
 
   @override
-  String toString() =>
-      '$runtimeType(errorKey: $errorKey, name: "$name", value: ${value ?? 'null'}, schema: ${schema.runtimeType})';
+  String toString() {
+    final loc = context.name;
+    final val = context.value;
+    final trace = stackTrace != null ? '\n$stackTrace' : '';
+    final causeMsg = cause != null ? '\nCaused by: $cause' : '';
+
+    return 'Validation failed for "$loc" with value "${val ?? 'null'}": $message$causeMsg$trace';
+  }
 }
 
 @immutable
 class SchemaUnknownError extends SchemaError {
-  final Object error;
-  final StackTrace stackTrace;
-
   SchemaUnknownError({
-    required this.error,
-    required this.stackTrace,
+    required Object error,
+    required StackTrace stackTrace,
     required super.context,
-  }) : super(errorKey: 'schema_unknown_error');
+  }) : super(
+          'An unknown error occurred: $error',
+          stackTrace: stackTrace,
+          cause: error,
+        );
 
   @override
   Map<String, Object?> toMap() {
     return {
       ...super.toMap(),
-      'errorMessage': error.toString(),
-      'stackTrace': stackTrace.toString(),
+      'errorMessage': cause?.toString(),
+      'stackTrace': stackTrace?.toString(),
     };
   }
 
   @override
   String toString() =>
-      'SchemaUnknownError(name: "$name", error: $error)\nStackTrace:\n$stackTrace';
+      'SchemaUnknownError(name: "$name", error: ${cause ?? 'null'})\nStackTrace:\n${stackTrace ?? 'null'}';
 }
 
 @immutable
@@ -62,9 +76,10 @@ class SchemaConstraintsError extends SchemaError {
   SchemaConstraintsError({
     required this.constraints,
     required super.context,
-  }) : super(errorKey: 'schema_constraints_error');
+  }) : super(
+          'Constraints not met: ${constraints.map((c) => c.message).join(', ')}',
+        );
 
-  bool get isInvalidType => getConstraint<InvalidTypeConstraint>() != null;
   bool get isNonNullable => getConstraint<NonNullableConstraint>() != null;
 
   ConstraintError? getConstraint<S extends Constraint>() {
@@ -98,10 +113,8 @@ class SchemaConstraintsError extends SchemaError {
 class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
-  SchemaNestedError({required this.errors, required super.context})
-      : super(errorKey: 'schema_nested_error');
-  // No specific assertions are needed here, but the constructor is kept
-  // for clarity and potential future use.
+  const SchemaNestedError({required this.errors, required super.context})
+      : super('One or more nested schemas failed validation.');
 
   S? getSchemaError<S extends SchemaError>() {
     for (final error in errors) {
@@ -122,15 +135,17 @@ class SchemaNestedError extends SchemaError {
 
 @immutable
 class SchemaValidationError extends SchemaError {
-  final String message;
+  SchemaValidationError({required String message, required super.context})
+      : super(message);
+}
 
-  SchemaValidationError({required this.message, required super.context})
-      : super(errorKey: 'schema_validation_error');
-
-  @override
-  Map<String, Object?> toMap() {
-    return {...super.toMap(), 'message': message};
-  }
+final class SchemaTransformError extends SchemaError {
+  const SchemaTransformError({
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  }) : super(message);
 }
 
 // @visibleForTesting
