@@ -53,7 +53,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   EnumSchema<T> copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required T? defaultValue,
     required List<Validator<T>>? constraints,
     required List<Refinement<T>>? refinements,
     List<T>? values,
@@ -62,9 +62,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       values: values ?? this.values,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as T?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -74,7 +72,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   EnumSchema<T> copyWith({
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    T? defaultValue,
     List<Validator<T>>? constraints,
     List<Refinement<T>>? refinements,
     List<T>? values,

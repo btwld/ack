@@ -56,7 +56,7 @@ final class BooleanSchema extends AckSchema<bool>
     bool? strictPrimitiveParsing,
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    bool? defaultValue,
     List<Validator<bool>>? constraints,
     List<Refinement<bool>>? refinements,
   }) {
@@ -74,7 +74,7 @@ final class BooleanSchema extends AckSchema<bool>
   BooleanSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required bool? defaultValue,
     required List<Validator<bool>>? constraints,
     required List<Refinement<bool>>? refinements,
     // BooleanSchema specific
@@ -83,9 +83,7 @@ final class BooleanSchema extends AckSchema<bool>
     return BooleanSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as bool?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:

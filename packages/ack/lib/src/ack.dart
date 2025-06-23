@@ -36,7 +36,7 @@ final class Ack {
   /// Creates a discriminated object schema for polymorphic validation.
   static DiscriminatedObjectSchema discriminated({
     required String discriminatorKey,
-    required Map<String, ObjectSchema> schemas,
+    required Map<String, AckSchema> schemas,
   }) =>
       DiscriminatedObjectSchema(
         discriminatorKey: discriminatorKey,

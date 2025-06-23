@@ -17,8 +17,6 @@ part 'num_schema.dart';
 part 'object_schema.dart';
 part 'string_schema.dart';
 
-const ackRawDefaultValue = Object();
-
 enum SchemaType {
   string,
   integer,
@@ -39,7 +37,7 @@ sealed class AckSchema<DartType extends Object> {
   final bool isNullable;
   final String? description;
   final DartType? defaultValue;
-  final List<Validator<DartType>> constraints;
+  final List<Constraint<DartType>> constraints;
   final List<Refinement<DartType>> refinements;
 
   const AckSchema({
@@ -58,10 +56,12 @@ sealed class AckSchema<DartType extends Object> {
   ) {
     if (constraints.isEmpty) return const [];
     final errors = <ConstraintError>[];
-    for (final validator in constraints) {
-      final error = validator.validate(value);
-      if (error != null) {
-        errors.add(error);
+    for (final constraint in constraints) {
+      if (constraint is Validator<DartType>) {
+        final error = constraint.validate(value);
+        if (error != null) {
+          errors.add(error);
+        }
       }
     }
 
@@ -160,7 +160,7 @@ sealed class AckSchema<DartType extends Object> {
   AckSchema<DartType> copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required DartType? defaultValue,
     required List<Validator<DartType>>? constraints,
     required List<Refinement<DartType>>? refinements,
   });
@@ -168,7 +168,7 @@ sealed class AckSchema<DartType extends Object> {
   AckSchema<DartType> copyWith({
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    DartType? defaultValue,
     List<Validator<DartType>>? constraints,
     List<Refinement<DartType>>? refinements,
   }) {

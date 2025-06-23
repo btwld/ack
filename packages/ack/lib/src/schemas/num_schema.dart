@@ -99,7 +99,7 @@ final class IntegerSchema extends NumSchema<int>
   IntegerSchema copyWith({
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    int? defaultValue,
     List<Validator<int>>? constraints,
     List<Refinement<int>>? refinements,
     bool? strictPrimitiveParsing,
@@ -118,7 +118,7 @@ final class IntegerSchema extends NumSchema<int>
   IntegerSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required int? defaultValue,
     required List<Validator<int>>? constraints,
     required List<Refinement<int>>? refinements,
     // NumSchema specific
@@ -127,9 +127,7 @@ final class IntegerSchema extends NumSchema<int>
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as int?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
@@ -190,7 +188,7 @@ final class DoubleSchema extends NumSchema<double>
   DoubleSchema copyWith({
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    double? defaultValue,
     List<Validator<double>>? constraints,
     List<Refinement<double>>? refinements,
     bool? strictPrimitiveParsing,
@@ -209,7 +207,7 @@ final class DoubleSchema extends NumSchema<double>
   DoubleSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required double? defaultValue,
     required List<Validator<double>>? constraints,
     required List<Refinement<double>>? refinements,
     // NumSchema specific
@@ -218,9 +216,7 @@ final class DoubleSchema extends NumSchema<double>
     return DoubleSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as double?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:

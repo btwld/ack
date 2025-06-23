@@ -8,7 +8,7 @@ part of 'schema.dart';
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, DiscriminatedObjectSchema> {
   final String discriminatorKey;
-  final Map<String, ObjectSchema> schemas;
+  final Map<String, AckSchema> schemas;
 
   const DiscriminatedObjectSchema({
     required this.discriminatorKey,
@@ -60,7 +60,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     }
 
     final String discValue = discValueRaw;
-    final ObjectSchema? selectedSubSchema = schemas[discValue];
+    final AckSchema? selectedSubSchema = schemas[discValue];
 
     if (selectedSubSchema == null) {
       // Using a generic PatternConstraint as a placeholder for a more specific
@@ -82,19 +82,25 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       value: inputValue,
     );
 
-    return selectedSubSchema.validate(
+    final result = selectedSubSchema.validate(
       inputValue,
       debugName: subSchemaContext.name,
+    );
+
+    // Convert the result to MapValue type for compatibility
+    return result.match(
+      onOk: (value) => SchemaResult.ok(value as MapValue),
+      onFail: (error) => SchemaResult.fail(error),
     );
   }
 
   @override
   DiscriminatedObjectSchema copyWith({
     String? discriminatorKey,
-    Map<String, ObjectSchema>? subSchemas,
+    Map<String, AckSchema>? subSchemas,
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    MapValue? defaultValue,
     List<Validator<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
@@ -113,21 +119,19 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   DiscriminatedObjectSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required MapValue? defaultValue,
     required List<Validator<MapValue>>? constraints,
     required List<Refinement<MapValue>>? refinements,
     // DiscriminatedObjectSchema specific
     String? discriminatorKey,
-    Map<String, ObjectSchema>? subSchemas,
+    Map<String, AckSchema>? subSchemas,
   }) {
     return DiscriminatedObjectSchema(
       discriminatorKey: discriminatorKey ?? this.discriminatorKey,
       schemas: subSchemas ?? schemas,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as MapValue?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
