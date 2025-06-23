@@ -32,8 +32,8 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   AckSchema<V> getItemSchema() => _itemSchema;
 
   @override
-  SchemaResult<List<V>> validateValue(Object? value) {
-    final result = super.validateValue(value);
+  SchemaResult<List<V>> validateValue(Object? value, SchemaContext context) {
+    final result = super.validateValue(value, context);
 
     if (result.isFail) return result;
 
