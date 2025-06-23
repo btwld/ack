@@ -80,17 +80,12 @@ final class BooleanSchema extends AckSchema<bool>
     // BooleanSchema specific
     bool? strictPrimitiveParsing,
   }) {
-    final bool? finalDefaultValue;
-    if (defaultValue == ackRawDefaultValue) {
-      finalDefaultValue = this.defaultValue;
-    } else {
-      finalDefaultValue = defaultValue as bool?;
-    }
-
     return BooleanSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: finalDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as bool?,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:

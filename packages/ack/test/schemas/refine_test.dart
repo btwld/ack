@@ -39,7 +39,7 @@ void main() {
       // Crucially, the error should be from minLength, not the refinement.
       expect(
         (result.getError() as SchemaConstraintsError).constraints.first.message,
-        contains('at least 10'),
+        contains('Minimum 10'),
       );
     });
 

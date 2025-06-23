@@ -19,7 +19,7 @@ void main() {
                 .constraints
                 .first
                 .message,
-            'Value must be at least 5 characters long, but was 2.');
+            'Too short. Minimum 5 characters, got 2.');
       });
 
       test('maxLength should pass if string is short enough', () {
@@ -37,7 +37,7 @@ void main() {
                 .constraints
                 .first
                 .message,
-            'Value must be no more than 3 characters long, but was 5.');
+            'Too long. Maximum 3 characters, got 5.');
       });
 
       test('length should pass if string is exact length', () {
@@ -55,7 +55,7 @@ void main() {
                 .constraints
                 .first
                 .message,
-            'Value must be exactly 5 characters long, but was 4.');
+            'Must be exactly 5 characters, got 4.');
       });
 
       test('should chain length constraints', () {
@@ -131,7 +131,7 @@ void main() {
               .constraints
               .first
               .message,
-          'Value must be at least 10 characters long, but was 7.');
+          'Too short. Minimum 10 characters, got 7.');
 
       final result2 = schema.validate('this-is-not-an-email');
       expect(result2.isOk, isFalse);
