@@ -93,7 +93,6 @@ sealed class AckSchema<T extends Object> {
     return value is T ? value : null;
   }
 
-  SchemaContext get context => getCurrentSchemaContext();
 
   /// Validates the [value] against the constraints, assuming it is already of type [T].
   ///
@@ -148,7 +147,7 @@ sealed class AckSchema<T extends Object> {
   /// This method handles null values, type conversion, and constraint validation.
   @protected
   @mustCallSuper
-  SchemaResult<T> validateValue(Object? value) {
+  SchemaResult<T> validateValue(Object? value, SchemaContext context) {
     try {
       // Handle null values
       if (value == null) {
@@ -201,12 +200,10 @@ sealed class AckSchema<T extends Object> {
   /// Validates the [value] against this schema with proper context and returns a [SchemaResult].
   ///
   /// This method provides a non-throwing way to validate values against the schema.
-  /// It wraps the validation logic in a context to provide better error reporting.
+  /// It creates a context to provide better error reporting.
   SchemaResult<T> validate(Object? value, {String? debugName}) {
-    return executeWithContext(
-      SchemaContext(name: debugName ?? type.name, schema: this, value: value),
-      () => validateValue(value),
-    );
+    final context = SchemaContext(name: debugName ?? type.name, schema: this, value: value);
+    return validateValue(value, context);
   }
 
   /// Validates and parses the [input] against this schema.

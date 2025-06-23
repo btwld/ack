@@ -102,8 +102,8 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
-  SchemaResult<MapValue> validateValue(Object? value) {
-    final result = super.validateValue(value);
+  SchemaResult<MapValue> validateValue(Object? value, SchemaContext context) {
+    final result = super.validateValue(value, context);
 
     if (result.isFail) return result;
 

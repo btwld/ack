@@ -34,8 +34,8 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   Map<String, ObjectSchema> getSchemasMap() => _schemas;
 
   @override
-  SchemaResult<MapValue> validateValue(Object? value) {
-    final result = super.validateValue(value);
+  SchemaResult<MapValue> validateValue(Object? value, SchemaContext context) {
+    final result = super.validateValue(value, context);
 
     if (result.isFail) return result;
 
