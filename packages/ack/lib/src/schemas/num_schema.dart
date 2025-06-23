@@ -100,7 +100,7 @@ final class IntegerSchema extends NumSchema<int>
     bool? isNullable,
     String? description,
     int? defaultValue,
-    List<Validator<int>>? constraints,
+    List<Constraint<int>>? constraints,
     List<Refinement<int>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
@@ -119,7 +119,7 @@ final class IntegerSchema extends NumSchema<int>
     required bool? isNullable,
     required String? description,
     required int? defaultValue,
-    required List<Validator<int>>? constraints,
+    required List<Constraint<int>>? constraints,
     required List<Refinement<int>>? refinements,
     // NumSchema specific
     bool? strictPrimitiveParsing,
@@ -189,7 +189,7 @@ final class DoubleSchema extends NumSchema<double>
     bool? isNullable,
     String? description,
     double? defaultValue,
-    List<Validator<double>>? constraints,
+    List<Constraint<double>>? constraints,
     List<Refinement<double>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
@@ -208,7 +208,7 @@ final class DoubleSchema extends NumSchema<double>
     required bool? isNullable,
     required String? description,
     required double? defaultValue,
-    required List<Validator<double>>? constraints,
+    required List<Constraint<double>>? constraints,
     required List<Refinement<double>>? refinements,
     // NumSchema specific
     bool? strictPrimitiveParsing,

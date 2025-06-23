@@ -54,7 +54,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     required bool? isNullable,
     required String? description,
     required T? defaultValue,
-    required List<Validator<T>>? constraints,
+    required List<Constraint<T>>? constraints,
     required List<Refinement<T>>? refinements,
     List<T>? values,
   }) {
@@ -70,12 +70,12 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
 
   @override
   EnumSchema<T> copyWith({
+    List<T>? values,
     bool? isNullable,
     String? description,
     T? defaultValue,
-    List<Validator<T>>? constraints,
+    List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
-    List<T>? values,
   }) {
     return copyWithInternal(
       isNullable: isNullable,

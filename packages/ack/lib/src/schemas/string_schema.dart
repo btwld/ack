@@ -41,7 +41,7 @@ final class StringSchema extends AckSchema<String>
     required bool? isNullable,
     required String? description,
     required String? defaultValue,
-    required List<Validator<String>>? constraints,
+    required List<Constraint<String>>? constraints,
     required List<Refinement<String>>? refinements,
     // StringSchema specific
     bool? strictPrimitiveParsing,
@@ -62,7 +62,7 @@ final class StringSchema extends AckSchema<String>
     bool? isNullable,
     String? description,
     String? defaultValue,
-    List<Validator<String>>? constraints,
+    List<Constraint<String>>? constraints,
     List<Refinement<String>>? refinements,
     bool? strictPrimitiveParsing,
   }) {

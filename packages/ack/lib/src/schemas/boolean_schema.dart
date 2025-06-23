@@ -57,7 +57,7 @@ final class BooleanSchema extends AckSchema<bool>
     bool? isNullable,
     String? description,
     bool? defaultValue,
-    List<Validator<bool>>? constraints,
+    List<Constraint<bool>>? constraints,
     List<Refinement<bool>>? refinements,
   }) {
     return copyWithInternal(
@@ -75,7 +75,7 @@ final class BooleanSchema extends AckSchema<bool>
     required bool? isNullable,
     required String? description,
     required bool? defaultValue,
-    required List<Validator<bool>>? constraints,
+    required List<Constraint<bool>>? constraints,
     required List<Refinement<bool>>? refinements,
     // BooleanSchema specific
     bool? strictPrimitiveParsing,

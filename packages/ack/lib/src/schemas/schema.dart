@@ -161,7 +161,7 @@ sealed class AckSchema<DartType extends Object> {
     required bool? isNullable,
     required String? description,
     required DartType? defaultValue,
-    required List<Validator<DartType>>? constraints,
+    required List<Constraint<DartType>>? constraints,
     required List<Refinement<DartType>>? refinements,
   });
 
@@ -169,7 +169,7 @@ sealed class AckSchema<DartType extends Object> {
     bool? isNullable,
     String? description,
     DartType? defaultValue,
-    List<Validator<DartType>>? constraints,
+    List<Constraint<DartType>>? constraints,
     List<Refinement<DartType>>? refinements,
   }) {
     return copyWithInternal(

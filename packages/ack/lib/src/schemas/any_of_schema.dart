@@ -51,7 +51,7 @@ final class AnyOfSchema extends AckSchema<Object>
     required bool? isNullable,
     required String? description,
     required Object? defaultValue,
-    required List<Validator<Object>>? constraints,
+    required List<Constraint<Object>>? constraints,
     required List<Refinement<Object>>? refinements,
     List<AckSchema>? schemas,
   }) {
