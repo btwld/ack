@@ -234,6 +234,8 @@ String _convertSchemaType(SchemaType type) {
       return 'object';
     case SchemaType.discriminatedObject:
       return '';
+    case SchemaType.date:
+      return 'date';
     case SchemaType.unknown:
       return 'unknown';
   }
