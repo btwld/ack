@@ -106,13 +106,12 @@ final class IntegerSchema extends AckSchema<int> {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    Map<String, Object?> schema = {
+    final Map<String, Object?> schema = {
       'type': 'integer',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    // Check constraints that implement JsonSchemaSpec
     final constraintSchemas = <Map<String, Object?>>[];
     for (final constraint in constraints) {
       if (constraint is JsonSchemaSpec) {
@@ -231,13 +230,12 @@ final class DoubleSchema extends AckSchema<double> {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    Map<String, Object?> schema = {
+    final Map<String, Object?> schema = {
       'type': 'number',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    // Check constraints that implement JsonSchemaSpec
     final constraintSchemas = <Map<String, Object?>>[];
     for (final constraint in constraints) {
       if (constraint is JsonSchemaSpec) {

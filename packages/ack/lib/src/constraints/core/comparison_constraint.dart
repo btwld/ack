@@ -173,6 +173,67 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
             'Too many properties. Maximum $max, got ${extracted.toInt()}.',
       );
 
+  // Additional factory methods for simple value comparisons
+
+  /// Creates a constraint that checks if a comparable value is less than the specified threshold
+  static ComparisonConstraint<T> lessThan<T extends Comparable<Object>>(
+    T compareValue,
+  ) =>
+      ComparisonConstraint(
+        type: ComparisonType.lt,
+        threshold: compareValue is num ? compareValue : 0,
+        valueExtractor: (value) =>
+            value is num ? value : value.compareTo(compareValue),
+        constraintKey: 'less_than',
+        description: 'Value must be less than $compareValue.',
+        customMessageBuilder: (value, _) => 'Must be less than $compareValue.',
+      );
+
+  /// Creates a constraint that checks if a comparable value is less than or equal to the specified threshold
+  static ComparisonConstraint<T> lessThanOrEqual<T extends Comparable<Object>>(
+    T compareValue,
+  ) =>
+      ComparisonConstraint(
+        type: ComparisonType.lte,
+        threshold: compareValue is num ? compareValue : 0,
+        valueExtractor: (value) =>
+            value is num ? value : value.compareTo(compareValue),
+        constraintKey: 'less_than_or_equal',
+        description: 'Value must be less than or equal to $compareValue.',
+        customMessageBuilder: (value, _) =>
+            'Must be less than or equal to $compareValue.',
+      );
+
+  /// Creates a constraint that checks if a comparable value is greater than the specified threshold
+  static ComparisonConstraint<T> greaterThan<T extends Comparable<Object>>(
+    T compareValue,
+  ) =>
+      ComparisonConstraint(
+        type: ComparisonType.gt,
+        threshold: compareValue is num ? compareValue : 0,
+        valueExtractor: (value) =>
+            value is num ? value : value.compareTo(compareValue),
+        constraintKey: 'greater_than',
+        description: 'Value must be greater than $compareValue.',
+        customMessageBuilder: (value, _) =>
+            'Must be greater than $compareValue.',
+      );
+
+  /// Creates a constraint that checks if a comparable value is greater than or equal to the specified threshold
+  static ComparisonConstraint<T>
+      greaterThanOrEqual<T extends Comparable<Object>>(T compareValue) =>
+          ComparisonConstraint(
+            type: ComparisonType.gte,
+            threshold: compareValue is num ? compareValue : 0,
+            valueExtractor: (value) =>
+                value is num ? value : value.compareTo(compareValue),
+            constraintKey: 'greater_than_or_equal',
+            description:
+                'Value must be greater than or equal to $compareValue.',
+            customMessageBuilder: (value, _) =>
+                'Must be greater than or equal to $compareValue.',
+          );
+
   @override
   bool isValid(T? value) {
     if (value == null) {
@@ -229,17 +290,16 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final isStringLength = constraintKey.startsWith('string_') &&
-        (constraintKey.contains('length') || constraintKey.contains('exact'));
-    final isListItems = constraintKey.startsWith('list_');
-    final isObjectProperties = constraintKey.startsWith('object_');
-    final isMultipleOf =
-        constraintKey == 'number_multiple_of' && multipleValue != null;
-
     switch (type) {
       case ComparisonType.gt:
         return {'exclusiveMinimum': threshold};
       case ComparisonType.gte:
+        final isStringLength = constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+        final isListItems = constraintKey.startsWith('list_');
+        final isObjectProperties = constraintKey.startsWith('object_');
+
         if (isStringLength) return {'minLength': threshold.toInt()};
         if (isListItems) return {'minItems': threshold.toInt()};
         if (isObjectProperties) return {'minProperties': threshold.toInt()};
@@ -248,12 +308,24 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
       case ComparisonType.lt:
         return {'exclusiveMaximum': threshold};
       case ComparisonType.lte:
+        final isStringLength = constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+        final isListItems = constraintKey.startsWith('list_');
+        final isObjectProperties = constraintKey.startsWith('object_');
+
         if (isStringLength) return {'maxLength': threshold.toInt()};
         if (isListItems) return {'maxItems': threshold.toInt()};
         if (isObjectProperties) return {'maxProperties': threshold.toInt()};
 
         return {'maximum': threshold};
       case ComparisonType.eq:
+        final isMultipleOf =
+            constraintKey == 'number_multiple_of' && multipleValue != null;
+        final isStringLength = constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+
         if (isMultipleOf) return {'multipleOf': multipleValue};
         if (isStringLength) {
           return {
@@ -264,6 +336,12 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
 
         return {'const': threshold};
       case ComparisonType.range:
+        final isStringLength = constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+        final isListItems = constraintKey.startsWith('list_');
+        final isObjectProperties = constraintKey.startsWith('object_');
+
         if (isStringLength) {
           return {
             'minLength': threshold.toInt(),

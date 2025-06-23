@@ -29,7 +29,7 @@ final class ListSchema<V> extends AckSchema<List<V>> {
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
-          : (defaultValue as List<V>?),
+          : (defaultValue as List?)?.cast(),
       constraints: constraints ?? this.constraints,
     );
   }
@@ -116,32 +116,24 @@ final class ListSchema<V> extends AckSchema<List<V>> {
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
-          : (defaultValue as List<V>?),
+          : (defaultValue as List?)?.cast(),
       constraints: constraints ?? this.constraints,
     );
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
-    Map<String, Object?> schema = {
+    final Map<String, Object?> schema = {
       'type': 'array',
       'items': itemSchema.toJsonSchema(),
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    // Check constraints that implement JsonSchemaSpec using dynamic typing
-    // This avoids the unrelated type assertion issue
     final constraintSchemas = <Map<String, Object?>>[];
     for (final constraint in constraints) {
-      // Use dynamic typing to check if constraint has toJsonSchema method
-      try {
-        final dynamic dynamicConstraint = constraint;
-        if (dynamicConstraint is JsonSchemaSpec) {
-          constraintSchemas.add(dynamicConstraint.toJsonSchema());
-        }
-      } catch (_) {
-        // Ignore constraints that don't implement JsonSchemaSpec
+      if (constraint is JsonSchemaSpec) {
+        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
       }
     }
 

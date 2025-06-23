@@ -109,13 +109,12 @@ final class BooleanSchema extends AckSchema<bool> {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    Map<String, Object?> schema = {
+    final Map<String, Object?> schema = {
       'type': 'boolean',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    // Check constraints that implement JsonSchemaSpec
     final constraintSchemas = <Map<String, Object?>>[];
     for (final constraint in constraints) {
       if (constraint is JsonSchemaSpec) {

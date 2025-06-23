@@ -21,8 +21,12 @@ class SchemaContext {
   });
 
   @override
-  String toString() =>
-      'SchemaContext(name: $name, value: ${value?.toString().substring(0, (value?.toString().length ?? 0) > 50 ? 50 : (value?.toString().length ?? 0))}, schema: ${schema.runtimeType})';
+  String toString() {
+    final schemaTypeString = schema.schemaType.toString().split('.').last;
+    final valueString = value?.toString() ?? 'null';
+
+    return 'SchemaContext(name: "$name", schema: $schemaTypeString, value: "$valueString")';
+  }
 }
 
 /// Executes an action within a specific [SchemaContext].

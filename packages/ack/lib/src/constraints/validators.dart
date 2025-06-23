@@ -59,6 +59,12 @@ class InvalidTypeConstraint extends Constraint<Object?>
   @override
   String buildMessage(Object? value) =>
       'Invalid type. Expected $expectedType, but got ${value?.runtimeType ?? "null"}.';
+
+  @override
+  Map<String, Object?> buildContext(Object? value) => {
+        'expectedType': expectedType,
+        'actualType': actualType,
+      };
 }
 
 /// Validates that all items in a list are unique.
