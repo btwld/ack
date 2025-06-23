@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../helpers.dart';
 import 'schema_error.dart';
 
@@ -5,14 +7,15 @@ import 'schema_error.dart';
 ///
 /// It wraps a [SchemaError] instance, providing detailed information
 /// about the validation failure.
+@immutable
 class AckException implements Exception {
-  final SchemaError error;
+  final List<SchemaError> errors;
 
-  const AckException(this.error);
+  const AckException(this.errors);
 
   /// Converts this exception (specifically its underlying error) to a map.
   Map<String, dynamic> toMap() {
-    return {'validationError': error.toMap()};
+    return {'validationError': errors.map((e) => e.toMap()).toList()};
   }
 
   /// Converts this exception to a pretty-printed JSON string.
@@ -20,23 +23,10 @@ class AckException implements Exception {
 
   @override
   String toString() {
-    String errorDetails;
-    if (error is SchemaConstraintsError) {
-      final constraintError = error as SchemaConstraintsError;
-      errorDetails =
-          constraintError.constraints.map((c) => c.message).join(', ');
-    } else if (error is SchemaNestedError) {
-      final nestedError = error as SchemaNestedError;
-      errorDetails =
-          nestedError.errors.map((e) => '"${e.name}": ${e.message}').join(', ');
-    } else {
-      errorDetails = error.message;
+    if (errors.length == 1) {
+      return errors.first.toString();
     }
-    final valueStr = error.value?.toString() ?? 'null';
-    final truncatedValue =
-        valueStr.substring(0, valueStr.length > 30 ? 30 : valueStr.length) +
-            (valueStr.length > 30 ? "..." : "");
 
-    return 'AckException: Validation failed for "${error.name}" (value: $truncatedValue). Issues: $errorDetails';
+    return 'AckException: Multiple validation errors occurred:\n${errors.map((e) => '  - ${e.toString()}').join('\n')}';
   }
 }

@@ -37,14 +37,8 @@ class ConstraintError {
     this.context,
   });
 
-  /// The runtime type of the constraint that failed.
-  Type get constraintType => constraint.runtimeType;
-
   /// The unique key of the constraint that failed.
   String get constraintKey => constraint.constraintKey;
-
-  /// Retrieves a value from the error context by its [key].
-  Object? getContextValue(String key) => context?[key];
 
   /// Serializes this error to a map.
   Map<String, Object?> toMap() {
