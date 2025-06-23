@@ -214,11 +214,11 @@ final class ObjectSchema extends AckSchema<MapValue> {
   @override
   Map<String, Object?> toJsonSchema() {
     final Map<String, Map<String, Object?>> schemaProperties = {};
-    for (var entry in properties.entries) {
+    for (final entry in properties.entries) {
       schemaProperties[entry.key] = entry.value.toJsonSchema();
     }
 
-    Map<String, Object?> schema = {
+    final Map<String, Object?> schema = {
       'type': 'object',
       if (schemaProperties.isNotEmpty) 'properties': schemaProperties,
       if (requiredProperties.isNotEmpty) 'required': requiredProperties,
@@ -227,7 +227,6 @@ final class ObjectSchema extends AckSchema<MapValue> {
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    // Check constraints that implement JsonSchemaSpec
     final constraintSchemas = <Map<String, Object?>>[];
     for (final constraint in constraints) {
       if (constraint is JsonSchemaSpec) {
