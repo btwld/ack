@@ -10,6 +10,7 @@ export 'src/context.dart';
 export 'src/schemas/extensions/list_schema_extensions.dart';
 export 'src/schemas/extensions/numeric_extensions.dart';
 export 'src/schemas/extensions/object_schema_extensions.dart';
+export 'src/schemas/extensions/refine_extension.dart';
 // Extensions
 export 'src/schemas/extensions/string_schema_extensions.dart';
 // Core schemas

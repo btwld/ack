@@ -10,18 +10,13 @@ final class StringSchema extends AckSchema<String>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
     this.strictPrimitiveParsing = false,
   }) : super(schemaType: SchemaType.string);
 
-  /// Creates a new [StringSchema] that enforces strict parsing.
-  StringSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
-
   @override
-  SchemaResult<String> tryConvertInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  @protected
+  SchemaResult<String> _onConvert(Object? inputValue, SchemaContext context) {
     if (inputValue is String) {
       return SchemaResult.ok(inputValue);
     }
@@ -37,13 +32,9 @@ final class StringSchema extends AckSchema<String>
     ));
   }
 
-  @override
-  SchemaResult<String> validateConvertedValue(
-    String convertedValue,
-    SchemaContext context,
-  ) {
-    return SchemaResult.ok(convertedValue);
-  }
+  /// Creates a new [StringSchema] that enforces strict parsing.
+  StringSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
 
   @override
   StringSchema copyWithInternal({
@@ -51,16 +42,23 @@ final class StringSchema extends AckSchema<String>
     required String? description,
     required Object? defaultValue,
     required List<Validator<String>>? constraints,
+    required List<Refinement<String>>? refinements,
     // StringSchema specific
     bool? strictPrimitiveParsing,
   }) {
+    final String? finalDefaultValue;
+    if (defaultValue == ackRawDefaultValue) {
+      finalDefaultValue = this.defaultValue;
+    } else {
+      finalDefaultValue = defaultValue as String?;
+    }
+
     return StringSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as String?,
+      defaultValue: finalDefaultValue,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
@@ -72,6 +70,7 @@ final class StringSchema extends AckSchema<String>
     String? description,
     Object? defaultValue,
     List<Validator<String>>? constraints,
+    List<Refinement<String>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
     return copyWithInternal(
@@ -79,6 +78,7 @@ final class StringSchema extends AckSchema<String>
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
+      refinements: refinements,
       strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }

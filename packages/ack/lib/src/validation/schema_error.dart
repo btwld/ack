@@ -99,13 +99,9 @@ class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
   SchemaNestedError({required this.errors, required super.context})
-      : super(errorKey: 'schema_nested_error') {
-    // assert(
-    //     schema is ObjectSchema ||
-    //         schema is ListSchema ||
-    //         schema is DiscriminatedObjectSchema,
-    //     'SchemaNestedError should primarily be used with ObjectSchema, ListSchema, or DiscriminatedObjectSchema');
-  }
+      : super(errorKey: 'schema_nested_error');
+  // No specific assertions are needed here, but the constructor is kept
+  // for clarity and potential future use.
 
   S? getSchemaError<S extends SchemaError>() {
     for (final error in errors) {
@@ -121,6 +117,19 @@ class SchemaNestedError extends SchemaError {
       ...super.toMap(),
       'nestedErrors': errors.map((e) => e.toMap()).toList(),
     };
+  }
+}
+
+@immutable
+class SchemaValidationError extends SchemaError {
+  final String message;
+
+  SchemaValidationError({required this.message, required super.context})
+      : super(errorKey: 'schema_validation_error');
+
+  @override
+  Map<String, Object?> toMap() {
+    return {...super.toMap(), 'message': message};
   }
 }
 

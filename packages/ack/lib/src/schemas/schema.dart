@@ -31,6 +31,8 @@ enum SchemaType {
   unknown,
 }
 
+typedef Refinement<T> = ({bool Function(T value) validate, String message});
+
 @immutable
 sealed class AckSchema<DartType extends Object> {
   final SchemaType schemaType;
@@ -38,6 +40,7 @@ sealed class AckSchema<DartType extends Object> {
   final String? description;
   final DartType? defaultValue;
   final List<Validator<DartType>> constraints;
+  final List<Refinement<DartType>> refinements;
 
   const AckSchema({
     required this.schemaType,
@@ -45,6 +48,7 @@ sealed class AckSchema<DartType extends Object> {
     this.description,
     this.defaultValue,
     this.constraints = const [],
+    this.refinements = const [],
   });
 
   @protected
@@ -65,6 +69,31 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   @protected
+  SchemaResult<DartType> _runRefinements(
+    DartType value,
+    SchemaContext context,
+  ) {
+    for (final refinement in refinements) {
+      if (!refinement.validate(value)) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message: refinement.message,
+            context: context,
+          ),
+        );
+      }
+    }
+
+    return SchemaResult.ok(value);
+  }
+
+  @protected
+  SchemaResult<DartType> _onConvert(
+    Object? inputValue,
+    SchemaContext context,
+  );
+
+  @protected
   SchemaResult<DartType> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
@@ -74,34 +103,22 @@ sealed class AckSchema<DartType extends Object> {
         return SchemaResult.ok(defaultValue);
       }
       if (defaultValue != null) {
-        return SchemaResult.ok(defaultValue);
-      }
-      final constraintError = NonNullableConstraint().validate(null);
+        inputValue = defaultValue;
+      } else {
+        final constraintError = NonNullableConstraint().validate(null);
 
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+        return SchemaResult.fail(SchemaConstraintsError(
+          constraints: constraintError != null ? [constraintError] : [],
+          context: context,
+        ));
+      }
     }
 
     final SchemaResult<DartType> convertedResult =
-        tryConvertInput(inputValue, context);
+        _onConvert(inputValue, context);
     if (convertedResult.isFail) return convertedResult;
 
-    final convertedValue = convertedResult.getOrNull();
-
-    if (convertedValue == null) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: DartType, inputValue: inputValue)
-              .validate(inputValue);
-
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context,
-        ),
-      );
-    }
+    final convertedValue = convertedResult.getOrNull()!;
 
     final constraintViolations = _checkConstraints(convertedValue, context);
     if (constraintViolations.isNotEmpty) {
@@ -111,20 +128,8 @@ sealed class AckSchema<DartType extends Object> {
       ));
     }
 
-    return validateConvertedValue(convertedValue, context);
+    return _runRefinements(convertedValue, context);
   }
-
-  @protected
-  SchemaResult<DartType> tryConvertInput(
-    Object? inputValue,
-    SchemaContext context,
-  );
-
-  @protected
-  SchemaResult<DartType> validateConvertedValue(
-    DartType convertedValue,
-    SchemaContext context,
-  );
 
   SchemaResult<DartType> validate(Object? value, {String? debugName}) {
     final effectiveDebugName = debugName ?? schemaType.name.toLowerCase();
@@ -157,6 +162,7 @@ sealed class AckSchema<DartType extends Object> {
     required String? description,
     required Object? defaultValue,
     required List<Validator<DartType>>? constraints,
+    required List<Refinement<DartType>>? refinements,
   });
 
   AckSchema<DartType> copyWith({
@@ -164,12 +170,14 @@ sealed class AckSchema<DartType extends Object> {
     String? description,
     Object? defaultValue,
     List<Validator<DartType>>? constraints,
+    List<Refinement<DartType>>? refinements,
   }) {
     return copyWithInternal(
       isNullable: isNullable,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
+      refinements: refinements,
     );
   }
 

@@ -11,15 +11,8 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   });
-
-  @override
-  SchemaResult<T> validateConvertedValue(
-    T convertedValue,
-    SchemaContext context,
-  ) {
-    return SchemaResult.ok(convertedValue);
-  }
 
   @override
   Map<String, Object?> toJsonSchema() {
@@ -64,10 +57,12 @@ final class IntegerSchema extends NumSchema<int>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   }) : super(schemaType: SchemaType.integer);
 
   @override
-  SchemaResult<int> tryConvertInput(Object? inputValue, SchemaContext context) {
+  @protected
+  SchemaResult<int> _onConvert(Object? inputValue, SchemaContext context) {
     if (inputValue is int) return SchemaResult.ok(inputValue);
     if (strictPrimitiveParsing) {
       final constraintError =
@@ -106,6 +101,7 @@ final class IntegerSchema extends NumSchema<int>
     String? description,
     Object? defaultValue,
     List<Validator<int>>? constraints,
+    List<Refinement<int>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
     return copyWithInternal(
@@ -113,6 +109,7 @@ final class IntegerSchema extends NumSchema<int>
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
+      refinements: refinements,
       strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
@@ -123,16 +120,23 @@ final class IntegerSchema extends NumSchema<int>
     required String? description,
     required Object? defaultValue,
     required List<Validator<int>>? constraints,
+    required List<Refinement<int>>? refinements,
     // NumSchema specific
     bool? strictPrimitiveParsing,
   }) {
+    final int? finalDefaultValue;
+    if (defaultValue == ackRawDefaultValue) {
+      finalDefaultValue = this.defaultValue;
+    } else {
+      finalDefaultValue = defaultValue as int?;
+    }
+
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as int?,
+      defaultValue: finalDefaultValue,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
@@ -160,13 +164,12 @@ final class DoubleSchema extends NumSchema<double>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   }) : super(schemaType: SchemaType.double);
 
   @override
-  SchemaResult<double> tryConvertInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  @protected
+  SchemaResult<double> _onConvert(Object? inputValue, SchemaContext context) {
     if (inputValue is double) return SchemaResult.ok(inputValue);
     if (inputValue is int && !strictPrimitiveParsing) {
       return SchemaResult.ok(inputValue.toDouble());
@@ -194,6 +197,7 @@ final class DoubleSchema extends NumSchema<double>
     String? description,
     Object? defaultValue,
     List<Validator<double>>? constraints,
+    List<Refinement<double>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
     return copyWithInternal(
@@ -201,6 +205,7 @@ final class DoubleSchema extends NumSchema<double>
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
+      refinements: refinements,
       strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
@@ -211,16 +216,23 @@ final class DoubleSchema extends NumSchema<double>
     required String? description,
     required Object? defaultValue,
     required List<Validator<double>>? constraints,
+    required List<Refinement<double>>? refinements,
     // NumSchema specific
     bool? strictPrimitiveParsing,
   }) {
+    final double? finalDefaultValue;
+    if (defaultValue == ackRawDefaultValue) {
+      finalDefaultValue = this.defaultValue;
+    } else {
+      finalDefaultValue = defaultValue as double?;
+    }
+
     return DoubleSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as double?,
+      defaultValue: finalDefaultValue,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );

@@ -18,75 +18,36 @@ final class ObjectSchema extends AckSchema<MapValue>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   })  : properties = properties ?? const {},
         super(schemaType: SchemaType.object);
 
   @override
-  ObjectSchema copyWith({
-    Map<String, AckSchema>? properties,
-    List<String>? requiredProperties,
-    bool? allowAdditionalProperties,
-    bool? isNullable,
-    String? description,
-    Object? defaultValue,
-    List<Validator<MapValue>>? constraints,
-  }) {
-    return copyWithInternal(
-      properties: properties,
-      requiredProperties: requiredProperties,
-      allowAdditionalProperties: allowAdditionalProperties,
-      isNullable: isNullable,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-    );
-  }
-
-  @override
-  SchemaResult<MapValue> tryConvertInput(
+  @protected
+  SchemaResult<MapValue> _onConvert(
     Object? inputValue,
     SchemaContext context,
   ) {
-    if (inputValue is Map) {
-      try {
-        final mapValue = Map<String, Object?>.from(inputValue);
+    if (inputValue is! MapValue) {
+      final constraintError =
+          InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
 
-        return SchemaResult.ok(mapValue);
-      } catch (e) {
-        final constraintError =
-            InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
-
-        return SchemaResult.fail(SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context,
-        ));
-      }
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ));
     }
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
-
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
-  }
-
-  @override
-  SchemaResult<MapValue> validateConvertedValue(
-    MapValue convertedValue,
-    SchemaContext context,
-  ) {
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
     // 1. Check for missing required properties
     for (final key in required) {
-      if (!convertedValue.containsKey(key)) {
+      if (!inputValue.containsKey(key)) {
         // Property is completely missing
         final constraintError =
             ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-                .validate(convertedValue);
+                .validate(inputValue);
         if (constraintError != null) {
           validationErrors.add(
             SchemaConstraintsError(
@@ -95,13 +56,13 @@ final class ObjectSchema extends AckSchema<MapValue>
             ),
           );
         }
-      } else if (convertedValue[key] == null) {
+      } else if (inputValue[key] == null) {
         // Property exists but is null - check if the property's schema allows null
         final propertySchema = properties[key];
         if (propertySchema != null && !propertySchema.isNullable) {
           final constraintError =
               ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-                  .validate(convertedValue);
+                  .validate(inputValue);
           if (constraintError != null) {
             validationErrors.add(
               SchemaConstraintsError(
@@ -115,9 +76,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     // 2. Validate all properties against their schemas
-    for (final key in convertedValue.keys) {
+    for (final key in inputValue.keys) {
       final propertySchema = properties[key];
-      final propertyValue = convertedValue[key];
+      final propertyValue = inputValue[key];
 
       if (propertySchema != null) {
         final propertyContext = SchemaContext(
@@ -164,11 +125,35 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
+  ObjectSchema copyWith({
+    Map<String, AckSchema>? properties,
+    List<String>? requiredProperties,
+    bool? allowAdditionalProperties,
+    bool? isNullable,
+    String? description,
+    Object? defaultValue,
+    List<Validator<MapValue>>? constraints,
+    List<Refinement<MapValue>>? refinements,
+  }) {
+    return copyWithInternal(
+      properties: properties,
+      requiredProperties: requiredProperties,
+      allowAdditionalProperties: allowAdditionalProperties,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
+      refinements: refinements,
+    );
+  }
+
+  @override
   ObjectSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
     required Object? defaultValue,
     required List<Validator<MapValue>>? constraints,
+    required List<Refinement<MapValue>>? refinements,
     // ObjectSchema specific
     Map<String, AckSchema>? properties,
     List<String>? requiredProperties,
@@ -184,6 +169,7 @@ final class ObjectSchema extends AckSchema<MapValue>
           ? this.defaultValue
           : defaultValue as MapValue?,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
   }
 

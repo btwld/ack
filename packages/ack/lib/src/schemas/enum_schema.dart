@@ -12,10 +12,12 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   }) : super(schemaType: SchemaType.enumType);
 
   @override
-  SchemaResult<T> tryConvertInput(Object? inputValue, SchemaContext context) {
+  @protected
+  SchemaResult<T> _onConvert(Object? inputValue, SchemaContext context) {
     if (inputValue is T && values.contains(inputValue)) {
       return SchemaResult.ok(inputValue);
     }
@@ -48,19 +50,12 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }
 
   @override
-  SchemaResult<T> validateConvertedValue(
-    T convertedValue,
-    SchemaContext context,
-  ) {
-    return SchemaResult.ok(convertedValue);
-  }
-
-  @override
   EnumSchema<T> copyWithInternal({
     required bool? isNullable,
     required String? description,
     required Object? defaultValue,
     required List<Validator<T>>? constraints,
+    required List<Refinement<T>>? refinements,
     List<T>? values,
   }) {
     return EnumSchema(
@@ -71,6 +66,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
           ? this.defaultValue
           : defaultValue as T?,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
   }
 
@@ -80,6 +76,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     String? description,
     Object? defaultValue,
     List<Validator<T>>? constraints,
+    List<Refinement<T>>? refinements,
     List<T>? values,
   }) {
     return copyWithInternal(
@@ -87,6 +84,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
+      refinements: refinements,
       values: values,
     );
   }

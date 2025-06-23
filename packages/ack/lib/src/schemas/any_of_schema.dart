@@ -13,56 +13,27 @@ final class AnyOfSchema extends AckSchema<Object>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   }) : super(schemaType: SchemaType.unknown);
 
   @override
-  AnyOfSchema copyWithInternal({
-    required bool? isNullable,
-    required String? description,
-    required Object? defaultValue,
-    required List<Validator<Object>>? constraints,
-    List<AckSchema>? schemas,
-  }) {
-    return AnyOfSchema(
-      schemas ?? this.schemas,
-      isNullable: isNullable ?? this.isNullable,
-      description: description ?? this.description,
-      defaultValue:
-          defaultValue == ackRawDefaultValue ? this.defaultValue : defaultValue,
-      constraints: constraints ?? this.constraints,
-    );
-  }
+  @protected
+  SchemaResult<Object> _onConvert(Object? inputValue, SchemaContext context) {
+    if (inputValue == null) {
+      final constraintError =
+          InvalidTypeConstraint(expectedType: Object, inputValue: null)
+              .validate(null);
 
-  @override
-  SchemaResult<Object> tryConvertInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // For `anyOf`, conversion is tricky as we don't know the target type.
-    // We pass the raw input to `validateConvertedValue` and let the sub-schemas handle conversion.
-    if (inputValue != null) {
-      return SchemaResult.ok(inputValue);
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ));
     }
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: Object, inputValue: inputValue)
-            .validate(inputValue);
-
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
-  }
-
-  @override
-  SchemaResult<Object> validateConvertedValue(
-    Object convertedValue,
-    SchemaContext context,
-  ) {
     final validationErrors = <SchemaError>[];
 
     for (final schema in schemas) {
-      final result = schema.validate(convertedValue);
+      final result = schema.validate(inputValue);
       if (result.isOk) {
         return SchemaResult.ok(result.getOrThrow()!);
       }
@@ -73,6 +44,26 @@ final class AnyOfSchema extends AckSchema<Object>
       errors: validationErrors,
       context: context,
     ));
+  }
+
+  @override
+  AnyOfSchema copyWithInternal({
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<Object>>? constraints,
+    required List<Refinement<Object>>? refinements,
+    List<AckSchema>? schemas,
+  }) {
+    return AnyOfSchema(
+      schemas ?? this.schemas,
+      isNullable: isNullable ?? this.isNullable,
+      description: description ?? this.description,
+      defaultValue:
+          defaultValue == ackRawDefaultValue ? this.defaultValue : defaultValue,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
+    );
   }
 
   @override
