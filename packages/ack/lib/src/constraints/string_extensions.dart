@@ -54,6 +54,10 @@ extension StringSchemaExtensions on StringSchema {
       _add(PatternConstraint.enumString(values));
 
   /// {@macro enum_validator}
+  StringSchema enumValues(List<String> values) =>
+      _add(PatternConstraint.enumString(values));
+
+  /// {@macro enum_validator}
   @Deprecated('Use enumString() instead for consistent naming')
   StringSchema isEnum(List<String> values) => enumString(values);
 
