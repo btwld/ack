@@ -15,12 +15,14 @@ class EnumConstraint<T extends Enum> extends Constraint<T?>
   @override
   bool isValid(T? value) {
     if (value == null) return true;
+
     return allowedValues.contains(value);
   }
 
   @override
   String buildMessage(T? value) {
     final allowedNames = allowedValues.map((e) => e.name).join(', ');
+
     return 'Must be one of: $allowedNames, but got ${value?.name ?? 'null'}';
   }
 
@@ -28,4 +30,34 @@ class EnumConstraint<T extends Enum> extends Constraint<T?>
   Map<String, Object?> toJsonSchema() => {
         'enum': allowedValues.map((e) => e.name).toList(),
       };
+}
+
+class StringEnumConstraint extends Constraint<String?>
+    with Validator<String?>, JsonSchemaSpec<String?> {
+  final List<String> allowedValues;
+
+  StringEnumConstraint(this.allowedValues)
+      : super(
+          constraintKey: 'enum_string_value',
+          description: 'Value must be one of: ${allowedValues.join(', ')}',
+        );
+
+  @override
+  bool isValid(String? value) {
+    if (value == null) {
+      return true;
+    }
+
+    return allowedValues.contains(value);
+  }
+
+  @override
+  String buildMessage(String? value) {
+    final allowedNames = allowedValues.join(', ');
+
+    return 'Must be one of: $allowedNames, but got ${value ?? 'null'}';
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() => {'enum': allowedValues};
 }

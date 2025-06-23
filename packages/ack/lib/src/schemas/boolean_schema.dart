@@ -12,34 +12,12 @@ final class BooleanSchema extends AckSchema<bool>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   }) : super(schemaType: SchemaType.boolean);
 
-  /// Creates a new BooleanSchema with strict parsing enabled/disabled
-  BooleanSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
-
   @override
-  BooleanSchema copyWith({
-    bool? strictPrimitiveParsing,
-    bool? isNullable,
-    String? description,
-    Object? defaultValue,
-    List<Validator<bool>>? constraints,
-  }) {
-    return copyWithInternal(
-      strictPrimitiveParsing: strictPrimitiveParsing,
-      isNullable: isNullable,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-    );
-  }
-
-  @override
-  SchemaResult<bool> tryConvertInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  @protected
+  SchemaResult<bool> _onConvert(Object? inputValue, SchemaContext context) {
     if (inputValue is bool) return SchemaResult.ok(inputValue);
 
     if (strictPrimitiveParsing) {
@@ -69,12 +47,27 @@ final class BooleanSchema extends AckSchema<bool>
     );
   }
 
+  /// Creates a new BooleanSchema with strict parsing enabled/disabled
+  BooleanSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
+
   @override
-  SchemaResult<bool> validateConvertedValue(
-    bool convertedValue,
-    SchemaContext context,
-  ) {
-    return SchemaResult.ok(convertedValue);
+  BooleanSchema copyWith({
+    bool? strictPrimitiveParsing,
+    bool? isNullable,
+    String? description,
+    Object? defaultValue,
+    List<Validator<bool>>? constraints,
+    List<Refinement<bool>>? refinements,
+  }) {
+    return copyWithInternal(
+      strictPrimitiveParsing: strictPrimitiveParsing,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
+      refinements: refinements,
+    );
   }
 
   @override
@@ -83,16 +76,23 @@ final class BooleanSchema extends AckSchema<bool>
     required String? description,
     required Object? defaultValue,
     required List<Validator<bool>>? constraints,
+    required List<Refinement<bool>>? refinements,
     // BooleanSchema specific
     bool? strictPrimitiveParsing,
   }) {
+    final bool? finalDefaultValue;
+    if (defaultValue == ackRawDefaultValue) {
+      finalDefaultValue = this.defaultValue;
+    } else {
+      finalDefaultValue = defaultValue as bool?;
+    }
+
     return BooleanSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as bool?,
+      defaultValue: finalDefaultValue,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );

@@ -12,65 +12,33 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     super.description,
     super.defaultValue,
     super.constraints,
+    super.refinements,
   }) : super(schemaType: SchemaType.list);
 
   @override
-  ListSchema<V> copyWith({
-    AckSchema<V>? itemSchema,
-    bool? isNullable,
-    String? description,
-    Object? defaultValue,
-    List<Validator<List<V>>>? constraints,
-  }) {
-    return copyWithInternal(
-      itemSchema: itemSchema,
-      isNullable: isNullable,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-    );
-  }
-
-  @override
-  SchemaResult<List<V>> tryConvertInput(
+  @protected
+  SchemaResult<List<V>> _onConvert(
     Object? inputValue,
     SchemaContext context,
   ) {
-    if (inputValue is List) {
-      try {
-        // This is an unsafe cast, but validateConvertedValue must be robust
-        // enough to handle a List<dynamic> where items are not yet of type V.
-        return SchemaResult.ok(List<V>.from(inputValue));
-      } catch (e) {
-        final constraintError =
-            InvalidTypeConstraint(expectedType: List<V>).validate(inputValue);
+    if (inputValue is! List) {
+      final constraintError =
+          InvalidTypeConstraint(expectedType: List).validate(inputValue);
 
-        return SchemaResult.fail(SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context,
-        ));
-      }
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ));
     }
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: List).validate(inputValue);
-
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
-  }
-
-  @override
-  SchemaResult<List<V>> validateConvertedValue(
-    List<V> convertedValue,
-    SchemaContext context,
-  ) {
+    // This is an unsafe cast, but the logic below must be robust enough
+    // to handle a List<dynamic> where items are not yet of type V.
+    final list = List.from(inputValue);
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
-    for (var i = 0; i < convertedValue.length; i++) {
-      final itemValue = convertedValue[i];
+    for (var i = 0; i < list.length; i++) {
+      final itemValue = list[i];
       final itemContext = SchemaContext(
         name: '${context.name}[$i]',
         schema: itemSchema,
@@ -83,15 +51,15 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       if (itemResult.isOk) {
         // itemResult.getOrNull() can return null if itemSchema is nullable and itemValue was null
         final validatedItemValue = itemResult.getOrNull();
-        if (validatedItemValue != null) {
+        if (validatedItemValue is V) {
           validatedItems.add(validatedItemValue);
-        } else if (itemSchema.isNullable) {
-          // If itemSchema is nullable and result is Ok(null), add null to the list.
-          // The type V is V extends Object, which means it can't be assigned null
-          // directly. However, if the schema is nullable, the intention is that
-          // the list can contain nulls. We can use a temporary list to help the type system.
-          final List<V?> tempList = [null];
-          validatedItems.addAll(tempList.whereType());
+        } else if (validatedItemValue == null && itemSchema.isNullable) {
+          // If itemSchema is nullable and result is Ok(null), we need to add a null.
+          // Since the list is `List<V>`, we can't add null directly.
+          // This path indicates a potential type mismatch in very specific scenarios,
+          // but we will trust the schema's nullability flag.
+          // The best approach is to continue and let downstream code handle it,
+          // as forcing a `null` into a `List<V>` is not type-safe at compile time.
         }
       } else {
         itemErrors.add(itemResult.getError());
@@ -109,11 +77,31 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
+  ListSchema<V> copyWith({
+    AckSchema<V>? itemSchema,
+    bool? isNullable,
+    String? description,
+    Object? defaultValue,
+    List<Validator<List<V>>>? constraints,
+    List<Refinement<List<V>>>? refinements,
+  }) {
+    return copyWithInternal(
+      itemSchema: itemSchema,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
+      refinements: refinements,
+    );
+  }
+
+  @override
   ListSchema<V> copyWithInternal({
     required bool? isNullable,
     required String? description,
     required Object? defaultValue,
     required List<Validator<List<V>>>? constraints,
+    required List<Refinement<List<V>>>? refinements,
     // ListSchema specific
     AckSchema<V>? itemSchema,
   }) {
@@ -125,6 +113,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
           ? this.defaultValue
           : defaultValue as List<V>?,
       constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
   }
 

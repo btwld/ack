@@ -92,7 +92,7 @@ class ListUniqueItemsConstraint<E> extends Constraint<List<E>?>
   String buildMessage(List<E>? value) {
     final nonUnique = value?.duplicates.map((e) => '"$e"').join(', ');
 
-    return 'List items must be unique. Duplicates found: $nonUnique.';
+    return 'List items must be unique. Duplicates found: ${nonUnique ?? 'none'}.';
   }
 
   @override
