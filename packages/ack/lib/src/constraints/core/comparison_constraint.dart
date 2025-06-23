@@ -11,8 +11,8 @@ enum ComparisonType { gt, gte, lt, lte, eq, range }
 ///
 /// It is generic on the non-nullable type `T`, but validates the nullable type `T?`.
 /// It will always pass if the input value is `null`.
-class ComparisonConstraint<T extends Object> extends Constraint<T?>
-    with Validator<T?>, JsonSchemaSpec<T?> {
+class ComparisonConstraint<T extends Object> extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
   final ComparisonType type;
   final num threshold;
   final num? maxThreshold; // Required for ComparisonType.range
@@ -125,6 +125,26 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
             'Must be a multiple of $multiple. $value is not.',
       );
 
+  static ComparisonConstraint<N> numberPositive<N extends num>() =>
+      ComparisonConstraint<N>(
+        type: ComparisonType.gt,
+        threshold: 0,
+        valueExtractor: (n) => n,
+        constraintKey: 'number_positive',
+        description: 'Number must be positive.',
+        customMessageBuilder: (value, _) => 'Must be positive, but got $value.',
+      );
+
+  static ComparisonConstraint<N> numberNegative<N extends num>() =>
+      ComparisonConstraint<N>(
+        type: ComparisonType.lt,
+        threshold: 0,
+        valueExtractor: (n) => n,
+        constraintKey: 'number_negative',
+        description: 'Number must be negative.',
+        customMessageBuilder: (value, _) => 'Must be negative, but got $value.',
+      );
+
   // List items count
   static ComparisonConstraint<List<E>> listMinItems<E>(int min) =>
       ComparisonConstraint<List<E>>(
@@ -145,6 +165,16 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
         description: 'List must have at most $max items.',
         customMessageBuilder: (value, extracted) =>
             'Too many items. Maximum $max, got ${extracted.toInt()}.',
+      );
+  static ComparisonConstraint<List<E>> listExactItems<E>(int length) =>
+      ComparisonConstraint<List<E>>(
+        type: ComparisonType.eq,
+        threshold: length,
+        valueExtractor: (l) => l.length,
+        constraintKey: 'list_exact_items',
+        description: 'List must have exactly $length items.',
+        customMessageBuilder: (value, extracted) =>
+            'Must have exactly $length items, got ${extracted.toInt()}.',
       );
 
   // Object properties count
@@ -235,12 +265,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
           );
 
   @override
-  bool isValid(T? value) {
-    if (value == null) {
-      // This constraint validates the value, not its nullability.
-      // A null value is considered valid by this constraint.
-      return true;
-    }
+  bool isValid(T value) {
     final num extracted = valueExtractor(value);
     switch (type) {
       case ComparisonType.gt:
@@ -260,9 +285,9 @@ class ComparisonConstraint<T extends Object> extends Constraint<T?>
   }
 
   @override
-  String buildMessage(T? value) {
+  String buildMessage(T value) {
     // This method is only called if isValid returns false, so value is non-null.
-    final nonNullValue = value!;
+    final nonNullValue = value;
     final num extracted = valueExtractor(nonNullValue);
     if (customMessageBuilder != null) {
       return customMessageBuilder!(nonNullValue, extracted);
