@@ -2,7 +2,7 @@ part of 'schema.dart';
 
 /// Schema for validating lists (`List<V>`) where each item conforms to `itemSchema`.
 @immutable
-final class ListSchema<V extends Object> extends AckSchema<List<V>> {
+final class ListSchema<V> extends AckSchema<List<V>> {
   final AckSchema<V> itemSchema;
 
   const ListSchema(

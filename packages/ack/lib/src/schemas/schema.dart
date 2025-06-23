@@ -72,7 +72,7 @@ sealed class AckSchema<T> {
 
       // Otherwise, if T is non-nullable, fail.
       return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [NonNullableConstraint().validate(null)!],
+        constraints: [NonNullableConstraint().validate(null)],
         context: context,
       ));
     }
@@ -95,7 +95,7 @@ sealed class AckSchema<T> {
         SchemaConstraintsError(
           constraints: [
             InvalidTypeConstraint(expectedType: T, inputValue: inputValue)
-                .validate(inputValue)!,
+                .validate(inputValue),
           ],
           context: context,
         ),
@@ -151,20 +151,6 @@ sealed class AckSchema<T> {
     List<Validator<T>>? constraints,
   });
 
-  AckSchema<T?> nullable({bool value = true}) {
-    // If the type T is already nullable, just return the current instance.
-    if (null is T) {
-      return this as AckSchema<T?>;
-    }
-    if (!value) {
-      return this as AckSchema<T?>;
-    }
-
-    // Since `null is T` is false, we know T is a non-nullable object type.
-    // We can safely cast it to `AckSchema<T & Object>` for the wrapper.
-    return NullableSchema(this as AckSchema<T & Object>);
-  }
-
   AckSchema<T> withDescription(String? newDescription);
   AckSchema<T> withDefault(T newDefaultValue);
   AckSchema<T> addConstraint(Validator<T> constraint);
@@ -176,9 +162,17 @@ sealed class AckSchema<T> {
   Map<String, Object?> toDefinitionMap() {
     return {
       'schemaType': schemaType.name,
-      if (description != null) 'description': description,
+      'description': description,
       'defaultValue': defaultValue?.toString(),
       'constraints': constraints.map((c) => c.toMap()).toList(),
     };
+  }
+}
+
+/// Extension to provide the `.nullable()` method on non-nullable schemas.
+extension NullableSchemaExtension<T extends Object> on AckSchema<T> {
+  /// Transforms a non-nullable schema into a schema that accepts `null`.
+  AckSchema<T?> nullable() {
+    return NullableSchema(this);
   }
 }
