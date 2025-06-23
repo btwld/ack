@@ -16,8 +16,27 @@ final class StringSchema extends AckSchema<String> {
           constraints: constraints,
         );
 
+  /// Creates a new StringSchema with strict parsing enabled/disabled
   StringSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
+      copyWithStringProperties(strictPrimitiveParsing: value);
+
+  /// Creates a new StringSchema with modified string-specific properties
+  StringSchema copyWithStringProperties({
+    bool? strictPrimitiveParsing,
+    String? description,
+    Object? defaultValue,
+    List<Validator<String>>? constraints,
+  }) {
+    return StringSchema(
+      description: description ?? this.description,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as String?,
+      constraints: constraints ?? this.constraints,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    );
+  }
 
   @override
   SchemaResult<String> tryConvertInput(
@@ -26,11 +45,12 @@ final class StringSchema extends AckSchema<String> {
   ) {
     if (inputValue is String) return SchemaResult.ok(inputValue);
     if (strictPrimitiveParsing) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
+      final constraintError =
           InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
-              .validate(inputValue),
-        ],
+              .validate(inputValue);
+
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -41,11 +61,12 @@ final class StringSchema extends AckSchema<String> {
     }
 
     // Fail if input is null, a map, or a list.
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: [
+    final constraintError =
         InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
-            .validate(inputValue),
-      ],
+            .validate(inputValue);
+
+    return SchemaResult.fail(SchemaConstraintsError(
+      constraints: constraintError != null ? [constraintError] : [],
       context: context,
     ));
   }
@@ -58,11 +79,12 @@ final class StringSchema extends AckSchema<String> {
     // This method is called after tryConvertInput, which for a non-nullable
     // schema should never produce a null value. This is a safeguard.
     if (convertedValue == null) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
+      final constraintError =
           InvalidTypeConstraint(expectedType: String, inputValue: null)
-              .validate(null),
-        ],
+              .validate(null);
+
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -71,39 +93,20 @@ final class StringSchema extends AckSchema<String> {
   }
 
   @override
-  StringSchema copyWith({
+  StringSchema copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<String>>? constraints,
-    bool? strictPrimitiveParsing,
   }) {
-    final newDefaultValue = defaultValue == ackRawDefaultValue
-        ? this.defaultValue
-        : defaultValue as String?;
-
     return StringSchema(
       description: description ?? this.description,
-      defaultValue: newDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as String?,
       constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+      strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
-
-  @override
-  StringSchema withDescription(String? d) => copyWith(description: d);
-  @override
-  StringSchema withDefault(String val) {
-    return copyWith(defaultValue: val);
-  }
-
-  @override
-  StringSchema addConstraint(Validator<String> c) =>
-      copyWith(constraints: [...constraints, c]);
-
-  @override
-  StringSchema addConstraints(List<Validator<String>> cs) =>
-      copyWith(constraints: [...constraints, ...cs]);
 
   @override
   Map<String, Object?> toJsonSchema() {
@@ -112,14 +115,18 @@ final class StringSchema extends AckSchema<String> {
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
-    final constraintSchemas = constraints
-        .whereType<JsonSchemaSpec<String>>()
-        .map((c) => c.toJsonSchema())
-        .fold<Map<String, Object?>>(
-      {},
+
+    // Check constraints that implement JsonSchemaSpec
+    final constraintSchemas = <Map<String, Object?>>[];
+    for (final constraint in constraints) {
+      if (constraint is JsonSchemaSpec) {
+        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
+      }
+    }
+
+    return constraintSchemas.fold(
+      schema,
       (prev, current) => deepMerge(prev, current),
     );
-
-    return deepMerge(schema, constraintSchemas);
   }
 }
