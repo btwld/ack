@@ -17,15 +17,34 @@ final class IntegerSchema extends AckSchema<int> {
           constraints: constraints,
         );
 
+  /// Creates a new IntegerSchema with modified integer-specific properties
+  IntegerSchema copyWithIntegerProperties({
+    bool? strictPrimitiveParsing,
+    String? description,
+    Object? defaultValue,
+    List<Validator<int>>? constraints,
+  }) {
+    return IntegerSchema(
+      description: description ?? this.description,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as int?,
+      constraints: constraints ?? this.constraints,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    );
+  }
+
   @override
   SchemaResult<int> tryConvertInput(Object? inputValue, SchemaContext context) {
     if (inputValue is int) return SchemaResult.ok(inputValue);
     if (strictPrimitiveParsing) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
+      final constraintError =
           InvalidTypeConstraint(expectedType: int, inputValue: inputValue)
-              .validate(inputValue)!,
-        ],
+              .validate(inputValue);
+
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -40,11 +59,12 @@ final class IntegerSchema extends AckSchema<int> {
       }
     }
 
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: [
+    final constraintError =
         InvalidTypeConstraint(expectedType: int, inputValue: inputValue)
-            .validate(inputValue)!,
-      ],
+            .validate(inputValue);
+
+    return SchemaResult.fail(SchemaConstraintsError(
+      constraints: constraintError != null ? [constraintError] : [],
       context: context,
     ));
   }
@@ -55,11 +75,12 @@ final class IntegerSchema extends AckSchema<int> {
     SchemaContext context,
   ) {
     if (convertedValue == null) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
+      final constraintError =
           InvalidTypeConstraint(expectedType: int, inputValue: null)
-              .validate(null)!,
-        ],
+              .validate(null);
+
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -68,38 +89,20 @@ final class IntegerSchema extends AckSchema<int> {
   }
 
   @override
-  IntegerSchema copyWith({
+  IntegerSchema copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<int>>? constraints,
-    bool? strictPrimitiveParsing,
   }) {
-    final newDefaultValue = defaultValue == ackRawDefaultValue
-        ? this.defaultValue
-        : defaultValue as int?;
-
     return IntegerSchema(
       description: description ?? this.description,
-      defaultValue: newDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as int?,
       constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+      strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
-
-  @override
-  IntegerSchema withDescription(String? d) => copyWith(description: d);
-
-  @override
-  IntegerSchema withDefault(int val) => copyWith(defaultValue: val);
-
-  @override
-  IntegerSchema addConstraint(Validator<int> c) =>
-      copyWith(constraints: [...constraints, c]);
-
-  @override
-  IntegerSchema addConstraints(List<Validator<int>> cs) =>
-      copyWith(constraints: [...constraints, ...cs]);
 
   @override
   Map<String, Object?> toJsonSchema() {
@@ -108,15 +111,19 @@ final class IntegerSchema extends AckSchema<int> {
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
-    final constraintSchemas = constraints
-        .whereType<JsonSchemaSpec<int>>()
-        .map((c) => c.toJsonSchema())
-        .fold<Map<String, Object?>>(
-      {},
+
+    // Check constraints that implement JsonSchemaSpec
+    final constraintSchemas = <Map<String, Object?>>[];
+    for (final constraint in constraints) {
+      if (constraint is JsonSchemaSpec) {
+        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
+      }
+    }
+
+    return constraintSchemas.fold(
+      schema,
       (prev, current) => deepMerge(prev, current),
     );
-
-    return deepMerge(schema, constraintSchemas);
   }
 }
 
@@ -137,6 +144,24 @@ final class DoubleSchema extends AckSchema<double> {
           constraints: constraints,
         );
 
+  /// Creates a new DoubleSchema with modified double-specific properties
+  DoubleSchema copyWithDoubleProperties({
+    bool? strictPrimitiveParsing,
+    String? description,
+    Object? defaultValue,
+    List<Validator<double>>? constraints,
+  }) {
+    return DoubleSchema(
+      description: description ?? this.description,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as double?,
+      constraints: constraints ?? this.constraints,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    );
+  }
+
   @override
   SchemaResult<double> tryConvertInput(
     Object? inputValue,
@@ -145,11 +170,12 @@ final class DoubleSchema extends AckSchema<double> {
     if (inputValue is double) return SchemaResult.ok(inputValue);
     if (inputValue is int) return SchemaResult.ok(inputValue.toDouble());
     if (strictPrimitiveParsing) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
+      final constraintError =
           InvalidTypeConstraint(expectedType: double, inputValue: inputValue)
-              .validate(inputValue)!,
-        ],
+              .validate(inputValue);
+
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -158,11 +184,12 @@ final class DoubleSchema extends AckSchema<double> {
       if (parsed != null) return SchemaResult.ok(parsed);
     }
 
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: [
+    final constraintError =
         InvalidTypeConstraint(expectedType: double, inputValue: inputValue)
-            .validate(inputValue)!,
-      ],
+            .validate(inputValue);
+
+    return SchemaResult.fail(SchemaConstraintsError(
+      constraints: constraintError != null ? [constraintError] : [],
       context: context,
     ));
   }
@@ -173,11 +200,12 @@ final class DoubleSchema extends AckSchema<double> {
     SchemaContext context,
   ) {
     if (convertedValue == null) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
+      final constraintError =
           InvalidTypeConstraint(expectedType: double, inputValue: null)
-              .validate(null)!,
-        ],
+              .validate(null);
+
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -186,38 +214,20 @@ final class DoubleSchema extends AckSchema<double> {
   }
 
   @override
-  DoubleSchema copyWith({
+  DoubleSchema copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<double>>? constraints,
-    bool? strictPrimitiveParsing,
   }) {
-    final newDefaultValue = defaultValue == ackRawDefaultValue
-        ? this.defaultValue
-        : defaultValue as double?;
-
     return DoubleSchema(
       description: description ?? this.description,
-      defaultValue: newDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as double?,
       constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+      strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
-
-  @override
-  DoubleSchema withDescription(String? d) => copyWith(description: d);
-
-  @override
-  DoubleSchema withDefault(double val) => copyWith(defaultValue: val);
-
-  @override
-  DoubleSchema addConstraint(Validator<double> c) =>
-      copyWith(constraints: [...constraints, c]);
-
-  @override
-  DoubleSchema addConstraints(List<Validator<double>> cs) =>
-      copyWith(constraints: [...constraints, ...cs]);
 
   @override
   Map<String, Object?> toJsonSchema() {
@@ -226,14 +236,18 @@ final class DoubleSchema extends AckSchema<double> {
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
-    final constraintSchemas = constraints
-        .whereType<JsonSchemaSpec<double>>()
-        .map((c) => c.toJsonSchema())
-        .fold<Map<String, Object?>>(
-      {},
+
+    // Check constraints that implement JsonSchemaSpec
+    final constraintSchemas = <Map<String, Object?>>[];
+    for (final constraint in constraints) {
+      if (constraint is JsonSchemaSpec) {
+        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
+      }
+    }
+
+    return constraintSchemas.fold(
+      schema,
       (prev, current) => deepMerge(prev, current),
     );
-
-    return deepMerge(schema, constraintSchemas);
   }
 }

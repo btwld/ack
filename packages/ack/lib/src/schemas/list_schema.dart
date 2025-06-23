@@ -17,6 +17,23 @@ final class ListSchema<V> extends AckSchema<List<V>> {
           constraints: constraints,
         );
 
+  /// Creates a new ListSchema with modified list-specific properties
+  ListSchema<V> copyWithListProperties({
+    AckSchema<V>? itemSchema,
+    String? description,
+    Object? defaultValue,
+    List<Validator<List<V>>>? constraints,
+  }) {
+    return ListSchema(
+      itemSchema ?? this.itemSchema,
+      description: description ?? this.description,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : (defaultValue as List<V>?),
+      constraints: constraints ?? this.constraints,
+    );
+  }
+
   @override
   SchemaResult<List<V>> tryConvertInput(
     Object? inputValue,
@@ -28,19 +45,21 @@ final class ListSchema<V> extends AckSchema<List<V>> {
         // enough to handle a List<dynamic> where items are not yet of type V.
         return SchemaResult.ok(List<V>.from(inputValue));
       } catch (e) {
+        final constraintError =
+            InvalidTypeConstraint(expectedType: List<V>).validate(inputValue);
+
         return SchemaResult.fail(SchemaConstraintsError(
-          constraints: [
-            InvalidTypeConstraint(expectedType: List<V>).validate(inputValue)!,
-          ],
+          constraints: constraintError != null ? [constraintError] : [],
           context: context,
         ));
       }
     }
 
+    final constraintError =
+        InvalidTypeConstraint(expectedType: List).validate(inputValue);
+
     return SchemaResult.fail(SchemaConstraintsError(
-      constraints: [
-        InvalidTypeConstraint(expectedType: List).validate(inputValue)!,
-      ],
+      constraints: constraintError != null ? [constraintError] : [],
       context: context,
     ));
   }
@@ -52,9 +71,11 @@ final class ListSchema<V> extends AckSchema<List<V>> {
   ) {
     if (convertedList == null) {
       // Should not be reached due to base class handling
+      final constraintError = NonNullableConstraint().validate(null);
+
       return SchemaResult.fail(
         SchemaConstraintsError(
-          constraints: [NonNullableConstraint().validate(null)!],
+          constraints: constraintError != null ? [constraintError] : [],
           context: context,
         ),
       );
@@ -85,25 +106,19 @@ final class ListSchema<V> extends AckSchema<List<V>> {
   }
 
   @override
-  ListSchema<V> copyWith({
+  ListSchema<V> copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<List<V>>>? constraints,
-    AckSchema<V>? itemSchema,
   }) {
     return ListSchema(
-      itemSchema ?? this.itemSchema,
+      this.itemSchema,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
-          : defaultValue as List<V>?,
+          : (defaultValue as List<V>?),
       constraints: constraints ?? this.constraints,
     );
-  }
-
-  @override
-  ListSchema<V> withDefault(List<V> val) {
-    return copyWith(defaultValue: val);
   }
 
   @override
@@ -114,29 +129,25 @@ final class ListSchema<V> extends AckSchema<List<V>> {
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
-    final constraintSchemas = constraints
-        .whereType<JsonSchemaSpec<List<V>>>()
-        .map((c) => c.toJsonSchema())
-        .fold<Map<String, Object?>>(
-      {},
+
+    // Check constraints that implement JsonSchemaSpec using dynamic typing
+    // This avoids the unrelated type assertion issue
+    final constraintSchemas = <Map<String, Object?>>[];
+    for (final constraint in constraints) {
+      // Use dynamic typing to check if constraint has toJsonSchema method
+      try {
+        final dynamic dynamicConstraint = constraint;
+        if (dynamicConstraint is JsonSchemaSpec) {
+          constraintSchemas.add(dynamicConstraint.toJsonSchema());
+        }
+      } catch (_) {
+        // Ignore constraints that don't implement JsonSchemaSpec
+      }
+    }
+
+    return constraintSchemas.fold(
+      schema,
       (prev, current) => deepMerge(prev, current),
     );
-
-    return deepMerge(schema, constraintSchemas);
-  }
-
-  @override
-  ListSchema<V> addConstraint(Validator<List<V>> constraint) {
-    return copyWith(constraints: [...constraints, constraint]);
-  }
-
-  @override
-  ListSchema<V> addConstraints(List<Validator<List<V>>> newConstraints) {
-    return copyWith(constraints: [...constraints, ...newConstraints]);
-  }
-
-  @override
-  ListSchema<V> withDescription(String? newDescription) {
-    return copyWith(description: newDescription);
   }
 }

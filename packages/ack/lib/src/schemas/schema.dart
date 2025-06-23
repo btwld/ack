@@ -65,14 +65,21 @@ sealed class AckSchema<T> {
       // This is now the crucial check. If the type T is nullable,
       // this schema can handle nulls.
       if (null is T) {
-        return defaultValue != null
-            ? SchemaResult.ok(defaultValue as T)
-            : SchemaResult.ok(null as T);
+        // For nullable types, we can safely handle null values
+        if (defaultValue != null) {
+          // We know defaultValue is T? and not null, so this is safe
+          return SchemaResult.ok(defaultValue as T);
+        } // We know null is assignable to T (since null is T), so this is safe
+
+        // This is the only safe way to represent null for a nullable type T
+        return SchemaResult.ok(null as T);
       }
 
       // Otherwise, if T is non-nullable, fail.
+      final constraintError = NonNullableConstraint().validate(null);
+
       return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [NonNullableConstraint().validate(null)],
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -86,17 +93,22 @@ sealed class AckSchema<T> {
     if (convertedValue == null) {
       // This path indicates a failed conversion within a nullable context.
       if (null is T) {
-        return defaultValue != null
-            ? SchemaResult.ok(defaultValue as T)
-            : SchemaResult.ok(null as T);
+        // For nullable types, we can safely handle null values
+        if (defaultValue != null) {
+          // We know defaultValue is T? and not null, so this is safe
+          return SchemaResult.ok(defaultValue as T);
+        } // We know null is assignable to T (since null is T), so this is safe
+
+        return SchemaResult.ok(null as T);
       }
+
+      final constraintError =
+          InvalidTypeConstraint(expectedType: T, inputValue: inputValue)
+              .validate(inputValue);
 
       return SchemaResult.fail(
         SchemaConstraintsError(
-          constraints: [
-            InvalidTypeConstraint(expectedType: T, inputValue: inputValue)
-                .validate(inputValue),
-          ],
+          constraints: constraintError != null ? [constraintError] : [],
           context: context,
         ),
       );
@@ -144,17 +156,39 @@ sealed class AckSchema<T> {
     return result.getOrNull();
   }
 
-  // Abstract Methods for Fluent API
-  AckSchema<T> copyWith({
+  // Abstract method for subclasses to implement their specific copyWith logic
+  @protected
+  AckSchema<T> copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<T>>? constraints,
   });
 
-  AckSchema<T> withDescription(String? newDescription);
-  AckSchema<T> withDefault(T newDefaultValue);
-  AckSchema<T> addConstraint(Validator<T> constraint);
-  AckSchema<T> addConstraints(List<Validator<T>> newConstraints);
+  // Concrete implementation of copyWith that delegates to copyWithInternal
+  AckSchema<T> copyWith({
+    String? description,
+    Object? defaultValue,
+    List<Validator<T>>? constraints,
+  }) {
+    return copyWithInternal(
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
+    );
+  }
+
+  // Concrete fluent API methods - no need for subclasses to implement these
+  AckSchema<T> withDescription(String? newDescription) =>
+      copyWith(description: newDescription);
+
+  AckSchema<T> withDefault(T newDefaultValue) =>
+      copyWith(defaultValue: newDefaultValue);
+
+  AckSchema<T> addConstraint(Validator<T> constraint) =>
+      copyWith(constraints: [...constraints, constraint]);
+
+  AckSchema<T> addConstraints(List<Validator<T>> newConstraints) =>
+      copyWith(constraints: [...constraints, ...newConstraints]);
 
   Map<String, Object?> toJsonSchema();
   String toJsonSchemaString() => prettyJson(toJsonSchema());

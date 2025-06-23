@@ -31,7 +31,8 @@ SchemaResult<T> executeWithContext<T>(
   SchemaResult<T> Function(SchemaContext currentContext) action,
 ) {
   return Zone.current.fork(
-      zoneValues: {_kSchemaContextKey: context}).run(() => action(context));
+    zoneValues: {_kSchemaContextKey: context},
+  ).run(() => action(context));
 }
 
 /// Retrieves the current [SchemaContext] from the active [Zone].

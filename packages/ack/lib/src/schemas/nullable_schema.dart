@@ -7,7 +7,7 @@ part of 'schema.dart';
 /// the generic type `T?`.
 @immutable
 class NullableSchema<T extends Object> extends AckSchema<T?> {
-  final AckSchema<dynamic> _schema;
+  final AckSchema<T> _schema;
 
   NullableSchema(this._schema)
       : super(
@@ -15,16 +15,35 @@ class NullableSchema<T extends Object> extends AckSchema<T?> {
           description: _schema.description,
           defaultValue: _schema.defaultValue,
           // The constraints of the inner schema are for `T`, not `T?`.
-          // We cast them here. This assumes constraints are added before
-          // nullability is applied, which is enforced by the API.
-          constraints: _schema.constraints.cast(),
+          // We need to handle this carefully since we can't directly cast
+          // List<Validator<T>> to List<Validator<T?>>
+          constraints: const [],
         );
+
+  /// Provides access to the underlying non-nullable schema
+  AckSchema<T> get innerSchema => _schema;
+
+  /// Creates a new NullableSchema with a modified inner schema
+  NullableSchema<T> copyWithInnerSchema(AckSchema<T> newInnerSchema) {
+    return NullableSchema(newInnerSchema);
+  }
+
+  AckSchema<T?> nullable({bool value = true}) {
+    // It's already nullable, so just return this.
+    return this;
+  }
 
   @override
   SchemaResult<T?> tryConvertInput(Object? inputValue, SchemaContext context) {
     // A null value is handled by the base parseAndValidate. If we get here,
     // the inputValue is not null, so we delegate to the inner schema.
-    return _schema.tryConvertInput(inputValue, context) as SchemaResult<T?>;
+    final result = _schema.tryConvertInput(inputValue, context);
+
+    // Safe conversion: if inner schema succeeds with T, we can safely return T?
+    return result.match(
+      onOk: (value) => SchemaResult.ok(value),
+      onFail: (error) => SchemaResult.fail(error),
+    );
   }
 
   @override
@@ -38,53 +57,35 @@ class NullableSchema<T extends Object> extends AckSchema<T?> {
     }
 
     // If it's not null, delegate validation to the inner schema.
-    return _schema.validateConvertedValue(convertedValue, context)
-        as SchemaResult<T?>;
+    // Since convertedValue is T? and we checked it's not null, it's safe to cast to T
+    final result = _schema.validateConvertedValue(convertedValue, context);
+
+    // Safe conversion: if inner schema succeeds with T, we can safely return T?
+    return result.match(
+      onOk: (value) => SchemaResult.ok(value),
+      onFail: (error) => SchemaResult.fail(error),
+    );
   }
 
   @override
-  AckSchema<T?> copyWith({
+  AckSchema<T?> copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<T?>>? constraints,
   }) {
     // When copying, we create a new inner schema with the updated properties
     // and then wrap it in a new NullableSchema.
+    // Note: We can't forward T? constraints to the inner T schema,
+    // so we ignore the constraints parameter for now.
     final newInner = _schema.copyWith(
       description: description,
-      defaultValue: defaultValue,
-      // Pass null for constraints as we cannot forward Validator<T?> to Validator<T>
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? _schema.defaultValue
+          : defaultValue,
+      // Cannot forward constraints as they are typed differently
     );
 
     return NullableSchema(newInner);
-  }
-
-  // --- Fluent API Delegation ---
-
-  @override
-  AckSchema<T?> withDescription(String? newDescription) {
-    return NullableSchema(_schema.withDescription(newDescription));
-  }
-
-  @override
-  AckSchema<T?> withDefault(T? newDefaultValue) {
-    // This is the key. The default value is applied to a *new* copy of the
-    // inner schema, which is then wrapped.
-    return NullableSchema(_schema.copyWith(defaultValue: newDefaultValue));
-  }
-
-  @override
-  AckSchema<T?> addConstraint(Validator<T?> constraint) {
-    throw UnimplementedError(
-      'Cannot add constraints after making a schema nullable. Add constraints before calling .nullable()',
-    );
-  }
-
-  @override
-  AckSchema<T?> addConstraints(List<Validator<T?>> newConstraints) {
-    throw UnimplementedError(
-      'Cannot add constraints after making a schema nullable. Add constraints before calling .nullable()',
-    );
   }
 
   @override
@@ -98,11 +99,5 @@ class NullableSchema<T extends Object> extends AckSchema<T?> {
     }
 
     return originalSchema;
-  }
-
-  @override
-  AckSchema<T?> nullable({bool value = true}) {
-    // It's already nullable, so just return this.
-    return this;
   }
 }

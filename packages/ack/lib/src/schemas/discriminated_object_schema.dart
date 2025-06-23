@@ -37,6 +37,25 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
     });
   }
 
+  /// Creates a new DiscriminatedObjectSchema with modified discriminated-object-specific properties
+  DiscriminatedObjectSchema copyWithDiscriminatedObjectProperties({
+    String? discriminatorKey,
+    Map<String, ObjectSchema>? subSchemas,
+    String? description,
+    Object? defaultValue,
+    List<Validator<MapValue>>? constraints,
+  }) {
+    return DiscriminatedObjectSchema(
+      discriminatorKey: discriminatorKey ?? this.discriminatorKey,
+      subSchemas: subSchemas ?? this.subSchemas,
+      description: description ?? this.description,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as MapValue?,
+      constraints: constraints ?? this.constraints,
+    );
+  }
+
   @override
   SchemaResult<MapValue> tryConvertInput(
     Object? inputValue,
@@ -48,19 +67,21 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
 
         return SchemaResult.ok(mapValue);
       } catch (e) {
+        final constraintError =
+            InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
+
         return SchemaResult.fail(SchemaConstraintsError(
-          constraints: [
-            InvalidTypeConstraint(expectedType: MapValue).validate(inputValue),
-          ],
+          constraints: constraintError != null ? [constraintError] : [],
           context: context,
         ));
       }
     }
 
+    final constraintError =
+        InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
+
     return SchemaResult.fail(SchemaConstraintsError(
-      constraints: [
-        InvalidTypeConstraint(expectedType: MapValue).validate(inputValue),
-      ],
+      constraints: constraintError != null ? [constraintError] : [],
       context: context,
     ));
   }
@@ -72,9 +93,11 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
   ) {
     if (convertedMap == null) {
       // Should not be reached
+      final constraintError = NonNullableConstraint().validate(null);
+
       return SchemaResult.fail(
         SchemaConstraintsError(
-          constraints: [NonNullableConstraint().validate(null)],
+          constraints: constraintError != null ? [constraintError] : [],
           context: context,
         ),
       );
@@ -83,21 +106,22 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
     final Object? discValueRaw = convertedMap[discriminatorKey];
 
     if (discValueRaw == null) {
+      final constraintError = ObjectRequiredPropertiesConstraint(
+        missingPropertyKey: discriminatorKey,
+      ).validate(convertedMap);
+
       return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
-          ObjectRequiredPropertiesConstraint(
-            missingPropertyKey: discriminatorKey,
-          ).validate(convertedMap)!,
-        ],
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
 
     if (discValueRaw is! String) {
+      final constraintError =
+          InvalidTypeConstraint(expectedType: String).validate(discValueRaw);
+
       return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
-          InvalidTypeConstraint(expectedType: String).validate(discValueRaw),
-        ],
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -108,13 +132,13 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
     if (selectedSubSchema == null) {
       // Using a generic PatternConstraint as a placeholder for a more specific
       // 'enum' or 'oneOf' style constraint for the discriminator value.
+      final constraintError = PatternConstraint<String>(
+        (v) => subSchemas.containsKey(v),
+        'a valid discriminator value',
+      ).validate(discValue);
+
       return SchemaResult.fail(SchemaConstraintsError(
-        constraints: [
-          PatternConstraint<String>(
-            (v) => subSchemas.containsKey(v),
-            'a valid discriminator value',
-          ).validate(discValue)!,
-        ],
+        constraints: constraintError != null ? [constraintError] : [],
         context: context,
       ));
     }
@@ -129,16 +153,14 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
   }
 
   @override
-  DiscriminatedObjectSchema copyWith({
+  DiscriminatedObjectSchema copyWithInternal({
     String? description,
     Object? defaultValue,
     List<Validator<MapValue>>? constraints,
-    String? discriminatorKey,
-    Map<String, ObjectSchema>? subSchemas,
   }) {
     return DiscriminatedObjectSchema(
-      discriminatorKey: discriminatorKey ?? this.discriminatorKey,
-      subSchemas: subSchemas ?? this.subSchemas,
+      discriminatorKey: discriminatorKey,
+      subSchemas: subSchemas,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
@@ -154,11 +176,11 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
       final subSchemaJson = objectSchema.toJsonSchema();
       // Ensure the discriminator property is correctly constrained in the sub-schema JSON
       subSchemaJson['properties'] = {
-        ...(subSchemaJson['properties'] as Map? ?? {}),
+        ...?(subSchemaJson['properties'] as Map?),
         discriminatorKey: {'const': discriminatorValue},
       };
       subSchemaJson['required'] = {
-        ...((subSchemaJson['required'] as List?)?.cast<String>() ?? []),
+        ...?(subSchemaJson['required'] as List?)?.cast<String>(),
         discriminatorKey,
       }.toList();
       oneOfClauses.add(subSchemaJson);
@@ -170,27 +192,5 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
     };
 
     return schema;
-  }
-
-  @override
-  DiscriminatedObjectSchema withDefault(MapValue val) {
-    return copyWith(defaultValue: val);
-  }
-
-  @override
-  DiscriminatedObjectSchema addConstraint(Validator<MapValue> constraint) {
-    return copyWith(constraints: [...constraints, constraint]);
-  }
-
-  @override
-  DiscriminatedObjectSchema addConstraints(
-    List<Validator<MapValue>> newConstraints,
-  ) {
-    return copyWith(constraints: [...constraints, ...newConstraints]);
-  }
-
-  @override
-  DiscriminatedObjectSchema withDescription(String? newDescription) {
-    return copyWith(description: newDescription);
   }
 }
