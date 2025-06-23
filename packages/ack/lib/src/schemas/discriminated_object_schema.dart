@@ -101,7 +101,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     bool? isNullable,
     String? description,
     MapValue? defaultValue,
-    List<Validator<MapValue>>? constraints,
+    List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
     return copyWithInternal(
@@ -120,7 +120,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     required bool? isNullable,
     required String? description,
     required MapValue? defaultValue,
-    required List<Validator<MapValue>>? constraints,
+    required List<Constraint<MapValue>>? constraints,
     required List<Refinement<MapValue>>? refinements,
     // DiscriminatedObjectSchema specific
     String? discriminatorKey,

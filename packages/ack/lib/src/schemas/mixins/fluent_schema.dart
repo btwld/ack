@@ -22,11 +22,11 @@ mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
 
   /// Adds a validation constraint to the schema.
 
-  Schema addConstraint(Validator<DartType> constraint) =>
+  Schema withConstraint(Constraint<DartType> constraint) =>
       copyWith(constraints: [...constraints, constraint]) as Schema;
 
   /// Adds a list of validation constraints to the schema.
 
-  Schema addConstraints(List<Validator<DartType>> newConstraints) =>
+  Schema withConstraints(List<Constraint<DartType>> newConstraints) =>
       copyWith(constraints: [...constraints, ...newConstraints]) as Schema;
 }
