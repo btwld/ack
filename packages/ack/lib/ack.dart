@@ -1,6 +1,8 @@
 /// ACK - A Comprehensive Kotlin-inspired validation library for Dart
 library;
 
+// Main API
+export 'src/ack.dart';
 // Constraints
 export 'src/constraints/constraint.dart';
 // Context
