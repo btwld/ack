@@ -1,7 +1,8 @@
 part of 'schema.dart';
 
 @immutable
-final class StringSchema extends AckSchema<String> {
+final class StringSchema extends AckSchema<String>
+    with FluentSchema<String, StringSchema> {
   final bool strictPrimitiveParsing;
 
   const StringSchema({
@@ -21,29 +22,15 @@ final class StringSchema extends AckSchema<String> {
     Object? inputValue,
     SchemaContext context,
   ) {
-    if (inputValue is String) return SchemaResult.ok(inputValue);
-
-    if (strictPrimitiveParsing) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
-              .validate(inputValue);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+    if (inputValue is String) {
+      return SchemaResult.ok(inputValue);
     }
 
-    // Flexible parsing: allow conversion from common types
-    if (inputValue is num || inputValue is bool) {
-      return SchemaResult.ok(inputValue?.toString());
-    }
+    final constraintError = InvalidTypeConstraint(
+      expectedType: String,
+      inputValue: inputValue,
+    ).validate(inputValue);
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
-            .validate(inputValue);
-
-    // Fail if input is null, a map, or a list.
     return SchemaResult.fail(SchemaConstraintsError(
       constraints: constraintError != null ? [constraintError] : [],
       context: context,

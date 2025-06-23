@@ -4,13 +4,14 @@ typedef MapValue = Map<String, Object?>;
 
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
 @immutable
-final class ObjectSchema extends AckSchema<MapValue> {
+final class ObjectSchema extends AckSchema<MapValue>
+    with FluentSchema<MapValue, ObjectSchema> {
   final Map<String, AckSchema> properties;
   final List<String> requiredProperties;
   final bool allowAdditionalProperties;
 
-  const ObjectSchema({
-    this.properties = const {},
+  const ObjectSchema(
+    this.properties, {
     this.requiredProperties = const [],
     this.allowAdditionalProperties = false,
     super.isNullable,
@@ -124,7 +125,7 @@ final class ObjectSchema extends AckSchema<MapValue> {
           value: propertyValue,
         );
         final result =
-            propertySchema.parseAndValidate(propertyValue, propertyContext);
+            (propertySchema).parseAndValidate(propertyValue, propertyContext);
         result.match(
           onOk: (validatedValue) {
             validatedMap[key] = validatedValue;
@@ -173,7 +174,7 @@ final class ObjectSchema extends AckSchema<MapValue> {
     bool? allowAdditionalProperties,
   }) {
     return ObjectSchema(
-      properties: properties ?? this.properties,
+      properties ?? this.properties,
       requiredProperties: requiredProperties ?? this.requiredProperties,
       allowAdditionalProperties:
           allowAdditionalProperties ?? this.allowAdditionalProperties,

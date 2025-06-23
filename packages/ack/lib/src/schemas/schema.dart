@@ -7,9 +7,12 @@ import '../helpers.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
+part 'any_of_schema.dart';
 part 'boolean_schema.dart';
 part 'discriminated_object_schema.dart';
+part 'enum_schema.dart';
 part 'list_schema.dart';
+part 'mixins/fluent_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
 part 'string_schema.dart';
@@ -24,6 +27,7 @@ enum SchemaType {
   object,
   discriminatedObject,
   list,
+  enumType,
   unknown,
 }
 
@@ -165,27 +169,10 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
-  AckSchema<DartType> nullable({bool value = true}) =>
-      copyWith(isNullable: value);
-
-  AckSchema<DartType> withDescription(String? newDescription) =>
-      copyWith(description: newDescription);
-
-  AckSchema<DartType> withDefault(DartType newDefaultValue) =>
-      copyWith(defaultValue: newDefaultValue);
-
-  AckSchema<DartType> addConstraint(Validator<DartType> constraint) =>
-      copyWith(constraints: [...constraints, constraint]);
-
-  AckSchema<DartType> addConstraints(
-    List<Validator<DartType>> newConstraints,
-  ) =>
-      copyWith(constraints: [...constraints, ...newConstraints]);
-
   Map<String, Object?> toJsonSchema();
   String toJsonSchemaString() => prettyJson(toJsonSchema());
 
-  Map<String, Object?> toDefinitionMap() {
+  Map<String, Object?> toMap() {
     return {
       'schemaType': schemaType.name,
       'isNullable': isNullable,
