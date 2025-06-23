@@ -59,8 +59,7 @@ final class AnyOfSchema extends AckSchema<Object>
       schemas ?? this.schemas,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue:
-          defaultValue == ackRawDefaultValue ? this.defaultValue : defaultValue,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

@@ -131,7 +131,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     bool? allowAdditionalProperties,
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    MapValue? defaultValue,
     List<Validator<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
@@ -151,7 +151,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   ObjectSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required MapValue? defaultValue,
     required List<Validator<MapValue>>? constraints,
     required List<Refinement<MapValue>>? refinements,
     // ObjectSchema specific
@@ -165,9 +165,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       additionalProperties: allowAdditionalProperties ?? additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as MapValue?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

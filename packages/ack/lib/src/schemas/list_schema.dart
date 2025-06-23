@@ -82,7 +82,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     AckSchema<V>? itemSchema,
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    List<V>? defaultValue,
     List<Validator<List<V>>>? constraints,
     List<Refinement<List<V>>>? refinements,
   }) {
@@ -100,7 +100,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   ListSchema<V> copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required List<V>? defaultValue,
     required List<Validator<List<V>>>? constraints,
     required List<Refinement<List<V>>>? refinements,
     // ListSchema specific
@@ -110,9 +110,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       itemSchema ?? this.itemSchema,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as List<V>?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

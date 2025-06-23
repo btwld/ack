@@ -40,7 +40,7 @@ final class StringSchema extends AckSchema<String>
   StringSchema copyWithInternal({
     required bool? isNullable,
     required String? description,
-    required Object? defaultValue,
+    required String? defaultValue,
     required List<Validator<String>>? constraints,
     required List<Refinement<String>>? refinements,
     // StringSchema specific
@@ -49,9 +49,7 @@ final class StringSchema extends AckSchema<String>
     return StringSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as String?,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
@@ -63,7 +61,7 @@ final class StringSchema extends AckSchema<String>
   StringSchema copyWith({
     bool? isNullable,
     String? description,
-    Object? defaultValue,
+    String? defaultValue,
     List<Validator<String>>? constraints,
     List<Refinement<String>>? refinements,
     bool? strictPrimitiveParsing,

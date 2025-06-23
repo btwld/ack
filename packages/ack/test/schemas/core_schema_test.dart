@@ -55,10 +55,10 @@ void main() {
         final result = schema.validate(null);
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
-        // TODO: This is incorrect. The default value should be validated.
-        // The current implementation validates nullability before applying the default.
+        // The default value should be validated against constraints.
+        // This was fixed in the refactor - now default values are properly validated.
         expect(error.constraints.first.message,
-            'Value is required and cannot be null.');
+            'Too short. Minimum 10 characters, got 5.');
       });
     });
 
