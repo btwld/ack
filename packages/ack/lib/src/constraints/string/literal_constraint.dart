@@ -4,8 +4,8 @@ import '../constraint.dart';
 ///
 /// Useful for discriminator fields or fixed value properties.
 /// It will always pass if the input value is `null`.
-class StringLiteralConstraint extends Constraint<String?>
-    with Validator<String?>, JsonSchemaSpec<String?> {
+class StringLiteralConstraint extends Constraint<String>
+    with Validator<String>, JsonSchemaSpec<String> {
   final String expectedValue;
 
   const StringLiteralConstraint(this.expectedValue)
@@ -15,17 +15,12 @@ class StringLiteralConstraint extends Constraint<String?>
         );
 
   @override
-  bool isValid(String? value) {
-    if (value == null) {
-      // This constraint validates the value, not its nullability.
-      return true;
-    }
-
+  bool isValid(String value) {
     return value == expectedValue;
   }
 
   @override
-  String buildMessage(String? value) =>
+  String buildMessage(String value) =>
       'Must be exactly "$expectedValue", but got "$value".';
 
   @override

@@ -145,5 +145,47 @@ void main() {
       final result3 = schema.validate('long.email@example.com');
       expect(result3.isOk, isTrue);
     });
+
+    group('literal', () {
+      test('should pass for exact string match', () {
+        final schema = Ack.string().literal('hello');
+
+        expect(schema.safeParse('hello').isOk, isTrue);
+        expect(schema.safeParse('hello').getOrNull(), equals('hello'));
+      });
+
+      test('should fail for different string', () {
+        final schema = Ack.string().literal('hello');
+
+        final result = schema.safeParse('world');
+        expect(result.isOk, isFalse);
+        final error = result.getError() as SchemaConstraintsError;
+        expect(error.constraints.first.message,
+            equals('Must be exactly "hello", but got "world".'));
+      });
+
+      test('should work with empty string', () {
+        final schema = Ack.string().literal('');
+
+        expect(schema.safeParse('').isOk, isTrue);
+        expect(schema.safeParse('not empty').isOk, isFalse);
+      });
+
+      test('should work chained with other constraints', () {
+        final schema = Ack.string().minLength(3).literal('hello');
+
+        expect(schema.safeParse('hello').isOk, isTrue);
+        expect(schema.safeParse('hi').isOk, isFalse); // too short
+        expect(schema.safeParse('world').isOk, isFalse); // wrong literal
+      });
+
+      test('should work with Ack.literal() factory method (like Zod)', () {
+        final schema = Ack.literal('hello');
+
+        expect(schema.safeParse('hello').isOk, isTrue);
+        expect(schema.safeParse('hello').getOrNull(), equals('hello'));
+        expect(schema.safeParse('world').isOk, isFalse);
+      });
+    });
   });
 }

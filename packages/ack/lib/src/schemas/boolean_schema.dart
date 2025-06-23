@@ -2,7 +2,8 @@ part of 'schema.dart';
 
 /// Schema for validating boolean (`bool`) values.
 @immutable
-final class BooleanSchema extends AckSchema<bool> {
+final class BooleanSchema extends AckSchema<bool>
+    with FluentSchema<bool, BooleanSchema> {
   final bool strictPrimitiveParsing;
 
   const BooleanSchema({

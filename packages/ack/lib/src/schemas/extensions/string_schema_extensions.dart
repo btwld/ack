@@ -1,5 +1,6 @@
 import '../../constraints/string/format_constraint.dart';
 import '../../constraints/string/length_constraint.dart';
+import '../../constraints/string/literal_constraint.dart';
 import '../../constraints/string/string_enum_constraint.dart';
 import '../schema.dart';
 
@@ -72,6 +73,14 @@ extension StringSchemaExtensions on StringSchema {
   StringSchema enumString(List<String> allowedValues) {
     return copyWith(
       constraints: [...constraints, StringEnumConstraint(allowedValues)],
+    );
+  }
+
+  /// Adds a constraint that the string must be exactly equal to [value].
+  /// Similar to Zod's `z.literal("value")`.
+  StringSchema literal(String value) {
+    return copyWith(
+      constraints: [...constraints, StringLiteralConstraint(value)],
     );
   }
 }

@@ -3,7 +3,8 @@ part of 'schema.dart';
 /// Schema for validating against a list of schemas.
 /// The input is valid if it is valid against any of the schemas in the list.
 @immutable
-final class AnyOfSchema extends AckSchema<Object> {
+final class AnyOfSchema extends AckSchema<Object>
+    with FluentSchema<Object, AnyOfSchema> {
   final List<AckSchema> schemas;
 
   const AnyOfSchema(
