@@ -28,8 +28,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
     final newProperties = {...properties, ...other.properties};
 
     // Combine required properties, ensuring uniqueness.
-    final newRequired =
-        {...requiredProperties, ...other.requiredProperties}.toList();
+    final newRequired = {...required, ...other.required}.toList();
 
     return copyWith(
       properties: newProperties,
@@ -58,8 +57,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
     );
 
     // Filter the required list to only include picked keys that were originally required.
-    final newRequired =
-        requiredProperties.where((key) => pickSet.contains(key)).toList();
+    final newRequired = required.where((key) => pickSet.contains(key)).toList();
 
     return copyWith(
       properties: newProperties,
@@ -82,7 +80,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
 
     // Filter the required list to exclude omitted keys.
     final newRequired =
-        requiredProperties.where((key) => !omitSet.contains(key)).toList();
+        required.where((key) => !omitSet.contains(key)).toList();
 
     return copyWith(
       properties: newProperties,

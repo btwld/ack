@@ -8,7 +8,7 @@ void main() {
         'name': StringSchema(),
         'email': StringSchema().email(),
       },
-      requiredProperties: ['name', 'email'],
+      required: ['name', 'email'],
     );
 
     group('strict', () {
@@ -52,7 +52,7 @@ void main() {
       test('should merge properties and required fields', () {
         final addressSchema = ObjectSchema(
           {'street': StringSchema()},
-          requiredProperties: ['street'],
+          required: ['street'],
         );
         final mergedSchema = userSchema.merge(addressSchema);
         final result = mergedSchema.validate({

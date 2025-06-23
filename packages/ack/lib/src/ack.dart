@@ -1,3 +1,4 @@
+import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
 /// The main entry point for creating schemas with the Ack validation library.
@@ -6,6 +7,10 @@ import 'schemas/schema.dart';
 final class Ack {
   /// Creates a string schema.
   static StringSchema string() => const StringSchema();
+
+  /// Creates a literal string schema that only accepts the exact [value].
+  /// Similar to Zod's `z.literal("value")`.
+  static StringSchema literal(String value) => string().literal(value);
 
   /// Creates an integer schema.
   static IntegerSchema integer() => const IntegerSchema();
@@ -19,23 +24,23 @@ final class Ack {
   /// Creates an object schema with the given properties.
   static ObjectSchema object(
     Map<String, AckSchema> properties, {
-    List<String> requiredProperties = const [],
-    bool allowAdditionalProperties = false,
+    List<String> required = const [],
+    bool additionalProperties = false,
   }) =>
       ObjectSchema(
         properties.cast(),
-        requiredProperties: requiredProperties,
-        allowAdditionalProperties: allowAdditionalProperties,
+        required: required,
+        additionalProperties: additionalProperties,
       );
 
   /// Creates a discriminated object schema for polymorphic validation.
-  static DiscriminatedObjectSchema discriminatedObject({
+  static DiscriminatedObjectSchema discriminated({
     required String discriminatorKey,
-    required Map<String, ObjectSchema> subSchemas,
+    required Map<String, ObjectSchema> schemas,
   }) =>
       DiscriminatedObjectSchema(
         discriminatorKey: discriminatorKey,
-        subSchemas: subSchemas,
+        schemas: schemas,
       );
 
   /// Creates a list schema with the given item schema.

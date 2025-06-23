@@ -147,6 +147,10 @@ sealed class AckSchema<DartType extends Object> {
     return result.getOrNull();
   }
 
+  SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
+    return validate(value, debugName: debugName);
+  }
+
   @protected
   AckSchema<DartType> copyWithInternal({
     required bool? isNullable,

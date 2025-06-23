@@ -7,18 +7,19 @@ typedef MapValue = Map<String, Object?>;
 final class ObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, ObjectSchema> {
   final Map<String, AckSchema> properties;
-  final List<String> requiredProperties;
-  final bool allowAdditionalProperties;
+  final List<String> required;
+  final bool additionalProperties;
 
   const ObjectSchema(
-    this.properties, {
-    this.requiredProperties = const [],
-    this.allowAdditionalProperties = false,
+    Map<String, AckSchema>? properties, {
+    this.required = const [],
+    this.additionalProperties = false,
     super.isNullable,
     super.description,
     super.defaultValue,
     super.constraints,
-  }) : super(schemaType: SchemaType.object);
+  })  : properties = properties ?? const {},
+        super(schemaType: SchemaType.object);
 
   @override
   ObjectSchema copyWith({
@@ -80,7 +81,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     final validationErrors = <SchemaError>[];
 
     // 1. Check for missing required properties
-    for (final key in requiredProperties) {
+    for (final key in required) {
       if (!convertedValue.containsKey(key)) {
         // Property is completely missing
         final constraintError =
@@ -132,7 +133,7 @@ final class ObjectSchema extends AckSchema<MapValue>
           },
           onFail: validationErrors.add,
         );
-      } else if (allowAdditionalProperties) {
+      } else if (additionalProperties) {
         validatedMap[key] = propertyValue; // Keep the original value
       } else {
         // Property not in schema and not allowed
@@ -175,9 +176,8 @@ final class ObjectSchema extends AckSchema<MapValue>
   }) {
     return ObjectSchema(
       properties ?? this.properties,
-      requiredProperties: requiredProperties ?? this.requiredProperties,
-      allowAdditionalProperties:
-          allowAdditionalProperties ?? this.allowAdditionalProperties,
+      required: requiredProperties ?? required,
+      additionalProperties: allowAdditionalProperties ?? additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
@@ -197,8 +197,8 @@ final class ObjectSchema extends AckSchema<MapValue>
     return {
       'type': isNullable ? ['object', 'null'] : 'object',
       'properties': propsJsonSchema,
-      if (requiredProperties.isNotEmpty) 'required': requiredProperties,
-      'additionalProperties': allowAdditionalProperties,
+      if (required.isNotEmpty) 'required': required,
+      'additionalProperties': additionalProperties,
       if (description != null) 'description': description,
     };
   }

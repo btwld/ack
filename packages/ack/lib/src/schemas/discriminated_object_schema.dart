@@ -5,13 +5,14 @@ part of 'schema.dart';
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
 /// `subSchemas` to validate the object.
 @immutable
-final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
+final class DiscriminatedObjectSchema extends AckSchema<MapValue>
+    with FluentSchema<MapValue, DiscriminatedObjectSchema> {
   final String discriminatorKey;
-  final Map<String, ObjectSchema> subSchemas;
+  final Map<String, ObjectSchema> schemas;
 
   const DiscriminatedObjectSchema({
     required this.discriminatorKey,
-    required this.subSchemas,
+    required this.schemas,
     super.isNullable,
     super.description,
     super.defaultValue,
@@ -108,13 +109,13 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
     }
 
     final String discValue = discValueRaw;
-    final ObjectSchema? selectedSubSchema = subSchemas[discValue];
+    final ObjectSchema? selectedSubSchema = schemas[discValue];
 
     if (selectedSubSchema == null) {
       // Using a generic PatternConstraint as a placeholder for a more specific
       // 'enum' or 'oneOf' style constraint for the discriminator value.
       final constraintError = PatternConstraint<String>(
-        (v) => subSchemas.containsKey(v),
+        (v) => schemas.containsKey(v),
         'a valid discriminator value',
       ).validate(discValue);
 
@@ -148,7 +149,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
   }) {
     return DiscriminatedObjectSchema(
       discriminatorKey: discriminatorKey ?? this.discriminatorKey,
-      subSchemas: subSchemas ?? this.subSchemas,
+      schemas: subSchemas ?? schemas,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
@@ -161,7 +162,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
   @override
   Map<String, Object?> toJsonSchema() {
     final List<Map<String, Object?>> oneOfClauses = [];
-    subSchemas.forEach((discriminatorValue, objectSchema) {
+    schemas.forEach((discriminatorValue, objectSchema) {
       final subSchemaJson = objectSchema.toJsonSchema();
       // Ensure the discriminator property is correctly constrained in the sub-schema JSON
       subSchemaJson['properties'] = {

@@ -2,7 +2,8 @@ part of 'schema.dart';
 
 /// Schema for validating enum values.
 @immutable
-final class EnumSchema<T extends Enum> extends AckSchema<T> {
+final class EnumSchema<T extends Enum> extends AckSchema<T>
+    with FluentSchema<T, EnumSchema<T>> {
   final List<T> values;
 
   const EnumSchema({
@@ -14,10 +15,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T> {
   }) : super(schemaType: SchemaType.enumType);
 
   @override
-  SchemaResult<T> tryConvertInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  SchemaResult<T> tryConvertInput(Object? inputValue, SchemaContext context) {
     if (inputValue is T && values.contains(inputValue)) {
       return SchemaResult.ok(inputValue);
     }
@@ -25,9 +23,8 @@ final class EnumSchema<T extends Enum> extends AckSchema<T> {
     // Try to match by name if input is a string
     if (inputValue is String) {
       try {
-        final enumValue = values.firstWhere(
-          (e) => e.name == inputValue,
-        );
+        final enumValue = values.firstWhere((e) => e.name == inputValue);
+
         return SchemaResult.ok(enumValue);
       } catch (_) {
         // Continue to error handling
@@ -66,7 +63,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T> {
     required List<Validator<T>>? constraints,
     List<T>? values,
   }) {
-    return EnumSchema<T>(
+    return EnumSchema(
       values: values ?? this.values,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
@@ -97,7 +94,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T> {
   @override
   Map<String, Object?> toJsonSchema() {
     final enumNames = values.map((e) => e.name).toList();
-    
+
     return {
       'type': isNullable ? ['string', 'null'] : 'string',
       'enum': enumNames,
