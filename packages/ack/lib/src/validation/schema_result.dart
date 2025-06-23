@@ -60,7 +60,7 @@ sealed class SchemaResult<T extends Object> {
   T? getOrThrow() {
     return switch (this) {
       Ok(value: final v) => v,
-      Fail(error: final e) => throw AckException(e),
+      Fail(error: final e) => throw AckException([e]),
     };
   }
 

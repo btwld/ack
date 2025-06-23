@@ -1,7 +1,6 @@
 import 'package:meta/meta.dart';
 
 import '../constraints/constraint.dart';
-import '../constraints/validators.dart';
 import '../context.dart';
 import '../schemas/schema.dart';
 
@@ -44,32 +43,6 @@ abstract class SchemaError {
 }
 
 @immutable
-class SchemaUnknownError extends SchemaError {
-  SchemaUnknownError({
-    required Object error,
-    required StackTrace stackTrace,
-    required super.context,
-  }) : super(
-          'An unknown error occurred: $error',
-          stackTrace: stackTrace,
-          cause: error,
-        );
-
-  @override
-  Map<String, Object?> toMap() {
-    return {
-      ...super.toMap(),
-      'errorMessage': cause?.toString(),
-      'stackTrace': stackTrace?.toString(),
-    };
-  }
-
-  @override
-  String toString() =>
-      'SchemaUnknownError(name: "$name", error: ${cause ?? 'null'})\nStackTrace:\n${stackTrace ?? 'null'}';
-}
-
-@immutable
 class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
 
@@ -79,8 +52,6 @@ class SchemaConstraintsError extends SchemaError {
   }) : super(
           'Constraints not met: ${constraints.map((c) => c.message).join(', ')}',
         );
-
-  bool get isNonNullable => getConstraint<NonNullableConstraint>() != null;
 
   ConstraintError? getConstraint<S extends Constraint>() {
     for (final constraintError in constraints) {
@@ -115,14 +86,6 @@ class SchemaNestedError extends SchemaError {
 
   const SchemaNestedError({required this.errors, required super.context})
       : super('One or more nested schemas failed validation.');
-
-  S? getSchemaError<S extends SchemaError>() {
-    for (final error in errors) {
-      if (error is S) return error;
-    }
-
-    return null;
-  }
 
   @override
   Map<String, Object?> toMap() {

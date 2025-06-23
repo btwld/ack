@@ -38,17 +38,6 @@ SchemaResult<T> executeWithContext<T extends Object>(
       zoneValues: {_kSchemaContextKey: context}).run(() => action(context));
 }
 
-/// Retrieves the current [SchemaContext] from the active [Zone].
-SchemaContext getCurrentSchemaContext() {
-  final context = Zone.current[_kSchemaContextKey];
-  if (context is SchemaContext) {
-    return context;
-  }
-  throw StateError(
-    'getCurrentSchemaContext() must be called within a Zone established by executeWithContext.',
-  );
-}
-
 // /// A mock context for testing purposes.
 // @visibleForTesting
 // class SchemaMockContext extends SchemaContext {
