@@ -7,16 +7,17 @@ import 'schema_error.dart';
 ///
 /// This class promotes explicit error handling without relying on exceptions
 /// for control flow when using the `validate()` method.
-sealed class SchemaResult<T> {
+sealed class SchemaResult<T extends Object> {
   const SchemaResult();
 
   /// Creates a successful result wrapping the given [value].
-  static SchemaResult<T> ok<T>(T value) {
+  /// If the schema is nullable and the input was null, [value] can be null.
+  static SchemaResult<T> ok<T extends Object>(T? value) {
     return Ok(value);
   }
 
   /// Creates a failure result wrapping the specified [error].
-  static SchemaResult<T> fail<T>(SchemaError error) {
+  static SchemaResult<T> fail<T extends Object>(SchemaError error) {
     return Fail(error);
   }
 
@@ -47,7 +48,7 @@ sealed class SchemaResult<T> {
 
   /// Returns the contained value if successful, otherwise returns the result of [orElse].
   /// If the successful value is `null` (for nullable schemas), [orElse] is still NOT called.
-  T getOrElse(T Function() orElse) {
+  T? getOrElse(T? Function() orElse) {
     return switch (this) {
       Ok(value: final v) => v,
       Fail() => orElse(),
@@ -55,8 +56,8 @@ sealed class SchemaResult<T> {
   }
 
   /// Returns the contained value if successful; otherwise, throws an [AckException].
-  /// The returned value can be `null` if the schema is nullable.
-  T getOrThrow() {
+  /// If the successful value is `null` (for nullable schemas), `null` is returned.
+  T? getOrThrow() {
     return switch (this) {
       Ok(value: final v) => v,
       Fail(error: final e) => throw AckException(e),
@@ -65,7 +66,7 @@ sealed class SchemaResult<T> {
 
   /// Executes one of the provided callbacks based on the result's type.
   R match<R>({
-    required R Function(T value) onOk,
+    required R Function(T? value) onOk,
     required R Function(SchemaError error) onFail,
   }) {
     return switch (this) {
@@ -83,7 +84,7 @@ sealed class SchemaResult<T> {
 
   /// Executes [action] if this result is successful.
   /// The [value] passed to the action can be `null` if `T` is nullable.
-  void ifOk(void Function(T value) action) {
+  void ifOk(void Function(T? value) action) {
     if (this case Ok(value: final v)) {
       action(v);
     }
@@ -91,16 +92,17 @@ sealed class SchemaResult<T> {
 }
 
 /// Represents a successful validation outcome, optionally wrapping a [value].
-/// The [_value] can be `null` if `T` is nullable (e.g., `T = String?`).
-class Ok<T> extends SchemaResult<T> {
-  final T _value;
+/// The [_value] can be `null` if the schema was nullable and the input was validly null.
+class Ok<T extends Object> extends SchemaResult<T> {
+  final T? _value;
   const Ok(this._value);
 
-  T get value => _value;
+  // Getter to access the value if needed, adhering to the interface
+  T? get value => _value;
 }
 
 /// Represents a failed validation outcome, containing a [SchemaError].
-class Fail<T> extends SchemaResult<T> {
+class Fail<T extends Object> extends SchemaResult<T> {
   final SchemaError error;
   const Fail(this.error);
 }

@@ -5,38 +5,16 @@ final class StringSchema extends AckSchema<String> {
   final bool strictPrimitiveParsing;
 
   const StringSchema({
-    String? description,
-    String? defaultValue,
-    List<Validator<String>> constraints = const [],
+    super.isNullable,
+    super.description,
+    super.defaultValue,
+    super.constraints,
     this.strictPrimitiveParsing = false,
-  }) : super(
-          schemaType: SchemaType.string,
-          description: description,
-          defaultValue: defaultValue,
-          constraints: constraints,
-        );
+  }) : super(schemaType: SchemaType.string);
 
-  /// Creates a new StringSchema with strict parsing enabled/disabled
+  /// Creates a new [StringSchema] that enforces strict parsing.
   StringSchema strictParsing({bool value = true}) =>
-      copyWithStringProperties(strictPrimitiveParsing: value);
-
-  /// Creates a new StringSchema with modified string-specific properties
-  StringSchema copyWithStringProperties({
-    bool? strictPrimitiveParsing,
-    String? description,
-    Object? defaultValue,
-    List<Validator<String>>? constraints,
-  }) {
-    return StringSchema(
-      description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as String?,
-      constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
-    );
-  }
+      copyWith(strictPrimitiveParsing: value);
 
   @override
   SchemaResult<String> tryConvertInput(
@@ -44,6 +22,7 @@ final class StringSchema extends AckSchema<String> {
     SchemaContext context,
   ) {
     if (inputValue is String) return SchemaResult.ok(inputValue);
+
     if (strictPrimitiveParsing) {
       final constraintError =
           InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
@@ -55,16 +34,16 @@ final class StringSchema extends AckSchema<String> {
       ));
     }
 
-    // For non-strict parsing, convert other primitives to string.
-    if (inputValue != null && inputValue is! Map && inputValue is! List) {
-      return SchemaResult.ok(inputValue.toString());
+    // Flexible parsing: allow conversion from common types
+    if (inputValue is num || inputValue is bool) {
+      return SchemaResult.ok(inputValue?.toString());
     }
 
-    // Fail if input is null, a map, or a list.
     final constraintError =
         InvalidTypeConstraint(expectedType: String, inputValue: inputValue)
             .validate(inputValue);
 
+    // Fail if input is null, a map, or a list.
     return SchemaResult.fail(SchemaConstraintsError(
       constraints: constraintError != null ? [constraintError] : [],
       context: context,
@@ -73,37 +52,46 @@ final class StringSchema extends AckSchema<String> {
 
   @override
   SchemaResult<String> validateConvertedValue(
-    String? convertedValue,
+    String convertedValue,
     SchemaContext context,
   ) {
-    // This method is called after tryConvertInput, which for a non-nullable
-    // schema should never produce a null value. This is a safeguard.
-    if (convertedValue == null) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: String, inputValue: null)
-              .validate(null);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
-    }
-
     return SchemaResult.ok(convertedValue);
   }
 
   @override
   StringSchema copyWithInternal({
-    String? description,
-    Object? defaultValue,
-    List<Validator<String>>? constraints,
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<String>>? constraints,
+    // StringSchema specific
+    bool? strictPrimitiveParsing,
   }) {
     return StringSchema(
+      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
           : defaultValue as String?,
       constraints: constraints ?? this.constraints,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    );
+  }
+
+  @override
+  StringSchema copyWith({
+    bool? isNullable,
+    String? description,
+    Object? defaultValue,
+    List<Validator<String>>? constraints,
+    bool? strictPrimitiveParsing,
+  }) {
+    return copyWithInternal(
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
       strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
@@ -111,7 +99,7 @@ final class StringSchema extends AckSchema<String> {
   @override
   Map<String, Object?> toJsonSchema() {
     final Map<String, Object?> schema = {
-      'type': 'string',
+      'type': isNullable ? ['string', 'null'] : 'string',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };

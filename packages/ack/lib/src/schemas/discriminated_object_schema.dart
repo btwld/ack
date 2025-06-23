@@ -9,50 +9,31 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
   final String discriminatorKey;
   final Map<String, ObjectSchema> subSchemas;
 
-  DiscriminatedObjectSchema({
+  const DiscriminatedObjectSchema({
     required this.discriminatorKey,
     required this.subSchemas,
-    String? description,
-    MapValue? defaultValue,
-    List<Validator<MapValue>> constraints = const [],
-  }) : super(
-          schemaType: SchemaType.discriminatedObject,
-          description: description,
-          defaultValue: defaultValue,
-          constraints: constraints,
-        ) {
-    // Constructor validation
-    subSchemas.forEach((discriminatorValue, schema) {
-      if (!schema.properties.containsKey(discriminatorKey)) {
-        throw ArgumentError(
-          'Sub-schema for discriminator value "$discriminatorValue" must define the discriminator property "$discriminatorKey".',
-        );
-      }
-      final discriminatorPropSchema = schema.properties[discriminatorKey]!;
-      if (discriminatorPropSchema is! StringSchema) {
-        throw ArgumentError(
-          'Discriminator property "$discriminatorKey" in sub-schema for "$discriminatorValue" must be a StringSchema.',
-        );
-      }
-    });
-  }
+    super.isNullable,
+    super.description,
+    super.defaultValue,
+    super.constraints,
+  }) : super(schemaType: SchemaType.discriminatedObject);
 
-  /// Creates a new DiscriminatedObjectSchema with modified discriminated-object-specific properties
-  DiscriminatedObjectSchema copyWithDiscriminatedObjectProperties({
+  @override
+  DiscriminatedObjectSchema copyWith({
     String? discriminatorKey,
     Map<String, ObjectSchema>? subSchemas,
+    bool? isNullable,
     String? description,
     Object? defaultValue,
     List<Validator<MapValue>>? constraints,
   }) {
-    return DiscriminatedObjectSchema(
-      discriminatorKey: discriminatorKey ?? this.discriminatorKey,
-      subSchemas: subSchemas ?? this.subSchemas,
-      description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as MapValue?,
-      constraints: constraints ?? this.constraints,
+    return copyWithInternal(
+      discriminatorKey: discriminatorKey,
+      subSchemas: subSchemas,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
     );
   }
 
@@ -149,18 +130,26 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
       value: convertedMap,
     );
 
-    return selectedSubSchema.parseAndValidate(convertedMap, subSchemaContext);
+    return selectedSubSchema.validate(
+      convertedMap,
+      debugName: subSchemaContext.name,
+    );
   }
 
   @override
   DiscriminatedObjectSchema copyWithInternal({
-    String? description,
-    Object? defaultValue,
-    List<Validator<MapValue>>? constraints,
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<MapValue>>? constraints,
+    // DiscriminatedObjectSchema specific
+    String? discriminatorKey,
+    Map<String, ObjectSchema>? subSchemas,
   }) {
     return DiscriminatedObjectSchema(
-      discriminatorKey: discriminatorKey,
-      subSchemas: subSchemas,
+      discriminatorKey: discriminatorKey ?? this.discriminatorKey,
+      subSchemas: subSchemas ?? this.subSchemas,
+      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
@@ -190,6 +179,16 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue> {
       'oneOf': oneOfClauses,
       if (description != null) 'description': description,
     };
+
+    if (isNullable) {
+      return {
+        'oneOf': [
+          {'type': 'null'},
+          schema,
+        ],
+        if (description != null) 'description': description,
+      };
+    }
 
     return schema;
   }
