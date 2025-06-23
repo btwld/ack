@@ -46,17 +46,12 @@ final class StringSchema extends AckSchema<String>
     // StringSchema specific
     bool? strictPrimitiveParsing,
   }) {
-    final String? finalDefaultValue;
-    if (defaultValue == ackRawDefaultValue) {
-      finalDefaultValue = this.defaultValue;
-    } else {
-      finalDefaultValue = defaultValue as String?;
-    }
-
     return StringSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: finalDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as String?,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:

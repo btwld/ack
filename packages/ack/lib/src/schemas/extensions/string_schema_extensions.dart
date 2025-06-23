@@ -1,5 +1,5 @@
+import '../../constraints/core/comparison_constraint.dart';
 import '../../constraints/string/format_constraint.dart';
-import '../../constraints/string/length_constraint.dart';
 import '../../constraints/string/literal_constraint.dart';
 import '../../constraints/string/string_enum_constraint.dart';
 import '../schema.dart';
@@ -8,17 +8,24 @@ import '../schema.dart';
 extension StringSchemaExtensions on StringSchema {
   /// Adds a constraint that the string's length must be at least [n].
   StringSchema minLength(int n) {
-    return copyWith(constraints: [...constraints, MinLengthConstraint(n)]);
+    return copyWith(
+      constraints: [...constraints, ComparisonConstraint.stringMinLength(n)],
+    );
   }
 
   /// Adds a constraint that the string's length must be no more than [n].
   StringSchema maxLength(int n) {
-    return copyWith(constraints: [...constraints, MaxLengthConstraint(n)]);
+    return copyWith(
+      constraints: [...constraints, ComparisonConstraint.stringMaxLength(n)],
+    );
   }
 
   /// Adds a constraint that the string's length must be exactly [n].
   StringSchema length(int n) {
-    return copyWith(constraints: [...constraints, ExactLengthConstraint(n)]);
+    return copyWith(constraints: [
+      ...constraints,
+      ComparisonConstraint.stringExactLength(n),
+    ]);
   }
 
   /// Adds a constraint that the string must be a valid email address.

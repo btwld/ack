@@ -799,9 +799,9 @@ void main() {
 
         final deepSchema = createNestedSchema(5);
 
-        Map<String, dynamic> createNestedData(int depth) {
+        dynamic createNestedData(int depth) {
           if (depth <= 0) {
-            return {'level': depth, 'nested': 'leaf'};
+            return 'leaf';
           }
           return {
             'level': depth,

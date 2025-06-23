@@ -124,17 +124,12 @@ final class IntegerSchema extends NumSchema<int>
     // NumSchema specific
     bool? strictPrimitiveParsing,
   }) {
-    final int? finalDefaultValue;
-    if (defaultValue == ackRawDefaultValue) {
-      finalDefaultValue = this.defaultValue;
-    } else {
-      finalDefaultValue = defaultValue as int?;
-    }
-
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: finalDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as int?,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
@@ -220,17 +215,12 @@ final class DoubleSchema extends NumSchema<double>
     // NumSchema specific
     bool? strictPrimitiveParsing,
   }) {
-    final double? finalDefaultValue;
-    if (defaultValue == ackRawDefaultValue) {
-      finalDefaultValue = this.defaultValue;
-    } else {
-      finalDefaultValue = defaultValue as double?;
-    }
-
     return DoubleSchema(
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: finalDefaultValue,
+      defaultValue: defaultValue == ackRawDefaultValue
+          ? this.defaultValue
+          : defaultValue as double?,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
