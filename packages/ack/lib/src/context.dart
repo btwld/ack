@@ -30,13 +30,12 @@ class SchemaContext {
 }
 
 /// Executes an action within a specific [SchemaContext].
-SchemaResult<T> executeWithContext<T>(
+SchemaResult<T> executeWithContext<T extends Object>(
   SchemaContext context,
   SchemaResult<T> Function(SchemaContext currentContext) action,
 ) {
   return Zone.current.fork(
-    zoneValues: {_kSchemaContextKey: context},
-  ).run(() => action(context));
+      zoneValues: {_kSchemaContextKey: context}).run(() => action(context));
 }
 
 /// Retrieves the current [SchemaContext] from the active [Zone].

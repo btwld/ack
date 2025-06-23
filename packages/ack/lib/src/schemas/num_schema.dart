@@ -6,32 +6,27 @@ final class IntegerSchema extends AckSchema<int> {
   final bool strictPrimitiveParsing;
 
   const IntegerSchema({
-    String? description,
-    int? defaultValue,
-    List<Validator<int>> constraints = const [],
     this.strictPrimitiveParsing = false,
-  }) : super(
-          schemaType: SchemaType.integer,
-          description: description,
-          defaultValue: defaultValue,
-          constraints: constraints,
-        );
+    super.isNullable,
+    super.description,
+    super.defaultValue,
+    super.constraints,
+  }) : super(schemaType: SchemaType.integer);
 
-  /// Creates a new IntegerSchema with modified integer-specific properties
-  IntegerSchema copyWithIntegerProperties({
+  @override
+  IntegerSchema copyWith({
     bool? strictPrimitiveParsing,
+    bool? isNullable,
     String? description,
     Object? defaultValue,
     List<Validator<int>>? constraints,
   }) {
-    return IntegerSchema(
-      description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as int?,
-      constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    return copyWithInternal(
+      strictPrimitiveParsing: strictPrimitiveParsing,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
     );
   }
 
@@ -53,61 +48,56 @@ final class IntegerSchema extends AckSchema<int> {
       final parsed = int.tryParse(inputValue);
       if (parsed != null) return SchemaResult.ok(parsed);
     }
-    if (inputValue is double) {
-      if (inputValue.truncate() == inputValue) {
+    if (inputValue is double && !strictPrimitiveParsing) {
+      if (inputValue == inputValue.truncateToDouble()) {
         return SchemaResult.ok(inputValue.toInt());
       }
     }
-
     final constraintError =
         InvalidTypeConstraint(expectedType: int, inputValue: inputValue)
             .validate(inputValue);
 
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
+    return SchemaResult.fail(
+      SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ),
+    );
   }
 
   @override
   SchemaResult<int> validateConvertedValue(
-    int? convertedValue,
+    int convertedValue,
     SchemaContext context,
   ) {
-    if (convertedValue == null) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: int, inputValue: null)
-              .validate(null);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
-    }
-
     return SchemaResult.ok(convertedValue);
   }
 
   @override
   IntegerSchema copyWithInternal({
-    String? description,
-    Object? defaultValue,
-    List<Validator<int>>? constraints,
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<int>>? constraints,
+    // IntegerSchema specific
+    bool? strictPrimitiveParsing,
   }) {
     return IntegerSchema(
+      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
           : defaultValue as int?,
       constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing: strictPrimitiveParsing,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
     final Map<String, Object?> schema = {
-      'type': 'integer',
+      'type': isNullable ? ['integer', 'null'] : 'integer',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
@@ -132,32 +122,27 @@ final class DoubleSchema extends AckSchema<double> {
   final bool strictPrimitiveParsing;
 
   const DoubleSchema({
-    String? description,
-    double? defaultValue,
-    List<Validator<double>> constraints = const [],
     this.strictPrimitiveParsing = false,
-  }) : super(
-          schemaType: SchemaType.double,
-          description: description,
-          defaultValue: defaultValue,
-          constraints: constraints,
-        );
+    super.isNullable,
+    super.description,
+    super.defaultValue,
+    super.constraints,
+  }) : super(schemaType: SchemaType.double);
 
-  /// Creates a new DoubleSchema with modified double-specific properties
-  DoubleSchema copyWithDoubleProperties({
+  @override
+  DoubleSchema copyWith({
     bool? strictPrimitiveParsing,
+    bool? isNullable,
     String? description,
     Object? defaultValue,
     List<Validator<double>>? constraints,
   }) {
-    return DoubleSchema(
-      description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as double?,
-      constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    return copyWithInternal(
+      strictPrimitiveParsing: strictPrimitiveParsing,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
     );
   }
 
@@ -179,59 +164,55 @@ final class DoubleSchema extends AckSchema<double> {
       ));
     }
     if (inputValue is String) {
-      final parsed = double.tryParse(inputValue);
-      if (parsed != null) return SchemaResult.ok(parsed);
+      final val = double.tryParse(inputValue);
+      if (val != null) return SchemaResult.ok(val);
     }
-
     final constraintError =
         InvalidTypeConstraint(expectedType: double, inputValue: inputValue)
             .validate(inputValue);
 
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
+    return SchemaResult.fail(
+      SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ),
+    );
   }
 
   @override
   SchemaResult<double> validateConvertedValue(
-    double? convertedValue,
+    double convertedValue,
     SchemaContext context,
   ) {
-    if (convertedValue == null) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: double, inputValue: null)
-              .validate(null);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
-    }
-
     return SchemaResult.ok(convertedValue);
   }
 
   @override
   DoubleSchema copyWithInternal({
-    String? description,
-    Object? defaultValue,
-    List<Validator<double>>? constraints,
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<double>>? constraints,
+    // DoubleSchema specific
+    bool? strictPrimitiveParsing,
   }) {
     return DoubleSchema(
+      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
           : defaultValue as double?,
       constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing: strictPrimitiveParsing,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
     final Map<String, Object?> schema = {
-      'type': 'number',
+      'type': isNullable ? ['number', 'null'] : 'number',
+      'format': 'double',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };

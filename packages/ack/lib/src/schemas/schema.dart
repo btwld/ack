@@ -10,7 +10,6 @@ import '../validation/schema_result.dart';
 part 'boolean_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'list_schema.dart';
-part 'nullable_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
 part 'string_schema.dart';
@@ -29,21 +28,26 @@ enum SchemaType {
 }
 
 @immutable
-sealed class AckSchema<T> {
+sealed class AckSchema<DartType extends Object> {
   final SchemaType schemaType;
+  final bool isNullable;
   final String? description;
-  final T? defaultValue;
-  final List<Validator<T>> constraints;
+  final DartType? defaultValue;
+  final List<Validator<DartType>> constraints;
 
   const AckSchema({
     required this.schemaType,
+    this.isNullable = false,
     this.description,
     this.defaultValue,
     this.constraints = const [],
   });
 
   @protected
-  List<ConstraintError> _checkConstraints(T value, SchemaContext context) {
+  List<ConstraintError> _checkConstraints(
+    DartType value,
+    SchemaContext context,
+  ) {
     if (constraints.isEmpty) return const [];
     final errors = <ConstraintError>[];
     for (final validator in constraints) {
@@ -57,25 +61,17 @@ sealed class AckSchema<T> {
   }
 
   @protected
-  SchemaResult<T> parseAndValidate(
+  SchemaResult<DartType> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
     if (inputValue == null) {
-      // This is now the crucial check. If the type T is nullable,
-      // this schema can handle nulls.
-      if (null is T) {
-        // For nullable types, we can safely handle null values
-        if (defaultValue != null) {
-          // We know defaultValue is T? and not null, so this is safe
-          return SchemaResult.ok(defaultValue as T);
-        } // We know null is assignable to T (since null is T), so this is safe
-
-        // This is the only safe way to represent null for a nullable type T
-        return SchemaResult.ok(null as T);
+      if (isNullable) {
+        return SchemaResult.ok(defaultValue);
       }
-
-      // Otherwise, if T is non-nullable, fail.
+      if (defaultValue != null) {
+        return SchemaResult.ok(defaultValue);
+      }
       final constraintError = NonNullableConstraint().validate(null);
 
       return SchemaResult.fail(SchemaConstraintsError(
@@ -84,26 +80,15 @@ sealed class AckSchema<T> {
       ));
     }
 
-    final SchemaResult<T> convertedResult =
+    final SchemaResult<DartType> convertedResult =
         tryConvertInput(inputValue, context);
     if (convertedResult.isFail) return convertedResult;
 
     final convertedValue = convertedResult.getOrNull();
 
     if (convertedValue == null) {
-      // This path indicates a failed conversion within a nullable context.
-      if (null is T) {
-        // For nullable types, we can safely handle null values
-        if (defaultValue != null) {
-          // We know defaultValue is T? and not null, so this is safe
-          return SchemaResult.ok(defaultValue as T);
-        } // We know null is assignable to T (since null is T), so this is safe
-
-        return SchemaResult.ok(null as T);
-      }
-
       final constraintError =
-          InvalidTypeConstraint(expectedType: T, inputValue: inputValue)
+          InvalidTypeConstraint(expectedType: DartType, inputValue: inputValue)
               .validate(inputValue);
 
       return SchemaResult.fail(
@@ -114,7 +99,6 @@ sealed class AckSchema<T> {
       );
     }
 
-    // Only validate constraints if we have a non-null converted value
     final constraintViolations = _checkConstraints(convertedValue, context);
     if (constraintViolations.isNotEmpty) {
       return SchemaResult.fail(SchemaConstraintsError(
@@ -127,15 +111,18 @@ sealed class AckSchema<T> {
   }
 
   @protected
-  SchemaResult<T> tryConvertInput(Object? inputValue, SchemaContext context);
-
-  @protected
-  SchemaResult<T> validateConvertedValue(
-    T? convertedValue,
+  SchemaResult<DartType> tryConvertInput(
+    Object? inputValue,
     SchemaContext context,
   );
 
-  SchemaResult<T> validate(Object? value, {String? debugName}) {
+  @protected
+  SchemaResult<DartType> validateConvertedValue(
+    DartType convertedValue,
+    SchemaContext context,
+  );
+
+  SchemaResult<DartType> validate(Object? value, {String? debugName}) {
     final effectiveDebugName = debugName ?? schemaType.name.toLowerCase();
 
     return executeWithContext(
@@ -144,50 +131,55 @@ sealed class AckSchema<T> {
     );
   }
 
-  T parse(Object? value, {String? debugName}) {
+  DartType? parse(Object? value, {String? debugName}) {
     final result = validate(value, debugName: debugName);
 
     return result.getOrThrow();
   }
 
-  T? tryParse(Object? value, {String? debugName}) {
+  DartType? tryParse(Object? value, {String? debugName}) {
     final result = validate(value, debugName: debugName);
 
     return result.getOrNull();
   }
 
-  // Abstract method for subclasses to implement their specific copyWith logic
   @protected
-  AckSchema<T> copyWithInternal({
-    String? description,
-    Object? defaultValue,
-    List<Validator<T>>? constraints,
+  AckSchema<DartType> copyWithInternal({
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<DartType>>? constraints,
   });
 
-  // Concrete implementation of copyWith that delegates to copyWithInternal
-  AckSchema<T> copyWith({
+  AckSchema<DartType> copyWith({
+    bool? isNullable,
     String? description,
     Object? defaultValue,
-    List<Validator<T>>? constraints,
+    List<Validator<DartType>>? constraints,
   }) {
     return copyWithInternal(
+      isNullable: isNullable,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
     );
   }
 
-  // Concrete fluent API methods - no need for subclasses to implement these
-  AckSchema<T> withDescription(String? newDescription) =>
+  AckSchema<DartType> nullable({bool value = true}) =>
+      copyWith(isNullable: value);
+
+  AckSchema<DartType> withDescription(String? newDescription) =>
       copyWith(description: newDescription);
 
-  AckSchema<T> withDefault(T newDefaultValue) =>
+  AckSchema<DartType> withDefault(DartType newDefaultValue) =>
       copyWith(defaultValue: newDefaultValue);
 
-  AckSchema<T> addConstraint(Validator<T> constraint) =>
+  AckSchema<DartType> addConstraint(Validator<DartType> constraint) =>
       copyWith(constraints: [...constraints, constraint]);
 
-  AckSchema<T> addConstraints(List<Validator<T>> newConstraints) =>
+  AckSchema<DartType> addConstraints(
+    List<Validator<DartType>> newConstraints,
+  ) =>
       copyWith(constraints: [...constraints, ...newConstraints]);
 
   Map<String, Object?> toJsonSchema();
@@ -196,17 +188,10 @@ sealed class AckSchema<T> {
   Map<String, Object?> toDefinitionMap() {
     return {
       'schemaType': schemaType.name,
+      'isNullable': isNullable,
       'description': description,
       'defaultValue': defaultValue?.toString(),
       'constraints': constraints.map((c) => c.toMap()).toList(),
     };
-  }
-}
-
-/// Extension to provide the `.nullable()` method on non-nullable schemas.
-extension NullableSchemaExtension<T extends Object> on AckSchema<T> {
-  /// Transforms a non-nullable schema into a schema that accepts `null`.
-  AckSchema<T?> nullable() {
-    return NullableSchema(this);
   }
 }

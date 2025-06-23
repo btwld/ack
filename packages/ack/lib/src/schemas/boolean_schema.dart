@@ -6,36 +6,31 @@ final class BooleanSchema extends AckSchema<bool> {
   final bool strictPrimitiveParsing;
 
   const BooleanSchema({
-    String? description,
-    bool? defaultValue,
-    List<Validator<bool>> constraints = const [],
     this.strictPrimitiveParsing = false,
-  }) : super(
-          schemaType: SchemaType.boolean,
-          description: description,
-          defaultValue: defaultValue,
-          constraints: constraints,
-        );
+    super.isNullable,
+    super.description,
+    super.defaultValue,
+    super.constraints,
+  }) : super(schemaType: SchemaType.boolean);
 
   /// Creates a new BooleanSchema with strict parsing enabled/disabled
   BooleanSchema strictParsing({bool value = true}) =>
-      copyWithBooleanProperties(strictPrimitiveParsing: value);
+      copyWith(strictPrimitiveParsing: value);
 
-  /// Creates a new BooleanSchema with modified boolean-specific properties
-  BooleanSchema copyWithBooleanProperties({
+  @override
+  BooleanSchema copyWith({
     bool? strictPrimitiveParsing,
+    bool? isNullable,
     String? description,
     Object? defaultValue,
     List<Validator<bool>>? constraints,
   }) {
-    return BooleanSchema(
-      description: description ?? this.description,
-      defaultValue: defaultValue == ackRawDefaultValue
-          ? this.defaultValue
-          : defaultValue as bool?,
-      constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    return copyWithInternal(
+      strictPrimitiveParsing: strictPrimitiveParsing,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
     );
   }
 
@@ -62,55 +57,50 @@ final class BooleanSchema extends AckSchema<bool> {
     }
 
     final constraintError =
-        InvalidTypeConstraint(expectedType: bool).validate(inputValue);
+        InvalidTypeConstraint(expectedType: bool, inputValue: inputValue)
+            .validate(inputValue);
 
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
+    return SchemaResult.fail(
+      SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ),
+    );
   }
 
   @override
   SchemaResult<bool> validateConvertedValue(
-    bool? convertedValue,
+    bool convertedValue,
     SchemaContext context,
   ) {
-    if (convertedValue == null) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: bool, inputValue: null)
-              .validate(null);
-
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context,
-        ),
-      );
-    }
-
     return SchemaResult.ok(convertedValue);
   }
 
   @override
   BooleanSchema copyWithInternal({
-    String? description,
-    Object? defaultValue,
-    List<Validator<bool>>? constraints,
+    required bool? isNullable,
+    required String? description,
+    required Object? defaultValue,
+    required List<Validator<bool>>? constraints,
+    // BooleanSchema specific
+    bool? strictPrimitiveParsing,
   }) {
     return BooleanSchema(
+      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue == ackRawDefaultValue
           ? this.defaultValue
           : defaultValue as bool?,
       constraints: constraints ?? this.constraints,
-      strictPrimitiveParsing: strictPrimitiveParsing,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
     final Map<String, Object?> schema = {
-      'type': 'boolean',
+      'type': isNullable ? ['boolean', 'null'] : 'boolean',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
