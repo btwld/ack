@@ -27,11 +27,10 @@ class AckException implements Exception {
           constraintError.constraints.map((c) => c.message).join(', ');
     } else if (error is SchemaNestedError) {
       final nestedError = error as SchemaNestedError;
-      errorDetails = nestedError.errors
-          .map((e) => '"${e.name}": ${e.errorKey}')
-          .join(', ');
+      errorDetails =
+          nestedError.errors.map((e) => '"${e.name}": ${e.message}').join(', ');
     } else {
-      errorDetails = error.errorKey;
+      errorDetails = error.message;
     }
     final valueStr = error.value?.toString() ?? 'null';
     final truncatedValue =

@@ -13,6 +13,7 @@ export 'src/schemas/extensions/object_schema_extensions.dart';
 export 'src/schemas/extensions/refine_extension.dart';
 // Extensions
 export 'src/schemas/extensions/string_schema_extensions.dart';
+export 'src/schemas/extensions/transform_extension.dart';
 // Core schemas
 export 'src/schemas/schema.dart';
 export 'src/validation/ack_exception.dart';

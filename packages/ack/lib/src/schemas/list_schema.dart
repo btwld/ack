@@ -61,6 +61,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
           // The best approach is to continue and let downstream code handle it,
           // as forcing a `null` into a `List<V>` is not type-safe at compile time.
           // Intentionally empty - we skip adding this item to maintain type safety.
+          continue; // Skip this item to maintain type safety
         }
       } else {
         itemErrors.add(itemResult.getError());
