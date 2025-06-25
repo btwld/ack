@@ -117,5 +117,84 @@ void main() {
             'Required property "name" is missing.');
       });
     });
+
+    group('extend', () {
+      test('should extend with new properties', () {
+        final extendedSchema = userSchema.extend({
+          'age': IntegerSchema().min(0),
+          'phone': StringSchema(),
+        });
+
+        final result = extendedSchema.validate({
+          'name': 'Leo',
+          'email': 'leo@example.com',
+          'age': 30,
+          'phone': '+1234567890',
+        });
+        expect(result.isOk, isTrue);
+      });
+
+      test('should override existing properties', () {
+        final extendedSchema = userSchema.extend({
+          'name':
+              StringSchema().minLength(5), // Override with stricter constraint
+        });
+
+        // Should fail with short name due to override
+        final result = extendedSchema.validate({
+          'name': 'Leo', // Only 3 characters
+          'email': 'leo@example.com',
+        });
+        expect(result.isOk, isFalse);
+
+        // Should pass with longer name
+        final result2 = extendedSchema.validate({
+          'name': 'Leonardo',
+          'email': 'leo@example.com',
+        });
+        expect(result2.isOk, isTrue);
+      });
+
+      test('should merge required fields', () {
+        final extendedSchema = userSchema.extend({
+          'age': IntegerSchema().min(0),
+        }, required: [
+          'age'
+        ]);
+
+        // Should fail without age
+        final result = extendedSchema.validate({
+          'name': 'Leo',
+          'email': 'leo@example.com',
+        });
+        expect(result.isOk, isFalse);
+
+        // Should pass with age
+        final result2 = extendedSchema.validate({
+          'name': 'Leo',
+          'email': 'leo@example.com',
+          'age': 30,
+        });
+        expect(result2.isOk, isTrue);
+      });
+
+      test('should override schema construction elements', () {
+        final extendedSchema = userSchema.extend({
+          'extra': StringSchema(),
+        }, additionalProperties: true, description: 'Extended user schema');
+
+        // Should allow additional properties
+        final result = extendedSchema.validate({
+          'name': 'Leo',
+          'email': 'leo@example.com',
+          'extra': 'value',
+          'unknown': 'allowed',
+        });
+        expect(result.isOk, isTrue);
+
+        // Check description was set
+        expect(extendedSchema.description, 'Extended user schema');
+      });
+    });
   });
 }

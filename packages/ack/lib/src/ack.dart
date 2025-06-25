@@ -51,6 +51,9 @@ final class Ack {
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
       EnumSchema(values: values);
 
+  static StringSchema enumString(List<String> values) =>
+      string().enumString(values);
+
   /// Creates a schema that can be one of many types.
   static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);
 }
