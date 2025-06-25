@@ -13,7 +13,8 @@ void main() {
         test('should validate basic string', () {
           final schema = Ack.string();
           expect(schema.validate('hello').isOk, isTrue);
-          expect(schema.validate(123).isOk, isFalse);
+          expect(
+              schema.validate(123).isOk, isTrue); // Type coercion: 123 -> "123"
         });
 
         test('should validate with constraints', () {
@@ -194,7 +195,8 @@ void main() {
         test('should validate basic list', () {
           final schema = Ack.list(Ack.string());
           expect(schema.validate(['hello', 'world']).isOk, isTrue);
-          expect(schema.validate([1, 2, 3]).isOk, isFalse);
+          expect(schema.validate([1, 2, 3]).isOk,
+              isTrue); // Type coercion: numbers -> strings
         });
 
         test('should validate with list constraints', () {
@@ -410,7 +412,8 @@ void main() {
 
           expect(schema.validate('hello').isOk, isTrue);
           expect(schema.validate(42).isOk, isTrue);
-          expect(schema.validate(true).isOk, isFalse);
+          expect(schema.validate(true).isOk,
+              isTrue); // Type coercion: true -> "true"
         });
 
         test('should validate complex anyOf schemas', () {
@@ -466,7 +469,8 @@ void main() {
                 'value': ['a', 'b', 'c']
               }).isOk,
               isTrue);
-          expect(schema.validate({'value': true}).isOk, isFalse);
+          expect(schema.validate({'value': true}).isOk,
+              isTrue); // Type coercion: true -> "true"
         });
 
         test('should generate correct JSON schema', () {

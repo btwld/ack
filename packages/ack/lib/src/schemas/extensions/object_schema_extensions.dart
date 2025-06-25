@@ -43,6 +43,40 @@ extension ObjectSchemaExtensions on ObjectSchema {
     return copyWith(requiredProperties: const []);
   }
 
+  /// Extends this schema with additional or overridden properties.
+  ///
+  /// Acts like an additional constructor, allowing you to override properties
+  /// one by one and add additional properties and construction elements.
+  ///
+  /// Properties in [newProperties] will override existing properties with the same key.
+  /// The [required] list will be merged with existing required properties.
+  /// Other schema properties can be overridden using the optional parameters.
+  ObjectSchema extend(
+    Map<String, AckSchema> newProperties, {
+    List<String>? required,
+    bool? additionalProperties,
+    bool? isNullable,
+    String? description,
+    Map<String, Object?>? defaultValue,
+  }) {
+    // Merge properties, with new properties taking precedence
+    final mergedProperties = {...properties, ...newProperties};
+
+    // Merge required fields if provided, otherwise keep existing
+    final mergedRequired = required != null
+        ? {...this.required, ...required}.toList()
+        : this.required;
+
+    return copyWith(
+      properties: mergedProperties,
+      requiredProperties: mergedRequired,
+      allowAdditionalProperties: additionalProperties,
+      isNullable: isNullable,
+      description: description,
+      defaultValue: defaultValue,
+    );
+  }
+
   /// Creates a new schema with a subset of the original's properties.
   ///
   /// Only the properties with keys included in [keysToPick] will be

@@ -148,6 +148,14 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
+  /// validateOrThrow is a convenience method that validates the value
+  /// and throws an exception if validation fails.
+  void validateOrThrow(Object? value, {String? debugName}) {
+    final result = validate(value, debugName: debugName);
+
+    result.getOrThrow();
+  }
+
   DartType? parse(Object? value, {String? debugName}) {
     final result = validate(value, debugName: debugName);
 

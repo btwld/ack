@@ -63,8 +63,9 @@ void main() {
     });
 
     group('Type Conversion', () {
-      test('StringSchema should fail for non-string input', () {
-        final schema = StringSchema();
+      test('StringSchema should fail for non-string input with strict parsing',
+          () {
+        final schema = StringSchema().strictParsing();
         final result = schema.validate(123);
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;

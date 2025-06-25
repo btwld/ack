@@ -1,0 +1,342 @@
+# ACK Utility - Comprehensive Public API Documentation
+
+## Overview
+ACK (Another Constraint Kit) is a powerful Dart validation library inspired by Zod, providing type-safe schema validation with a fluent API. This document covers the complete public API surface.
+
+## Core Entry Point
+
+### Ack Class
+The main entry point for creating schemas.
+
+```dart
+import 'package:ack/ack.dart';
+
+// Static factory methods
+Ack.string()           // Creates StringSchema
+Ack.integer()          // Creates IntegerSchema  
+Ack.double()           // Creates DoubleSchema
+Ack.boolean()          // Creates BooleanSchema
+Ack.enumString(values) // Creates StringSchema from List<String>
+Ack.literal(value)     // Creates literal string schema
+Ack.object(properties, {required, additionalProperties})  // Creates ObjectSchema
+Ack.list(itemSchema)   // Creates ListSchema<T>
+Ack.enumValues(values) // Creates EnumSchema<T>
+Ack.anyOf(schemas)     // Creates AnyOfSchema
+Ack.discriminated({discriminatorKey, schemas})  // Creates DiscriminatedObjectSchema
+```
+
+## Schema Types
+
+### 1. StringSchema
+Validates string values with extensive constraint options.
+
+**Core Methods:**
+- `validate(value)` → `SchemaResult<String>`
+- `parse(value)` → `String?` (throws on error)
+- `tryParse(value)` → `String?` (returns null on error)
+- `safeParse(value)` → `SchemaResult<String>` (alias for validate)
+
+**String-Specific Constraints:**
+- `minLength(int n)` - Minimum character length
+- `maxLength(int n)` - Maximum character length  
+- `length(int n)` - Exact character length
+- `email()` - Valid email format
+- `url()` - Valid URL format
+- `uuid()` - Valid UUID format
+- `datetime()` - Valid ISO 8601 datetime
+- `ip({int? version})` - Valid IP address (v4/v6)
+- `matches(String pattern, {String? example})` - Regex pattern matching
+- `startsWith(String value)` - Must start with value
+- `endsWith(String value)` - Must end with value
+- `enumString(List<String> values)` - Must be one of allowed values
+- `literal(String value)` - Must exactly equal value
+- `strictParsing({bool value = true})` - Enable/disable type coercion
+
+### 2. IntegerSchema
+Validates integer values with numeric constraints.
+
+**Numeric Constraints:**
+- `min(int n)` - Minimum value (>=)
+- `max(int n)` - Maximum value (<=)
+- `greaterThan(int n)` - Exclusive minimum (>)
+- `lessThan(int n)` - Exclusive maximum (<)
+- `positive()` - Must be > 0
+- `negative()` - Must be < 0
+- `multipleOf(int n)` - Must be multiple of n
+- `strictParsing({bool value = true})` - Enable/disable type coercion
+
+### 3. DoubleSchema
+Validates double/decimal values with numeric constraints.
+
+**Numeric Constraints:**
+- `min(double n)` - Minimum value (>=)
+- `max(double n)` - Maximum value (<=)
+- `greaterThan(double n)` - Exclusive minimum (>)
+- `lessThan(double n)` - Exclusive maximum (<)
+- `positive()` - Must be > 0
+- `negative()` - Must be < 0
+- `multipleOf(double n)` - Must be multiple of n
+- `strictParsing({bool value = true})` - Enable/disable type coercion
+
+### 4. BooleanSchema
+Validates boolean values.
+
+**Boolean-Specific:**
+- `strictParsing({bool value = true})` - Enable/disable string coercion ("true"/"false")
+
+### 5. ObjectSchema
+Validates Map<String, Object?> with property definitions.
+
+**Constructor:**
+```dart
+Ack.object(
+  Map<String, AckSchema> properties,
+  {
+    List<String> required = const [],
+    bool additionalProperties = false,
+  }
+)
+```
+
+**Object-Specific Methods:**
+- `strict()` - Disallow additional properties (convenience for additionalProperties: false)
+- `passthrough()` - Allow additional properties (convenience for additionalProperties: true)
+- `merge(ObjectSchema other)` - Merge with another ObjectSchema (other's properties take precedence)
+- `extend(Map<String, AckSchema> properties, {...})` - Extend schema with additional/overridden properties and construction elements
+- `partial()` - Make all properties optional (removes all required constraints)
+- `pick(List<String> keys)` - Create new schema with only specified properties
+- `omit(List<String> keys)` - Create new schema excluding specified properties
+
+### 6. ListSchema<T>
+Validates List<T> where each item conforms to itemSchema.
+
+**List-Specific Constraints:**
+- `minItems(int n)` - Minimum number of items
+- `maxItems(int n)` - Maximum number of items
+- `exactLength(int n)` - Exact number of items
+- `nonEmpty()` - Must have at least 1 item (convenience for minItems(1))
+- `unique()` - All items must be unique
+
+### 7. EnumSchema<T extends Enum>
+Validates enum values with automatic string/index conversion.
+
+**Features:**
+- Accepts enum values directly
+- Converts string names to enum values
+- Converts integer indices to enum values
+
+### 8. AnyOfSchema
+Validates against multiple possible schemas (union type).
+
+**Usage:**
+```dart
+final schema = Ack.anyOf([
+  Ack.string(),
+  Ack.integer(),
+  Ack.boolean()
+]);
+```
+
+### 9. DiscriminatedObjectSchema
+Validates polymorphic objects based on a discriminator field.
+
+**Usage:**
+```dart
+final animalSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'cat': catSchema,
+    'dog': dogSchema,
+  }
+);
+```
+
+## Universal Schema Methods (FluentSchema Mixin)
+
+All schema types inherit these methods:
+
+### Nullability
+- `nullable({bool value = true})` - Make schema accept null values
+
+### Metadata
+- `withDescription(String? description)` - Add description for documentation
+- `withDefault(T defaultValue)` - Set default value for null inputs
+
+### Custom Validation
+- `withConstraint(Constraint<T> constraint)` - Add single constraint
+- `withConstraints(List<Constraint<T>> constraints)` - Add multiple constraints
+- `refine(bool Function(T) validate, {String message})` - Add custom validation function
+
+### Transformation
+- `transform<R>(R Function(T?) transformer)` - Transform validated value to different type
+
+## Validation Results
+
+### SchemaResult<T>
+Represents validation outcome without throwing exceptions.
+
+**Properties:**
+- `bool isOk` - True if validation succeeded
+- `bool isFail` - True if validation failed
+
+**Methods:**
+- `T? getOrThrow()` - Get value or throw exception
+- `T? getOrNull()` - Get value or return null
+- `SchemaError getError()` - Get error (only if failed)
+- `T getOrElse(T Function() defaultValue)` - Get value or default
+
+### SchemaError Types
+Base class: `SchemaError`
+
+**Subclasses:**
+- `SchemaConstraintsError` - Constraint violations
+- `SchemaNestedError` - Multiple nested errors
+- `SchemaValidationError` - General validation errors
+- `SchemaTransformError` - Transformation failures
+
+**Properties:**
+- `String message` - Error description
+- `String name` - Schema context name
+- `Object? value` - Input value that failed
+- `AckSchema schema` - Schema that failed
+- `SchemaContext context` - Full validation context
+
+## JSON Schema Integration
+
+All schemas support JSON Schema generation:
+
+```dart
+final schema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'age': Ack.integer().min(0).nullable(),
+});
+
+final jsonSchema = schema.toJsonSchema();
+// Generates standard JSON Schema object
+```
+
+## Type Coercion
+
+ACK provides intelligent type coercion by default:
+
+**String Schema:**
+- Numbers and booleans → string representation
+- Disable with `strictParsing()`
+
+**Integer Schema:**
+- String numbers → parsed integers
+- Whole doubles → integers
+- Disable with `strictParsing()`
+
+**Double Schema:**
+- String numbers → parsed doubles
+- Integers → doubles
+
+**Boolean Schema:**
+- "true"/"false" strings → booleans
+- Disable with `strictParsing()`
+
+## Advanced Features
+
+### ObjectSchema Composition
+ObjectSchema provides powerful composition methods:
+
+```dart
+// Base user schema
+final baseUserSchema = Ack.object({
+  'id': Ack.string(),
+  'name': Ack.string(),
+}, required: ['id', 'name']);
+
+// Address schema
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+}, required: ['street', 'city']);
+
+// Merge schemas (address properties added to user)
+final userWithAddressSchema = baseUserSchema.merge(addressSchema);
+
+// Extend schema with additional properties and construction elements
+final extendedUserSchema = baseUserSchema.extend({
+  'age': Ack.integer().min(0).max(120),
+  'name': Ack.string().minLength(2), // Override existing property
+  'phone': Ack.string().matches(r'^\+?[\d\s-()]+$'),
+},
+  required: ['age'], // Add to existing required fields
+  additionalProperties: true,
+  description: 'Extended user schema with age and phone'
+);
+
+// Pick specific properties
+final userIdOnlySchema = baseUserSchema.pick(['id']);
+
+// Omit properties
+final userWithoutIdSchema = baseUserSchema.omit(['id']);
+```
+
+**Merge Behavior:**
+- Properties from the second schema overwrite properties with same keys
+- Required fields from both schemas are combined
+- Other schema properties (nullable, description, etc.) are preserved from the first schema
+
+**Extend Behavior:**
+- Acts like an additional constructor for the schema
+- New properties override existing properties with same keys
+- Required fields are merged with existing required fields
+- Allows overriding any construction element (additionalProperties, description, etc.)
+- More flexible than merge() as it accepts individual parameters rather than another schema
+
+### Custom Constraints
+Implement `Constraint<T>` interface for custom validation logic.
+
+### Schema Context
+`SchemaContext` provides validation context including:
+- Schema name/path
+- Current schema instance
+- Input value being validated
+
+### Error Handling Patterns
+```dart
+// Exception-based (throws on error)
+final user = userSchema.parse(data);
+
+// Result-based (explicit error handling)
+final result = userSchema.validate(data);
+if (result.isOk) {
+  final user = result.getOrThrow();
+} else {
+  final error = result.getError();
+  print('Validation failed: ${error.message}');
+}
+
+// Null-safe (returns null on error)
+final user = userSchema.tryParse(data);
+if (user != null) {
+  // Use validated user
+}
+```
+
+## Best Practices
+
+1. **Use specific constraints**: Prefer `email()` over generic regex patterns
+2. **Leverage nullability**: Use `nullable()` for optional fields
+3. **Handle errors explicitly**: Use `validate()` for explicit error handling
+4. **Compose schemas**: Build complex schemas from simpler ones
+5. **Use discriminated unions**: For polymorphic data structures
+6. **Add descriptions**: Document schemas with `withDescription()`
+7. **Set defaults**: Use `withDefault()` for sensible fallbacks
+
+## Package Structure
+
+**Core Package:** `ack`
+- Runtime validation library
+- All schema types and constraints
+- Fluent API and extensions
+
+**Generator Package:** `ack_generator`
+- Code generation from annotated Dart classes
+- Build runner integration
+- Type-safe schema classes
+
+This comprehensive API provides powerful, type-safe validation capabilities with excellent developer experience through its fluent interface and explicit error handling.
