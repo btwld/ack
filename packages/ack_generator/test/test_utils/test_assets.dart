@@ -78,12 +78,14 @@ export 'src/validation/ack_exception.dart';
   'ack|lib/src/ack.dart': '''
 class Ack {
   static const string = StringSchema();
-  static const integer = IntegerSchema();
+  static const int = IntegerSchema();
   static const double = DoubleSchema();
   static const number = NumberSchema();
   static const boolean = BooleanSchema();
+  static const any = AnySchema();
   
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
+  static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
   static ObjectSchema object(Map<String, AckSchema> properties, {List<String>? required, bool additionalProperties = false}) =>
     ObjectSchema(properties, required: required, additionalProperties: additionalProperties);
 }
@@ -95,6 +97,7 @@ class StringSchema extends AckSchema<String> {
   StringSchema notEmpty() => this;
   StringSchema minLength(int length) => this;
   StringSchema maxLength(int length) => this;
+  StringSchema enumString(List<String> values) => this;
   StringSchema nullable() => this;
 }
 class IntegerSchema extends AckSchema<int> {
@@ -116,10 +119,20 @@ class BooleanSchema extends AckSchema<bool> {
   const BooleanSchema();
   BooleanSchema nullable() => this;
 }
+class AnySchema extends AckSchema<dynamic> {
+  const AnySchema();
+  AnySchema nullable() => this;
+}
 class ListSchema<T> extends AckSchema<List<T>> {
   final AckSchema<T> itemSchema;
   const ListSchema(this.itemSchema);
   ListSchema<T> nullable() => this;
+  ListSchema<T> unique() => this;
+}
+class MapSchema<T> extends AckSchema<Map<String, T>> {
+  final AckSchema<T> valueSchema;
+  const MapSchema(this.valueSchema);
+  MapSchema<T> nullable() => this;
 }
 class ObjectSchema extends AckSchema<Map<String, Object?>> {
   final Map<String, AckSchema> properties;
