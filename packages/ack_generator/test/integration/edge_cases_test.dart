@@ -207,12 +207,12 @@ class Response<T> {
 ''',
         },
         outputs: {
-          'test_pkg|lib/generic.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/generic.g.dart': decodedMatches(allOf([
             contains('class ResponseSchema extends SchemaModel'),
             contains("'success': Ack.boolean"),
             contains("'error': Ack.string.nullable()"),
             // Generic type T would be treated as dynamic/any
-            contains("'data': TSchema().definition.nullable()"),
+            contains("'data': Ack.any.nullable()"),
           ])),
         },
       );
