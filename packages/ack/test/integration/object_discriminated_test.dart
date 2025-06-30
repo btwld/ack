@@ -8,7 +8,7 @@ void main() {
         'id': Ack.string(),
         'name': Ack.string(),
       });
-      
+
       final userTypeSchema = Ack.discriminated(
         discriminatorKey: 'role',
         schemas: {
@@ -22,23 +22,24 @@ void main() {
           }),
         },
       );
-      
+
       // Add common fields to all variants
-      final enhancedSchema = userTypeSchema.transform<Map<String, Object?>>((user) {
+      final enhancedSchema =
+          userTypeSchema.transform<Map<String, Object?>>((user) {
         return {
           ...user!,
           'lastActive': DateTime.now().toIso8601String(),
           'apiVersion': 'v2',
         };
       });
-      
+
       final admin = enhancedSchema.parse({
         'id': '1',
         'name': 'Admin User',
         'role': 'admin',
         'permissions': ['read', 'write', 'delete'],
       });
-      
+
       expect(admin!['role'], equals('admin'));
       expect(admin['apiVersion'], equals('v2'));
       expect(admin.containsKey('lastActive'), isTrue);

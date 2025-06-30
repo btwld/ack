@@ -11,7 +11,7 @@ void main() {
         'country': Ack.string(),
         'postalCode': Ack.string().matches(r'^\d{5}(-\d{4})?$'),
       });
-      
+
       final productSchema = Ack.object({
         'id': Ack.string().uuid(),
         'name': Ack.string(),
@@ -23,7 +23,7 @@ void main() {
           'total': (product['price'] as double) * (product['quantity'] as int),
         };
       });
-      
+
       final paymentSchema = Ack.discriminated(
         discriminatorKey: 'method',
         schemas: {
@@ -38,7 +38,7 @@ void main() {
           }),
         },
       );
-      
+
       final orderSchema = Ack.object({
         'orderId': Ack.string().uuid(),
         'customer': Ack.object({
@@ -51,20 +51,22 @@ void main() {
         'payment': paymentSchema,
         'notes': Ack.string().nullable(),
       })
-      .strict() // No additional properties
-      .refine((order) {
+          .strict() // No additional properties
+          .refine((order) {
         // Custom validation: total must be positive
         final items = order['items'] as List;
-        final total = items.fold<double>(0, (sum, item) => sum + (item as Map)['total'] as double);
+        final total =
+            items.fold<double>(0, (sum, item) => sum + (item as Map)['total']);
         return total > 0;
-      }, message: 'Order total must be positive')
-      .transform<Map<String, Object?>>((order) {
+      }, message: 'Order total must be positive').transform<
+              Map<String, Object?>>((order) {
         // Calculate order summary
         final items = order!['items'] as List;
-        final subtotal = items.fold<double>(0, (sum, item) => sum + (item as Map)['total'] as double);
+        final subtotal =
+            items.fold<double>(0, (sum, item) => sum + (item as Map)['total']);
         final tax = subtotal * 0.08;
         final shipping = items.length > 5 ? 0 : 10.0;
-        
+
         return {
           ...order,
           'summary': {
@@ -76,7 +78,7 @@ void main() {
           'processedAt': DateTime.now().toIso8601String(),
         };
       });
-      
+
       // Test with valid order
       final order = orderSchema.parse({
         'orderId': '550e8400-e29b-41d4-a716-446655440000',
@@ -110,7 +112,7 @@ void main() {
           'brand': 'visa',
         },
       });
-      
+
       expect(order!['summary'] as Map, isNotNull);
       final summary = order['summary'] as Map;
       expect(summary['subtotal'], equals(109.97));
@@ -129,8 +131,8 @@ void main() {
           }),
         }),
       })
-      .partial() // Make all fields optional
-      .transform<Map<String, Object?>>((obj) {
+          .partial() // Make all fields optional
+          .transform<Map<String, Object?>>((obj) {
         // Handle missing data gracefully
         final data = obj!['data'] as Map<String, Object?>?;
         return {
@@ -141,7 +143,7 @@ void main() {
               : 0,
         };
       });
-      
+
       // Test with full data
       expect(
         schema.parse({
@@ -159,7 +161,7 @@ void main() {
           'tagCount': 3,
         }),
       );
-      
+
       // Test with missing data
       expect(
         schema.parse(<String, Object?>{}),
@@ -182,13 +184,11 @@ void main() {
             }),
           }),
         },
-      )
-      .transform<Map<String, Object?>>((data) => data!)
-      .refine((data) {
+      ).transform<Map<String, Object?>>((data) => data!).refine((data) {
         final profile = data['profile'] as Map;
         return (profile['age'] as int) < 100;
       }, message: 'Age too high');
-      
+
       // Test validation at different levels
       try {
         schema.parse({
@@ -201,7 +201,8 @@ void main() {
       } catch (e) {
         expect(e, isA<AckException>());
         final errors = (e as AckException).errors;
-        expect(errors.any((err) => err.message.contains('Age too high')), isTrue);
+        expect(
+            errors.any((err) => err.message.contains('Age too high')), isTrue);
       }
     });
   });

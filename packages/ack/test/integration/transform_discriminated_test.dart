@@ -24,18 +24,18 @@ void main() {
           _ => 'Unknown event',
         };
       });
-      
+
       expect(
         eventSchema.parse({'type': 'click', 'x': 100, 'y': 200}),
         equals('Click at (100, 200)'),
       );
-      
+
       expect(
         eventSchema.parse({'type': 'scroll', 'delta': 50.5}),
         equals('Scroll by 50.5'),
       );
     });
-    
+
     test('should validate before transforming discriminated unions', () {
       final schema = Ack.discriminated(
         discriminatorKey: 'status',
@@ -52,13 +52,13 @@ void main() {
       ).transform<int>((result) {
         return result!['status'] == 'success' ? 0 : result['code'] as int;
       });
-      
+
       // Invalid discriminator should fail before transform
       expect(
         () => schema.parse({'status': 'unknown', 'data': 'test'}),
         throwsA(isA<AckException>()),
       );
-      
+
       // Invalid schema should fail before transform
       expect(
         () => schema.parse({'status': 'error', 'code': 'not-a-number'}),
