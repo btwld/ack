@@ -130,7 +130,7 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.ack.g.part': decodedMatches(
+          'test_pkg|lib/user.g.dart': decodedMatches(
             predicate<String>(
               (actual) {
                 // Normalize whitespace for comparison
@@ -187,7 +187,7 @@ class Order {
 ''',
         },
         outputs: {
-          'test_pkg|lib/order.ack.g.part': decodedMatches(
+          'test_pkg|lib/order.g.dart': decodedMatches(
             predicate<String>(
               (actual) {
                 // Check that both schemas are present
@@ -263,7 +263,7 @@ class SimpleProduct {
 ''',
         },
         outputs: {
-          'test_pkg|lib/product.ack.g.part': decodedMatches(
+          'test_pkg|lib/product.g.dart': decodedMatches(
             predicate<String>(
               (actual) {
                 // Check Product schema with additional properties

@@ -96,7 +96,7 @@ class Empty {}
 ''',
         },
         outputs: {
-          'test_pkg|lib/empty.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/empty.g.dart': decodedMatches(allOf([
             contains('class EmptySchema extends SchemaModel'),
             contains('Ack.object({})'),
             isNot(contains('required:')),
@@ -123,7 +123,7 @@ class Constants {
 ''',
         },
         outputs: {
-          'test_pkg|lib/constants.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/constants.g.dart': decodedMatches(allOf([
             contains('class ConstantsSchema extends SchemaModel'),
             contains('Ack.object({})'),
             isNot(contains('apiUrl')),
@@ -165,7 +165,7 @@ class User extends BaseEntity {
 ''',
         },
         outputs: {
-          'test_pkg|lib/inheritance.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/inheritance.g.dart': decodedMatches(allOf([
             // Should include inherited fields
             contains("'id': Ack.string"),
             contains(

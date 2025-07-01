@@ -1,7 +1,7 @@
-import 'package:test/test.dart';
-import 'package:build_test/build_test.dart';
-import 'package:build/build.dart';
 import 'package:ack_generator/builder.dart';
+import 'package:build/build.dart';
+import 'package:build_test/build_test.dart';
+import 'package:test/test.dart';
 
 import '../test_utils/test_assets.dart';
 
@@ -9,7 +9,7 @@ void main() {
   group('Nested Model Integration Tests', () {
     test('generates schema with nested models', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -45,26 +45,28 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/models.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/models.g.dart': decodedMatches(allOf([
             // Address schema
             contains('class AddressSchema extends SchemaModel'),
             contains("'street': Ack.string"),
             contains("'city': Ack.string"),
             contains("'zipCode': Ack.string"),
-            
+
             // User schema
             contains('class UserSchema extends SchemaModel'),
             contains("'address': AddressSchema().definition"),
             contains("'mailingAddress': AddressSchema().definition.nullable()"),
-            
+
             // Nested getters
             contains('AddressSchema get address {'),
             contains("final data = getValue<Map<String, Object?>>('address');"),
             contains('return AddressSchema().parse(data);'),
-            
+
             contains('AddressSchema? get mailingAddress {'),
-            contains("final data = getValueOrNull<Map<String, Object?>>('mailingAddress');"),
-            contains('return data != null ? AddressSchema().parse(data) : null;'),
+            contains(
+                "final data = getValueOrNull<Map<String, Object?>>('mailingAddress');"),
+            contains(
+                'return data != null ? AddressSchema().parse(data) : null;'),
           ])),
         },
       );
@@ -72,7 +74,7 @@ class User {
 
     test('generates schema with lists of nested models', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -108,7 +110,7 @@ class Order {
 ''',
         },
         outputs: {
-          'test_pkg|lib/order.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/order.g.dart': decodedMatches(allOf([
             contains("'items': Ack.list(OrderItemSchema().definition)"),
             contains('List<OrderItem> get items => getValue<List>'),
             contains(".cast<OrderItem>();"),
@@ -119,7 +121,7 @@ class Order {
 
     test('handles deeply nested models', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -166,19 +168,19 @@ class Company {
 ''',
         },
         outputs: {
-          'test_pkg|lib/company.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/company.g.dart': decodedMatches(allOf([
             // Contact schema
             contains('class ContactSchema extends SchemaModel'),
-            
-            // Department schema  
+
+            // Department schema
             contains('class DepartmentSchema extends SchemaModel'),
             contains("'manager': ContactSchema().definition"),
             contains("'employees': Ack.list(ContactSchema().definition)"),
-            
+
             // Company schema
             contains('class CompanySchema extends SchemaModel'),
             contains("'departments': Ack.list(DepartmentSchema().definition)"),
-            
+
             // Nested list getter
             contains('List<Department> get departments'),
           ])),
