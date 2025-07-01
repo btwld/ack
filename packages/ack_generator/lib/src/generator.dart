@@ -1,5 +1,5 @@
 // ignore: unused_import
-import 'package:ack/ack.dart' show SchemaModel;
+
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
@@ -11,7 +11,7 @@ import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
 
 /// Generates SchemaModel implementations for classes annotated with @AckModel
-/// 
+///
 /// This generator processes all annotated classes in a source file together to create
 /// a single .g.dart file with proper imports and all schema classes. This approach
 /// solves the multiple-classes-per-file issue that occurs with GeneratorForAnnotation.
@@ -39,8 +39,8 @@ class AckSchemaGenerator extends Generator {
       return '';
     }
 
-    // Generate all schema classes for this file
-    final schemaClasses = <Class>[];
+    // Generate all schema functions for this file
+    final schemaFunctions = <Method>[];
     final analyzer = ModelAnalyzer();
     final schemaBuilder = SchemaBuilder();
 
@@ -53,10 +53,10 @@ class AckSchemaGenerator extends Generator {
             TypeChecker.fromRuntime(AckModel).firstAnnotationOf(element)!;
         final annotationReader = ConstantReader(annotation);
 
-        // Analyze the model and build the schema class
+        // Analyze the model and build the schema function
         final modelInfo = analyzer.analyze(element, annotationReader);
-        final schemaClass = schemaBuilder.buildClass(modelInfo);
-        schemaClasses.add(schemaClass);
+        final schemaFunction = schemaBuilder.buildSchemaFunction(modelInfo);
+        schemaFunctions.add(schemaFunction);
       } catch (e) {
         throw InvalidGenerationSourceError(
           'Error generating schema for ${element.name}: $e',
@@ -73,7 +73,7 @@ class AckSchemaGenerator extends Generator {
         Directive.import('package:ack/ack.dart'),
         Directive.import('package:meta/meta.dart'),
       ])
-      ..body.addAll(schemaClasses));
+      ..body.addAll(schemaFunctions));
 
     final emitter = DartEmitter(
       allocator: Allocator.none,

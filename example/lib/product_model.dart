@@ -85,13 +85,13 @@ void main() {
   };
 
   try {
-    final schema = ProductSchema().parse(productData);
+    final result = productSchema().parse(productData) as Map<String, dynamic>;
 
     print('✅ Schema parsing successful!');
-    print('✅ Product ID: ${schema.id}');
-    print('✅ Product Name: ${schema.name}');
-    print('✅ Category: ${schema.category.name}');
-    print('✅ Additional properties: ${schema.metadata}');
+    print('✅ Product ID: ${result['id']}');
+    print('✅ Product Name: ${result['name']}');
+    print('✅ Category: ${(result['category'] as Map<String, dynamic>)['name']}');
+    print('✅ Additional properties: ${result['metadata']}');
 
     print('\n🎉 Product schema test passed!');
   } catch (e) {

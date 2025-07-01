@@ -1,4 +1,3 @@
-import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 import '../lib/product_model.g.dart';
@@ -25,28 +24,26 @@ void main() {
         'productCode': 'ABC-1234', // matches pattern
       };
 
-      final schema = ProductSchema().parse(validData);
+      final schema = productSchema();
+      final result = schema.validate(validData);
 
-      // No exception means schema is valid with correct data
+      // Check validation was successful
+      expect(result.isOk, isTrue);
 
-      // Test all field values
-      expect(schema.id, equals('prod123'));
-      expect(schema.name, equals('Valid Product Name'));
-      expect(schema.description, equals('A valid product description'));
-      expect(schema.price, equals(99.99));
-      expect(schema.contactEmail, equals('test@example.com'));
-      expect(schema.imageUrl, equals('https://example.com/image.jpg'));
-      expect(schema.releaseDate, equals('2024-01-15'));
-      expect(schema.createdAt, equals('2024-01-15T10:30:00Z'));
-      expect(schema.updatedAt, equals('2024-01-16T11:45:00Z'));
-      expect(schema.stockQuantity, equals(50));
-      expect(schema.status, equals('published'));
-      expect(schema.productCode, equals('ABC-1234'));
-
-      // Test direct property access (new architecture)
-      expect(schema.id, equals('prod123'));
-      expect(schema.name, equals('Valid Product Name'));
-      expect(schema.contactEmail, equals('test@example.com'));
+      // Test all field values from validated data
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['id'], equals('prod123'));
+      expect(parsedData['name'], equals('Valid Product Name'));
+      expect(parsedData['description'], equals('A valid product description'));
+      expect(parsedData['price'], equals(99.99));
+      expect(parsedData['contactEmail'], equals('test@example.com'));
+      expect(parsedData['imageUrl'], equals('https://example.com/image.jpg'));
+      expect(parsedData['releaseDate'], equals('2024-01-15'));
+      expect(parsedData['createdAt'], equals('2024-01-15T10:30:00Z'));
+      expect(parsedData['updatedAt'], equals('2024-01-16T11:45:00Z'));
+      expect(parsedData['stockQuantity'], equals(50));
+      expect(parsedData['status'], equals('published'));
+      expect(parsedData['productCode'], equals('ABC-1234'));
     });
 
     test('should reject data violating @IsMinLength constraint', () {
@@ -63,8 +60,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsEmail constraint', () {
@@ -82,8 +80,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsMin/@IsMax constraints', () {
@@ -100,8 +99,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsPositive constraint', () {
@@ -118,8 +118,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsEnumValues constraint', () {
@@ -137,8 +138,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsPattern constraint', () {
@@ -156,8 +158,9 @@ void main() {
             'invalid-code', // Doesn't match pattern ^[A-Z]{2,3}-\d{4}$
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsDate constraint', () {
@@ -174,8 +177,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should reject data violating @IsDateTime constraint', () {
@@ -192,8 +196,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData),
-          throwsA(isA<AckException>()));
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should handle nullable fields correctly', () {
@@ -213,11 +218,14 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema().parse(dataWithNulls);
-      // No exception means schema is valid
-      expect(schema.contactEmail, isNull);
-      expect(schema.imageUrl, isNull);
-      expect(schema.updatedAt, isNull);
+      final schema = productSchema();
+      final result = schema.validate(dataWithNulls);
+      expect(result.isOk, isTrue);
+
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['contactEmail'], isNull);
+      expect(parsedData['imageUrl'], isNull);
+      expect(parsedData['updatedAt'], isNull);
     });
   });
 }

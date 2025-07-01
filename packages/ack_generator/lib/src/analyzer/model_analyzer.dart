@@ -60,6 +60,7 @@ class ModelAnalyzer {
       if (fieldInfo.isRequired) {
         requiredFields.add(fieldInfo.jsonKey);
       }
+      
     }
 
     // Validate additionalPropertiesField if specified

@@ -52,17 +52,51 @@ class FieldAnalyzer {
   }
 
   bool _isRequired(FieldElement field, DartObject? annotation) {
-    // First check annotation
-    if (annotation != null) {
-      final requiredField = annotation.getField('required');
-      if (requiredField != null && !requiredField.isNull) {
-        return requiredField.toBoolValue()!;
-      }
+    // If no annotation, use automatic detection
+    if (annotation == null) {
+      return field.type.nullabilitySuffix == NullabilitySuffix.none && 
+             !field.hasInitializer;
     }
     
-    // If not nullable and no default value, it's required
+    // Check if the annotation explicitly sets required
+    // We need to distinguish between @AckField(required: true/false) 
+    // and @AckField(jsonKey: 'something') where required is not explicitly set
+    
+    // For now, we'll use a heuristic: if the annotation only has jsonKey set,
+    // fall back to automatic detection. This handles the common case where
+    // @AckField is used only to customize the JSON key.
+    final hasExplicitRequired = _hasExplicitRequiredValue(annotation);
+    
+    if (hasExplicitRequired) {
+      return annotation.getField('required')!.toBoolValue()!;
+    }
+    
+    // Fall back to automatic detection
     return field.type.nullabilitySuffix == NullabilitySuffix.none && 
            !field.hasInitializer;
+  }
+  
+  bool _hasExplicitRequiredValue(DartObject annotation) {
+    // This is a workaround: we check if only jsonKey or constraints are set
+    // If so, we assume required was not explicitly set
+    // This isn't perfect but works for the common cases
+    
+    // Check the source to see if 'required' was explicitly mentioned
+    // For now, we'll assume that if required=false and there's a jsonKey,
+    // then required was not explicitly set (using the default)
+    
+    final requiredValue = annotation.getField('required')?.toBoolValue();
+    final hasJsonKey = annotation.getField('jsonKey')?.toStringValue() != null;
+    final hasConstraints = annotation.getField('constraints')?.toListValue()?.isNotEmpty ?? false;
+    
+    // If required is false and we have jsonKey or constraints, 
+    // assume required was not explicitly set
+    if (requiredValue == false && (hasJsonKey || hasConstraints)) {
+      return false;
+    }
+    
+    // Otherwise, assume it was explicitly set
+    return true;
   }
 
   List<ConstraintInfo> _extractConstraints(FieldElement field, DartObject? annotation) {

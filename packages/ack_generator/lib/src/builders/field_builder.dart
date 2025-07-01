@@ -39,15 +39,15 @@ class FieldBuilder {
 
   String _buildPrimitiveSchema(FieldInfo field) {
     if (field.type.isDartCoreString) {
-      return 'Ack.string';
+      return 'Ack.string()';
     } else if (field.type.isDartCoreInt) {
-      return 'Ack.int';
+      return 'Ack.integer()';
     } else if (field.type.isDartCoreDouble) {
-      return 'Ack.double';
+      return 'Ack.double()';
     } else if (field.type.isDartCoreBool) {
-      return 'Ack.boolean';
+      return 'Ack.boolean()';
     } else if (field.type.isDartCoreNum) {
-      return 'Ack.number';
+      return 'Ack.number()'; // Map num to number
     } else {
       throw UnsupportedError(
           'Unsupported primitive type: ${field.type.getDisplayString()}');
@@ -57,123 +57,123 @@ class FieldBuilder {
   String _buildListSchema(FieldInfo field) {
     // Use the DartType API instead of string parsing
     final listType = field.type;
-    
+
     if (listType is ParameterizedType && listType.typeArguments.isNotEmpty) {
       final itemType = listType.typeArguments[0];
       final itemSchema = _buildSchemaForType(itemType);
       return 'Ack.list($itemSchema)';
     }
-    
+
     // Fallback for untyped lists
-    return 'Ack.list(Ack.any)';
+    return 'Ack.list(Ack.any())';
   }
 
   String _buildMapSchema(FieldInfo field) {
     // Extract map value type using DartType API
     final mapType = field.type;
-    
+
     // Try to get type arguments from the DartType
     if (mapType is ParameterizedType && mapType.typeArguments.length == 2) {
       final keyType = mapType.typeArguments[0];
       final valueType = mapType.typeArguments[1];
-      
+
       // Verify key type is String (required for JSON)
       if (!keyType.isDartCoreString) {
         throw UnsupportedError(
-          'Map keys must be String for JSON serialization. Found: ${keyType.getDisplayString()}'
-        );
+            'Map keys must be String for JSON serialization. Found: ${keyType.getDisplayString()}');
       }
-      
+
       // Build schema for value type
       final valueSchema = _buildSchemaForType(valueType);
       return 'Ack.map($valueSchema)';
     }
-    
+
     // Fallback for untyped maps
-    return 'Ack.map(Ack.any)';
+    return 'Ack.map(Ack.any())';
   }
 
   String _buildSetSchema(FieldInfo field) {
     // Sets are serialized as arrays with unique constraint
     // Extract set element type using DartType API
     final setType = field.type;
-    
+
     if (setType is ParameterizedType && setType.typeArguments.isNotEmpty) {
       final elementType = setType.typeArguments[0];
       final elementSchema = _buildSchemaForType(elementType);
       return 'Ack.list($elementSchema).unique()';
     }
-    
+
     // Fallback for untyped sets
-    return 'Ack.list(Ack.any).unique()';
+    return 'Ack.list(Ack.any()).unique()';
   }
-  
+
   String _buildSchemaForType(DartType type) {
     // Helper method to build schema for any DartType
     if (type.isDartCoreString) {
-      return 'Ack.string';
+      return 'Ack.string()';
     } else if (type.isDartCoreInt) {
-      return 'Ack.int';
+      return 'Ack.integer()';
     } else if (type.isDartCoreDouble) {
-      return 'Ack.double';
+      return 'Ack.double()';
     } else if (type.isDartCoreBool) {
-      return 'Ack.boolean';
+      return 'Ack.boolean()';
     } else if (type.isDartCoreNum) {
-      return 'Ack.number';
+      return 'Ack.number()'; // Map num to number
     } else if (type.toString() == 'dynamic' || type.isDartCoreObject) {
-      return 'Ack.any';
+      return 'Ack.any()';
     } else if (type is TypeParameterType) {
       // Generic type parameter
-      return 'Ack.any';
+      return 'Ack.any()';
     } else if (type.isDartCoreList) {
       // Nested list
       if (type is ParameterizedType && type.typeArguments.isNotEmpty) {
         final itemType = type.typeArguments[0];
         return 'Ack.list(${_buildSchemaForType(itemType)})';
       }
-      return 'Ack.list(Ack.any)';
+      return 'Ack.list(Ack.any())';
     } else if (type.isDartCoreMap) {
       // Nested map
       if (type is ParameterizedType && type.typeArguments.length == 2) {
         final valueType = type.typeArguments[1];
         return 'Ack.map(${_buildSchemaForType(valueType)})';
       }
-      return 'Ack.map(Ack.any)';
+      return 'Ack.map(Ack.any())';
     } else if (type.isDartCoreSet) {
       // Nested set
       if (type is ParameterizedType && type.typeArguments.isNotEmpty) {
         final elementType = type.typeArguments[0];
         return 'Ack.list(${_buildSchemaForType(elementType)}).unique()';
       }
-      return 'Ack.list(Ack.any).unique()';
+      return 'Ack.list(Ack.any()).unique()';
     } else {
       // Assume it's a custom schema model
       final typeName = type.getDisplayString().replaceAll('?', '');
-      return '${typeName}Schema().definition';
+      return '${typeName.toLowerCase()}Schema()';
     }
   }
 
   String _buildNestedSchema(FieldInfo field) {
     final typeName = field.type.getDisplayString();
     final baseType = typeName.replaceAll('?', '');
-    return '${baseType}Schema().definition';
+    return '${baseType.toLowerCase()}Schema()';
   }
 
   String _buildEnumSchema(FieldInfo field) {
     final enumValues = field.enumValues;
     if (enumValues.isEmpty) {
-      throw UnsupportedError('Enum ${field.type.getDisplayString()} has no values');
+      throw UnsupportedError(
+          'Enum ${field.type.getDisplayString()} has no values');
     }
 
     // Generate enum schema with string values
     final valueList = enumValues.map((value) => "'$value'").join(', ');
-    
+
     return 'Ack.string().enumString([$valueList])';
   }
 
   String _buildGenericSchema(FieldInfo field) {
     // Generic types are treated as dynamic/any since we can't know the actual type at generation time
-    return 'Ack.any';
+    return 'Ack.any()';
   }
 
   String _applyConstraint(String schema, ConstraintInfo constraint) {

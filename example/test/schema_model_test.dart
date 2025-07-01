@@ -21,19 +21,18 @@ void main() {
         'productCode': 'PRD-1111',
       };
 
-      // Create schema with valid data
-      final schema = ProductSchema().parse(validData);
+      // Create schema and validate data
+      final schema = productSchema();
+      final result = schema.validate(validData);
 
-      // Check that validation was performed (no exception thrown means valid)
+      // Check that validation was successful
+      expect(result.isOk, isTrue);
 
-      // Access properties
-      expect(schema.id, equals('product-1'));
-      expect(schema.name, equals('Test Product'));
-      expect(schema.price, equals(19.99));
-
-      // Access properties directly from schema
-      expect(schema.id, equals('product-1'));
-      expect(schema.name, equals('Test Product'));
+      // Access properties from validated data
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['id'], equals('product-1'));
+      expect(parsedData['name'], equals('Test Product'));
+      expect(parsedData['price'], equals(19.99));
     });
 
     test('throws exception for invalid data', () {
@@ -45,21 +44,27 @@ void main() {
         'price': 'not-a-number', // Wrong type
       };
 
-      // Create schema with invalid data should throw exception
-      expect(() => ProductSchema().parse(invalidData), throwsException);
+      // Create schema and validate invalid data
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('throws exception for non-map input', () {
       // Non-map input
       final nonMapInput = 'not-a-map';
 
-      // Create schema with non-map input should throw exception
-      expect(() => ProductSchema().parse(nonMapInput), throwsException);
+      // Create schema and validate non-map input
+      final schema = productSchema();
+      final result = schema.validate(nonMapInput);
+      expect(result.isOk, isFalse);
     });
 
     test('throws exception for null input', () {
-      // Null input should throw exception
-      expect(() => ProductSchema().parse(null), throwsException);
+      // Create schema and validate null input
+      final schema = productSchema();
+      final result = schema.validate(null);
+      expect(result.isOk, isFalse);
     });
   });
 }

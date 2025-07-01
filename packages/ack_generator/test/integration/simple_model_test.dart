@@ -28,21 +28,14 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.ack.g.part': decodedMatches(allOf([
-            contains('class UserSchema extends SchemaModel'),
-            contains('UserSchema()'),
-            contains('UserSchema._valid(Map<String, Object?> data)'),
-            contains('@override\n  UserSchema parse(Object? input)'),
-            contains('return super.parse(input) as UserSchema;'),
-            contains('@override\n  UserSchema? tryParse(Object? input)'),
-            contains('return super.tryParse(input) as UserSchema?;'),
-            contains("'name': Ack.string"),
-            contains("'age': Ack.integer"),
-            contains("'email': Ack.string.nullable()"),
+          'test_pkg|lib/user.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema userSchema()'),
+            contains('/// Generated schema for User'),
+            contains("'name': Ack.string()"),
+            contains("'age': Ack.integer()"),
+            contains("'email': Ack.string().nullable()"),
             contains("required: ['name', 'age']"),
-            contains('String get name => getValue<String>(\'name\')'),
-            contains('int get age => getValue<int>(\'age\')'),
-            contains('String? get email => getValueOrNull<String>(\'email\')'),
+            contains('return Ack.object('),
           ])),
         },
       );
@@ -67,8 +60,13 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.ack.g.part': decodedMatches(
-              contains('class CustomUserSchema extends SchemaModel')),
+          'test_pkg|lib/model.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema customUserSchema()'),
+            contains('/// Generated schema for User'),
+            contains('/// A custom user schema'),
+            contains("'id': Ack.string()"),
+            contains("required: ['id']"),
+          ])),
         },
       );
     });
@@ -102,17 +100,14 @@ class AllPrimitives {
 ''',
         },
         outputs: {
-          'test_pkg|lib/primitives.ack.g.part': decodedMatches(allOf([
-            contains("'text': Ack.string"),
-            contains("'count': Ack.integer"),
-            contains("'price': Ack.double"),
-            contains("'number': Ack.number"),
-            contains("'active': Ack.boolean"),
-            contains('String get text'),
-            contains('int get count'),
-            contains('double get price'),
-            contains('num get number'),
-            contains('bool get active'),
+          'test_pkg|lib/primitives.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema allPrimitivesSchema()'),
+            contains("'text': Ack.string()"),
+            contains("'count': Ack.integer()"),
+            contains("'price': Ack.double()"),
+            contains("'number': Ack.number()"),
+            contains("'active': Ack.boolean()"),
+            contains("required: ['text', 'count', 'price', 'number', 'active']"),
           ])),
         },
       );

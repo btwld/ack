@@ -1,7 +1,7 @@
-import 'package:test/test.dart';
-import 'package:build_test/build_test.dart';
-import 'package:build/build.dart';
 import 'package:ack_generator/builder.dart';
+import 'package:build/build.dart';
+import 'package:build_test/build_test.dart';
+import 'package:test/test.dart';
 
 import '../test_utils/test_assets.dart';
 
@@ -9,7 +9,7 @@ void main() {
   group('Complex Model Integration Tests', () {
     test('generates schema with field constraints', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -45,10 +45,12 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.ack.g.part': decodedMatches(allOf([
-            contains("'username': Ack.string.notEmpty().minLength(3).maxLength(50)"),
-            contains("'email': Ack.string.email()"),
-            contains("'age': Ack.integer.positive().max(150).nullable()"),
+          'test_pkg|lib/user.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema userSchema()'),
+            contains(
+                "'username': Ack.string().notEmpty().minLength(3).maxLength(50)"),
+            contains("'email': Ack.string().email()"),
+            contains("'age': Ack.integer().positive().max(150).nullable()"),
             contains("required: ['username', 'email']"),
           ])),
         },
@@ -57,7 +59,7 @@ class User {
 
     test('generates schema with custom JSON keys', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -85,13 +87,12 @@ class ApiResponse {
 ''',
         },
         outputs: {
-          'test_pkg|lib/api_model.ack.g.part': decodedMatches(allOf([
-            contains("'response_id': Ack.string"),
-            contains("'created_at': Ack.string"),
-            contains("'is_successful': Ack.boolean"),
-            contains("getValue<String>('response_id')"),
-            contains("getValue<String>('created_at')"),
-            contains("getValue<bool>('is_successful')"),
+          'test_pkg|lib/api_model.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema apiResponseSchema()'),
+            contains("'response_id': Ack.string()"),
+            contains("'created_at': Ack.string()"),
+            contains("'is_successful': Ack.boolean()"),
+            contains("required: ['response_id', 'created_at', 'is_successful']"),
           ])),
         },
       );
@@ -99,7 +100,7 @@ class ApiResponse {
 
     test('generates schema with lists', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -122,13 +123,12 @@ class Collection {
 ''',
         },
         outputs: {
-          'test_pkg|lib/collection.ack.g.part': decodedMatches(allOf([
-            contains("'tags': Ack.list(Ack.string)"),
-            contains("'scores': Ack.list(Ack.integer)"),
-            contains("'categories': Ack.list(Ack.string).nullable()"),
-            contains("List<String> get tags => getValue<List>('tags').cast<String>()"),
-            contains("List<int> get scores => getValue<List>('scores').cast<int>()"),
-            contains("List<String>? get categories =>"),
+          'test_pkg|lib/collection.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema collectionSchema()'),
+            contains("'tags': Ack.list(Ack.string())"),
+            contains("'scores': Ack.list(Ack.integer())"),
+            contains("'categories': Ack.list(Ack.string()).nullable()"),
+            contains("required: ['tags', 'scores']"),
           ])),
         },
       );
@@ -136,7 +136,7 @@ class Collection {
 
     test('handles mixed required and optional fields', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -167,11 +167,12 @@ class Product {
 ''',
         },
         outputs: {
-          'test_pkg|lib/product.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/product.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema productSchema()'),
             contains("required: ['id', 'name', 'price', 'isActive']"),
-            contains("'description': Ack.string.nullable()"),
-            contains("'stock': Ack.integer.nullable()"),
-            contains("'tags': Ack.list(Ack.string).nullable()"),
+            contains("'description': Ack.string().nullable()"),
+            contains("'stock': Ack.integer().nullable()"),
+            contains("'tags': Ack.list(Ack.string()).nullable()"),
           ])),
         },
       );
