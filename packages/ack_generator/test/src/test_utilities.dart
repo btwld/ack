@@ -29,6 +29,18 @@ class MockFieldInfo implements FieldInfo {
   final bool isList;
 
   @override
+  final bool isSet;
+
+  @override
+  final bool isGeneric;
+
+  @override
+  final bool isEnum;
+
+  @override
+  final List<String> enumValues;
+
+  @override
   final bool isMap;
 
   final String typeName;
@@ -44,6 +56,10 @@ class MockFieldInfo implements FieldInfo {
     required this.isPrimitive,
     required this.isList,
     required this.isMap,
+    this.isSet = false,
+    this.isGeneric = false,
+    this.isEnum = false,
+    this.enumValues = const [],
     this.listItemTypeName,
   }) : jsonKey = name;
 
