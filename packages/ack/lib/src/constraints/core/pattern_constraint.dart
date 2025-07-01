@@ -242,7 +242,7 @@ class PatternConstraint extends Constraint<String?>
   Map<String, Object?> toJsonSchema() {
     switch (type) {
       case PatternType.regex:
-        final String? standardFormat = _keyToFormat[constraintKey];
+        final standardFormat = _keyToFormat[constraintKey];
         if (standardFormat != null) {
           return {'format': standardFormat};
         }
@@ -255,7 +255,7 @@ class PatternConstraint extends Constraint<String?>
           'not': {'enum': allowedValues},
         };
       case PatternType.format:
-        final String? standardFormat = _keyToFormat[constraintKey];
+        final standardFormat = _keyToFormat[constraintKey];
         if (standardFormat != null) {
           return {'format': standardFormat};
         }

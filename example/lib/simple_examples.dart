@@ -82,11 +82,12 @@ void main() {
   };
 
   try {
-    final user = UserSchema().parse(userData);
-    print('✅ User: ${user.name} (${user.email})');
-    print('   Theme: ${user.preferences['theme']}');
-    print('   Language: ${user.preferences['language']}');
-    print('   Notifications: ${user.preferences['notifications']}\n');
+    final user = userSchema().parse(userData) as Map<String, dynamic>;
+    final prefs = user['preferences'] as Map<String, dynamic>;
+    print('✅ User: ${user['name']} (${user['email']})');
+    print('   Theme: ${prefs['theme']}');
+    print('   Language: ${prefs['language']}');
+    print('   Notifications: ${prefs['notifications']}\n');
   } catch (e) {
     print('❌ User error: $e\n');
   }
@@ -104,11 +105,12 @@ void main() {
   };
 
   try {
-    final product = ProductSchema().parse(productData);
-    print('✅ Product: ${product.name} (\$${product.price})');
-    print('   Brand: ${product.metadata['brand']}');
-    print('   Color: ${product.metadata['color']}');
-    print('   Rating: ${product.metadata['rating']}\n');
+    final product = productSchema().parse(productData) as Map<String, dynamic>;
+    final metadata = product['metadata'] as Map<String, dynamic>;
+    print('✅ Product: ${product['name']} (\$${product['price']})');
+    print('   Brand: ${metadata['brand']}');
+    print('   Color: ${metadata['color']}');
+    print('   Rating: ${metadata['rating']}\n');
   } catch (e) {
     print('❌ Product error: $e\n');
   }
@@ -124,8 +126,8 @@ void main() {
   };
 
   try {
-    final item = SimpleItemSchema().parse(simpleData);
-    print('✅ Simple Item: ${item.name} (active: ${item.active})');
+    final item = simpleItemSchema().parse(simpleData) as Map<String, dynamic>;
+    print('✅ Simple Item: ${item['name']} (active: ${item['active']})');
     print('   Note: Extra fields are ignored in simple models\n');
   } catch (e) {
     print('❌ Simple item error: $e\n');

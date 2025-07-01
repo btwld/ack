@@ -50,10 +50,10 @@ class Other {
 ''',
         },
         outputs: {
-          'test_pkg|lib/models.ack.g.part': decodedMatches(allOf([
-            contains('class UserSchema extends SchemaModel'),
-            contains('class ProductSchema extends SchemaModel'),
-            isNot(contains('class OtherSchema')),
+          'test_pkg|lib/models.g.dart': decodedMatches(allOf([
+            contains('ObjectSchema userSchema()'),
+            contains('ObjectSchema productSchema()'),
+            isNot(contains('otherSchema')),
           ])),
         },
       );
@@ -87,10 +87,10 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/address.ack.g.part': decodedMatches(
-              contains('class AddressSchema extends SchemaModel')),
-          'test_pkg|lib/user.ack.g.part':
-              decodedMatches(contains('AddressSchema().definition')),
+          'test_pkg|lib/address.g.dart': decodedMatches(
+              contains('ObjectSchema addressSchema()')),
+          'test_pkg|lib/user.g.dart':
+              decodedMatches(contains('addressSchema()')),
         },
       );
     });
@@ -115,7 +115,7 @@ class Model {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.ack.g.part': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
               contains('// GENERATED CODE - DO NOT MODIFY BY HAND')),
         },
       );
@@ -146,7 +146,7 @@ class WellFormatted {
 ''',
         },
         outputs: {
-          'test_pkg|lib/formatted.ack.g.part': decodedMatches(allOf([
+          'test_pkg|lib/formatted.g.dart': decodedMatches(allOf([
             isNot(contains('\t')), // No tabs
             contains('  '), // Uses spaces for indentation
             isNot(contains(

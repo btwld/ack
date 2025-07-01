@@ -20,9 +20,12 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema().parse(validData);
-      // No exception means valid - all required fields provided
-      expect(schema.id, equals('test123'));
+      final schema = productSchema();
+      final result = schema.validate(validData);
+      expect(result.isOk, isTrue);
+
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['id'], equals('test123'));
     });
 
     test(
@@ -42,7 +45,9 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      expect(() => ProductSchema().parse(invalidData), throwsException);
+      final schema = productSchema();
+      final result = schema.validate(invalidData);
+      expect(result.isOk, isFalse);
     });
 
     test('should allow optional fields to be null (inferred from constructor)',
@@ -62,11 +67,14 @@ void main() {
         // contactEmail, imageUrl, updatedAt are optional
       };
 
-      final schema = ProductSchema().parse(dataWithOptionalFieldsOmitted);
-      // No exception means valid - optional fields can be omitted
-      expect(schema.contactEmail, isNull);
-      expect(schema.imageUrl, isNull);
-      expect(schema.updatedAt, isNull);
+      final schema = productSchema();
+      final result = schema.validate(dataWithOptionalFieldsOmitted);
+      expect(result.isOk, isTrue);
+
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['contactEmail'], isNull);
+      expect(parsedData['imageUrl'], isNull);
+      expect(parsedData['updatedAt'], isNull);
     });
 
     test('should handle nullable fields correctly (inferred from field types)',
@@ -87,11 +95,14 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = ProductSchema().parse(dataWithNulls);
-      // No exception means valid - nullable fields can be null
-      expect(schema.contactEmail, isNull);
-      expect(schema.imageUrl, isNull);
-      expect(schema.updatedAt, isNull);
+      final schema = productSchema();
+      final result = schema.validate(dataWithNulls);
+      expect(result.isOk, isTrue);
+
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['contactEmail'], isNull);
+      expect(parsedData['imageUrl'], isNull);
+      expect(parsedData['updatedAt'], isNull);
     });
 
     test('should respect @IsRequired annotation override', () {
@@ -102,9 +113,12 @@ void main() {
         // description is optional
       };
 
-      final schema = CategorySchema().parse(categoryData);
-      // No exception means valid
-      expect(schema.description, isNull);
+      final schema = categorySchema();
+      final result = schema.validate(categoryData);
+      expect(result.isOk, isTrue);
+
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['description'], isNull);
     });
 
     test('should respect @IsNullable annotation override', () {
@@ -115,9 +129,12 @@ void main() {
         'description': null, // Explicitly null due to @IsNullable
       };
 
-      final schema = CategorySchema().parse(categoryData);
-      // No exception means valid
-      expect(schema.description, isNull);
+      final schema = categorySchema();
+      final result = schema.validate(categoryData);
+      expect(result.isOk, isTrue);
+
+      final parsedData = result.getOrThrow()!;
+      expect(parsedData['description'], isNull);
     });
   });
 }

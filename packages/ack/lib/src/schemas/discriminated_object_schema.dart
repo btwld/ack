@@ -59,7 +59,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       ));
     }
 
-    final String discValue = discValueRaw;
+    final discValue = discValueRaw;
     final AckSchema? selectedSubSchema = schemas[discValue];
 
     if (selectedSubSchema == null) {

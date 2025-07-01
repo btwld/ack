@@ -3,12 +3,7 @@ import 'package:ack_example/product_model.dart';
 import 'package:ack_example/product_model.g.dart';
 import 'package:test/test.dart';
 
-// Helper class for testing type parameters
-class TypeHelper {
-  static Type getTypeParam<T>() {
-    return T;
-  }
-}
+// No type helper needed for function-based approach
 
 void main() {
   group('ProductSchema', () {
@@ -30,36 +25,33 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      // Create schema with the data
-      final schema = ProductSchema().parse(productData);
-
-      // Check if schema is valid (no exception means valid)
-      // Note: schema.isValid and schema.toMap() don't exist in new API
+      // Parse with the function-based schema
+      final result = productSchema().parse(productData) as Map<String, dynamic>;
 
       // Verify data was parsed correctly
-      expect(schema.id, equals('123'));
-      expect(schema.name, equals('Test Product'));
-      expect(schema.description, equals('A test product'));
-      expect(schema.price, equals(19.99));
-      expect(schema.imageUrl, isNull);
+      expect(result['id'], equals('123'));
+      expect(result['name'], equals('Test Product'));
+      expect(result['description'], equals('A test product'));
+      expect(result['price'], equals(19.99));
+      expect(result['imageUrl'], isNull);
 
-      // Access category through the public property
-      expect(schema.category.id, equals('cat1'));
-      expect(schema.category.name, equals('Test Category'));
+      // Access nested category data
+      expect((result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
+      expect((result['category'] as Map<String, dynamic>)['name'], equals('Test Category'));
 
-      // Access properties directly from schema (no toModel() method in new architecture)
-      expect(schema.id, equals('123'));
-      expect(schema.name, equals('Test Product'));
-      expect(schema.description, equals('A test product'));
-      expect(schema.price, equals(19.99));
-      expect(schema.contactEmail, equals('test@example.com'));
-      expect(schema.releaseDate, equals('2024-01-15'));
-      expect(schema.createdAt, equals('2024-01-15T10:30:00Z'));
-      expect(schema.stockQuantity, equals(100));
-      expect(schema.status, equals('published'));
-      expect(schema.productCode, equals('ABC-1234'));
-      expect(schema.category.id, equals('cat1'));
-      expect(schema.category.name, equals('Test Category'));
+      // Verify other fields
+      expect(result['id'], equals('123'));
+      expect(result['name'], equals('Test Product'));
+      expect(result['description'], equals('A test product'));
+      expect(result['price'], equals(19.99));
+      expect(result['contactEmail'], equals('test@example.com'));
+      expect(result['releaseDate'], equals('2024-01-15'));
+      expect(result['createdAt'], equals('2024-01-15T10:30:00Z'));
+      expect(result['stockQuantity'], equals(100));
+      expect(result['status'], equals('published'));
+      expect(result['productCode'], equals('ABC-1234'));
+      expect((result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
+      expect((result['category'] as Map<String, dynamic>)['name'], equals('Test Category'));
     });
 
     test('should reject invalid product data', () {
@@ -68,8 +60,8 @@ void main() {
         'price': 'not a number', // Wrong type
       };
 
-      // Create a schema instance with invalid data should throw exception
-      expect(() => ProductSchema().parse(invalidData), throwsException);
+      // Parse with invalid data should throw exception
+      expect(() => productSchema().parse(invalidData), throwsException);
     });
 
     test('SchemaModel should validate and transform data', () {
@@ -89,19 +81,19 @@ void main() {
         'productCode': 'TRN-4567',
       };
 
-      // Create schema with the data
-      final schema = ProductSchema().parse(productData);
+      // Parse with the function-based schema
+      final result = productSchema().parse(productData) as Map<String, dynamic>;
 
-      // Check if schema is valid (no exception means valid)
-      expect(schema, isA<ProductSchema>());
-      expect(schema.id, equals('456'));
-      expect(schema.name, equals('Test Transform'));
-      expect(schema.description, equals('Testing validation'));
-      expect(schema.price, equals(29.99));
-      expect(schema.imageUrl, isNull);
-      expect(schema.category.id, equals('cat2'));
-      expect(schema.category.name, equals('Transform Category'));
-      expect(schema.category, isA<CategorySchema>());
+      // Check if result is valid map
+      expect(result, isA<Map<String, dynamic>>());
+      expect(result['id'], equals('456'));
+      expect(result['name'], equals('Test Transform'));
+      expect(result['description'], equals('Testing validation'));
+      expect(result['price'], equals(29.99));
+      expect(result['imageUrl'], isNull);
+      expect(result['category']['id'], equals('cat2'));
+      expect(result['category']['name'], equals('Transform Category'));
+      expect(result['category'], isA<Map<String, dynamic>>());
     });
 
     test('Using direct constructor instead of SchemaModel.get', () {
@@ -121,26 +113,20 @@ void main() {
         'productCode': 'DIR-8901',
       };
 
-      print('ProductSchema type: $ProductSchema');
-      print('Registration in schema would use: Product, ProductSchema');
+      print('productSchema function available');
+      print('Using function-based schema approach');
 
-      // Using direct constructor instead of SchemaModel.get
-      final schema = ProductSchema().parse(productData);
-      print('Schema created successfully: $schema');
+      // Using function-based schema
+      final result = productSchema().parse(productData) as Map<String, dynamic>;
+      print('Schema parsed successfully: ${result['id']}');
 
-      // Check if schema is valid (no exception means valid)
+      // No registry concept in function-based approach
+      print('\nFunction-based schemas don\'t use registry');
+      print('Simply call productSchema() to get the schema');
 
-      print('\nTesting if Product type is correctly registered:');
-      try {
-        final result = SchemaRegistry.isRegistered<Product>();
-        print('Is Product registered? $result');
-      } catch (e) {
-        print('Error checking registry: $e');
-      }
-
-      print('\nTesting if direct constructor works:');
-      expect(schema.id, equals('456'));
-      expect(schema.name, equals('Test Transform'));
+      print('\nTesting if result was parsed correctly:');
+      expect(result['id'], equals('456'));
+      expect(result['name'], equals('Test Transform'));
     });
 
     test('Using direct constructor with CategorySchema', () {
@@ -149,15 +135,15 @@ void main() {
         'name': 'Test Category',
       };
 
-      print('CategorySchema type: $CategorySchema');
+      print('categorySchema function available');
 
-      // Using direct constructor instead of SchemaModel.get
-      final schema = CategorySchema().parse(categoryData);
-      print('Schema created successfully: $schema');
+      // Using function-based schema
+      final result = categorySchema().parse(categoryData) as Map<String, dynamic>;
+      print('Schema parsed successfully: ${result['id']}');
 
-      // Check if schema is valid (no exception means valid)
-      expect(schema.id, equals('cat3'));
-      expect(schema.name, equals('Test Category'));
+      // Check if result is valid
+      expect(result['id'], equals('cat3'));
+      expect(result['name'], equals('Test Category'));
     });
 
     test('Explore type issues with generic methods', () {
@@ -177,9 +163,8 @@ void main() {
       // Call it with the Product type
       genericMethod<Product>();
 
-      // Check how the static generic method behaves
-      Type staticTypeParam = TypeHelper.getTypeParam<Product>();
-      print('Static generic method - Product: $staticTypeParam');
+      // No type helper needed in function-based approach
+      print('Function-based approach doesn\'t use generic type parameters');
 
       // Check what happens with runtime types using schema
       final testData = {
@@ -194,29 +179,27 @@ void main() {
         'status': 'draft',
         'productCode': 'TST-1234',
       };
-      final testSchema = ProductSchema().parse(testData);
+      final testResult = productSchema().parse(testData) as Map<String, dynamic>;
       // Test schema validation and property access (no exception means valid)
-      print('Schema type: ${testSchema.runtimeType}');
+      print('Result type: ${testResult.runtimeType}');
 
-      // Compare what the SchemaModel.get method is doing
+      // Function-based approach doesn't use registry
       print(
-        'SchemaModel.get<ProductSchema> uses Type.toString(): $ProductSchema',
+        'Function-based schemas don\'t use Type.toString() or registries',
       );
 
-      // Check what's happening in direct registry
+      // No registry in function-based approach
       print(
-        'Is Product registered directly? ${SchemaRegistry.isRegistered<Product>()}',
+        'Function-based approach: simply call productSchema()',
       );
 
-      // Test creating the same issue as in SchemaModel.get
-      void testGenericTypeIssue<S>() {
-        print('Inside generic method, type S: $S');
-      }
+      // Function-based approach doesn't need generic type handling
 
-      testGenericTypeIssue<ProductSchema>();
+      // Function-based approach doesn't need type parameters
+      print('Simply use productSchema() function directly');
     });
 
-    test('Using SchemaRegistry directly', () {
+    test('Using function-based schemas directly', () {
       final productData = {
         'id': '678',
         'name': 'Custom Implementation',
@@ -233,36 +216,35 @@ void main() {
         'productCode': 'CUS-2468',
       };
 
-      // With our new implementation, we can use the constructor directly
-      final schema = ProductSchema().parse(productData);
-      print('Direct constructor works: ${schema.id}');
+      // With function-based approach, we use the function directly
+      final result = productSchema().parse(productData) as Map<String, dynamic>;
+      print('Function-based schema works: ${result['id']}');
 
       // We can also verify properties
-      expect(schema.name, equals('Custom Implementation'));
-      expect(schema.price, equals(39.99));
+      expect(result['name'], equals('Custom Implementation'));
+      expect(result['price'], equals(39.99));
 
-      // Note: SchemaRegistry.createSchema would work if the schema was registered
-      // But for this test, we'll skip this part since we haven't registered the schema
-      // In a real application, you would register the schema in the generated code
+      // No registry needed in function-based approach
+      // Simply use the generated functions
 
-      // We can also use a type map if needed for more complex scenarios
-      Map<Type, Function> typeFactoryMap = {
-        ProductSchema: (Object? data) => ProductSchema().parse(data),
-        CategorySchema: (Object? data) => CategorySchema().parse(data),
+      // We can create a map of schema functions if needed
+      Map<String, ObjectSchema Function()> schemaMap = {
+        'product': productSchema,
+        'category': categorySchema,
       };
 
       try {
-        // Using the factory map
-        final factory = typeFactoryMap[ProductSchema];
-        if (factory != null) {
-          final mapSchema = factory(productData) as ProductSchema;
-          print('Factory map approach works: ${mapSchema.id}');
-          expect(mapSchema.id, equals('678'));
+        // Using the schema map
+        final schemaFunc = schemaMap['product'];
+        if (schemaFunc != null) {
+          final mapResult = schemaFunc().parse(productData) as Map<String, dynamic>;
+          print('Schema map approach works: ${mapResult['id']}');
+          expect(mapResult['id'], equals('678'));
         } else {
-          print('Factory map has no entry for ProductSchema');
+          print('Schema map has no entry for product');
         }
       } catch (e) {
-        print('Error in factory map: $e');
+        print('Error in schema map: $e');
       }
     });
   });
