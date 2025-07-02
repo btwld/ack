@@ -82,7 +82,7 @@ void main() {
   };
 
   try {
-    final user = userSchema().parse(userData) as Map<String, dynamic>;
+    final user = userSchema.parse(userData) as Map<String, dynamic>;
     final prefs = user['preferences'] as Map<String, dynamic>;
     print('✅ User: ${user['name']} (${user['email']})');
     print('   Theme: ${prefs['theme']}');
@@ -105,7 +105,7 @@ void main() {
   };
 
   try {
-    final product = productSchema().parse(productData) as Map<String, dynamic>;
+    final product = productSchema.parse(productData) as Map<String, dynamic>;
     final metadata = product['metadata'] as Map<String, dynamic>;
     print('✅ Product: ${product['name']} (\$${product['price']})');
     print('   Brand: ${metadata['brand']}');
@@ -126,7 +126,7 @@ void main() {
   };
 
   try {
-    final item = simpleItemSchema().parse(simpleData) as Map<String, dynamic>;
+    final item = simpleItemSchema.parse(simpleData) as Map<String, dynamic>;
     print('✅ Simple Item: ${item['name']} (active: ${item['active']})');
     print('   Note: Extra fields are ignored in simple models\n');
   } catch (e) {

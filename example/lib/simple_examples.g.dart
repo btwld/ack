@@ -11,29 +11,23 @@ import 'package:ack/ack.dart';
 
 /// Generated schema for User
 /// User with flexible preferences
-ObjectSchema userSchema() {
-  return Ack.object(
-    {'id': Ack.string(), 'name': Ack.string(), 'email': Ack.string()},
-    required: ['id', 'name', 'email'],
-    additionalProperties: true,
-  );
-}
+final userSchema = Ack.object(
+  {'id': Ack.string(), 'name': Ack.string(), 'email': Ack.string()},
+  required: ['id', 'name', 'email'],
+  additionalProperties: true,
+);
 
 /// Generated schema for Product
 /// Product with flexible metadata
-ObjectSchema productSchema() {
-  return Ack.object(
-    {'id': Ack.string(), 'name': Ack.string(), 'price': Ack.double()},
-    required: ['id', 'name', 'price'],
-    additionalProperties: true,
-  );
-}
+final productSchema = Ack.object(
+  {'id': Ack.string(), 'name': Ack.string(), 'price': Ack.double()},
+  required: ['id', 'name', 'price'],
+  additionalProperties: true,
+);
 
 /// Generated schema for SimpleItem
 /// Simple model without additional properties
-ObjectSchema simpleItemSchema() {
-  return Ack.object(
-    {'id': Ack.string(), 'name': Ack.string(), 'active': Ack.boolean()},
-    required: ['id', 'name', 'active'],
-  );
-}
+final simpleItemSchema = Ack.object(
+  {'id': Ack.string(), 'name': Ack.string(), 'active': Ack.boolean()},
+  required: ['id', 'name', 'active'],
+);

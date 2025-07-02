@@ -22,7 +22,7 @@ void main() {
       };
 
       // Create schema and validate data
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(validData);
 
       // Check that validation was successful
@@ -45,7 +45,7 @@ void main() {
       };
 
       // Create schema and validate invalid data
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -55,14 +55,14 @@ void main() {
       final nonMapInput = 'not-a-map';
 
       // Create schema and validate non-map input
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(nonMapInput);
       expect(result.isOk, isFalse);
     });
 
     test('throws exception for null input', () {
       // Create schema and validate null input
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(null);
       expect(result.isOk, isFalse);
     });

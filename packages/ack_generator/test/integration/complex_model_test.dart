@@ -46,7 +46,7 @@ class User {
         },
         outputs: {
           'test_pkg|lib/user.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema userSchema()'),
+            contains('final userSchema = Ack.object('),
             contains(
                 "'username': Ack.string().notEmpty().minLength(3).maxLength(50)"),
             contains("'email': Ack.string().email()"),
@@ -88,7 +88,7 @@ class ApiResponse {
         },
         outputs: {
           'test_pkg|lib/api_model.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema apiResponseSchema()'),
+            contains('final apiResponseSchema = Ack.object('),
             contains("'response_id': Ack.string()"),
             contains("'created_at': Ack.string()"),
             contains("'is_successful': Ack.boolean()"),
@@ -124,7 +124,7 @@ class Collection {
         },
         outputs: {
           'test_pkg|lib/collection.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema collectionSchema()'),
+            contains('final collectionSchema = Ack.object('),
             contains("'tags': Ack.list(Ack.string())"),
             contains("'scores': Ack.list(Ack.integer())"),
             contains("'categories': Ack.list(Ack.string()).nullable()"),
@@ -168,7 +168,7 @@ class Product {
         },
         outputs: {
           'test_pkg|lib/product.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema productSchema()'),
+            contains('final productSchema = Ack.object('),
             contains("required: ['id', 'name', 'price', 'isActive']"),
             contains("'description': Ack.string().nullable()"),
             contains("'stock': Ack.integer().nullable()"),

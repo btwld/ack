@@ -102,24 +102,28 @@ class FieldAnalyzer {
   List<ConstraintInfo> _extractConstraints(FieldElement field, DartObject? annotation) {
     final constraints = <ConstraintInfo>[];
     
-    if (annotation == null) return constraints;
-    
-    final constraintsField = annotation.getField('constraints');
-    if (constraintsField != null && !constraintsField.isNull) {
-      final constraintsList = constraintsField.toListValue();
-      if (constraintsList != null) {
-        for (final constraint in constraintsList) {
-          // Parse constraint strings like "minLength(3)", "email()"
-          final constraintStr = constraint.toStringValue();
-          if (constraintStr != null) {
-            final parsed = _parseConstraintString(constraintStr);
-            if (parsed != null) {
-              constraints.add(parsed);
+    // Extract constraints from @AckField annotation (legacy support)
+    if (annotation != null) {
+      final constraintsField = annotation.getField('constraints');
+      if (constraintsField != null && !constraintsField.isNull) {
+        final constraintsList = constraintsField.toListValue();
+        if (constraintsList != null) {
+          for (final constraint in constraintsList) {
+            // Parse constraint strings like "minLength(3)", "email()"
+            final constraintStr = constraint.toStringValue();
+            if (constraintStr != null) {
+              final parsed = _parseConstraintString(constraintStr);
+              if (parsed != null) {
+                constraints.add(parsed);
+              }
             }
           }
         }
       }
     }
+    
+    // Extract constraints from decorator annotations
+    constraints.addAll(_extractDecoratorConstraints(field));
     
     return constraints;
   }
@@ -145,5 +149,109 @@ class FieldAnalyzer {
     // For now, return null - extracting default values is complex
     // and may not be needed for initial implementation
     return null;
+  }
+
+  List<ConstraintInfo> _extractDecoratorConstraints(FieldElement field) {
+    final constraints = <ConstraintInfo>[];
+
+    // STRING LENGTH CONSTRAINTS
+    final minLengthAnnotation = TypeChecker.fromRuntime(MinLength).firstAnnotationOf(field);
+    if (minLengthAnnotation != null) {
+      final length = minLengthAnnotation.getField('length')?.toIntValue();
+      if (length != null) {
+        constraints.add(ConstraintInfo(name: 'minLength', arguments: [length.toString()]));
+      }
+    }
+
+    final maxLengthAnnotation = TypeChecker.fromRuntime(MaxLength).firstAnnotationOf(field);
+    if (maxLengthAnnotation != null) {
+      final length = maxLengthAnnotation.getField('length')?.toIntValue();
+      if (length != null) {
+        constraints.add(ConstraintInfo(name: 'maxLength', arguments: [length.toString()]));
+      }
+    }
+
+    // STRING FORMAT CONSTRAINTS
+    if (TypeChecker.fromRuntime(Email).hasAnnotationOfExact(field)) {
+      constraints.add(ConstraintInfo(name: 'email', arguments: []));
+    }
+
+    if (TypeChecker.fromRuntime(Url).hasAnnotationOfExact(field)) {
+      constraints.add(ConstraintInfo(name: 'url', arguments: []));
+    }
+
+    // STRING PATTERN CONSTRAINTS
+    final patternAnnotation = TypeChecker.fromRuntime(Pattern).firstAnnotationOf(field);
+    if (patternAnnotation != null) {
+      final pattern = patternAnnotation.getField('pattern')?.toStringValue();
+      if (pattern != null) {
+        constraints.add(ConstraintInfo(name: 'matches', arguments: [pattern]));
+      }
+    }
+
+    // NUMERIC CONSTRAINTS
+    final minAnnotation = TypeChecker.fromRuntime(Min).firstAnnotationOf(field);
+    if (minAnnotation != null) {
+      final value = minAnnotation.getField('value')?.toDoubleValue();
+      if (value != null) {
+        constraints.add(ConstraintInfo(name: 'min', arguments: [value.toString()]));
+      }
+    }
+
+    final maxAnnotation = TypeChecker.fromRuntime(Max).firstAnnotationOf(field);
+    if (maxAnnotation != null) {
+      final value = maxAnnotation.getField('value')?.toDoubleValue();
+      if (value != null) {
+        constraints.add(ConstraintInfo(name: 'max', arguments: [value.toString()]));
+      }
+    }
+
+    if (TypeChecker.fromRuntime(Positive).hasAnnotationOfExact(field)) {
+      constraints.add(ConstraintInfo(name: 'positive', arguments: []));
+    }
+
+    final multipleOfAnnotation = TypeChecker.fromRuntime(MultipleOf).firstAnnotationOf(field);
+    if (multipleOfAnnotation != null) {
+      final value = multipleOfAnnotation.getField('value')?.toDoubleValue();
+      if (value != null) {
+        constraints.add(ConstraintInfo(name: 'multipleOf', arguments: [value.toString()]));
+      }
+    }
+
+    // LIST CONSTRAINTS
+    final minItemsAnnotation = TypeChecker.fromRuntime(MinItems).firstAnnotationOf(field);
+    if (minItemsAnnotation != null) {
+      final count = minItemsAnnotation.getField('count')?.toIntValue();
+      if (count != null) {
+        constraints.add(ConstraintInfo(name: 'minItems', arguments: [count.toString()]));
+      }
+    }
+
+    final maxItemsAnnotation = TypeChecker.fromRuntime(MaxItems).firstAnnotationOf(field);
+    if (maxItemsAnnotation != null) {
+      final count = maxItemsAnnotation.getField('count')?.toIntValue();
+      if (count != null) {
+        constraints.add(ConstraintInfo(name: 'maxItems', arguments: [count.toString()]));
+      }
+    }
+
+    // ENUM CONSTRAINTS
+    final enumStringAnnotation = TypeChecker.fromRuntime(EnumString).firstAnnotationOf(field);
+    if (enumStringAnnotation != null) {
+      final valuesList = enumStringAnnotation.getField('values')?.toListValue();
+      if (valuesList != null) {
+        final values = valuesList
+            .map((v) => v.toStringValue())
+            .where((v) => v != null)
+            .cast<String>()
+            .toList();
+        if (values.isNotEmpty) {
+          constraints.add(ConstraintInfo(name: 'enumString', arguments: values));
+        }
+      }
+    }
+
+
+    return constraints;
   }
 }

@@ -25,8 +25,8 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      // Parse with the function-based schema
-      final result = productSchema().parse(productData) as Map<String, dynamic>;
+      // Parse with the schema variable
+      final result = productSchema.parse(productData) as Map<String, dynamic>;
 
       // Verify data was parsed correctly
       expect(result['id'], equals('123'));
@@ -61,7 +61,7 @@ void main() {
       };
 
       // Parse with invalid data should throw exception
-      expect(() => productSchema().parse(invalidData), throwsException);
+      expect(() => productSchema.parse(invalidData), throwsException);
     });
 
     test('SchemaModel should validate and transform data', () {
@@ -81,8 +81,8 @@ void main() {
         'productCode': 'TRN-4567',
       };
 
-      // Parse with the function-based schema
-      final result = productSchema().parse(productData) as Map<String, dynamic>;
+      // Parse with the schema variable
+      final result = productSchema.parse(productData) as Map<String, dynamic>;
 
       // Check if result is valid map
       expect(result, isA<Map<String, dynamic>>());
@@ -114,15 +114,15 @@ void main() {
       };
 
       print('productSchema function available');
-      print('Using function-based schema approach');
+      print('Using variable-based schema approach');
 
-      // Using function-based schema
-      final result = productSchema().parse(productData) as Map<String, dynamic>;
+      // Using schema variable
+      final result = productSchema.parse(productData) as Map<String, dynamic>;
       print('Schema parsed successfully: ${result['id']}');
 
-      // No registry concept in function-based approach
+      // No registry concept in variable-based approach
       print('\nFunction-based schemas don\'t use registry');
-      print('Simply call productSchema() to get the schema');
+      print('Simply call productSchema to get the schema');
 
       print('\nTesting if result was parsed correctly:');
       expect(result['id'], equals('456'));
@@ -137,8 +137,8 @@ void main() {
 
       print('categorySchema function available');
 
-      // Using function-based schema
-      final result = categorySchema().parse(categoryData) as Map<String, dynamic>;
+      // Using schema variable
+      final result = categorySchema.parse(categoryData) as Map<String, dynamic>;
       print('Schema parsed successfully: ${result['id']}');
 
       // Check if result is valid
@@ -179,24 +179,24 @@ void main() {
         'status': 'draft',
         'productCode': 'TST-1234',
       };
-      final testResult = productSchema().parse(testData) as Map<String, dynamic>;
+      final testResult = productSchema.parse(testData) as Map<String, dynamic>;
       // Test schema validation and property access (no exception means valid)
       print('Result type: ${testResult.runtimeType}');
 
-      // Function-based approach doesn't use registry
+      // Variable-based approach doesn't use registry
       print(
-        'Function-based schemas don\'t use Type.toString() or registries',
+        'Variable-based schemas don\'t use Type.toString() or registries',
       );
 
       // No registry in function-based approach
       print(
-        'Function-based approach: simply call productSchema()',
+        'Variable-based approach: simply use productSchema',
       );
 
-      // Function-based approach doesn't need generic type handling
+      // Variable-based approach doesn't need generic type handling
 
-      // Function-based approach doesn't need type parameters
-      print('Simply use productSchema() function directly');
+      // Variable-based approach doesn't need type parameters
+      print('Simply use productSchema function directly');
     });
 
     test('Using function-based schemas directly', () {
@@ -217,27 +217,27 @@ void main() {
       };
 
       // With function-based approach, we use the function directly
-      final result = productSchema().parse(productData) as Map<String, dynamic>;
-      print('Function-based schema works: ${result['id']}');
+      final result = productSchema.parse(productData) as Map<String, dynamic>;
+      print('Variable-based schema works: ${result['id']}');
 
       // We can also verify properties
       expect(result['name'], equals('Custom Implementation'));
       expect(result['price'], equals(39.99));
 
-      // No registry needed in function-based approach
-      // Simply use the generated functions
+      // No registry needed in variable-based approach
+      // Simply use the generated variables
 
-      // We can create a map of schema functions if needed
-      Map<String, ObjectSchema Function()> schemaMap = {
+      // We can create a map of schema variables if needed
+      Map<String, ObjectSchema> schemaMap = {
         'product': productSchema,
         'category': categorySchema,
       };
 
       try {
         // Using the schema map
-        final schemaFunc = schemaMap['product'];
-        if (schemaFunc != null) {
-          final mapResult = schemaFunc().parse(productData) as Map<String, dynamic>;
+        final schema = schemaMap['product'];
+        if (schema != null) {
+          final mapResult = schema.parse(productData) as Map<String, dynamic>;
           print('Schema map approach works: ${mapResult['id']}');
           expect(mapResult['id'], equals('678'));
         } else {

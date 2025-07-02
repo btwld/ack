@@ -39,8 +39,8 @@ class AckSchemaGenerator extends Generator {
       return '';
     }
 
-    // Generate all schema functions for this file
-    final schemaFunctions = <Method>[];
+    // Generate all schema fields for this file
+    final schemaFields = <Field>[];
     final analyzer = ModelAnalyzer();
     final schemaBuilder = SchemaBuilder();
 
@@ -53,10 +53,10 @@ class AckSchemaGenerator extends Generator {
             TypeChecker.fromRuntime(AckModel).firstAnnotationOf(element)!;
         final annotationReader = ConstantReader(annotation);
 
-        // Analyze the model and build the schema function
+        // Analyze the model and build the schema field
         final modelInfo = analyzer.analyze(element, annotationReader);
-        final schemaFunction = schemaBuilder.buildSchemaFunction(modelInfo);
-        schemaFunctions.add(schemaFunction);
+        final schemaField = schemaBuilder.buildSchemaField(modelInfo);
+        schemaFields.add(schemaField);
       } catch (e) {
         throw InvalidGenerationSourceError(
           'Error generating schema for ${element.name}: $e',
@@ -71,9 +71,8 @@ class AckSchemaGenerator extends Generator {
       ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
       ..directives.addAll([
         Directive.import('package:ack/ack.dart'),
-        Directive.import('package:meta/meta.dart'),
       ])
-      ..body.addAll(schemaFunctions));
+      ..body.addAll(schemaFields));
 
     final emitter = DartEmitter(
       allocator: Allocator.none,

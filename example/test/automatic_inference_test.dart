@@ -20,7 +20,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(validData);
       expect(result.isOk, isTrue);
 
@@ -45,7 +45,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -67,7 +67,7 @@ void main() {
         // contactEmail, imageUrl, updatedAt are optional
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(dataWithOptionalFieldsOmitted);
       expect(result.isOk, isTrue);
 
@@ -95,7 +95,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(dataWithNulls);
       expect(result.isOk, isTrue);
 
@@ -113,7 +113,7 @@ void main() {
         // description is optional
       };
 
-      final schema = categorySchema();
+      final schema = categorySchema;
       final result = schema.validate(categoryData);
       expect(result.isOk, isTrue);
 
@@ -129,7 +129,7 @@ void main() {
         'description': null, // Explicitly null due to @IsNullable
       };
 
-      final schema = categorySchema();
+      final schema = categorySchema;
       final result = schema.validate(categoryData);
       expect(result.isOk, isTrue);
 
