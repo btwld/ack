@@ -1,11 +1,11 @@
 name: ack_generator
 description: Code generator for Ack schema validation models
-version: 0.3.0
-repository: https://github.com/leoafarias/ack
+version: 0.3.0-alpha.0
+repository: https://github.com/btwld/ack
 publish_to: none
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ^3.3.0
 
 dependencies:
   # Core code generation dependencies

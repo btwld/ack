@@ -134,8 +134,8 @@ class ErrorMessages {
       'Custom validation failed: $message';
   static String multipleErrors(int count) =>
       'Multiple validation errors occurred ($count errors)'; // Literal value errors
-  static String literalMismatch(dynamic expected, dynamic actual) =>
-      'Expected literal value "$expected" but got "$actual"';
+  static String literalMismatch(Object? expected, Object? actual) =>
+      'Expected literal value "${expected ?? 'null'}" but got "${actual ?? 'null'}"';
 
   // Conditional validation errors
   static String conditionalFailed(String condition) =>
