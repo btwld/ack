@@ -55,4 +55,8 @@ final class Ack {
 
   /// Creates a schema that can be one of many types.
   static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);
+
+  /// Creates a schema that accepts any value without type conversion or validation.
+  /// Useful for dynamic content or when you need maximum flexibility.
+  static AnySchema any() => const AnySchema();
 }
