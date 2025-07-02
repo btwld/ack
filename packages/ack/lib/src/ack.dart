@@ -22,14 +22,13 @@ final class Ack {
   static BooleanSchema boolean() => const BooleanSchema();
 
   /// Creates an object schema with the given properties.
+  /// All properties are required by default unless wrapped with .optional().
   static ObjectSchema object(
     Map<String, AckSchema> properties, {
-    List<String> required = const [],
     bool additionalProperties = false,
   }) =>
       ObjectSchema(
         properties.cast(),
-        required: required,
         additionalProperties: additionalProperties,
       );
 

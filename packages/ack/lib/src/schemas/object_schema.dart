@@ -7,12 +7,10 @@ typedef MapValue = Map<String, Object?>;
 final class ObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, ObjectSchema> {
   final Map<String, AckSchema> properties;
-  final List<String> required;
   final bool additionalProperties;
 
   const ObjectSchema(
     Map<String, AckSchema>? properties, {
-    this.required = const [],
     this.additionalProperties = false,
     super.isNullable,
     super.description,
@@ -41,10 +39,18 @@ final class ObjectSchema extends AckSchema<MapValue>
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
-    // 1. Check for missing required properties
-    for (final key in required) {
-      if (!inputValue.containsKey(key)) {
-        // Property is completely missing
+    // 1. Check for missing required properties (all non-optional properties are required)
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+
+      // Skip optional fields if they're missing
+      if (!inputValue.containsKey(key) && schema.isOptional) {
+        continue;
+      }
+
+      // Non-optional fields must be present
+      if (!inputValue.containsKey(key) && !schema.isOptional) {
         final constraintError =
             ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
                 .validate(inputValue);
@@ -55,22 +61,6 @@ final class ObjectSchema extends AckSchema<MapValue>
               context: context,
             ),
           );
-        }
-      } else if (inputValue[key] == null) {
-        // Property exists but is null - check if the property's schema allows null
-        final propertySchema = properties[key];
-        if (propertySchema != null && !propertySchema.isNullable) {
-          final constraintError =
-              ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-                  .validate(inputValue);
-          if (constraintError != null) {
-            validationErrors.add(
-              SchemaConstraintsError(
-                constraints: [constraintError],
-                context: context,
-              ),
-            );
-          }
         }
       }
     }
@@ -127,7 +117,6 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
-    List<String>? requiredProperties,
     bool? allowAdditionalProperties,
     bool? isNullable,
     String? description,
@@ -137,7 +126,6 @@ final class ObjectSchema extends AckSchema<MapValue>
   }) {
     return copyWithInternal(
       properties: properties,
-      requiredProperties: requiredProperties,
       allowAdditionalProperties: allowAdditionalProperties,
       isNullable: isNullable,
       description: description,
@@ -156,12 +144,10 @@ final class ObjectSchema extends AckSchema<MapValue>
     required List<Refinement<MapValue>>? refinements,
     // ObjectSchema specific
     Map<String, AckSchema>? properties,
-    List<String>? requiredProperties,
     bool? allowAdditionalProperties,
   }) {
     return ObjectSchema(
       properties ?? this.properties,
-      required: requiredProperties ?? required,
       additionalProperties: allowAdditionalProperties ?? additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
@@ -174,14 +160,20 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   Map<String, Object?> toJsonSchema() {
     final Map<String, Object?> propsJsonSchema = {};
+    final List<String> requiredFields = [];
+
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
+      // All non-optional fields are required
+      if (!entry.value.isOptional) {
+        requiredFields.add(entry.key);
+      }
     }
 
     return {
       'type': isNullable ? ['object', 'null'] : 'object',
       'properties': propsJsonSchema,
-      if (required.isNotEmpty) 'required': required,
+      if (requiredFields.isNotEmpty) 'required': requiredFields,
       'additionalProperties': additionalProperties,
       if (description != null) 'description': description,
     };

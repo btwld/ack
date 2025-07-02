@@ -29,8 +29,13 @@ class FieldBuilder {
       schema = _applyConstraint(schema, constraint);
     }
 
-    // Apply nullable if needed
-    if (field.isNullable && !field.isRequired) {
+    // Apply optional if field is not required
+    if (!field.isRequired) {
+      schema = '$schema.optional()';
+    }
+
+    // Apply nullable if field is nullable
+    if (field.isNullable) {
       schema = '$schema.nullable()';
     }
 

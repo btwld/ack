@@ -39,10 +39,10 @@ import 'package:ack/ack.dart';
 
 // Define a schema for a user object
 final userSchema = Ack.object({
-  'name': Ack.string.minLength(2).maxLength(50),
-  'email': Ack.string.email(),
-  'age': Ack.int.min(0).max(120).nullable(),
-}, required: ['name', 'email']);
+  'name': Ack.string().minLength(2).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).max(120).optional().nullable(),
+});
 
 // Validate data against the schema
 final result = userSchema.validate({
