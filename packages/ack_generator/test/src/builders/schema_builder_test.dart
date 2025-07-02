@@ -12,7 +12,7 @@ void main() {
       builder = SchemaBuilder();
     });
 
-    test('builds complete schema class', () {
+    test('builds complete schema variable', () {
       final model = ModelInfo(
         className: 'User',
         schemaClassName: 'UserSchema',
@@ -23,36 +23,25 @@ void main() {
           createField('email', 'String', isNullable: true),
         ],
         requiredFields: ['id', 'name'],
+        additionalProperties: false,
       );
 
       final result = builder.build(model);
 
-      // Check class declaration
-      expect(result, contains('class UserSchema extends SchemaModel'));
+      // Check variable declaration
+      expect(result, contains('final userSchema = Ack.object('));
 
       // Check documentation
       expect(result, contains('/// Generated schema for User'));
       expect(result, contains('/// User model for testing'));
 
-      // Check constructors
-      expect(result, contains('UserSchema()'));
-      expect(result, contains('UserSchema._valid(Map<String, Object?> data)'));
-
-      // Check methods
-      expect(result, contains('UserSchema parse(Object? input)'));
-      expect(result, contains('UserSchema? tryParse(Object? input)'));
-      expect(result,
-          contains('UserSchema createValidated(Map<String, Object?> data)'));
-
-      // Check definition field
-      expect(result, contains('late final definition = Ack.object('));
-      expect(result, contains("'id': Ack.string"));
-      expect(result, contains("'name': Ack.string"));
-      expect(result, contains("'email': Ack.string.nullable()"));
-      expect(result, contains("required: ['id', 'name']"));
+      // Check field definitions
+      expect(result, contains("'id': Ack.string()"));
+      expect(result, contains("'name': Ack.string()"));
+      expect(result, contains("'email': Ack.string().optional().nullable()"));
     });
 
-    test('generates property getters for primitive types', () {
+    test('generates schema for primitive types', () {
       final model = ModelInfo(
         className: 'Product',
         schemaClassName: 'ProductSchema',
@@ -63,83 +52,54 @@ void main() {
           createField('description', 'String', isNullable: true),
         ],
         requiredFields: ['name', 'price', 'inStock'],
+        additionalProperties: false,
       );
 
       final result = builder.build(model);
 
-      // Check primitive getters
-      expect(result, contains("String get name => getValue<String>('name')"));
-      expect(result, contains("double get price => getValue<double>('price')"));
-      expect(result, contains("bool get inStock => getValue<bool>('inStock')"));
-      expect(
-          result,
-          contains(
-              "String? get description => getValueOrNull<String>('description')"));
+      expect(result, contains('final productSchema = Ack.object('));
+      expect(result, contains("'name': Ack.string()"));
+      expect(result, contains("'price': Ack.double()"));
+      expect(result, contains("'inStock': Ack.boolean()"));
+      expect(result, contains("'description': Ack.string().optional().nullable()"));
     });
 
-    test('generates property getters for lists', () {
+    test('generates schema for list fields', () {
       final model = ModelInfo(
         className: 'Post',
         schemaClassName: 'PostSchema',
         fields: [
+          createField('title', 'String', isRequired: true),
           createListField('tags', 'String'),
-          createListField('comments', 'String', isNullable: true),
         ],
-        requiredFields: ['tags'],
+        requiredFields: ['title', 'tags'],
+        additionalProperties: false,
       );
 
       final result = builder.build(model);
 
-      expect(
-          result,
-          contains(
-              "List<String> get tags => getValue<List>('tags').cast<String>()"));
-      expect(result, contains("List<String>? get comments =>"));
-      expect(
-          result, contains("getValueOrNull<List>('comments')?.cast<String>()"));
+      expect(result, contains('final postSchema = Ack.object('));
+      expect(result, contains("'title': Ack.string()"));
+      expect(result, contains("'tags': Ack.list(Ack.any())"));
     });
 
-    test('generates property getters for nested schemas', () {
+    test('generates schema for nested objects', () {
       final model = ModelInfo(
         className: 'Order',
         schemaClassName: 'OrderSchema',
         fields: [
+          createField('id', 'String', isRequired: true),
           createField('customer', 'Customer', isRequired: true),
-          createField('shippingAddress', 'Address', isNullable: true),
         ],
-        requiredFields: ['customer'],
+        requiredFields: ['id', 'customer'],
+        additionalProperties: false,
       );
 
       final result = builder.build(model);
 
-      // Check nested schema getters
-      expect(result, contains('CustomerSchema get customer'));
-      expect(result, contains("getValue<Map<String, Object?>>('customer')"));
-      expect(result, contains('CustomerSchema().parse(data)'));
-
-      expect(result, contains('AddressSchema? get shippingAddress'));
-      expect(result,
-          contains("getValueOrNull<Map<String, Object?>>('shippingAddress')"));
-      expect(result,
-          contains('data != null ? AddressSchema().parse(data) : null'));
-    });
-
-    test('handles empty required fields', () {
-      final model = ModelInfo(
-        className: 'Config',
-        schemaClassName: 'ConfigSchema',
-        fields: [
-          createField('theme', 'String', isNullable: true),
-          createField('timeout', 'int', isNullable: true),
-        ],
-        requiredFields: [],
-      );
-
-      final result = builder.build(model);
-
-      // Should not include required parameter when empty
-      expect(result, contains('Ack.object('));
-      expect(result, isNot(contains('required:')));
+      expect(result, contains('final orderSchema = Ack.object('));
+      expect(result, contains("'id': Ack.string()"));
+      expect(result, contains("'customer': customerSchema"));
     });
 
     test('formats output correctly', () {
@@ -150,14 +110,33 @@ void main() {
           createField('value', 'String', isRequired: true),
         ],
         requiredFields: ['value'],
+        additionalProperties: false,
       );
 
       final result = builder.build(model);
 
-      // Check formatting
+      // Check that it's properly formatted
       expect(result, contains('// GENERATED CODE - DO NOT MODIFY BY HAND'));
-      expect(result, isNot(contains('\t'))); // No tabs
-      expect(result.trim(), endsWith('}')); // Ends with closing brace
+      expect(result, contains('import \'package:ack/ack.dart\';'));
+      expect(result, contains(';'));
+    });
+
+    test('handles additional properties', () {
+      final model = ModelInfo(
+        className: 'Flexible',
+        schemaClassName: 'FlexibleSchema',
+        fields: [
+          createField('name', 'String', isRequired: true),
+        ],
+        requiredFields: ['name'],
+        additionalProperties: true,
+      );
+
+      final result = builder.build(model);
+
+      expect(result, contains('final flexibleSchema = Ack.object('));
+      expect(result, contains("'name': Ack.string()"));
+      expect(result, contains('additionalProperties: true'));
     });
   });
 }

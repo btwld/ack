@@ -49,7 +49,7 @@ void main() {
         'shippingAddress': addressSchema,
         'billingAddress': addressSchema.partial(), // Optional fields
         'payment': paymentSchema,
-        'notes': Ack.string().nullable(),
+        'notes': Ack.string().optional(),
       })
           .strict() // No additional properties
           .refine((order) {
@@ -105,6 +105,12 @@ void main() {
           'city': 'Anytown',
           'country': 'USA',
           'postalCode': '12345',
+        },
+        'billingAddress': {
+          'street': '456 Oak Ave',
+          'city': 'Somewhere',
+          'country': 'USA',
+          'postalCode': '67890',
         },
         'payment': {
           'method': 'card',

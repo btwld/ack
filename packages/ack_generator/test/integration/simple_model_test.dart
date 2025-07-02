@@ -33,8 +33,7 @@ class User {
             contains('/// Generated schema for User'),
             contains("'name': Ack.string()"),
             contains("'age': Ack.integer()"),
-            contains("'email': Ack.string().nullable()"),
-            contains("required: ['name', 'age']"),
+            contains("'email': Ack.string().optional()"),
             // final syntax doesn't use return
           ])),
         },
@@ -65,7 +64,6 @@ class User {
             contains('/// Generated schema for User'),
             contains('/// A custom user schema'),
             contains("'id': Ack.string()"),
-            contains("required: ['id']"),
           ])),
         },
       );
@@ -107,7 +105,6 @@ class AllPrimitives {
             contains("'price': Ack.double()"),
             contains("'number': Ack.number()"),
             contains("'active': Ack.boolean()"),
-            contains("required: ['text', 'count', 'price', 'number', 'active']"),
           ])),
         },
       );

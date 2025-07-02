@@ -140,10 +140,8 @@ void main() {
       test('basic object schema example', () {
         final userSchema = Ack.object({
           'name': Ack.string(),
-          'age': Ack.integer().min(0),
-        }, required: [
-          'name'
-        ]);
+          'age': Ack.integer().min(0).optional(),
+        });
 
         final validUser = {
           'name': 'John Doe',

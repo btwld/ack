@@ -112,13 +112,13 @@ void main() {
         final profileSchema = Ack.object({
           'email': Ack.string().email(),
           'name': Ack.string().minLength(1),
-          'bio': Ack.string().maxLength(500).nullable(),
+          'bio': Ack.string().maxLength(500).optional(),
         });
 
         final completeSchema = Ack.object({
           'email': Ack.string().email(),
           'name': Ack.string().minLength(1),
-          'bio': Ack.string().maxLength(500).nullable(),
+          'bio': Ack.string().maxLength(500).optional(),
           'verified': Ack.boolean(),
           'role': Ack.enumString(['user', 'admin']),
         });
@@ -171,7 +171,7 @@ void main() {
 
         final contactSchema = Ack.object({
           'email': Ack.string().email(),
-          'phone': Ack.string().nullable(),
+          'phone': Ack.string().optional(),
         });
 
         // Composed schema
@@ -180,7 +180,7 @@ void main() {
           'name': Ack.string(),
           'contact': contactSchema,
           'billingAddress': addressSchema,
-          'shippingAddress': addressSchema.nullable(),
+          'shippingAddress': addressSchema.optional(),
         });
 
         final customerData = {
@@ -263,7 +263,7 @@ void main() {
         final emailSchema = Ack.string().email();
         final userSchema = Ack.object({
           'primaryEmail': emailSchema,
-          'secondaryEmail': emailSchema.nullable(),
+          'secondaryEmail': emailSchema.optional(),
         });
 
         // Validate multiple times with same schema

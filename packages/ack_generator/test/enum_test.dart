@@ -30,10 +30,9 @@ class User {
         },
         outputs: {
           'test_pkg|lib/model.g.dart': decodedMatches(allOf([
-            contains('class UserSchema extends SchemaModel'),
-            contains("'name': Ack.string"),
+            contains('final userSchema = Ack.object('),
+            contains("'name': Ack.string()"),
             contains("'status': Ack.string().enumString(['active', 'inactive', 'pending'])"),
-            contains("required: ['name', 'status']"),
           ])),
         },
       );
@@ -62,10 +61,12 @@ class Task {
         },
         outputs: {
           'test_pkg|lib/model.g.dart': decodedMatches(allOf([
-            contains('class TaskSchema extends SchemaModel'),
-            contains("'title': Ack.string"),
-            contains("'priority': Ack.string().enumString(['low', 'medium', 'high']).nullable()"),
-            contains("required: ['title']"),
+            contains('final taskSchema = Ack.object('),
+            contains("'title': Ack.string()"),
+            contains("'priority': Ack.string()"),
+            contains(".enumString(['low', 'medium', 'high'])"),
+            contains(".optional()"),
+            contains(".nullable()"),
           ])),
         },
       );

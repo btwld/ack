@@ -3,13 +3,10 @@ import 'package:test/test.dart';
 
 void main() {
   group('ObjectSchemaExtensions', () {
-    final userSchema = ObjectSchema(
-      {
-        'name': StringSchema(),
-        'email': StringSchema().email(),
-      },
-      required: ['name', 'email'],
-    );
+    final userSchema = Ack.object({
+      'name': Ack.string(),
+      'email': Ack.string().email(),
+    });
 
     group('strict', () {
       test('should fail with additional properties', () {
@@ -50,10 +47,9 @@ void main() {
 
     group('merge', () {
       test('should merge properties and required fields', () {
-        final addressSchema = ObjectSchema(
-          {'street': StringSchema()},
-          required: ['street'],
-        );
+        final addressSchema = Ack.object({
+          'street': Ack.string(),
+        });
         final mergedSchema = userSchema.merge(addressSchema);
         final result = mergedSchema.validate({
           'name': 'Leo',
@@ -155,14 +151,12 @@ void main() {
         expect(result2.isOk, isTrue);
       });
 
-      test('should merge required fields', () {
+      test('should add required fields by default', () {
         final extendedSchema = userSchema.extend({
-          'age': IntegerSchema().min(0),
-        }, required: [
-          'age'
-        ]);
+          'age': Ack.integer().min(0),
+        });
 
-        // Should fail without age
+        // Should fail without age (required by default)
         final result = extendedSchema.validate({
           'name': 'Leo',
           'email': 'leo@example.com',

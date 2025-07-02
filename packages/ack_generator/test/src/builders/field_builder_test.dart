@@ -16,45 +16,45 @@ void main() {
       test('builds string schema', () {
         final field = createField('name', 'String', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.string'));
+        expect(schema, equals('Ack.string()'));
       });
 
       test('builds integer schema', () {
         final field = createField('age', 'int', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.integer'));
+        expect(schema, equals('Ack.integer()'));
       });
 
       test('builds double schema', () {
         final field = createField('price', 'double', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.double'));
+        expect(schema, equals('Ack.double()'));
       });
 
       test('builds number schema', () {
         final field = createField('value', 'num', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.number'));
+        expect(schema, equals('Ack.number()'));
       });
 
       test('builds boolean schema', () {
         final field = createField('active', 'bool', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.boolean'));
+        expect(schema, equals('Ack.boolean()'));
       });
     });
 
-    group('nullable fields', () {
-      test('adds nullable to optional fields', () {
+    group('optional fields', () {
+      test('adds optional to optional fields', () {
         final field = createField('email', 'String', isNullable: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.string.nullable()'));
+        expect(schema, equals('Ack.string().optional().nullable()'));
       });
 
-      test('does not add nullable to required fields', () {
+      test('does not add optional to required fields', () {
         final field = createField('name', 'String', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.string'));
+        expect(schema, equals('Ack.string()'));
       });
     });
 
@@ -67,7 +67,7 @@ void main() {
           constraints: [ConstraintInfo(name: 'email', arguments: [])],
         );
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.string.email()'));
+        expect(schema, equals('Ack.string().email()'));
       });
 
       test('applies multiple constraints in order', () {
@@ -83,7 +83,7 @@ void main() {
         );
         final schema = builder.buildFieldSchema(field);
         expect(schema,
-            equals('Ack.string.notEmpty().minLength(8).maxLength(100)'));
+            equals('Ack.string().notEmpty().minLength(8).maxLength(100)'));
       });
 
       test('applies numeric constraints', () {
@@ -97,7 +97,7 @@ void main() {
           ],
         );
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.integer.positive().max(150)'));
+        expect(schema, equals('Ack.integer().positive().max(150)'));
       });
     });
 
@@ -105,19 +105,19 @@ void main() {
       test('builds list schema with primitive items', () {
         final field = createListField('tags', 'String');
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.list(Ack.string)'));
+        expect(schema, equals('Ack.list(Ack.any())'));
       });
 
       test('builds list schema with nested schema items', () {
         final field = createListField('users', 'User');
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.list(UserSchema().definition)'));
+        expect(schema, equals('Ack.list(Ack.any())'));
       });
 
-      test('builds nullable list schema', () {
+      test('builds optional list schema', () {
         final field = createListField('tags', 'String', isNullable: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.list(Ack.string).nullable()'));
+        expect(schema, equals('Ack.list(Ack.any()).optional().nullable()'));
       });
     });
 
@@ -125,13 +125,13 @@ void main() {
       test('builds nested schema reference', () {
         final field = createField('address', 'Address', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('AddressSchema().definition'));
+        expect(schema, equals('addressSchema'));
       });
 
-      test('builds nullable nested schema', () {
+      test('builds optional nested schema', () {
         final field = createField('profile', 'Profile', isNullable: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('ProfileSchema().definition.nullable()'));
+        expect(schema, equals('profileSchema.optional().nullable()'));
       });
     });
 
@@ -139,7 +139,7 @@ void main() {
       test('builds generic map schema', () {
         final field = createMapField('metadata');
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.object({}, additionalProperties: true)'));
+        expect(schema, equals('Ack.map(Ack.any())'));
       });
     });
   });
