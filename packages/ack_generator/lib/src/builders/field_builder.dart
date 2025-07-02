@@ -146,16 +146,18 @@ class FieldBuilder {
       }
       return 'Ack.list(Ack.any()).unique()';
     } else {
-      // Assume it's a custom schema model
+      // Assume it's a custom schema model - reference as a variable
       final typeName = type.getDisplayString().replaceAll('?', '');
-      return '${typeName.toLowerCase()}Schema()';
+      final camelCaseName = '${typeName[0].toLowerCase()}${typeName.substring(1)}';
+      return '${camelCaseName}Schema';
     }
   }
 
   String _buildNestedSchema(FieldInfo field) {
     final typeName = field.type.getDisplayString();
     final baseType = typeName.replaceAll('?', '');
-    return '${baseType.toLowerCase()}Schema()';
+    final camelCaseName = '${baseType[0].toLowerCase()}${baseType.substring(1)}';
+    return '${camelCaseName}Schema';
   }
 
   String _buildEnumSchema(FieldInfo field) {
@@ -178,28 +180,51 @@ class FieldBuilder {
 
   String _applyConstraint(String schema, ConstraintInfo constraint) {
     switch (constraint.name) {
-      case 'email':
-        return '$schema.email()';
-      case 'notEmpty':
-        return '$schema.notEmpty()';
+      // STRING LENGTH CONSTRAINTS
       case 'minLength':
         return '$schema.minLength(${constraint.arguments.first})';
       case 'maxLength':
         return '$schema.maxLength(${constraint.arguments.first})';
+      case 'notEmpty':
+        return '$schema.notEmpty()';
+      
+      // STRING FORMAT CONSTRAINTS
+      case 'email':
+        return '$schema.email()';
+      case 'url':
+        return '$schema.url()';
+      
+      // STRING PATTERN CONSTRAINTS
+      case 'matches':
+        return '$schema.matches(r\'${constraint.arguments.first}\')';
+      
+      // NUMERIC CONSTRAINTS
       case 'min':
         return '$schema.min(${constraint.arguments.first})';
       case 'max':
         return '$schema.max(${constraint.arguments.first})';
       case 'positive':
         return '$schema.positive()';
-      case 'negative':
-        return '$schema.negative()';
-      case 'url':
-        return '$schema.url()';
-      case 'uuid':
-        return '$schema.uuid()';
+      case 'multipleOf':
+        return '$schema.multipleOf(${constraint.arguments.first})';
+      
+      // LIST CONSTRAINTS
+      case 'minItems':
+        return '$schema.minItems(${constraint.arguments.first})';
+      case 'maxItems':
+        return '$schema.maxItems(${constraint.arguments.first})';
+      
+      // ENUM CONSTRAINTS
+      case 'enumString':
+        final values = constraint.arguments.map((v) => "'$v'").join(', ');
+        return '$schema.enumString([$values])';
+      
+      // LEGACY SUPPORT
       case 'pattern':
-        return '$schema.pattern(${constraint.arguments.first})';
+        return '$schema.matches(r\'${constraint.arguments.first}\')';
+      case 'enumFromType':
+        return schema;
+      
       default:
         // Unknown constraint, ignore for now
         return schema;

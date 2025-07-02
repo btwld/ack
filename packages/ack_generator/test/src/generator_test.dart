@@ -51,8 +51,8 @@ class Other {
         },
         outputs: {
           'test_pkg|lib/models.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema userSchema()'),
-            contains('ObjectSchema productSchema()'),
+            contains('final userSchema = Ack.object('),
+            contains('final productSchema = Ack.object('),
             isNot(contains('otherSchema')),
           ])),
         },
@@ -88,9 +88,9 @@ class User {
         },
         outputs: {
           'test_pkg|lib/address.g.dart': decodedMatches(
-              contains('ObjectSchema addressSchema()')),
+              contains('final addressSchema = Ack.object(')),
           'test_pkg|lib/user.g.dart':
-              decodedMatches(contains('addressSchema()')),
+              decodedMatches(contains('addressSchema')),
         },
       );
     });

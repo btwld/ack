@@ -29,13 +29,13 @@ class User {
         },
         outputs: {
           'test_pkg|lib/user.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema userSchema()'),
+            contains('final userSchema = Ack.object('),
             contains('/// Generated schema for User'),
             contains("'name': Ack.string()"),
             contains("'age': Ack.integer()"),
             contains("'email': Ack.string().nullable()"),
             contains("required: ['name', 'age']"),
-            contains('return Ack.object('),
+            // final syntax doesn't use return
           ])),
         },
       );
@@ -61,7 +61,7 @@ class User {
         },
         outputs: {
           'test_pkg|lib/model.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema customUserSchema()'),
+            contains('final customUserSchema = Ack.object('),
             contains('/// Generated schema for User'),
             contains('/// A custom user schema'),
             contains("'id': Ack.string()"),
@@ -101,7 +101,7 @@ class AllPrimitives {
         },
         outputs: {
           'test_pkg|lib/primitives.g.dart': decodedMatches(allOf([
-            contains('ObjectSchema allPrimitivesSchema()'),
+            contains('final allPrimitivesSchema = Ack.object('),
             contains("'text': Ack.string()"),
             contains("'count': Ack.integer()"),
             contains("'price': Ack.double()"),

@@ -9,19 +9,40 @@ import 'product_model.g.dart';
   additionalPropertiesField: 'metadata',
 )
 class Product {
+  @MinLength(1)
   final String id;
+  
+  @MinLength(3)
   final String name;
+  
   final String description;
+  
+  @Min(0.01)
   final double price;
+  
+  @Email()
   final String? contactEmail;
+  
+  @Url()
   final String? imageUrl;
+  
   final Category category;
+  
   final String releaseDate;
+  
   final String createdAt;
+  
   final String? updatedAt;
+  
+  @Positive()
   final int stockQuantity;
+  
+  @EnumString(['draft', 'published', 'archived'])
   final String status;
+  
+  @Pattern(r'^[A-Z]{2,3}-\d{4}$')
   final String productCode;
+  
   final Map<String, dynamic> metadata;
 
   Product({
@@ -85,7 +106,7 @@ void main() {
   };
 
   try {
-    final result = productSchema().parse(productData) as Map<String, dynamic>;
+    final result = productSchema.parse(productData) as Map<String, dynamic>;
 
     print('✅ Schema parsing successful!');
     print('✅ Product ID: ${result['id']}');

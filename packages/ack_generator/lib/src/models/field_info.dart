@@ -46,7 +46,7 @@ class FieldInfo {
 
   /// Whether this field is an enum type
   bool get isEnum {
-    final element = type.element3;
+    final element = type.element;
     if (element == null) return false;
     
     // Check if this is an enum by looking at the element kind
@@ -56,34 +56,26 @@ class FieldInfo {
   /// Get enum values if this is an enum type
   List<String> get enumValues {
     if (!isEnum) return [];
-    final element = type.element3;
+    final element = type.element;
     if (element == null) return [];
     
-    // For enums, get the enum constants
+    // For enums, get the enum constants using the analyzer API
     if (element.kind == ElementKind.ENUM) {
-      // Get the enum name and return some default values for now
-      // This is a minimal implementation to get the basic enum support working
-      final enumName = element.displayName;
-      
-      // For testing purposes, return some common enum values
-      // In a real implementation, we would parse these from the enum definition
-      if (enumName == 'Status') {
-        return ['active', 'inactive', 'pending'];
-      } else if (enumName == 'Priority') {
-        return ['low', 'medium', 'high'];
-      }
-      
-      // Fallback: try to get values dynamically if possible
       try {
+        // Use dynamic access to get fields (handles analyzer API variations)
         final fields = (element as dynamic).fields;
         if (fields != null) {
-          return (fields as List)
-              .where((f) => f.isEnumConstant == true)
-              .map((f) => f.name.toString())
+          final enumConstants = (fields as List)
+              .where((field) => field.isEnumConstant == true)
+              .map((field) => field.name as String)
               .toList();
+          
+          return enumConstants;
         }
       } catch (e) {
-        // Return empty list if we can't determine values
+        // If there's any issue with the analyzer API, fall back to empty list
+        // This maintains backward compatibility with manual @EnumString annotations
+        print('Warning: Could not extract enum values for ${element.displayName}: $e');
         return [];
       }
     }

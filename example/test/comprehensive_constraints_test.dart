@@ -24,7 +24,7 @@ void main() {
         'productCode': 'ABC-1234', // matches pattern
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(validData);
 
       // Check validation was successful
@@ -60,7 +60,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -80,7 +80,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -99,7 +99,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -118,7 +118,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -138,7 +138,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -158,7 +158,7 @@ void main() {
             'invalid-code', // Doesn't match pattern ^[A-Z]{2,3}-\d{4}$
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -177,7 +177,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -196,7 +196,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(invalidData);
       expect(result.isOk, isFalse);
     });
@@ -218,7 +218,7 @@ void main() {
         'productCode': 'ABC-1234',
       };
 
-      final schema = productSchema();
+      final schema = productSchema;
       final result = schema.validate(dataWithNulls);
       expect(result.isOk, isTrue);
 

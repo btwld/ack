@@ -12,14 +12,14 @@ class SchemaBuilder {
   );
 
   String build(ModelInfo model, [String? sourceFileName]) {
-    final schemaFunction = buildSchemaFunction(model);
+    final schemaField = buildSchemaField(model);
 
     final library = Library((b) => b
       ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
       ..directives.addAll([
         Directive.import('package:ack/ack.dart'),
       ])
-      ..body.add(schemaFunction));
+      ..body.add(schemaField));
 
     final emitter = DartEmitter(
       allocator: Allocator.none,
@@ -30,19 +30,19 @@ class SchemaBuilder {
     return _formatter.format('${library.accept(emitter)}');
   }
 
-  Method buildSchemaFunction(ModelInfo model) {
-    // Convert schema class name to camelCase function name
+  Field buildSchemaField(ModelInfo model) {
+    // Convert schema class name to camelCase variable name
     // e.g., "UserSchema" -> "userSchema", "CustomUserSchema" -> "customUserSchema"
-    final functionName = _toCamelCase(model.schemaClassName);
+    final variableName = _toCamelCase(model.schemaClassName);
     
-    return Method((b) => b
-      ..name = functionName
-      ..returns = refer('ObjectSchema')
+    return Field((b) => b
+      ..name = variableName
+      ..modifier = FieldModifier.final$
+      ..assignment = Code(_buildSchemaDefinition(model))
       ..docs.addAll([
         '/// Generated schema for ${model.className}',
         if (model.description != null) '/// ${model.description}',
-      ])
-      ..body = Code(_buildSchemaBody(model)));
+      ]));
   }
   
   String _toCamelCase(String text) {
@@ -50,9 +50,6 @@ class SchemaBuilder {
     return text[0].toLowerCase() + text.substring(1);
   }
 
-  String _buildSchemaBody(ModelInfo model) {
-    return 'return ${_buildSchemaDefinition(model)};';
-  }
 
   String _buildSchemaDefinition(ModelInfo model) {
     final buffer = StringBuffer();

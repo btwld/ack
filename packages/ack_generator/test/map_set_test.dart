@@ -33,10 +33,10 @@ class Config {
         },
         outputs: {
           'test_pkg|lib/config.g.dart': decodedMatches(allOf([
-            contains('class ConfigSchema extends SchemaModel'),
-            contains("'settings': Ack.map(Ack.any)"),
-            contains("'counts': Ack.map(Ack.int)"),
-            contains("'groupedData': Ack.map(Ack.list(Ack.string))"),
+            contains('final configSchema = Ack.object('),
+            contains("'settings': Ack.map(Ack.any())"),
+            contains("'counts': Ack.map(Ack.integer())"),
+            contains("'groupedData': Ack.map(Ack.list(Ack.string()))"),
             contains("required: ['settings', 'counts', 'groupedData']"),
           ])),
         },
@@ -69,10 +69,10 @@ class UniqueData {
         },
         outputs: {
           'test_pkg|lib/unique_data.g.dart': decodedMatches(allOf([
-            contains('class UniqueDataSchema extends SchemaModel'),
-            contains("'tags': Ack.list(Ack.string).unique()"),
-            contains("'ids': Ack.list(Ack.int).unique()"),
-            contains("'mixed': Ack.list(Ack.any).unique()"),
+            contains('final uniqueDataSchema = Ack.object('),
+            contains("'tags': Ack.list(Ack.string()).unique()"),
+            contains("'ids': Ack.list(Ack.integer()).unique()"),
+            contains("'mixed': Ack.list(Ack.any()).unique()"),
             contains("required: ['tags', 'ids', 'mixed']"),
           ])),
         },
@@ -103,9 +103,9 @@ class NullableCollections {
         },
         outputs: {
           'test_pkg|lib/nullable_collections.g.dart': decodedMatches(allOf([
-            contains('class NullableCollectionsSchema extends SchemaModel'),
-            contains("'metadata': Ack.map(Ack.string).nullable()"),
-            contains("'categories': Ack.list(Ack.string).unique().nullable()"),
+            contains('final nullableCollectionsSchema = Ack.object('),
+            contains("'metadata': Ack.map(Ack.string()).nullable()"),
+            contains("'categories': Ack.list(Ack.string()).unique().nullable()"),
             isNot(contains("required:")), // No required fields means no required parameter
           ])),
         },
@@ -142,12 +142,12 @@ class ComplexModel {
         },
         outputs: {
           'test_pkg|lib/complex_collections.g.dart': decodedMatches(allOf([
-            contains('class ComplexModelSchema extends SchemaModel'),
-            contains("'matrix': Ack.list(Ack.list(Ack.string))"),
-            contains("'grouped': Ack.map(Ack.list(Ack.int))"),
-            contains("'unique': Ack.list(Ack.string).unique()"),
-            contains("'nested': Ack.map(Ack.map(Ack.any))"),
-            contains("'superComplex': Ack.list(Ack.map(Ack.list(Ack.int).unique()))"),
+            contains('final complexModelSchema = Ack.object('),
+            contains("'matrix': Ack.list(Ack.list(Ack.string()))"),
+            contains("'grouped': Ack.map(Ack.list(Ack.integer()))"),
+            contains("'unique': Ack.list(Ack.string()).unique()"),
+            contains("'nested': Ack.map(Ack.map(Ack.any()))"),
+            contains("'superComplex': Ack.list(Ack.map(Ack.list(Ack.integer()).unique()))"),
           ])),
         },
       );

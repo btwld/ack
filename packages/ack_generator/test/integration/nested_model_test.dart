@@ -47,26 +47,15 @@ class User {
         outputs: {
           'test_pkg|lib/models.g.dart': decodedMatches(allOf([
             // Address schema
-            contains('class AddressSchema extends SchemaModel'),
+            contains('final addressSchema = Ack.object('),
             contains("'street': Ack.string"),
             contains("'city': Ack.string"),
             contains("'zipCode': Ack.string"),
 
             // User schema
-            contains('class UserSchema extends SchemaModel'),
-            contains("'address': AddressSchema().definition"),
-            contains("'mailingAddress': AddressSchema().definition.nullable()"),
-
-            // Nested getters
-            contains('AddressSchema get address {'),
-            contains("final data = getValue<Map<String, Object?>>('address');"),
-            contains('return AddressSchema().parse(data);'),
-
-            contains('AddressSchema? get mailingAddress {'),
-            contains(
-                "final data = getValueOrNull<Map<String, Object?>>('mailingAddress');"),
-            contains(
-                'return data != null ? AddressSchema().parse(data) : null;'),
+            contains('final userSchema = Ack.object('),
+            contains("'address': addressSchema"),
+            contains("'mailingAddress': addressSchema.nullable()"),
           ])),
         },
       );
@@ -111,9 +100,9 @@ class Order {
         },
         outputs: {
           'test_pkg|lib/order.g.dart': decodedMatches(allOf([
-            contains("'items': Ack.list(OrderItemSchema().definition)"),
-            contains('List<OrderItem> get items => getValue<List>'),
-            contains(".cast<OrderItem>();"),
+            contains("'items': Ack.list(orderItemSchema)"),
+            contains('final orderItemSchema = Ack.object('),
+            contains('final orderSchema = Ack.object('),
           ])),
         },
       );
@@ -170,19 +159,16 @@ class Company {
         outputs: {
           'test_pkg|lib/company.g.dart': decodedMatches(allOf([
             // Contact schema
-            contains('class ContactSchema extends SchemaModel'),
+            contains('final contactSchema = Ack.object('),
 
             // Department schema
-            contains('class DepartmentSchema extends SchemaModel'),
-            contains("'manager': ContactSchema().definition"),
-            contains("'employees': Ack.list(ContactSchema().definition)"),
+            contains('final departmentSchema = Ack.object('),
+            contains("'manager': contactSchema"),
+            contains("'employees': Ack.list(contactSchema)"),
 
             // Company schema
-            contains('class CompanySchema extends SchemaModel'),
-            contains("'departments': Ack.list(DepartmentSchema().definition)"),
-
-            // Nested list getter
-            contains('List<Department> get departments'),
+            contains('final companySchema = Ack.object('),
+            contains("'departments': Ack.list(departmentSchema)"),
           ])),
         },
       );
