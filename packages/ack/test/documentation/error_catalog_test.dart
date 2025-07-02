@@ -170,10 +170,7 @@ void main() {
         schema: Ack.object({
           'id': Ack.string(),
           'name': Ack.string(),
-        }, required: [
-          'id',
-          'name'
-        ]),
+        }),
         input: {'id': '123'},
         expectedErrorType: 'nested',
         description: 'Missing required field',
@@ -247,9 +244,7 @@ void main() {
       examples.add(ErrorExample(
         schema: Ack.object({
           'required': Ack.string(),
-        }, required: [
-          'required'
-        ]),
+        }),
         input: {},
         expectedErrorType: 'nested',
         description: 'Required field missing',

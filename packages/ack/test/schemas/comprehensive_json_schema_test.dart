@@ -243,10 +243,8 @@ void main() {
         test('should validate required properties', () {
           final schema = Ack.object({
             'name': Ack.string(),
-            'age': Ack.integer(),
-          }, required: [
-            'name'
-          ]);
+            'age': Ack.integer().optional(),
+          });
 
           expect(schema.validate({'name': 'John', 'age': 30}).isOk, isTrue);
           expect(schema.validate({'age': 30}).isOk, isFalse);
@@ -306,21 +304,13 @@ void main() {
             'type': Ack.string(),
             'doors': Ack.integer(),
             'engine': Ack.string(),
-          }, required: [
-            'type',
-            'doors',
-            'engine'
-          ]);
+          });
 
           bikeSchema = Ack.object({
             'type': Ack.string(),
             'wheels': Ack.integer(),
             'pedals': Ack.boolean(),
-          }, required: [
-            'type',
-            'wheels',
-            'pedals'
-          ]);
+          });
 
           vehicleSchema = Ack.discriminated(
             discriminatorKey: 'type',
@@ -508,11 +498,7 @@ void main() {
             }),
           ]),
           'timestamp': Ack.string(),
-        }, required: [
-          'status',
-          'data',
-          'timestamp'
-        ]);
+        });
 
         final successResponse = {
           'status': 200,
@@ -556,29 +542,15 @@ void main() {
               'city': Ack.string(),
               'country': Ack.string().length(2), // ISO country code
               'zipCode': Ack.string(),
-            }, required: [
-              'street',
-              'city',
-              'country'
-            ]),
-          }, required: [
-            'id',
-            'name',
-            'email',
-            'address'
-          ]),
+            }),
+          }),
           'items': Ack.list(Ack.object({
             'productId': Ack.string(),
             'name': Ack.string(),
             'quantity': Ack.integer().min(1),
             'price': Ack.double().min(0),
             'category': Ack.enumValues(Color.values), // Using Color as category
-          }, required: [
-            'productId',
-            'name',
-            'quantity',
-            'price'
-          ])).minItems(1),
+          })).minItems(1),
           'total': Ack.double().min(0),
           'status': Ack.anyOf([
             Ack.literal('pending'),
@@ -602,14 +574,7 @@ void main() {
               }),
             },
           ),
-        }, required: [
-          'orderId',
-          'customer',
-          'items',
-          'total',
-          'status',
-          'paymentMethod'
-        ]);
+        });
 
         final validOrder = {
           'orderId': '123e4567-e89b-12d3-a456-426614174000',
@@ -676,14 +641,12 @@ void main() {
 
       test('should handle null values correctly in complex schemas', () {
         final schema = Ack.object({
-          'optional': Ack.string().nullable(),
+          'optional': Ack.string().optional().nullable(),
           'required': Ack.string(),
           'nested': Ack.object({
-            'nullableField': Ack.integer().nullable(),
-          }).nullable(),
-        }, required: [
-          'required'
-        ]);
+            'nullableField': Ack.integer().optional().nullable(),
+          }).optional().nullable(),
+        });
 
         final validData = {
           'optional': null,

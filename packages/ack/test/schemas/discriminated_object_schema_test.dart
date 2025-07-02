@@ -11,12 +11,12 @@ void main() {
       catSchema = Ack.object({
         'type': Ack.string(),
         'meow': Ack.boolean(),
-      }, required: ['type', 'meow']);
+      });
 
       dogSchema = Ack.object({
         'type': Ack.string(),
         'bark': Ack.boolean(),
-      }, required: ['type', 'bark']);
+      });
 
       animalSchema = Ack.discriminated(
         discriminatorKey: 'type',

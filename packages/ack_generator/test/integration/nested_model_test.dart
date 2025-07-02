@@ -55,7 +55,7 @@ class User {
             // User schema
             contains('final userSchema = Ack.object('),
             contains("'address': addressSchema"),
-            contains("'mailingAddress': addressSchema.nullable()"),
+            contains("'mailingAddress': addressSchema.optional()"),
           ])),
         },
       );
@@ -160,6 +160,7 @@ class Company {
           'test_pkg|lib/company.g.dart': decodedMatches(allOf([
             // Contact schema
             contains('final contactSchema = Ack.object('),
+            contains("'phone': Ack.string().optional()"),
 
             // Department schema
             contains('final departmentSchema = Ack.object('),

@@ -130,11 +130,7 @@ void main() {
           'id': Ack.string(),
           'name': Ack.string(),
           'email': Ack.string().email(),
-        }, required: [
-          'id',
-          'name',
-          'email'
-        ]);
+        });
 
         final testCases = [
           {

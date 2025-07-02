@@ -109,29 +109,21 @@ void main() {
         // Stage 1: Basic validation (required fields only)
         final basicSchema = Ack.object({
           'id': Ack.string(),
-        }, required: [
-          'id'
-        ]);
+        });
 
         // Stage 2: Enhanced validation (with constraints)
         final enhancedSchema = Ack.object({
           'id': Ack.string().uuid(),
-          'name': Ack.string().minLength(2),
-        }, required: [
-          'id'
-        ]);
+          'name': Ack.string().minLength(2).optional(),
+        });
 
         // Stage 3: Complete validation (all fields)
         final completeSchema = Ack.object({
           'id': Ack.string().uuid(),
           'name': Ack.string().minLength(2),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(150),
-        }, required: [
-          'id',
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(150).optional(),
+        });
 
         ValidationStage validateProgressively(dynamic input) {
           // Try complete validation first

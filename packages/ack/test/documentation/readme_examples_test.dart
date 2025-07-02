@@ -9,11 +9,8 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string().minLength(2).maxLength(50),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(120).nullable(),
-        }, required: [
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(120).optional().nullable(),
+        });
 
         // Valid data test
         final validData = {
@@ -35,11 +32,8 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string().minLength(2).maxLength(50),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(120).nullable(),
-        }, required: [
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(120).optional().nullable(),
+        });
 
         // Valid data without age
         final validDataNoAge = {
@@ -60,11 +54,8 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string().minLength(2).maxLength(50),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(120).nullable(),
-        }, required: [
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(120).optional().nullable(),
+        });
 
         // Invalid data - name too short
         final invalidData = {
@@ -91,11 +82,8 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string().minLength(2).maxLength(50),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(120).nullable(),
-        }, required: [
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(120).optional().nullable(),
+        });
 
         // Invalid data - missing required field
         final invalidData = {
@@ -122,11 +110,8 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string().minLength(2).maxLength(50),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(120).nullable(),
-        }, required: [
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(120).optional().nullable(),
+        });
 
         final validData = {
           'name': 'John Doe',
@@ -146,11 +131,8 @@ void main() {
         final userSchema = Ack.object({
           'name': Ack.string().minLength(2).maxLength(50),
           'email': Ack.string().email(),
-          'age': Ack.integer().min(0).max(120).nullable(),
-        }, required: [
-          'name',
-          'email'
-        ]);
+          'age': Ack.integer().min(0).max(120).optional().nullable(),
+        });
 
         final invalidData = {
           'name': 'J', // Too short

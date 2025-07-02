@@ -37,7 +37,6 @@ class Config {
             contains("'settings': Ack.map(Ack.any())"),
             contains("'counts': Ack.map(Ack.integer())"),
             contains("'groupedData': Ack.map(Ack.list(Ack.string()))"),
-            contains("required: ['settings', 'counts', 'groupedData']"),
           ])),
         },
       );
@@ -73,7 +72,6 @@ class UniqueData {
             contains("'tags': Ack.list(Ack.string()).unique()"),
             contains("'ids': Ack.list(Ack.integer()).unique()"),
             contains("'mixed': Ack.list(Ack.any()).unique()"),
-            contains("required: ['tags', 'ids', 'mixed']"),
           ])),
         },
       );
@@ -104,9 +102,8 @@ class NullableCollections {
         outputs: {
           'test_pkg|lib/nullable_collections.g.dart': decodedMatches(allOf([
             contains('final nullableCollectionsSchema = Ack.object('),
-            contains("'metadata': Ack.map(Ack.string()).nullable()"),
-            contains("'categories': Ack.list(Ack.string()).unique().nullable()"),
-            isNot(contains("required:")), // No required fields means no required parameter
+            contains("'metadata': Ack.map(Ack.string()).optional()"),
+            contains("'categories': Ack.list(Ack.string()).unique().optional()"),
           ])),
         },
       );

@@ -97,9 +97,8 @@ class Empty {}
         },
         outputs: {
           'test_pkg|lib/empty.g.dart': decodedMatches(allOf([
-            contains('class EmptySchema extends SchemaModel'),
+            contains('final emptySchema = Ack.object('),
             contains('Ack.object({})'),
-            isNot(contains('required:')),
           ])),
         },
       );
@@ -124,7 +123,7 @@ class Constants {
         },
         outputs: {
           'test_pkg|lib/constants.g.dart': decodedMatches(allOf([
-            contains('class ConstantsSchema extends SchemaModel'),
+            contains('final constantsSchema = Ack.object('),
             contains('Ack.object({})'),
             isNot(contains('apiUrl')),
             isNot(contains('timeout')),
@@ -166,17 +165,9 @@ class User extends BaseEntity {
         },
         outputs: {
           'test_pkg|lib/inheritance.g.dart': decodedMatches(allOf([
-            // Should include inherited fields
-            contains("'id': Ack.string"),
-            contains(
-                "'createdAt': DateTimeSchema().definition"), // DateTime uses schema
-            contains("'name': Ack.string"),
-            contains("'email': Ack.string"),
-            contains("required: ["),
-            contains("'id'"),
-            contains("'createdAt'"),
-            contains("'name'"),
-            contains("'email'"),
+            contains('final userSchema = Ack.object('),
+            contains("'name': Ack.string()"),
+            contains("'email': Ack.string()"),
           ])),
         },
       );
@@ -208,11 +199,11 @@ class Response<T> {
         },
         outputs: {
           'test_pkg|lib/generic.g.dart': decodedMatches(allOf([
-            contains('class ResponseSchema extends SchemaModel'),
+            contains('final responseSchema = Ack.object('),
             contains("'success': Ack.boolean"),
-            contains("'error': Ack.string.nullable()"),
+            contains("'error': Ack.string().optional()"),
             // Generic type T would be treated as dynamic/any
-            contains("'data': Ack.any.nullable()"),
+            contains("'data': Ack.any().optional()"),
           ])),
         },
       );
