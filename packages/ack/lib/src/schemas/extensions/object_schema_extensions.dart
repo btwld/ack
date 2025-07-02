@@ -1,4 +1,5 @@
 import '../schema.dart';
+import 'ack_schema_extensions.dart';
 
 /// Adds fluent validation methods to [ObjectSchema].
 extension ObjectSchemaExtensions on ObjectSchema {
@@ -21,26 +22,23 @@ extension ObjectSchemaExtensions on ObjectSchema {
   /// Merges this schema with another [ObjectSchema].
   ///
   /// The properties of the [other] schema will overwrite properties of this
-  /// schema if they share the same key. The `requiredProperties` lists
-  /// will be combined.
+  /// schema if they share the same key.
   ObjectSchema merge(ObjectSchema other) {
     // Combine properties, with the 'other' schema's properties taking precedence.
     final newProperties = {...properties, ...other.properties};
 
-    // Combine required properties, ensuring uniqueness.
-    final newRequired = {...required, ...other.required}.toList();
-
-    return copyWith(
-      properties: newProperties,
-      requiredProperties: newRequired,
-    );
+    return copyWith(properties: newProperties);
   }
 
   /// Makes all properties on the schema optional.
   ///
-  /// This is a convenience method for `copyWith(requiredProperties: const [])`.
+  /// This wraps each property schema with `.optional()`.
   ObjectSchema partial() {
-    return copyWith(requiredProperties: const []);
+    final optionalProperties = properties.map(
+      (key, schema) => MapEntry(key, schema.optional()),
+    );
+
+    return copyWith(properties: optionalProperties);
   }
 
   /// Extends this schema with additional or overridden properties.
@@ -49,11 +47,9 @@ extension ObjectSchemaExtensions on ObjectSchema {
   /// one by one and add additional properties and construction elements.
   ///
   /// Properties in [newProperties] will override existing properties with the same key.
-  /// The [required] list will be merged with existing required properties.
   /// Other schema properties can be overridden using the optional parameters.
   ObjectSchema extend(
     Map<String, AckSchema> newProperties, {
-    List<String>? required,
     bool? additionalProperties,
     bool? isNullable,
     String? description,
@@ -62,14 +58,8 @@ extension ObjectSchemaExtensions on ObjectSchema {
     // Merge properties, with new properties taking precedence
     final mergedProperties = {...properties, ...newProperties};
 
-    // Merge required fields if provided, otherwise keep existing
-    final mergedRequired = required != null
-        ? {...this.required, ...required}.toList()
-        : this.required;
-
     return copyWith(
       properties: mergedProperties,
-      requiredProperties: mergedRequired,
       allowAdditionalProperties: additionalProperties,
       isNullable: isNullable,
       description: description,
@@ -79,9 +69,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
 
   /// Creates a new schema with a subset of the original's properties.
   ///
-  /// Only the properties with keys included in [keysToPick] will be
-  /// kept. Required properties that are not picked will be removed
-  /// from the new schema's required list.
+  /// Only the properties with keys included in [keysToPick] will be kept.
   ObjectSchema pick(List<String> keysToPick) {
     final pickSet = keysToPick.toSet();
 
@@ -90,20 +78,12 @@ extension ObjectSchemaExtensions on ObjectSchema {
       properties.entries.where((entry) => pickSet.contains(entry.key)),
     );
 
-    // Filter the required list to only include picked keys that were originally required.
-    final newRequired = required.where((key) => pickSet.contains(key)).toList();
-
-    return copyWith(
-      properties: newProperties,
-      requiredProperties: newRequired,
-    );
+    return copyWith(properties: newProperties);
   }
 
   /// Creates a new schema with a subset of the original's properties removed.
   ///
   /// The properties with keys included in [keysToOmit] will be removed.
-  /// Required properties that are omitted will also be removed from the
-  /// new schema's required list.
   ObjectSchema omit(List<String> keysToOmit) {
     final omitSet = keysToOmit.toSet();
 
@@ -112,13 +92,6 @@ extension ObjectSchemaExtensions on ObjectSchema {
       properties.entries.where((entry) => !omitSet.contains(entry.key)),
     );
 
-    // Filter the required list to exclude omitted keys.
-    final newRequired =
-        required.where((key) => !omitSet.contains(key)).toList();
-
-    return copyWith(
-      properties: newProperties,
-      requiredProperties: newRequired,
-    );
+    return copyWith(properties: newProperties);
   }
 }

@@ -65,15 +65,6 @@ class SchemaBuilder {
     buffer.write(fieldDefs.join(', '));
     buffer.write('}');
 
-    // Add required fields if any
-    if (model.requiredFields.isNotEmpty) {
-      final requiredList = model.requiredFields.map((f) => "'$f'").join(', ');
-      buffer.write(', required: [$requiredList]');
-    }
-    
-    // Debug: Always add required to see what's happening
-    // print('DEBUG: model.requiredFields = ${model.requiredFields}');
-
     // Add additionalProperties if enabled
     if (model.additionalProperties) {
       buffer.write(', additionalProperties: true');

@@ -15,6 +15,7 @@ part 'list_schema.dart';
 part 'mixins/fluent_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
+part 'optional_schema.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
 
@@ -93,6 +94,10 @@ sealed class AckSchema<DartType extends Object> {
     Object? inputValue,
     SchemaContext context,
   );
+
+  /// Whether this schema represents an optional field in an object.
+  /// Override this in OptionalSchema to return true.
+  bool get isOptional => false;
 
   @protected
   SchemaResult<DartType> parseAndValidate(
