@@ -1,4 +1,4 @@
-import 'package:ack/src/errors/error_messages.dart';
+import 'package:ack/src/validation/error_messages.dart';
 import 'package:test/test.dart';
 
 void main() {

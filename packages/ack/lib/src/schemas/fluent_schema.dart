@@ -1,4 +1,4 @@
-part of '../schema.dart';
+part of 'schema.dart';
 
 /// A mixin to provide a fluent API for building and modifying schemas.
 ///

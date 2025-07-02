@@ -22,21 +22,6 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
 
   @override
   @protected
-  SchemaResult<DartType> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Handle null values directly since OptionalSchema is inherently nullable
-    if (inputValue == null) {
-      return SchemaResult.ok(defaultValue);
-    }
-    
-    // Delegate to the wrapped schema for non-null values
-    return wrappedSchema.parseAndValidate(inputValue, context);
-  }
-
-  @override
-  @protected
   SchemaResult<DartType> _onConvert(
     Object? inputValue,
     SchemaContext context,
@@ -61,6 +46,21 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
+  }
+
+  @override
+  @protected
+  SchemaResult<DartType> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Handle null values directly since OptionalSchema is inherently nullable
+    if (inputValue == null) {
+      return SchemaResult.ok(defaultValue);
+    }
+
+    // Delegate to the wrapped schema for non-null values
+    return wrappedSchema.parseAndValidate(inputValue, context);
   }
 
   @override
