@@ -1,88 +1,63 @@
 # ACK Generator
 
-Code generator for the ACK (Another Constraint Kit) validation library. This package automatically generates schema classes from Dart model classes annotated with `@AckModel()`.
+**⚠️ EXPERIMENTAL PACKAGE - UNDER DEVELOPMENT**
 
-## Overview
+Code generator for the ACK validation library. This package is currently experimental and under active development.
 
-The ACK Generator transforms your Dart model classes into powerful schema validation classes that can:
+## Current Status
+
+This package is being developed to generate schema validation code from annotated Dart models. The implementation is not yet complete and the API may change significantly.
+
+**Current limitations:**
+- SchemaModel base class is not yet implemented in the main ack package
+- Generated code may not compile with current ack version
+- API is subject to breaking changes
+
+## Planned Features
+
+The ACK Generator is planned to transform your Dart model classes into schema validation classes that can:
 
 - Validate data against defined constraints
 - Parse and type-check input data
-- Generate OpenAPI specifications
+- Generate JSON Schema specifications
 - Provide type-safe access to validated data
 
-## Installation
+## Alternative: Manual Schema Definition
 
-Add `ack_generator` as a dev dependency in your `pubspec.yaml`:
-
-```yaml
-dev_dependencies:
-  ack_generator: ^1.0.0
-  build_runner: ^2.4.0
-```
-
-## Usage
-
-### 1. Annotate Your Models
+For production use, we recommend using manual schema definition with the current ack package:
 
 ```dart
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/ack.dart';
 
-@AckModel()
-class User {
-  final String id;
-  final String name;
-  final String email;
-  final int? age;
-  
-  User({
-    required this.id,
-    required this.name,
-    required this.email,
-    this.age,
-  });
+// Define schemas manually using the fluent API
+final userSchema = Ack.object({
+  'id': Ack.string().uuid(),
+  'name': Ack.string().minLength(1),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).optional(),
+});
+
+// Validate data
+final result = userSchema.validate(userData);
+if (result.isOk) {
+  final validData = result.getOrThrow();
+  // Use validated data
 }
 ```
 
-### 2. Run Code Generation
+## Development Status
 
-```bash
-dart run build_runner build
-```
+This package contains experimental code generation functionality. The current implementation includes:
 
-### 3. Use Generated Schema
+- Annotation definitions (`@AckModel`, constraint annotations)
+- Code generation infrastructure
+- Golden test framework for testing generated output
 
-```dart
-import 'user.ack.g.part';
+However, the generated code depends on a `SchemaModel` base class that is not yet implemented in the main ack package.
 
-void main() {
-  const userSchema = UserSchema();
-  
-  // Parse and validate data
-  final user = userSchema.parse({
-    'id': '123',
-    'name': 'John Doe',
-    'email': 'john@example.com',
-    'age': 30,
-  });
-  
-  // Access validated data
-  print(user.name); // John Doe
-  print(user.email); // john@example.com
-}
-```
+## For Contributors
 
-## Generated Code Structure
-
-For each `@AckModel()` annotated class, the generator creates:
-
-- **Schema class** extending `SchemaModel`
-- **Validation definition** with field constraints
-- **Type-safe getters** for accessing validated data
-- **Parse methods** for data validation
-- **OpenAPI integration** support
-
-## Development
+If you're interested in contributing to the code generation functionality:
 
 ### Running Tests
 
@@ -99,88 +74,49 @@ dart test --watch
 
 ### Golden Test Management
 
-Golden tests ensure the generator produces consistent output. Use these tools to manage golden test files:
-
-#### Update Golden Files
-
-When you modify the generator and need to update the expected output:
+Golden tests ensure the generator produces consistent output:
 
 ```bash
 # Update all golden files
-dart tool/update_goldens.dart --all
+UPDATE_GOLDEN=true dart test test/golden_test.dart
 
-# Update specific golden file
-dart tool/update_goldens.dart user_schema
-
-# Using melos (from project root)
-melos update-golden:all
-```
-
-#### View Generator Output
-
-To see what the generator produces without updating files:
-
-```bash
-# Show generator output for user schema
-dart tool/show_generator_output.dart user_schema
-
-# Show generator output for order schema
-dart tool/show_generator_output.dart order_schema
-```
-
-#### Golden Test Workflow
-
-1. **Make changes** to the generator code
-2. **Run tests** to see failures: `dart test test/golden_test.dart`
-3. **Update golden files**: `dart tool/update_goldens.dart --all`
-4. **Verify tests pass**: `dart test test/golden_test.dart`
-5. **Review changes** in the golden files
-6. **Commit updated golden files**
-
-#### Available Melos Commands
-
-From the project root, you can use these melos commands:
-
-```bash
-# Golden test management
-melos test:golden                 # Run golden tests
-melos update-golden:all           # Update all golden files
-melos update-golden               # Interactive golden file update
+# View current generator output
+dart test test/golden_test.dart
 ```
 
 ### Test Structure
 
-- **`test/integration/`** - End-to-end generator tests
-- **`test/src/`** - Unit tests for generator components
-- **`test/golden/`** - Golden test reference files
-- **`test/test_utils/`** - Shared test utilities
+- **`test/golden/`** - Golden test reference files (expected generator output)
+- **`test/test_utils/`** - Shared test utilities and mock classes
+- **`test/golden_test.dart`** - Main golden test file
 
 ### Architecture
 
-The generator consists of several key components:
+The generator includes these components:
 
-- **`AckSchemaGenerator`** - Main build_runner generator
-- **`ModelAnalyzer`** - Analyzes Dart model classes
-- **`FieldAnalyzer`** - Processes individual fields and constraints
-- **`SchemaBuilder`** - Generates schema class code
-- **`FieldBuilder`** - Generates field-specific validation code
+- **`AckSchemaGenerator`** - Main build_runner generator (experimental)
+- **Annotation definitions** - `@AckModel` and constraint annotations
+- **Golden test framework** - For testing generated output consistency
+
+## Roadmap
+
+To complete this package, the following work is needed:
+
+1. **Implement SchemaModel base class** in the main ack package
+2. **Complete code generation logic** for schema classes
+3. **Add proper integration** with the current AckSchema architecture
+4. **Update generated code** to work with current ack APIs
+5. **Add comprehensive documentation** and examples
 
 ## Contributing
 
-1. **Fork the repository**
-2. **Create a feature branch**
-3. **Make your changes**
-4. **Add/update tests** (including golden tests if needed)
-5. **Run the test suite**: `dart test`
-6. **Update golden files** if generator output changed
-7. **Submit a pull request**
+Contributions are welcome! If you're interested in helping complete the code generation functionality:
 
-### Code Style
-
-- Follow Dart style guidelines
-- Add documentation for public APIs
-- Include tests for new functionality
-- Update golden tests when changing generator output
+1. **Check existing issues** for planned work
+2. **Discuss major changes** in issues before implementing
+3. **Follow existing code patterns** and test structure
+4. **Update golden tests** when changing generator output
+5. **Test with the main ack package** to ensure compatibility
 
 ## License
 
