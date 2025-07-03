@@ -106,9 +106,11 @@ final validData1 = {'name': 'John'};
 // ✅ Valid - age field is present with value
 final validData2 = {'name': 'John', 'age': 30};
 
-// ❌ Invalid - age field cannot be null (use .optional().nullable() for that)
-final invalidData = {'name': 'John', 'age': null}; // Validation fails
+// ✅ Valid - age field can also be null (optional fields are inherently nullable)
+final validData3 = {'name': 'John', 'age': null};
 ```
+
+**Important:** `.optional()` fields are inherently nullable - they accept both missing values and null values.
 
 **Combining both** - Field can be omitted OR present with null value:
 ```dart

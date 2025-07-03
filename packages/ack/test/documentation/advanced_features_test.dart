@@ -215,7 +215,8 @@ void main() {
         final partialUserSchema = userSchema.partial();
 
         // All these should be valid:
-        expect(partialUserSchema.validate({}).isOk, isTrue); // Empty object
+        expect(partialUserSchema.validate(<String, Object?>{}).isOk,
+            isTrue); // Empty object
         expect(partialUserSchema.validate({'name': 'John'}).isOk,
             isTrue); // Only name
         expect(
