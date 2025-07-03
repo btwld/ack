@@ -51,7 +51,6 @@
       "group": "Guides",
       "pages": [
         { "title": "Custom Validation", "href": "/guides/custom-validation" },
-        { "title": "Code Generation", "href": "/guides/code-generation" },
         {
           "title": "JSON Schema Integration",
           "href": "/guides/json-schema-integration"

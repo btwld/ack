@@ -23,12 +23,10 @@ Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter p
     ```dart
     final userSchema = Ack.object({
       // 'name' field: must be a string with at least 2 characters.
-      'name': Ack.string.minLength(2),
+      'name': Ack.string().minLength(2),
       // 'age' field: must be an integer, 0 or greater, but can be missing (nullable).
-      'age': Ack.int.min(0).nullable(),
-    },
-    // Specify that 'name' is a required field.
-    required: ['name']);
+      'age': Ack.integer().min(0).nullable(),
+    });
     ```
     
     *Learn more about [Schemas](../core-concepts/schemas.mdx) and [Validation](../core-concepts/validation.mdx).* 
@@ -112,9 +110,9 @@ import 'package:ack/ack.dart';
 void main() {
   // Define Schema
   final userSchema = Ack.object({
-    'name': Ack.string.minLength(2),
-    'age': Ack.int.min(0).nullable(),
-  }, required: ['name']);
+    'name': Ack.string().minLength(2),
+    'age': Ack.integer().min(0).nullable(),
+  });
 
   // Data Examples
   final validData = {'name': 'Alice', 'age': 30};

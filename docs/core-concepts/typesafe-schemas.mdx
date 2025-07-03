@@ -72,17 +72,75 @@ if (result.isOk) {
 
 ## Advanced Features
 
-### 1. Nullable and Optional Fields
+### 1. Optional vs Nullable Fields
 
+Understanding the difference between `.optional()` and `.nullable()` is crucial:
+
+**`.nullable()`** - The field must be present but can have a `null` value:
 ```dart
-// Nullable field (can be null)
-final optionalAgeSchema = Ack.integer().min(0).nullable();
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'middleName': Ack.string().nullable(), // Must be present, can be null
+});
 
-// Optional field (can be omitted from object)
-final userWithOptionalAge = Ack.object({
-  'name': Ack.string().minLength(2),
-  'email': Ack.string().email(),
-  'age': Ack.integer().min(0).optional(), // Field can be missing
+// ✅ Valid - middleName is present with null value
+final validData1 = {'name': 'John', 'middleName': null};
+
+// ✅ Valid - middleName is present with string value
+final validData2 = {'name': 'John', 'middleName': 'Robert'};
+
+// ❌ Invalid - middleName is missing entirely
+final invalidData = {'name': 'John'}; // Validation fails
+```
+
+**`.optional()`** - The field can be completely omitted from the object:
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'age': Ack.integer().min(0).optional(), // Can be missing entirely
+});
+
+// ✅ Valid - age field is omitted
+final validData1 = {'name': 'John'};
+
+// ✅ Valid - age field is present with value
+final validData2 = {'name': 'John', 'age': 30};
+
+// ❌ Invalid - age field cannot be null (use .optional().nullable() for that)
+final invalidData = {'name': 'John', 'age': null}; // Validation fails
+```
+
+**Combining both** - Field can be omitted OR present with null value:
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'bio': Ack.string().optional().nullable(), // Can be missing OR null
+});
+
+// ✅ All of these are valid:
+final valid1 = {'name': 'John'}; // bio omitted
+final valid2 = {'name': 'John', 'bio': null}; // bio is null
+final valid3 = {'name': 'John', 'bio': 'Software developer'}; // bio has value
+```
+
+**Common patterns:**
+```dart
+// API response where field might not exist
+final apiSchema = Ack.object({
+  'id': Ack.string(),
+  'metadata': Ack.any().optional(), // Field might not be in response
+});
+
+// Database record where field can be NULL
+final dbSchema = Ack.object({
+  'id': Ack.string(),
+  'deletedAt': Ack.string().datetime().nullable(), // Present but can be NULL
+});
+
+// Form data where field is optional and can be empty
+final formSchema = Ack.object({
+  'name': Ack.string(),
+  'comments': Ack.string().optional().nullable(), // Can be missing or empty
 });
 ```
 
@@ -113,6 +171,49 @@ final adultUserSchema = Ack.object({
   },
   message: 'User must be at least 18 years old',
 );
+
+// Multiple refinements can be chained
+final strongPasswordSchema = Ack.string()
+    .minLength(8)
+    .refine(
+      (password) => password.contains(RegExp(r'[A-Z]')),
+      message: 'Password must contain at least one uppercase letter',
+    )
+    .refine(
+      (password) => password.contains(RegExp(r'[0-9]')),
+      message: 'Password must contain at least one number',
+    )
+    .refine(
+      (password) => password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]')),
+      message: 'Password must contain at least one special character',
+    );
+
+// Business logic validation
+final orderSchema = Ack.object({
+  'items': Ack.list(Ack.object({
+    'price': Ack.double().positive(),
+    'quantity': Ack.integer().positive(),
+  })),
+  'discount': Ack.double().min(0).max(1),
+  'total': Ack.double().positive(),
+}).refine(
+  (order) {
+    final items = order['items'] as List;
+    final discount = order['discount'] as double;
+    final total = order['total'] as double;
+
+    final subtotal = items.fold<double>(0, (sum, item) {
+      final itemMap = item as Map<String, Object?>;
+      final price = itemMap['price'] as double;
+      final quantity = itemMap['quantity'] as int;
+      return sum + (price * quantity);
+    });
+
+    final expectedTotal = subtotal * (1 - discount);
+    return (expectedTotal - total).abs() < 0.01; // Allow for rounding
+  },
+  message: 'Total must match calculated amount after discount',
+);
 ```
 
 ### 3. Transformations
@@ -137,6 +238,55 @@ final userWithAgeSchema = Ack.object({
     'age': age,
   };
 });
+
+// Type transformation - string to DateTime
+final dateSchema = Ack.string()
+    .matches(r'^\d{4}-\d{2}-\d{2}$')
+    .transform<DateTime>((dateStr) {
+      return DateTime.parse(dateStr!);
+    });
+
+// Data normalization
+final phoneSchema = Ack.string()
+    .matches(r'^[\d\s\-\(\)\+]+$')
+    .transform((phone) {
+      // Remove all non-digit characters except +
+      return phone!.replaceAll(RegExp(r'[^\d\+]'), '');
+    });
+
+// Complex object transformation
+final apiResponseSchema = Ack.object({
+  'user_id': Ack.integer(),
+  'first_name': Ack.string(),
+  'last_name': Ack.string(),
+  'email_address': Ack.string().email(),
+  'created_at': Ack.string().datetime(),
+}).transform<Map<String, Object?>>((apiData) {
+  // Transform API response to internal format
+  return {
+    'id': apiData!['user_id'],
+    'fullName': '${apiData['first_name']} ${apiData['last_name']}',
+    'email': apiData['email_address'],
+    'createdAt': DateTime.parse(apiData['created_at'] as String),
+    'isActive': true, // Default value
+  };
+});
+
+// Chaining transformations with validation
+final processedUserSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0),
+}).transform<Map<String, Object?>>((user) {
+  return {
+    ...user!,
+    'slug': (user['name'] as String).toLowerCase().replaceAll(' ', '-'),
+    'category': (user['age'] as int) >= 18 ? 'adult' : 'minor',
+  };
+}).refine(
+  (processed) => (processed['slug'] as String).isNotEmpty,
+  message: 'Generated slug cannot be empty',
+);
 ```
 ```
 
@@ -259,6 +409,26 @@ final shapeSchema = Ack.discriminated(
     }),
   },
 );
+
+// Usage example
+final circleData = {
+  'type': 'circle',
+  'radius': 5.0,
+};
+
+final rectangleData = {
+  'type': 'rectangle',
+  'width': 10.0,
+  'height': 20.0,
+};
+
+final circleResult = shapeSchema.validate(circleData);
+final rectangleResult = shapeSchema.validate(rectangleData);
+
+if (circleResult.isOk) {
+  final shape = circleResult.getOrThrow();
+  print('Circle with radius: ${shape['radius']}');
+}
 ```
 
 ## Error Handling
@@ -312,7 +482,54 @@ final postSchema = Ack.object({
 });
 ```
 
-### 2. Gradual Validation
+### 2. Schema Composition and Extension
+
+Build complex schemas by composing and extending simpler ones:
+
+```dart
+// Base schemas for reuse
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+  'country': Ack.string(),
+  'postalCode': Ack.string().matches(r'^\d{5}(-\d{4})?$'),
+});
+
+final contactSchema = Ack.object({
+  'email': Ack.string().email(),
+  'phone': Ack.string().optional(),
+});
+
+// Compose schemas into more complex ones
+final customerSchema = Ack.object({
+  'id': Ack.string().uuid(),
+  'name': Ack.string(),
+  'contact': contactSchema,
+  'billingAddress': addressSchema,
+  'shippingAddress': addressSchema.optional(),
+});
+
+// Extend existing schemas
+final premiumCustomerSchema = customerSchema.extend({
+  'membershipLevel': Ack.enumString(['gold', 'platinum', 'diamond']),
+  'loyaltyPoints': Ack.integer().min(0),
+  'personalManager': Ack.object({
+    'name': Ack.string(),
+    'email': Ack.string().email(),
+  }).optional(),
+});
+
+// Make all fields optional for partial updates
+final customerUpdateSchema = customerSchema.partial();
+
+// Pick specific fields for different use cases
+final customerSummarySchema = customerSchema.pick(['id', 'name', 'contact']);
+
+// Omit sensitive fields for public APIs
+final publicCustomerSchema = customerSchema.omit(['billingAddress']);
+```
+
+### 3. Gradual Validation
 
 Use `AnySchema` for gradual migration or flexible APIs:
 

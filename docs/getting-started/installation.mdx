@@ -22,28 +22,18 @@ dependencies:
   ack: ^1.0.0 # Replace with latest version
 ```
 
-## Using the Code Generator (Recommended)
+## Code Generator (Experimental)
 
-If you want to generate schema classes from your models, add the generator:
+The `ack_generator` package is experimental and not recommended for production use. For production applications, use manual schema definition with the current Ack API.
+
+If you want to experiment with the code generator:
 
 ```bash
-# Add the generator and build_runner
+# Add the experimental generator and build_runner
 dart pub add --dev ack_generator build_runner
 ```
 
-Or in your `pubspec.yaml`:
-
-```yaml
-dev_dependencies:
-  ack_generator: ^1.0.0 # Replace with latest version
-  build_runner: ^2.3.0 # Check for compatible version
-```
-
-Run the generator:
-
-```bash
-dart run build_runner build
-```
+**Note:** The generated code may not compile with the current ack package version. Manual schema definition is the recommended approach.
 
 ## Basic Usage after Installation
 
@@ -53,7 +43,7 @@ Import Ack in your Dart files:
 import 'package:ack/ack.dart';
 
 // 1. Define a simple schema (e.g., for a name)
-final nameSchema = Ack.string.minLength(3);
+final nameSchema = Ack.string().minLength(3);
 
 // 2. Validate some data against the schema
 final result = nameSchema.validate('John');

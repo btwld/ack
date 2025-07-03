@@ -32,10 +32,10 @@ import 'package:ack/ack.dart';
 
 // Define the structure and rules for a user object.
 final userSchema = Ack.object({
-  'name': Ack.string.minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
-  'age': Ack.int.min(0).max(120),                // Age must be an integer between 0 and 120.
-  'email': Ack.string.email().nullable(),      // Email must be a valid format, but can be null.
-}, required: ['name', 'age']); // Name and age are mandatory fields.
+  'name': Ack.string().minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
+  'age': Ack.integer().min(0).max(120),            // Age must be an integer between 0 and 120.
+  'email': Ack.string().email().nullable(),        // Email must be a valid format, but can be null.
+}); // All fields are required by default
 
 // Data to validate.
 final dataToValidate = {
