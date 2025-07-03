@@ -1,169 +1,171 @@
-# TypeSafe Schemas
+# Schema Validation
 
 ## Overview
 
-Ack's schema system bridges the gap between runtime data validation and static type checking. It provides a type-safe approach to validating data against Dart models with automatic validation and strong type safety.
+Ack provides a comprehensive schema validation system that helps you validate data with a simple, fluent API. The schema system is built around the `AckSchema` base class and provides type-safe validation for various data types.
 
-Traditional approaches to data validation often require:
-1. **Separate validation logic** from your models
-2. **Manual type casting** between dynamic JSON and typed models
-3. **Duplicate schema definitions** for documentation and client validation
+## Core Schema Types
 
-TypeSafe Schemas solves these problems by combining:
-1. **Strong typing** through generated schema classes with typed getters
-2. **Automatic validation** when creating schemas from external data
-3. **Schema generation** for documentation and cross-platform validation
+Ack includes built-in schemas for common data types:
 
-All from a single model definition with validation annotations.
+- **StringSchema** - Validates strings with constraints like length, format, patterns
+- **IntegerSchema** - Validates integers with numeric constraints
+- **DoubleSchema** - Validates floating-point numbers
+- **BooleanSchema** - Validates boolean values
+- **ObjectSchema** - Validates objects/maps with nested property validation
+- **ListSchema** - Validates arrays with item validation
+- **EnumSchema** - Validates enum values
+- **AnyOfSchema** - Validates against multiple possible schemas (union types)
+- **AnySchema** - Accepts any value without validation (for maximum flexibility)
 
-## Getting Started
+## Basic Usage
 
-### 1. Define Your Model with Annotations
+### Creating Schemas
+
+Use the `Ack` factory class to create schemas:
 
 ```dart
-// file: user.dart
 import 'package:ack/ack.dart';
 
-// Use the part directive to include the generated code
-part 'user.g.dart';
+// String validation
+final nameSchema = Ack.string().minLength(2).maxLength(50);
 
-@Schema()
-class User {
-  @MinLength(2)
-  final String name;
+// Numeric validation
+final ageSchema = Ack.integer().min(0).max(120);
 
-  @IsEmail()
-  final String email;
+// Email validation
+final emailSchema = Ack.string().email();
 
-  @Min(18)
-  final int age;
-
-  User({required this.name, required this.email, required this.age});
-}
+// Object validation
+final userSchema = Ack.object({
+  'name': nameSchema,
+  'age': ageSchema,
+  'email': emailSchema,
+});
 ```
 
-### 2. Generate the Schema Class
+### Validating Data
 
-Run the build_runner command to generate the schema class:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-This generates a `user.g.dart` file with a `UserSchema` class that provides validation, type-safety, and schema generation.
-
-## Key Capabilities
-
-TypeSafe Schemas provide three key capabilities from a single model definition:
-
-### 1. Type-Safe Schema Access
-
-The generated schema class provides typed access to your data through generated getters:
+Use the `validate()` method to check data against a schema:
 
 ```dart
-// Untyped data (e.g., from JSON, form input, API response)
-final Map<String, dynamic> data = {
-  'name': 'John',
+// Sample data to validate
+final userData = {
+  'name': 'John Doe',
+  'age': 30,
   'email': 'john@example.com',
-  'age': 30
 };
 
-// Create a schema instance using parse method
-final userSchema = UserSchema().parse(data);
+// Validate the data
+final result = userSchema.validate(userData);
 
-if (userSchema.isValid) {
-  // Access fully typed properties directly through the schema
-  String name = userSchema.name;     // Typed as String
-  String email = userSchema.email;   // Typed as String
-  int age = userSchema.age;          // Typed as int
-
-  // Type checking prevents errors like:
-  // age = "thirty";  // Compile error!
-
-  print('Valid user: $name ($email) is $age years old');
-}
-
-// Detailed error handling for invalid data
-if (!userSchema.isValid) {
-  final error = userSchema.getErrors();
+if (result.isOk) {
+  // Validation passed - get the validated data
+  final validData = result.getOrThrow();
+  print('Valid user: ${validData['name']}');
+} else {
+  // Validation failed - handle the error
+  final error = result.getError();
   print('Validation failed: $error');
 }
 ```
 
-### 2. Model Creation Patterns
+## Advanced Features
 
-You have complete control over how to create model instances from validated data:
+### 1. Nullable and Optional Fields
 
-#### Direct Property Access
 ```dart
-final userSchema = UserSchema().parse(data);
+// Nullable field (can be null)
+final optionalAgeSchema = Ack.integer().min(0).nullable();
 
-if (userSchema.isValid) {
-  // Work directly with schema properties
-  print('Hello ${userSchema.name}! You are ${userSchema.age} years old');
-
-  // Create model when needed
-  final user = User(
-    name: userSchema.name,
-    email: userSchema.email,
-    age: userSchema.age,
-  );
-}
+// Optional field (can be omitted from object)
+final userWithOptionalAge = Ack.object({
+  'name': Ack.string().minLength(2),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).optional(), // Field can be missing
+});
 ```
 
-#### Factory Method Pattern
-```dart
-// Add to your model class
-class User {
-  // ... existing code ...
-  
-  factory User.fromSchema(UserSchema schema) {
-    if (!schema.isValid) {
-      throw AckException(schema.getErrors()!);
-    }
-    return User(
-      name: schema.name,
-      email: schema.email,
-      age: schema.age,
-    );
-  }
-}
+### 2. Custom Validation with Refinements
 
-// Usage
-final user = User.fromSchema(UserSchema().parse(data));
+Add custom validation logic using refinements:
+
+```dart
+// Password confirmation validation
+final passwordSchema = Ack.object({
+  'password': Ack.string().minLength(8),
+  'confirmPassword': Ack.string().minLength(8),
+}).refine(
+  (data) => data['password'] == data['confirmPassword'],
+  message: 'Passwords must match',
+);
+
+// Age validation with custom logic
+final adultUserSchema = Ack.object({
+  'name': Ack.string(),
+  'birthYear': Ack.integer().min(1900).max(2024),
+}).refine(
+  (data) {
+    final birthYear = data['birthYear'] as int;
+    final currentYear = DateTime.now().year;
+    final age = currentYear - birthYear;
+    return age >= 18;
+  },
+  message: 'User must be at least 18 years old',
+);
 ```
 
-#### Extension Method Pattern
-```dart
-extension UserSchemaX on UserSchema {
-  User toUser() => User(name: name, email: email, age: age);
-}
+### 3. Transformations
 
-// Usage
-if (userSchema.isValid) {
-  final user = userSchema.toUser();
-}
+Transform validated data into different formats:
+
+```dart
+// Transform string to uppercase
+final upperCaseNameSchema = Ack.string()
+    .minLength(2)
+    .transform((name) => name?.toUpperCase() ?? '');
+
+// Transform object to add computed fields
+final userWithAgeSchema = Ack.object({
+  'name': Ack.string(),
+  'birthYear': Ack.integer(),
+}).transform((data) {
+  final birthYear = data!['birthYear'] as int;
+  final age = DateTime.now().year - birthYear;
+  return {
+    ...data,
+    'age': age,
+  };
+});
+```
 ```
 
-### 3. JSON Schema Generation
+### 4. JSON Schema Generation
 
-The same model definition can generate JSON Schema for documentation or client-side validation:
+Generate JSON Schema for documentation or API specifications:
 
 ```dart
-// Generate a JSON Schema definition from your model
-final jsonSchema = UserSchema().toJsonSchema();
+// Generate JSON Schema from any schema
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(18).max(120),
+});
 
-// Use in API documentation, client validation, etc.
+final jsonSchema = userSchema.toJsonSchema();
+
+// Use in API documentation, OpenAPI specs, etc.
 import 'dart:convert';
 final jsonString = jsonEncode(jsonSchema);
 
-// Example output (simplified):
+// Example output:
 // {
 //   "type": "object",
 //   "properties": {
 //     "name": {
 //       "type": "string",
-//       "minLength": 2
+//       "minLength": 2,
+//       "maxLength": 50
 //     },
 //     "email": {
 //       "type": "string",
@@ -171,268 +173,185 @@ final jsonString = jsonEncode(jsonSchema);
 //     },
 //     "age": {
 //       "type": "integer",
-//       "minimum": 18
+//       "minimum": 18,
+//       "maximum": 120
 //     }
 //   },
 //   "required": ["name", "email", "age"]
 // }
 ```
 
-## Validating Nested Models
+## Complex Validation Scenarios
 
-TypeSafe Schemas handle nested models automatically, providing deep validation:
-
-```dart
-// file: address.dart
-import 'package:ack/ack.dart';
-
-part 'address.g.dart';
-
-@Schema()
-class Address {
-  @IsNotEmpty()
-  final String street;
-  
-  @IsNotEmpty()
-  final String city;
-
-  Address({required this.street, required this.city});
-  
-  factory Address.fromSchema(AddressSchema schema) {
-    return Address(street: schema.street, city: schema.city);
-  }
-}
-
-// file: customer.dart
-import 'package:ack/ack.dart';
-import 'address.dart';
-
-part 'customer.g.dart';
-
-@Schema()
-class Customer {
-  @MinLength(3)
-  final String name;
-  
-  // Validates using AddressSchema
-  final Address address;
-  
-  // List of addresses, each validated
-  final List<Address>? secondaryAddresses;
-
-  Customer({
-    required this.name, 
-    required this.address,
-    this.secondaryAddresses
-  });
-  
-  factory Customer.fromSchema(CustomerSchema schema) {
-    return Customer(
-      name: schema.name,
-      address: Address.fromSchema(schema.address),
-      secondaryAddresses: schema.secondaryAddresses
-          ?.map((addr) => Address.fromSchema(addr))
-          .toList(),
-    );
-  }
-}
-```
-
-Using nested schemas:
+### Nested Object Validation
 
 ```dart
-final customerData = {
-  'name': 'John Doe',
-  'address': {
-    'street': '123 Main St',
-    'city': 'Anytown',
-  },
-  'secondaryAddresses': [
-    {
-      'street': '456 Business Ave',
-      'city': 'Work City',
-    }
-  ]
-};
+// Address schema
+final addressSchema = Ack.object({
+  'street': Ack.string().minLength(1),
+  'city': Ack.string().minLength(1),
+  'zipCode': Ack.string().matches(r'^\d{5}(-\d{4})?$'),
+});
 
-// Type-safe access to nested properties
-final customerSchema = CustomerSchema().parse(customerData);
-
-if (customerSchema.isValid) {
-  // Access nested schema properties directly
-  String name = customerSchema.name;
-  String street = customerSchema.address.street;
-  String city = customerSchema.address.city;
-
-  // Access nested lists
-  if (customerSchema.secondaryAddresses != null) {
-    for (final addr in customerSchema.secondaryAddresses!) {
-      print('Secondary: ${addr.street}, ${addr.city}');
-    }
-  }
-
-  // Create model when needed
-  final customer = Customer.fromSchema(customerSchema);
-}
-```
-
-## Working with Additional Properties
-
-You can configure how to handle additional properties not defined in your model:
-
-```dart
-@Schema(
-  additionalProperties: true, // Allow additional properties
-  additionalPropertiesField: 'metadata' // Store them in this field
-)
-class User {
-  final String name;
-  final String email;
-  
-  // Field to store additional properties
-  final Map<String, dynamic> metadata;
-
-  User({
-    required this.name, 
-    required this.email, 
-    Map<String, dynamic>? metadata
-  }) : metadata = metadata ?? {};
-}
-```
-
-With this configuration, any properties in the input data that aren't defined in the model will be stored in the `metadata` field.
-
-## Available Validation Annotations
-
-Ack provides a wide range of validation annotations for your model properties:
-
-### String Validation
-
-- `@MinLength(int)`: String must have at least n characters
-- `@MaxLength(int)`: String must have at most n characters
-- `@IsEmail()`: String must be a valid email address
-- `@Pattern(pattern)`: String must match the regular expression pattern
-- `@IsNotEmpty()`: String must not be empty
-- `@EnumValues(values)`: String must be one of the specified values
-- `@IsDate()`: String must be a valid date in YYYY-MM-DD format
-- `@IsDateTime()`: String must be a valid date-time in ISO 8601 format
-
-### Number Validation
-
-- `@Min(n)`: Number must be greater than or equal to n
-- `@Max(n)`: Number must be less than or equal to n
-- `@MultipleOf(n)`: Number must be a multiple of n
-- `@IsPositive()`: Number must be greater than 0
-- `@IsNegative()`: Number must be less than 0
+// User with nested address
+final userWithAddressSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'email': Ack.string().email(),
+  'address': addressSchema, // Nested validation
+});
 
 ### List Validation
 
-- `@MinItems(n)`: List must have at least n items
-- `@MaxItems(n)`: List must have at most n items
-- `@Length(n)`: List must have exactly n items
-- `@UniqueItems()`: List items must be unique
-- `@IsNotEmpty()`: List must not be empty
-
-### Common Validation
-
-- `@Nullable()`: Override annotation - makes a non-nullable field accept null values in validation
-- `@Required()`: Override annotation - makes an optional constructor parameter required in validation
-- `@DefaultValue(value)`: Default value if the field is not provided
-- `@Description(text)`: Description for documentation
-
-**Automatic Inference**: With Ack's enhanced automatic inference, `@Required()` and `@Nullable()` annotations are rarely needed. The generator automatically determines:
-
-- **Required status** from constructor parameters: `required this.field` → field is required
-- **Nullable status** from field types: `String?` → field is nullable
-
-Use override annotations only when you need to override the automatic inference behavior.
-
-#### Automatic Inference Examples
-
 ```dart
-@Schema()
-class User {
-  // ✅ Automatic inference - no annotations needed
-  final String name;        // Non-nullable field
-  final String? email;      // Nullable field
-  final int age;           // Non-nullable field
+// Validate arrays of items
+final numbersSchema = Ack.list(Ack.integer().positive()).minLength(1);
 
-  User({
-    required this.name,    // → Automatically inferred as required
-    this.email,           // → Automatically inferred as optional
-    required this.age,    // → Automatically inferred as required
-  });
-}
+// Validate array of objects
+final usersSchema = Ack.list(userSchema).maxLength(10);
 
-// Generated schema automatically creates:
-// required: ['name', 'age']  // From constructor parameters
-// 'email': Ack.string.nullable()  // From String? type
+// Validate with custom refinements
+final uniqueEmailsSchema = Ack.list(userSchema).refine(
+  (users) {
+    final emails = users.map((u) => u['email']).toSet();
+    return emails.length == users.length;
+  },
+  message: 'All users must have unique email addresses',
+);
 ```
 
-#### Override Annotation Examples
+### Union Types (AnyOf)
 
 ```dart
-@Schema()
-class AdvancedUser {
-  // Override: Make optional constructor param required in validation
-  @Required()
-  final String? nickname;   // Optional in constructor, required in validation
+// Value can be either a string or a number
+final stringOrNumberSchema = Ack.anyOf([
+  Ack.string(),
+  Ack.integer(),
+]);
 
-  // Override: Make non-nullable field accept null in validation
-  @Nullable()
-  final String internalId; // Non-nullable type, but validation allows null
+// More complex union types
+final contactSchema = Ack.anyOf([
+  Ack.object({
+    'type': Ack.literal('email'),
+    'value': Ack.string().email(),
+  }),
+  Ack.object({
+    'type': Ack.literal('phone'),
+    'value': Ack.string().matches(r'^\+?[\d\s\-\(\)]+$'),
+  }),
+]);
+```
 
-  AdvancedUser({
-    this.nickname,         // Optional in constructor
-    required this.internalId, // Required in constructor
-  });
+### Discriminated Unions
+
+```dart
+// Polymorphic validation based on a discriminator field
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': Ack.object({
+      'type': Ack.literal('circle'),
+      'radius': Ack.double().positive(),
+    }),
+    'rectangle': Ack.object({
+      'type': Ack.literal('rectangle'),
+      'width': Ack.double().positive(),
+      'height': Ack.double().positive(),
+    }),
+  },
+);
+```
+
+## Error Handling
+
+Ack provides detailed error information when validation fails:
+
+```dart
+final result = userSchema.validate(invalidData);
+
+if (result.isFail) {
+  final error = result.getError();
+
+  // Different error types provide different information
+  if (error is SchemaConstraintsError) {
+    print('Constraint violations:');
+    for (final constraint in error.constraints) {
+      print('- ${constraint.message}');
+    }
+  } else if (error is SchemaNestedError) {
+    print('Nested validation errors:');
+    for (final nestedError in error.errors) {
+      print('- ${nestedError.message}');
+    }
+  }
 }
 ```
 
-## Manual Implementation (Advanced)
+## Best Practices
 
-While code generation is recommended, you can also implement schemas manually:
+### 1. Schema Reuse
+
+Define reusable schemas for common patterns:
 
 ```dart
-class UserSchema extends SchemaModel {
-  const UserSchema() : super();
-  const UserSchema._valid(Map<String, Object?> data) : super.validated(data);
+// Common schemas
+final emailSchema = Ack.string().email();
+final uuidSchema = Ack.string().uuid();
+final timestampSchema = Ack.string().datetime();
 
-  @override
-  ObjectSchema get definition => Ack.object({
-    'name': Ack.string.minLength(2),
-    'email': Ack.string.email(),
-    'age': Ack.int.min(18),
-  }, required: ['name', 'email', 'age']);
+// Reuse in multiple schemas
+final userSchema = Ack.object({
+  'id': uuidSchema,
+  'email': emailSchema,
+  'createdAt': timestampSchema,
+});
 
-  @override
-  UserSchema parse(Object? input) {
-    return super.parse(input) as UserSchema;
-  }
+final postSchema = Ack.object({
+  'id': uuidSchema,
+  'authorId': uuidSchema,
+  'createdAt': timestampSchema,
+});
+```
 
-  @override
-  UserSchema? tryParse(Object? input) {
-    return super.tryParse(input) as UserSchema?;
-  }
+### 2. Gradual Validation
 
-  @override
-  UserSchema createValidated(Map<String, Object?> data) {
-    return UserSchema._valid(data);
-  }
+Use `AnySchema` for gradual migration or flexible APIs:
 
-  // Add typed getters
-  String get name => getValue<String>('name');
-  String get email => getValue<String>('email');
-  int get age => getValue<int>('age');
-}
+```dart
+// Accept any data initially, add validation incrementally
+final flexibleSchema = Ack.object({
+  'id': Ack.string(), // Validated
+  'data': Ack.any(),  // Accept anything for now
+});
 
-// Usage
-final schema = UserSchema().parse(data);
-if (schema.isValid) {
-  final user = User(
-    name: schema.name,
-    email: schema.email,
-    age: schema.age,
-  );
+// Later, add more specific validation
+final stricterSchema = Ack.object({
+  'id': Ack.string().uuid(),
+  'data': Ack.object({
+    'name': Ack.string().minLength(1),
+    'value': Ack.integer(),
+  }),
+});
+```
+
+### 3. Performance Considerations
+
+- Reuse schema instances when possible (they're immutable)
+- Use `safeParse()` instead of `parse()` when you expect validation failures
+- Consider using `transform()` for expensive computations only after validation passes
+
+```dart
+// ✅ Good: Reuse schema instances
+final userSchema = Ack.object({...});
+
+// Use the same instance multiple times
+final result1 = userSchema.validate(data1);
+final result2 = userSchema.validate(data2);
+
+// ✅ Good: Use safeParse for expected failures
+final result = userSchema.safeParse(untrustedData);
+if (result.isOk) {
+  // Handle success
+} else {
+  // Handle expected failure gracefully
 }
 ```
