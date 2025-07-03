@@ -1,11 +1,6 @@
-import 'dart:async';
-
 import 'package:meta/meta.dart';
 
 import 'schemas/schema.dart';
-import 'validation/schema_result.dart';
-
-final _kSchemaContextKey = #ackSchemaContextKeyV2;
 
 /// Represents the context in which a schema validation is occurring.
 @immutable
@@ -28,24 +23,3 @@ class SchemaContext {
     return 'SchemaContext(name: "$name", schema: $schemaTypeString, value: "$valueString")';
   }
 }
-
-/// Executes an action within a specific [SchemaContext].
-SchemaResult<T> executeWithContext<T extends Object>(
-  SchemaContext context,
-  SchemaResult<T> Function(SchemaContext currentContext) action,
-) {
-  return Zone.current.fork(
-      zoneValues: {_kSchemaContextKey: context}).run(() => action(context));
-}
-
-// /// A mock context for testing purposes.
-// @visibleForTesting
-// class SchemaMockContext extends SchemaContext {
-//   const SchemaMockContext()
-//       : super(
-//           name: 'mock_context',
-//           schema:
-//               const StringSchema(),
-//           value: 'mock_value',
-//         );
-// }
