@@ -18,7 +18,7 @@ All `validate()` methods in Ack return a `SchemaResult` object. This object enca
 ```dart
 import 'package:ack/ack.dart';
 
-final schema = Ack.string.minLength(5);
+final schema = Ack.string().minLength(5);
 final result = schema.validate('abc');
 
 if (result.isFail) {
@@ -49,12 +49,12 @@ The `SchemaError` object contains details about the validation failure.
 
 ```dart
 final userSchema = Ack.object({
-  'name': Ack.string,
-  'age': Ack.int.min(18),
+  'name': Ack.string(),
+  'age': Ack.integer().min(18),
   'address': Ack.object({
-    'city': Ack.string
+    'city': Ack.string()
   })
-}, required: ['name', 'age']);
+});
 
 final invalidData = {
   'name': 'Test',
@@ -129,7 +129,7 @@ Built-in constraints provide default error messages. For custom error messages, 
 
 ```dart
 // Built-in constraints use default messages
-final schema = Ack.string.minLength(5);
+final schema = Ack.string().minLength(5);
 
 final result = schema.validate('abc');
 if (result.isFail) {

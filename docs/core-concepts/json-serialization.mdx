@@ -99,33 +99,34 @@ if (result.isOk) {
 } 
 ```
 
-**Using Code Generation:**
+**Using Manual Schema Definition:**
 
-If you use Ack's code generation, the generated schema class provides typed getters for seamless access to validated data.
+With manual schema definition, you work directly with the validated data:
 
 ```dart
-// Assumes user.dart and user.schema.dart (generated) exist
-import 'user.dart';
-import 'user.schema.dart';
+// Define your schema
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(1),
+  'email': Ack.string().email(),
+});
 
-// Create schema instance (validation happens automatically)
-final userSchemaInstance = UserSchema(jsonData);
+// Validate JSON data
+final result = userSchema.validate(jsonData);
 
-if (userSchemaInstance.isValid) {
-  // Access validated data through typed getters
-  print('Name: ${userSchemaInstance.name}');
-  print('Email: ${userSchemaInstance.email}');
-  
-  // Create model using your preferred pattern
-  final user = User(
-    name: userSchemaInstance.name,
-    email: userSchemaInstance.email,
-  );
-  print('Created User model via generator: ${user.name}');
+if (result.isOk) {
+  final validData = result.getOrThrow();
+
+  // Access validated data with type casting
+  final name = validData['name'] as String;
+  final email = validData['email'] as String;
+
+  // Create model using validated data
+  final user = User(name: name, email: email);
+  print('Created User model: ${user.name}');
 }
 ```
 
-*See the [Code Generation Guide](../guides/code-generation.mdx) for more details.*
+*See the [Schema Validation](../core-concepts/typesafe-schemas.mdx) guide for more details.*
 
 ## Serializing Models to JSON-compatible Maps
 
