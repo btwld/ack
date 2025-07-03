@@ -147,11 +147,10 @@ sealed class AckSchema<DartType extends Object> {
 
   SchemaResult<DartType> validate(Object? value, {String? debugName}) {
     final effectiveDebugName = debugName ?? schemaType.name.toLowerCase();
+    final context =
+        SchemaContext(name: effectiveDebugName, schema: this, value: value);
 
-    return executeWithContext(
-      SchemaContext(name: effectiveDebugName, schema: this, value: value),
-      (ctx) => parseAndValidate(value, ctx),
-    );
+    return parseAndValidate(value, context);
   }
 
   /// validateOrThrow is a convenience method that validates the value
