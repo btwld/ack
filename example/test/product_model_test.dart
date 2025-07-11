@@ -1,6 +1,5 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/product_model.dart';
-import 'package:ack_example/product_model.g.dart';
 import 'package:test/test.dart';
 
 // No type helper needed for function-based approach

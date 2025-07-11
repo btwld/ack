@@ -5,9 +5,7 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-// // GENERATED CODE - DO NOT MODIFY BY HAND
-
-import 'package:ack/ack.dart';
+part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation
@@ -34,3 +32,83 @@ final categorySchema = Ack.object({
   'name': Ack.string(),
   'description': Ack.string().optional().nullable(),
 }, additionalProperties: true);
+
+/// Generated SchemaModel for [Product].
+/// A product model with validation
+class ProductSchemaModel extends SchemaModel<Product> {
+  ProductSchemaModel._();
+
+  factory ProductSchemaModel() {
+    return _instance;
+  }
+
+  static final _instance = ProductSchemaModel._();
+
+  @override
+  ObjectSchema buildSchema() {
+    return productSchema;
+  }
+
+  @override
+  Product createFromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      description: map['description'] as String,
+      price: map['price'] as double,
+      contactEmail: map['contactEmail'] as String?,
+      imageUrl: map['imageUrl'] as String?,
+      category: CategorySchemaModel._instance.createFromMap(
+        map['category'] as Map<String, dynamic>,
+      ),
+      releaseDate: map['releaseDate'] as String,
+      createdAt: map['createdAt'] as String,
+      updatedAt: map['updatedAt'] as String?,
+      stockQuantity: map['stockQuantity'] as int,
+      status: map['status'] as String,
+      productCode: map['productCode'] as String,
+      metadata: extractAdditionalProperties(map, {
+        'id',
+        'name',
+        'description',
+        'price',
+        'contactEmail',
+        'imageUrl',
+        'category',
+        'releaseDate',
+        'createdAt',
+        'updatedAt',
+        'stockQuantity',
+        'status',
+        'productCode',
+      }),
+    );
+  }
+}
+
+/// Generated SchemaModel for [Category].
+/// A category for organizing products
+class CategorySchemaModel extends SchemaModel<Category> {
+  CategorySchemaModel._();
+
+  factory CategorySchemaModel() {
+    return _instance;
+  }
+
+  static final _instance = CategorySchemaModel._();
+
+  @override
+  ObjectSchema buildSchema() {
+    return categorySchema;
+  }
+
+  @override
+  Category createFromMap(Map<String, dynamic> map) {
+    return Category(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      description: map['description'] as String?,
+      metadata: extractAdditionalProperties(map, {'id', 'name', 'description'}),
+    );
+  }
+}

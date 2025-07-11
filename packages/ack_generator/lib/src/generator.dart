@@ -9,6 +9,7 @@ import 'package:source_gen/source_gen.dart';
 
 import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
+import 'builders/schema_model_builder.dart';
 
 /// Generates SchemaModel implementations for classes annotated with @AckModel
 ///
@@ -39,10 +40,12 @@ class AckSchemaGenerator extends Generator {
       return '';
     }
 
-    // Generate all schema fields for this file
+    // Generate all schema fields and SchemaModel classes for this file
     final schemaFields = <Field>[];
+    final schemaModelClasses = <Class>[];
     final analyzer = ModelAnalyzer();
     final schemaBuilder = SchemaBuilder();
+    final schemaModelBuilder = SchemaModelBuilder();
 
     for (final element in annotatedElements) {
       try {
@@ -53,13 +56,26 @@ class AckSchemaGenerator extends Generator {
             TypeChecker.fromRuntime(AckModel).firstAnnotationOf(element)!;
         final annotationReader = ConstantReader(annotation);
 
-        // Analyze the model and build the schema field
+        // Analyze the model
         final modelInfo = analyzer.analyze(element, annotationReader);
+        
+        // Always build the schema field
         final schemaField = schemaBuilder.buildSchemaField(modelInfo);
         schemaFields.add(schemaField);
+        
+        // Check if model generation is requested
+        final generateModel = annotationReader.read('model').isNull
+            ? false
+            : annotationReader.read('model').boolValue;
+            
+        if (generateModel) {
+          // Build SchemaModel class too
+          final schemaModelClass = schemaModelBuilder.buildSchemaModelClass(modelInfo);
+          schemaModelClasses.add(schemaModelClass);
+        }
       } catch (e) {
         throw InvalidGenerationSourceError(
-          'Error generating schema for ${element.name}: $e',
+          'Error generating schemas for ${element.name}: $e',
           element: element,
           todo: 'Check that all fields have supported types',
         );
@@ -67,20 +83,61 @@ class AckSchemaGenerator extends Generator {
     }
 
     // Build the complete library with all schemas
-    final generatedLibrary = Library((b) => b
-      ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
-      ..directives.addAll([
-        Directive.import('package:ack/ack.dart'),
-      ])
-      ..body.addAll(schemaFields));
+    // Schema variables must come first as SchemaModel classes depend on them
+    final allGeneratedElements = <Spec>[
+      ...schemaFields,       // Schema variables first (dependencies)
+      ...schemaModelClasses, // SchemaModel classes after (use schemas)
+    ];
+    
+    // Only add imports and headers if we have content
+    if (allGeneratedElements.isEmpty) {
+      return '';
+    }
+    
+    // Check if we need to generate as a part file or standalone
+    final needsPartOf = schemaModelClasses.isNotEmpty;
+    
+    if (needsPartOf) {
+      // Generate as a part file
+      final fileName = buildStep.inputId.pathSegments.last.replaceAll('.g.dart', '.dart');
+      final library = Library((b) => b
+        ..body.addAll(allGeneratedElements));
+      
+      final emitter = DartEmitter(
+        allocator: Allocator.none,
+        orderDirectives: true,
+        useNullSafetySyntax: true,
+      );
+      
+      final code = library.accept(emitter);
+      final output = '''part of '$fileName';
 
-    final emitter = DartEmitter(
-      allocator: Allocator.none,
-      orderDirectives: true,
-      useNullSafetySyntax: true,
-    );
+$code''';
+      
+      try {
+        return _formatter.format(output);
+      } catch (e) {
+        // If formatting fails, return unformatted code
+        print('Warning: Failed to format generated code: $e');
+        return output;
+      }
+    } else {
+      // Generate as standalone file with imports
+      final generatedLibrary = Library((b) => b
+        ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
+        ..directives.addAll([
+          Directive.import('package:ack/ack.dart'),
+        ])
+        ..body.addAll(allGeneratedElements));
 
-    return _formatter.format('${generatedLibrary.accept(emitter)}');
+      final emitter = DartEmitter(
+        allocator: Allocator.none,
+        orderDirectives: true,
+        useNullSafetySyntax: true,
+      );
+
+      return _formatter.format('${generatedLibrary.accept(emitter)}');
+    }
   }
 
   /// Validates that the element can be processed by the generator

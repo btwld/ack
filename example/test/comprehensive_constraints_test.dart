@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 
-import '../lib/product_model.g.dart';
+import '../lib/product_model.dart';
 
 void main() {
   group('Comprehensive Constraint Annotations Test', () {

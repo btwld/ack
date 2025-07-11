@@ -10,6 +10,7 @@ class ModelInfo {
   final bool hasDiscriminator;
   final bool additionalProperties;
   final String? additionalPropertiesField;
+  final bool model;
 
   const ModelInfo({
     required this.className,
@@ -20,5 +21,6 @@ class ModelInfo {
     this.hasDiscriminator = false,
     this.additionalProperties = false,
     this.additionalPropertiesField,
+    this.model = false,
   });
 }
