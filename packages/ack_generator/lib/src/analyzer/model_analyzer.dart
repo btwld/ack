@@ -34,6 +34,11 @@ class ModelAnalyzer {
             ? null
             : annotation.read('additionalPropertiesField').stringValue;
 
+    // Extract model flag
+    final model = annotation.read('model').isNull
+        ? false
+        : annotation.read('model').boolValue;
+
     // Analyze all fields
     final fields = <FieldInfo>[];
     final requiredFields = <String>[];
@@ -77,6 +82,7 @@ class ModelAnalyzer {
       requiredFields: requiredFields,
       additionalProperties: additionalProperties,
       additionalPropertiesField: additionalPropertiesField,
+      model: model,
     );
   }
 

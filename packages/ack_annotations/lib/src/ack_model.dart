@@ -15,11 +15,18 @@ class AckModel {
   /// The name of the field that should store additional properties
   /// Must be a `Map<String, dynamic>` field in your class
   final String? additionalPropertiesField;
+  
+  /// Whether to generate a SchemaModel class in addition to the schema variable
+  /// When true, generates both:
+  /// - Schema variable (e.g., productSchema)
+  /// - SchemaModel class (e.g., ProductSchemaModel)
+  final bool model;
 
   const AckModel({
     this.schemaName,
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
+    this.model = false,
   });
 }

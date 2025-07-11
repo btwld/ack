@@ -1,0 +1,19 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    # Suppress deprecated analyzer API warnings while we maintain compatibility
+    deprecated_member_use: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.mocks.dart"
+
+linter:
+  rules:
+    # Enable additional rules
+    prefer_single_quotes: true
+    avoid_print: false
+    lines_longer_than_80_chars: false
+    
+    # Disable problematic rules for generated code compatibility
+    avoid_classes_with_only_static_members: false

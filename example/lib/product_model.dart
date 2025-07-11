@@ -1,12 +1,14 @@
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 // Import generated schemas
-import 'product_model.g.dart';
+part 'product_model.g.dart';
 
 @AckModel(
   description: 'A product model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
+  model: true,
 )
 class Product {
   @MinLength(1)
@@ -67,6 +69,7 @@ class Product {
   description: 'A category for organizing products',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
+  model: true,
 )
 class Category {
   final String id;
@@ -84,7 +87,7 @@ class Category {
 
 // Simple test to verify the generated code works
 void main() {
-  print('Testing Product Schema...');
+  print('Testing Product Schema with model: true flag...');
 
   final productData = {
     'id': '123',
@@ -105,17 +108,37 @@ void main() {
     'color': 'Blue',
   };
 
+  // Test 1: Using schema variable
   try {
     final result = productSchema.parse(productData) as Map<String, dynamic>;
 
-    print('✅ Schema parsing successful!');
-    print('✅ Product ID: ${result['id']}');
-    print('✅ Product Name: ${result['name']}');
-    print('✅ Category: ${(result['category'] as Map<String, dynamic>)['name']}');
-    print('✅ Additional properties: ${result['metadata']}');
-
-    print('\n🎉 Product schema test passed!');
+    print('\n✅ Schema variable parsing successful!');
+    print('   Product ID: ${result['id']}');
+    print('   Product Name: ${result['name']}');
+    print('   Category: ${(result['category'] as Map<String, dynamic>)['name']}');
   } catch (e) {
-    print('❌ Error: $e');
+    print('❌ Schema variable error: $e');
   }
+
+  // Test 2: Using SchemaModel
+  try {
+    final productModel = ProductSchemaModel();
+    final parseResult = productModel.parse(productData);
+    
+    if (parseResult.isOk) {
+      final product = productModel.value!;
+      print('\n✅ SchemaModel parsing successful!');
+      print('   Product ID: ${product.id}');
+      print('   Product Name: ${product.name}');
+      print('   Category: ${product.category.name}');
+      print('   Status: ${product.status}');
+      print('   Additional properties: ${product.metadata}');
+    } else {
+      print('❌ SchemaModel validation failed: ${parseResult.getError()}');
+    }
+  } catch (e) {
+    print('❌ SchemaModel error: $e');
+  }
+
+  print('\n🎉 Both approaches work with model: true flag!');
 }

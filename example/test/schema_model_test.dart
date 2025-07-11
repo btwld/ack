@@ -1,4 +1,4 @@
-import 'package:ack_example/product_model.g.dart';
+import 'package:ack_example/product_model.dart';
 import 'package:test/test.dart';
 
 void main() {
