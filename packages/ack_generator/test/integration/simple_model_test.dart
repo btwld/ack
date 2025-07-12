@@ -103,7 +103,7 @@ class AllPrimitives {
             contains("'text': Ack.string()"),
             contains("'count': Ack.integer()"),
             contains("'price': Ack.double()"),
-            contains("'number': Ack.number()"),
+            contains("'number': Ack.double()"),
             contains("'active': Ack.boolean()"),
           ])),
         },

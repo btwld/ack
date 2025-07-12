@@ -34,7 +34,7 @@ void main() {
       test('builds number schema', () {
         final field = createField('value', 'num', isRequired: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.number()'));
+        expect(schema, equals('Ack.double()'));
       });
 
       test('builds boolean schema', () {
@@ -139,7 +139,7 @@ void main() {
       test('builds generic map schema', () {
         final field = createMapField('metadata');
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.map(Ack.any())'));
+        expect(schema, equals('Ack.object({}, additionalProperties: true)'));
       });
     });
   });

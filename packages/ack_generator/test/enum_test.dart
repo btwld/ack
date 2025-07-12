@@ -65,8 +65,8 @@ class Task {
             contains("'title': Ack.string()"),
             contains("'priority': Ack.string()"),
             contains(".enumString(['low', 'medium', 'high'])"),
-            contains(".optional()"),
-            contains(".nullable()"),
+            contains('.optional()'),
+            contains('.nullable()'),
           ])),
         },
       );

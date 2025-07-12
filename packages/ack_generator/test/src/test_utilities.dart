@@ -23,6 +23,9 @@ class MockFieldInfo implements FieldInfo {
   final String? defaultValue;
 
   @override
+  final String? description;
+
+  @override
   final bool isPrimitive;
 
   @override
@@ -56,6 +59,7 @@ class MockFieldInfo implements FieldInfo {
     required this.isPrimitive,
     required this.isList,
     required this.isMap,
+    this.description,
     this.isSet = false,
     this.isGeneric = false,
     this.isEnum = false,
@@ -86,10 +90,15 @@ class MockDartType implements DartType {
   @override
   bool get isDartCoreMap => typeName.startsWith('Map<');
 
+  @override
   bool get isDartCoreString => typeName == 'String';
+  @override
   bool get isDartCoreInt => typeName == 'int';
+  @override
   bool get isDartCoreDouble => typeName == 'double';
+  @override
   bool get isDartCoreBool => typeName == 'bool';
+  @override
   bool get isDartCoreNum => typeName == 'num';
 
   List<DartType> get typeArguments {

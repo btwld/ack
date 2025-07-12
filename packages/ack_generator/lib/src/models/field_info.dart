@@ -11,6 +11,7 @@ class FieldInfo {
   final bool isNullable;
   final List<ConstraintInfo> constraints;
   final String? defaultValue;
+  final String? description;
 
   const FieldInfo({
     required this.name,
@@ -20,6 +21,7 @@ class FieldInfo {
     required this.isNullable,
     required this.constraints,
     this.defaultValue,
+    this.description,
   });
 
   /// Whether this field references another schema model
