@@ -52,7 +52,7 @@ class FieldBuilder {
     } else if (field.type.isDartCoreBool) {
       return 'Ack.boolean()';
     } else if (field.type.isDartCoreNum) {
-      return 'Ack.number()'; // Map num to number
+      return 'Ack.double()'; // Map num to double
     } else {
       throw UnsupportedError(
           'Unsupported primitive type: ${field.type.getDisplayString()}');
@@ -80,7 +80,6 @@ class FieldBuilder {
     // Try to get type arguments from the DartType
     if (mapType is ParameterizedType && mapType.typeArguments.length == 2) {
       final keyType = mapType.typeArguments[0];
-      final valueType = mapType.typeArguments[1];
 
       // Verify key type is String (required for JSON)
       if (!keyType.isDartCoreString) {
@@ -88,13 +87,12 @@ class FieldBuilder {
             'Map keys must be String for JSON serialization. Found: ${keyType.getDisplayString()}');
       }
 
-      // Build schema for value type
-      final valueSchema = _buildSchemaForType(valueType);
-      return 'Ack.map($valueSchema)';
+      // Use object with additionalProperties for all Maps
+      return 'Ack.object({}, additionalProperties: true)';
     }
 
     // Fallback for untyped maps
-    return 'Ack.map(Ack.any())';
+    return 'Ack.object({}, additionalProperties: true)';
   }
 
   String _buildSetSchema(FieldInfo field) {
@@ -123,7 +121,7 @@ class FieldBuilder {
     } else if (type.isDartCoreBool) {
       return 'Ack.boolean()';
     } else if (type.isDartCoreNum) {
-      return 'Ack.number()'; // Map num to number
+      return 'Ack.double()'; // Map num to double
     } else if (type.toString() == 'dynamic' || type.isDartCoreObject) {
       return 'Ack.any()';
     } else if (type is TypeParameterType) {
@@ -137,12 +135,8 @@ class FieldBuilder {
       }
       return 'Ack.list(Ack.any())';
     } else if (type.isDartCoreMap) {
-      // Nested map
-      if (type is ParameterizedType && type.typeArguments.length == 2) {
-        final valueType = type.typeArguments[1];
-        return 'Ack.map(${_buildSchemaForType(valueType)})';
-      }
-      return 'Ack.map(Ack.any())';
+      // Nested map - use object with additionalProperties
+      return 'Ack.object({}, additionalProperties: true)';
     } else if (type.isDartCoreSet) {
       // Nested set
       if (type is ParameterizedType && type.typeArguments.isNotEmpty) {

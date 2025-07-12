@@ -34,10 +34,16 @@ class ModelAnalyzer {
             ? null
             : annotation.read('additionalPropertiesField').stringValue;
 
-    // Extract model flag
-    final model = annotation.read('model').isNull
-        ? false
-        : annotation.read('model').boolValue;
+    // Extract model flag (with fallback for backward compatibility)
+    bool model = false;
+    try {
+      model = annotation.read('model').isNull
+          ? false
+          : annotation.read('model').boolValue;
+    } catch (e) {
+      // Field doesn't exist in annotation, default to false
+      model = false;
+    }
 
     // Analyze all fields
     final fields = <FieldInfo>[];

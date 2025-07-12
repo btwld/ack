@@ -3,7 +3,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 // This file demonstrates how AnyOf could work with sealed classes
 // Note: Code generation for AnyOf is not yet implemented
-// part 'anyof_example.g.dart';
+part 'anyof_example.g.dart';
 
 /// Example 1: Simple AnyOf with sealed class
 /// Represents a value that can be either a string ID or numeric ID
@@ -40,6 +40,13 @@ class ApiResponse {
 sealed class ResponseData {
   const ResponseData();
 }
+
+// Temporary schema for ResponseData (until sealed class support is added)
+final responseDataSchema = Ack.anyOf([
+  userResponseSchema,
+  errorResponseSchema,
+  listResponseSchema,
+]);
 
 @AckModel(model: true)
 class UserResponse extends ResponseData {
@@ -98,6 +105,14 @@ class Setting {
 sealed class SettingValue {
   const SettingValue();
 }
+
+// Temporary schema for SettingValue (until sealed class support is added)
+final settingValueSchema = Ack.anyOf([
+  Ack.string(), // StringSetting
+  Ack.double(), // NumberSetting  
+  Ack.boolean(), // BooleanSetting
+  Ack.object({}, additionalProperties: true), // ObjectSetting
+]);
 
 class StringSetting extends SettingValue {
   final String value;

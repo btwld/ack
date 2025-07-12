@@ -24,6 +24,9 @@ class FieldAnalyzer {
     
     // Get default value if any
     final defaultValue = _getDefaultValue(field);
+    
+    // Extract description from annotation
+    final description = _getDescription(field, ackFieldAnnotation);
 
     return FieldInfo(
       name: field.name,
@@ -33,6 +36,7 @@ class FieldAnalyzer {
       isNullable: field.type.nullabilitySuffix != NullabilitySuffix.none,
       constraints: constraints,
       defaultValue: defaultValue,
+      description: description,
     );
   }
 
@@ -49,6 +53,16 @@ class FieldAnalyzer {
       }
     }
     return field.name;
+  }
+
+  String? _getDescription(FieldElement field, DartObject? annotation) {
+    if (annotation != null) {
+      final descriptionField = annotation.getField('description');
+      if (descriptionField != null && !descriptionField.isNull) {
+        return descriptionField.toStringValue();
+      }
+    }
+    return null;
   }
 
   bool _isRequired(FieldElement field, DartObject? annotation) {

@@ -1,5 +1,6 @@
 /// Test assets for ack_generator tests
 /// Provides reusable mock file contents
+library;
 
 const metaAssets = {
   'meta|lib/meta_meta.dart': '''
@@ -39,12 +40,14 @@ class AckModel {
   final String? description;
   final bool additionalProperties;
   final String? additionalPropertiesField;
+  final bool model;
 
   const AckModel({
     this.schemaName,
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
+    this.model = false,
   });
 }
 ''',
@@ -55,11 +58,13 @@ import 'package:meta/meta_meta.dart';
 class AckField {
   final bool required;
   final String? jsonKey;
+  final String? description;
   final List<String> constraints;
   
   const AckField({
     this.required = false,
     this.jsonKey,
+    this.description,
     this.constraints = const [],
   });
 }

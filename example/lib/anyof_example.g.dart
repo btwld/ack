@@ -25,7 +25,7 @@ final userResponseSchema = Ack.object({
 final errorResponseSchema = Ack.object({
   'code': Ack.string(),
   'message': Ack.string(),
-  'details': Ack.map(Ack.any()).optional().nullable(),
+  'details': Ack.object({}, additionalProperties: true).optional().nullable(),
 });
 
 /// Generated schema for ListResponse

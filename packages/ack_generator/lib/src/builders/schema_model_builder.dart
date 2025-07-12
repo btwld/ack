@@ -73,8 +73,6 @@ class SchemaModelBuilder {
 
   /// Generates the createFromMap method body
   String _generateCreateFromMapBody(ModelInfo modelInfo) {
-    final buffer = StringBuffer('return ${modelInfo.className}(\n');
-
     final params = <String>[];
 
     // Process all regular fields
@@ -90,10 +88,15 @@ class SchemaModelBuilder {
           '      ${modelInfo.additionalPropertiesField}: extractAdditionalProperties(map, {${_getKnownFields(modelInfo)}})');
     }
 
-    buffer.writeln(params.join(',\n'));
-    buffer.write('    );');
-
-    return buffer.toString();
+    // Handle empty parameter case
+    if (params.isEmpty) {
+      return 'return ${modelInfo.className}();';
+    } else {
+      final buffer = StringBuffer('return ${modelInfo.className}(\n');
+      buffer.writeln(params.join(',\n'));
+      buffer.write('    );');
+      return buffer.toString();
+    }
   }
 
   /// Get list of known field names for filtering additional properties

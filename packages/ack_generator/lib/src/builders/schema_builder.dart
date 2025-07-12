@@ -51,18 +51,29 @@ class SchemaBuilder {
   }
 
 
+
   String _buildSchemaDefinition(ModelInfo model) {
     final buffer = StringBuffer();
 
-    // Build field definitions
+    // Build field definitions with descriptions
     final fieldDefs = <String>[];
     for (final field in model.fields) {
       final fieldSchema = _fieldBuilder.buildFieldSchema(field);
-      fieldDefs.add("'${field.jsonKey}': $fieldSchema");
+      
+      // Add description comment if available
+      if (field.description != null && field.description!.isNotEmpty) {
+        fieldDefs.add('// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
+      } else {
+        fieldDefs.add("'${field.jsonKey}': $fieldSchema");
+      }
     }
 
     buffer.write('Ack.object({');
-    buffer.write(fieldDefs.join(', '));
+    if (fieldDefs.isNotEmpty) {
+      buffer.write('\n  ');
+      buffer.write(fieldDefs.join(',\n  '));
+      buffer.write(',\n');
+    }
     buffer.write('}');
 
     // Add additionalProperties if enabled
