@@ -41,6 +41,8 @@ class AckModel {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final bool model;
+  final String? discriminatedKey;
+  final String? discriminatedValue;
 
   const AckModel({
     this.schemaName,
@@ -48,7 +50,12 @@ class AckModel {
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.model = false,
-  });
+    this.discriminatedKey,
+    this.discriminatedValue,
+  }) : assert(
+         discriminatedKey == null || discriminatedValue == null,
+         'discriminatedKey and discriminatedValue cannot be used together',
+       );
 }
 ''',
   'ack_annotations|lib/src/ack_field.dart': '''
@@ -93,6 +100,9 @@ class Ack {
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
   static ObjectSchema object(Map<String, AckSchema> properties, {List<String>? required, bool additionalProperties = false}) =>
     ObjectSchema(properties, required: required, additionalProperties: additionalProperties);
+  
+  static DiscriminatedSchema discriminated({required String discriminatorKey, required Map<String, AckSchema> schemas}) =>
+    DiscriminatedSchema(discriminatorKey: discriminatorKey, schemas: schemas);
 }
 
 abstract class AckSchema<T> {}
@@ -144,6 +154,11 @@ class ObjectSchema extends AckSchema<Map<String, Object?>> {
   final List<String>? required;
   final bool additionalProperties;
   const ObjectSchema(this.properties, {this.required, this.additionalProperties = false});
+}
+class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
+  final String discriminatorKey;
+  final Map<String, AckSchema> schemas;
+  const DiscriminatedSchema({required this.discriminatorKey, required this.schemas});
 }
 ''',
   'ack|lib/src/schemas/schema_model.dart': '''

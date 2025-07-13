@@ -52,11 +52,20 @@ class SchemaModelBuilder {
     // Use the schema variable name
     final schemaVarName = _toCamelCase(modelInfo.schemaClassName);
 
+    // For now, always return ObjectSchema to maintain compatibility with SchemaModel base class
+    // TODO: Enhance SchemaModel to support AckSchema<MapValue> generically
+    final returnType = 'ObjectSchema';
+
+    // Cast discriminated schemas to ObjectSchema for compatibility
+    final returnCode = modelInfo.isDiscriminatedBase 
+        ? 'return $schemaVarName as ObjectSchema;'
+        : 'return $schemaVarName;';
+
     return Method((b) => b
       ..name = 'buildSchema'
       ..annotations.add(refer('override'))
-      ..returns = refer('ObjectSchema')
-      ..body = Code('return $schemaVarName;'));
+      ..returns = refer(returnType)
+      ..body = Code(returnCode));
   }
 
   /// Builds the createFromMap method
@@ -73,6 +82,43 @@ class SchemaModelBuilder {
 
   /// Generates the createFromMap method body
   String _generateCreateFromMapBody(ModelInfo modelInfo) {
+    // Check if this is a discriminated base class
+    if (modelInfo.isDiscriminatedBase && modelInfo.subtypes != null) {
+      return _generateDiscriminatedCreateFromMapBody(modelInfo);
+    }
+    
+    // Regular model or discriminated subtype
+    return _generateRegularCreateFromMapBody(modelInfo);
+  }
+
+  /// Generates createFromMap body for discriminated base classes with switch logic
+  String _generateDiscriminatedCreateFromMapBody(ModelInfo modelInfo) {
+    final discriminatorKey = modelInfo.discriminatorKey!;
+    final subtypes = modelInfo.subtypes!;
+    
+    final buffer = StringBuffer();
+    buffer.writeln('final $discriminatorKey = map[\'$discriminatorKey\'] as String;');
+    buffer.writeln('return switch ($discriminatorKey) {');
+    
+    // Generate case for each subtype
+    for (final entry in subtypes.entries) {
+      final discriminatorValue = entry.key;
+      final subtypeElement = entry.value;
+      final subtypeSchemaModelName = '${subtypeElement.name}SchemaModel';
+      
+      buffer.writeln('  \'$discriminatorValue\' => $subtypeSchemaModelName._instance.createFromMap(map),');
+    }
+    
+    // Default case with error
+    final validValues = subtypes.keys.map((v) => '\\\'$v\\\'').join(', ');
+    buffer.writeln('  _ => throw ArgumentError(\'Unknown $discriminatorKey: \$$discriminatorKey. Valid values: $validValues\'),');
+    buffer.writeln('};');
+    
+    return buffer.toString();
+  }
+
+  /// Generates createFromMap body for regular models and discriminated subtypes  
+  String _generateRegularCreateFromMapBody(ModelInfo modelInfo) {
     final params = <String>[];
 
     // Process all regular fields

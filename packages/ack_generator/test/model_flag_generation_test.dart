@@ -244,6 +244,8 @@ class AckModel {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final bool model;
+  final String? discriminatedKey;
+  final String? discriminatedValue;
 
   const AckModel({
     this.schemaName,
@@ -251,7 +253,12 @@ class AckModel {
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.model = false,
-  });
+    this.discriminatedKey,
+    this.discriminatedValue,
+  }) : assert(
+         discriminatedKey == null || discriminatedValue == null,
+         'discriminatedKey and discriminatedValue cannot be used together',
+       );
 }
 ''',
       'ack|lib/ack.dart': '''
