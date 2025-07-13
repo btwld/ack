@@ -53,6 +53,84 @@ class SchemaBuilder {
 
 
   String _buildSchemaDefinition(ModelInfo model) {
+    // Check if this is a discriminated base class
+    if (model.isDiscriminatedBase && model.subtypes != null) {
+      return _buildDiscriminatedSchema(model);
+    }
+    
+    // Check if this is a discriminated subtype
+    if (model.isDiscriminatedSubtype) {
+      return _buildSubtypeSchema(model);
+    }
+    
+    // Regular object schema
+    return _buildRegularObjectSchema(model);
+  }
+
+  /// Builds a discriminated schema for base classes
+  String _buildDiscriminatedSchema(ModelInfo model) {
+    final buffer = StringBuffer();
+    final discriminatorKey = model.discriminatorKey!;
+    final subtypes = model.subtypes!;
+
+    buffer.write('Ack.discriminated(\n');
+    buffer.write('  discriminatorKey: \'$discriminatorKey\',\n');
+    buffer.write('  schemas: {\n');
+
+    // Generate schema references for each subtype
+    final schemaRefs = <String>[];
+    for (final entry in subtypes.entries) {
+      final discriminatorValue = entry.key;
+      final subtypeElement = entry.value;
+      final subtypeSchemaName = _toCamelCase('${subtypeElement.name}Schema');
+      
+      schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
+    }
+
+    buffer.write(schemaRefs.join(',\n'));
+    buffer.write('\n  },\n');
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  /// Builds a regular object schema for subtypes (with literal discriminator field)
+  String _buildSubtypeSchema(ModelInfo model) {
+    final buffer = StringBuffer();
+
+    // Build field definitions with descriptions
+    final fieldDefs = <String>[];
+    for (final field in model.fields) {
+      final fieldSchema = _fieldBuilder.buildFieldSchema(field, model);
+      
+      // Add description comment if available
+      if (field.description != null && field.description!.isNotEmpty) {
+        fieldDefs.add('// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
+      } else {
+        fieldDefs.add("'${field.jsonKey}': $fieldSchema");
+      }
+    }
+
+    buffer.write('Ack.object({');
+    if (fieldDefs.isNotEmpty) {
+      buffer.write('\n  ');
+      buffer.write(fieldDefs.join(',\n  '));
+      buffer.write(',\n');
+    }
+    buffer.write('}');
+
+    // Add additionalProperties if enabled
+    if (model.additionalProperties) {
+      buffer.write(', additionalProperties: true');
+    }
+
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  /// Builds a regular object schema for non-discriminated models
+  String _buildRegularObjectSchema(ModelInfo model) {
     final buffer = StringBuffer();
 
     // Build field definitions with descriptions

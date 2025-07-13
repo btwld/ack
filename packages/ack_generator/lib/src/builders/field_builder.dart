@@ -2,10 +2,20 @@ import 'package:analyzer/dart/element/type.dart';
 
 import '../models/constraint_info.dart';
 import '../models/field_info.dart';
+import '../models/model_info.dart';
 
 /// Builds field schema expressions
 class FieldBuilder {
-  String buildFieldSchema(FieldInfo field) {
+  String buildFieldSchema(FieldInfo field, [ModelInfo? model]) {
+    // Check if this field is a discriminator field in a subtype
+    if (model != null && 
+        model.isDiscriminatedSubtype && 
+        model.discriminatorKey != null &&
+        field.name == model.discriminatorKey) {
+      // Generate Ack.literal() for discriminator field
+      return 'Ack.literal(\'${model.discriminatorValue}\')';
+    }
+
     String schema;
 
     if (field.isPrimitive) {
@@ -229,4 +239,5 @@ class FieldBuilder {
         return schema;
     }
   }
+
 }
