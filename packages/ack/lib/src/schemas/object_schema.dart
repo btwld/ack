@@ -39,18 +39,15 @@ final class ObjectSchema extends AckSchema<MapValue>
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
-    // 1. Check for missing required properties (all non-optional properties are required)
+    // Optimized single-loop approach: handle both required property validation and input validation
+    // First, validate all properties defined in the schema
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
+      final hasValue = inputValue.containsKey(key);
 
-      // Skip optional fields if they're missing
-      if (!inputValue.containsKey(key) && schema.isOptional) {
-        continue;
-      }
-
-      // Non-optional fields must be present
-      if (!inputValue.containsKey(key) && !schema.isOptional) {
+      if (!hasValue && !schema.isOptional) {
+        // Missing required property
         final constraintError =
             ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
                 .validate(inputValue);
@@ -62,45 +59,47 @@ final class ObjectSchema extends AckSchema<MapValue>
             ),
           );
         }
-      }
-    }
-
-    // 2. Validate all properties against their schemas
-    for (final key in inputValue.keys) {
-      final propertySchema = properties[key];
-      final propertyValue = inputValue[key];
-
-      if (propertySchema != null) {
+      } else if (hasValue) {
+        // Property exists, validate it
+        final propertyValue = inputValue[key];
         final propertyContext = SchemaContext(
           name: '${context.name}.$key',
-          schema: propertySchema,
+          schema: schema,
           value: propertyValue,
         );
-        final result =
-            (propertySchema).parseAndValidate(propertyValue, propertyContext);
+        final result = schema.parseAndValidate(propertyValue, propertyContext);
         result.match(
           onOk: (validatedValue) {
             validatedMap[key] = validatedValue;
           },
           onFail: validationErrors.add,
         );
-      } else if (additionalProperties) {
-        validatedMap[key] = propertyValue; // Keep the original value
-      } else {
-        // Property not in schema and not allowed
-        validationErrors.add(
-          SchemaConstraintsError(
-            constraints: [
-              ConstraintError(
-                constraint: ObjectNoAdditionalPropertiesConstraint(
-                  unexpectedPropertyKey: key,
+      }
+      // If hasValue is false and schema.isOptional is true, we skip the property
+    }
+
+    // Handle additional properties (those not in schema)
+    for (final key in inputValue.keys) {
+      if (!properties.containsKey(key)) {
+        // Property not defined in schema
+        if (additionalProperties) {
+          validatedMap[key] = inputValue[key]; // Keep the original value
+        } else {
+          // Property not in schema and not allowed
+          validationErrors.add(
+            SchemaConstraintsError(
+              constraints: [
+                ConstraintError(
+                  constraint: ObjectNoAdditionalPropertiesConstraint(
+                    unexpectedPropertyKey: key,
+                  ),
+                  message: 'Property "$key" is not allowed.',
                 ),
-                message: 'Property "$key" is not allowed.',
-              ),
-            ],
-            context: context,
-          ),
-        );
+              ],
+              context: context,
+            ),
+          );
+        }
       }
     }
 

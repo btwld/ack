@@ -24,8 +24,8 @@ Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter p
     final userSchema = Ack.object({
       // 'name' field: must be a string with at least 2 characters.
       'name': Ack.string().minLength(2),
-      // 'age' field: must be an integer, 0 or greater, but can be missing (nullable).
-      'age': Ack.integer().min(0).nullable(),
+      // 'age' field: must be an integer, 0 or greater, but can be missing (optional).
+      'age': Ack.integer().min(0).optional(),
     });
     ```
     
@@ -111,7 +111,7 @@ void main() {
   // Define Schema
   final userSchema = Ack.object({
     'name': Ack.string().minLength(2),
-    'age': Ack.integer().min(0).nullable(),
+    'age': Ack.integer().min(0).optional(),
   });
 
   // Data Examples

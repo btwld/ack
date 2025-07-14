@@ -16,7 +16,7 @@ import 'validation/schema_result.dart';
 ///
 /// Example:
 /// ```dart
-/// class UserSchemaModel extends SchemaModel<User> {
+/// class UserSchemaModel extends SchemaModel<User, ObjectSchema> {
 ///   @override
 ///   ObjectSchema buildSchema() => Ack.object({
 ///     'name': Ack.string(),
@@ -31,8 +31,6 @@ import 'validation/schema_result.dart';
 /// }
 /// ```
 abstract class SchemaModel<T extends Object> {
-  // Private late final schema - built on first access
-  late final ObjectSchema _schema = buildSchema();
 
   // Value container
   T? _value;
@@ -61,14 +59,10 @@ abstract class SchemaModel<T extends Object> {
   /// Whether this model has been validated at least once.
   bool get hasBeenValidated => _hasBeenValidated;
 
-  /// Protected getter to access the schema for code generation.
+  /// The validation schema for this model.
+  /// This getter is implemented by generated code.
   @protected
-  ObjectSchema get schema => _schema;
-
-  /// Builds the validation schema for this model.
-  /// This method is called once on first access to the schema.
-  @protected
-  ObjectSchema buildSchema();
+  AckSchema<MapValue> get schema;
 
   /// Creates a model instance from a validated map.
   /// This method is only called after successful validation.
@@ -80,7 +74,7 @@ abstract class SchemaModel<T extends Object> {
   /// Returns a [SchemaResult] containing either the validated model instance
   /// or validation errors.
   SchemaResult<T> parse(Object? input) {
-    final result = _schema.validate(input);
+    final result = schema.validate(input);
     _hasBeenValidated = true; // Mark as validated regardless of result
 
     if (result.isOk) {
@@ -94,7 +88,7 @@ abstract class SchemaModel<T extends Object> {
 
         return SchemaResult.fail(SchemaValidationError(
             message: 'Model creation failed: $e',
-            context: SchemaContext(name: '$T', schema: _schema, value: input)));
+            context: SchemaContext(name: '$T', schema: schema, value: input)));
       }
     }
 
@@ -110,7 +104,7 @@ abstract class SchemaModel<T extends Object> {
     } catch (e) {
       return SchemaResult.fail(SchemaValidationError(
           message: 'Invalid JSON: $e',
-          context: SchemaContext(name: '$T', schema: _schema, value: json)));
+          context: SchemaContext(name: '$T', schema: schema, value: json)));
     }
   }
 
@@ -125,7 +119,7 @@ abstract class SchemaModel<T extends Object> {
       throw AckException([
         SchemaValidationError(
             message: 'Validation succeeded but value is null',
-            context: SchemaContext(name: '$T', schema: _schema, value: input))
+            context: SchemaContext(name: '$T', schema: schema, value: input))
       ]);
     }
     throw AckException([result.getError()]);
@@ -135,7 +129,7 @@ abstract class SchemaModel<T extends Object> {
   T? tryParse(Object? input) => parse(input).getOrNull();
 
   /// Exports the validation schema as a JSON Schema object.
-  Map<String, dynamic> toJsonSchema() => _schema.toJsonSchema();
+  Map<String, dynamic> toJsonSchema() => schema.toJsonSchema();
 
   /// Clears the current value and resets validation state.
   void clear() {

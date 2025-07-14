@@ -62,18 +62,17 @@ final productInventorySchema = Ack.object({
 /// Generated SchemaModel for [EnhancedUser].
 /// Enhanced user with SchemaModel for type safety
 class EnhancedUserSchemaModel extends SchemaModel<EnhancedUser> {
-  EnhancedUserSchemaModel._();
+  EnhancedUserSchemaModel._internal(ObjectSchema this.schema);
 
   factory EnhancedUserSchemaModel() {
-    return _instance;
+    return EnhancedUserSchemaModel._internal(enhancedUserSchema);
   }
 
-  static final _instance = EnhancedUserSchemaModel._();
+  EnhancedUserSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return enhancedUserSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   EnhancedUser createFromMap(Map<String, dynamic> map) {
@@ -84,23 +83,40 @@ class EnhancedUserSchemaModel extends SchemaModel<EnhancedUser> {
       createdAt: map['createdAt'] as String,
     );
   }
+
+  /// Returns a new schema with the specified description.
+  EnhancedUserSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return EnhancedUserSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  EnhancedUserSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return EnhancedUserSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  EnhancedUserSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return EnhancedUserSchemaModel._withSchema(newSchema);
+  }
 }
 
 /// Generated SchemaModel for [BlogPost].
 /// Blog post with author - demonstrates nested models
 class BlogPostSchemaModel extends SchemaModel<BlogPost> {
-  BlogPostSchemaModel._();
+  BlogPostSchemaModel._internal(ObjectSchema this.schema);
 
   factory BlogPostSchemaModel() {
-    return _instance;
+    return BlogPostSchemaModel._internal(blogPostSchema);
   }
 
-  static final _instance = BlogPostSchemaModel._();
+  BlogPostSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return blogPostSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   BlogPost createFromMap(Map<String, dynamic> map) {
@@ -108,7 +124,7 @@ class BlogPostSchemaModel extends SchemaModel<BlogPost> {
       id: map['id'] as String,
       title: map['title'] as String,
       content: map['content'] as String,
-      author: EnhancedUserSchemaModel._instance.createFromMap(
+      author: EnhancedUserSchemaModel().createFromMap(
         map['author'] as Map<String, dynamic>,
       ),
       publishedAt: map['publishedAt'] as String,
@@ -123,23 +139,40 @@ class BlogPostSchemaModel extends SchemaModel<BlogPost> {
       }),
     );
   }
+
+  /// Returns a new schema with the specified description.
+  BlogPostSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return BlogPostSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  BlogPostSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return BlogPostSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  BlogPostSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return BlogPostSchemaModel._withSchema(newSchema);
+  }
 }
 
 /// Generated SchemaModel for [ProductInventory].
 /// Product inventory with comprehensive constraints
 class ProductInventorySchemaModel extends SchemaModel<ProductInventory> {
-  ProductInventorySchemaModel._();
+  ProductInventorySchemaModel._internal(ObjectSchema this.schema);
 
   factory ProductInventorySchemaModel() {
-    return _instance;
+    return ProductInventorySchemaModel._internal(productInventorySchema);
   }
 
-  static final _instance = ProductInventorySchemaModel._();
+  ProductInventorySchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return productInventorySchema;
-  }
+  final ObjectSchema schema;
 
   @override
   ProductInventory createFromMap(Map<String, dynamic> map) {
@@ -150,5 +183,23 @@ class ProductInventorySchemaModel extends SchemaModel<ProductInventory> {
       lastRestocked: map['lastRestocked'] as String,
       isAvailable: map['isAvailable'] as bool,
     );
+  }
+
+  /// Returns a new schema with the specified description.
+  ProductInventorySchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return ProductInventorySchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  ProductInventorySchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return ProductInventorySchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  ProductInventorySchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return ProductInventorySchemaModel._withSchema(newSchema);
   }
 }

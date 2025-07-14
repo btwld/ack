@@ -105,7 +105,9 @@ class Ack {
     DiscriminatedSchema(discriminatorKey: discriminatorKey, schemas: schemas);
 }
 
-abstract class AckSchema<T> {}
+abstract class AckSchema<T> {
+  Map<String, Object?> toJsonSchema();
+}
 class StringSchema extends AckSchema<String> {
   const StringSchema();
   StringSchema email() => this;
@@ -114,6 +116,11 @@ class StringSchema extends AckSchema<String> {
   StringSchema maxLength(int length) => this;
   StringSchema enumString(List<String> values) => this;
   StringSchema nullable() => this;
+  StringSchema describe(String description) => this;
+  StringSchema withDefault(String defaultValue) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {'type': 'string'};
 }
 class IntegerSchema extends AckSchema<int> {
   const IntegerSchema();
@@ -121,50 +128,98 @@ class IntegerSchema extends AckSchema<int> {
   IntegerSchema max(int value) => this;
   IntegerSchema positive() => this;
   IntegerSchema nullable() => this;
+  IntegerSchema describe(String description) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {'type': 'integer'};
 }
 class DoubleSchema extends AckSchema<double> {
   const DoubleSchema();
   DoubleSchema nullable() => this;
+  DoubleSchema describe(String description) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {'type': 'number'};
 }
 class NumberSchema extends AckSchema<num> {
   const NumberSchema();
   NumberSchema nullable() => this;
+  NumberSchema describe(String description) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {'type': 'number'};
 }
 class BooleanSchema extends AckSchema<bool> {
   const BooleanSchema();
   BooleanSchema nullable() => this;
+  BooleanSchema describe(String description) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {'type': 'boolean'};
 }
 class AnySchema extends AckSchema<dynamic> {
   const AnySchema();
   AnySchema nullable() => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {};
 }
 class ListSchema<T> extends AckSchema<List<T>> {
   final AckSchema<T> itemSchema;
   const ListSchema(this.itemSchema);
   ListSchema<T> nullable() => this;
   ListSchema<T> unique() => this;
+  ListSchema<T> describe(String description) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {
+    'type': 'array',
+    'items': itemSchema.toJsonSchema(),
+  };
 }
 class MapSchema<T> extends AckSchema<Map<String, T>> {
   final AckSchema<T> valueSchema;
   const MapSchema(this.valueSchema);
   MapSchema<T> nullable() => this;
+  MapSchema<T> describe(String description) => this;
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {
+    'type': 'object',
+    'additionalProperties': valueSchema.toJsonSchema(),
+  };
 }
 class ObjectSchema extends AckSchema<Map<String, Object?>> {
   final Map<String, AckSchema> properties;
   final List<String>? required;
   final bool additionalProperties;
   const ObjectSchema(this.properties, {this.required, this.additionalProperties = false});
+  
+  Map<String, Object?> toJsonSchema() {
+    return {
+      'type': 'object',
+      'properties': properties.map((k, v) => MapEntry(k, v.toJsonSchema())),
+      if (required != null && required!.isNotEmpty) 'required': required,
+      'additionalProperties': additionalProperties,
+    };
+  }
 }
 class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
   final String discriminatorKey;
   final Map<String, AckSchema> schemas;
   const DiscriminatedSchema({required this.discriminatorKey, required this.schemas});
+  
+  @override
+  Map<String, Object?> toJsonSchema() => {
+    'oneOf': schemas.values.map((schema) => schema.toJsonSchema()).toList(),
+    'discriminator': {'propertyName': discriminatorKey},
+  };
 }
 ''',
   'ack|lib/src/schemas/schema_model.dart': '''
 import 'package:meta/meta.dart';
 
-abstract class SchemaModel {
+abstract class SchemaModel<T> {
   final Map<String, Object?>? _data;
   
   const SchemaModel() : _data = null;
@@ -172,7 +227,8 @@ abstract class SchemaModel {
   @protected
   const SchemaModel.validated(Map<String, Object?> data) : _data = data;
   
-  ObjectSchema get definition;
+  @protected
+  ObjectSchema get schema;
   
   bool get hasData => _data != null;
   
@@ -192,23 +248,29 @@ abstract class SchemaModel {
   @protected
   SchemaModel createValidated(Map<String, Object?> data);
   
+  T createFromMap(Map<String, dynamic> map);
+  
   @protected
-  T getValue<T extends Object>(String key) {
+  TValue getValue<TValue extends Object>(String key) {
     if (_data == null) {
       throw StateError('No data available - use parse() first');
     }
-    return _data![key] as T;
+    return _data![key] as TValue;
   }
   
   @protected
-  T? getValueOrNull<T extends Object>(String key) {
+  TValue? getValueOrNull<TValue extends Object>(String key) {
     if (_data == null) return null;
-    return _data![key] as T?;
+    return _data![key] as TValue?;
   }
   
   Map<String, Object?> toMap() {
     if (_data == null) return const {};
     return Map.unmodifiable(_data!);
+  }
+  
+  Map<String, Object?> toJsonSchema() {
+    return schema.toJsonSchema();
   }
 }
 ''',

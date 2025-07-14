@@ -55,7 +55,8 @@ class ModelAnalyzer {
         : annotation.read('discriminatedValue').stringValue;
 
     // Validate discriminated type usage
-    _validateDiscriminatedTypeUsage(element, discriminatedKey, discriminatedValue);
+    _validateDiscriminatedTypeUsage(
+        element, discriminatedKey, discriminatedValue);
 
     // Analyze all fields
     final fields = <FieldInfo>[];
@@ -83,7 +84,6 @@ class ModelAnalyzer {
       if (fieldInfo.isRequired) {
         requiredFields.add(fieldInfo.jsonKey);
       }
-      
     }
 
     // Validate additionalPropertiesField if specified
@@ -185,7 +185,8 @@ class ModelAnalyzer {
   }
 
   /// Validates that the discriminator field exists and is properly typed
-  void _validateDiscriminatorField(ClassElement element, String discriminatorKey) {
+  void _validateDiscriminatorField(
+      ClassElement element, String discriminatorKey) {
     // Check if the field exists (including inherited fields)
     final allFields = [
       ...element.fields,
@@ -195,9 +196,9 @@ class ModelAnalyzer {
     ];
 
     final discriminatorField = allFields.cast<FieldElement?>().firstWhere(
-      (field) => field?.name == discriminatorKey,
-      orElse: () => null,
-    );
+          (field) => field?.name == discriminatorKey,
+          orElse: () => null,
+        );
 
     if (discriminatorField == null) {
       throw ArgumentError(
@@ -297,7 +298,8 @@ class ModelAnalyzer {
       // Find the parent discriminator key for this subtype
       String? parentDiscriminatorKey;
       for (final baseClass in baseClasses) {
-        if (_isSubtypeOf(elements[modelInfos.indexOf(subtype)], baseClass.className)) {
+        if (_isSubtypeOf(
+            elements[modelInfos.indexOf(subtype)], baseClass.className)) {
           parentDiscriminatorKey = baseClass.discriminatorKey;
           break;
         }
@@ -316,7 +318,8 @@ class ModelAnalyzer {
         model: subtype.model,
         isDiscriminatedBase: false,
         isDiscriminatedSubtype: true,
-        discriminatorKey: parentDiscriminatorKey, // Add parent's discriminator key
+        discriminatorKey:
+            parentDiscriminatorKey, // Add parent's discriminator key
         discriminatorValue: subtype.discriminatorValue,
         subtypes: null,
       );

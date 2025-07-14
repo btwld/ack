@@ -11,10 +11,8 @@ class MethodBuilder {
       ..returns = refer(model.schemaClassName)
       ..requiredParameters.add(Parameter((p) => p
         ..name = 'input'
-        ..type = refer('Object?')
-      ))
-      ..body = Code('return super.parse(input) as ${model.schemaClassName};')
-    );
+        ..type = refer('Object?')))
+      ..body = Code('return super.parse(input) as ${model.schemaClassName};'));
   }
 
   /// Build tryParse method with covariant return type
@@ -25,10 +23,9 @@ class MethodBuilder {
       ..returns = refer('${model.schemaClassName}?')
       ..requiredParameters.add(Parameter((p) => p
         ..name = 'input'
-        ..type = refer('Object?')
-      ))
-      ..body = Code('return super.tryParse(input) as ${model.schemaClassName}?;')
-    );
+        ..type = refer('Object?')))
+      ..body =
+          Code('return super.tryParse(input) as ${model.schemaClassName}?;'));
   }
 
   /// Build createValidated factory method
@@ -42,9 +39,7 @@ class MethodBuilder {
       ..returns = refer(model.schemaClassName)
       ..requiredParameters.add(Parameter((p) => p
         ..name = 'data'
-        ..type = refer('Map<String, Object?>')
-      ))
-      ..body = Code('return ${model.schemaClassName}._valid(data);')
-    );
+        ..type = refer('Map<String, Object?>')))
+      ..body = Code('return ${model.schemaClassName}._valid(data);'));
   }
 }

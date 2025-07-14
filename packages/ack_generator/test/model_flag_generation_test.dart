@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('Model Flag Generation', () {
-    test('should generate only schema variable when model: false (default)', () async {
+    test('should generate only schema variable when model: false (default)',
+        () async {
       final source = '''
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -27,14 +28,16 @@ class User {
         // Should NOT generate SchemaModel class
         expect(result, isNot(contains('class UserSchemaModel')));
         expect(result, isNot(contains('extends SchemaModel<User>')));
-        
+
         // Should generate standalone file with imports
         expect(result, contains('import \'package:ack/ack.dart\';'));
         expect(result, isNot(contains('part of')));
       });
     });
 
-    test('should generate both schema variable and SchemaModel when model: true', () async {
+    test(
+        'should generate both schema variable and SchemaModel when model: true',
+        () async {
       final source = '''
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -58,11 +61,12 @@ class Product {
         expect(result, contains("'price': Ack.double()"));
 
         // Should also generate SchemaModel class
-        expect(result, contains('class ProductSchemaModel extends SchemaModel<Product>'));
+        expect(result,
+            contains('class ProductSchemaModel extends SchemaModel<Product>'));
         expect(result, contains('factory ProductSchemaModel()'));
-        expect(result, contains('buildSchema()'));
+        expect(result, contains('ObjectSchema get schema'));
         expect(result, contains('createFromMap(Map<String, dynamic> map)'));
-        
+
         // Should generate as part file
         expect(result, contains('part of'));
         expect(result, isNot(contains('import \'package:ack/ack.dart\';')));
@@ -93,7 +97,8 @@ class FlexibleModel {
         expect(result, contains('additionalProperties: true'));
 
         // SchemaModel should use extractAdditionalProperties
-        expect(result, contains('metadata: extractAdditionalProperties(map, {\'id\'})'));
+        expect(result,
+            contains('metadata: extractAdditionalProperties(map, {\'id\'})'));
       });
     });
 
@@ -117,7 +122,7 @@ class MyClass {
       await expectGeneratedOutput(source, (result) {
         // Should use custom schema name
         expect(result, contains('final customSchema = Ack.object({'));
-        
+
         // SchemaModel should reference the custom schema variable
         expect(result, contains('return customSchema;'));
       });
@@ -186,7 +191,9 @@ class OptionalFields {
       });
     });
 
-    test('should generate correct order: schema variables first, then SchemaModel classes', () async {
+    test(
+        'should generate correct order: schema variables first, then SchemaModel classes',
+        () async {
       final source = '''
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -215,10 +222,10 @@ class Second {
         // Schema variables should come before SchemaModel classes
         expect(firstSchemaPos, lessThan(firstModelPos));
         expect(secondSchemaPos, lessThan(secondModelPos));
-        
+
         // Schema variables should be in order
         expect(firstSchemaPos, lessThan(secondSchemaPos));
-        
+
         // SchemaModel classes should be in order
         expect(firstModelPos, lessThan(secondModelPos));
       });
@@ -227,10 +234,11 @@ class Second {
 }
 
 // Helper function to test code generation
-Future<void> expectGeneratedOutput(String source, void Function(String) verifyOutput) async {
+Future<void> expectGeneratedOutput(
+    String source, void Function(String) verifyOutput) async {
   final generator = AckSchemaGenerator();
   String? capturedOutput;
-  
+
   await testBuilder(
     LibraryBuilder(generator, generatedExtension: '.g.dart'),
     {
@@ -281,7 +289,7 @@ class NumberSchema {
 }
 
 abstract class SchemaModel<T> {
-  ObjectSchema buildSchema();
+  ObjectSchema get schema;
   T createFromMap(Map<String, dynamic> map);
   Map<String, dynamic> extractAdditionalProperties(Map<String, dynamic> map, Set<String> knownFields) => {};
 }
@@ -295,7 +303,7 @@ abstract class SchemaModel<T> {
       }),
     },
   );
-  
+
   if (capturedOutput != null) {
     verifyOutput(capturedOutput!);
   }

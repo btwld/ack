@@ -31,8 +31,9 @@ final class BooleanSchema extends AckSchema<bool>
     }
 
     if (inputValue is String) {
-      if (inputValue.toLowerCase() == 'true') return SchemaResult.ok(true);
-      if (inputValue.toLowerCase() == 'false') return SchemaResult.ok(false);
+      final lowercaseValue = inputValue.toLowerCase();
+      if (lowercaseValue == 'true') return SchemaResult.ok(true);
+      if (lowercaseValue == 'false') return SchemaResult.ok(false);
     }
 
     final constraintError =

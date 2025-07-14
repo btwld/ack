@@ -16,16 +16,16 @@ class ModelInfo {
   // New discriminated type properties
   /// Whether this class is a discriminated base class (has discriminatedKey)
   final bool isDiscriminatedBase;
-  
+
   /// Whether this class is a discriminated subtype (has discriminatedValue)
   final bool isDiscriminatedSubtype;
-  
+
   /// Field name for discrimination (only for base classes)
   final String? discriminatorKey;
-  
+
   /// This class's discriminator value (only for subtypes)
   final String? discriminatorValue;
-  
+
   /// Map of discriminator values to class elements (only for base classes)
   final Map<String, ClassElement>? subtypes;
 

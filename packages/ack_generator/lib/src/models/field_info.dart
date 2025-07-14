@@ -25,7 +25,8 @@ class FieldInfo {
   });
 
   /// Whether this field references another schema model
-  bool get isNestedSchema => !isPrimitive && !isList && !isMap && !isSet && !isEnum && !isGeneric;
+  bool get isNestedSchema =>
+      !isPrimitive && !isList && !isMap && !isSet && !isEnum && !isGeneric;
 
   /// Whether this field is a generic type parameter
   bool get isGeneric {
@@ -50,7 +51,7 @@ class FieldInfo {
   bool get isEnum {
     final element = type.element;
     if (element == null) return false;
-    
+
     // Check if this is an enum by looking at the element kind
     return element.kind == ElementKind.ENUM;
   }
@@ -60,7 +61,7 @@ class FieldInfo {
     if (!isEnum) return [];
     final element = type.element;
     if (element == null) return [];
-    
+
     // For enums, get the enum constants using the analyzer API
     if (element.kind == ElementKind.ENUM) {
       try {
@@ -71,23 +72,24 @@ class FieldInfo {
               .where((field) => field.isEnumConstant == true)
               .map((field) => field.name as String)
               .toList();
-          
+
           return enumConstants;
         }
       } catch (e) {
         // If there's any issue with the analyzer API, fall back to empty list
         // This maintains backward compatibility with manual @EnumString annotations
-        print('Warning: Could not extract enum values for ${element.displayName}: $e');
+        print(
+            'Warning: Could not extract enum values for ${element.displayName}: $e');
         return [];
       }
     }
-    
+
     return [];
   }
 
   /// Whether this is a List type
   bool get isList => type.isDartCoreList;
 
-  /// Whether this is a Map type  
+  /// Whether this is a Map type
   bool get isMap => type.isDartCoreMap;
 }

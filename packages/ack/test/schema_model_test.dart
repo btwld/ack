@@ -19,13 +19,11 @@ class TestUserSchemaModel extends SchemaModel<TestUser> {
   static final _instance = TestUserSchemaModel._();
 
   @override
-  ObjectSchema buildSchema() {
-    return Ack.object({
-      'id': Ack.string().minLength(1),
-      'name': Ack.string().minLength(2),
-      'age': Ack.integer().positive().optional().nullable(),
-    });
-  }
+  ObjectSchema get schema => Ack.object({
+    'id': Ack.string().minLength(1),
+    'name': Ack.string().minLength(2),
+    'age': Ack.integer().positive().optional().nullable(),
+  });
 
   @override
   TestUser createFromMap(Map<String, dynamic> map) {
@@ -53,11 +51,9 @@ class FlexibleDataSchemaModel extends SchemaModel<FlexibleData> {
   static final _instance = FlexibleDataSchemaModel._();
 
   @override
-  ObjectSchema buildSchema() {
-    return Ack.object({
-      'id': Ack.string(),
-    }, additionalProperties: true);
-  }
+  ObjectSchema get schema => Ack.object({
+    'id': Ack.string(),
+  }, additionalProperties: true);
 
   @override
   FlexibleData createFromMap(Map<String, dynamic> map) {

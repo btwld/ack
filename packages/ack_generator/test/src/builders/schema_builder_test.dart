@@ -61,7 +61,8 @@ void main() {
       expect(result, contains("'name': Ack.string()"));
       expect(result, contains("'price': Ack.double()"));
       expect(result, contains("'inStock': Ack.boolean()"));
-      expect(result, contains("'description': Ack.string().optional().nullable()"));
+      expect(result,
+          contains("'description': Ack.string().optional().nullable()"));
     });
 
     test('generates schema for list fields', () {

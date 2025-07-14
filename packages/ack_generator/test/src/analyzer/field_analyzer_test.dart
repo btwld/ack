@@ -31,14 +31,15 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library =
+            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
         final field = classElement.fields.firstWhere((f) => f.name == 'name');
-        
+
         final fieldInfo = analyzer.analyze(field);
-        
+
         expect(fieldInfo.name, equals('name'));
         expect(fieldInfo.jsonKey, equals('user_name'));
         expect(fieldInfo.isRequired, isTrue);
@@ -61,14 +62,16 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library =
+            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
-        final field = classElement.fields.firstWhere((f) => f.name == 'firstName');
-        
+        final field =
+            classElement.fields.firstWhere((f) => f.name == 'firstName');
+
         final fieldInfo = analyzer.analyze(field);
-        
+
         expect(fieldInfo.jsonKey, equals('firstName'));
       });
     });
@@ -91,15 +94,18 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library =
+            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
-        
-        final nameField = classElement.fields.firstWhere((f) => f.name == 'name');
-        final emailField = classElement.fields.firstWhere((f) => f.name == 'email');
+
+        final nameField =
+            classElement.fields.firstWhere((f) => f.name == 'name');
+        final emailField =
+            classElement.fields.firstWhere((f) => f.name == 'email');
         final ageField = classElement.fields.firstWhere((f) => f.name == 'age');
-        
+
         expect(analyzer.analyze(nameField).isNullable, isFalse);
         expect(analyzer.analyze(emailField).isNullable, isTrue);
         expect(analyzer.analyze(ageField).isNullable, isTrue);
@@ -126,14 +132,16 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library =
+            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
-        
-        final emailField = classElement.fields.firstWhere((f) => f.name == 'email');
+
+        final emailField =
+            classElement.fields.firstWhere((f) => f.name == 'email');
         final emailInfo = analyzer.analyze(emailField);
-        
+
         expect(emailInfo.constraints.length, equals(3));
         expect(emailInfo.constraints[0].name, equals('email'));
         expect(emailInfo.constraints[0].arguments, isEmpty);
@@ -141,10 +149,10 @@ class User {
         expect(emailInfo.constraints[1].arguments, equals(['5']));
         expect(emailInfo.constraints[2].name, equals('maxLength'));
         expect(emailInfo.constraints[2].arguments, equals(['100']));
-        
+
         final ageField = classElement.fields.firstWhere((f) => f.name == 'age');
         final ageInfo = analyzer.analyze(ageField);
-        
+
         expect(ageInfo.constraints.length, equals(2));
         expect(ageInfo.constraints[0].name, equals('positive'));
         expect(ageInfo.constraints[0].arguments, isEmpty);
@@ -171,15 +179,19 @@ class Settings {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library =
+            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'Settings');
-        
-        final enabledField = classElement.fields.firstWhere((f) => f.name == 'enabled');
-        final retryField = classElement.fields.firstWhere((f) => f.name == 'retryCount');
-        final themeField = classElement.fields.firstWhere((f) => f.name == 'theme');
-        
+
+        final enabledField =
+            classElement.fields.firstWhere((f) => f.name == 'enabled');
+        final retryField =
+            classElement.fields.firstWhere((f) => f.name == 'retryCount');
+        final themeField =
+            classElement.fields.firstWhere((f) => f.name == 'theme');
+
         // Note: In actual implementation, extracting default values from AST
         // requires more complex analysis. For testing, we verify the field exists
         expect(analyzer.analyze(enabledField).name, equals('enabled'));
@@ -216,17 +228,18 @@ class TypeTest {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library =
+            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'TypeTest');
-        
+
         final fields = classElement.fields.where((f) => !f.isSynthetic);
-        
+
         for (final field in fields) {
           final fieldInfo = analyzer.analyze(field);
           final typeName = fieldInfo.type.getDisplayString();
-          
+
           switch (fieldInfo.name) {
             case 'text':
               expect(typeName, equals('String'));

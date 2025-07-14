@@ -131,10 +131,10 @@ class User {
             predicate<String>(
               (actual) {
                 return actual.contains('final userSchema = Ack.object(') &&
-                       actual.contains("'id': Ack.string()") &&
-                       actual.contains("'name': Ack.string()") &&
-                       actual.contains("'email': Ack.string()") &&
-                       actual.contains("'age': Ack.integer().optional()");
+                    actual.contains("'id': Ack.string()") &&
+                    actual.contains("'name': Ack.string()") &&
+                    actual.contains("'email': Ack.string()") &&
+                    actual.contains("'age': Ack.integer().optional()");
               },
               'matches golden file content',
             ),
@@ -185,10 +185,10 @@ class Order {
             predicate<String>(
               (actual) {
                 return actual.contains('final orderItemSchema = Ack.object(') &&
-                       actual.contains('final orderSchema = Ack.object(') &&
-                       actual.contains("'productId': Ack.string()") &&
-                       actual.contains("'quantity': Ack.integer()") &&
-                       actual.contains("'price': Ack.double()");
+                    actual.contains('final orderSchema = Ack.object(') &&
+                    actual.contains("'productId': Ack.string()") &&
+                    actual.contains("'quantity': Ack.integer()") &&
+                    actual.contains("'price': Ack.double()");
               },
               'matches order golden file content',
             ),
@@ -245,16 +245,18 @@ class SimpleProduct {
             predicate<String>(
               (actual) {
                 // Check Product schema with additional properties
-                final hasProductSchema = actual.contains('final productSchema = Ack.object(');
+                final hasProductSchema =
+                    actual.contains('final productSchema = Ack.object(');
 
                 // Check SimpleProduct schema without additional properties
-                final hasSimpleProductSchema = actual.contains('final simpleProductSchema = Ack.object(');
+                final hasSimpleProductSchema =
+                    actual.contains('final simpleProductSchema = Ack.object(');
 
                 // Check field definitions
-                final hasProductFields =
-                    actual.contains("'name': Ack.string()") &&
-                        actual.contains("'price': Ack.double()") &&
-                        actual.contains("'description': Ack.string().optional()");
+                final hasProductFields = actual
+                        .contains("'name': Ack.string()") &&
+                    actual.contains("'price': Ack.double()") &&
+                    actual.contains("'description': Ack.string().optional()");
 
                 final hasSimpleProductFields =
                     actual.contains("'name': Ack.string()") &&

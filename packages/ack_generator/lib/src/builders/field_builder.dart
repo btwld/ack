@@ -8,8 +8,8 @@ import '../models/model_info.dart';
 class FieldBuilder {
   String buildFieldSchema(FieldInfo field, [ModelInfo? model]) {
     // Check if this field is a discriminator field in a subtype
-    if (model != null && 
-        model.isDiscriminatedSubtype && 
+    if (model != null &&
+        model.isDiscriminatedSubtype &&
         model.discriminatorKey != null &&
         field.name == model.discriminatorKey) {
       // Generate Ack.literal() for discriminator field
@@ -157,7 +157,8 @@ class FieldBuilder {
     } else {
       // Assume it's a custom schema model - reference as a variable
       final typeName = type.getDisplayString().replaceAll('?', '');
-      final camelCaseName = '${typeName[0].toLowerCase()}${typeName.substring(1)}';
+      final camelCaseName =
+          '${typeName[0].toLowerCase()}${typeName.substring(1)}';
       return '${camelCaseName}Schema';
     }
   }
@@ -165,7 +166,8 @@ class FieldBuilder {
   String _buildNestedSchema(FieldInfo field) {
     final typeName = field.type.getDisplayString();
     final baseType = typeName.replaceAll('?', '');
-    final camelCaseName = '${baseType[0].toLowerCase()}${baseType.substring(1)}';
+    final camelCaseName =
+        '${baseType[0].toLowerCase()}${baseType.substring(1)}';
     return '${camelCaseName}Schema';
   }
 
@@ -196,17 +198,17 @@ class FieldBuilder {
         return '$schema.maxLength(${constraint.arguments.first})';
       case 'notEmpty':
         return '$schema.notEmpty()';
-      
+
       // STRING FORMAT CONSTRAINTS
       case 'email':
         return '$schema.email()';
       case 'url':
         return '$schema.url()';
-      
+
       // STRING PATTERN CONSTRAINTS
       case 'matches':
         return '$schema.matches(r\'${constraint.arguments.first}\')';
-      
+
       // NUMERIC CONSTRAINTS
       case 'min':
         return '$schema.min(${constraint.arguments.first})';
@@ -216,28 +218,27 @@ class FieldBuilder {
         return '$schema.positive()';
       case 'multipleOf':
         return '$schema.multipleOf(${constraint.arguments.first})';
-      
+
       // LIST CONSTRAINTS
       case 'minItems':
         return '$schema.minItems(${constraint.arguments.first})';
       case 'maxItems':
         return '$schema.maxItems(${constraint.arguments.first})';
-      
+
       // ENUM CONSTRAINTS
       case 'enumString':
         final values = constraint.arguments.map((v) => "'$v'").join(', ');
         return '$schema.enumString([$values])';
-      
+
       // LEGACY SUPPORT
       case 'pattern':
         return '$schema.matches(r\'${constraint.arguments.first}\')';
       case 'enumFromType':
         return schema;
-      
+
       default:
         // Unknown constraint, ignore for now
         return schema;
     }
   }
-
 }

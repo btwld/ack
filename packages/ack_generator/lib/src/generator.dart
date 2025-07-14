@@ -9,6 +9,7 @@ import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
 import 'builders/schema_model_builder.dart';
 import 'models/model_info.dart';
+import 'utils/error_messages.dart';
 import 'validation/code_validator.dart';
 import 'validation/model_validator.dart';
 
@@ -63,11 +64,7 @@ class AckSchemaGenerator extends Generator {
         final modelInfo = analyzer.analyze(element, annotationReader);
         modelInfos.add(modelInfo);
       } catch (e) {
-        throw InvalidGenerationSourceError(
-          'Error analyzing ${element.name}: $e',
-          element: element,
-          todo: 'Check annotation parameters and class structure',
-        );
+        throw GenErrorMessages.forAnnotationError(element, e);
       }
     }
 
@@ -94,70 +91,69 @@ class AckSchemaGenerator extends Generator {
             todo: 'Simplify complex generic types or fix circular references',
           );
         }
-        
+
         // Always build the schema field
         final schemaField = schemaBuilder.buildSchemaField(modelInfo);
         schemaFields.add(schemaField);
-        
+
         // Check if model generation is requested
         if (modelInfo.model) {
           // Build SchemaModel class too
-          final schemaModelClass = schemaModelBuilder.buildSchemaModelClass(modelInfo);
+          final schemaModelClass =
+              schemaModelBuilder.buildSchemaModelClass(modelInfo);
           schemaModelClasses.add(schemaModelClass);
         }
       } catch (e) {
-        throw InvalidGenerationSourceError(
-          'Error generating schemas for ${element.name}: $e',
-          element: element,
-          todo: 'Check that all fields have supported types',
-        );
+        throw GenErrorMessages.forSchemaGenerationError(element, e);
       }
     }
 
     // Build the complete library with all schemas
     // Schema variables must come first as SchemaModel classes depend on them
     final allGeneratedElements = <Spec>[
-      ...schemaFields,       // Schema variables first (dependencies)
+      ...schemaFields, // Schema variables first (dependencies)
       ...schemaModelClasses, // SchemaModel classes after (use schemas)
     ];
-    
+
     // Only add imports and headers if we have content
     if (allGeneratedElements.isEmpty) {
       return '';
     }
-    
+
     // Check if we need to generate as a part file or standalone
     final needsPartOf = schemaModelClasses.isNotEmpty;
-    
+
     if (needsPartOf) {
       // Generate as a part file manually to avoid import issues
-      final fileName = buildStep.inputId.pathSegments.last.replaceAll('.g.dart', '.dart');
-      
+      final fileName =
+          buildStep.inputId.pathSegments.last.replaceAll('.g.dart', '.dart');
+
       // Manually build the content to avoid emitter import issues
       final buffer = StringBuffer();
       buffer.writeln("part of '$fileName';");
       buffer.writeln();
-      
+
       // Add schema fields first
       for (final schemaField in schemaFields) {
         final emitter = DartEmitter(allocator: Allocator.none);
         buffer.writeln(schemaField.accept(emitter));
         buffer.writeln();
       }
-      
+
       // Add SchemaModel classes using code_builder
       // Use the final ModelInfos with discriminator relationships
       for (final modelInfo in finalModelInfos) {
         if (modelInfo.model) {
-          final schemaModelClass = schemaModelBuilder.buildSchemaModelClass(modelInfo);
+          final schemaModelClass =
+              schemaModelBuilder.buildSchemaModelClass(modelInfo);
           final emitter = DartEmitter(allocator: Allocator.none);
           buffer.writeln(schemaModelClass.accept(emitter));
           buffer.writeln();
         }
       }
-      
+
       final output = buffer.toString();
-      
+
       // Validate generated code before formatting
       final validation = CodeValidator.validate(output);
       if (validation.isFailure) {
@@ -166,7 +162,7 @@ class AckSchemaGenerator extends Generator {
           todo: 'Fix the code generation logic to produce valid Dart syntax',
         );
       }
-      
+
       try {
         return _formatter.format(output);
       } catch (e) {
@@ -190,7 +186,7 @@ class AckSchemaGenerator extends Generator {
       );
 
       final generatedCode = generatedLibrary.accept(emitter).toString();
-      
+
       // Validate generated code before formatting
       final validation = CodeValidator.validate(generatedCode);
       if (validation.isFailure) {
@@ -207,13 +203,14 @@ class AckSchemaGenerator extends Generator {
   /// Validates that the element can be processed by the generator
   void _validateElement(ClassElement element) {
     // Check if this is a discriminated base class (abstract is allowed for discriminated types)
-    final annotation = TypeChecker.fromRuntime(AckModel).firstAnnotationOf(element);
+    final annotation =
+        TypeChecker.fromRuntime(AckModel).firstAnnotationOf(element);
     if (annotation != null) {
       final annotationReader = ConstantReader(annotation);
       final discriminatedKey = annotationReader.read('discriminatedKey').isNull
           ? null
           : annotationReader.read('discriminatedKey').stringValue;
-      
+
       // Allow abstract classes only if they have discriminatedKey
       if (element.isAbstract && discriminatedKey == null) {
         throw InvalidGenerationSourceError(
@@ -223,5 +220,4 @@ class AckSchemaGenerator extends Generator {
       }
     }
   }
-
 }

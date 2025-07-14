@@ -36,7 +36,8 @@ class Config {
             contains('final configSchema = Ack.object('),
             contains("'settings': Ack.object({}, additionalProperties: true)"),
             contains("'counts': Ack.object({}, additionalProperties: true)"),
-            contains("'groupedData': Ack.object({}, additionalProperties: true)"),
+            contains(
+                "'groupedData': Ack.object({}, additionalProperties: true)"),
           ])),
         },
       );
@@ -102,8 +103,10 @@ class NullableCollections {
         outputs: {
           'test_pkg|lib/nullable_collections.g.dart': decodedMatches(allOf([
             contains('final nullableCollectionsSchema = Ack.object('),
-            contains("'metadata': Ack.object({}, additionalProperties: true).optional()"),
-            contains("'categories': Ack.list(Ack.string()).unique().optional()"),
+            contains(
+                "'metadata': Ack.object({}, additionalProperties: true).optional()"),
+            contains(
+                "'categories': Ack.list(Ack.string()).unique().optional()"),
           ])),
         },
       );
@@ -144,10 +147,13 @@ class ComplexModel {
             contains("'grouped': Ack.object({}, additionalProperties: true)"),
             contains("'unique': Ack.list(Ack.string()).unique()"),
             contains("'nested': Ack.object({}, additionalProperties: true)"),
-            contains("'superComplex': Ack.list(Ack.object({}, additionalProperties: true))"),
+            contains(
+                "'superComplex': Ack.list(Ack.object({}, additionalProperties: true))"),
           ])),
         },
       );
-    }, skip: 'Complex nested collections (List<Map<String, Set<int>>>) are intentionally not supported due to validation complexity');
+    },
+        skip:
+            'Complex nested collections (List<Map<String, Set<int>>>) are intentionally not supported due to validation complexity');
   });
 }
