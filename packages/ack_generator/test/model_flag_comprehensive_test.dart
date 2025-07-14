@@ -21,11 +21,11 @@ class BasicModel {
           // Should generate schema variable only
           expect(result, contains('final basicModelSchema = Ack.object({'));
           expect(result, contains("'name': Ack.string()"));
-          
+
           // Should NOT generate SchemaModel class
           expect(result, isNot(contains('class BasicModelSchemaModel')));
           expect(result, isNot(contains('extends SchemaModel')));
-          
+
           // Should be standalone file with imports
           expect(result, contains('import \'package:ack/ack.dart\';'));
           expect(result, isNot(contains('part of')));
@@ -51,14 +51,18 @@ class ModelClass {
           expect(result, contains('final modelClassSchema = Ack.object({'));
           expect(result, contains("'id': Ack.string()"));
           expect(result, contains("'value': Ack.integer()"));
-          
+
           // Should generate SchemaModel class
-          expect(result, contains('class ModelClassSchemaModel extends SchemaModel<ModelClass>'));
+          expect(
+              result,
+              contains(
+                  'class ModelClassSchemaModel extends SchemaModel<ModelClass>'));
           expect(result, contains('factory ModelClassSchemaModel()'));
           expect(result, contains('static final _instance'));
-          expect(result, contains('ObjectSchema buildSchema()'));
-          expect(result, contains('ModelClass createFromMap(Map<String, dynamic> map)'));
-          
+          expect(result, contains('ObjectSchema get schema'));
+          expect(result,
+              contains('ModelClass createFromMap(Map<String, dynamic> map)'));
+
           // Should be part file
           expect(result, contains('part of'));
           expect(result, isNot(contains('import \'package:ack/ack.dart\';')));
@@ -86,8 +90,9 @@ class ListModel {
         await expectGeneratedOutput(source, (result) {
           // Schema should handle lists
           expect(result, contains('Ack.list(Ack.string())'));
-          expect(result, contains('Ack.list(Ack.integer()).optional().nullable()'));
-          
+          expect(result,
+              contains('Ack.list(Ack.integer()).optional().nullable()'));
+
           // createFromMap should handle list casts
           expect(result, contains('(map[\'tags\'] as List).cast<String>()'));
           expect(result, contains('(map[\'scores\'] as List?)?.cast<int>()'));
@@ -112,8 +117,9 @@ class MapModel {
 
         await expectGeneratedOutput(source, (result) {
           // Schema should handle maps with additionalProperties
-          expect(result, contains('Ack.object({}, additionalProperties: true)'));
-          
+          expect(
+              result, contains('Ack.object({}, additionalProperties: true)'));
+
           // createFromMap should handle map casts
           expect(result, contains('map[\'metadata\'] as Map<String, dynamic>'));
           expect(result, contains('map[\'labels\'] as Map<String, String>?'));
@@ -140,10 +146,14 @@ class EnumModel {
 
         await expectGeneratedOutput(source, (result) {
           // Schema should handle enums as string with enumString constraint
-          expect(result, contains('Ack.string().enumString([\'active\', \'inactive\', \'pending\'])'));
-          
+          expect(
+              result,
+              contains(
+                  'Ack.string().enumString([\'active\', \'inactive\', \'pending\'])'));
+
           // createFromMap should handle enum parsing
-          expect(result, contains('Status.values.byName(map[\'status\'] as String)'));
+          expect(result,
+              contains('Status.values.byName(map[\'status\'] as String)'));
         });
       });
     });
@@ -177,13 +187,17 @@ class Person {
           final addressSchemaPos = result.indexOf('final addressSchema');
           final personSchemaPos = result.indexOf('final personSchema');
           expect(addressSchemaPos, lessThan(personSchemaPos));
-          
+
           // Person schema should reference address schema
           expect(result, contains("'address': addressSchema"));
-          expect(result, contains("'billingAddress': addressSchema.optional().nullable()"));
-          
+          expect(
+              result,
+              contains(
+                  "'billingAddress': addressSchema.optional().nullable()"));
+
           // createFromMap should use nested SchemaModel
-          expect(result, contains('AddressSchemaModel._instance.createFromMap('));
+          expect(
+              result, contains('AddressSchemaModel._instance.createFromMap('));
           expect(result, contains('map[\'address\'] as Map<String, dynamic>'));
         });
       });
@@ -213,7 +227,7 @@ class Order {
         await expectGeneratedOutput(source, (result) {
           // Schema should handle list of schemas
           expect(result, contains('Ack.list(itemSchema)'));
-          
+
           // createFromMap should handle list of nested models
           expect(result, contains('(map[\'items\'] as List)'));
           expect(result, contains('ItemSchemaModel._instance.createFromMap'));
@@ -245,9 +259,10 @@ class FlexibleModel {
         await expectGeneratedOutput(source, (result) {
           // Schema should include additionalProperties
           expect(result, contains('additionalProperties: true'));
-          
+
           // createFromMap should extract additional properties
-          expect(result, contains('extractAdditionalProperties(map, {\'id\', \'name\'})'));
+          expect(result,
+              contains('extractAdditionalProperties(map, {\'id\', \'name\'})'));
         });
       });
 
@@ -270,7 +285,7 @@ class User {
         await expectGeneratedOutput(source, (result) {
           // Should use custom schema name
           expect(result, contains('final customUserSchema = Ack.object({'));
-          
+
           // SchemaModel should reference custom schema
           expect(result, contains('return customUserSchema;'));
         });
@@ -300,7 +315,7 @@ class DocumentedUser {
         await expectGeneratedOutput(source, (result) {
           // Should include class description
           expect(result, contains('/// A user model with descriptions'));
-          
+
           // Should include field descriptions as comments
           expect(result, contains('// Unique user identifier'));
           expect(result, contains('// User display name'));
@@ -325,7 +340,7 @@ class EmptyModel {
           // Should generate empty object schema
           expect(result, contains('Ack.object({'));
           expect(result, contains('});'));
-          
+
           // createFromMap should work with no parameters
           expect(result, contains('return EmptyModel('));
           expect(result, contains(');'));
@@ -372,7 +387,7 @@ class AllNullableModel {
           expect(result, contains('Ack.string().optional().nullable()'));
           expect(result, contains('Ack.integer().optional().nullable()'));
           expect(result, contains('Ack.boolean().optional().nullable()'));
-          
+
           // All casts should be nullable
           expect(result, contains('as String?'));
           expect(result, contains('as int?'));
@@ -399,7 +414,10 @@ class ThreadSafeModel {
           // Should use proper singleton pattern
           expect(result, contains('ThreadSafeModelSchemaModel._();'));
           expect(result, contains('factory ThreadSafeModelSchemaModel()'));
-          expect(result, contains('static final _instance = ThreadSafeModelSchemaModel._();'));
+          expect(
+              result,
+              contains(
+                  'static final _instance = ThreadSafeModelSchemaModel._();'));
           expect(result, contains('return _instance;'));
         });
       });
@@ -424,7 +442,8 @@ class DocumentedModel {
           // Should have proper dartdoc format
           expect(result, contains('/// Generated schema for DocumentedModel'));
           expect(result, contains('/// A well-documented model class'));
-          expect(result, contains('/// Generated SchemaModel for [DocumentedModel].'));
+          expect(result,
+              contains('/// Generated SchemaModel for [DocumentedModel].'));
         });
       });
 
@@ -444,12 +463,12 @@ class MySpecialModel {
         await expectGeneratedOutput(source, (result) {
           // Schema variable should be camelCase
           expect(result, contains('final mySpecialModelSchema'));
-          
+
           // Class name should be PascalCase with suffix
           expect(result, contains('class MySpecialModelSchemaModel'));
-          
+
           // Method names should be camelCase
-          expect(result, contains('buildSchema()'));
+          expect(result, contains('get schema'));
           expect(result, contains('createFromMap('));
         });
       });
@@ -458,10 +477,11 @@ class MySpecialModel {
 }
 
 // Helper function to test code generation
-Future<void> expectGeneratedOutput(String source, void Function(String) verifyOutput) async {
+Future<void> expectGeneratedOutput(
+    String source, void Function(String) verifyOutput) async {
   final generator = AckSchemaGenerator();
   String? capturedOutput;
-  
+
   await testBuilder(
     LibraryBuilder(generator, generatedExtension: '.g.dart'),
     {
@@ -476,6 +496,8 @@ class AckModel {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final bool model;
+  final String? discriminatedKey;
+  final String? discriminatedValue;
 
   const AckModel({
     this.schemaName,
@@ -483,6 +505,8 @@ class AckModel {
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.model = false,
+    this.discriminatedKey,
+    this.discriminatedValue,
   });
 }
 ''',

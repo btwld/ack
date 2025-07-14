@@ -159,6 +159,72 @@ void main() {
           expect(schema.validate(true).isOk, isTrue);
           expect(schema.validate('true').isOk, isFalse);
         });
+
+        group('Case-insensitive string parsing', () {
+          test('should parse uppercase strings correctly', () {
+            final schema = Ack.boolean();
+            expect(schema.validate('TRUE').isOk, isTrue);
+            expect(schema.validate('TRUE').getOrNull(), isTrue);
+            expect(schema.validate('FALSE').isOk, isTrue);
+            expect(schema.validate('FALSE').getOrNull(), isFalse);
+          });
+
+          test('should parse mixed case strings correctly', () {
+            final schema = Ack.boolean();
+            expect(schema.validate('True').isOk, isTrue);
+            expect(schema.validate('True').getOrNull(), isTrue);
+            expect(schema.validate('False').isOk, isTrue);
+            expect(schema.validate('False').getOrNull(), isFalse);
+            expect(schema.validate('tRuE').isOk, isTrue);
+            expect(schema.validate('tRuE').getOrNull(), isTrue);
+            expect(schema.validate('fAlSe').isOk, isTrue);
+            expect(schema.validate('fAlSe').getOrNull(), isFalse);
+          });
+
+          test('should maintain case-insensitive behavior after optimization', () {
+            final schema = Ack.boolean();
+            // Test various case combinations that would break if toLowerCase() optimization fails
+            final trueCases = ['true', 'TRUE', 'True', 'tRuE', 'TrUe', 'TRue', 'trUE', 'TRUe'];
+            final falseCases = ['false', 'FALSE', 'False', 'fAlSe', 'FaLsE', 'FALse', 'falSE', 'FALsE'];
+            
+            for (final testCase in trueCases) {
+              expect(schema.validate(testCase).isOk, isTrue, reason: 'Failed for: $testCase');
+              expect(schema.validate(testCase).getOrNull(), isTrue, reason: 'Wrong value for: $testCase');
+            }
+            
+            for (final testCase in falseCases) {
+              expect(schema.validate(testCase).isOk, isTrue, reason: 'Failed for: $testCase');
+              expect(schema.validate(testCase).getOrNull(), isFalse, reason: 'Wrong value for: $testCase');
+            }
+          });
+
+          test('should reject invalid string values', () {
+            final schema = Ack.boolean();
+            final invalidCases = ['yes', 'no', '1', '0', 'on', 'off', 'True ', ' true', 'truee', 'fals'];
+            
+            for (final testCase in invalidCases) {
+              expect(schema.validate(testCase).isOk, isFalse, reason: 'Should reject: $testCase');
+            }
+          });
+
+          test('should handle empty and whitespace strings', () {
+            final schema = Ack.boolean();
+            expect(schema.validate('').isOk, isFalse);
+            expect(schema.validate(' ').isOk, isFalse);
+            expect(schema.validate('  ').isOk, isFalse);
+            expect(schema.validate('\t').isOk, isFalse);
+            expect(schema.validate('\n').isOk, isFalse);
+          });
+
+          test('should not parse strings with strict parsing enabled', () {
+            final schema = Ack.boolean().strictParsing();
+            final stringCases = ['true', 'false', 'TRUE', 'FALSE', 'True', 'False'];
+            
+            for (final testCase in stringCases) {
+              expect(schema.validate(testCase).isOk, isFalse, reason: 'Should reject with strict parsing: $testCase');
+            }
+          });
+        });
       });
 
       group('EnumSchema', () {

@@ -32,7 +32,8 @@ class User {
           'test_pkg|lib/model.g.dart': decodedMatches(allOf([
             contains('final userSchema = Ack.object('),
             contains("'name': Ack.string()"),
-            contains("'status': Ack.string().enumString(['active', 'inactive', 'pending'])"),
+            contains(
+                "'status': Ack.string().enumString(['active', 'inactive', 'pending'])"),
           ])),
         },
       );

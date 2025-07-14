@@ -30,22 +30,22 @@ class _SignUpFormState extends State<SignUpForm> {
 
   // Define Ack schemas for validation rules
   // See: [Schema Types](../core-concepts/schemas.mdx), [Validation Rules](../core-concepts/validation.mdx)
-  final _usernameSchema = Ack.string
-    .minLength(3, message: 'Username must be at least 3 characters')
-    .maxLength(20, message: 'Username cannot exceed 20 characters')
-    .matches(r'[a-zA-Z0-9_]+', message: 'Username can only contain letters, numbers, and underscores')
-    .isNotEmpty(message: 'Username is required');
+  final _usernameSchema = Ack.string()
+    .minLength(3)
+    .maxLength(20)
+    .matches(r'[a-zA-Z0-9_]+')
+    .notEmpty();
 
-  final _emailSchema = Ack.string
-    .isEmail(message: 'Please enter a valid email address')
-    .isNotEmpty(message: 'Email is required');
+  final _emailSchema = Ack.string()
+    .email()
+    .notEmpty();
 
-  final _passwordSchema = Ack.string
-    .minLength(8, message: 'Password must be at least 8 characters')
-    .matches(r'.*[A-Z].*', message: 'Password must contain an uppercase letter')
-    .matches(r'.*[a-z].*', message: 'Password must contain a lowercase letter')
-    .matches(r'.*[0-9].*', message: 'Password must contain a digit')
-    .isNotEmpty(message: 'Password is required');
+  final _passwordSchema = Ack.string()
+    .minLength(8)
+    .matches(r'.*[A-Z].*')
+    .matches(r'.*[a-z].*')
+    .matches(r'.*[0-9].*')
+    .notEmpty();
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +63,7 @@ class _SignUpFormState extends State<SignUpForm> {
               final result = _usernameSchema.validate(value);
               // Return the error message if validation fails
               // See: [Error Handling](../core-concepts/error-handling.mdx)
-              return result.isFail ? result.getError()?.message : null;
+              return result.isFail ? result.getError().toString() : null;
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
@@ -76,7 +76,7 @@ class _SignUpFormState extends State<SignUpForm> {
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
               final result = _emailSchema.validate(value);
-              return result.isFail ? result.getError()?.message : null;
+              return result.isFail ? result.getError().toString() : null;
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
@@ -89,7 +89,7 @@ class _SignUpFormState extends State<SignUpForm> {
             obscureText: true,
             validator: (value) {
               final result = _passwordSchema.validate(value);
-              return result.isFail ? result.getError()?.message : null;
+              return result.isFail ? result.getError().toString() : null;
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
@@ -160,9 +160,9 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
   String? _emailErrorText; // State variable to hold the error message
 
   // Define the schema
-  final _emailSchema = Ack.string
-      .isEmail(message: 'Please enter a valid email')
-      .isNotEmpty(message: 'Email cannot be empty');
+  final _emailSchema = Ack.string()
+      .email()
+      .notEmpty();
 
   @override
   void initState() {
@@ -179,7 +179,7 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
       final result = _emailSchema.validate(text);
       // Update the error state variable, triggering a rebuild
       setState(() {
-        _emailErrorText = result.isFail ? result.getError()?.message : null;
+        _emailErrorText = result.isFail ? result.getError().toString() : null;
       });
     } else {
       // Clear error if field becomes empty
@@ -245,11 +245,12 @@ final _formSchema = Ack.object({
   'username': _usernameSchema, // Reuse field schemas
   'email': _emailSchema,
   'password': _passwordSchema,
-  'confirmPassword': Ack.string.isNotEmpty(message: 'Please confirm password')
+  'confirmPassword': Ack.string()
+      .notEmpty()
       // Example: Custom constraint for cross-field validation
       // See: [Custom Validation](./custom-validation.mdx)
       .constrain(PasswordMatchConstraint('password')),
-}, required: ['username', 'email', 'password', 'confirmPassword']);
+});
 
 void _submitForm() {
   // Gather all form data into a map
@@ -268,10 +269,9 @@ void _submitForm() {
     // Submit formData
   } else {
     final error = result.getError();
-    print('Form submission error: ${error?.message}');
+    print('Form submission error: $error');
     // You might need to map the error path back to specific fields
     // to display errors if not using TextFormField validators.
-    print('Error path: ${error?.path}');
   }
 }
 ```

@@ -22,18 +22,32 @@ dependencies:
   ack: ^1.0.0 # Replace with latest version
 ```
 
-## Code Generator (Experimental)
+## Code Generator (Production Ready)
 
-The `ack_generator` package is experimental and not recommended for production use. For production applications, use manual schema definition with the current Ack API.
+The `ack_generator` package provides automatic schema generation from Dart classes, reducing boilerplate code and improving type safety.
 
-If you want to experiment with the code generator:
+Add the generator and build_runner to your project:
 
 ```bash
-# Add the experimental generator and build_runner
+# Add the generator and build_runner
 dart pub add --dev ack_generator build_runner
 ```
 
-**Note:** The generated code may not compile with the current ack package version. Manual schema definition is the recommended approach.
+Or add to your `pubspec.yaml`:
+
+```yaml
+dev_dependencies:
+  ack_generator: ^1.0.0 # Replace with latest version
+  build_runner: ^2.4.0
+```
+
+**Features:**
+- Automatic schema generation from annotated classes
+- Type-safe model creation with `SchemaModel` classes
+- Support for complex types including discriminated unions
+- Comprehensive error handling with detailed messages
+
+See the [generator documentation](https://docs.page/btwld/ack) for usage examples.
 
 ## Basic Usage after Installation
 

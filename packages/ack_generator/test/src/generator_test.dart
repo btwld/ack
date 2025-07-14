@@ -87,8 +87,8 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/address.ack.g.part': decodedMatches(
-              contains('final addressSchema = Ack.object(')),
+          'test_pkg|lib/address.ack.g.part':
+              decodedMatches(contains('final addressSchema = Ack.object(')),
           'test_pkg|lib/user.ack.g.part':
               decodedMatches(contains('addressSchema')),
         },

@@ -7,26 +7,25 @@ part of 'schema.dart';
 mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
     on AckSchema<DartType> {
   /// Marks the schema as nullable.
-
   Schema nullable({bool value = true}) => copyWith(isNullable: value) as Schema;
 
   /// Sets the description for the schema.
+  Schema describe(String description) =>
+      copyWith(description: description) as Schema;
 
-  Schema withDescription(String? newDescription) =>
-      copyWith(description: newDescription) as Schema;
+  /// Alias for describe() for backward compatibility.
+  Schema withDescription(String description) =>
+      copyWith(description: description) as Schema;
 
   /// Sets the default value for the schema.
-
-  Schema withDefault(DartType newDefaultValue) =>
-      copyWith(defaultValue: newDefaultValue) as Schema;
+  Schema withDefault(DartType defaultValue) =>
+      copyWith(defaultValue: defaultValue) as Schema;
 
   /// Adds a validation constraint to the schema.
-
   Schema withConstraint(Constraint<DartType> constraint) =>
       copyWith(constraints: [...constraints, constraint]) as Schema;
 
   /// Adds a list of validation constraints to the schema.
-
   Schema withConstraints(List<Constraint<DartType>> newConstraints) =>
       copyWith(constraints: [...constraints, ...newConstraints]) as Schema;
 }

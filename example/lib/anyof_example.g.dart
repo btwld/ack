@@ -45,44 +45,58 @@ final settingSchema = Ack.object({
 /// Generated SchemaModel for [ApiResponse].
 /// API response with different possible payloads
 class ApiResponseSchemaModel extends SchemaModel<ApiResponse> {
-  ApiResponseSchemaModel._();
+  ApiResponseSchemaModel._internal(ObjectSchema this.schema);
 
   factory ApiResponseSchemaModel() {
-    return _instance;
+    return ApiResponseSchemaModel._internal(apiResponseSchema);
   }
 
-  static final _instance = ApiResponseSchemaModel._();
+  ApiResponseSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return apiResponseSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   ApiResponse createFromMap(Map<String, dynamic> map) {
     return ApiResponse(
       status: map['status'] as String,
-      data: ResponseDataSchemaModel._instance.createFromMap(
-        map['data'] as Map<String, dynamic>,
-      ),
+      data: map['data'] as ResponseData,
     );
+  }
+
+  /// Returns a new schema with the specified description.
+  ApiResponseSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return ApiResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  ApiResponseSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return ApiResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  ApiResponseSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return ApiResponseSchemaModel._withSchema(newSchema);
   }
 }
 
 /// Generated SchemaModel for [UserResponse].
 class UserResponseSchemaModel extends SchemaModel<UserResponse> {
-  UserResponseSchemaModel._();
+  UserResponseSchemaModel._internal(ObjectSchema this.schema);
 
   factory UserResponseSchemaModel() {
-    return _instance;
+    return UserResponseSchemaModel._internal(userResponseSchema);
   }
 
-  static final _instance = UserResponseSchemaModel._();
+  UserResponseSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return userResponseSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   UserResponse createFromMap(Map<String, dynamic> map) {
@@ -92,22 +106,39 @@ class UserResponseSchemaModel extends SchemaModel<UserResponse> {
       email: map['email'] as String,
     );
   }
+
+  /// Returns a new schema with the specified description.
+  UserResponseSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return UserResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  UserResponseSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return UserResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  UserResponseSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return UserResponseSchemaModel._withSchema(newSchema);
+  }
 }
 
 /// Generated SchemaModel for [ErrorResponse].
 class ErrorResponseSchemaModel extends SchemaModel<ErrorResponse> {
-  ErrorResponseSchemaModel._();
+  ErrorResponseSchemaModel._internal(ObjectSchema this.schema);
 
   factory ErrorResponseSchemaModel() {
-    return _instance;
+    return ErrorResponseSchemaModel._internal(errorResponseSchema);
   }
 
-  static final _instance = ErrorResponseSchemaModel._();
+  ErrorResponseSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return errorResponseSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   ErrorResponse createFromMap(Map<String, dynamic> map) {
@@ -117,22 +148,39 @@ class ErrorResponseSchemaModel extends SchemaModel<ErrorResponse> {
       details: map['details'] as Map<String, dynamic>?,
     );
   }
+
+  /// Returns a new schema with the specified description.
+  ErrorResponseSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return ErrorResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  ErrorResponseSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return ErrorResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  ErrorResponseSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return ErrorResponseSchemaModel._withSchema(newSchema);
+  }
 }
 
 /// Generated SchemaModel for [ListResponse].
 class ListResponseSchemaModel extends SchemaModel<ListResponse> {
-  ListResponseSchemaModel._();
+  ListResponseSchemaModel._internal(ObjectSchema this.schema);
 
   factory ListResponseSchemaModel() {
-    return _instance;
+    return ListResponseSchemaModel._internal(listResponseSchema);
   }
 
-  static final _instance = ListResponseSchemaModel._();
+  ListResponseSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return listResponseSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   ListResponse createFromMap(Map<String, dynamic> map) {
@@ -142,31 +190,64 @@ class ListResponseSchemaModel extends SchemaModel<ListResponse> {
       page: map['page'] as int,
     );
   }
+
+  /// Returns a new schema with the specified description.
+  ListResponseSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return ListResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  ListResponseSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return ListResponseSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  ListResponseSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return ListResponseSchemaModel._withSchema(newSchema);
+  }
 }
 
 /// Generated SchemaModel for [Setting].
 /// Configuration setting with flexible value type
 class SettingSchemaModel extends SchemaModel<Setting> {
-  SettingSchemaModel._();
+  SettingSchemaModel._internal(ObjectSchema this.schema);
 
   factory SettingSchemaModel() {
-    return _instance;
+    return SettingSchemaModel._internal(settingSchema);
   }
 
-  static final _instance = SettingSchemaModel._();
+  SettingSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return settingSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   Setting createFromMap(Map<String, dynamic> map) {
     return Setting(
       key: map['key'] as String,
-      value: SettingValueSchemaModel._instance.createFromMap(
-        map['value'] as Map<String, dynamic>,
-      ),
+      value: map['value'] as SettingValue,
     );
+  }
+
+  /// Returns a new schema with the specified description.
+  SettingSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return SettingSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  SettingSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return SettingSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  SettingSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return SettingSchemaModel._withSchema(newSchema);
   }
 }

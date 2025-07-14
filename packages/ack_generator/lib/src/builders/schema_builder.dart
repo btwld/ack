@@ -34,7 +34,7 @@ class SchemaBuilder {
     // Convert schema class name to camelCase variable name
     // e.g., "UserSchema" -> "userSchema", "CustomUserSchema" -> "customUserSchema"
     final variableName = _toCamelCase(model.schemaClassName);
-    
+
     return Field((b) => b
       ..name = variableName
       ..modifier = FieldModifier.final$
@@ -44,25 +44,23 @@ class SchemaBuilder {
         if (model.description != null) '/// ${model.description}',
       ]));
   }
-  
+
   String _toCamelCase(String text) {
     if (text.isEmpty) return text;
     return text[0].toLowerCase() + text.substring(1);
   }
-
-
 
   String _buildSchemaDefinition(ModelInfo model) {
     // Check if this is a discriminated base class
     if (model.isDiscriminatedBase && model.subtypes != null) {
       return _buildDiscriminatedSchema(model);
     }
-    
+
     // Check if this is a discriminated subtype
     if (model.isDiscriminatedSubtype) {
       return _buildSubtypeSchema(model);
     }
-    
+
     // Regular object schema
     return _buildRegularObjectSchema(model);
   }
@@ -83,7 +81,7 @@ class SchemaBuilder {
       final discriminatorValue = entry.key;
       final subtypeElement = entry.value;
       final subtypeSchemaName = _toCamelCase('${subtypeElement.name}Schema');
-      
+
       schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
     }
 
@@ -102,10 +100,11 @@ class SchemaBuilder {
     final fieldDefs = <String>[];
     for (final field in model.fields) {
       final fieldSchema = _fieldBuilder.buildFieldSchema(field, model);
-      
+
       // Add description comment if available
       if (field.description != null && field.description!.isNotEmpty) {
-        fieldDefs.add('// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
+        fieldDefs.add(
+            '// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
       } else {
         fieldDefs.add("'${field.jsonKey}': $fieldSchema");
       }
@@ -137,10 +136,11 @@ class SchemaBuilder {
     final fieldDefs = <String>[];
     for (final field in model.fields) {
       final fieldSchema = _fieldBuilder.buildFieldSchema(field);
-      
+
       // Add description comment if available
       if (field.description != null && field.description!.isNotEmpty) {
-        fieldDefs.add('// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
+        fieldDefs.add(
+            '// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
       } else {
         fieldDefs.add("'${field.jsonKey}': $fieldSchema");
       }

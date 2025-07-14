@@ -133,7 +133,7 @@ final schema = Ack.string().minLength(5);
 
 final result = schema.validate('abc');
 if (result.isFail) {
-  final error = result.getError() as SchemaConstraintsError;
-  print(error.constraints.first.message); // Output: "Too short, min 5 characters"
+  final error = result.getError();
+  print(error.toString()); // Output: validation error details
 }
 ```

@@ -26,18 +26,17 @@ final userProfileSchema = Ack.object({
 /// Generated SchemaModel for [UserProfile].
 /// User profile with comprehensive field descriptions
 class UserProfileSchemaModel extends SchemaModel<UserProfile> {
-  UserProfileSchemaModel._();
+  UserProfileSchemaModel._internal(ObjectSchema this.schema);
 
   factory UserProfileSchemaModel() {
-    return _instance;
+    return UserProfileSchemaModel._internal(userProfileSchema);
   }
 
-  static final _instance = UserProfileSchemaModel._();
+  UserProfileSchemaModel._withSchema(ObjectSchema customSchema)
+      : schema = customSchema;
 
   @override
-  ObjectSchema buildSchema() {
-    return userProfileSchema;
-  }
+  final ObjectSchema schema;
 
   @override
   UserProfile createFromMap(Map<String, dynamic> map) {
@@ -49,5 +48,23 @@ class UserProfileSchemaModel extends SchemaModel<UserProfile> {
       avatarUrl: map['avatarUrl'] as String?,
       bio: map['bio'] as String?,
     );
+  }
+
+  /// Returns a new schema with the specified description.
+  UserProfileSchemaModel describe(String description) {
+    final newSchema = schema.copyWith(description: description);
+    return UserProfileSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with the specified default value.
+  UserProfileSchemaModel withDefault(Map<String, dynamic> defaultValue) {
+    final newSchema = schema.copyWith(defaultValue: defaultValue);
+    return UserProfileSchemaModel._withSchema(newSchema);
+  }
+
+  /// Returns a new schema with nullable flag set to the specified value.
+  UserProfileSchemaModel nullable([bool value = true]) {
+    final newSchema = schema.copyWith(isNullable: value);
+    return UserProfileSchemaModel._withSchema(newSchema);
   }
 }

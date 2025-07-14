@@ -55,22 +55,22 @@ Use the [`.constrain()`](../core-concepts/validation.mdx#constrainschemaconstrai
 
 ```dart
 // Applying the IsPositiveConstraint to a double schema
-final priceSchema = Ack.double.constrain(IsPositiveConstraint());
+final priceSchema = Ack.double().constrain(IsPositiveConstraint());
 
 print(priceSchema.validate(10.50).isOk); // true
 print(priceSchema.validate(-5.0).isOk);  // false
-print(priceSchema.validate(-5.0).getError()?.message); // Number must be positive
+print(priceSchema.validate(-5.0).getError().toString()); // Number must be positive
 
 
 // Applying the PasswordMatchConstraint within an object schema
 // See: [Object Schema](../core-concepts/schemas.mdx#object-schema)
 final signUpSchema = Ack.object({
-  'password': Ack.string.minLength(8),
-  'confirmPassword': Ack.string
+  'password': Ack.string().minLength(8),
+  'confirmPassword': Ack.string()
       .minLength(8)
       // Apply the constraint, passing the name of the field to compare against
       .constrain(PasswordMatchConstraint('password')) 
-}, required: ['password', 'confirmPassword']);
+});
 
 // Valid data
 final validPasswords = {
@@ -86,8 +86,7 @@ final mismatchPasswords = {
 };
 final result = signUpSchema.validate(mismatchPasswords);
 print(result.isOk); // false
-print(result.getError()?.path); // ['confirmPassword']
-print(result.getError()?.message); // Passwords do not match
+print(result.getError().toString()); // Passwords do not match
 ```
 
 ## Overriding Error Messages
@@ -96,10 +95,10 @@ You can override the default `message` defined in your `SchemaConstraint` constr
 See also: [Custom Error Messages](../core-concepts/error-handling.mdx#custom-error-messages).
 
 ```dart
-final schema = Ack.double
+final schema = Ack.double()
     .constrain(IsPositiveConstraint(), message: 'Price must be greater than zero.');
 
-print(schema.validate(-10).getError()?.message); // Price must be greater than zero.
+print(schema.validate(-10).getError().toString()); // Price must be greater than zero.
 ```
 
 ## Reusable Constraints
@@ -118,7 +117,7 @@ import 'package:ack/ack.dart';
 import '../validation/constraints.dart';
 
 final userSchema = Ack.object({
-  'age': Ack.int.constrain(IsPositiveConstraint()),
+  'age': Ack.integer().constrain(IsPositiveConstraint()),
   // ... other fields
 });
 ```

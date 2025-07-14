@@ -31,14 +31,13 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       ));
     }
 
-    // This is an unsafe cast, but the logic below must be robust enough
-    // to handle a List<dynamic> where items are not yet of type V.
-    final list = List.from(inputValue);
+    // Direct access to inputValue - no need for List.from() since we already know it's a List
+    final inputList = inputValue;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
-    for (var i = 0; i < list.length; i++) {
-      final itemValue = list[i];
+    for (var i = 0; i < inputList.length; i++) {
+      final itemValue = inputList[i];
       final itemContext = SchemaContext(
         name: '${context.name}[$i]',
         schema: itemSchema,

@@ -9,7 +9,7 @@ void main() {
   group('Description Generation Tests', () {
     test('generates class-level descriptions in schema comments', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -38,7 +38,7 @@ class User {
 
     test('generates field-level descriptions when @AckField is used', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -74,7 +74,7 @@ class User {
 
     test('works with both class and field descriptions', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -121,7 +121,7 @@ class Product {
 
     test('handles missing descriptions gracefully', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
@@ -141,8 +141,10 @@ class SimpleModel {
           'test_pkg|lib/test.g.dart': decodedMatches(allOf([
             contains('Generated schema for SimpleModel'),
             // Should have the standard generated comment but no additional description
-            isNot(contains('/// A')), // No additional description starting with "/// A"
-            isNot(contains('/// This')), // No additional description starting with "/// This"
+            isNot(contains(
+                '/// A')), // No additional description starting with "/// A"
+            isNot(contains(
+                '/// This')), // No additional description starting with "/// This"
             contains('final simpleModelSchema = Ack.object({'),
           ])),
         },
@@ -151,7 +153,7 @@ class SimpleModel {
 
     test('extracts descriptions with special characters correctly', () async {
       final builder = ackGenerator(BuilderOptions.empty);
-      
+
       await testBuilder(
         builder,
         {
