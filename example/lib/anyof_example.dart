@@ -28,8 +28,8 @@ class NumericUserId extends UserId {
 )
 class ApiResponse {
   final String status;
-  final ResponseData data;  // This would be the AnyOf field
-  
+  final ResponseData data; // This would be the AnyOf field
+
   ApiResponse({
     required this.status,
     required this.data,
@@ -53,7 +53,7 @@ class UserResponse extends ResponseData {
   final String id;
   final String name;
   final String email;
-  
+
   const UserResponse({
     required this.id,
     required this.name,
@@ -66,7 +66,7 @@ class ErrorResponse extends ResponseData {
   final String code;
   final String message;
   final Map<String, dynamic>? details;
-  
+
   const ErrorResponse({
     required this.code,
     required this.message,
@@ -79,7 +79,7 @@ class ListResponse extends ResponseData {
   final List<String> items;
   final int total;
   final int page;
-  
+
   const ListResponse({
     required this.items,
     required this.total,
@@ -94,8 +94,8 @@ class ListResponse extends ResponseData {
 )
 class Setting {
   final String key;
-  final SettingValue value;  // AnyOf: string, number, boolean, object
-  
+  final SettingValue value; // AnyOf: string, number, boolean, object
+
   Setting({
     required this.key,
     required this.value,
@@ -109,7 +109,7 @@ sealed class SettingValue {
 // Temporary schema for SettingValue (until sealed class support is added)
 final settingValueSchema = Ack.anyOf([
   Ack.string(), // StringSetting
-  Ack.double(), // NumberSetting  
+  Ack.double(), // NumberSetting
   Ack.boolean(), // BooleanSetting
   Ack.object({}, additionalProperties: true), // ObjectSetting
 ]);
@@ -145,7 +145,7 @@ void main() {
   ]);
 
   print('1️⃣ Simple UserId AnyOf:');
-  
+
   // Valid string ID
   try {
     final stringId = userIdSchema.parse('user_123');
@@ -171,7 +171,7 @@ void main() {
 
   // Example 2: Complex nested AnyOf
   print('\n2️⃣ API Response with AnyOf data:');
-  
+
   // For now, we'd need to manually create the schema
   // In the future, the generator could do this automatically
   final responseDataSchema = Ack.anyOf([
@@ -183,7 +183,8 @@ void main() {
     Ack.object({
       'code': Ack.string(),
       'message': Ack.string(),
-      'details': Ack.object({}, additionalProperties: true).optional().nullable(),
+      'details':
+          Ack.object({}, additionalProperties: true).optional().nullable(),
     }),
     Ack.object({
       'items': Ack.list(Ack.string()),
@@ -228,7 +229,8 @@ void main() {
   for (final response in [successResponse, errorResponse, listResponse]) {
     try {
       final result = apiResponseSchema.parse(response);
-      print('   ✅ Valid response: ${response['status']} - ${(result as Map<String, dynamic>)['data']}');
+      print(
+          '   ✅ Valid response: ${response['status']} - ${(result as Map<String, dynamic>)['data']}');
     } catch (e) {
       print('   ❌ Invalid response: $e');
     }
@@ -239,7 +241,7 @@ void main() {
   print('   2. Generate AnyOf schema with each subclass schema');
   print('   3. In createFromMap, use discriminator or type checking');
   print('   4. Return appropriate subclass instance');
-  
+
   print('\n🚀 Proposed annotation:');
   print('   @AnyOf() on sealed class fields');
   print('   @Discriminator("type") for explicit discriminator fields');

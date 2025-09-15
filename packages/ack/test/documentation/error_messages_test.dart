@@ -53,7 +53,8 @@ void main() {
         expect(ErrorMessages.invalidEmail, equals('Invalid email format'));
         expect(ErrorMessages.invalidUrl, equals('Invalid URL format'));
         expect(ErrorMessages.invalidUuid, equals('Invalid UUID format'));
-        expect(ErrorMessages.invalidDatetime, equals('Invalid datetime format'));
+        expect(
+            ErrorMessages.invalidDatetime, equals('Invalid datetime format'));
         expect(ErrorMessages.invalidIp, equals('Invalid IP address format'));
       });
 
@@ -71,7 +72,7 @@ void main() {
         expect(ErrorMessages.min(18), equals('Number must be at least 18'));
         expect(ErrorMessages.max(100), equals('Number must be at most 100'));
         expect(ErrorMessages.max(1), equals('Number must be at most 1'));
-        
+
         expect(
           ErrorMessages.greaterThan(0),
           equals('Number must be greater than 0'),
@@ -86,7 +87,8 @@ void main() {
         expect(ErrorMessages.mustBePositive, equals('Number must be positive'));
         expect(ErrorMessages.mustBeNegative, equals('Number must be negative'));
         expect(ErrorMessages.mustBeFinite, equals('Number must be finite'));
-        expect(ErrorMessages.mustBeInteger, equals('Number must be an integer'));
+        expect(
+            ErrorMessages.mustBeInteger, equals('Number must be an integer'));
       });
 
       test('should format multiple constraint messages correctly', () {
@@ -151,7 +153,8 @@ void main() {
         );
         expect(
           ErrorMessages.invalidDiscriminator('unknown', ['a', 'b', 'c']),
-          equals('Invalid discriminator value "unknown". Expected one of: a, b, c'),
+          equals(
+              'Invalid discriminator value "unknown". Expected one of: a, b, c'),
         );
       });
     });
@@ -225,7 +228,8 @@ void main() {
         );
         expect(
           ErrorMessages.formatMultipleErrors(['Error 1', 'Error 2', 'Error 3']),
-          equals('Multiple validation errors:\n1. Error 1\n2. Error 2\n3. Error 3'),
+          equals(
+              'Multiple validation errors:\n1. Error 1\n2. Error 2\n3. Error 3'),
         );
       });
 

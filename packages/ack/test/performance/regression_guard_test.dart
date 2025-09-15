@@ -4,14 +4,11 @@ import 'package:test/test.dart';
 void main() {
   group('Performance Regression Guards', () {
     test('string validation with multiple constraints should remain fast', () {
-      final schema = Ack.string()
-          .minLength(5)
-          .maxLength(50)
-          .email()
-          .endsWith('.com');
+      final schema =
+          Ack.string().minLength(5).maxLength(50).email().endsWith('.com');
 
       const testEmail = 'test.user@example.com';
-      
+
       // Warm up
       for (int i = 0; i < 100; i++) {
         schema.tryParse(testEmail);
@@ -19,15 +16,15 @@ void main() {
 
       final stopwatch = Stopwatch()..start();
       const iterations = 10000;
-      
+
       for (int i = 0; i < iterations; i++) {
         schema.tryParse(testEmail);
       }
-      
+
       stopwatch.stop();
-      
+
       final avgMicroseconds = stopwatch.elapsedMicroseconds / iterations;
-      
+
       // Multiple string constraints should still be fast
       expect(avgMicroseconds, lessThan(10));
     });
@@ -55,21 +52,25 @@ void main() {
 
       final testData = [
         {'type': 'user', 'name': 'John', 'age': 30},
-        {'type': 'admin', 'name': 'Jane', 'permissions': ['read', 'write']},
+        {
+          'type': 'admin',
+          'name': 'Jane',
+          'permissions': ['read', 'write']
+        },
         {'type': 'guest', 'sessionId': 'abc123'},
       ];
 
       final stopwatch = Stopwatch()..start();
       const iterations = 5000;
-      
+
       for (int i = 0; i < iterations; i++) {
         schema.parse(testData[i % 3]);
       }
-      
+
       stopwatch.stop();
-      
+
       final avgMicroseconds = stopwatch.elapsedMicroseconds / iterations;
-      
+
       // Discriminated unions should dispatch quickly
       expect(avgMicroseconds, lessThan(20));
     });
@@ -85,24 +86,24 @@ void main() {
       });
 
       final testData = {'x': 10, 'y': 20};
-      
+
       // Measure base schema
       final baseStopwatch = Stopwatch()..start();
       for (int i = 0; i < 10000; i++) {
         baseSchema.parse(testData);
       }
       baseStopwatch.stop();
-      
+
       // Measure transformed schema
       final transformStopwatch = Stopwatch()..start();
       for (int i = 0; i < 10000; i++) {
         transformedSchema.parse(testData);
       }
       transformStopwatch.stop();
-      
-      final overhead = transformStopwatch.elapsedMicroseconds / 
-                       baseStopwatch.elapsedMicroseconds;
-      
+
+      final overhead = transformStopwatch.elapsedMicroseconds /
+          baseStopwatch.elapsedMicroseconds;
+
       // Transform should add less than 50% overhead
       expect(overhead, lessThan(1.5));
     });

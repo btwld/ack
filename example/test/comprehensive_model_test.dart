@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/product_model.dart';
-import 'package:ack_example/simple_examples.dart' as simple;
-import 'package:ack_example/status_model.dart';
+import 'package:ack_example/simple_examples.g.dart' as simple_gen;
+import 'package:ack_example/status_model.g.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -16,8 +16,9 @@ void main() {
           'theme': 'dark',
           'language': 'en',
         };
-        
-        final user = simple.userSchema.parse(userData) as Map<String, dynamic>;
+
+        final user =
+            simple_gen.userSchema.parse(userData) as Map<String, dynamic>;
         expect(user['id'], equals('user_1'));
         expect(user['preferences']['theme'], equals('dark'));
       });
@@ -27,15 +28,16 @@ void main() {
         final validData = {
           'simpleStatus': 'active',
         };
-        
-        final result = statusModelSchema.parse(validData) as Map<String, dynamic>;
+
+        final result =
+            statusModelSchema.parse(validData) as Map<String, dynamic>;
         expect(result['simpleStatus'], equals('active'));
-        
+
         // Invalid enum value should throw
         final invalidData = {
           'simpleStatus': 'invalid_status',
         };
-        
+
         expect(() => statusModelSchema.parse(invalidData), throwsException);
       });
     });
@@ -43,7 +45,7 @@ void main() {
     group('SchemaModel approach (model: true)', () {
       test('Product with SchemaModel - type safety', () {
         final model = ProductSchemaModel();
-        
+
         final data = {
           'id': 'prod_123',
           'name': 'Laptop Pro',
@@ -61,10 +63,10 @@ void main() {
           'warranty': '2 years',
           'manufacturer': 'TechCorp',
         };
-        
+
         final result = model.parse(data);
         expect(result.isOk, isTrue);
-        
+
         final product = model.value!;
         // Type-safe access
         expect(product.id, equals('prod_123'));
@@ -76,7 +78,7 @@ void main() {
 
       test('Category with SchemaModel - nested usage', () {
         final model = CategorySchemaModel();
-        
+
         final data = {
           'id': 'cat_books',
           'name': 'Books',
@@ -84,10 +86,10 @@ void main() {
           'parentCategory': 'media',
           'sortOrder': 1,
         };
-        
+
         final result = model.parse(data);
         expect(result.isOk, isTrue);
-        
+
         final category = model.value!;
         expect(category.id, equals('cat_books'));
         expect(category.metadata['parentCategory'], equals('media'));
@@ -110,13 +112,14 @@ void main() {
           'status': 'draft',
           'productCode': 'TST-001',
         });
-        
+
         expect(schemaResult, isA<Map<String, dynamic>>());
-        
+
         // SchemaModel approach for type-safe object creation
         final model = ProductSchemaModel();
-        final modelResult = model.parseJson('{"id":"test_2","name":"Another Test","description":"Type safe test","price":149.99,"category":{"id":"cat_2","name":"Test2"},"releaseDate":"2024-01-01","createdAt":"2024-01-01T00:00:00Z","stockQuantity":5,"status":"published","productCode":"TST-002"}');
-        
+        final modelResult = model.parseJson(
+            '{"id":"test_2","name":"Another Test","description":"Type safe test","price":149.99,"category":{"id":"cat_2","name":"Test2"},"releaseDate":"2024-01-01","createdAt":"2024-01-01T00:00:00Z","stockQuantity":5,"status":"published","productCode":"TST-002"}');
+
         expect(modelResult.isOk, isTrue);
         expect(model.value, isA<Product>());
       });
@@ -125,13 +128,13 @@ void main() {
     group('Validation edge cases', () {
       test('enum validation with ProductStatus', () {
         final validStatuses = ['draft', 'published', 'archived'];
-        
+
         for (final status in validStatuses) {
           final data = _createProductData(status: status);
           final result = productSchema.parse(data);
           expect(result, isA<Map<String, dynamic>>());
         }
-        
+
         // Invalid status should fail
         expect(
           () => productSchema.parse(_createProductData(status: 'invalid')),
@@ -141,17 +144,17 @@ void main() {
 
       test('additional properties handling', () {
         final model = ProductSchemaModel();
-        
+
         final dataWithExtras = _createProductData()
           ..addAll({
             'customField1': 'value1',
             'customField2': 123,
             'customField3': {'nested': 'data'},
           });
-        
+
         final result = model.parse(dataWithExtras);
         expect(result.isOk, isTrue);
-        
+
         final product = model.value!;
         expect(product.metadata['customField1'], equals('value1'));
         expect(product.metadata['customField2'], equals(123));
@@ -171,13 +174,13 @@ void main() {
           'status': 'draft',
           'productCode': 'MIN-001',
         };
-        
+
         // Both approaches should handle nullable fields
         final schemaResult = productSchema.parse(minimalData);
         expect(schemaResult!['contactEmail'], isNull);
         expect(schemaResult['imageUrl'], isNull);
         expect(schemaResult['updatedAt'], isNull);
-        
+
         final model = ProductSchemaModel();
         final modelResult = model.parse(minimalData);
         expect(modelResult.isOk, isTrue);
@@ -199,22 +202,25 @@ void main() {
             Ack.boolean(),
           ]),
         });
-        
+
         // Test with string value
         final stringResult = flexibleSchema.parse({'id': '1', 'value': 'text'});
         expect(stringResult, isA<Map<String, dynamic>>());
-        
+
         // Test with number value
         final numberResult = flexibleSchema.parse({'id': '2', 'value': 42});
         expect(numberResult, isA<Map<String, dynamic>>());
-        
+
         // Test with boolean value
         final boolResult = flexibleSchema.parse({'id': '3', 'value': true});
         expect(boolResult, isA<Map<String, dynamic>>());
-        
+
         // Test with invalid value
         expect(
-          () => flexibleSchema.parse({'id': '4', 'value': ['array']}),
+          () => flexibleSchema.parse({
+            'id': '4',
+            'value': ['array']
+          }),
           throwsException,
         );
       });

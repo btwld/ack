@@ -13,38 +13,38 @@ part 'product_model.g.dart';
 class Product {
   @MinLength(1)
   final String id;
-  
+
   @MinLength(3)
   final String name;
-  
+
   final String description;
-  
+
   @Min(0.01)
   final double price;
-  
+
   @Email()
   final String? contactEmail;
-  
+
   @Url()
   final String? imageUrl;
-  
+
   final Category category;
-  
+
   final String releaseDate;
-  
+
   final String createdAt;
-  
+
   final String? updatedAt;
-  
+
   @Positive()
   final int stockQuantity;
-  
+
   @EnumString(['draft', 'published', 'archived'])
   final String status;
-  
+
   @Pattern(r'^[A-Z]{2,3}-\d{4}$')
   final String productCode;
-  
+
   final Map<String, dynamic> metadata;
 
   Product({
@@ -115,7 +115,8 @@ void main() {
     print('\n✅ Schema variable parsing successful!');
     print('   Product ID: ${result['id']}');
     print('   Product Name: ${result['name']}');
-    print('   Category: ${(result['category'] as Map<String, dynamic>)['name']}');
+    print(
+        '   Category: ${(result['category'] as Map<String, dynamic>)['name']}');
   } catch (e) {
     print('❌ Schema variable error: $e');
   }
@@ -124,7 +125,7 @@ void main() {
   try {
     final productModel = ProductSchemaModel();
     final parseResult = productModel.parse(productData);
-    
+
     if (parseResult.isOk) {
       final product = productModel.value!;
       print('\n✅ SchemaModel parsing successful!');

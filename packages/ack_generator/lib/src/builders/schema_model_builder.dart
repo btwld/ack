@@ -32,10 +32,10 @@ class SchemaModelBuilder {
   /// Builds the private constructor
   Constructor _buildPrivateConstructor(ModelInfo modelInfo) {
     // Determine the specific schema type based on whether this is a discriminated base class
-    final schemaType = modelInfo.isDiscriminatedBase 
-        ? 'DiscriminatedObjectSchema' 
+    final schemaType = modelInfo.isDiscriminatedBase
+        ? 'DiscriminatedObjectSchema'
         : 'ObjectSchema';
-    
+
     return Constructor((b) => b
       ..name = '_internal'
       ..requiredParameters.add(Parameter((p) => p
@@ -47,19 +47,20 @@ class SchemaModelBuilder {
   /// Builds the default factory constructor
   Constructor _buildDefaultFactoryConstructor(ModelInfo modelInfo) {
     final schemaVarName = _toCamelCase(modelInfo.schemaClassName);
-    
+
     return Constructor((b) => b
       ..factory = true
-      ..body = Code('return ${modelInfo.className}SchemaModel._internal($schemaVarName);'));
+      ..body = Code(
+          'return ${modelInfo.className}SchemaModel._internal($schemaVarName);'));
   }
 
   /// Builds the private schema constructor for fluent methods
   Constructor _buildPrivateSchemaConstructor(ModelInfo modelInfo) {
     // Determine the specific schema type based on whether this is a discriminated base class
-    final schemaType = modelInfo.isDiscriminatedBase 
-        ? 'DiscriminatedObjectSchema' 
+    final schemaType = modelInfo.isDiscriminatedBase
+        ? 'DiscriminatedObjectSchema'
         : 'ObjectSchema';
-    
+
     return Constructor((b) => b
       ..name = '_withSchema'
       ..requiredParameters.add(Parameter((p) => p
@@ -68,14 +69,13 @@ class SchemaModelBuilder {
       ..initializers.add(Code('schema = customSchema')));
   }
 
-
   /// Builds the schema field
   Field _buildSchemaField(ModelInfo modelInfo) {
     // Determine the specific schema type based on whether this is a discriminated base class
-    final schemaType = modelInfo.isDiscriminatedBase 
-        ? 'DiscriminatedObjectSchema' 
+    final schemaType = modelInfo.isDiscriminatedBase
+        ? 'DiscriminatedObjectSchema'
         : 'ObjectSchema';
-    
+
     return Field((b) => b
       ..name = 'schema'
       ..modifier = FieldModifier.final$
@@ -220,7 +220,7 @@ class SchemaModelBuilder {
   /// Generates mapping for nested schema fields
   String _generateNestedSchemaMapping(FieldInfo field, String mapKey) {
     final typeName = field.type.getDisplayString().replaceAll('?', '');
-    
+
     // Check if this is a field that uses AnyOfSchema (sealed class types)
     // For now, we'll detect common AnyOf patterns and handle them differently
     if (typeName == 'ResponseData' || typeName == 'SettingValue') {
@@ -312,8 +312,7 @@ class SchemaModelBuilder {
         ..requiredParameters.add(Parameter((p) => p
           ..name = 'description'
           ..type = refer('String')))
-        ..docs.add(
-            '/// Returns a new schema with the specified description.')
+        ..docs.add('/// Returns a new schema with the specified description.')
         ..body = Code('''
 final newSchema = schema.copyWith(description: description);
 return $className._withSchema(newSchema);
@@ -325,8 +324,7 @@ return $className._withSchema(newSchema);
         ..requiredParameters.add(Parameter((p) => p
           ..name = 'defaultValue'
           ..type = refer('Map<String, dynamic>')))
-        ..docs.add(
-            '/// Returns a new schema with the specified default value.')
+        ..docs.add('/// Returns a new schema with the specified default value.')
         ..body = Code('''
 final newSchema = schema.copyWith(defaultValue: defaultValue);
 return $className._withSchema(newSchema);

@@ -69,8 +69,8 @@ class Dog extends Animal {
               contains('class AnimalSchemaModel extends SchemaModel<Animal>'),
               contains('final type = map[\'type\'] as String;'),
               contains('return switch (type) {'),
-              contains("'cat' => CatSchemaModel._instance.createFromMap(map)"),
-              contains("'dog' => DogSchemaModel._instance.createFromMap(map)"),
+              contains("'cat' => CatSchemaModel().createFromMap(map)"),
+              contains("'dog' => DogSchemaModel().createFromMap(map)"),
               contains('_ => throw ArgumentError('),
               contains(
                   "'Unknown type: \$type. Valid values: \\'cat\\', \\'dog\\'"),
@@ -245,16 +245,16 @@ class Customer extends Person {
               contains('class PersonSchemaModel extends SchemaModel<Person>'),
               contains("final personType = map['personType'] as String;"),
               contains(
-                  "'employee' => EmployeeSchemaModel._instance.createFromMap(map)"),
+                  "'employee' => EmployeeSchemaModel().createFromMap(map)"),
               contains(
-                  "'customer' => CustomerSchemaModel._instance.createFromMap(map)"),
+                  "'customer' => CustomerSchemaModel().createFromMap(map)"),
 
               // Employee createFromMap with nested model
               contains(
                   'class EmployeeSchemaModel extends SchemaModel<Employee>'),
               contains('return Employee('),
               contains('name: map[\'name\'] as String'),
-              contains('address: AddressSchemaModel._instance.createFromMap('),
+              contains('address: AddressSchemaModel().createFromMap('),
               contains('employeeId: map[\'employeeId\'] as String'),
               contains('salary: map[\'salary\'] as double'),
 

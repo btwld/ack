@@ -60,6 +60,23 @@ void main() {
         expect(error.constraints.first.message,
             'Too short. Minimum 10 characters, got 5.');
       });
+
+      test('nullable schema default should honor constraints', () {
+        final schema = Ack.string()
+            .nullable()
+            .minLength(5)
+            .withDefault('oops');
+
+        final result = schema.validate(null);
+
+        expect(result.isOk, isFalse);
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(
+          (error as SchemaConstraintsError).constraints.first.message,
+          contains('Minimum 5 characters'),
+        );
+      });
     });
 
     group('Type Conversion', () {
@@ -92,6 +109,17 @@ void main() {
         expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
         expect(error.constraints.first.message,
             'Invalid type. Expected bool, but got int.');
+      });
+    });
+
+    group('ListSchema', () {
+      test('should fail when nullable item resolves to null', () {
+        final schema = Ack.list(Ack.string().nullable());
+
+        final result = schema.validate(['valid', null, 'also valid']);
+
+        expect(result.isOk, isFalse);
+        expect(result.getError(), isA<SchemaNestedError>());
       });
     });
   });

@@ -58,8 +58,11 @@ class ModelClass {
               contains(
                   'class ModelClassSchemaModel extends SchemaModel<ModelClass>'));
           expect(result, contains('factory ModelClassSchemaModel()'));
-          expect(result, contains('static final _instance'));
-          expect(result, contains('ObjectSchema get schema'));
+          expect(
+              result,
+              contains(
+                  'ModelClassSchemaModel._internal(ObjectSchema this.schema);'));
+          expect(result, contains('final ObjectSchema schema;'));
           expect(result,
               contains('ModelClass createFromMap(Map<String, dynamic> map)'));
 
@@ -196,8 +199,7 @@ class Person {
                   "'billingAddress': addressSchema.optional().nullable()"));
 
           // createFromMap should use nested SchemaModel
-          expect(
-              result, contains('AddressSchemaModel._instance.createFromMap('));
+          expect(result, contains('AddressSchemaModel().createFromMap('));
           expect(result, contains('map[\'address\'] as Map<String, dynamic>'));
         });
       });
@@ -230,7 +232,7 @@ class Order {
 
           // createFromMap should handle list of nested models
           expect(result, contains('(map[\'items\'] as List)'));
-          expect(result, contains('ItemSchemaModel._instance.createFromMap'));
+          expect(result, contains('ItemSchemaModel().createFromMap'));
         });
       });
     });
@@ -287,7 +289,8 @@ class User {
           expect(result, contains('final customUserSchema = Ack.object({'));
 
           // SchemaModel should reference custom schema
-          expect(result, contains('return customUserSchema;'));
+          expect(
+              result, contains('UserSchemaModel._internal(customUserSchema);'));
         });
       });
 
@@ -411,14 +414,16 @@ class ThreadSafeModel {
 ''';
 
         await expectGeneratedOutput(source, (result) {
-          // Should use proper singleton pattern
-          expect(result, contains('ThreadSafeModelSchemaModel._();'));
+          // Should use proper factory pattern
+          expect(
+              result,
+              contains(
+                  'ThreadSafeModelSchemaModel._internal(ObjectSchema this.schema);'));
           expect(result, contains('factory ThreadSafeModelSchemaModel()'));
           expect(
               result,
               contains(
-                  'static final _instance = ThreadSafeModelSchemaModel._();'));
-          expect(result, contains('return _instance;'));
+                  'return ThreadSafeModelSchemaModel._internal(threadSafeModelSchema);'));
         });
       });
 
@@ -468,7 +473,7 @@ class MySpecialModel {
           expect(result, contains('class MySpecialModelSchemaModel'));
 
           // Method names should be camelCase
-          expect(result, contains('get schema'));
+          expect(result, contains('final ObjectSchema schema;'));
           expect(result, contains('createFromMap('));
         });
       });

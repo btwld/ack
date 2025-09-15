@@ -4,11 +4,12 @@ import 'package:test/test.dart';
 
 void main() {
   group('Model Flag Generation Integration', () {
-    test('should have generated both schema variable and SchemaModel class', () {
+    test('should have generated both schema variable and SchemaModel class',
+        () {
       // Test that productSchema variable exists and is accessible
       expect(productSchema, isNotNull);
       expect(productSchema.toJsonSchema()['type'], equals('object'));
-      
+
       // Test that ProductSchemaModel class exists and is accessible
       final model = ProductSchemaModel();
       expect(model, isNotNull);
@@ -17,7 +18,7 @@ void main() {
 
     test('SchemaModel should use the generated schema internally', () {
       final model = ProductSchemaModel();
-      
+
       // The buildSchema method should return the productSchema variable
       // We can't directly test this due to protected access, but we can verify
       // both produce the same JSON schema
@@ -43,15 +44,16 @@ void main() {
       };
 
       // Test schema variable approach
-      final schemaResult = productSchema.parse(testData) as Map<String, dynamic>;
+      final schemaResult =
+          productSchema.parse(testData) as Map<String, dynamic>;
       expect(schemaResult['id'], equals('test-123'));
       expect(schemaResult['name'], equals('Test Product'));
-      
+
       // Test SchemaModel approach
       final model = ProductSchemaModel();
       final modelResult = model.parse(testData);
       expect(modelResult.isOk, isTrue);
-      
+
       final product = model.value!;
       expect(product.id, equals('test-123'));
       expect(product.name, equals('Test Product'));
@@ -67,7 +69,7 @@ void main() {
 
       // Schema variable should throw
       expect(() => productSchema.parse(invalidData), throwsException);
-      
+
       // SchemaModel should return error result
       final model = ProductSchemaModel();
       final result = model.parse(invalidData);
@@ -76,17 +78,17 @@ void main() {
 
     test('nested CategorySchemaModel should work correctly', () {
       final categoryModel = CategorySchemaModel();
-      
+
       final categoryData = {
         'id': 'cat-123',
         'name': 'Electronics',
         'description': 'Electronic products',
         'customField': 'extra data',
       };
-      
+
       final result = categoryModel.parse(categoryData);
       expect(result.isOk, isTrue);
-      
+
       final category = categoryModel.value!;
       expect(category.id, equals('cat-123'));
       expect(category.name, equals('Electronics'));
@@ -96,7 +98,7 @@ void main() {
 
     test('should demonstrate type safety advantage of SchemaModel', () {
       final model = ProductSchemaModel();
-      
+
       model.parse({
         'id': '123',
         'name': 'Type Safe Product',
@@ -109,7 +111,7 @@ void main() {
         'status': 'published',
         'productCode': 'TST-0001',
       });
-      
+
       // Direct typed access without casting
       final product = model.value;
       if (product != null) {
@@ -119,7 +121,7 @@ void main() {
         double price = product.price;
         Category category = product.category;
         int stock = product.stockQuantity;
-        
+
         expect(id, isA<String>());
         expect(name, isA<String>());
         expect(price, isA<double>());

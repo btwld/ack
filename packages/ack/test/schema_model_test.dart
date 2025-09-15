@@ -10,20 +10,23 @@ class TestUser {
   TestUser({required this.id, required this.name, this.age});
 }
 
+// Test schema definition
+final testUserSchema = Ack.object({
+  'id': Ack.string().minLength(1),
+  'name': Ack.string().minLength(2),
+  'age': Ack.integer().positive().optional().nullable(),
+});
+
 // Test SchemaModel implementation
 class TestUserSchemaModel extends SchemaModel<TestUser> {
-  TestUserSchemaModel._();
+  TestUserSchemaModel._internal(this.schema);
 
-  factory TestUserSchemaModel() => _instance;
-
-  static final _instance = TestUserSchemaModel._();
+  factory TestUserSchemaModel() {
+    return TestUserSchemaModel._internal(testUserSchema);
+  }
 
   @override
-  ObjectSchema get schema => Ack.object({
-    'id': Ack.string().minLength(1),
-    'name': Ack.string().minLength(2),
-    'age': Ack.integer().positive().optional().nullable(),
-  });
+  final ObjectSchema schema;
 
   @override
   TestUser createFromMap(Map<String, dynamic> map) {
@@ -52,8 +55,8 @@ class FlexibleDataSchemaModel extends SchemaModel<FlexibleData> {
 
   @override
   ObjectSchema get schema => Ack.object({
-    'id': Ack.string(),
-  }, additionalProperties: true);
+        'id': Ack.string(),
+      }, additionalProperties: true);
 
   @override
   FlexibleData createFromMap(Map<String, dynamic> map) {
@@ -74,7 +77,8 @@ void main() {
     });
 
     group('Value Access', () {
-      test('should throw StateError when accessing value before validation', () {
+      test('should throw StateError when accessing value before validation',
+          () {
         expect(
           () => userModel.value,
           throwsA(isA<StateError>().having(
@@ -104,11 +108,11 @@ void main() {
       test('should reset value access after clear()', () {
         final data = {'id': '123', 'name': 'John'};
         userModel.parse(data);
-        
+
         expect(userModel.value, isNotNull);
-        
+
         userModel.clear();
-        
+
         expect(
           () => userModel.value,
           throwsA(isA<StateError>()),
@@ -192,7 +196,7 @@ void main() {
 
         expect(jsonSchema['type'], equals('object'));
         expect(jsonSchema['properties'], isA<Map>());
-        
+
         final properties = jsonSchema['properties'] as Map;
         expect(properties.containsKey('id'), isTrue);
         expect(properties.containsKey('name'), isTrue);
@@ -220,14 +224,16 @@ void main() {
         };
 
         final result = model.parse(data);
-        
+
         expect(result.isOk, isTrue);
         expect(model.value?.id, equals('test-123'));
-        expect(model.value?.metadata, equals({
-          'extra1': 'value1',
-          'extra2': 42,
-          'extra3': true,
-        }));
+        expect(
+            model.value?.metadata,
+            equals({
+              'extra1': 'value1',
+              'extra2': 42,
+              'extra3': true,
+            }));
       });
 
       test('extractAdditionalProperties should handle empty map', () {
@@ -235,26 +241,9 @@ void main() {
         final data = {'id': 'minimal'};
 
         final result = model.parse(data);
-        
+
         expect(result.isOk, isTrue);
         expect(model.value?.metadata, isEmpty);
-      });
-    });
-
-    group('Singleton Pattern', () {
-      test('should return same instance from factory', () {
-        final instance1 = TestUserSchemaModel();
-        final instance2 = TestUserSchemaModel();
-
-        expect(identical(instance1, instance2), isTrue);
-      });
-
-      test('singleton should maintain state across calls', () {
-        final instance1 = TestUserSchemaModel();
-        instance1.parse({'id': '123', 'name': 'Test'});
-
-        final instance2 = TestUserSchemaModel();
-        expect(instance2.value?.id, equals('123'));
       });
     });
 
@@ -290,7 +279,7 @@ void main() {
 
       test('should provide typed access to parsed values', () {
         userModel.parse({'id': '123', 'name': 'Type Safe'});
-        
+
         // These should compile without casting
         final TestUser? user = userModel.value;
         expect(user?.id, isA<String>());

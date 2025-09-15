@@ -64,7 +64,7 @@ class Product {
         expect(result,
             contains('class ProductSchemaModel extends SchemaModel<Product>'));
         expect(result, contains('factory ProductSchemaModel()'));
-        expect(result, contains('ObjectSchema get schema'));
+        expect(result, contains('final ObjectSchema schema;'));
         expect(result, contains('createFromMap(Map<String, dynamic> map)'));
 
         // Should generate as part file
@@ -124,7 +124,7 @@ class MyClass {
         expect(result, contains('final customSchema = Ack.object({'));
 
         // SchemaModel should reference the custom schema variable
-        expect(result, contains('return customSchema;'));
+        expect(result, contains('MyClassSchemaModel._internal(customSchema);'));
       });
     });
 
@@ -160,7 +160,7 @@ class Person {
         expect(result, contains("'address': addressSchema"));
 
         // SchemaModel should handle nested model
-        expect(result, contains('AddressSchemaModel._instance.createFromMap('));
+        expect(result, contains('AddressSchemaModel().createFromMap('));
       });
     });
 

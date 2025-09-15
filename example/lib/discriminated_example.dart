@@ -14,10 +14,10 @@ abstract class Animal {
 class Cat extends Animal {
   @override
   String get type => 'cat';
-  
+
   final bool meow;
   final int lives;
-  
+
   Cat({
     required this.meow,
     this.lives = 9,
@@ -28,10 +28,10 @@ class Cat extends Animal {
 class Dog extends Animal {
   @override
   String get type => 'dog';
-  
+
   final bool bark;
   final String breed;
-  
+
   Dog({
     required this.bark,
     required this.breed,
@@ -42,10 +42,10 @@ class Dog extends Animal {
 class Bird extends Animal {
   @override
   String get type => 'bird';
-  
+
   final bool canFly;
   final double wingspan;
-  
+
   Bird({
     required this.canFly,
     required this.wingspan,
@@ -63,11 +63,11 @@ abstract class Shape {
 class Circle extends Shape {
   @override
   String get kind => 'circle';
-  
+
   final double radius;
-  
+
   Circle({required this.radius});
-  
+
   @override
   double get area => 3.14159 * radius * radius;
 }
@@ -76,15 +76,15 @@ class Circle extends Shape {
 class Rectangle extends Shape {
   @override
   String get kind => 'rectangle';
-  
+
   final double width;
   final double height;
-  
+
   Rectangle({
     required this.width,
     required this.height,
   });
-  
+
   @override
   double get area => width * height;
 }

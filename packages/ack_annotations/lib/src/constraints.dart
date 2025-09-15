@@ -91,4 +91,3 @@ class EnumString {
   final List<String> values;
   const EnumString(this.values);
 }
-

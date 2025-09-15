@@ -31,7 +31,6 @@ import 'validation/schema_result.dart';
 /// }
 /// ```
 abstract class SchemaModel<T extends Object> {
-
   // Value container
   T? _value;
 

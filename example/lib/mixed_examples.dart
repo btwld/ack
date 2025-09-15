@@ -12,7 +12,7 @@ class BasicUser {
   final String id;
   final String username;
   final String? email;
-  
+
   BasicUser({
     required this.id,
     required this.username,
@@ -29,8 +29,8 @@ class EnhancedUser {
   final String id;
   final String username;
   final String email;
-  final String createdAt;  // ISO 8601 date string
-  
+  final String createdAt; // ISO 8601 date string
+
   EnhancedUser({
     required this.id,
     required this.username,
@@ -45,12 +45,12 @@ class EnhancedUser {
 )
 class Order {
   final String id;
-  
+
   @EnumString(['pending', 'processing', 'shipped', 'delivered', 'cancelled'])
   final String status;
-  
+
   final double total;
-  
+
   Order({
     required this.id,
     required this.status,
@@ -70,10 +70,10 @@ class BlogPost {
   final String title;
   final String content;
   final EnhancedUser author;
-  final String publishedAt;  // ISO 8601 date string
+  final String publishedAt; // ISO 8601 date string
   final List<String> tags;
   final Map<String, dynamic> metadata;
-  
+
   BlogPost({
     required this.id,
     required this.title,
@@ -94,19 +94,19 @@ class ProductInventory {
   @MinLength(3)
   @MaxLength(50)
   final String sku;
-  
+
   @Min(0)
   @Max(10000)
   final int quantity;
-  
+
   @Min(0.01)
   final double unitPrice;
-  
+
   @Pattern(r'^\d{4}-\d{2}-\d{2}$')
   final String lastRestocked;
-  
+
   final bool isAvailable;
-  
+
   ProductInventory({
     required this.sku,
     required this.quantity,
@@ -127,7 +127,7 @@ void main() {
     'username': 'johndoe',
     'email': 'john@example.com',
   };
-  
+
   try {
     final result = basicUserSchema.parse(basicUserData) as Map<String, dynamic>;
     print('   ✅ Valid: ${result['username']}');
@@ -143,10 +143,10 @@ void main() {
     'email': 'jane@example.com',
     'createdAt': '2024-01-15T10:30:00Z',
   };
-  
+
   final userModel = EnhancedUserSchemaModel();
   final userResult = userModel.parse(enhancedUserData);
-  
+
   if (userResult.isOk) {
     final user = userModel.value!;
     print('   ✅ Type-safe access:');
@@ -162,7 +162,7 @@ void main() {
     'status': 'shipped',
     'total': 149.99,
   };
-  
+
   try {
     final result = orderSchema.parse(orderData) as Map<String, dynamic>;
     print('   ✅ Valid status: ${result['status']}');
@@ -182,10 +182,10 @@ void main() {
     'viewCount': 1500,
     'featured': true,
   };
-  
+
   final blogModel = BlogPostSchemaModel();
   final blogResult = blogModel.parse(blogData);
-  
+
   if (blogResult.isOk) {
     final post = blogModel.value!;
     print('   ✅ Blog post: ${post.title}');
@@ -197,7 +197,7 @@ void main() {
   // Example 5: Constraints validation
   print('\n5️⃣ Product Inventory (constraints):');
   final inventoryModel = ProductInventorySchemaModel();
-  
+
   // Valid data
   final validInventory = {
     'sku': 'PROD-123',
@@ -206,12 +206,12 @@ void main() {
     'lastRestocked': '2024-01-15',
     'isAvailable': true,
   };
-  
+
   final invResult = inventoryModel.parse(validInventory);
   if (invResult.isOk) {
     print('   ✅ Valid inventory: SKU ${inventoryModel.value!.sku}');
   }
-  
+
   // Invalid data
   final invalidInventory = {
     'sku': 'PR', // Too short
@@ -220,7 +220,7 @@ void main() {
     'lastRestocked': '2024/01/15', // Wrong format
     'isAvailable': true,
   };
-  
+
   final invalidResult = inventoryModel.parse(invalidInventory);
   if (!invalidResult.isOk) {
     print('   ❌ Validation errors detected');

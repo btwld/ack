@@ -35,8 +35,10 @@ void main() {
       expect(result['imageUrl'], isNull);
 
       // Access nested category data
-      expect((result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
-      expect((result['category'] as Map<String, dynamic>)['name'], equals('Test Category'));
+      expect(
+          (result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
+      expect((result['category'] as Map<String, dynamic>)['name'],
+          equals('Test Category'));
 
       // Verify other fields
       expect(result['id'], equals('123'));
@@ -49,8 +51,10 @@ void main() {
       expect(result['stockQuantity'], equals(100));
       expect(result['status'], equals('published'));
       expect(result['productCode'], equals('ABC-1234'));
-      expect((result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
-      expect((result['category'] as Map<String, dynamic>)['name'], equals('Test Category'));
+      expect(
+          (result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
+      expect((result['category'] as Map<String, dynamic>)['name'],
+          equals('Test Category'));
     });
 
     test('should reject invalid product data', () {

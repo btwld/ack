@@ -43,16 +43,14 @@ class User {
               contains('/// User model with SchemaModel'),
               contains('class UserSchemaModel extends SchemaModel<User>'),
 
-              // Singleton pattern
-              contains('UserSchemaModel._();'),
+              // Factory pattern
+              contains('UserSchemaModel._internal(ObjectSchema this.schema);'),
               contains('factory UserSchemaModel() {'),
-              contains('return _instance;'),
-              contains('static final _instance = UserSchemaModel._();'),
+              contains('return UserSchemaModel._internal(userSchema);'),
 
               // schema property
               contains('@override'),
-              contains('ObjectSchema get schema {'),
-              contains('return userSchema;'),
+              contains('final ObjectSchema schema;'),
 
               // createFromMap method
               contains('@override'),
@@ -112,7 +110,8 @@ class OptionalFieldsModel {
               contains('required: map[\'required\'] as String,'),
               contains('nullable: map[\'nullable\'] as String?,'),
               contains('nullableInt: map[\'nullableInt\'] as int?,'),
-              contains('nullableList: (map[\'nullableList\'] as List?)?.cast<String>(),'),
+              contains(
+                  'nullableList: (map[\'nullableList\'] as List?)?.cast<String>(),'),
               contains('defaulted: map[\'defaulted\'] as bool,'),
             ])),
           },
@@ -177,11 +176,10 @@ class Company {
               contains('class CompanySchemaModel extends SchemaModel<Company>'),
               contains('return Company('),
               contains('name: map[\'name\'] as String,'),
-              contains(
-                  'headquarters: AddressSchemaModel._instance.createFromMap('),
+              contains('headquarters: AddressSchemaModel().createFromMap('),
               contains('map[\'headquarters\'] as Map<String, dynamic>'),
               contains('offices: (map[\'offices\'] as List)'),
-              contains('AddressSchemaModel._instance.createFromMap('),
+              contains('AddressSchemaModel().createFromMap('),
             ])),
           },
         );
@@ -290,7 +288,8 @@ class CollectionsModel {
               contains('tags: (map[\'tags\'] as List).cast<String>(),'),
               contains('ids: (map[\'ids\'] as List).cast<int>().toSet(),'),
               contains('metadata: map[\'metadata\'] as Map<String, String>,'),
-              contains('optionalTags: (map[\'optionalTags\'] as List?)?.cast<String>(),'),
+              contains(
+                  'optionalTags: (map[\'optionalTags\'] as List?)?.cast<String>(),'),
               contains(
                   'optionalScores: (map[\'optionalScores\'] as List?)?.cast<double>().toSet(),'),
               contains(
@@ -410,8 +409,8 @@ class Company {
               contains("'employees': Ack.list(employeeSchema)"),
 
               // SchemaModels reference each other correctly
-              contains('DepartmentSchemaModel._instance.createFromMap('),
-              contains('EmployeeSchemaModel._instance.createFromMap('),
+              contains('DepartmentSchemaModel().createFromMap('),
+              contains('EmployeeSchemaModel().createFromMap('),
             ])),
           },
         );
@@ -510,8 +509,9 @@ class Organization {
               contains("'members': Ack.list(personSchema)"),
 
               // SchemaModel schema property returns custom schema
-              contains('return personValidationSchema;'),
-              contains('return organizationValidationSchema;'),
+              contains('PersonSchemaModel._internal(personValidationSchema);'),
+              contains(
+                  'OrganizationSchemaModel._internal(organizationValidationSchema);'),
             ])),
           },
         );

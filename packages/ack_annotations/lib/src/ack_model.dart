@@ -71,7 +71,7 @@ class AckModel {
   /// The name of the field that should store additional properties
   /// Must be a `Map<String, dynamic>` field in your class
   final String? additionalPropertiesField;
-  
+
   /// Whether to generate a SchemaModel class in addition to the schema variable
   /// When true, generates both:
   /// - Schema variable (e.g., productSchema)
@@ -99,7 +99,7 @@ class AckModel {
     this.discriminatedKey,
     this.discriminatedValue,
   }) : assert(
-         discriminatedKey == null || discriminatedValue == null,
-         'discriminatedKey and discriminatedValue cannot be used together',
-       );
+          discriminatedKey == null || discriminatedValue == null,
+          'discriminatedKey and discriminatedValue cannot be used together',
+        );
 }

@@ -138,9 +138,9 @@ class SmsNotification extends Notification {
               contains("final type = map['type'] as String;"),
               contains('return switch (type) {'),
               contains(
-                  "'email' => EmailNotificationSchemaModel._instance.createFromMap(map)"),
+                  "'email' => EmailNotificationSchemaModel().createFromMap(map)"),
               contains(
-                  "'sms' => SmsNotificationSchemaModel._instance.createFromMap(map)"),
+                  "'sms' => SmsNotificationSchemaModel().createFromMap(map)"),
             ])),
           },
         );
@@ -262,8 +262,7 @@ class UserWithAddress {
               contains('city: map[\'city_name\'] as String'),
               contains('postalCode: map[\'postal_code\'] as String?'),
               contains('name: map[\'full_name\'] as String'),
-              contains(
-                  'homeAddress: AddressSchemaModel._instance.createFromMap('),
+              contains('homeAddress: AddressSchemaModel().createFromMap('),
               contains('map[\'home_address\'] as Map<String, dynamic>'),
             ])),
           },
