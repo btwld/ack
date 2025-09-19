@@ -48,19 +48,17 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
           itemSchema.validate(itemValue, debugName: itemContext.name);
 
       if (itemResult.isOk) {
-        // itemResult.getOrNull() can return null if itemSchema is nullable and itemValue was null
         final validatedItemValue = itemResult.getOrNull();
         if (validatedItemValue is V) {
           validatedItems.add(validatedItemValue);
-        } else if (validatedItemValue == null && itemSchema.isNullable) {
-          // If itemSchema is nullable and result is Ok(null), we need to add a null.
-          // Since the list is `List<V>`, we can't add null directly.
-          // This path indicates a potential type mismatch in very specific scenarios,
-          // but we will trust the schema's nullability flag.
-          // The best approach is to continue and let downstream code handle it,
-          // as forcing a `null` into a `List<V>` is not type-safe at compile time.
-          // Intentionally empty - we skip adding this item to maintain type safety.
-          continue; // Skip this item to maintain type safety
+        } else {
+          itemErrors.add(
+            SchemaValidationError(
+              message:
+                  'List item ${itemContext.name} resolved to null. Use non-nullable item schemas for Ack.list.',
+              context: itemContext,
+            ),
+          );
         }
       } else {
         itemErrors.add(itemResult.getError());

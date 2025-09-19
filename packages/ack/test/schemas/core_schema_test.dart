@@ -77,6 +77,23 @@ void main() {
           contains('Minimum 5 characters'),
         );
       });
+
+      test('optional schema default should honor constraints', () {
+        final schema = Ack.string()
+            .minLength(5)
+            .optional()
+            .withDefault('tiny');
+
+        final result = schema.validate(null);
+
+        expect(result.isOk, isFalse);
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(
+          (error as SchemaConstraintsError).constraints.first.message,
+          contains('Minimum 5 characters'),
+        );
+      });
     });
 
     group('Type Conversion', () {
@@ -101,6 +118,15 @@ void main() {
             'Invalid type. Expected int, but got String.');
       });
 
+      test('IntegerSchema should enforce strict parsing when enabled', () {
+        const schema = IntegerSchema(strictPrimitiveParsing: true);
+        final result = schema.validate('123');
+
+        expect(result.isOk, isFalse);
+        final error = result.getError() as SchemaConstraintsError;
+        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
+      });
+
       test('BooleanSchema should fail for non-boolean input', () {
         final schema = BooleanSchema();
         final result = schema.validate(1);
@@ -109,6 +135,15 @@ void main() {
         expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
         expect(error.constraints.first.message,
             'Invalid type. Expected bool, but got int.');
+      });
+
+      test('DoubleSchema should treat ints as invalid when strict parsing', () {
+        const schema = DoubleSchema(strictPrimitiveParsing: true);
+        final result = schema.validate(42);
+
+        expect(result.isOk, isFalse);
+        final error = result.getError() as SchemaConstraintsError;
+        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
       });
     });
 

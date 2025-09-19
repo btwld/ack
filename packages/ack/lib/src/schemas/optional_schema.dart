@@ -54,9 +54,13 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Handle null values directly since OptionalSchema is inherently nullable
+    // Handle null values directly since OptionalSchema is inherently nullable.
     if (inputValue == null) {
-      return SchemaResult.ok(defaultValue);
+      if (defaultValue != null) {
+        return wrappedSchema.parseAndValidate(defaultValue, context);
+      }
+
+      return SchemaResult.ok(null);
     }
 
     // Delegate to the wrapped schema for non-null values

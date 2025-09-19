@@ -106,11 +106,10 @@ sealed class AckSchema<DartType extends Object> {
     SchemaContext context,
   ) {
     if (inputValue == null) {
-      if (isNullable) {
-        return SchemaResult.ok(defaultValue);
-      }
       if (defaultValue != null) {
         inputValue = defaultValue;
+      } else if (isNullable) {
+        return SchemaResult.ok(null);
       } else {
         final constraintError = NonNullableConstraint().validate(null);
 

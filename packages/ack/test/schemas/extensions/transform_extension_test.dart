@@ -43,6 +43,18 @@ void main() {
       expect(result2.getOrThrow(), 'was not null');
     });
 
+    test('should error when transformer returns null for non-nullable output',
+        () {
+      final schema = Ack.string().transform<int>((val) {
+        return (null as dynamic);
+      });
+
+      final result = schema.safeParse('value');
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaTransformError>());
+    });
+
     test('should return a SchemaTransformError if the transformer fails', () {
       final schema = Ack.string().transform<int>((val) {
         if (val == 'fail') {
