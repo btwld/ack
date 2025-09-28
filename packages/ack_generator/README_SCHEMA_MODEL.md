@@ -41,7 +41,7 @@ final userSchema = Ack.object({
   'id': Ack.string(),
   'name': Ack.string(),
   'email': Ack.string(),
-  'age': Ack.integer().optional().nullable(),
+  'age': Ack.integer().nullable().optional(),
 });
 ```
 

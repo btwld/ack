@@ -38,7 +38,7 @@ void main() {
       // Check field definitions
       expect(result, contains("'id': Ack.string()"));
       expect(result, contains("'name': Ack.string()"));
-      expect(result, contains("'email': Ack.string().optional().nullable()"));
+      expect(result, contains("'email': Ack.string().nullable().optional()"));
     });
 
     test('generates schema for primitive types', () {
@@ -62,7 +62,7 @@ void main() {
       expect(result, contains("'price': Ack.double()"));
       expect(result, contains("'inStock': Ack.boolean()"));
       expect(result,
-          contains("'description': Ack.string().optional().nullable()"));
+          contains("'description': Ack.string().nullable().optional()"));
     });
 
     test('generates schema for list fields', () {

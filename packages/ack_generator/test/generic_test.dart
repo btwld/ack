@@ -60,8 +60,8 @@ class Response<T> {
           'test_pkg|lib/nullable_generic.g.dart': decodedMatches(allOf([
             contains('final responseSchema = Ack.object('),
             contains("'success': Ack.boolean()"),
-            // Nullable generic type should use Ack.any().nullable()
-            contains("'data': Ack.any().optional().nullable()"),
+            // Nullable generic type should use Ack.any().nullable().optional()
+            contains("'data': Ack.any().nullable().optional()"),
           ])),
         },
       );

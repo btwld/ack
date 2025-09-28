@@ -21,6 +21,12 @@ abstract class SchemaError {
   String get name => context.name;
   AckSchema get schema => context.schema;
   Object? get value => context.value;
+  String get path => context.path;
+
+  /// Returns a human-readable error string with path information.
+  String toErrorString() {
+    return '$message at path: $path';
+  }
 
   Map<String, Object?> toMap() {
     return {
@@ -28,6 +34,7 @@ abstract class SchemaError {
       'name': name,
       'value': value,
       'schemaType': schema.schemaType.name,
+      'path': path,
     };
   }
 

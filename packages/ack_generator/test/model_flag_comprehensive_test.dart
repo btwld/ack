@@ -94,7 +94,7 @@ class ListModel {
           // Schema should handle lists
           expect(result, contains('Ack.list(Ack.string())'));
           expect(result,
-              contains('Ack.list(Ack.integer()).optional().nullable()'));
+              contains('Ack.list(Ack.integer()).nullable().optional()'));
 
           // createFromMap should handle list casts
           expect(result, contains('(map[\'tags\'] as List).cast<String>()'));
@@ -196,7 +196,7 @@ class Person {
           expect(
               result,
               contains(
-                  "'billingAddress': addressSchema.optional().nullable()"));
+                  "'billingAddress': addressSchema.nullable().optional()"));
 
           // createFromMap should use nested SchemaModel
           expect(result, contains('AddressSchemaModel().createFromMap('));
@@ -386,10 +386,10 @@ class AllNullableModel {
 ''';
 
         await expectGeneratedOutput(source, (result) {
-          // All fields should be optional and nullable
-          expect(result, contains('Ack.string().optional().nullable()'));
-          expect(result, contains('Ack.integer().optional().nullable()'));
-          expect(result, contains('Ack.boolean().optional().nullable()'));
+          // All fields should be nullable and optional (in that order)
+          expect(result, contains('Ack.string().nullable().optional()'));
+          expect(result, contains('Ack.integer().nullable().optional()'));
+          expect(result, contains('Ack.boolean().nullable().optional()'));
 
           // All casts should be nullable
           expect(result, contains('as String?'));

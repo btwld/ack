@@ -250,12 +250,12 @@ class UserWithAddress {
               // Address schema with custom keys
               contains("'street_address': Ack.string()"),
               contains("'city_name': Ack.string()"),
-              contains("'postal_code': Ack.string().optional().nullable()"),
+              contains("'postal_code': Ack.string().nullable().optional()"),
 
               // User schema with nested references
               contains("'full_name': Ack.string()"),
               contains("'home_address': addressSchema"),
-              contains("'work_address': addressSchema.optional().nullable()"),
+              contains("'work_address': addressSchema.nullable().optional()"),
 
               // SchemaModel createFromMap with custom keys
               contains('street: map[\'street_address\'] as String'),

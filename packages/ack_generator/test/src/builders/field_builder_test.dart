@@ -48,7 +48,7 @@ void main() {
       test('adds optional to optional fields', () {
         final field = createField('email', 'String', isNullable: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.string().optional().nullable()'));
+        expect(schema, equals('Ack.string().nullable().optional()'));
       });
 
       test('does not add optional to required fields', () {
@@ -117,7 +117,7 @@ void main() {
       test('builds optional list schema', () {
         final field = createListField('tags', 'String', isNullable: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('Ack.list(Ack.any()).optional().nullable()'));
+        expect(schema, equals('Ack.list(Ack.any()).nullable().optional()'));
       });
     });
 
@@ -131,7 +131,7 @@ void main() {
       test('builds optional nested schema', () {
         final field = createField('profile', 'Profile', isNullable: true);
         final schema = builder.buildFieldSchema(field);
-        expect(schema, equals('profileSchema.optional().nullable()'));
+        expect(schema, equals('profileSchema.nullable().optional()'));
       });
     });
 

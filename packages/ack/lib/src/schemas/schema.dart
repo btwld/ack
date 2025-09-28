@@ -32,6 +32,23 @@ enum SchemaType {
   unknown,
 }
 
+/// JSON type enumeration following JSON Schema Draft 2020-12.
+/// Treats null as a first-class type rather than the absence of a value.
+enum JsonType {
+  string('string'),
+  integer('integer'),
+  number('number'),
+  boolean('boolean'),
+  object('object'),
+  array('array'),
+  nil('null');
+
+  const JsonType(this.typeName);
+
+  /// The string representation used in JSON Schema.
+  final String typeName;
+}
+
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
 @immutable
@@ -51,6 +68,20 @@ sealed class AckSchema<DartType extends Object> {
     this.constraints = const [],
     this.refinements = const [],
   });
+
+  /// Utility method to get the JSON type of any value.
+  static JsonType getJsonType(Object? value) {
+    return switch (value) {
+      null => JsonType.nil,
+      Map() => JsonType.object,
+      List() => JsonType.array,
+      String() => JsonType.string,
+      int() => JsonType.integer,
+      double() || num() => JsonType.number, // For double and other num types
+      bool() => JsonType.boolean,
+      _ => throw ArgumentError('Unknown JSON type for value: $value'),
+    };
+  }
 
   @protected
   List<ConstraintError> _checkConstraints(
@@ -99,6 +130,24 @@ sealed class AckSchema<DartType extends Object> {
   /// Whether this schema represents an optional field in an object.
   /// Override this in OptionalSchema to return true.
   bool get isOptional => false;
+
+  /// The JSON types that this schema accepts.
+  /// Defaults to a single type based on schemaType, but can be overridden
+  /// for schemas that accept multiple types (e.g., nullable schemas).
+  List<JsonType> get acceptedTypes {
+    final baseType = switch (schemaType) {
+      SchemaType.string => JsonType.string,
+      SchemaType.integer => JsonType.integer,
+      SchemaType.double => JsonType.number,
+      SchemaType.boolean => JsonType.boolean,
+      SchemaType.object || SchemaType.discriminatedObject => JsonType.object,
+      SchemaType.list => JsonType.array,
+      SchemaType.enumType || SchemaType.unknown => JsonType.string, // Enums and unknown fallback to string
+    };
+
+    // If nullable, add null type to the accepted types
+    return isNullable ? [baseType, JsonType.nil] : [baseType];
+  }
 
   @protected
   SchemaResult<DartType> parseAndValidate(

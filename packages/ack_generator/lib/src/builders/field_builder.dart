@@ -39,14 +39,13 @@ class FieldBuilder {
       schema = _applyConstraint(schema, constraint);
     }
 
-    // Apply optional if field is not required
-    if (!field.isRequired) {
-      schema = '$schema.optional()';
-    }
-
-    // Apply nullable if field is nullable
+    // Apply nullability before optionality to keep types sound with Phase 2 semantics
     if (field.isNullable) {
       schema = '$schema.nullable()';
+    }
+
+    if (!field.isRequired) {
+      schema = '$schema.optional()';
     }
 
     return schema;
