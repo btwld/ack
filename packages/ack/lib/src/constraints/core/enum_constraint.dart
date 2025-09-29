@@ -32,11 +32,11 @@ class EnumConstraint<T extends Enum> extends Constraint<T?>
       };
 }
 
-class StringEnumConstraint extends Constraint<String?>
+class NullableStringEnumConstraint extends Constraint<String?>
     with Validator<String?>, JsonSchemaSpec<String?> {
   final List<String> allowedValues;
 
-  StringEnumConstraint(this.allowedValues)
+  NullableStringEnumConstraint(this.allowedValues)
       : super(
           constraintKey: 'enum_string_value',
           description: 'Value must be one of: ${allowedValues.join(', ')}',

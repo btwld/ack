@@ -78,8 +78,8 @@ abstract class SchemaModel<T extends Object> {
 
     if (result.isOk) {
       try {
-        final validatedMap = result.getOrThrow() as Map<String, dynamic>;
-        _value = createFromMap(validatedMap);
+        final validatedMap = result.getOrThrow() as Map<String, Object?>;
+        _value = createFromMap(Map<String, dynamic>.from(validatedMap));
 
         return SchemaResult.ok(_value);
       } catch (e) {

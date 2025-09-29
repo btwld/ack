@@ -181,9 +181,9 @@ class OptionalFields {
 ''';
 
       await expectGeneratedOutput(source, (result) {
-        // Schema should mark fields as nullable and optional (in that order)
-        expect(result, contains('Ack.string().nullable().optional()'));
-        expect(result, contains('Ack.integer().nullable().optional()'));
+        // Schema should mark fields as optional and nullable
+        expect(result, contains('Ack.string().optional().nullable()'));
+        expect(result, contains('Ack.integer().optional().nullable()'));
 
         // createFromMap should handle nullable casts
         expect(result, contains('as String?'));

@@ -109,7 +109,7 @@ When an inner schema resolves to `null` for a non-nullable list item, Ack raises
 final userSchema = Ack.object({
   'id': Ack.string().minLength(1),
   'email': Ack.string().email(),
-  'age': Ack.integer().nullable().optional(),
+  'age': Ack.integer().optional().nullable(),
 }, additionalProperties: false);
 
 final ok = userSchema.safeParse({

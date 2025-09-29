@@ -27,11 +27,6 @@ class EmailConstraint extends Constraint<String>
 /// Constraint to validate if a string is a valid URL.
 class UrlConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
-  // A common URL regex pattern.
-  static final _urlRegex = RegExp(
-    r'^(https_?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$',
-  );
-
   UrlConstraint()
       : super(
           constraintKey: 'string.url',
@@ -39,7 +34,13 @@ class UrlConstraint extends Constraint<String>
         );
 
   @override
-  bool isValid(String value) => _urlRegex.hasMatch(value);
+  bool isValid(String value) {
+    final uri = Uri.tryParse(value);
+
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
 
   @override
   String buildMessage(String value) => '"$value" is not a valid URL.';
@@ -203,8 +204,11 @@ class IpConstraint extends Constraint<String>
     if (version == 4) return {'format': 'ipv4'};
     if (version == 6) return {'format': 'ipv6'};
 
-    // For generic IP, we could use anyOf, but JSON Schema doesn't have a generic IP format
-    // So we'll use a pattern that matches both IPv4 and IPv6
-    return {'format': 'ipv4'}; // Default to IPv4 for generic case
+    return {
+      'oneOf': [
+        {'format': 'ipv4'},
+        {'format': 'ipv6'},
+      ]
+    };
   }
 }

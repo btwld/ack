@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '../constraints/constraint.dart';
+import '../constraints/string/string_enum_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
@@ -19,6 +20,18 @@ part 'object_schema.dart';
 part 'optional_schema.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
+
+/// Internal marker to distinguish missing fields from null values.
+/// This is used by OptionalSchema and ObjectSchema to differentiate between
+/// a field that is absent from an object vs a field that is present but null.
+class _MissingField {
+  const _MissingField();
+  @override
+  String toString() => '<missing>';
+}
+
+/// Singleton instance used to mark missing fields during validation.
+const missingFieldMarker = _MissingField();
 
 enum SchemaType {
   string,

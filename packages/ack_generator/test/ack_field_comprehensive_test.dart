@@ -40,7 +40,7 @@ class RequiredFieldsModel {
             'test_pkg|lib/required_fields.g.dart': decodedMatches(allOf([
               contains('final requiredFieldsModelSchema = Ack.object({'),
               contains("'mandatoryField': Ack.string()"),
-              contains("'optionalField': Ack.string().nullable().optional()"),
+              contains("'optionalField': Ack.string().optional().nullable()"),
               contains("'defaultField': Ack.string()"),
             ])),
           },
@@ -121,7 +121,7 @@ class FieldDescriptionsModel {
               contains('final fieldDescriptionsModelSchema = Ack.object({'),
               contains("'name': Ack.string()"),
               contains("'age': Ack.integer()"),
-              contains("'email': Ack.string().nullable().optional()"),
+              contains("'email': Ack.string().optional().nullable()"),
             ])),
           },
         );
@@ -441,7 +441,7 @@ class VariousTypesModel {
               contains(
                   "'enum_field': Ack.string().enumString(['active', 'inactive'])"),
               contains("'list_field': Ack.list(Ack.string())"),
-              contains("'nullable_field': Ack.string().nullable().optional()"),
+              contains("'nullable_field': Ack.string().optional().nullable()"),
             ])),
           },
         );

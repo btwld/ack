@@ -1,8 +1,7 @@
 part of 'schema.dart';
 
-/// A schema wrapper that makes any schema optional.
-/// Optional means the field can be omitted from an object.
-/// This is different from nullable - a nullable field must still be present but can have a null value.
+/// A schema wrapper that makes any schema optional (field may be omitted).
+/// Optional ≠ Nullable: use `.nullable()` explicitly to allow present nulls.
 @immutable
 final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     with FluentSchema<DartType, OptionalSchema<DartType>> {
@@ -10,14 +9,15 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
 
   OptionalSchema({
     required this.wrappedSchema,
+    bool isNullable = false,
     super.description,
     super.defaultValue,
     super.constraints = const [],
     super.refinements = const [],
   }) : super(
           schemaType: wrappedSchema.schemaType,
-          // Optional schemas are inherently nullable since missing values are treated as null
-          isNullable: true,
+          // Do not force nullable; nullability must be explicit.
+          isNullable: isNullable,
         );
 
   @override
@@ -41,6 +41,7 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
   }) {
     return OptionalSchema(
       wrappedSchema: wrappedSchema,
+      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
@@ -48,24 +49,8 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     );
   }
 
-  @override
-  @protected
-  SchemaResult<DartType> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Handle null values directly since OptionalSchema is inherently nullable.
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        return wrappedSchema.parseAndValidate(defaultValue, context);
-      }
-
-      return SchemaResult.ok(null);
-    }
-
-    // Delegate to the wrapped schema for non-null values
-    return wrappedSchema.parseAndValidate(inputValue, context);
-  }
+  // No custom parse: optionality is handled at the object level. For present
+  // values (including null), delegate to the base pipeline.
 
   @override
   Map<String, Object?> toJsonSchema() {

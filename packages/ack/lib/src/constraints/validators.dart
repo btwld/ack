@@ -46,14 +46,17 @@ class InvalidTypeConstraint extends Constraint<Object?>
 
   @override
   bool isValid(Object? value) {
-    // This is a tricky validation. The main purpose is for error reporting.
-    // `value is expectedType` is the ideal check, but `expectedType` is a variable.
-    // For now, we focus on the error message, which is the primary use.
-    if (value == null) {
-      return false; // Or should depend on schema nullability? No, this is for type.
-    }
+    if (value == null) return false;
+    final t = expectedType;
+    if (t == Object) return true;
+    if (t == String) return value is String;
+    if (t == int) return value is int;
+    if (t == double) return value is double;
+    if (t == bool) return value is bool;
+    if (t == MapValue) return value is Map<String, Object?>;
+    if (t == List) return value is List;
 
-    return value.runtimeType == expectedType;
+    return value.runtimeType == t; // conservative fallback
   }
 
   @override
@@ -97,28 +100,6 @@ class ListUniqueItemsConstraint<E> extends Constraint<List<E>?>
 
   @override
   Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
-}
-
-/// A generic constraint that validates a value against a custom pattern function.
-class PatternConstraint<T> extends Constraint<T> with Validator<T> {
-  final String expectedPattern;
-  final bool Function(T value) _isValid;
-
-  const PatternConstraint(this._isValid, this.expectedPattern)
-      : super(
-          constraintKey: 'pattern',
-          description: 'Value must match the expected pattern.',
-        );
-
-  @override
-  bool isValid(T value) {
-    return _isValid(value);
-  }
-
-  @override
-  String buildMessage(T value) {
-    return 'Value does not match the expected pattern: $expectedPattern.';
-  }
 }
 
 // --- Object Specific Constraints ---

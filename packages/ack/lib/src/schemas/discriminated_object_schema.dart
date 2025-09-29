@@ -63,16 +63,17 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     final AckSchema? selectedSubSchema = schemas[discValue];
 
     if (selectedSubSchema == null) {
-      // Using a generic PatternConstraint as a placeholder for a more specific
-      // 'enum' or 'oneOf' style constraint for the discriminator value.
-      final constraintError = PatternConstraint<String>(
-        (v) => schemas.containsKey(v),
-        'a valid discriminator value',
-      ).validate(discValue);
+      final allowed = schemas.keys.toList(growable: false);
+      final enumError = StringEnumConstraint(allowed).validate(discValue);
 
       return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
+        constraints: enumError != null ? [enumError] : [],
+        context: context.createChild(
+          name: discriminatorKey,
+          schema: const StringSchema(),
+          value: discValue,
+          pathSegment: discriminatorKey,
+        ),
       ));
     }
 

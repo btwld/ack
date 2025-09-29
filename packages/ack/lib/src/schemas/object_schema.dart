@@ -48,16 +48,18 @@ final class ObjectSchema extends AckSchema<MapValue>
 
       if (!hasValue && !schema.isOptional) {
         // Missing required property
-        final constraintError =
-            ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-                .validate(inputValue);
-        if (constraintError != null) {
-          validationErrors.add(
-            SchemaConstraintsError(
-              constraints: [constraintError],
-              context: context,
+        final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
+            .validate(inputValue);
+        if (ce != null) {
+          validationErrors.add(SchemaConstraintsError(
+            constraints: [ce],
+            context: context.createChild(
+              name: key,
+              schema: schema,
+              value: null,
+              pathSegment: key,
             ),
-          );
+          ));
         }
       } else if (hasValue) {
         // Property exists, validate it
@@ -96,7 +98,12 @@ final class ObjectSchema extends AckSchema<MapValue>
                   message: 'Property "$key" is not allowed.',
                 ),
               ],
-              context: context,
+              context: context.createChild(
+                name: key,
+                schema: this,
+                value: inputValue[key],
+                pathSegment: key,
+              ),
             ),
           );
         }

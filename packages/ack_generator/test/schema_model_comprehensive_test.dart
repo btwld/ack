@@ -99,10 +99,10 @@ class OptionalFieldsModel {
               // Schema with nullable fields
               contains('final optionalFieldsModelSchema = Ack.object({'),
               contains("'required': Ack.string()"),
-              contains("'nullable': Ack.string().nullable().optional()"),
-              contains("'nullableInt': Ack.integer().nullable().optional()"),
+              contains("'nullable': Ack.string().optional().nullable()"),
+              contains("'nullableInt': Ack.integer().optional().nullable()"),
               contains(
-                  "'nullableList': Ack.list(Ack.string()).nullable().optional()"),
+                  "'nullableList': Ack.list(Ack.string()).optional().nullable()"),
               contains("'defaulted': Ack.boolean()"),
 
               // createFromMap with proper nullable handling
@@ -157,7 +157,7 @@ class Company {
               contains('final addressSchema = Ack.object({'),
               contains("'street': Ack.string()"),
               contains("'city': Ack.string()"),
-              contains("'postalCode': Ack.string().nullable().optional()"),
+              contains("'postalCode': Ack.string().optional().nullable()"),
 
               // Company schema with nested reference
               contains('final companySchema = Ack.object({'),
@@ -276,12 +276,12 @@ class CollectionsModel {
               contains(
                   "'metadata': Ack.object({}, additionalProperties: true)"),
               contains(
-                  "'optionalTags': Ack.list(Ack.string()).nullable().optional()"),
+                  "'optionalTags': Ack.list(Ack.string()).optional().nullable()"),
               contains(
-                  "'optionalScores': Ack.list(Ack.double()).unique().nullable().optional()"),
+                  "'optionalScores': Ack.list(Ack.double()).unique().optional().nullable()"),
               contains("'optionalFlags': Ack.object("),
               contains('additionalProperties: true'),
-              contains(').nullable().optional()'),
+              contains(').optional().nullable()'),
 
               // createFromMap with collection handling
               contains('return CollectionsModel('),
