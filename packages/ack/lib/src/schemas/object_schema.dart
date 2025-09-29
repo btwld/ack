@@ -183,7 +183,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       if (requiredFields.isNotEmpty) 'required': requiredFields,
       'additionalProperties': additionalProperties,
       if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
     };
   }
 }
