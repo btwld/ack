@@ -18,24 +18,17 @@ final class AnyOfSchema extends AckSchema<Object>
 
   @override
   @protected
-  SchemaResult<Object> _onConvert(Object? inputValue, SchemaContext context) {
-    if (inputValue == null) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: Object, inputValue: null)
-              .validate(null);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
-    }
-
+  SchemaResult<Object> _performTypeConversion(Object inputValue, SchemaContext context) {
     final validationErrors = <SchemaError>[];
 
-    for (final schema in schemas) {
-      final result = schema.validate(inputValue);
+    for (var i = 0; i < schemas.length; i++) {
+      final schema = schemas[i];
+      final result = schema.validate(
+        inputValue,
+        debugName: '${context.name}[anyOf:$i]',
+      );
       if (result.isOk) {
-        return SchemaResult.ok(result.getOrThrow()!);
+        return SchemaResult.ok(result.getOrThrow());
       }
       validationErrors.add(result.getError());
     }
@@ -67,8 +60,15 @@ final class AnyOfSchema extends AckSchema<Object>
 
   @override
   Map<String, Object?> toJsonSchema() {
+    final anyOfClauses = schemas.map((s) => s.toJsonSchema()).toList();
+
+    // Add null as an option if nullable
+    if (isNullable) {
+      anyOfClauses.insert(0, {'type': 'null'});
+    }
+
     return {
-      'anyOf': schemas.map((s) => s.toJsonSchema()).toList(),
+      'anyOf': anyOfClauses,
       if (description != null) 'description': description,
     };
   }

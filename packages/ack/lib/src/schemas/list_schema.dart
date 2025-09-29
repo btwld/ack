@@ -17,22 +17,16 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
   @override
   @protected
-  SchemaResult<List<V>> _onConvert(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    if (inputValue is! List) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: List).validate(inputValue);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+  SchemaResult<List<V>> _performTypeConversion(
+      Object inputValue, SchemaContext context) {
+    // First try basic type validation
+    final typeResult = validateExpectedType(inputValue, context);
+    if (typeResult.isFail) {
+      return SchemaResult.fail(typeResult.getError());
     }
 
-    // Direct access to inputValue - no need for List.from() since we already know it's a List
-    final inputList = inputValue;
+    // Type validation passed, safe to cast
+    final inputList = inputValue as List;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
@@ -44,8 +38,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         value: itemValue,
       );
 
-      final itemResult =
-          itemSchema.validate(itemValue, debugName: itemContext.name);
+      final itemResult = itemSchema.parseAndValidate(itemValue, itemContext);
 
       if (itemResult.isOk) {
         final validatedItemValue = itemResult.getOrNull();
@@ -116,22 +109,12 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final Map<String, Object?> schema = {
+    final schema = {
       'type': isNullable ? ['array', 'null'] : 'array',
       'items': itemSchema.toJsonSchema(),
       if (description != null) 'description': description,
     };
 
-    final constraintSchemas = <Map<String, Object?>>[];
-    for (final constraint in constraints) {
-      if (constraint is JsonSchemaSpec) {
-        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
-      }
-    }
-
-    return constraintSchemas.fold(
-      schema,
-      (prev, current) => deepMerge(prev, current),
-    );
+    return mergeConstraintSchemas(schema);
   }
 }

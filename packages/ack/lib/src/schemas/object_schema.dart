@@ -22,8 +22,8 @@ final class ObjectSchema extends AckSchema<MapValue>
 
   @override
   @protected
-  SchemaResult<MapValue> _onConvert(
-    Object? inputValue,
+  SchemaResult<MapValue> _performTypeConversion(
+    Object inputValue,
     SchemaContext context,
   ) {
     if (inputValue is! MapValue) {
@@ -81,8 +81,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     // Handle additional properties (those not in schema)
+    final knownKeys = properties.keys.toSet();
     for (final key in inputValue.keys) {
-      if (!properties.containsKey(key)) {
+      if (!knownKeys.contains(key)) {
         // Property not defined in schema
         if (additionalProperties) {
           validatedMap[key] = inputValue[key]; // Keep the original value

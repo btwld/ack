@@ -204,19 +204,22 @@ void main() {
         expect(result.isFail, isTrue);
         final error = result.getError();
 
-        // Should get constraint error, not refinement error
-        expect(error, isA<SchemaConstraintsError>());
-        if (error is SchemaConstraintsError) {
-          expect(
-            error.constraints.any((c) => c.message.contains('Minimum 8')),
-            isTrue,
-          );
-          // Should not contain the password mismatch message
-          expect(
-            error.constraints.any((c) => c.message.contains('❌')),
-            isFalse,
-          );
-        }
+        // Object validation returns SchemaNestedError for field errors
+        expect(error, isA<SchemaNestedError>());
+
+        // Check that the error message contains the constraint error
+        final errorMessage = error.toString();
+        expect(
+          errorMessage.contains('Minimum 8'),
+          isTrue,
+          reason: 'Should contain minimum length constraint error',
+        );
+        // Should not contain the password mismatch message since constraint fails first
+        expect(
+          errorMessage.contains('❌'),
+          isFalse,
+          reason: 'Should not contain password mismatch emoji',
+        );
       });
     });
 

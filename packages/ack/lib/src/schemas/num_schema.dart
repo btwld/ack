@@ -16,34 +16,13 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final Map<String, Object?> schema = {
-      'type': 'number',
+    final schema = {
+      'type': isNullable ? ['number', 'null'] : 'number',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    final constraintSchemas = <Map<String, Object?>>[];
-    for (final constraint in constraints) {
-      if (constraint is JsonSchemaSpec) {
-        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
-      }
-    }
-
-    final mergedSchema = constraintSchemas.fold(
-      schema,
-      (prev, current) => deepMerge(prev, current),
-    );
-
-    if (isNullable) {
-      return {
-        'oneOf': [
-          {'type': 'null'},
-          mergedSchema,
-        ],
-      };
-    }
-
-    return mergedSchema;
+    return mergeConstraintSchemas(schema);
   }
 }
 
@@ -62,19 +41,19 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   @protected
-  SchemaResult<int> _onConvert(Object? inputValue, SchemaContext context) {
-    if (inputValue is int) return SchemaResult.ok(inputValue);
-    if (strictPrimitiveParsing) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: int, inputValue: inputValue)
-              .validate(inputValue);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+  SchemaResult<int> _performTypeConversion(Object inputValue, SchemaContext context) {
+    // First try basic type validation
+    final typeResult = validateExpectedType(inputValue, context);
+    if (typeResult.isOk) {
+      return SchemaResult.ok(inputValue as int);
     }
 
+    // If strict parsing is enabled, don't attempt conversion
+    if (strictPrimitiveParsing) {
+      return SchemaResult.fail(typeResult.getError());
+    }
+
+    // Try conversions from other types
     if (inputValue is String) {
       final parsed = int.tryParse(inputValue);
       if (parsed != null) return SchemaResult.ok(parsed);
@@ -83,16 +62,8 @@ final class IntegerSchema extends NumSchema<int>
       return SchemaResult.ok(inputValue.toInt());
     }
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: int, inputValue: inputValue)
-            .validate(inputValue);
-
-    return SchemaResult.fail(
-      SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ),
-    );
+    // Return the original type error
+    return SchemaResult.fail(typeResult.getError());
   }
 
   @override
@@ -138,9 +109,11 @@ final class IntegerSchema extends NumSchema<int>
   @override
   Map<String, Object?> toJsonSchema() {
     final schema = super.toJsonSchema();
-    schema['type'] = 'integer';
+    // Override the type to be 'integer' instead of 'number'
     if (isNullable) {
-      (schema['oneOf'] as List).last['type'] = 'integer';
+      schema['type'] = ['integer', 'null'];
+    } else {
+      schema['type'] = 'integer';
     }
 
     return schema;
@@ -162,9 +135,20 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   @protected
-  SchemaResult<double> _onConvert(Object? inputValue, SchemaContext context) {
-    if (inputValue is double) return SchemaResult.ok(inputValue);
-    if (inputValue is int && !strictPrimitiveParsing) {
+  SchemaResult<double> _performTypeConversion(Object inputValue, SchemaContext context) {
+    // First try basic type validation
+    final typeResult = validateExpectedType(inputValue, context);
+    if (typeResult.isOk) {
+      return SchemaResult.ok(inputValue as double);
+    }
+
+    // If strict parsing is enabled, don't attempt conversion
+    if (strictPrimitiveParsing) {
+      return SchemaResult.fail(typeResult.getError());
+    }
+
+    // Try conversions from other types
+    if (inputValue is int) {
       return SchemaResult.ok(inputValue.toDouble());
     }
     if (inputValue is String) {
@@ -172,16 +156,8 @@ final class DoubleSchema extends NumSchema<double>
       if (val != null) return SchemaResult.ok(val);
     }
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: double, inputValue: inputValue)
-            .validate(inputValue);
-
-    return SchemaResult.fail(
-      SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ),
-    );
+    // Return the original type error
+    return SchemaResult.fail(typeResult.getError());
   }
 
   @override
@@ -227,10 +203,8 @@ final class DoubleSchema extends NumSchema<double>
   @override
   Map<String, Object?> toJsonSchema() {
     final schema = super.toJsonSchema();
+    // Add format annotation for double precision
     schema['format'] = 'double';
-    if (isNullable) {
-      (schema['oneOf'] as List).last['format'] = 'double';
-    }
 
     return schema;
   }

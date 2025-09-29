@@ -3,7 +3,7 @@ part of 'schema.dart';
 /// Schema for validating a discriminated union of objects.
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
-/// `subSchemas` to validate the object.
+/// `schemas` to validate the object.
 @immutable
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, DiscriminatedObjectSchema> {
@@ -22,8 +22,8 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
   @override
   @protected
-  SchemaResult<MapValue> _onConvert(
-    Object? inputValue,
+  SchemaResult<MapValue> _performTypeConversion(
+    Object inputValue,
     SchemaContext context,
   ) {
     if (inputValue is! MapValue) {
@@ -59,33 +59,32 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       ));
     }
 
-    final discValue = discValueRaw;
-    final AckSchema? selectedSubSchema = schemas[discValue];
+    final AckSchema? selectedSubSchema = schemas[discValueRaw];
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
-      final enumError = StringEnumConstraint(allowed).validate(discValue);
+      final enumError = StringEnumConstraint(allowed).validate(discValueRaw);
 
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: enumError != null ? [enumError] : [],
         context: context.createChild(
           name: discriminatorKey,
           schema: const StringSchema(),
-          value: discValue,
+          value: discValueRaw,
           pathSegment: discriminatorKey,
         ),
       ));
     }
 
     final subSchemaContext = SchemaContext(
-      name: '${context.name}(when $discriminatorKey="$discValue")',
+      name: '${context.name}(when $discriminatorKey="$discValueRaw")',
       schema: selectedSubSchema,
       value: inputValue,
     );
 
-    final result = selectedSubSchema.validate(
+    final result = selectedSubSchema.parseAndValidate(
       inputValue,
-      debugName: subSchemaContext.name,
+      subSchemaContext,
     );
 
     // Convert the result to MapValue type for compatibility
@@ -98,7 +97,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   @override
   DiscriminatedObjectSchema copyWith({
     String? discriminatorKey,
-    Map<String, AckSchema>? subSchemas,
+    Map<String, AckSchema>? schemas,
     bool? isNullable,
     String? description,
     MapValue? defaultValue,
@@ -107,7 +106,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   }) {
     return copyWithInternal(
       discriminatorKey: discriminatorKey,
-      subSchemas: subSchemas,
+      schemas: schemas,
       isNullable: isNullable,
       description: description,
       defaultValue: defaultValue,
@@ -125,11 +124,11 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     required List<Refinement<MapValue>>? refinements,
     // DiscriminatedObjectSchema specific
     String? discriminatorKey,
-    Map<String, AckSchema>? subSchemas,
+    Map<String, AckSchema>? schemas,
   }) {
     return DiscriminatedObjectSchema(
       discriminatorKey: discriminatorKey ?? this.discriminatorKey,
-      schemas: subSchemas ?? schemas,
+      schemas: schemas ?? this.schemas,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
@@ -140,7 +139,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final List<Map<String, Object?>> oneOfClauses = [];
+    final oneOfClauses = <Map<String, Object?>>[];
     schemas.forEach((discriminatorValue, objectSchema) {
       final subSchemaJson = objectSchema.toJsonSchema();
       // Ensure the discriminator property is correctly constrained in the sub-schema JSON
@@ -155,21 +154,14 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       oneOfClauses.add(subSchemaJson);
     });
 
-    Map<String, Object?> schema = {
+    // Add null as an option if nullable
+    if (isNullable) {
+      oneOfClauses.insert(0, {'type': 'null'});
+    }
+
+    return {
       'oneOf': oneOfClauses,
       if (description != null) 'description': description,
     };
-
-    if (isNullable) {
-      return {
-        'oneOf': [
-          {'type': 'null'},
-          schema,
-        ],
-        if (description != null) 'description': description,
-      };
-    }
-
-    return schema;
   }
 }

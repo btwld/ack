@@ -26,9 +26,8 @@ void main() async {
 
     // Schema extensions
     'packages/ack/lib/src/schemas/extensions/ack_schema_extensions.dart',
-    'packages/ack/lib/src/schemas/extensions/boolean_schema_extensions.dart',
     'packages/ack/lib/src/schemas/extensions/list_schema_extensions.dart',
-    'packages/ack/lib/src/schemas/extensions/num_schema_extensions.dart',
+    'packages/ack/lib/src/schemas/extensions/numeric_extensions.dart',
     'packages/ack/lib/src/schemas/extensions/object_schema_extensions.dart',
     'packages/ack/lib/src/schemas/extensions/string_schema_extensions.dart',
 

@@ -17,7 +17,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T> _onConvert(Object? inputValue, SchemaContext context) {
+  SchemaResult<T> _performTypeConversion(Object inputValue, SchemaContext context) {
     if (inputValue is T && values.contains(inputValue)) {
       return SchemaResult.ok(inputValue);
     }

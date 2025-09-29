@@ -130,7 +130,7 @@ void main() {
         };
 
         final updated = animalSchema.copyWith(
-          subSchemas: newSchemas,
+          schemas: newSchemas,
           isNullable: true,
           description: 'Updated schema',
         );

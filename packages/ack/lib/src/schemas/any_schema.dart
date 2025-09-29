@@ -15,19 +15,9 @@ final class AnySchema extends AckSchema<Object>
 
   @override
   @protected
-  SchemaResult<Object> _onConvert(Object? inputValue, SchemaContext context) {
+  SchemaResult<Object> _performTypeConversion(Object inputValue, SchemaContext context) {
     // Accept any non-null value as-is
-    if (inputValue != null) {
-      return SchemaResult.ok(inputValue);
-    }
-
-    // Handle null case - use default validation logic
-    final constraintError = NonNullableConstraint().validate(null);
-
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
+    return SchemaResult.ok(inputValue);
   }
 
   @override
@@ -49,8 +39,18 @@ final class AnySchema extends AckSchema<Object>
 
   @override
   Map<String, Object?> toJsonSchema() {
+    // AnySchema accepts anything, including null if nullable
+    if (isNullable) {
+      return {
+        // No type restriction means it accepts any type including null
+        if (description != null) 'description': description,
+        if (defaultValue != null) 'default': defaultValue,
+      };
+    }
+
     return {
-      // No type restriction in JSON Schema
+      // Accepts any type except null
+      'not': {'type': 'null'},
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };

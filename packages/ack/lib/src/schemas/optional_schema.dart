@@ -1,7 +1,7 @@
 part of 'schema.dart';
 
 /// A schema wrapper that makes any schema optional (field may be omitted).
-/// Optional ≠ Nullable: use `.nullable()` explicitly to allow present nulls.
+/// Optional fields are always nullable - they can be missing OR explicitly null.
 @immutable
 final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     with FluentSchema<DartType, OptionalSchema<DartType>> {
@@ -9,25 +9,46 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
 
   OptionalSchema({
     required this.wrappedSchema,
-    bool isNullable = false,
     super.description,
     super.defaultValue,
     super.constraints = const [],
     super.refinements = const [],
   }) : super(
           schemaType: wrappedSchema.schemaType,
-          // Do not force nullable; nullability must be explicit.
-          isNullable: isNullable,
+          // Optional always implies nullable
+          isNullable: true,
         );
 
   @override
   @protected
-  SchemaResult<DartType> _onConvert(
+  SchemaResult<DartType> _performTypeConversion(
+    Object inputValue,
+    SchemaContext context,
+  ) {
+    // Delegate to the wrapped schema's _performTypeConversion
+    // Since we're in _performTypeConversion, inputValue is guaranteed to be non-null
+    // However, wrappedSchema._performTypeConversion also expects non-null now
+    return wrappedSchema._performTypeConversion(inputValue, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<DartType> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // This should not be called since we override parseAndValidate
-    return wrappedSchema._onConvert(inputValue, context);
+    // For non-null input, delegate directly to wrapped schema
+    if (inputValue != null) {
+      return wrappedSchema.parseAndValidate(inputValue, context);
+    }
+
+    // For null input with a default, validate the default against wrapped schema
+    if (defaultValue != null) {
+      return wrappedSchema.parseAndValidate(defaultValue, context);
+    }
+
+    // For null input without default, accept it (optional is always nullable)
+    return SchemaResult.ok(null);
   }
 
   @override
@@ -41,16 +62,12 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
   }) {
     return OptionalSchema(
       wrappedSchema: wrappedSchema,
-      isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
   }
-
-  // No custom parse: optionality is handled at the object level. For present
-  // values (including null), delegate to the base pipeline.
 
   @override
   Map<String, Object?> toJsonSchema() {

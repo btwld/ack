@@ -5,6 +5,7 @@ import '../constraints/string/string_enum_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
+import '../utils/json_utils.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
@@ -20,18 +21,6 @@ part 'object_schema.dart';
 part 'optional_schema.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
-
-/// Internal marker to distinguish missing fields from null values.
-/// This is used by OptionalSchema and ObjectSchema to differentiate between
-/// a field that is absent from an object vs a field that is present but null.
-class _MissingField {
-  const _MissingField();
-  @override
-  String toString() => '<missing>';
-}
-
-/// Singleton instance used to mark missing fields during validation.
-const missingFieldMarker = _MissingField();
 
 enum SchemaType {
   string,
@@ -134,11 +123,45 @@ sealed class AckSchema<DartType extends Object> {
     return SchemaResult.ok(value);
   }
 
+  /// Performs type conversion on a non-null input value to the schema's DartType.
+  ///
+  /// This method MUST NOT receive null values - the base class handles null
+  /// in parseAndValidate before calling this method.
+  ///
+  /// This method MUST NOT return SchemaResult.ok(null) unless DartType
+  /// explicitly includes null as a valid value.
   @protected
-  SchemaResult<DartType> _onConvert(
-    Object? inputValue,
+  SchemaResult<DartType> _performTypeConversion(
+    Object inputValue,
     SchemaContext context,
   );
+
+  /// Derives a Dart Type from acceptedTypes for InvalidTypeConstraint.
+  Type _deriveExpectedTypeFromAcceptedTypes() {
+    if (acceptedTypes.isEmpty) return Object;
+
+    // Use the first non-null type, or Object if only null is accepted
+    for (final jsonType in acceptedTypes) {
+      switch (jsonType) {
+        case JsonType.string:
+          return String;
+        case JsonType.integer:
+          return int;
+        case JsonType.number:
+          return double;
+        case JsonType.boolean:
+          return bool;
+        case JsonType.object:
+          return Map;
+        case JsonType.array:
+          return List;
+        case JsonType.nil:
+          continue; // Skip null, look for other types
+      }
+    }
+
+    return Object; // Fallback
+  }
 
   /// Whether this schema represents an optional field in an object.
   /// Override this in OptionalSchema to return true.
@@ -155,11 +178,69 @@ sealed class AckSchema<DartType extends Object> {
       SchemaType.boolean => JsonType.boolean,
       SchemaType.object || SchemaType.discriminatedObject => JsonType.object,
       SchemaType.list => JsonType.array,
-      SchemaType.enumType || SchemaType.unknown => JsonType.string, // Enums and unknown fallback to string
+      SchemaType.enumType ||
+      SchemaType.unknown =>
+        JsonType.string, // Enums and unknown fallback to string
     };
 
     // If nullable, add null type to the accepted types
     return isNullable ? [baseType, JsonType.nil] : [baseType];
+  }
+
+  /// Helper method to validate that input value matches one of the expected types.
+  ///
+  /// Returns Ok(inputValue) if the type is acceptable, or Fail with InvalidTypeConstraint
+  /// if the type doesn't match any of the acceptedTypes.
+  @protected
+  SchemaResult<Object> validateExpectedType(
+      Object inputValue, SchemaContext context) {
+    final inputType = AckSchema.getJsonType(inputValue);
+
+    if (acceptedTypes.contains(inputType)) {
+      return SchemaResult.ok(inputValue);
+    }
+
+    // Derive expected type from acceptedTypes for error message
+    final expectedType = _deriveExpectedTypeFromAcceptedTypes();
+    final constraintError = InvalidTypeConstraint(
+      expectedType: expectedType,
+      inputValue: inputValue,
+    ).validate(inputValue);
+
+    return SchemaResult.fail(SchemaConstraintsError(
+      constraints: constraintError != null ? [constraintError] : [],
+      context: context,
+    ));
+  }
+
+  /// Helper method to merge constraint JSON schemas into a base schema.
+  ///
+  /// This is used in toJsonSchema() implementations to fold constraint-specific
+  /// JSON schema definitions into the base schema structure.
+  @protected
+  Map<String, Object?> mergeConstraintSchemas(Map<String, Object?> baseSchema) {
+    final constraintSchemas = <Map<String, Object?>>[];
+    for (final constraint in constraints) {
+      if (constraint is JsonSchemaSpec<DartType>) {
+        constraintSchemas.add(constraint.toJsonSchema());
+      }
+    }
+    return constraintSchemas.fold(
+      baseSchema,
+      (prev, current) => deepMerge(prev, current),
+    );
+  }
+
+  /// Helper method to create a standard non-nullable constraint error.
+  ///
+  /// Returns a SchemaResult.fail with a NonNullableConstraint error.
+  @protected
+  SchemaResult<DartType> failNonNullable(SchemaContext context) {
+    final constraintError = NonNullableConstraint().validate(null);
+    return SchemaResult.fail(SchemaConstraintsError(
+      constraints: constraintError != null ? [constraintError] : [],
+      context: context,
+    ));
   }
 
   @protected
@@ -169,33 +250,30 @@ sealed class AckSchema<DartType extends Object> {
   ) {
     if (inputValue == null) {
       if (defaultValue != null) {
-        inputValue = defaultValue;
-      } else if (isNullable) {
-        return SchemaResult.ok(null);
-      } else {
-        final constraintError = NonNullableConstraint().validate(null);
+        final constraintViolations = _checkConstraints(defaultValue!, context);
+        if (constraintViolations.isNotEmpty) {
+          return SchemaResult.fail(SchemaConstraintsError(
+            constraints: constraintViolations,
+            context: context,
+          ));
+        }
 
-        return SchemaResult.fail(SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context,
-        ));
+        return _runRefinements(defaultValue!, context);
       }
-    }
 
-    final SchemaResult<DartType> convertedResult =
-        _onConvert(inputValue, context);
-    if (convertedResult.isFail) return convertedResult;
-
-    final convertedValue = convertedResult.getOrNull();
-
-    if (convertedValue == null) {
       if (isNullable) {
         return SchemaResult.ok(null);
       }
+
+      return failNonNullable(context);
     }
 
-    final constraintViolations =
-        _checkConstraints(convertedValue as DartType, context);
+    final convertedResult = _performTypeConversion(inputValue, context);
+    if (convertedResult.isFail) return convertedResult;
+
+    final convertedValue = convertedResult.getOrThrow()!;
+
+    final constraintViolations = _checkConstraints(convertedValue, context);
     if (constraintViolations.isNotEmpty) {
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: constraintViolations,

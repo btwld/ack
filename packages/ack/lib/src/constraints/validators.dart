@@ -1,8 +1,6 @@
 import '../helpers.dart';
-// import '../schemas/schema.dart'; // This file doesn't exist yet, will be created later.
 import 'constraint.dart';
 
-// Temporary typedef to resolve linter errors. This will be defined in `schema.dart`.
 typedef MapValue = Map<String, Object?>;
 
 /// Constraint for validating that a value is not null.
@@ -47,16 +45,18 @@ class InvalidTypeConstraint extends Constraint<Object?>
   @override
   bool isValid(Object? value) {
     if (value == null) return false;
+
     final t = expectedType;
     if (t == Object) return true;
     if (t == String) return value is String;
     if (t == int) return value is int;
     if (t == double) return value is double;
     if (t == bool) return value is bool;
-    if (t == MapValue) return value is Map<String, Object?>;
+    if (t == MapValue || t == Map) return value is Map;
     if (t == List) return value is List;
 
-    return value.runtimeType == t; // conservative fallback
+    // Conservative fallback for other types
+    return value.runtimeType == t;
   }
 
   @override

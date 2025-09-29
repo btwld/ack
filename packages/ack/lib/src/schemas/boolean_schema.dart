@@ -17,35 +17,28 @@ final class BooleanSchema extends AckSchema<bool>
 
   @override
   @protected
-  SchemaResult<bool> _onConvert(Object? inputValue, SchemaContext context) {
-    if (inputValue is bool) return SchemaResult.ok(inputValue);
-
-    if (strictPrimitiveParsing) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: bool).validate(inputValue);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+  SchemaResult<bool> _performTypeConversion(
+      Object inputValue, SchemaContext context) {
+    // First try basic type validation
+    final typeResult = validateExpectedType(inputValue, context);
+    if (typeResult.isOk) {
+      return SchemaResult.ok(inputValue as bool);
     }
 
+    // If strict parsing is enabled, don't attempt conversion
+    if (strictPrimitiveParsing) {
+      return SchemaResult.fail(typeResult.getError());
+    }
+
+    // Try string to boolean conversion
     if (inputValue is String) {
       final lowercaseValue = inputValue.toLowerCase();
       if (lowercaseValue == 'true') return SchemaResult.ok(true);
       if (lowercaseValue == 'false') return SchemaResult.ok(false);
     }
 
-    final constraintError =
-        InvalidTypeConstraint(expectedType: bool, inputValue: inputValue)
-            .validate(inputValue);
-
-    return SchemaResult.fail(
-      SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ),
-    );
+    // Return the original type error
+    return SchemaResult.fail(typeResult.getError());
   }
 
   /// Creates a new BooleanSchema with strict parsing enabled/disabled
@@ -94,22 +87,12 @@ final class BooleanSchema extends AckSchema<bool>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final Map<String, Object?> schema = {
+    final schema = {
       'type': isNullable ? ['boolean', 'null'] : 'boolean',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
 
-    final constraintSchemas = <Map<String, Object?>>[];
-    for (final constraint in constraints) {
-      if (constraint is JsonSchemaSpec) {
-        constraintSchemas.add((constraint as JsonSchemaSpec).toJsonSchema());
-      }
-    }
-
-    return constraintSchemas.fold(
-      schema,
-      (prev, current) => deepMerge(prev, current),
-    );
+    return mergeConstraintSchemas(schema);
   }
 }

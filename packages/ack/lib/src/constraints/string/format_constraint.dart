@@ -3,9 +3,9 @@ import '../constraint.dart';
 /// Constraint to validate if a string is a valid email address.
 class EmailConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
-  // A common email regex pattern.
+  // Email regex pattern that requires at least one dot after @ and no consecutive dots
   static final _emailRegex = RegExp(
-    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
+    r"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$",
   );
 
   EmailConstraint()
