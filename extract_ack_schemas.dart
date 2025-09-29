@@ -1,104 +1,64 @@
 import 'dart:io';
 
 void main() async {
-  print('# Ack Schema Library - Complete Source Code\n');
-  print('Generated on: ${DateTime.now().toIso8601String()}\n');
-  print('---\n');
+  // Output file
+  final outputFile = File('context.local.md');
+  final buffer = StringBuffer();
 
-  // Define the schema library structure
-  final schemaFiles = [
-    // Core schema file
-    'packages/ack/lib/src/schemas/schema.dart',
+  buffer.writeln('# Ack Schema Library - Complete Source Code\n');
+  buffer.writeln('Generated on: ${DateTime.now().toIso8601String()}\n');
+  buffer.writeln('---\n');
 
-    // Individual schema implementations (part files)
-    'packages/ack/lib/src/schemas/any_of_schema.dart',
-    'packages/ack/lib/src/schemas/any_schema.dart',
-    'packages/ack/lib/src/schemas/boolean_schema.dart',
-    'packages/ack/lib/src/schemas/discriminated_object_schema.dart',
-    'packages/ack/lib/src/schemas/enum_schema.dart',
-    'packages/ack/lib/src/schemas/fluent_schema.dart',
-    'packages/ack/lib/src/schemas/list_schema.dart',
-    'packages/ack/lib/src/schemas/num_schema.dart',
-    'packages/ack/lib/src/schemas/object_schema.dart',
-    'packages/ack/lib/src/schemas/optional_schema.dart',
-    'packages/ack/lib/src/schemas/string_schema.dart',
-    'packages/ack/lib/src/schemas/transformed_schema.dart',
+  // Get all Dart files from packages/ack/lib directory
+  final libDir = Directory('packages/ack/lib');
+  if (!libDir.existsSync()) {
+    print('❌ Directory not found: packages/ack/lib');
+    exit(1);
+  }
 
-    // Schema extensions
-    'packages/ack/lib/src/schemas/extensions/ack_schema_extensions.dart',
-    'packages/ack/lib/src/schemas/extensions/list_schema_extensions.dart',
-    'packages/ack/lib/src/schemas/extensions/numeric_extensions.dart',
-    'packages/ack/lib/src/schemas/extensions/object_schema_extensions.dart',
-    'packages/ack/lib/src/schemas/extensions/string_schema_extensions.dart',
-
-    // Validation components
-    'packages/ack/lib/src/validation/schema_result.dart',
-    'packages/ack/lib/src/validation/schema_error.dart',
-    'packages/ack/lib/src/validation/ack_exception.dart',
-
-    // Context
-    'packages/ack/lib/src/context.dart',
-
-    // Schema model
-    'packages/ack/lib/src/schema_model.dart',
-
-    // Constraints
-    'packages/ack/lib/src/constraints/constraint.dart',
-    'packages/ack/lib/src/constraints/validators.dart',
-
-    // Core constraints
-    'packages/ack/lib/src/constraints/core/comparison_constraint.dart',
-    'packages/ack/lib/src/constraints/core/enum_constraint.dart',
-    'packages/ack/lib/src/constraints/core/is_finite_constraint.dart',
-    'packages/ack/lib/src/constraints/core/is_negative_constraint.dart',
-    'packages/ack/lib/src/constraints/core/is_positive_constraint.dart',
-    'packages/ack/lib/src/constraints/core/literal_constraint.dart',
-    'packages/ack/lib/src/constraints/core/pattern_constraint.dart',
-    'packages/ack/lib/src/constraints/core/range_constraint.dart',
-    'packages/ack/lib/src/constraints/core/unique_items_constraint.dart',
-
-    // String constraints
-    'packages/ack/lib/src/constraints/string/format_constraint.dart',
-    'packages/ack/lib/src/constraints/string/string_enum_constraint.dart',
-
-    // Helpers
-    'packages/ack/lib/src/helpers.dart',
-
-    // Main Ack factory
-    'packages/ack/lib/src/ack.dart',
-
-    // Main export file
-    'packages/ack/lib/ack.dart',
-  ];
-
-  for (final filePath in schemaFiles) {
-    final file = File(filePath);
-    if (!file.existsSync()) {
-      print('## ⚠️ File not found: $filePath\n');
-      continue;
+  // Recursively find all .dart files
+  final dartFiles = <File>[];
+  await for (final entity in libDir.list(recursive: true, followLinks: false)) {
+    if (entity is File && entity.path.endsWith('.dart')) {
+      dartFiles.add(entity);
     }
+  }
 
-    print('## File: `$filePath`\n');
-    print('```dart');
+  // Sort files by path for consistent output
+  dartFiles.sort((a, b) => a.path.compareTo(b.path));
+
+  // Process each file
+  int processedCount = 0;
+  for (final file in dartFiles) {
+    // Get relative path from packages/ack/lib
+    final relativePath = file.path;
+
+    buffer.writeln('## File: `$relativePath`\n');
+    buffer.writeln('```dart');
 
     try {
       final content = await file.readAsString();
-      print(content);
+      buffer.write(content);
+      processedCount++;
     } catch (e) {
-      print('// Error reading file: $e');
+      buffer.writeln('// Error reading file: $e');
     }
 
-    print('```\n');
+    buffer.writeln('```\n');
   }
 
-  print('---\n');
-  print('## Summary\n');
-  print('Total files extracted: ${schemaFiles.length}\n');
-  print('This extraction includes the complete Ack schema validation library with:');
-  print('- Core schema implementations');
-  print('- Schema extensions for fluent API');
-  print('- Validation and error handling');
-  print('- Constraint system');
-  print('- Context management');
-  print('- Helper utilities\n');
+  buffer.writeln('---\n');
+  buffer.writeln('## Summary\n');
+  buffer.writeln('Total files extracted: $processedCount\n');
+  buffer.writeln('This extraction includes the complete Ack schema validation library with:');
+  buffer.writeln('- Core schema implementations');
+  buffer.writeln('- Schema extensions for fluent API');
+  buffer.writeln('- Validation and error handling');
+  buffer.writeln('- Constraint system');
+  buffer.writeln('- Context management');
+  buffer.writeln('- Helper utilities\n');
+
+  // Write to file
+  await outputFile.writeAsString(buffer.toString());
+  print('✅ Context extracted to context.local.md ($processedCount files)');
 }
