@@ -14,7 +14,7 @@ final class BooleanSchema extends AckSchema<bool>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.boolean);
+  });
 
   @override
   JsonType get acceptedType => JsonType.boolean;

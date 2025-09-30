@@ -11,10 +11,16 @@ final class AnySchema extends AckSchema<Object>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.unknown);
+  });
 
   @override
-  JsonType get acceptedType => JsonType.string; // Arbitrary, not used
+  JsonType get acceptedType {
+    // AnySchema accepts all types, so we throw UnimplementedError
+    // since it overrides parseAndValidate directly
+    throw UnimplementedError(
+      'AnySchema accepts all types and overrides parseAndValidate directly',
+    );
+  }
 
   /// AnySchema accepts all values, so it overrides parseAndValidate directly.
   @override

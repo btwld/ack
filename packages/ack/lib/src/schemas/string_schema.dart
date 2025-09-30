@@ -13,7 +13,7 @@ final class StringSchema extends AckSchema<String>
     super.constraints,
     super.refinements,
     this.strictPrimitiveParsing = false,
-  }) : super(schemaType: SchemaType.string);
+  });
 
   @override
   JsonType get acceptedType => JsonType.string;

@@ -135,14 +135,14 @@ void main() {
         expect(error.actualType, equals('integer'));
       });
 
-      test('DoubleSchema should treat ints as invalid when strict parsing', () {
+      test('DoubleSchema should accept ints even in strict mode (integers are numbers)', () {
         const schema = DoubleSchema(strictPrimitiveParsing: true);
         final result = schema.validate(42);
 
-        expect(result.isOk, isFalse);
-        final error = result.getError() as TypeMismatchError;
-        expect(error.expectedType, equals('number'));
-        expect(error.actualType, equals('integer'));
+        // Integers ARE numbers in JSON Schema semantics, so this should pass
+        // Strict mode only prevents string→number coercion
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), equals(42.0));
       });
     });
 

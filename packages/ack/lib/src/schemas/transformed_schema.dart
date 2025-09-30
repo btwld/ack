@@ -14,7 +14,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: schema.schemaType);
+  });
 
   @override
   @protected

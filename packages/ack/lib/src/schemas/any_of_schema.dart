@@ -1,7 +1,23 @@
 part of 'schema.dart';
 
 /// Schema for validating against a list of schemas.
-/// The input is valid if it is valid against any of the schemas in the list.
+///
+/// The input is valid if it matches ANY of the provided schemas.
+/// This is useful for union types where a value can be one of several different types.
+///
+/// Example:
+/// ```dart
+/// final schema = Ack.anyOf([
+///   Ack.string(),
+///   Ack.integer(),
+///   Ack.boolean(),
+/// ]);
+///
+/// schema.validate('hello');  // Ok
+/// schema.validate(42);        // Ok
+/// schema.validate(true);      // Ok
+/// schema.validate([]);        // Fail - not matching any schema
+/// ```
 @immutable
 final class AnyOfSchema extends AckSchema<Object>
     with FluentSchema<Object, AnyOfSchema> {
@@ -14,47 +30,79 @@ final class AnyOfSchema extends AckSchema<Object>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.unknown);
+  });
 
   @override
-  JsonType get acceptedType => JsonType.string; // Arbitrary, not used
+  JsonType get acceptedType {
+    // AnyOfSchema can accept multiple types, so we can't return a single type.
+    // This is only used for type checking in the base parseAndValidate,
+    // but we override parseAndValidate entirely, so this is never called.
+    // Throwing here makes it clear this schema handles types differently.
+    throw UnimplementedError(
+      'AnyOfSchema accepts multiple types and overrides parseAndValidate directly',
+    );
+  }
 
   /// AnyOfSchema tries multiple schemas, so it overrides parseAndValidate directly.
+  ///
+  /// Key behaviors:
+  /// 1. Tries ALL member schemas with the input value (including null)
+  /// 2. Returns success on first matching schema
+  /// 3. If no schema matches and input is null, checks AnyOfSchema's own nullable
+  /// 4. Collects all errors for comprehensive debugging
   @override
   @protected
   SchemaResult<Object> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    if (inputValue == null) return handleNullInput(context);
+    // STEP 1: Try all member schemas first (including with null input!)
+    // This allows patterns like: Ack.anyOf([Ack.string().nullable(), Ack.integer()])
+    // where the nullable member schema should accept null.
+    final errors = <SchemaError>[];
 
-    // Try each schema until one succeeds
-    final validationErrors = <SchemaError>[];
-
-    for (var i = 0; i < schemas.length; i++) {
-      final schema = schemas[i];
+    for (final (index, schema) in schemas.indexed) {
       // Keep branch name for debug but DON'T pollute the JSON Pointer path
       // User errors should point to their field path, not #/field/anyOf:0
       // Empty pathSegment means "inherit parent's path"
       final childContext = context.createChild(
-        name: 'anyOf:$i',
+        name: 'anyOf:$index',
         schema: schema,
         value: inputValue,
         pathSegment: '', // Inherit parent path, don't add segment
       );
-      final result = schema.parseAndValidate(inputValue, childContext);
-      if (result.isOk) {
-        final validatedValue = result.getOrThrow()!;
 
-        // Use centralized constraints and refinements check
+      final result = schema.parseAndValidate(inputValue, childContext);
+
+      // Early return on first success for better performance
+      if (result.isOk) {
+        final validatedValue = result.getOrNull();
+
+        // If member schema returned null (because it's nullable), return directly
+        // We don't apply AnyOfSchema's own constraints to null values
+        if (validatedValue == null) {
+          return SchemaResult.ok(null);
+        }
+
+        // Apply AnyOfSchema's own constraints and refinements to non-null values
         return applyConstraintsAndRefinements(validatedValue, context);
       }
-      validationErrors.add(result.getError());
+
+      // Collect error for comprehensive error reporting
+      errors.add(result.getError());
     }
 
+    // STEP 2: No member schema accepted the value
+    // If input is null, check AnyOfSchema's own nullable settings
+    if (inputValue == null) {
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+    }
+
+    // STEP 3: Nothing worked - return comprehensive errors
     return SchemaResult.fail(SchemaNestedError(
-      errors: validationErrors,
+      errors: errors,
       context: context,
     ));
   }
@@ -66,13 +114,15 @@ final class AnyOfSchema extends AckSchema<Object>
     required Object? defaultValue,
     required List<Constraint<Object>>? constraints,
     required List<Refinement<Object>>? refinements,
-    List<AckSchema>? schemas,
   }) {
+    if (defaultValue != null) {
+      throw StateError('Default not supported for AnyOfSchema');
+    }
     return AnyOfSchema(
-      schemas ?? this.schemas,
+      schemas, // schemas are immutable once created
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
+      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

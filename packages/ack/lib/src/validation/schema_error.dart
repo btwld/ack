@@ -33,7 +33,7 @@ abstract class SchemaError {
       'message': message,
       'name': name,
       'value': value,
-      'schemaType': schema.schemaType.name,
+      'schemaType': schema.schemaTypeName,
       'path': path,
     };
   }

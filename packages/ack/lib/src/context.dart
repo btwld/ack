@@ -73,7 +73,7 @@ class SchemaContext {
 
   @override
   String toString() {
-    final schemaTypeString = schema.schemaType.toString().split('.').last;
+    final schemaTypeString = schema.schemaTypeName;
     final valueString = value?.toString() ?? 'null';
 
     return 'SchemaContext(name: "$name", path: "$path", schema: $schemaTypeString, value: "$valueString")';

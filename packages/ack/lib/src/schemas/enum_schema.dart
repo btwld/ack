@@ -13,7 +13,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.enumType);
+  });
 
   @override
   JsonType get acceptedType => JsonType.string;

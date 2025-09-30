@@ -18,13 +18,18 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.discriminatedObject);
+  });
 
   @override
   JsonType get acceptedType => JsonType.object;
 
   /// DiscriminatedObjectSchema uses custom polymorphic validation logic,
   /// so it overrides parseAndValidate directly.
+  ///
+  /// Key behaviors:
+  /// 1. For non-null input: validates discriminator and routes to appropriate schema
+  /// 2. For null input with default: recursively validates default through discriminator logic
+  /// 3. For null input without default but nullable: returns null
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(
@@ -159,12 +164,15 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     String? discriminatorKey,
     Map<String, AckSchema>? schemas,
   }) {
+    if (defaultValue != null) {
+      throw StateError('Default not supported for DiscriminatedObjectSchema');
+    }
     return DiscriminatedObjectSchema(
       discriminatorKey: discriminatorKey ?? this.discriminatorKey,
       schemas: schemas ?? this.schemas,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
+      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

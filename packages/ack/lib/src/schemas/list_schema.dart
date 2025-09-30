@@ -13,7 +13,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.list);
+  });
 
   @override
   JsonType get acceptedType => JsonType.array;
@@ -107,11 +107,14 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     // ListSchema specific
     AckSchema<V>? itemSchema,
   }) {
+    if (defaultValue != null) {
+      throw StateError('Default not supported for ListSchema');
+    }
     return ListSchema(
       itemSchema ?? this.itemSchema,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
+      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -123,7 +126,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'type': isNullable ? ['array', 'null'] : 'array',
       'items': itemSchema.toJsonSchema(),
       if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
     };
 
     return mergeConstraintSchemas(schema);

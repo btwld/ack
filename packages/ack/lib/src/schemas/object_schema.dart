@@ -17,8 +17,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  })  : properties = properties ?? const {},
-        super(schemaType: SchemaType.object);
+  })  : properties = properties ?? const {};
 
   @override
   JsonType get acceptedType => JsonType.object;
@@ -186,12 +185,15 @@ final class ObjectSchema extends AckSchema<MapValue>
     Map<String, AckSchema>? properties,
     bool? allowAdditionalProperties,
   }) {
+    if (defaultValue != null) {
+      throw StateError('Default not supported for ObjectSchema');
+    }
     return ObjectSchema(
       properties ?? this.properties,
       additionalProperties: allowAdditionalProperties ?? additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
+      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -216,7 +218,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       if (requiredFields.isNotEmpty) 'required': requiredFields,
       'additionalProperties': additionalProperties,
       if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
     };
 
     return mergeConstraintSchemas(schema);

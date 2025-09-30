@@ -69,31 +69,19 @@ void main() {
         expect(animalSchema.description, isNull); // Original unchanged
       });
 
-      test('withDefault() adds default value', () {
-        final defaultValue = {'type': 'cat', 'meow': true};
-        final schemaWithDefault = animalSchema.withDefault(defaultValue);
-
-        expect(schemaWithDefault.defaultValue, equals(defaultValue));
-        expect(animalSchema.defaultValue, isNull); // Original unchanged
-      });
-
-      test('fluent methods can be chained', () {
+      test('fluent methods can be chained (excluding default)', () {
         const description = 'Nullable animal schema';
-        final defaultValue = {'type': 'cat', 'meow': true};
 
         final fullyConfiguredSchema = animalSchema
             .nullable()
-            .withDescription(description)
-            .withDefault(defaultValue);
+            .withDescription(description);
 
         expect(fullyConfiguredSchema.isNullable, isTrue);
         expect(fullyConfiguredSchema.description, equals(description));
-        expect(fullyConfiguredSchema.defaultValue, equals(defaultValue));
 
         // Original remains unchanged
         expect(animalSchema.isNullable, isFalse);
         expect(animalSchema.description, isNull);
-        expect(animalSchema.defaultValue, isNull);
       });
 
       test('nullable(false) creates non-nullable schema', () {
@@ -114,7 +102,7 @@ void main() {
         expect(copy.schemas, equals(animalSchema.schemas));
         expect(copy.isNullable, equals(animalSchema.isNullable));
         expect(copy.description, equals(animalSchema.description));
-        expect(copy.defaultValue, equals(animalSchema.defaultValue));
+        // No default expected on discriminated schema
       });
 
       test('copyWith updates specific values', () {

@@ -22,18 +22,6 @@ part 'optional_schema.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
 
-enum SchemaType {
-  string,
-  integer,
-  double,
-  boolean,
-  object,
-  discriminatedObject,
-  list,
-  enumType,
-  unknown,
-}
-
 /// JSON type enumeration following JSON Schema Draft 2020-12.
 ///
 /// This enum serves as the central authority for type validation and conversion logic.
@@ -253,7 +241,6 @@ typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
 @immutable
 sealed class AckSchema<DartType extends Object> {
-  final SchemaType schemaType;
   final bool isNullable;
   final String? description;
   final DartType? defaultValue;
@@ -261,7 +248,6 @@ sealed class AckSchema<DartType extends Object> {
   final List<Refinement<DartType>> refinements;
 
   const AckSchema({
-    required this.schemaType,
     this.isNullable = false,
     this.description,
     this.defaultValue,
@@ -286,16 +272,22 @@ sealed class AckSchema<DartType extends Object> {
 
   /// Handles null input values according to schema rules.
   ///
-  /// This method centralizes null handling logic used by all schemas that override parseAndValidate.
-  /// Returns SchemaResult if null should be handled (success with default/null, or failure).
-  ///
-  /// Schemas that override parseAndValidate should call this for null inputs:
-  /// ```dart
-  /// if (inputValue == null) return handleNullInput(context);
-  /// ```
+  /// Centralized behavior for null inputs (in order of precedence):
+  /// 1) If `defaultValue` is set, use it
+  ///    - Scalar schemas: validate constraints/refinements on the default directly
+  ///    - Composite schemas (AnyOf/List/Object/Discriminated): they should override
+  ///      `parseAndValidate` and validate defaults through their nested schemas
+  ///      (e.g., through member/item/property validation) before applying their
+  ///      own constraints/refinements.
+  /// 2) If `isNullable` is true, return Ok(null)
+  /// 3) Otherwise, return a non-nullable failure
   @protected
   SchemaResult<DartType> handleNullInput(SchemaContext context) {
+    // Priority 1: Use default value if provided
     if (defaultValue != null) {
+      // For scalar schemas: validate constraints and refinements
+      // For composite schemas: they should override parseAndValidate
+      // to validate defaults through their member/item schemas instead
       final constraintViolations = _checkConstraints(defaultValue!, context);
       if (constraintViolations.isNotEmpty) {
         return SchemaResult.fail(SchemaConstraintsError(
@@ -306,10 +298,12 @@ sealed class AckSchema<DartType extends Object> {
       return _runRefinements(defaultValue!, context);
     }
 
+    // Priority 2: Accept null if schema is nullable
     if (isNullable) {
       return SchemaResult.ok(null);
     }
 
+    // Priority 3: Fail - null not allowed
     return failNonNullable(context);
   }
 
@@ -430,30 +424,40 @@ sealed class AckSchema<DartType extends Object> {
     ));
   }
 
-  /// The JSON types that this schema accepts for validation.
-  ///
-  /// Subclasses can override this to define custom accepted types (e.g., for coercion).
-  /// The base implementation returns a single type based on [schemaType], plus null if [isNullable].
-  ///
-  /// Examples:
-  /// - `StringSchema`: `[JsonType.string]` or `[JsonType.string, JsonType.nil]` if nullable
-  /// - `IntegerSchema` with coercion: `[JsonType.integer, JsonType.number, JsonType.string]`
   /// The primary JSON type this schema validates to.
   ///
-  /// Schemas override this to specify their target type. The [canAcceptFrom]
-  /// method on JsonType determines which source types can be converted.
+  /// Each schema subclass must override this to specify its target JSON type.
+  /// The [canAcceptFrom] method on JsonType determines which source types
+  /// can be converted to the target type.
+  ///
+  /// Examples:
+  /// - `StringSchema`: returns `JsonType.string`
+  /// - `IntegerSchema`: returns `JsonType.integer`
+  /// - `ObjectSchema`: returns `JsonType.object`
+  /// - `ListSchema`: returns `JsonType.array`
+  ///
+  /// For composite schemas like AnyOfSchema that accept multiple types,
+  /// this getter may throw UnimplementedError since they override parseAndValidate directly.
   @protected
-  JsonType get acceptedType {
-    return switch (schemaType) {
-      SchemaType.string => JsonType.string,
-      SchemaType.integer => JsonType.integer,
-      SchemaType.double => JsonType.number,
-      SchemaType.boolean => JsonType.boolean,
-      SchemaType.object || SchemaType.discriminatedObject => JsonType.object,
-      SchemaType.list => JsonType.array,
-      SchemaType.enumType => JsonType.string,
-      SchemaType.unknown => JsonType.string,
-    };
+  JsonType get acceptedType;
+
+  /// Returns a human-readable type name for this schema.
+  ///
+  /// For schemas with a single JSON type (StringSchema, IntegerSchema, etc.),
+  /// returns the JSON Schema standard type name ("string", "integer", etc.).
+  ///
+  /// For composite schemas (AnyOfSchema, etc.) that don't have a single type,
+  /// returns the Dart class name as a fallback.
+  ///
+  /// This is used in error messages and debugging output to provide
+  /// clear, standards-aligned type information.
+  String get schemaTypeName {
+    try {
+      return acceptedType.typeName;
+    } catch (_) {
+      // Composite schemas without single type fall back to class name
+      return runtimeType.toString();
+    }
   }
 
   /// Whether this schema uses strict primitive parsing.
@@ -470,16 +474,11 @@ sealed class AckSchema<DartType extends Object> {
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
+    // Use centralized null handling (returns early for null)
     if (inputValue == null) return handleNullInput(context);
 
     final targetType = acceptedType;
     final actualType = AckSchema.getJsonType(inputValue);
-
-    // Handle nullable: nil is always acceptable for nullable schemas
-    if (isNullable && actualType == JsonType.nil) {
-      return SchemaResult.ok(null);
-    }
 
     // Type checking: ask JsonType if it can accept the source type
     if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
@@ -503,7 +502,12 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   SchemaResult<DartType> validate(Object? value, {String? debugName}) {
-    final effectiveDebugName = debugName ?? schemaType.name.toLowerCase();
+    // Use provided debugName or derive from runtime type (e.g., "StringSchema" -> "string")
+    final typeName = runtimeType
+        .toString()
+        .replaceFirst(RegExp(r'Schema$'), '')
+        .toLowerCase();
+    final effectiveDebugName = debugName ?? typeName;
     final context =
         SchemaContext(name: effectiveDebugName, schema: this, value: value);
 
@@ -563,7 +567,7 @@ sealed class AckSchema<DartType extends Object> {
 
   Map<String, Object?> toMap() {
     return {
-      'schemaType': schemaType.name,
+      'runtimeType': runtimeType.toString(),
       'isNullable': isNullable,
       'description': description,
       'defaultValue': defaultValue?.toString(),

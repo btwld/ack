@@ -2,10 +2,10 @@ part of 'schema.dart';
 
 @immutable
 sealed class NumSchema<T extends num> extends AckSchema<T> {
+  @override
   final bool strictPrimitiveParsing;
 
   const NumSchema({
-    required super.schemaType,
     this.strictPrimitiveParsing = false,
     super.isNullable,
     super.description,
@@ -37,7 +37,7 @@ final class IntegerSchema extends NumSchema<int>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.integer);
+  });
 
   @override
   JsonType get acceptedType => JsonType.integer;
@@ -107,7 +107,7 @@ final class DoubleSchema extends NumSchema<double>
     super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(schemaType: SchemaType.double);
+  });
 
   @override
   JsonType get acceptedType => JsonType.number;

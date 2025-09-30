@@ -1,8 +1,50 @@
 part of 'schema.dart';
 
 /// A schema wrapper that makes any schema optional (field may be omitted).
-/// Optional means the field can be missing. It does NOT imply nullable.
-/// Use .nullable() explicitly if you want to accept null values.
+///
+/// ## Semantics
+///
+/// **`optional()`** means: The field can be **MISSING** from an object.
+/// - When field is present: validates normally
+/// - When field is missing: uses default if provided, otherwise omits from result
+/// - When field is explicitly null: **FAILS** (unless also `.nullable()`)
+///
+/// **`nullable()`** means: The field/value can be explicitly **NULL**.
+/// - Accepts null as a valid value
+/// - Does NOT mean the field can be missing
+///
+/// **`optional().nullable()`** means: Field can be missing OR explicitly null.
+///
+/// ## Usage Context
+///
+/// ### In ObjectSchema (most common):
+/// ```dart
+/// Ack.object({
+///   'required': Ack.string(),                    // Must be present, cannot be null
+///   'optional': Ack.string().optional(),         // Can be missing, fails if null
+///   'nullable': Ack.string().nullable(),         // Must be present, can be null
+///   'both': Ack.string().optional().nullable(),  // Can be missing or null
+/// });
+/// ```
+///
+/// ### At Top-Level (less common):
+/// At top-level, `optional()` has minimal effect since there's no "missing" concept:
+/// ```dart
+/// Ack.string().optional().validate(null)          // FAILS - null is not missing
+/// Ack.string().optional().nullable().validate(null) // OK - nullable accepts it
+/// Ack.string().optional().withDefault('x').validate(null) // OK - uses default
+/// ```
+///
+/// ## Default Values
+///
+/// Defaults apply when the field is **missing** (in ObjectSchema):
+/// ```dart
+/// Ack.object({'count': Ack.integer().optional().withDefault(0)})
+/// .validate({})  // → {'count': 0}
+///
+/// Ack.object({'count': Ack.integer().optional().withDefault(0)})
+/// .validate({'count': null})  // → FAILS (null ≠ missing)
+/// ```
 @immutable
 final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     with FluentSchema<DartType, OptionalSchema<DartType>> {
@@ -15,9 +57,7 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     super.constraints = const [],
     super.refinements = const [],
     super.isNullable = false,
-  }) : super(
-          schemaType: wrappedSchema.schemaType,
-        );
+  });
 
   @override
   JsonType get acceptedType => wrappedSchema.acceptedType;
@@ -32,8 +72,19 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    if (inputValue == null) return handleNullInput(context);
+    // Simplified Optional semantics:
+    // - Optional is intended for object properties ("missing" semantics)
+    // - At the top-level (no parent context), null should not trigger Optional defaults
+    //   or special handling; treat as non-nullable unless explicitly nullable.
+    if (inputValue == null) {
+      final isTopLevel = context.parent == null;
+      if (isTopLevel) {
+        if (isNullable) return SchemaResult.ok(null);
+        return failNonNullable(context);
+      }
+      // Nested usage (e.g., object property): fall back to base handling
+      return handleNullInput(context);
+    }
 
     // Delegate full validation to wrapped schema, which includes wrapped schema's
     // constraints and refinements. After this, we'll apply OptionalSchema's own constraints/refinements.
