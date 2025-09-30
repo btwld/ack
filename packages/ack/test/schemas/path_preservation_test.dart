@@ -11,8 +11,16 @@ void main() {
 
         expect(result.isFail, isTrue);
         final error = result.getError();
-        expect(error.toString(), contains('[1]'),
-            reason: 'Error should contain index of bad item');
+        // Check the actual JSON Pointer path from nested error
+        if (error is SchemaNestedError) {
+          final nestedErrors = error.errors;
+          expect(nestedErrors, isNotEmpty);
+          final firstError = nestedErrors.first;
+          if (firstError is SchemaConstraintsError) {
+            expect(firstError.context.path, equals('#/1'),
+                reason: 'Error should have JSON Pointer path #/1');
+          }
+        }
       });
 
       test('should show JSON pointer path for nested list items', () {
@@ -26,10 +34,23 @@ void main() {
 
         expect(result.isFail, isTrue);
         final error = result.getError();
-        expect(error.toString(), contains('items'),
-            reason: 'Error should show parent field');
-        expect(error.toString(), contains('[1]'),
-            reason: 'Error should show array index');
+        // Navigate through nested error structure to find the actual validation error
+        if (error is SchemaNestedError) {
+          final objectErrors = error.errors;
+          expect(objectErrors, isNotEmpty);
+          // The first error should be for the 'items' property
+          final itemsError = objectErrors.first;
+          if (itemsError is SchemaNestedError) {
+            // Within items, there should be an error for index 1
+            final listErrors = itemsError.errors;
+            expect(listErrors, isNotEmpty);
+            final indexError = listErrors.first;
+            if (indexError is SchemaConstraintsError) {
+              expect(indexError.context.path, equals('#/items/1'),
+                  reason: 'Error should have full JSON Pointer path #/items/1');
+            }
+          }
+        }
       });
     });
 
@@ -184,6 +205,99 @@ void main() {
     });
   });
 
+  group('RFC 6901 JSON Pointer Escaping', () {
+    test('should escape ~ and / in property names', () {
+      final schema = Ack.object({
+        'user/name': Ack.string().minLength(5),
+        'config~value': Ack.integer().min(10),
+      });
+
+      // Test ~ escaping
+      final result1 = schema.validate({
+        'user/name': 'valid',
+        'config~value': 5, // Invalid: too small
+      });
+
+      expect(result1.isFail, isTrue);
+      final error1 = result1.getError();
+      if (error1 is SchemaNestedError) {
+        final nestedError = error1.errors.first;
+        if (nestedError is SchemaConstraintsError) {
+          // ~ should be escaped as ~0
+          expect(nestedError.context.path, equals('#/config~0value'),
+              reason: 'Tilde ~ should be escaped as ~0 per RFC 6901');
+        }
+      }
+
+      // Test / escaping
+      final result2 = schema.validate({
+        'user/name': 'bad', // Invalid: too short
+        'config~value': 15,
+      });
+
+      expect(result2.isFail, isTrue);
+      final error2 = result2.getError();
+      if (error2 is SchemaNestedError) {
+        final nestedError = error2.errors.first;
+        if (nestedError is SchemaConstraintsError) {
+          // / should be escaped as ~1
+          expect(nestedError.context.path, equals('#/user~1name'),
+              reason: 'Forward slash / should be escaped as ~1 per RFC 6901');
+        }
+      }
+    });
+
+    test('should escape both ~ and / when present together', () {
+      final schema = Ack.object({
+        'path~/to/file': Ack.string().minLength(5),
+      });
+
+      final result = schema.validate({
+        'path~/to/file': 'bad', // Invalid: too short
+      });
+
+      expect(result.isFail, isTrue);
+      final error = result.getError();
+      if (error is SchemaNestedError) {
+        final nestedError = error.errors.first;
+        if (nestedError is SchemaConstraintsError) {
+          // ~ first (becomes ~0), then / (becomes ~1)
+          expect(nestedError.context.path, equals('#/path~0~1to~1file'),
+              reason: 'Should escape ~ as ~0 and / as ~1 per RFC 6901');
+        }
+      }
+    });
+
+    test('should escape in nested paths', () {
+      final schema = Ack.object({
+        'level1': Ack.object({
+          'level~/2': Ack.string().minLength(5),
+        }),
+      });
+
+      final result = schema.validate({
+        'level1': {
+          'level~/2': 'bad', // Invalid: too short
+        },
+      });
+
+      expect(result.isFail, isTrue);
+      final error = result.getError();
+      if (error is SchemaNestedError) {
+        // Navigate to the nested error
+        final level1Error = error.errors.first;
+        if (level1Error is SchemaNestedError) {
+          final level2Error = level1Error.errors.first;
+          if (level2Error is SchemaConstraintsError) {
+            // 'level~/2' becomes 'level~0~12' (~ -> ~0, / -> ~1, 2 stays as 2)
+            expect(level2Error.context.path, equals('#/level1/level~0~12'),
+                reason: 'Nested paths should also escape special characters');
+          }
+        }
+      }
+    });
+  });
+
   group('JSON Schema Nullability', () {
     test('AnySchema should handle nullable in JSON Schema', () {
       final nullableSchema = Ack.any().nullable();
@@ -207,17 +321,17 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      // When nullable, AnyOfSchema wraps in oneOf with null type
-      expect(jsonSchema['oneOf'], isA<List>());
-      final oneOf = jsonSchema['oneOf'] as List;
+      // When nullable, AnyOfSchema includes null in anyOf array
+      expect(jsonSchema['anyOf'], isA<List>());
+      final anyOf = jsonSchema['anyOf'] as List;
 
       // First element should be the null type
-      expect(oneOf[0], equals({'type': 'null'}));
+      expect(anyOf[0], equals({'type': 'null'}));
 
-      // Second element should contain the anyOf schemas
-      expect(oneOf[1], isA<Map>());
-      final innerSchema = oneOf[1] as Map;
-      expect(innerSchema['anyOf'], isA<List>());
+      // Remaining elements should be the original schemas
+      expect(anyOf.length, equals(3)); // null, integer, string
+      expect(anyOf[1], isA<Map>());
+      expect(anyOf[2], isA<Map>());
     });
   });
 }

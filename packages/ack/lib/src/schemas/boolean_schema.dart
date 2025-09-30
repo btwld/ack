@@ -4,6 +4,7 @@ part of 'schema.dart';
 @immutable
 final class BooleanSchema extends AckSchema<bool>
     with FluentSchema<bool, BooleanSchema> {
+  @override
   final bool strictPrimitiveParsing;
 
   const BooleanSchema({
@@ -16,30 +17,7 @@ final class BooleanSchema extends AckSchema<bool>
   }) : super(schemaType: SchemaType.boolean);
 
   @override
-  @protected
-  SchemaResult<bool> _performTypeConversion(
-      Object inputValue, SchemaContext context) {
-    // First try basic type validation
-    final typeResult = validateExpectedType(inputValue, context);
-    if (typeResult.isOk) {
-      return SchemaResult.ok(inputValue as bool);
-    }
-
-    // If strict parsing is enabled, don't attempt conversion
-    if (strictPrimitiveParsing) {
-      return SchemaResult.fail(typeResult.getError());
-    }
-
-    // Try string to boolean conversion
-    if (inputValue is String) {
-      final lowercaseValue = inputValue.toLowerCase();
-      if (lowercaseValue == 'true') return SchemaResult.ok(true);
-      if (lowercaseValue == 'false') return SchemaResult.ok(false);
-    }
-
-    // Return the original type error
-    return SchemaResult.fail(typeResult.getError());
-  }
+  JsonType get acceptedType => JsonType.boolean;
 
   /// Creates a new BooleanSchema with strict parsing enabled/disabled
   BooleanSchema strictParsing({bool value = true}) =>

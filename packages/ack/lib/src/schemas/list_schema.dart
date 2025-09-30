@@ -16,26 +16,35 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }) : super(schemaType: SchemaType.list);
 
   @override
-  @protected
-  SchemaResult<List<V>> _performTypeConversion(
-      Object inputValue, SchemaContext context) {
-    // First try basic type validation
-    final typeResult = validateExpectedType(inputValue, context);
-    if (typeResult.isFail) {
-      return SchemaResult.fail(typeResult.getError());
-    }
+  JsonType get acceptedType => JsonType.array;
 
-    // Type validation passed, safe to cast
+  /// ListSchema uses custom validation logic for items,
+  /// so it overrides parseAndValidate directly.
+  @override
+  @protected
+  SchemaResult<List<V>> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
+
+    // Use centralized type checking
+    final typeError = checkTypeMatch(inputValue, context);
+    if (typeError != null) return typeError;
+
+    // Custom list validation logic
     final inputList = inputValue as List;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
     for (var i = 0; i < inputList.length; i++) {
       final itemValue = inputList[i];
-      final itemContext = SchemaContext(
-        name: '${context.name}[$i]',
+      final itemContext = context.createChild(
+        name: '$i',
         schema: itemSchema,
         value: itemValue,
+        pathSegment: '$i',
       );
 
       final itemResult = itemSchema.parseAndValidate(itemValue, itemContext);
@@ -65,7 +74,8 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       ));
     }
 
-    return SchemaResult.ok(validatedItems);
+    // Use centralized constraints and refinements check
+    return applyConstraintsAndRefinements(validatedItems, context);
   }
 
   @override
@@ -113,6 +123,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'type': isNullable ? ['array', 'null'] : 'array',
       'items': itemSchema.toJsonSchema(),
       if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
     };
 
     return mergeConstraintSchemas(schema);

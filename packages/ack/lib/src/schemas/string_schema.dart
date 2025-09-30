@@ -3,6 +3,7 @@ part of 'schema.dart';
 @immutable
 final class StringSchema extends AckSchema<String>
     with FluentSchema<String, StringSchema> {
+  @override
   final bool strictPrimitiveParsing;
 
   const StringSchema({
@@ -15,25 +16,7 @@ final class StringSchema extends AckSchema<String>
   }) : super(schemaType: SchemaType.string);
 
   @override
-  @protected
-  SchemaResult<String> _performTypeConversion(
-      Object inputValue, SchemaContext context) {
-    // First try basic type validation
-    final typeResult = validateExpectedType(inputValue, context);
-    if (typeResult.isOk) {
-      return SchemaResult.ok(inputValue as String);
-    }
-
-    // If basic type validation fails, try type coercion (if allowed)
-    if (!strictPrimitiveParsing) {
-      if (inputValue is int || inputValue is double || inputValue is bool) {
-        return SchemaResult.ok(inputValue.toString());
-      }
-    }
-
-    // Return the original type error
-    return SchemaResult.fail(typeResult.getError());
-  }
+  JsonType get acceptedType => JsonType.string;
 
   /// Creates a new [StringSchema] that enforces strict parsing.
   StringSchema strictParsing({bool value = true}) =>

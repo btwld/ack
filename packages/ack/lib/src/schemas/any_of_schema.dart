@@ -17,18 +17,38 @@ final class AnyOfSchema extends AckSchema<Object>
   }) : super(schemaType: SchemaType.unknown);
 
   @override
+  JsonType get acceptedType => JsonType.string; // Arbitrary, not used
+
+  /// AnyOfSchema tries multiple schemas, so it overrides parseAndValidate directly.
+  @override
   @protected
-  SchemaResult<Object> _performTypeConversion(Object inputValue, SchemaContext context) {
+  SchemaResult<Object> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
+
+    // Try each schema until one succeeds
     final validationErrors = <SchemaError>[];
 
     for (var i = 0; i < schemas.length; i++) {
       final schema = schemas[i];
-      final result = schema.validate(
-        inputValue,
-        debugName: '${context.name}[anyOf:$i]',
+      // Keep branch name for debug but DON'T pollute the JSON Pointer path
+      // User errors should point to their field path, not #/field/anyOf:0
+      // Empty pathSegment means "inherit parent's path"
+      final childContext = context.createChild(
+        name: 'anyOf:$i',
+        schema: schema,
+        value: inputValue,
+        pathSegment: '', // Inherit parent path, don't add segment
       );
+      final result = schema.parseAndValidate(inputValue, childContext);
       if (result.isOk) {
-        return SchemaResult.ok(result.getOrThrow());
+        final validatedValue = result.getOrThrow()!;
+
+        // Use centralized constraints and refinements check
+        return applyConstraintsAndRefinements(validatedValue, context);
       }
       validationErrors.add(result.getError());
     }
@@ -67,9 +87,11 @@ final class AnyOfSchema extends AckSchema<Object>
       anyOfClauses.insert(0, {'type': 'null'});
     }
 
-    return {
+    final schema = {
       'anyOf': anyOfClauses,
       if (description != null) 'description': description,
     };
+
+    return mergeConstraintSchemas(schema);
   }
 }

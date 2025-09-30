@@ -230,8 +230,6 @@ void main() {
               '0',
               'on',
               'off',
-              'True ',
-              ' true',
               'truee',
               'fals'
             ];
@@ -242,7 +240,19 @@ void main() {
             }
           });
 
-          test('should handle empty and whitespace strings', () {
+          test('should handle whitespace-padded valid values', () {
+            final schema = Ack.boolean();
+            // These should pass after trimming
+            expect(schema.validate(' true').isOk, isTrue);
+            expect(schema.validate('true ').isOk, isTrue);
+            expect(schema.validate('  true  ').isOk, isTrue);
+            expect(schema.validate(' false').isOk, isTrue);
+            expect(schema.validate('false ').isOk, isTrue);
+            expect(schema.validate(' TRUE ').isOk, isTrue);
+            expect(schema.validate(' FALSE ').isOk, isTrue);
+          });
+
+          test('should handle empty and whitespace-only strings', () {
             final schema = Ack.boolean();
             expect(schema.validate('').isOk, isFalse);
             expect(schema.validate(' ').isOk, isFalse);

@@ -5,7 +5,7 @@ import '../constraint.dart';
 /// It handles uniqueness for primitives directly. For complex objects,
 /// it relies on the object's `hashCode` and `==` implementation.
 class UniqueItemsConstraint<T> extends Constraint<List<T>>
-    with Validator<List<T>> {
+    with Validator<List<T>>, JsonSchemaSpec<List<T>> {
   UniqueItemsConstraint()
       : super(
           constraintKey: 'list.unique',
@@ -20,14 +20,18 @@ class UniqueItemsConstraint<T> extends Constraint<List<T>>
 
   @override
   String buildMessage(List<T> value) {
-    // Finding the first duplicate to provide a more helpful error message.
     final seen = <T>{};
+    final dups = <T>{};
     for (final item in value) {
       if (!seen.add(item)) {
-        return 'List must contain unique items, but found a duplicate value: "$item".';
+        dups.add(item);
       }
     }
-
-    return 'List must contain unique items.';
+    if (dups.isEmpty) return 'List must contain unique items.';
+    final joined = dups.map((e) => '"$e"').join(', ');
+    return 'List items must be unique. Duplicates found: $joined.';
   }
+
+  @override
+  Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
 }

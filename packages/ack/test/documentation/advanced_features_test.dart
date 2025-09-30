@@ -37,9 +37,9 @@ void main() {
         final validData2 = {'name': 'John', 'age': 30};
         expect(userSchema.validate(validData2).isOk, isTrue);
 
-        // Valid - age field can be null because .optional() makes it inherently nullable
-        final validData3 = {'name': 'John', 'age': null};
-        expect(userSchema.validate(validData3).isOk, isTrue);
+        // Invalid - age field cannot be null (optional ≠ nullable)
+        final invalidData = {'name': 'John', 'age': null};
+        expect(userSchema.validate(invalidData).isFail, isTrue);
       });
 
       test('should demonstrate optional and nullable combined', () {

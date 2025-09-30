@@ -1,5 +1,31 @@
 # Phase 2: Fix Nullable/Optional Semantics
 
+> Status (2025-09-30): Superseded by simpler implementation already in code.
+>
+> Decision: Do not implement the missing-field marker or a dedicated
+> `NullableWrapperSchema`. The current codebase already cleanly separates
+> optional and nullable semantics using `OptionalSchema` plus a simple
+> `isNullable` flag, with object handling via `handleMissingOptionalField`.
+> This is simpler and correct, and matches JSON Schema expectations.
+>
+> What changed from this draft:
+> - No `_MissingField` sentinel is needed; `ObjectSchema` routes absent keys to
+>   `schema.handleMissingOptionalField(...)` and otherwise validates the actual
+>   value (including `null`) through the normal pipeline.
+> - No `NullableWrapperSchema`; nullability is a first-class flag available on
+>   all schemas via `.nullable()` (from `FluentSchema`), including `OptionalSchema`.
+> - JSON Schema output for optional fields comes from the wrapped schema’s
+>   `toJsonSchema()` and only includes `"null"` when nullable is explicitly set.
+>
+> Keep for reference: The table of the four cases, the migration notes, and the
+> JSON Schema before/after examples (they already match current behavior).
+>
+> See implementation: `packages/ack/lib/src/schemas/optional_schema.dart`,
+> `packages/ack/lib/src/schemas/object_schema.dart`,
+> `packages/ack/lib/src/schemas/fluent_schema.dart`, and tests in
+> `packages/ack/test/schemas/optional_nullable_semantics_test.dart`.
+
+
 ## Overview
 Fix the fundamental semantic confusion between "optional" (field can be missing) and "nullable" (field can be null) in the Ack framework. This phase separates these orthogonal concepts to match JSON Schema 2020-12 standards.
 

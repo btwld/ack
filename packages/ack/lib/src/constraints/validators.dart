@@ -1,4 +1,3 @@
-import '../helpers.dart';
 import 'constraint.dart';
 
 typedef MapValue = Map<String, Object?>;
@@ -68,38 +67,6 @@ class InvalidTypeConstraint extends Constraint<Object?>
         'expectedType': expectedType,
         'actualType': actualType,
       };
-}
-
-/// Validates that all items in a list are unique.
-/// It will always pass if the input value is `null`.
-class ListUniqueItemsConstraint<E> extends Constraint<List<E>?>
-    with Validator<List<E>?>, JsonSchemaSpec<List<E>?> {
-  const ListUniqueItemsConstraint()
-      : super(
-          constraintKey: 'list_unique_items',
-          description: 'All items in the list must be unique.',
-        );
-
-  @override
-  bool isValid(List<E>? value) {
-    if (value == null) return true;
-
-    return value.duplicates.isEmpty;
-  }
-
-  @override
-  Map<String, Object?> buildContext(List<E>? value) =>
-      {'duplicateItems': value?.duplicates.toList()};
-
-  @override
-  String buildMessage(List<E>? value) {
-    final nonUnique = value?.duplicates.map((e) => '"$e"').join(', ');
-
-    return 'List items must be unique. Duplicates found: ${nonUnique ?? 'none'}.';
-  }
-
-  @override
-  Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
 }
 
 // --- Object Specific Constraints ---

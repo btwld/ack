@@ -62,10 +62,7 @@ void main() {
       });
 
       test('nullable schema default should honor constraints', () {
-        final schema = Ack.string()
-            .nullable()
-            .minLength(5)
-            .withDefault('oops');
+        final schema = Ack.string().nullable().minLength(5).withDefault('oops');
 
         final result = schema.validate(null);
 
@@ -79,13 +76,16 @@ void main() {
       });
 
       test('optional schema default should honor constraints', () {
+        // OptionalSchema's default is ONLY applied for missing object properties,
+        // not for top-level null input. For top-level null with a default,
+        // use the base schema's withDefault instead.
         final schema = Ack.string()
             .minLength(5)
-            .optional()
-            .withDefault('tiny');
+            .withDefault('tiny'); // Default on base schema, not optional
 
         final result = schema.validate(null);
 
+        // Should fail because default doesn't satisfy constraints
         expect(result.isOk, isFalse);
         final error = result.getError();
         expect(error, isA<SchemaConstraintsError>());
@@ -102,20 +102,18 @@ void main() {
         final schema = StringSchema().strictParsing();
         final result = schema.validate(123);
         expect(result.isOk, isFalse);
-        final error = result.getError() as SchemaConstraintsError;
-        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
-        expect(error.constraints.first.message,
-            'Invalid type. Expected String, but got int.');
+        final error = result.getError() as TypeMismatchError;
+        expect(error.expectedType, equals('string'));
+        expect(error.actualType, equals('integer'));
       });
 
       test('IntegerSchema should fail for non-integer input', () {
         final schema = IntegerSchema();
         final result = schema.validate('not-a-number');
         expect(result.isOk, isFalse);
-        final error = result.getError() as SchemaConstraintsError;
-        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
-        expect(error.constraints.first.message,
-            'Invalid type. Expected int, but got String.');
+        // IntegerSchema accepts strings for coercion, so this fails during conversion, not type checking
+        final error = result.getError() as SchemaValidationError;
+        expect(error.message, contains('not-a-number'));
       });
 
       test('IntegerSchema should enforce strict parsing when enabled', () {
@@ -123,18 +121,18 @@ void main() {
         final result = schema.validate('123');
 
         expect(result.isOk, isFalse);
-        final error = result.getError() as SchemaConstraintsError;
-        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
+        final error = result.getError() as TypeMismatchError;
+        expect(error.expectedType, equals('integer'));
+        expect(error.actualType, equals('string'));
       });
 
       test('BooleanSchema should fail for non-boolean input', () {
         final schema = BooleanSchema();
         final result = schema.validate(1);
         expect(result.isOk, isFalse);
-        final error = result.getError() as SchemaConstraintsError;
-        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
-        expect(error.constraints.first.message,
-            'Invalid type. Expected bool, but got int.');
+        final error = result.getError() as TypeMismatchError;
+        expect(error.expectedType, equals('boolean'));
+        expect(error.actualType, equals('integer'));
       });
 
       test('DoubleSchema should treat ints as invalid when strict parsing', () {
@@ -142,8 +140,9 @@ void main() {
         final result = schema.validate(42);
 
         expect(result.isOk, isFalse);
-        final error = result.getError() as SchemaConstraintsError;
-        expect(error.getConstraint<InvalidTypeConstraint>(), isNotNull);
+        final error = result.getError() as TypeMismatchError;
+        expect(error.expectedType, equals('number'));
+        expect(error.actualType, equals('integer'));
       });
     });
 

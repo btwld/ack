@@ -16,37 +16,50 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }) : super(schemaType: SchemaType.enumType);
 
   @override
+  JsonType get acceptedType => JsonType.string;
+
+  /// EnumSchema uses custom parsing logic that doesn't fit the standard
+  /// primitive type conversion patterns, so it overrides parseAndValidate directly.
+  @override
   @protected
-  SchemaResult<T> _performTypeConversion(Object inputValue, SchemaContext context) {
+  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
+
+    // Custom enum parsing logic
+    T? parsed;
+
+    // Try exact enum match first
     if (inputValue is T && values.contains(inputValue)) {
-      return SchemaResult.ok(inputValue);
+      parsed = inputValue;
     }
-
     // Try to match by name if input is a string
-    if (inputValue is String) {
+    else if (inputValue is String) {
       try {
-        final enumValue = values.firstWhere((e) => e.name == inputValue);
-
-        return SchemaResult.ok(enumValue);
+        parsed = values.firstWhere((e) => e.name == inputValue);
       } catch (_) {
-        // Continue to error handling
+        // Continue to integer check
       }
     }
-
     // Try to match by index if input is an int
-    if (inputValue is int && inputValue >= 0 && inputValue < values.length) {
-      return SchemaResult.ok(values[inputValue]);
+    else if (inputValue is int && inputValue >= 0 && inputValue < values.length) {
+      parsed = values[inputValue];
     }
 
-    final constraintError = InvalidTypeConstraint(
-      expectedType: T,
-      inputValue: inputValue,
-    ).validate(inputValue);
+    if (parsed == null) {
+      final constraintError = InvalidTypeConstraint(
+        expectedType: T,
+        inputValue: inputValue,
+      ).validate(inputValue);
 
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ));
+    }
+
+    // Use centralized constraints and refinements check
+    return applyConstraintsAndRefinements(parsed, context);
   }
 
   @override
@@ -91,11 +104,13 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   Map<String, Object?> toJsonSchema() {
     final enumNames = values.map((e) => e.name).toList();
 
-    return {
+    final schema = {
       'type': isNullable ? ['string', 'null'] : 'string',
       'enum': enumNames,
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': (defaultValue as T).name,
     };
+
+    return mergeConstraintSchemas(schema);
   }
 }

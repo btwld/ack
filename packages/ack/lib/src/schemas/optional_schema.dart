@@ -1,7 +1,8 @@
 part of 'schema.dart';
 
 /// A schema wrapper that makes any schema optional (field may be omitted).
-/// Optional fields are always nullable - they can be missing OR explicitly null.
+/// Optional means the field can be missing. It does NOT imply nullable.
+/// Use .nullable() explicitly if you want to accept null values.
 @immutable
 final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     with FluentSchema<DartType, OptionalSchema<DartType>> {
@@ -13,42 +14,36 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     super.defaultValue,
     super.constraints = const [],
     super.refinements = const [],
+    super.isNullable = false,
   }) : super(
           schemaType: wrappedSchema.schemaType,
-          // Optional always implies nullable
-          isNullable: true,
         );
 
   @override
-  @protected
-  SchemaResult<DartType> _performTypeConversion(
-    Object inputValue,
-    SchemaContext context,
-  ) {
-    // Delegate to the wrapped schema's _performTypeConversion
-    // Since we're in _performTypeConversion, inputValue is guaranteed to be non-null
-    // However, wrappedSchema._performTypeConversion also expects non-null now
-    return wrappedSchema._performTypeConversion(inputValue, context);
-  }
+  JsonType get acceptedType => wrappedSchema.acceptedType;
 
+  @override
+  bool get strictPrimitiveParsing => wrappedSchema.strictPrimitiveParsing;
+
+  /// OptionalSchema delegates to wrapped schema for parsing.
   @override
   @protected
   SchemaResult<DartType> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // For non-null input, delegate directly to wrapped schema
-    if (inputValue != null) {
-      return wrappedSchema.parseAndValidate(inputValue, context);
-    }
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
 
-    // For null input with a default, validate the default against wrapped schema
-    if (defaultValue != null) {
-      return wrappedSchema.parseAndValidate(defaultValue, context);
-    }
+    // Delegate full validation to wrapped schema, which includes wrapped schema's
+    // constraints and refinements. After this, we'll apply OptionalSchema's own constraints/refinements.
+    final result = wrappedSchema.parseAndValidate(inputValue, context);
+    if (result.isFail) return result;
 
-    // For null input without default, accept it (optional is always nullable)
-    return SchemaResult.ok(null);
+    final validatedValue = result.getOrThrow()!;
+
+    // Use centralized constraints and refinements check for OptionalSchema's own constraints
+    return applyConstraintsAndRefinements(validatedValue, context);
   }
 
   @override
@@ -66,16 +61,30 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
+      isNullable: isNullable ?? this.isNullable,
     );
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
-    // Return the wrapped schema's JSON schema
-    // The "required" property is handled at the object level in JSON Schema
-    return wrappedSchema.toJsonSchema();
-  }
+    // Get the wrapped schema's JSON Schema representation
+    final base = Map<String, Object?>.from(wrappedSchema.toJsonSchema());
 
-  @override
-  bool get isOptional => true;
+    // If this OptionalSchema is also marked nullable, add null to the type
+    if (isNullable) {
+      final existingType = base['type'];
+      if (existingType is String && existingType != 'null') {
+        base['type'] = [existingType, 'null'];
+      } else if (existingType is List && !existingType.contains('null')) {
+        base['type'] = [...existingType, 'null'];
+      }
+    }
+
+    // Override with OptionalSchema's own properties
+    if (description != null) base['description'] = description;
+    if (defaultValue != null) base['default'] = defaultValue;
+
+    // Merge OptionalSchema's constraints into the JSON Schema
+    return mergeConstraintSchemas(base);
+  }
 }

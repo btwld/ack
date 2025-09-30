@@ -64,7 +64,8 @@ void main() {
     });
 
     group('Password mismatch', () {
-      test('should fail with emoji error message when passwords do not match', () {
+      test('should fail with emoji error message when passwords do not match',
+          () {
         final result = signupSchema.validate({
           'email': 'user@example.com',
           'password': 'password123',
@@ -141,7 +142,8 @@ void main() {
         }
       });
 
-      test('should fail before checking password match if email is invalid', () {
+      test('should fail before checking password match if email is invalid',
+          () {
         final result = signupSchema.validate({
           'email': 'invalid-email',
           'password': 'password123',
@@ -207,16 +209,26 @@ void main() {
         // Object validation returns SchemaNestedError for field errors
         expect(error, isA<SchemaNestedError>());
 
-        // Check that the error message contains the constraint error
-        final errorMessage = error.toString();
+        // Check nested errors for the password field constraint error
+        final nestedError = error as SchemaNestedError;
+        final passwordError = nestedError.errors.firstWhere(
+          (e) => e.toString().contains('password'),
+        );
+
+        expect(passwordError, isA<SchemaConstraintsError>());
+        final constraintsError = passwordError as SchemaConstraintsError;
+
+        // Check that constraint error message contains minimum length info
+        final constraintMessage = constraintsError.constraints.first.message;
         expect(
-          errorMessage.contains('Minimum 8'),
+          constraintMessage.toLowerCase().contains('minimum'),
           isTrue,
           reason: 'Should contain minimum length constraint error',
         );
+
         // Should not contain the password mismatch message since constraint fails first
         expect(
-          errorMessage.contains('❌'),
+          error.toString().contains('❌'),
           isFalse,
           reason: 'Should not contain password mismatch emoji',
         );

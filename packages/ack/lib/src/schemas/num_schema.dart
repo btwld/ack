@@ -40,31 +40,7 @@ final class IntegerSchema extends NumSchema<int>
   }) : super(schemaType: SchemaType.integer);
 
   @override
-  @protected
-  SchemaResult<int> _performTypeConversion(Object inputValue, SchemaContext context) {
-    // First try basic type validation
-    final typeResult = validateExpectedType(inputValue, context);
-    if (typeResult.isOk) {
-      return SchemaResult.ok(inputValue as int);
-    }
-
-    // If strict parsing is enabled, don't attempt conversion
-    if (strictPrimitiveParsing) {
-      return SchemaResult.fail(typeResult.getError());
-    }
-
-    // Try conversions from other types
-    if (inputValue is String) {
-      final parsed = int.tryParse(inputValue);
-      if (parsed != null) return SchemaResult.ok(parsed);
-    }
-    if (inputValue is double && inputValue == inputValue.roundToDouble()) {
-      return SchemaResult.ok(inputValue.toInt());
-    }
-
-    // Return the original type error
-    return SchemaResult.fail(typeResult.getError());
-  }
+  JsonType get acceptedType => JsonType.integer;
 
   @override
   IntegerSchema copyWith({
@@ -134,31 +110,7 @@ final class DoubleSchema extends NumSchema<double>
   }) : super(schemaType: SchemaType.double);
 
   @override
-  @protected
-  SchemaResult<double> _performTypeConversion(Object inputValue, SchemaContext context) {
-    // First try basic type validation
-    final typeResult = validateExpectedType(inputValue, context);
-    if (typeResult.isOk) {
-      return SchemaResult.ok(inputValue as double);
-    }
-
-    // If strict parsing is enabled, don't attempt conversion
-    if (strictPrimitiveParsing) {
-      return SchemaResult.fail(typeResult.getError());
-    }
-
-    // Try conversions from other types
-    if (inputValue is int) {
-      return SchemaResult.ok(inputValue.toDouble());
-    }
-    if (inputValue is String) {
-      final val = double.tryParse(inputValue);
-      if (val != null) return SchemaResult.ok(val);
-    }
-
-    // Return the original type error
-    return SchemaResult.fail(typeResult.getError());
-  }
+  JsonType get acceptedType => JsonType.number;
 
   @override
   DoubleSchema copyWith({

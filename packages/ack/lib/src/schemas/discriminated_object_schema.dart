@@ -21,11 +21,24 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   }) : super(schemaType: SchemaType.discriminatedObject);
 
   @override
+  JsonType get acceptedType => JsonType.object;
+
+  /// DiscriminatedObjectSchema uses custom polymorphic validation logic,
+  /// so it overrides parseAndValidate directly.
+  @override
   @protected
-  SchemaResult<MapValue> _performTypeConversion(
-    Object inputValue,
+  SchemaResult<MapValue> parseAndValidate(
+    Object? inputValue,
     SchemaContext context,
   ) {
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
+
+    // Use centralized type checking
+    final typeError = checkTypeMatch(inputValue, context);
+    if (typeError != null) return typeError;
+
+    // Custom discriminated object validation logic
     if (inputValue is! MapValue) {
       final constraintError =
           InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
@@ -45,7 +58,12 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: constraintError != null ? [constraintError] : [],
-        context: context,
+        context: context.createChild(
+          name: discriminatorKey,
+          schema: const StringSchema(),
+          value: null,
+          pathSegment: discriminatorKey,
+        ),
       ));
     }
 
@@ -55,18 +73,6 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
-    }
-
-    final AckSchema? selectedSubSchema = schemas[discValueRaw];
-
-    if (selectedSubSchema == null) {
-      final allowed = schemas.keys.toList(growable: false);
-      final enumError = StringEnumConstraint(allowed).validate(discValueRaw);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: enumError != null ? [enumError] : [],
         context: context.createChild(
           name: discriminatorKey,
           schema: const StringSchema(),
@@ -76,10 +82,31 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       ));
     }
 
-    final subSchemaContext = SchemaContext(
-      name: '${context.name}(when $discriminatorKey="$discValueRaw")',
+    final AckSchema? selectedSubSchema = schemas[discValueRaw];
+
+    if (selectedSubSchema == null) {
+      final allowed = schemas.keys.toList(growable: false);
+      final enumError = StringEnumConstraint(allowed).validate(discValueRaw);
+
+      // Error context for discriminator key, but inherit parent path
+      return SchemaResult.fail(SchemaConstraintsError(
+        constraints: enumError != null ? [enumError] : [],
+        context: context.createChild(
+          name: discriminatorKey,
+          schema: const StringSchema(),
+          value: discValueRaw,
+          pathSegment: discriminatorKey, // Point directly to the failing field
+        ),
+      ));
+    }
+
+    // Validate the selected branch, but keep path at object level
+    // Branch name is for debug only; errors point to the object, not a sub-path
+    final subSchemaContext = context.createChild(
+      name: 'when $discriminatorKey="$discValueRaw"',
       schema: selectedSubSchema,
       value: inputValue,
+      pathSegment: '', // Inherit parent path
     );
 
     final result = selectedSubSchema.parseAndValidate(
@@ -87,11 +114,17 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       subSchemaContext,
     );
 
-    // Convert the result to MapValue type for compatibility
-    return result.match(
-      onOk: (value) => SchemaResult.ok(value as MapValue),
-      onFail: (error) => SchemaResult.fail(error),
-    );
+    if (result.isFail) {
+      return result.match(
+        onOk: (_) => throw StateError('Unreachable'),
+        onFail: (error) => SchemaResult.fail(error),
+      );
+    }
+
+    final validatedValue = result.getOrThrow() as MapValue;
+
+    // Use centralized constraints and refinements check
+    return applyConstraintsAndRefinements(validatedValue, context);
   }
 
   @override
@@ -159,9 +192,11 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       oneOfClauses.insert(0, {'type': 'null'});
     }
 
-    return {
+    final schema = {
       'oneOf': oneOfClauses,
       if (description != null) 'description': description,
     };
+
+    return mergeConstraintSchemas(schema);
   }
 }

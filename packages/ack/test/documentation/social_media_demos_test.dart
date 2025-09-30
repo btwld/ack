@@ -82,9 +82,7 @@ void main() {
         }).refine(
           (order) {
             final calculated = (order['items'] as List).fold(
-                0.0,
-                (sum, item) =>
-                    sum + item['price'] * item['quantity']);
+                0.0, (sum, item) => sum + item['price'] * item['quantity']);
             return ((order['total'] as double) - calculated).abs() < 0.01;
           },
           message: 'Total doesn\'t match item prices!',
@@ -260,20 +258,18 @@ void main() {
             'code': Ack.integer().min(400).max(599),
             'message': Ack.string(),
           }),
-        ])
-            .transform((response) {
-              // Add request ID for tracking
-              return {
-                ...response as Map<String, dynamic>,
-                'requestId': 'test-request-id-${DateTime.now().millisecondsSinceEpoch}'
-              };
-            })
-            .refine(
-              (response) =>
-                  response['timestamp'] != null ||
-                  response['status'] == 'error',
-              message: 'Success responses must have timestamp!',
-            );
+        ]).transform((response) {
+          // Add request ID for tracking
+          return {
+            ...response as Map<String, dynamic>,
+            'requestId':
+                'test-request-id-${DateTime.now().millisecondsSinceEpoch}'
+          };
+        }).refine(
+          (response) =>
+              response['timestamp'] != null || response['status'] == 'error',
+          message: 'Success responses must have timestamp!',
+        );
 
         // Test success response
         final successResponse = apiResponseSchema.validate({
@@ -282,10 +278,10 @@ void main() {
           'timestamp': '2024-01-15T10:30:00Z',
         });
         expect(successResponse.isOk, isTrue);
-        final successData = successResponse.getOrThrow() as Map<String, dynamic>;
+        final successData =
+            successResponse.getOrThrow() as Map<String, dynamic>;
         expect(successData['requestId'], isNotNull);
-        expect(successData['requestId'],
-            startsWith('test-request-id-'));
+        expect(successData['requestId'], startsWith('test-request-id-'));
 
         // Test error response (no timestamp required)
         final errorResponse = apiResponseSchema.validate({

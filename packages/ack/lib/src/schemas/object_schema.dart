@@ -21,21 +21,28 @@ final class ObjectSchema extends AckSchema<MapValue>
         super(schemaType: SchemaType.object);
 
   @override
+  JsonType get acceptedType => JsonType.object;
+
+  /// ObjectSchema uses custom validation logic for properties,
+  /// so it overrides parseAndValidate directly.
+  @override
   @protected
-  SchemaResult<MapValue> _performTypeConversion(
-    Object inputValue,
+  SchemaResult<MapValue> parseAndValidate(
+    Object? inputValue,
     SchemaContext context,
   ) {
-    if (inputValue is! MapValue) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
 
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
-    }
+    // Use centralized type checking
+    final typeError = checkTypeMatch(inputValue, context);
+    if (typeError != null) return typeError;
 
+    // Custom object validation logic
+    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
+    final mapValue = inputValue is Map<String, Object?>
+        ? inputValue
+        : (inputValue as Map).cast<String, Object?>();
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
@@ -44,30 +51,56 @@ final class ObjectSchema extends AckSchema<MapValue>
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
-      final hasValue = inputValue.containsKey(key);
+      final hasValue = mapValue.containsKey(key);
 
-      if (!hasValue && !schema.isOptional) {
-        // Missing required property
-        final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-            .validate(inputValue);
-        if (ce != null) {
-          validationErrors.add(SchemaConstraintsError(
-            constraints: [ce],
-            context: context.createChild(
+      if (!hasValue) {
+        // Property is missing from input
+        if (schema is OptionalSchema) {
+          // Optional field - check for default value
+          if (schema.defaultValue != null) {
+            // Optional field with default - validate the default value
+            final propertyContext = context.createChild(
               name: key,
               schema: schema,
-              value: null,
+              value: schema.defaultValue,
               pathSegment: key,
-            ),
-          ));
+            );
+            final result =
+                schema.parseAndValidate(schema.defaultValue, propertyContext);
+            result.match(
+              onOk: (validatedValue) {
+                if (validatedValue != null) {
+                  validatedMap[key] = validatedValue;
+                }
+              },
+              onFail: validationErrors.add,
+            );
+          }
+          // Else: optional field without default - omit from output map (do nothing)
+        } else {
+          // Required field missing - error
+          final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
+              .validate(mapValue);
+          if (ce != null) {
+            validationErrors.add(SchemaConstraintsError(
+              constraints: [ce],
+              context: context.createChild(
+                name: key,
+                schema: schema,
+                value: null,
+                pathSegment: key,
+              ),
+            ));
+          }
         }
-      } else if (hasValue) {
-        // Property exists, validate it
-        final propertyValue = inputValue[key];
-        final propertyContext = SchemaContext(
-          name: '${context.name}.$key',
+      } else {
+        // Property exists in input, validate the actual value
+        final propertyValue = mapValue[key];
+        final propertyContext = context.createChild(
+          name: key,
           schema: schema,
           value: propertyValue,
+          pathSegment: key,
         );
         final result = schema.parseAndValidate(propertyValue, propertyContext);
         result.match(
@@ -77,16 +110,15 @@ final class ObjectSchema extends AckSchema<MapValue>
           onFail: validationErrors.add,
         );
       }
-      // If hasValue is false and schema.isOptional is true, we skip the property
     }
 
     // Handle additional properties (those not in schema)
     final knownKeys = properties.keys.toSet();
-    for (final key in inputValue.keys) {
+    for (final key in mapValue.keys) {
       if (!knownKeys.contains(key)) {
         // Property not defined in schema
         if (additionalProperties) {
-          validatedMap[key] = inputValue[key]; // Keep the original value
+          validatedMap[key] = mapValue[key]; // Keep the original value
         } else {
           // Property not in schema and not allowed
           validationErrors.add(
@@ -102,7 +134,7 @@ final class ObjectSchema extends AckSchema<MapValue>
               context: context.createChild(
                 name: key,
                 schema: this,
-                value: inputValue[key],
+                value: mapValue[key],
                 pathSegment: key,
               ),
             ),
@@ -118,7 +150,8 @@ final class ObjectSchema extends AckSchema<MapValue>
       ));
     }
 
-    return SchemaResult.ok(validatedMap);
+    // Use centralized constraints and refinements check
+    return applyConstraintsAndRefinements(validatedMap, context);
   }
 
   @override
@@ -172,17 +205,20 @@ final class ObjectSchema extends AckSchema<MapValue>
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
       // All non-optional fields are required
-      if (!entry.value.isOptional) {
+      if (entry.value is! OptionalSchema) {
         requiredFields.add(entry.key);
       }
     }
 
-    return {
+    final schema = {
       'type': isNullable ? ['object', 'null'] : 'object',
       'properties': propsJsonSchema,
       if (requiredFields.isNotEmpty) 'required': requiredFields,
       'additionalProperties': additionalProperties,
       if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
     };
+
+    return mergeConstraintSchemas(schema);
   }
 }

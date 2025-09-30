@@ -209,7 +209,14 @@ void main() {
         expect(jsonSchema['type'], equals('object'));
         expect(jsonSchema['required'], contains('id'));
         expect(jsonSchema['required'], contains('name'));
-        expect(jsonSchema['properties']['age']['type'], equals('integer'));
+        // Age is optional().nullable(), so type should be ['integer', 'null']
+        expect(
+          jsonSchema['properties']['age']['type'],
+          anyOf([
+            equals(['integer', 'null']),
+            equals(['null', 'integer']),
+          ]),
+        );
       });
     });
 

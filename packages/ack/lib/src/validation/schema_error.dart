@@ -50,6 +50,39 @@ abstract class SchemaError {
 }
 
 @immutable
+class TypeMismatchError extends SchemaError {
+  TypeMismatchError({
+    required JsonType expectedType,
+    required JsonType actualType,
+    required SchemaContext context,
+  })  : _expectedJsonType = expectedType,
+        _actualJsonType = actualType,
+        super(
+          'Expected ${expectedType.typeName}, got ${actualType.typeName}',
+          context: context,
+        );
+
+  final JsonType _expectedJsonType;
+  final JsonType _actualJsonType;
+
+  String get expectedType => _expectedJsonType.typeName;
+  String get actualType => _actualJsonType.typeName;
+
+  @override
+  String toErrorString() {
+    return 'Expected ${_expectedJsonType.typeName}, got ${_actualJsonType.typeName} at path: ${context.path}';
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      ...super.toMap(),
+      'expectedType': expectedType,
+      'actualType': actualType,
+    };
+  }
+}
+
 class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
 

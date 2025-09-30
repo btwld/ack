@@ -19,21 +19,40 @@ class SchemaContext {
     this.pathSegment,
   });
 
-  /// The full JSON path from root to this context.
+  /// Escapes a JSON Pointer segment per RFC 6901.
+  ///
+  /// Per RFC 6901, `~` must be escaped as `~0` and `/` must be escaped as `~1`.
+  static String _escapeJsonPointerSegment(String segment) {
+    return segment.replaceAll('~', '~0').replaceAll('/', '~1');
+  }
+
+  /// The full JSON Pointer path (RFC 6901) from root to this context.
+  ///
+  /// Returns a JSON Pointer string like `#/user/name` or `#/items/0`.
+  /// The `#` prefix indicates this is a JSON Pointer reference.
+  /// Special characters in segments (`~` and `/`) are escaped per RFC 6901.
+  ///
+  /// If pathSegment is explicitly set to empty string '', the child inherits
+  /// the parent's path without adding a new segment.
   String get path {
     if (parent == null) {
       return '#';
     }
 
     final parentPath = parent!.path;
-    final segment = pathSegment ?? name;
 
-    // Handle array indices (numeric) vs object properties (string)
-    if (RegExp(r'^\d+$').hasMatch(segment)) {
-      return '$parentPath[$segment]';
+    // Empty string pathSegment means "inherit parent path, don't add segment"
+    if (pathSegment == '') {
+      return parentPath;
     }
 
-    return parentPath == '#' ? '#/$segment' : '$parentPath/$segment';
+    final segment = pathSegment ?? name;
+    final escapedSegment = _escapeJsonPointerSegment(segment);
+
+    // All segments (including array indices) use `/` separator per RFC 6901
+    return parentPath == '#'
+        ? '#/$escapedSegment'
+        : '$parentPath/$escapedSegment';
   }
 
   /// Creates a child context for nested validation.

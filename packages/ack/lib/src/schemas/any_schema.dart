@@ -14,10 +14,20 @@ final class AnySchema extends AckSchema<Object>
   }) : super(schemaType: SchemaType.unknown);
 
   @override
+  JsonType get acceptedType => JsonType.string; // Arbitrary, not used
+
+  /// AnySchema accepts all values, so it overrides parseAndValidate directly.
+  @override
   @protected
-  SchemaResult<Object> _performTypeConversion(Object inputValue, SchemaContext context) {
-    // Accept any non-null value as-is
-    return SchemaResult.ok(inputValue);
+  SchemaResult<Object> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Use centralized null handling
+    if (inputValue == null) return handleNullInput(context);
+
+    // Accept any non-null value as-is, then use centralized constraints and refinements check
+    return applyConstraintsAndRefinements(inputValue, context);
   }
 
   @override
@@ -40,19 +50,20 @@ final class AnySchema extends AckSchema<Object>
   @override
   Map<String, Object?> toJsonSchema() {
     // AnySchema accepts anything, including null if nullable
-    if (isNullable) {
-      return {
-        // No type restriction means it accepts any type including null
-        if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
-      };
-    }
+    final schema = isNullable
+        ? {
+            // No type restriction means it accepts any type including null
+            if (description != null) 'description': description,
+            if (defaultValue != null) 'default': defaultValue,
+          }
+        : {
+            // Accepts any type except null
+            'not': {'type': 'null'},
+            if (description != null) 'description': description,
+            if (defaultValue != null) 'default': defaultValue,
+          };
 
-    return {
-      // Accepts any type except null
-      'not': {'type': 'null'},
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
-    };
+    // Merge constraints into the JSON Schema
+    return mergeConstraintSchemas(schema);
   }
 }
