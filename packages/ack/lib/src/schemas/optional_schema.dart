@@ -48,119 +48,113 @@ part of 'schema.dart';
 @immutable
 final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     with FluentSchema<DartType, OptionalSchema<DartType>> {
-  final AckSchema<DartType> wrappedSchema;
+  final AckSchema<DartType> schema;
 
-  OptionalSchema({
-    required this.wrappedSchema,
-    super.description,
-    super.defaultValue,
-    super.constraints = const [],
-    super.refinements = const [],
-    super.isNullable = false,
-  }) {
-    // Guard against conflicting defaults - enforce single source of truth
-    if (defaultValue != null && wrappedSchema.defaultValue != null) {
-      throw ArgumentError(
-        'Cannot set default on both OptionalSchema and wrapped schema. '
-        'Use .optional().withDefault(value) instead of '
-        '.withDefault(value).optional(). '
-        'Wrapped schema has default: ${wrappedSchema.defaultValue}, '
-        'OptionalSchema default: $defaultValue',
-      );
-    }
-  }
+  OptionalSchema(this.schema)
+      : assert(
+          schema is! OptionalSchema,
+          'Cannot wrap OptionalSchema in OptionalSchema. '
+          'The .optional() method is idempotent and will not double-wrap.',
+        ),
+        super(
+          defaultValue: null,
+          constraints: const [],
+          refinements: const [],
+          isNullable: false,
+          description: null,
+        );
+
+  // Property getters - proxy to wrapped schema for transparent access
+  @override
+  DartType? get defaultValue => schema.defaultValue;
 
   @override
-  JsonType get acceptedType => wrappedSchema.acceptedType;
+  bool get isNullable => schema.isNullable;
 
   @override
-  bool get strictPrimitiveParsing => wrappedSchema.strictPrimitiveParsing;
+  String? get description => schema.description;
 
-  /// OptionalSchema delegates to wrapped schema for parsing.
+  @override
+  List<Constraint<DartType>> get constraints => schema.constraints;
+
+  @override
+  List<Refinement<DartType>> get refinements => schema.refinements;
+
+  @override
+  JsonType get acceptedType => schema.acceptedType;
+
+  @override
+  bool get strictPrimitiveParsing => schema.strictPrimitiveParsing;
+
+  /// OptionalSchema is a pure transparent wrapper - delegates all validation to wrapped schema.
   @override
   @protected
   SchemaResult<DartType> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Simplified Optional semantics:
-    // - Optional is intended for object properties ("missing" semantics)
-    // - At the top-level (no parent context), null should not trigger Optional defaults
-    //   or special handling; treat as non-nullable unless explicitly nullable.
-    if (inputValue == null) {
-      final isTopLevel = context.parent == null;
-      if (isTopLevel) {
-        if (isNullable) return SchemaResult.ok(null);
-        return failNonNullable(context);
-      }
-      // Nested usage (e.g., object property): inline the null handling
-      if (defaultValue != null) {
-        return applyConstraintsAndRefinements(defaultValue!, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Pure delegation - wrapped schema handles all logic
+    return schema.parseAndValidate(inputValue, context);
+  }
 
-    // Delegate full validation to wrapped schema, which includes wrapped schema's
-    // constraints and refinements. After this, we'll apply OptionalSchema's own constraints/refinements.
-    final result = wrappedSchema.parseAndValidate(inputValue, context);
-    if (result.isFail) return result;
+  // Fluent method overrides - modify wrapped schema and return new OptionalSchema
+  @override
+  OptionalSchema<DartType> withDefault(DartType defaultValue) {
+    return OptionalSchema(schema.copyWith(defaultValue: defaultValue));
+  }
 
-    final validatedValue = result.getOrThrow()!;
+  @override
+  OptionalSchema<DartType> nullable({bool value = true}) {
+    return OptionalSchema(schema.copyWith(isNullable: value));
+  }
 
-    // Use centralized constraints and refinements check for OptionalSchema's own constraints
-    return applyConstraintsAndRefinements(validatedValue, context);
+  @override
+  OptionalSchema<DartType> describe(String description) {
+    return OptionalSchema(schema.copyWith(description: description));
+  }
+
+  @override
+  OptionalSchema<DartType> withConstraint(Constraint<DartType> constraint) {
+    return OptionalSchema(
+      schema.copyWith(constraints: [...schema.constraints, constraint]),
+    );
+  }
+
+  @override
+  OptionalSchema<DartType> withConstraints(
+    List<Constraint<DartType>> newConstraints,
+  ) {
+    return OptionalSchema(
+      schema.copyWith(
+        constraints: [...schema.constraints, ...newConstraints],
+      ),
+    );
   }
 
   @override
   @protected
   OptionalSchema<DartType> copyWithInternal({
-    bool? isNullable,
-    String? description,
-    DartType? defaultValue,
-    List<Constraint<DartType>>? constraints,
-    List<Refinement<DartType>>? refinements,
+    required bool? isNullable,
+    required String? description,
+    required DartType? defaultValue,
+    required List<Constraint<DartType>>? constraints,
+    required List<Refinement<DartType>>? refinements,
   }) {
+    // Proxy to wrapped schema's copyWith
     return OptionalSchema(
-      wrappedSchema: wrappedSchema,
-      description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-      isNullable: isNullable ?? this.isNullable,
+      schema.copyWithInternal(
+        isNullable: isNullable,
+        description: description,
+        defaultValue: defaultValue,
+        constraints: constraints,
+        refinements: refinements,
+      ),
     );
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
-    // Get the wrapped schema's JSON Schema representation
-    final base = Map<String, Object?>.from(wrappedSchema.toJsonSchema());
-
-    // If this OptionalSchema is also marked nullable, add null to the type
-    if (isNullable) {
-      final existingType = base['type'];
-      if (existingType is String && existingType != 'null') {
-        base['type'] = [existingType, 'null'];
-      } else if (existingType is List && !existingType.contains('null')) {
-        base['type'] = [...existingType, 'null'];
-      }
-    }
-
-    // Override with OptionalSchema's own properties
-    if (description != null) base['description'] = description;
-
-    // Enforce single default source: OptionalSchema default takes precedence
-    // (wrapped defaults are prevented by constructor guard, but be defensive)
-    if (defaultValue != null) {
-      base['default'] = defaultValue;
-    } else if (wrappedSchema.defaultValue != null) {
-      // This shouldn't happen due to constructor guard, but handle it defensively
-      base['default'] = wrappedSchema.defaultValue;
-    }
-
-    // Merge OptionalSchema's constraints into the JSON Schema
-    return mergeConstraintSchemas(base);
+    // Pure delegation - wrapped schema owns all properties
+    return schema.toJsonSchema();
   }
 }
