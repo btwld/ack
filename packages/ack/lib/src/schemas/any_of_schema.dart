@@ -18,6 +18,8 @@ part of 'schema.dart';
 /// schema.validate(true);      // Ok
 /// schema.validate([]);        // Fail - not matching any schema
 /// ```
+/// Note: AnyOfSchema does not support default values. Use defaults on the
+/// individual member schemas instead.
 @immutable
 final class AnyOfSchema extends AckSchema<Object>
     with FluentSchema<Object, AnyOfSchema> {
@@ -27,20 +29,17 @@ final class AnyOfSchema extends AckSchema<Object>
     this.schemas, {
     super.isNullable,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
-  });
+  }) : super(defaultValue: null);
 
   @override
   JsonType get acceptedType {
-    // AnyOfSchema can accept multiple types, so we can't return a single type.
-    // This is only used for type checking in the base parseAndValidate,
-    // but we override parseAndValidate entirely, so this is never called.
-    // Throwing here makes it clear this schema handles types differently.
-    throw UnimplementedError(
-      'AnyOfSchema accepts multiple types and overrides parseAndValidate directly',
-    );
+    // AnyOfSchema can accept multiple types, so we return JsonType.nil
+    // as a sentinel value meaning "not applicable".
+    // This getter is only meaningful for primitive schemas.
+    // AnyOfSchema overrides parseAndValidate() directly to handle multiple types.
+    return JsonType.nil;
   }
 
   /// AnyOfSchema tries multiple schemas, so it overrides parseAndValidate directly.
@@ -115,14 +114,11 @@ final class AnyOfSchema extends AckSchema<Object>
     required List<Constraint<Object>>? constraints,
     required List<Refinement<Object>>? refinements,
   }) {
-    if (defaultValue != null) {
-      throw StateError('Default not supported for AnyOfSchema');
-    }
+    // defaultValue is ignored - AnyOfSchema does not support defaults
     return AnyOfSchema(
       schemas, // schemas are immutable once created
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

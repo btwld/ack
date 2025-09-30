@@ -1,6 +1,9 @@
 part of 'schema.dart';
 
 /// Schema for validating lists (`List<V>`) where each item conforms to `itemSchema`.
+///
+/// Note: ListSchema does not support default values. Use item schemas with defaults
+/// or optional properties instead.
 @immutable
 final class ListSchema<V extends Object> extends AckSchema<List<V>>
     with FluentSchema<List<V>, ListSchema<V>> {
@@ -10,10 +13,9 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     this.itemSchema, {
     super.isNullable,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
-  });
+  }) : super(defaultValue: null);
 
   @override
   JsonType get acceptedType => JsonType.array;
@@ -26,8 +28,13 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    if (inputValue == null) return handleNullInput(context);
+    // Inline null handling - ListSchema does not support defaults
+    if (inputValue == null) {
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
 
     // Use centralized type checking
     final typeError = checkTypeMatch(inputValue, context);
@@ -107,14 +114,11 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     // ListSchema specific
     AckSchema<V>? itemSchema,
   }) {
-    if (defaultValue != null) {
-      throw StateError('Default not supported for ListSchema');
-    }
+    // defaultValue is ignored - ListSchema does not support defaults
     return ListSchema(
       itemSchema ?? this.itemSchema,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

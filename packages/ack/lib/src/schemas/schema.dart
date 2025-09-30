@@ -270,42 +270,6 @@ sealed class AckSchema<DartType extends Object> {
     };
   }
 
-  /// Handles null input values according to schema rules.
-  ///
-  /// Centralized behavior for null inputs (in order of precedence):
-  /// 1) If `defaultValue` is set, use it
-  ///    - Scalar schemas: validate constraints/refinements on the default directly
-  ///    - Composite schemas (AnyOf/List/Object/Discriminated): they should override
-  ///      `parseAndValidate` and validate defaults through their nested schemas
-  ///      (e.g., through member/item/property validation) before applying their
-  ///      own constraints/refinements.
-  /// 2) If `isNullable` is true, return Ok(null)
-  /// 3) Otherwise, return a non-nullable failure
-  @protected
-  SchemaResult<DartType> handleNullInput(SchemaContext context) {
-    // Priority 1: Use default value if provided
-    if (defaultValue != null) {
-      // For scalar schemas: validate constraints and refinements
-      // For composite schemas: they should override parseAndValidate
-      // to validate defaults through their member/item schemas instead
-      final constraintViolations = _checkConstraints(defaultValue!, context);
-      if (constraintViolations.isNotEmpty) {
-        return SchemaResult.fail(SchemaConstraintsError(
-          constraints: constraintViolations,
-          context: context,
-        ));
-      }
-      return _runRefinements(defaultValue!, context);
-    }
-
-    // Priority 2: Accept null if schema is nullable
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
-    // Priority 3: Fail - null not allowed
-    return failNonNullable(context);
-  }
 
   /// Checks if input value matches the expected JSON type.
   ///
@@ -474,8 +438,17 @@ sealed class AckSchema<DartType extends Object> {
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling (returns early for null)
-    if (inputValue == null) return handleNullInput(context);
+    // Inline null handling for scalar schemas
+    // Composite schemas (Object, List, AnyOf, Discriminated) override this method entirely
+    if (inputValue == null) {
+      if (defaultValue != null) {
+        return applyConstraintsAndRefinements(defaultValue!, context);
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
 
     final targetType = acceptedType;
     final actualType = AckSchema.getJsonType(inputValue);

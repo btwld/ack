@@ -15,11 +15,11 @@ final class AnySchema extends AckSchema<Object>
 
   @override
   JsonType get acceptedType {
-    // AnySchema accepts all types, so we throw UnimplementedError
-    // since it overrides parseAndValidate directly
-    throw UnimplementedError(
-      'AnySchema accepts all types and overrides parseAndValidate directly',
-    );
+    // AnySchema accepts all types, so we return JsonType.nil
+    // as a sentinel value meaning "not applicable".
+    // This getter is only meaningful for primitive schemas.
+    // AnySchema overrides parseAndValidate() directly to accept all values.
+    return JsonType.nil;
   }
 
   /// AnySchema accepts all values, so it overrides parseAndValidate directly.
@@ -29,8 +29,16 @@ final class AnySchema extends AckSchema<Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    if (inputValue == null) return handleNullInput(context);
+    // Inline null handling for scalar schema
+    if (inputValue == null) {
+      if (defaultValue != null) {
+        return applyConstraintsAndRefinements(defaultValue!, context);
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
 
     // Accept any non-null value as-is, then use centralized constraints and refinements check
     return applyConstraintsAndRefinements(inputValue, context);

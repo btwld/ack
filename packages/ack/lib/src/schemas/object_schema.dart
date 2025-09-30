@@ -3,6 +3,9 @@ part of 'schema.dart';
 typedef MapValue = Map<String, Object?>;
 
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
+///
+/// Note: ObjectSchema does not support default values. Use property schemas with
+/// defaults or optional properties instead.
 @immutable
 final class ObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, ObjectSchema> {
@@ -14,10 +17,10 @@ final class ObjectSchema extends AckSchema<MapValue>
     this.additionalProperties = false,
     super.isNullable,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
-  })  : properties = properties ?? const {};
+  })  : properties = properties ?? const {},
+        super(defaultValue: null);
 
   @override
   JsonType get acceptedType => JsonType.object;
@@ -30,8 +33,13 @@ final class ObjectSchema extends AckSchema<MapValue>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    if (inputValue == null) return handleNullInput(context);
+    // Inline null handling - ObjectSchema does not support defaults
+    if (inputValue == null) {
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
 
     // Use centralized type checking
     final typeError = checkTypeMatch(inputValue, context);
@@ -185,15 +193,12 @@ final class ObjectSchema extends AckSchema<MapValue>
     Map<String, AckSchema>? properties,
     bool? allowAdditionalProperties,
   }) {
-    if (defaultValue != null) {
-      throw StateError('Default not supported for ObjectSchema');
-    }
+    // defaultValue is ignored - ObjectSchema does not support defaults
     return ObjectSchema(
       properties ?? this.properties,
       additionalProperties: allowAdditionalProperties ?? additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
-      // ignore defaultValue by design
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

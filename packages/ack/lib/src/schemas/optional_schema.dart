@@ -57,7 +57,18 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
     super.constraints = const [],
     super.refinements = const [],
     super.isNullable = false,
-  });
+  }) {
+    // Guard against conflicting defaults - enforce single source of truth
+    if (defaultValue != null && wrappedSchema.defaultValue != null) {
+      throw ArgumentError(
+        'Cannot set default on both OptionalSchema and wrapped schema. '
+        'Use .optional().withDefault(value) instead of '
+        '.withDefault(value).optional(). '
+        'Wrapped schema has default: ${wrappedSchema.defaultValue}, '
+        'OptionalSchema default: $defaultValue',
+      );
+    }
+  }
 
   @override
   JsonType get acceptedType => wrappedSchema.acceptedType;
@@ -82,8 +93,14 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
         if (isNullable) return SchemaResult.ok(null);
         return failNonNullable(context);
       }
-      // Nested usage (e.g., object property): fall back to base handling
-      return handleNullInput(context);
+      // Nested usage (e.g., object property): inline the null handling
+      if (defaultValue != null) {
+        return applyConstraintsAndRefinements(defaultValue!, context);
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
     }
 
     // Delegate full validation to wrapped schema, which includes wrapped schema's
@@ -133,7 +150,15 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
 
     // Override with OptionalSchema's own properties
     if (description != null) base['description'] = description;
-    if (defaultValue != null) base['default'] = defaultValue;
+
+    // Enforce single default source: OptionalSchema default takes precedence
+    // (wrapped defaults are prevented by constructor guard, but be defensive)
+    if (defaultValue != null) {
+      base['default'] = defaultValue;
+    } else if (wrappedSchema.defaultValue != null) {
+      // This shouldn't happen due to constructor guard, but handle it defensively
+      base['default'] = wrappedSchema.defaultValue;
+    }
 
     // Merge OptionalSchema's constraints into the JSON Schema
     return mergeConstraintSchemas(base);
