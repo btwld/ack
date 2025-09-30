@@ -210,4 +210,17 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
     return mergeConstraintSchemas(schema);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      'type': acceptedType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      // defaultValue omitted - DiscriminatedObjectSchema does not support defaults
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'discriminatorKey': discriminatorKey,
+      'schemas': schemas.length,
+    };
+  }
 }

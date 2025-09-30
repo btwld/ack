@@ -2,6 +2,9 @@ part of 'schema.dart';
 
 /// Schema that accepts any value without type conversion or validation.
 /// Useful for dynamic content or when you need maximum flexibility.
+///
+/// Unlike composite schemas (List, Object, AnyOf, Discriminated), AnySchema
+/// supports default values and will emit them in JSON Schema output.
 @immutable
 final class AnySchema extends AckSchema<Object>
     with FluentSchema<Object, AnySchema> {

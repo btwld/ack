@@ -540,7 +540,7 @@ sealed class AckSchema<DartType extends Object> {
 
   Map<String, Object?> toMap() {
     return {
-      'runtimeType': runtimeType.toString(),
+      'type': acceptedType.typeName,
       'isNullable': isNullable,
       'description': description,
       'defaultValue': defaultValue?.toString(),

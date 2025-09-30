@@ -134,4 +134,16 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
     return mergeConstraintSchemas(schema);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      'type': acceptedType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      // defaultValue omitted - ListSchema does not support defaults
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'itemSchema': itemSchema.acceptedType.typeName,
+    };
+  }
 }

@@ -56,6 +56,11 @@ class SchemaContext {
   }
 
   /// Creates a child context for nested validation.
+  ///
+  /// If [pathSegment] is an empty string (''), the child inherits the parent's
+  /// path without adding a new segment. This is useful for schemas like AnyOf
+  /// or DiscriminatedObject that should not pollute the JSON Pointer path with
+  /// internal structure (e.g., avoiding paths like `#/field/anyOf:0`).
   SchemaContext createChild({
     required String name,
     required AckSchema schema,

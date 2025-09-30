@@ -64,6 +64,7 @@ final class ObjectSchema extends AckSchema<MapValue>
         // Property is missing from input
         if (schema is OptionalSchema) {
           // Optional field - check for default value
+          // Policy: Use wrapped schema's defaultValue (via OptionalSchema getter proxy)
           if (schema.defaultValue != null) {
             // Optional field with default - validate the default value
             final propertyContext = context.createChild(
@@ -226,5 +227,18 @@ final class ObjectSchema extends AckSchema<MapValue>
     };
 
     return mergeConstraintSchemas(schema);
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      'type': acceptedType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      // defaultValue omitted - ObjectSchema does not support defaults
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'properties': properties.length,
+      'additionalProperties': additionalProperties,
+    };
   }
 }

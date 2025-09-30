@@ -140,4 +140,16 @@ final class AnyOfSchema extends AckSchema<Object>
 
     return mergeConstraintSchemas(schema);
   }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      'type': acceptedType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      // defaultValue omitted - AnyOfSchema does not support defaults
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'schemas': schemas.length,
+    };
+  }
 }
