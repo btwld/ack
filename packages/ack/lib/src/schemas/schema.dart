@@ -9,6 +9,7 @@ import '../utils/json_utils.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
+part 'json_type.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
@@ -21,221 +22,6 @@ part 'object_schema.dart';
 part 'optional_schema.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
-
-/// JSON type enumeration following JSON Schema Draft 2020-12.
-///
-/// This enum serves as the central authority for type validation and conversion logic.
-/// Each JsonType knows:
-/// 1. Which other JsonTypes it can accept/parse from (via [canAcceptFrom])
-/// 2. How to parse values from those types (via [parse])
-///
-/// This centralizes all coercion rules in one place, eliminating duplication
-/// between schema classes.
-///
-/// Example:
-/// ```dart
-/// // JsonType.integer can parse from number/string in non-strict mode
-/// JsonType.integer.canAcceptFrom(JsonType.string, strict: false) // true
-/// JsonType.integer.parse("42", JsonType.string, context) // Ok(42)
-/// ```
-enum JsonType {
-  string('string'),
-  integer('integer'),
-  number('number'),
-  boolean('boolean'),
-  object('object'),
-  array('array'),
-  nil('null');
-
-  const JsonType(this.typeName);
-
-  /// The string representation used in JSON Schema.
-  final String typeName;
-
-  /// Determines if this type can accept/parse values from [sourceType].
-  ///
-  /// When [strict] is true, only exact type matches are allowed (except number ← integer).
-  /// When [strict] is false, primitive types can parse from compatible types:
-  /// - integer: from number, string
-  /// - string: from integer, number, boolean
-  /// - boolean: from string
-  /// - number: from integer, string
-  bool canAcceptFrom(JsonType sourceType, {required bool strict}) {
-    // Same type always OK
-    if (this == sourceType) return true;
-
-    return switch (this) {
-      // Integer can parse from number/string (if not strict)
-      JsonType.integer =>
-        !strict && (sourceType == JsonType.number || sourceType == JsonType.string),
-
-      // String can parse from primitives (if not strict)
-      JsonType.string => !strict &&
-          (sourceType == JsonType.integer ||
-              sourceType == JsonType.number ||
-              sourceType == JsonType.boolean),
-
-      // Boolean can parse from string (if not strict)
-      JsonType.boolean => !strict && sourceType == JsonType.string,
-
-      // Number can always accept integer, or string if not strict
-      JsonType.number =>
-        sourceType == JsonType.integer || (!strict && sourceType == JsonType.string),
-
-      // Object/Array/Nil are strict - only accept exact type
-      _ => false,
-    };
-  }
-
-  /// Parses [value] from [sourceType] to this type.
-  ///
-  /// Precondition: [canAcceptFrom] returned true for these types.
-  /// Returns SchemaResult.fail if parsing fails (e.g., "abc" → integer).
-  SchemaResult<T> parse<T extends Object>(
-    Object value,
-    JsonType sourceType,
-    SchemaContext context,
-  ) {
-    // If same type, just cast (already validated by type checking)
-    if (this == sourceType) {
-      return SchemaResult.ok(value as T);
-    }
-
-    return switch (this) {
-      JsonType.integer =>
-        _parseInteger(value, sourceType, context) as SchemaResult<T>,
-      JsonType.string => SchemaResult.ok(value.toString() as T),
-      JsonType.boolean =>
-        _parseBoolean(value, sourceType, context) as SchemaResult<T>,
-      JsonType.number =>
-        _parseNumber(value, sourceType, context) as SchemaResult<T>,
-      _ => SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Cannot parse ${sourceType.typeName} to ${this.typeName}',
-            context: context,
-          ),
-        ),
-    };
-  }
-
-  /// Parses value to integer from compatible source types.
-  SchemaResult<int> _parseInteger(
-    Object value,
-    JsonType sourceType,
-    SchemaContext context,
-  ) {
-    return switch (sourceType) {
-      JsonType.integer => SchemaResult.ok(value as int),
-      JsonType.number => _convertDoubleToInt(value as double, context),
-      JsonType.string => _parseIntFromString(value as String, context),
-      _ => SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Cannot convert ${sourceType.typeName} to integer',
-            context: context,
-          ),
-        ),
-    };
-  }
-
-  /// Parses value to number from compatible source types.
-  SchemaResult<double> _parseNumber(
-    Object value,
-    JsonType sourceType,
-    SchemaContext context,
-  ) {
-    return switch (sourceType) {
-      JsonType.number => SchemaResult.ok(value as double),
-      JsonType.integer => SchemaResult.ok((value as int).toDouble()),
-      JsonType.string => _parseDoubleFromString(value as String, context),
-      _ => SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Cannot convert ${sourceType.typeName} to number',
-            context: context,
-          ),
-        ),
-    };
-  }
-
-  /// Parses value to boolean from compatible source types.
-  SchemaResult<bool> _parseBoolean(
-    Object value,
-    JsonType sourceType,
-    SchemaContext context,
-  ) {
-    return switch (sourceType) {
-      JsonType.boolean => SchemaResult.ok(value as bool),
-      JsonType.string => _parseBoolFromString(value as String, context),
-      _ => SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Cannot convert ${sourceType.typeName} to boolean',
-            context: context,
-          ),
-        ),
-    };
-  }
-
-  /// Converts double to int, checking for precision loss.
-  static SchemaResult<int> _convertDoubleToInt(
-    double value,
-    SchemaContext context,
-  ) {
-    if (value.isFinite && value == value.truncate()) {
-      return SchemaResult.ok(value.toInt());
-    }
-    return SchemaResult.fail(
-      SchemaValidationError(
-        message: 'Cannot convert $value to integer without losing precision.',
-        context: context,
-      ),
-    );
-  }
-
-  /// Parses integer from string.
-  static SchemaResult<int> _parseIntFromString(
-    String value,
-    SchemaContext context,
-  ) {
-    final parsed = int.tryParse(value);
-    if (parsed != null) return SchemaResult.ok(parsed);
-    return SchemaResult.fail(
-      SchemaValidationError(
-        message: 'Cannot convert "$value" to integer.',
-        context: context,
-      ),
-    );
-  }
-
-  /// Parses double from string.
-  static SchemaResult<double> _parseDoubleFromString(
-    String value,
-    SchemaContext context,
-  ) {
-    final parsed = double.tryParse(value);
-    if (parsed != null) return SchemaResult.ok(parsed);
-    return SchemaResult.fail(
-      SchemaValidationError(
-        message: 'Cannot convert "$value" to number.',
-        context: context,
-      ),
-    );
-  }
-
-  /// Parses boolean from string.
-  static SchemaResult<bool> _parseBoolFromString(
-    String value,
-    SchemaContext context,
-  ) {
-    final normalized = value.trim().toLowerCase();
-    if (normalized == 'true') return SchemaResult.ok(true);
-    if (normalized == 'false') return SchemaResult.ok(false);
-    return SchemaResult.fail(
-      SchemaValidationError(
-        message: 'Cannot convert "$value" to boolean.',
-        context: context,
-      ),
-    );
-  }
-}
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
@@ -257,19 +43,8 @@ sealed class AckSchema<DartType extends Object> {
 
   /// Utility method to get the JSON type of any value.
   static JsonType getJsonType(Object? value) {
-    return switch (value) {
-      null => JsonType.nil,
-      Map() => JsonType.object,
-      List() => JsonType.array,
-      String() => JsonType.string,
-      int() => JsonType.integer,
-      double() || num() => JsonType.number, // For double and other num types
-      bool() => JsonType.boolean,
-      Enum() => JsonType.string, // Enums serialize to strings (their name)
-      _ => throw ArgumentError('Unknown JSON type for value: $value'),
-    };
+    return JsonType.of(value);
   }
-
 
   /// Checks if input value matches the expected JSON type.
   ///
@@ -282,7 +57,8 @@ sealed class AckSchema<DartType extends Object> {
   /// if (typeError != null) return typeError;
   /// ```
   @protected
-  SchemaResult<DartType>? checkTypeMatch(Object inputValue, SchemaContext context) {
+  SchemaResult<DartType>? checkTypeMatch(
+      Object inputValue, SchemaContext context) {
     final actualType = AckSchema.getJsonType(inputValue);
     if (actualType != acceptedType) {
       return SchemaResult.fail(
@@ -465,7 +241,8 @@ sealed class AckSchema<DartType extends Object> {
     }
 
     // Parse using JsonType's centralized parsing logic
-    final convertedResult = targetType.parse<DartType>(inputValue, actualType, context);
+    final convertedResult =
+        targetType.parse<DartType>(inputValue, actualType, context);
     if (convertedResult.isFail) return convertedResult;
 
     final convertedValue = convertedResult.getOrThrow()!;
