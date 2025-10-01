@@ -10,6 +10,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     this.schema,
     this.transformer, {
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -67,6 +68,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   @override
   TransformedSchema<InputType, OutputType> copyWith({
     bool? isNullable,
+    bool? isOptional,
     String? description,
     OutputType? defaultValue,
     List<Constraint<OutputType>>? constraints,
@@ -76,6 +78,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
       schema,
       transformer,
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
@@ -86,6 +89,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   @override
   AckSchema<OutputType> copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required OutputType? defaultValue,
     required List<Constraint<OutputType>>? constraints,
@@ -93,6 +97,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }) {
     return copyWith(
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,

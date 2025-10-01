@@ -76,7 +76,7 @@ void main() {
       });
 
       test('optional schema default should honor constraints', () {
-        // OptionalSchema's default is ONLY applied for missing object properties,
+        // Optional defaults apply only when the field is missing from an object,
         // not for top-level null input. For top-level null with a default,
         // use the base schema's withDefault instead.
         final schema = Ack.string()
@@ -135,7 +135,9 @@ void main() {
         expect(error.actualType, equals('integer'));
       });
 
-      test('DoubleSchema should accept ints even in strict mode (integers are numbers)', () {
+      test(
+          'DoubleSchema should accept ints even in strict mode (integers are numbers)',
+          () {
         const schema = DoubleSchema(strictPrimitiveParsing: true);
         final result = schema.validate(42);
 

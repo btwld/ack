@@ -9,6 +9,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   const EnumSchema({
     required this.values,
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -86,6 +87,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   @override
   EnumSchema<T> copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required T? defaultValue,
     required List<Constraint<T>>? constraints,
@@ -95,6 +97,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     return EnumSchema(
       values: values ?? this.values,
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
@@ -106,6 +109,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   EnumSchema<T> copyWith({
     List<T>? values,
     bool? isNullable,
+    bool? isOptional,
     String? description,
     T? defaultValue,
     List<Constraint<T>>? constraints,
@@ -113,6 +117,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }) {
     return copyWithInternal(
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,

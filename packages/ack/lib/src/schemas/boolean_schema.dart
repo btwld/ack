@@ -10,6 +10,7 @@ final class BooleanSchema extends AckSchema<bool>
   const BooleanSchema({
     this.strictPrimitiveParsing = false,
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -27,6 +28,7 @@ final class BooleanSchema extends AckSchema<bool>
   BooleanSchema copyWith({
     bool? strictPrimitiveParsing,
     bool? isNullable,
+    bool? isOptional,
     String? description,
     bool? defaultValue,
     List<Constraint<bool>>? constraints,
@@ -35,6 +37,7 @@ final class BooleanSchema extends AckSchema<bool>
     return copyWithInternal(
       strictPrimitiveParsing: strictPrimitiveParsing,
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
@@ -45,6 +48,7 @@ final class BooleanSchema extends AckSchema<bool>
   @override
   BooleanSchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required bool? defaultValue,
     required List<Constraint<bool>>? constraints,
@@ -54,6 +58,7 @@ final class BooleanSchema extends AckSchema<bool>
   }) {
     return BooleanSchema(
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,

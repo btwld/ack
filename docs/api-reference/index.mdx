@@ -31,7 +31,6 @@ Base class for all schema types.
 - `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint.
 - `AckSchema<T> refine(bool Function(T) validate, {String message})`: Adds custom validation logic.
 - `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values.
-- `OptionalSchema<T> optional()`: Makes the schema optional (can be omitted from objects).
 - `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema map.
 
 See also [Schema Validation](../core-concepts/typesafe-schemas.mdx) for detailed usage examples.
@@ -150,10 +149,12 @@ Schema that transforms validated values.
 
 - Created using `schema.transform<R>(R Function(T?) transformer)`
 
-### `OptionalSchema<T>`
+### Optional Schemas
 
-Schema wrapper that makes a field optional in object validation.
+Every schema can be marked optional through the `optional({bool value = true})` fluent API.
 
-- Created using `schema.optional()`
+- Calling `schema.optional()` sets `isOptional` to `true` without wrapping the schema.
+- Use `schema.optional(value: false)` to clear the optional flag.
+- Optional affects object-field presence only; combine with `.nullable()` to also allow explicit `null`.
 
 *Refer to the [Schema Validation](../core-concepts/typesafe-schemas.mdx) guide for detailed usage and examples.*

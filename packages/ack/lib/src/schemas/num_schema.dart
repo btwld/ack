@@ -8,6 +8,7 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
   const NumSchema({
     this.strictPrimitiveParsing = false,
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -33,6 +34,7 @@ final class IntegerSchema extends NumSchema<int>
   const IntegerSchema({
     super.strictPrimitiveParsing,
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -45,6 +47,7 @@ final class IntegerSchema extends NumSchema<int>
   @override
   IntegerSchema copyWith({
     bool? isNullable,
+    bool? isOptional,
     String? description,
     int? defaultValue,
     List<Constraint<int>>? constraints,
@@ -53,6 +56,7 @@ final class IntegerSchema extends NumSchema<int>
   }) {
     return copyWithInternal(
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
@@ -64,6 +68,7 @@ final class IntegerSchema extends NumSchema<int>
   @override
   IntegerSchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required int? defaultValue,
     required List<Constraint<int>>? constraints,
@@ -73,6 +78,7 @@ final class IntegerSchema extends NumSchema<int>
   }) {
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
@@ -103,6 +109,7 @@ final class DoubleSchema extends NumSchema<double>
   const DoubleSchema({
     super.strictPrimitiveParsing,
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -115,6 +122,7 @@ final class DoubleSchema extends NumSchema<double>
   @override
   DoubleSchema copyWith({
     bool? isNullable,
+    bool? isOptional,
     String? description,
     double? defaultValue,
     List<Constraint<double>>? constraints,
@@ -123,6 +131,7 @@ final class DoubleSchema extends NumSchema<double>
   }) {
     return copyWithInternal(
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
@@ -134,6 +143,7 @@ final class DoubleSchema extends NumSchema<double>
   @override
   DoubleSchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required double? defaultValue,
     required List<Constraint<double>>? constraints,
@@ -143,6 +153,7 @@ final class DoubleSchema extends NumSchema<double>
   }) {
     return DoubleSchema(
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,

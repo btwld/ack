@@ -72,9 +72,8 @@ void main() {
       test('fluent methods can be chained (excluding default)', () {
         const description = 'Nullable animal schema';
 
-        final fullyConfiguredSchema = animalSchema
-            .nullable()
-            .withDescription(description);
+        final fullyConfiguredSchema =
+            animalSchema.nullable().withDescription(description);
 
         expect(fullyConfiguredSchema.isNullable, isTrue);
         expect(fullyConfiguredSchema.description, equals(description));

@@ -61,13 +61,13 @@ void main() {
     });
 
     test('Optional schemas should proxy defaults to wrapped schema', () {
-      // OptionalSchema is a transparent wrapper - delegates to wrapped schema
+      // Optional flag should behave transparently and reuse the base schema JSON
       final optionalWithDefault = Ack.string().optional().withDefault('x');
       final jsonSchema = optionalWithDefault.toJsonSchema();
 
-      // OptionalSchema delegates to wrapped schema's toJsonSchema
+      // Optional flag delegates to wrapped schema's toJsonSchema
       expect(jsonSchema['default'], equals('x'),
-          reason: 'OptionalSchema should proxy default from wrapped schema');
+          reason: 'Optional field should proxy default from wrapped schema');
       expect(jsonSchema['type'], equals('string'));
     });
 

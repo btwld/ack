@@ -21,12 +21,10 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
   /// Makes the schema optional - the field can be omitted from an object.
   /// This is different from nullable() which allows null values but requires the field to be present.
   ///
-  /// This method is idempotent - calling it multiple times returns the same OptionalSchema.
-  OptionalSchema<T> optional() {
-    if (this is OptionalSchema<T>) {
-      return this as OptionalSchema<T>;
-    }
-    return OptionalSchema(this);
+  /// This method is idempotent - calling it multiple times returns the same schema if already optional.
+  AckSchema<T> optional({bool value = true}) {
+    if (isOptional == value) return this;
+    return copyWith(isOptional: value);
   }
 
   /// Transforms the validated value using the provided transformer function.

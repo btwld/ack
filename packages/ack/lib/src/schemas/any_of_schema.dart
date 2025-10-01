@@ -28,6 +28,7 @@ final class AnyOfSchema extends AckSchema<Object>
   const AnyOfSchema(
     this.schemas, {
     super.isNullable,
+    super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
@@ -103,6 +104,7 @@ final class AnyOfSchema extends AckSchema<Object>
   @override
   AnyOfSchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required Object? defaultValue,
     required List<Constraint<Object>>? constraints,
@@ -112,6 +114,7 @@ final class AnyOfSchema extends AckSchema<Object>
     return AnyOfSchema(
       schemas, // schemas are immutable once created
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,

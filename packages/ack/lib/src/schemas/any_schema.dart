@@ -10,6 +10,7 @@ final class AnySchema extends AckSchema<Object>
     with FluentSchema<Object, AnySchema> {
   const AnySchema({
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -44,6 +45,7 @@ final class AnySchema extends AckSchema<Object>
   @override
   AnySchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required Object? defaultValue,
     required List<Constraint<Object>>? constraints,
@@ -51,6 +53,7 @@ final class AnySchema extends AckSchema<Object>
   }) {
     return AnySchema(
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,

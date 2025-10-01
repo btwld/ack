@@ -112,8 +112,7 @@ void main() {
       final schema = Ack.anyOf([]);
 
       final result = schema.validate('anything');
-      expect(result.isFail, isTrue,
-          reason: 'Empty anyOf should always fail');
+      expect(result.isFail, isTrue, reason: 'Empty anyOf should always fail');
     });
 
     test('should handle single schema in anyOf', () {

@@ -19,7 +19,6 @@ part 'fluent_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
-part 'optional_schema.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
 
@@ -28,6 +27,7 @@ typedef Refinement<T> = ({bool Function(T value) validate, String message});
 @immutable
 sealed class AckSchema<DartType extends Object> {
   final bool isNullable;
+  final bool isOptional;
   final String? description;
   final DartType? defaultValue;
   final List<Constraint<DartType>> constraints;
@@ -35,6 +35,7 @@ sealed class AckSchema<DartType extends Object> {
 
   const AckSchema({
     this.isNullable = false,
+    this.isOptional = false,
     this.description,
     this.defaultValue,
     this.constraints = const [],
@@ -255,6 +256,7 @@ sealed class AckSchema<DartType extends Object> {
   @protected
   AckSchema<DartType> copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required DartType? defaultValue,
     required List<Constraint<DartType>>? constraints,
@@ -263,6 +265,7 @@ sealed class AckSchema<DartType extends Object> {
 
   AckSchema<DartType> copyWith({
     bool? isNullable,
+    bool? isOptional,
     String? description,
     DartType? defaultValue,
     List<Constraint<DartType>>? constraints,
@@ -270,6 +273,7 @@ sealed class AckSchema<DartType extends Object> {
   }) {
     return copyWithInternal(
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,

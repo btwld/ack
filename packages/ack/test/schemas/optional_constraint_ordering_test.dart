@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 /// Tests that constraints and refinements work correctly regardless of where
 /// they are added relative to the .optional() call.
 void main() {
-  group('OptionalSchema Constraint Ordering', () {
+  group('Optional Constraint Ordering', () {
     test('constraints before optional() should work', () {
       final schema = Ack.string().minLength(5).optional();
 

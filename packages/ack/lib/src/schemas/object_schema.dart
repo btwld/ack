@@ -14,6 +14,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     Map<String, AckSchema>? properties, {
     this.additionalProperties = false,
     super.isNullable,
+    super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
@@ -68,7 +69,7 @@ final class ObjectSchema extends AckSchema<MapValue>
 
       if (!hasValue) {
         // Property is missing from input
-        if (schema is OptionalSchema) {
+        if (schema.isOptional) {
           // Optional field - check for default value
           // Policy: Use wrapped schema's defaultValue (via OptionalSchema getter proxy)
           if (schema.defaultValue != null) {
@@ -173,6 +174,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     Map<String, AckSchema>? properties,
     bool? additionalProperties,
     bool? isNullable,
+    bool? isOptional,
     String? description,
     MapValue? defaultValue,
     List<Constraint<MapValue>>? constraints,
@@ -182,6 +184,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       properties: properties,
       additionalProperties: additionalProperties,
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
@@ -192,6 +195,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   ObjectSchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required MapValue? defaultValue,
     required List<Constraint<MapValue>>? constraints,
@@ -205,6 +209,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       properties ?? this.properties,
       additionalProperties: additionalProperties ?? this.additionalProperties,
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
@@ -219,7 +224,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
       // All non-optional fields are required
-      if (entry.value is! OptionalSchema) {
+      if (!entry.value.isOptional) {
         requiredFields.add(entry.key);
       }
     }

@@ -28,11 +28,20 @@ void main() {
                 'Optional field should reject null unless also marked nullable');
       });
 
-      test('optional() schema should report isNullable as false', () {
+      test(
+          'optional() schema should report isOptional true and isNullable false',
+          () {
         final schema = Ack.string().optional();
+        expect(schema.isOptional, isTrue,
+            reason: 'optional() should mark the schema as optional');
         expect(schema.isNullable, isFalse,
-            reason:
-                'OptionalSchema should not be nullable unless explicitly marked');
+            reason: 'optional() should not imply nullable semantics');
+      });
+
+      test('optional(false) should reset optional flag', () {
+        final schema = Ack.string().optional(value: false);
+        expect(schema.isOptional, isFalse,
+            reason: 'optional(value: false) should clear the optional flag');
       });
     });
 

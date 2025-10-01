@@ -122,7 +122,7 @@ final fail = userSchema.safeParse({'email': 'missing id'});
 
 Use `.optional()` to mark a property as omit-able. `.nullable()` allows `null` values but still requires the field to exist. Set `additionalProperties: true` when you want to forward unknown keys; `SchemaModel.extractAdditionalProperties` uses that flag for metadata maps.
 
-### OptionalSchema vs Nullable
+### Optional vs Nullable
 
 ```dart
 final profileSchema = Ack.object({
@@ -137,7 +137,7 @@ profileSchema.safeParse({
 });
 ```
 
-Optional schemas validate their defaults through the wrapped schema, so
+Optional schemas validate their defaults through the underlying schema, so
 `Ack.string().minLength(5).optional().withDefault('x')` fails fast.
 
 ---

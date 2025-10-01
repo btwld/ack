@@ -12,6 +12,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   const ListSchema(
     this.itemSchema, {
     super.isNullable,
+    super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
@@ -97,6 +98,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   ListSchema<V> copyWith({
     AckSchema<V>? itemSchema,
     bool? isNullable,
+    bool? isOptional,
     String? description,
     List<V>? defaultValue,
     List<Constraint<List<V>>>? constraints,
@@ -105,6 +107,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     return copyWithInternal(
       itemSchema: itemSchema,
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
@@ -115,6 +118,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   ListSchema<V> copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required List<V>? defaultValue,
     required List<Constraint<List<V>>>? constraints,
@@ -126,6 +130,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     return ListSchema(
       itemSchema ?? this.itemSchema,
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,

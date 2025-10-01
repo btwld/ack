@@ -8,6 +8,7 @@ final class StringSchema extends AckSchema<String>
 
   const StringSchema({
     super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
     super.constraints,
@@ -25,6 +26,7 @@ final class StringSchema extends AckSchema<String>
   @override
   StringSchema copyWithInternal({
     required bool? isNullable,
+    required bool? isOptional,
     required String? description,
     required String? defaultValue,
     required List<Constraint<String>>? constraints,
@@ -34,6 +36,7 @@ final class StringSchema extends AckSchema<String>
   }) {
     return StringSchema(
       isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
       defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
@@ -46,6 +49,7 @@ final class StringSchema extends AckSchema<String>
   @override
   StringSchema copyWith({
     bool? isNullable,
+    bool? isOptional,
     String? description,
     String? defaultValue,
     List<Constraint<String>>? constraints,
@@ -54,6 +58,7 @@ final class StringSchema extends AckSchema<String>
   }) {
     return copyWithInternal(
       isNullable: isNullable,
+      isOptional: isOptional,
       description: description,
       defaultValue: defaultValue,
       constraints: constraints,
