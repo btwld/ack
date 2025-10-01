@@ -1,7 +1,5 @@
 part of 'schema.dart';
 
-typedef MapValue = Map<String, Object?>;
-
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
 ///
 /// Note: ObjectSchema does not support default values. Use property schemas with
@@ -165,7 +163,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
-    bool? allowAdditionalProperties,
+    bool? additionalProperties,
     bool? isNullable,
     String? description,
     MapValue? defaultValue,
@@ -174,7 +172,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   }) {
     return copyWithInternal(
       properties: properties,
-      allowAdditionalProperties: allowAdditionalProperties,
+      additionalProperties: additionalProperties,
       isNullable: isNullable,
       description: description,
       defaultValue: defaultValue,
@@ -192,12 +190,12 @@ final class ObjectSchema extends AckSchema<MapValue>
     required List<Refinement<MapValue>>? refinements,
     // ObjectSchema specific
     Map<String, AckSchema>? properties,
-    bool? allowAdditionalProperties,
+    bool? additionalProperties,
   }) {
     // defaultValue is ignored - ObjectSchema does not support defaults
     return ObjectSchema(
       properties ?? this.properties,
-      additionalProperties: allowAdditionalProperties ?? additionalProperties,
+      additionalProperties: additionalProperties ?? this.additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,

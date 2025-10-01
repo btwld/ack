@@ -81,10 +81,12 @@ mixin Validator<T> on Constraint<T> {
   String buildMessage(T value);
 
   /// Builds an optional context map providing additional details for an invalid [value].
-  /// Defaults to including the invalid `value` itself.
+  /// Stores both the raw value and its string representation for debugging.
   @protected
-  Map<String, Object?> buildContext(T value) =>
-      {'inputValue': value?.toString()};
+  Map<String, Object?> buildContext(T value) => {
+        'inputValue': value,
+        'stringValue': value.toString(),
+      };
 
   /// Validates the [value] against this constraint.
   ///

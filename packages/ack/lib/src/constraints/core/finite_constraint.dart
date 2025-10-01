@@ -2,7 +2,7 @@ import '../constraint.dart';
 
 /// Constraint to validate if a double is finite.
 class IsFiniteConstraint extends Constraint<double> with Validator<double> {
-  IsFiniteConstraint()
+  const IsFiniteConstraint()
       : super(
           constraintKey: 'double.isFinite',
           description: 'Value must be a finite number.',

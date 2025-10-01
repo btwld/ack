@@ -11,10 +11,8 @@ enum PatternType { regex, enumString, notEnumString, format }
 /// Handles regex matching, checking against a list of allowed/disallowed enum strings,
 /// and validating against predefined formats (like date, email) using either regex
 /// or custom validation functions.
-///
-/// It will always pass if the input value is `null`.
-class PatternConstraint extends Constraint<String?>
-    with Validator<String?>, JsonSchemaSpec<String?> {
+class PatternConstraint extends Constraint<String>
+    with Validator<String>, JsonSchemaSpec<String> {
   final PatternType type;
   final RegExp? pattern; // For PatternType.regex
   final List<String>?
@@ -103,6 +101,17 @@ class PatternConstraint extends Constraint<String?>
         customMessageBuilder: (v) => 'Invalid hex color format, got "$v".',
       );
 
+  static PatternConstraint uri() => PatternConstraint(
+        type: PatternType.format,
+        formatValidator: (v) {
+          final u = Uri.tryParse(v);
+          return u != null && u.hasScheme && u.host.isNotEmpty;
+        },
+        constraintKey: 'string_format_uri',
+        description: 'Must be a valid URI.',
+        customMessageBuilder: (v) => 'Invalid URI format, got "$v".',
+      );
+
   static PatternConstraint enumString(List<String> values) => PatternConstraint(
         type: PatternType.enumString,
         allowedValues: values,
@@ -128,12 +137,40 @@ class PatternConstraint extends Constraint<String?>
             'Value "$v" is disallowed. Cannot be one of: ${disallowedValues.map((e) => '"$e"').join(', ')}.',
       );
 
+  static PatternConstraint startsWith(String prefix) => PatternConstraint(
+        type: PatternType.regex,
+        pattern: RegExp('^${RegExp.escape(prefix)}'),
+        constraintKey: 'string.startsWith',
+        description: 'Value must start with "$prefix".',
+        customMessageBuilder: (v) => '"$v" does not start with "$prefix".',
+      );
+
+  static PatternConstraint endsWith(String suffix) => PatternConstraint(
+        type: PatternType.regex,
+        pattern: RegExp('${RegExp.escape(suffix)}\$'),
+        constraintKey: 'string.endsWith',
+        description: 'Value must end with "$suffix".',
+        customMessageBuilder: (v) => '"$v" does not end with "$suffix".',
+      );
+
   static PatternConstraint dateTimeIso8601() => PatternConstraint(
         type: PatternType.format,
-        formatValidator: (v) =>
-            DateTime.tryParse(v)?.toIso8601String() == v ||
-            DateTime.tryParse(v) !=
-                null, // Stricter check for ISO8601, but allow with timezone
+        // RFC 3339 / ISO-8601 validation using Dart's built-in DateTime parser
+        // Dart's tryParse implements RFC 3339, which is a subset of ISO-8601
+        formatValidator: (v) {
+          // Use Dart's built-in RFC 3339/ISO-8601 parser
+          final dt = DateTime.tryParse(v);
+          if (dt == null) return false;
+
+          // Must contain 'T' separator (distinguishes datetime from date-only)
+          // Must contain timezone indicator (Z or +/-HH:MM)
+          final hasTimeSeparator = v.contains('T') || v.contains('t');
+          final hasTimezone = v.endsWith('Z') ||
+                              v.endsWith('z') ||
+                              RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(v);
+
+          return hasTimeSeparator && hasTimezone;
+        },
         constraintKey: 'string_format_datetime',
         description: 'Must be a valid ISO 8601 date-time string.',
         example: '2023-10-27T10:30:00Z',
@@ -178,11 +215,7 @@ class PatternConstraint extends Constraint<String?>
       );
 
   @override
-  bool isValid(String? value) {
-    if (value == null) {
-      // This constraint validates the value, not its nullability.
-      return true;
-    }
+  bool isValid(String value) {
     switch (type) {
       case PatternType.regex:
         return pattern!.hasMatch(value);
@@ -196,9 +229,8 @@ class PatternConstraint extends Constraint<String?>
   }
 
   @override
-  String buildMessage(String? value) {
-    // This method is only called if isValid returns false, so value is non-null.
-    final nonNullValue = value!;
+  String buildMessage(String value) {
+    final nonNullValue = value;
     if (customMessageBuilder != null) {
       return customMessageBuilder!(nonNullValue);
     }
@@ -221,11 +253,9 @@ class PatternConstraint extends Constraint<String?>
   }
 
   @override
-  Map<String, Object?> buildContext(String? value) {
+  Map<String, Object?> buildContext(String value) {
     final baseContext = super.buildContext(value);
-    if (value != null &&
-        type == PatternType.enumString &&
-        allowedValues != null) {
+    if (type == PatternType.enumString && allowedValues != null) {
       final closestMatch = findClosestStringMatch(value, allowedValues!);
 
       return {

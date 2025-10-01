@@ -74,8 +74,8 @@ final class AnySchema extends AckSchema<Object>
             if (defaultValue != null) 'default': defaultValue,
           }
         : {
-            // Accepts any type except null
-            'not': {'type': 'null'},
+            // Accepts any type except null - use explicit type array for better compatibility
+            'type': ['boolean', 'number', 'integer', 'string', 'object', 'array'],
             if (description != null) 'description': description,
             if (defaultValue != null) 'default': defaultValue,
           };

@@ -155,8 +155,9 @@ final class DoubleSchema extends NumSchema<double>
   @override
   Map<String, Object?> toJsonSchema() {
     final schema = super.toJsonSchema();
-    // Add format annotation for double precision
-    schema['format'] = 'double';
+    // Note: 'double' is not a standard JSON Schema format keyword.
+    // JSON Schema uses 'number' type for all floating point values.
+    // If OpenAPI-specific double precision is needed, use x-openapi-format extension.
 
     return schema;
   }

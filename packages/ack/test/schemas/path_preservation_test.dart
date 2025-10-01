@@ -306,11 +306,15 @@ void main() {
       final nullableJson = nullableSchema.toJsonSchema();
       final nonNullableJson = nonNullableSchema.toJsonSchema();
 
-      // Nullable should not restrict null
+      // Nullable should not have type restriction
+      expect(nullableJson.containsKey('type'), isFalse);
       expect(nullableJson.containsKey('not'), isFalse);
 
-      // Non-nullable should restrict null
-      expect(nonNullableJson['not'], equals({'type': 'null'}));
+      // Non-nullable should use explicit type array (JSON Schema standard)
+      expect(
+        nonNullableJson['type'],
+        equals(['boolean', 'number', 'integer', 'string', 'object', 'array']),
+      );
     });
 
     test('AnyOfSchema should include null type when nullable', () {

@@ -97,7 +97,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
-      final enumError = StringEnumConstraint(allowed).validate(discValueRaw);
+      final enumError = PatternConstraint.enumString(allowed).validate(discValueRaw);
 
       // Error context for discriminator key, but inherit parent path
       return SchemaResult.fail(SchemaConstraintsError(

@@ -6,17 +6,17 @@ extension ObjectSchemaExtensions on ObjectSchema {
   /// Makes the object schema strict, disallowing any properties not
   /// explicitly defined in the `properties` map.
   ///
-  /// This is a convenience method for `copyWith(allowAdditionalProperties: false)`.
+  /// This is a convenience method for `copyWith(additionalProperties: false)`.
   ObjectSchema strict() {
-    return copyWith(allowAdditionalProperties: false);
+    return copyWith(additionalProperties: false);
   }
 
   /// Allows the object schema to have properties that are not
   /// explicitly defined in the `properties` map.
   ///
-  /// This is a convenience method for `copyWith(allowAdditionalProperties: true)`.
+  /// This is a convenience method for `copyWith(additionalProperties: true)`.
   ObjectSchema passthrough() {
-    return copyWith(allowAdditionalProperties: true);
+    return copyWith(additionalProperties: true);
   }
 
   /// Merges this schema with another [ObjectSchema].
@@ -60,7 +60,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
 
     return copyWith(
       properties: mergedProperties,
-      allowAdditionalProperties: additionalProperties,
+      additionalProperties: additionalProperties,
       isNullable: isNullable,
       description: description,
       defaultValue: defaultValue,

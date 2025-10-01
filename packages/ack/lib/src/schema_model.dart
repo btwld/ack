@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 
+import 'common_types.dart';
 import 'context.dart';
 import 'schemas/schema.dart';
 import 'validation/ack_exception.dart';
@@ -77,8 +78,13 @@ abstract class SchemaModel<T extends Object> {
     _hasBeenValidated = true; // Mark as validated regardless of result
 
     if (result.isOk) {
+      final validated = result.getOrNull();
+      if (validated == null) {
+        _value = null; // Null is an allowed, successful parse
+        return SchemaResult.ok(null);
+      }
       try {
-        final validatedMap = result.getOrThrow() as Map<String, Object?>;
+        final validatedMap = validated;
         _value = createFromMap(Map<String, dynamic>.from(validatedMap));
 
         return SchemaResult.ok(_value);

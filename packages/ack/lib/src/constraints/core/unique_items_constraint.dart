@@ -6,7 +6,7 @@ import '../constraint.dart';
 /// it relies on the object's `hashCode` and `==` implementation.
 class UniqueItemsConstraint<T> extends Constraint<List<T>>
     with Validator<List<T>>, JsonSchemaSpec<List<T>> {
-  UniqueItemsConstraint()
+  const UniqueItemsConstraint()
       : super(
           constraintKey: 'list.unique',
           description: 'All items in the list must be unique.',

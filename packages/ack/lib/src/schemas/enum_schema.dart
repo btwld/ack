@@ -55,15 +55,28 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     }
 
     if (parsed == null) {
-      final constraintError = InvalidTypeConstraint(
-        expectedType: T,
-        inputValue: inputValue,
-      ).validate(inputValue);
+      // Build helpful error message with allowed values and suggestions
+      final allowed = values.map((e) => e.name).toList(growable: false);
+      final inputStr = inputValue.toString();
+      final closest = findClosestStringMatch(inputStr, allowed);
+      final suggestion = closest != null && closest != inputStr
+          ? ' Did you mean "$closest"?'
+          : '';
 
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+      final error = ConstraintError(
+        constraint: _EnumValuesConstraint(allowed),
+        message:
+            'Invalid enum value. Allowed: ${allowed.map((s) => '"$s"').join(', ')}.$suggestion',
+        context: {
+          'received': inputValue,
+          'allowedValues': allowed,
+          if (closest != null) 'closestMatchSuggestion': closest,
+        },
+      );
+
+      return SchemaResult.fail(
+        SchemaConstraintsError(constraints: [error], context: context),
+      );
     }
 
     // Use centralized constraints and refinements check
@@ -121,4 +134,15 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
 
     return mergeConstraintSchemas(schema);
   }
+}
+
+/// Internal constraint used for better error reporting in EnumSchema.
+class _EnumValuesConstraint extends Constraint<Object?> {
+  final List<String> allowed;
+
+  _EnumValuesConstraint(this.allowed)
+      : super(
+          constraintKey: 'enum_value',
+          description: 'Value must be one of: ${allowed.join(", ")}',
+        );
 }

@@ -203,66 +203,10 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
             'Too many properties. Maximum $max, got ${extracted.toInt()}.',
       );
 
-  // Additional factory methods for simple value comparisons
-
-  /// Creates a constraint that checks if a comparable value is less than the specified threshold
-  static ComparisonConstraint<T> lessThan<T extends Comparable<Object>>(
-    T compareValue,
-  ) =>
-      ComparisonConstraint(
-        type: ComparisonType.lt,
-        threshold: compareValue is num ? compareValue : 0,
-        valueExtractor: (value) =>
-            value is num ? value : value.compareTo(compareValue),
-        constraintKey: 'less_than',
-        description: 'Value must be less than $compareValue.',
-        customMessageBuilder: (value, _) => 'Must be less than $compareValue.',
-      );
-
-  /// Creates a constraint that checks if a comparable value is less than or equal to the specified threshold
-  static ComparisonConstraint<T> lessThanOrEqual<T extends Comparable<Object>>(
-    T compareValue,
-  ) =>
-      ComparisonConstraint(
-        type: ComparisonType.lte,
-        threshold: compareValue is num ? compareValue : 0,
-        valueExtractor: (value) =>
-            value is num ? value : value.compareTo(compareValue),
-        constraintKey: 'less_than_or_equal',
-        description: 'Value must be less than or equal to $compareValue.',
-        customMessageBuilder: (value, _) =>
-            'Must be less than or equal to $compareValue.',
-      );
-
-  /// Creates a constraint that checks if a comparable value is greater than the specified threshold
-  static ComparisonConstraint<T> greaterThan<T extends Comparable<Object>>(
-    T compareValue,
-  ) =>
-      ComparisonConstraint(
-        type: ComparisonType.gt,
-        threshold: compareValue is num ? compareValue : 0,
-        valueExtractor: (value) =>
-            value is num ? value : value.compareTo(compareValue),
-        constraintKey: 'greater_than',
-        description: 'Value must be greater than $compareValue.',
-        customMessageBuilder: (value, _) =>
-            'Must be greater than $compareValue.',
-      );
-
-  /// Creates a constraint that checks if a comparable value is greater than or equal to the specified threshold
-  static ComparisonConstraint<T>
-      greaterThanOrEqual<T extends Comparable<Object>>(T compareValue) =>
-          ComparisonConstraint(
-            type: ComparisonType.gte,
-            threshold: compareValue is num ? compareValue : 0,
-            valueExtractor: (value) =>
-                value is num ? value : value.compareTo(compareValue),
-            constraintKey: 'greater_than_or_equal',
-            description:
-                'Value must be greater than or equal to $compareValue.',
-            customMessageBuilder: (value, _) =>
-                'Must be greater than or equal to $compareValue.',
-          );
+  // Generic Comparable factories removed due to type safety and JSON Schema issues.
+  // These methods had incorrect type bounds (Comparable<Object> excludes DateTime)
+  // and would emit incorrect JSON Schema for non-numeric types.
+  // Use the specific typed factories above (numberMin, numberMax, etc.) instead.
 
   @override
   bool isValid(T value) {
@@ -277,8 +221,13 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       case ComparisonType.lte:
         return extracted <= threshold;
       case ComparisonType.eq:
-        return extracted ==
-            threshold; // For multipleOf, extractor gives remainder, so check against 0
+        if (multipleValue != null && constraintKey == 'number_multiple_of') {
+          // extractor gives remainder; treat near-zero as zero for doubles
+          final rem = extracted.abs();
+          const eps = 1e-10;
+          return rem == 0 || rem < eps;
+        }
+        return extracted == threshold;
       case ComparisonType.range:
         return extracted >= threshold && extracted <= maxThreshold!;
     }

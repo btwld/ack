@@ -7,7 +7,7 @@ const maxSafeInteger = 9007199254740991;
 /// A safe integer is an integer that can be exactly represented as an
 /// IEEE-754 double precision number.
 class IsSafeIntegerConstraint extends Constraint<int> with Validator<int> {
-  IsSafeIntegerConstraint()
+  const IsSafeIntegerConstraint()
       : super(
           constraintKey: 'integer.isSafe',
           description: 'Value must be a safe integer.',

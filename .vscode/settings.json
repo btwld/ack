@@ -7,5 +7,25 @@
   "search.exclude": {
     "**/.fvm/versions": true,
     "**/.fvm/flutter_sdk": true
-  }
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#454b53",
+    "activityBar.background": "#454b53",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#c75887",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#454b53",
+    "statusBar.background": "#2e3237",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#454b53",
+    "statusBarItem.remoteBackground": "#2e3237",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#2e3237",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#2e323799",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#2e3237"
 }

@@ -1,6 +1,5 @@
+import '../common_types.dart';
 import 'constraint.dart';
-
-typedef MapValue = Map<String, Object?>;
 
 /// Constraint for validating that a value is not null.
 /// Typically used internally by `AckSchema` when `isNullable` is false.

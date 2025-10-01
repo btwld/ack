@@ -82,7 +82,7 @@ void main() {
                 .constraints
                 .first
                 .message,
-            '"not-an-email" is not a valid email address.');
+            'Invalid email format. Expected format like user@example.com, got "not-an-email".');
       });
 
       test('url should pass for valid url', () {
@@ -100,7 +100,7 @@ void main() {
                 .constraints
                 .first
                 .message,
-            '"not-a-url" is not a valid URL.');
+            'Invalid URI format, got "not-a-url".');
       });
 
       test('uuid should pass for valid uuid', () {
@@ -118,7 +118,7 @@ void main() {
                 .constraints
                 .first
                 .message,
-            '"not-a-uuid" is not a valid UUID.');
+            'Invalid UUID format, got "not-a-uuid".');
       });
     });
 
@@ -140,7 +140,7 @@ void main() {
               .constraints
               .first
               .message,
-          '"this-is-not-an-email" is not a valid email address.');
+          'Invalid email format. Expected format like user@example.com, got "this-is-not-an-email".');
 
       final result3 = schema.validate('long.email@example.com');
       expect(result3.isOk, isTrue);

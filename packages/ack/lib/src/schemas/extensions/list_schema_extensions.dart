@@ -20,7 +20,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
   }
 
   /// Adds a constraint that the list must not be empty.
-  /// This is a convenience method for `minLength(1)`.
+  /// This is a convenience method for `minItems(1)`.
   ListSchema<T> nonEmpty() {
     return minItems(1);
   }

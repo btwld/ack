@@ -1,7 +1,8 @@
 import 'package:meta/meta.dart';
 
+import '../common_types.dart';
 import '../constraints/constraint.dart';
-import '../constraints/string/string_enum_constraint.dart';
+import '../constraints/core/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';

@@ -18,8 +18,8 @@ void main() {
       expect(result.isOk, isFalse);
       final error = result.getError() as SchemaConstraintsError;
       expect(error.constraints.first.message,
-          contains('Must be one of: "red", "green", "blue"'));
-      expect(error.constraints.first.message, contains('got "yellow"'));
+          contains('is not one of the allowed values'));
+      expect(error.constraints.first.message, contains('"yellow"'));
     });
 
     test('should handle empty string if allowed', () {

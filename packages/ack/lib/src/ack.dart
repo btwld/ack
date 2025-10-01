@@ -28,7 +28,7 @@ final class Ack {
     bool additionalProperties = false,
   }) =>
       ObjectSchema(
-        properties.cast(),
+        properties,
         additionalProperties: additionalProperties,
       );
 
