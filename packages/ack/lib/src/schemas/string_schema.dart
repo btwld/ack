@@ -16,7 +16,7 @@ final class StringSchema extends AckSchema<String>
   });
 
   @override
-  SchemaType get acceptedType => SchemaType.string;
+  SchemaType get schemaType => SchemaType.string;
 
   /// Creates a new [StringSchema] that enforces strict parsing.
   StringSchema strictParsing({bool value = true}) =>

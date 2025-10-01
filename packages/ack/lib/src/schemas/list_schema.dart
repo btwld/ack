@@ -18,7 +18,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }) : super(defaultValue: null);
 
   @override
-  SchemaType get acceptedType => SchemaType.array;
+  SchemaType get schemaType => SchemaType.array;
 
   /// ListSchema uses custom validation logic for items,
   /// so it overrides parseAndValidate directly.
@@ -36,9 +36,17 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       return failNonNullable(context);
     }
 
-    // Use centralized type checking
-    final typeError = checkTypeMatch(inputValue, context);
-    if (typeError != null) return typeError;
+    // Inline type guard
+    if (inputValue is! List) {
+      final actualType = AckSchema.getSchemaType(inputValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
 
     // Custom list validation logic
     final inputList = inputValue as List;
@@ -138,12 +146,12 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   Map<String, Object?> toMap() {
     return {
-      'type': acceptedType.typeName,
+      'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
       // defaultValue omitted - ListSchema does not support defaults
       'constraints': constraints.map((c) => c.toMap()).toList(),
-      'itemSchema': itemSchema.acceptedType.typeName,
+      'itemSchema': itemSchema.schemaType.typeName,
     };
   }
 }

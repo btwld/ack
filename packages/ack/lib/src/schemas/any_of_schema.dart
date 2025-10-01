@@ -34,13 +34,7 @@ final class AnyOfSchema extends AckSchema<Object>
   }) : super(defaultValue: null);
 
   @override
-  SchemaType get acceptedType {
-    // AnyOfSchema can accept multiple types, so we return SchemaType.anyOf
-    // as a sentinel value meaning "not applicable".
-    // This getter is only meaningful for primitive schemas.
-    // AnyOfSchema overrides parseAndValidate() directly to handle multiple types.
-    return SchemaType.anyOf;
-  }
+  SchemaType get schemaType => SchemaType.anyOf;
 
   /// AnyOfSchema tries multiple schemas, so it overrides parseAndValidate directly.
   ///
@@ -144,7 +138,7 @@ final class AnyOfSchema extends AckSchema<Object>
   @override
   Map<String, Object?> toMap() {
     return {
-      'type': acceptedType.typeName,
+      'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
       // defaultValue omitted - AnyOfSchema does not support defaults

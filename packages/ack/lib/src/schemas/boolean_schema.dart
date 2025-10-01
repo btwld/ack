@@ -17,7 +17,7 @@ final class BooleanSchema extends AckSchema<bool>
   });
 
   @override
-  SchemaType get acceptedType => SchemaType.boolean;
+  SchemaType get schemaType => SchemaType.boolean;
 
   /// Creates a new BooleanSchema with strict parsing enabled/disabled
   BooleanSchema strictParsing({bool value = true}) =>

@@ -40,7 +40,7 @@ final class IntegerSchema extends NumSchema<int>
   });
 
   @override
-  SchemaType get acceptedType => SchemaType.integer;
+  SchemaType get schemaType => SchemaType.integer;
 
   @override
   IntegerSchema copyWith({
@@ -110,7 +110,7 @@ final class DoubleSchema extends NumSchema<double>
   });
 
   @override
-  SchemaType get acceptedType => SchemaType.number;
+  SchemaType get schemaType => SchemaType.number;
 
   @override
   DoubleSchema copyWith({

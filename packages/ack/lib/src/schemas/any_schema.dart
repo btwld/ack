@@ -17,13 +17,7 @@ final class AnySchema extends AckSchema<Object>
   });
 
   @override
-  SchemaType get acceptedType {
-    // AnySchema accepts all types, so we return SchemaType.any
-    // as a sentinel value meaning "not applicable".
-    // This getter is only meaningful for primitive schemas.
-    // AnySchema overrides parseAndValidate() directly to accept all values.
-    return SchemaType.any;
-  }
+  SchemaType get schemaType => SchemaType.any;
 
   /// AnySchema accepts all values, so it overrides parseAndValidate directly.
   @override

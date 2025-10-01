@@ -22,7 +22,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   }) : super(defaultValue: null);
 
   @override
-  SchemaType get acceptedType => SchemaType.object;
+  SchemaType get schemaType => SchemaType.discriminated;
 
   /// DiscriminatedObjectSchema uses custom polymorphic validation logic,
   /// so it overrides parseAndValidate directly.
@@ -45,27 +45,29 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       return failNonNullable(context);
     }
 
-    // Use centralized type checking
-    final typeError = checkTypeMatch(inputValue, context);
-    if (typeError != null) return typeError;
-
-    // Custom discriminated object validation logic
-    if (inputValue is! MapValue) {
-      final constraintError =
-          InvalidTypeConstraint(expectedType: MapValue).validate(inputValue);
-
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintError != null ? [constraintError] : [],
-        context: context,
-      ));
+    // Inline type guard
+    if (inputValue is! Map) {
+      final actualType = AckSchema.getSchemaType(inputValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
     }
 
-    final Object? discValueRaw = inputValue[discriminatorKey];
+    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
+    final mapValue = inputValue is MapValue
+        ? inputValue
+        : (inputValue as Map).cast<String, Object?>();
+
+    final Object? discValueRaw = mapValue[discriminatorKey];
 
     if (discValueRaw == null) {
       final constraintError = ObjectRequiredPropertiesConstraint(
         missingPropertyKey: discriminatorKey,
-      ).validate(inputValue);
+      ).validate(mapValue);
 
       return SchemaResult.fail(SchemaConstraintsError(
         constraints: constraintError != null ? [constraintError] : [],
@@ -116,12 +118,12 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     final subSchemaContext = context.createChild(
       name: 'when $discriminatorKey="$discValueRaw"',
       schema: selectedSubSchema,
-      value: inputValue,
+      value: mapValue,
       pathSegment: '', // Inherit parent path
     );
 
     final result = selectedSubSchema.parseAndValidate(
-      inputValue,
+      mapValue,
       subSchemaContext,
     );
 
@@ -214,7 +216,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   @override
   Map<String, Object?> toMap() {
     return {
-      'type': acceptedType.typeName,
+      'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
       // defaultValue omitted - DiscriminatedObjectSchema does not support defaults

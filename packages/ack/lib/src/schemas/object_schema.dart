@@ -21,7 +21,7 @@ final class ObjectSchema extends AckSchema<MapValue>
         super(defaultValue: null);
 
   @override
-  SchemaType get acceptedType => SchemaType.object;
+  SchemaType get schemaType => SchemaType.object;
 
   /// ObjectSchema uses custom validation logic for properties,
   /// so it overrides parseAndValidate directly.
@@ -39,15 +39,23 @@ final class ObjectSchema extends AckSchema<MapValue>
       return failNonNullable(context);
     }
 
-    // Use centralized type checking
-    final typeError = checkTypeMatch(inputValue, context);
-    if (typeError != null) return typeError;
+    // Inline type guard
+    if (inputValue is! Map) {
+      final actualType = AckSchema.getSchemaType(inputValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
 
     // Custom object validation logic
     // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
     final mapValue = inputValue is Map<String, Object?>
         ? inputValue
-        : (inputValue as Map).cast<String, Object?>();
+        : inputValue.cast<String, Object?>();
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
@@ -230,7 +238,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   Map<String, Object?> toMap() {
     return {
-      'type': acceptedType.typeName,
+      'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
       // defaultValue omitted - ObjectSchema does not support defaults
