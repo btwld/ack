@@ -22,7 +22,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   }) : super(defaultValue: null);
 
   @override
-  JsonType get acceptedType => JsonType.object;
+  SchemaType get acceptedType => SchemaType.object;
 
   /// DiscriminatedObjectSchema uses custom polymorphic validation logic,
   /// so it overrides parseAndValidate directly.

@@ -10,7 +10,7 @@ import '../utils/json_utils.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
-part 'json_type.dart';
+part 'schema_type.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
@@ -43,8 +43,8 @@ sealed class AckSchema<DartType extends Object> {
   });
 
   /// Utility method to get the JSON type of any value.
-  static JsonType getJsonType(Object? value) {
-    return JsonType.of(value);
+  static SchemaType getJsonType(Object? value) {
+    return SchemaType.of(value);
   }
 
   /// Checks if input value matches the expected JSON type.
@@ -168,19 +168,19 @@ sealed class AckSchema<DartType extends Object> {
   /// The primary JSON type this schema validates to.
   ///
   /// Each schema subclass must override this to specify its target JSON type.
-  /// The [canAcceptFrom] method on JsonType determines which source types
+  /// The [canAcceptFrom] method on SchemaType determines which source types
   /// can be converted to the target type.
   ///
   /// Examples:
-  /// - `StringSchema`: returns `JsonType.string`
-  /// - `IntegerSchema`: returns `JsonType.integer`
-  /// - `ObjectSchema`: returns `JsonType.object`
-  /// - `ListSchema`: returns `JsonType.array`
+  /// - `StringSchema`: returns `SchemaType.string`
+  /// - `IntegerSchema`: returns `SchemaType.integer`
+  /// - `ObjectSchema`: returns `SchemaType.object`
+  /// - `ListSchema`: returns `SchemaType.array`
   ///
   /// For composite schemas like AnyOfSchema that accept multiple types,
   /// this getter may throw UnimplementedError since they override parseAndValidate directly.
   @protected
-  JsonType get acceptedType;
+  SchemaType get acceptedType;
 
   /// Returns a human-readable type name for this schema.
   ///
@@ -230,7 +230,7 @@ sealed class AckSchema<DartType extends Object> {
     final targetType = acceptedType;
     final actualType = AckSchema.getJsonType(inputValue);
 
-    // Type checking: ask JsonType if it can accept the source type
+    // Type checking: ask SchemaType if it can accept the source type
     if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
       return SchemaResult.fail(
         TypeMismatchError(
@@ -241,7 +241,7 @@ sealed class AckSchema<DartType extends Object> {
       );
     }
 
-    // Parse using JsonType's centralized parsing logic
+    // Parse using SchemaType's centralized parsing logic
     final convertedResult =
         targetType.parse<DartType>(inputValue, actualType, context);
     if (convertedResult.isFail) return convertedResult;

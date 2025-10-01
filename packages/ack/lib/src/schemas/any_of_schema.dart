@@ -34,12 +34,12 @@ final class AnyOfSchema extends AckSchema<Object>
   }) : super(defaultValue: null);
 
   @override
-  JsonType get acceptedType {
-    // AnyOfSchema can accept multiple types, so we return JsonType.nil
+  SchemaType get acceptedType {
+    // AnyOfSchema can accept multiple types, so we return SchemaType.anyOf
     // as a sentinel value meaning "not applicable".
     // This getter is only meaningful for primitive schemas.
     // AnyOfSchema overrides parseAndValidate() directly to handle multiple types.
-    return JsonType.nil;
+    return SchemaType.anyOf;
   }
 
   /// AnyOfSchema tries multiple schemas, so it overrides parseAndValidate directly.

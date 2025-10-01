@@ -16,7 +16,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   });
 
   @override
-  JsonType get acceptedType => JsonType.string;
+  SchemaType get acceptedType => SchemaType.string;
 
   /// EnumSchema uses custom parsing logic that doesn't fit the standard
   /// primitive type conversion patterns, so it overrides parseAndValidate directly.

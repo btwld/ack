@@ -59,7 +59,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }
 
   @override
-  JsonType get acceptedType => schema.acceptedType;
+  SchemaType get acceptedType => schema.acceptedType;
 
   @override
   bool get strictPrimitiveParsing => schema.strictPrimitiveParsing;

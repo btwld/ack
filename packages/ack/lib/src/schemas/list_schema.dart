@@ -18,7 +18,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }) : super(defaultValue: null);
 
   @override
-  JsonType get acceptedType => JsonType.array;
+  SchemaType get acceptedType => SchemaType.array;
 
   /// ListSchema uses custom validation logic for items,
   /// so it overrides parseAndValidate directly.

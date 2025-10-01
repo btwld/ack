@@ -1,9 +1,14 @@
 part of 'schema.dart';
 
-/// JSON type enumeration following JSON Schema Draft 2020-12.
+/// Schema type enumeration covering JSON primitives and schema-specific categories.
 ///
-/// Centralizes type detection, coercion rules, and parsing helpers so the
-/// individual schema classes can stay focused on validation concerns.
+/// Unifies type detection, coercion rules, and schema categorization so validation,
+/// JSON Schema export, and error messages share a single source of truth.
+///
+/// ## Type Categories
+///
+/// **JSON Primitives**: string, integer, number, boolean, object, array, null_
+/// **Schema-Specific**: any, anyOf, enum_, discriminated
 ///
 /// ## Type Conversion Matrix
 ///
@@ -16,7 +21,7 @@ part of 'schema.dart';
 /// | string   | string, integer, number, boolean| via .toString()                            |
 /// | object   | object                          | no coercion                                |
 /// | array    | array                           | no coercion                                |
-/// | nil      | nil                             | no coercion                                |
+/// | null_    | null_                           | no coercion                                |
 ///
 /// ### Strict Mode (strict: true)
 /// | Target   | Accepts From    | Notes                                     |
@@ -26,40 +31,47 @@ part of 'schema.dart';
 ///
 /// Example:
 /// ```dart
-/// JsonType.integer.canAcceptFrom(JsonType.string, strict: false); // true
-/// JsonType.integer.parse('42', JsonType.string, context); // Ok(42)
+/// SchemaType.integer.canAcceptFrom(SchemaType.string, strict: false); // true
+/// SchemaType.integer.parse('42', SchemaType.string, context); // Ok(42)
 /// ```
-enum JsonType {
-  string('string'),
-  integer('integer'),
-  number('number'),
-  boolean('boolean'),
+enum SchemaType {
+  string('string', supportsCoercion: true),
+  integer('integer', supportsCoercion: true),
+  number('number', supportsCoercion: true),
+  boolean('boolean', supportsCoercion: true),
   object('object'),
   array('array'),
-  nil('null');
+  null_('null'),
+  any('any'),
+  anyOf('anyOf'),
+  enum_('enum'),
+  discriminated('discriminated');
 
-  const JsonType(this.typeName);
+  const SchemaType(this.typeName, {this.supportsCoercion = false});
 
-  /// The string representation used in JSON Schema.
+  /// The string representation used in JSON Schema and error messages.
   final String typeName;
+
+  /// Whether this type supports coercion from other types in loose mode.
+  final bool supportsCoercion;
 
   /// Determines if this type can accept/parse values from [sourceType].
   ///
   /// When [strict] is true, only exact type matches are allowed (except number ← integer).
   /// When [strict] is false, primitive types can parse from compatible types.
-  bool canAcceptFrom(JsonType sourceType, {required bool strict}) {
+  bool canAcceptFrom(SchemaType sourceType, {required bool strict}) {
     if (this == sourceType) return true;
 
     return switch (this) {
-      JsonType.integer => !strict &&
-          (sourceType == JsonType.number || sourceType == JsonType.string),
-      JsonType.string => !strict &&
-          (sourceType == JsonType.integer ||
-              sourceType == JsonType.number ||
-              sourceType == JsonType.boolean),
-      JsonType.boolean => !strict && sourceType == JsonType.string,
-      JsonType.number => sourceType == JsonType.integer ||
-          (!strict && sourceType == JsonType.string),
+      SchemaType.integer => !strict &&
+          (sourceType == SchemaType.number || sourceType == SchemaType.string),
+      SchemaType.string => !strict &&
+          (sourceType == SchemaType.integer ||
+              sourceType == SchemaType.number ||
+              sourceType == SchemaType.boolean),
+      SchemaType.boolean => !strict && sourceType == SchemaType.string,
+      SchemaType.number => sourceType == SchemaType.integer ||
+          (!strict && sourceType == SchemaType.string),
       _ => false,
     };
   }
@@ -69,7 +81,7 @@ enum JsonType {
   /// Precondition: [canAcceptFrom] must already have returned true.
   SchemaResult<T> parse<T extends Object>(
     Object value,
-    JsonType sourceType,
+    SchemaType sourceType,
     SchemaContext context,
   ) {
     if (this == sourceType) {
@@ -78,23 +90,23 @@ enum JsonType {
 
     return switch ((this, sourceType, value)) {
       // integer conversions
-      (JsonType.integer, JsonType.number, double d) =>
+      (SchemaType.integer, SchemaType.number, double d) =>
         _convertDoubleToInt(d, context) as SchemaResult<T>,
-      (JsonType.integer, JsonType.string, String s) =>
+      (SchemaType.integer, SchemaType.string, String s) =>
         _parseIntFromString(s, context) as SchemaResult<T>,
 
       // number conversions
-      (JsonType.number, JsonType.integer, int i) =>
+      (SchemaType.number, SchemaType.integer, int i) =>
         SchemaResult.ok(i.toDouble() as T),
-      (JsonType.number, JsonType.string, String s) =>
+      (SchemaType.number, SchemaType.string, String s) =>
         _parseDoubleFromString(s, context) as SchemaResult<T>,
 
       // boolean conversions
-      (JsonType.boolean, JsonType.string, String s) =>
+      (SchemaType.boolean, SchemaType.string, String s) =>
         _parseBoolFromString(s, context) as SchemaResult<T>,
 
       // string conversions (accepts anything)
-      (JsonType.string, _, Object v) => SchemaResult.ok(v.toString() as T),
+      (SchemaType.string, _, Object v) => SchemaResult.ok(v.toString() as T),
 
       // unsupported conversion
       _ => SchemaResult.fail(
@@ -106,17 +118,17 @@ enum JsonType {
     };
   }
 
-  /// Infers the [JsonType] for [value].
-  static JsonType of(Object? value) => switch (value) {
-        null => JsonType.nil,
-        Map() => JsonType.object,
-        List() => JsonType.array,
-        Enum() => JsonType.string,
-        String() => JsonType.string,
-        bool() => JsonType.boolean,
-        int() => JsonType.integer,
-        num() => JsonType.number,
-        _ => throw ArgumentError('Unknown JSON type for value: $value'),
+  /// Infers the [SchemaType] for [value].
+  static SchemaType of(Object? value) => switch (value) {
+        null => SchemaType.null_,
+        Map() => SchemaType.object,
+        List() => SchemaType.array,
+        Enum() => SchemaType.enum_,
+        String() => SchemaType.string,
+        bool() => SchemaType.boolean,
+        int() => SchemaType.integer,
+        num() => SchemaType.number,
+        _ => throw ArgumentError('Unknown schema type for value: $value'),
       };
 
   static SchemaResult<int> _convertDoubleToInt(

@@ -21,7 +21,7 @@ final class ObjectSchema extends AckSchema<MapValue>
         super(defaultValue: null);
 
   @override
-  JsonType get acceptedType => JsonType.object;
+  SchemaType get acceptedType => SchemaType.object;
 
   /// ObjectSchema uses custom validation logic for properties,
   /// so it overrides parseAndValidate directly.

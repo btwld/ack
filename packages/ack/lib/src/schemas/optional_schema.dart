@@ -81,7 +81,7 @@ final class OptionalSchema<DartType extends Object> extends AckSchema<DartType>
   List<Refinement<DartType>> get refinements => schema.refinements;
 
   @override
-  JsonType get acceptedType => schema.acceptedType;
+  SchemaType get acceptedType => schema.acceptedType;
 
   @override
   bool get strictPrimitiveParsing => schema.strictPrimitiveParsing;
