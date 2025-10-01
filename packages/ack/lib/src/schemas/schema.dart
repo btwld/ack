@@ -253,16 +253,6 @@ sealed class AckSchema<DartType extends Object> {
     return validate(value, debugName: debugName);
   }
 
-  @protected
-  AckSchema<DartType> copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required DartType? defaultValue,
-    required List<Constraint<DartType>>? constraints,
-    required List<Refinement<DartType>>? refinements,
-  });
-
   AckSchema<DartType> copyWith({
     bool? isNullable,
     bool? isOptional,
@@ -270,16 +260,7 @@ sealed class AckSchema<DartType extends Object> {
     DartType? defaultValue,
     List<Constraint<DartType>>? constraints,
     List<Refinement<DartType>>? refinements,
-  }) {
-    return copyWithInternal(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-    );
-  }
+  });
 
   Map<String, Object?> toJsonSchema();
 

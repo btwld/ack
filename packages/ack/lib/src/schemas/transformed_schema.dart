@@ -87,25 +87,6 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }
 
   @override
-  AckSchema<OutputType> copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required OutputType? defaultValue,
-    required List<Constraint<OutputType>>? constraints,
-    required List<Refinement<OutputType>>? refinements,
-  }) {
-    return copyWith(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-    );
-  }
-
-  @override
   Map<String, Object?> toJsonSchema() {
     // A transformed schema doesn't have a direct, standard JSON Schema representation.
     // It might be possible to represent it as the original schema with a custom

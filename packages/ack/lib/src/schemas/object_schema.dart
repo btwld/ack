@@ -180,30 +180,6 @@ final class ObjectSchema extends AckSchema<MapValue>
     List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
-    return copyWithInternal(
-      properties: properties,
-      additionalProperties: additionalProperties,
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-    );
-  }
-
-  @override
-  ObjectSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required MapValue? defaultValue,
-    required List<Constraint<MapValue>>? constraints,
-    required List<Refinement<MapValue>>? refinements,
-    // ObjectSchema specific
-    Map<String, AckSchema>? properties,
-    bool? additionalProperties,
-  }) {
     // defaultValue is ignored - ObjectSchema does not support defaults
     return ObjectSchema(
       properties ?? this.properties,

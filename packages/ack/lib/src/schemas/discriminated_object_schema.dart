@@ -61,7 +61,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
     final mapValue = inputValue is MapValue
         ? inputValue
-        : (inputValue as Map).cast<String, Object?>();
+        : inputValue.cast<String, Object?>();
 
     final Object? discValueRaw = mapValue[discriminatorKey];
 
@@ -100,7 +100,8 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
-      final enumError = PatternConstraint.enumString(allowed).validate(discValueRaw);
+      final enumError =
+          PatternConstraint.enumString(allowed).validate(discValueRaw);
 
       // Error context for discriminator key, but inherit parent path
       return SchemaResult.fail(SchemaConstraintsError(
@@ -151,30 +152,6 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     MapValue? defaultValue,
     List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
-  }) {
-    return copyWithInternal(
-      discriminatorKey: discriminatorKey,
-      schemas: schemas,
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-    );
-  }
-
-  @override
-  DiscriminatedObjectSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required MapValue? defaultValue,
-    required List<Constraint<MapValue>>? constraints,
-    required List<Refinement<MapValue>>? refinements,
-    // DiscriminatedObjectSchema specific
-    String? discriminatorKey,
-    Map<String, AckSchema>? schemas,
   }) {
     // defaultValue is ignored - DiscriminatedObjectSchema does not support defaults
     return DiscriminatedObjectSchema(

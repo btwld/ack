@@ -34,28 +34,6 @@ final class BooleanSchema extends AckSchema<bool>
     List<Constraint<bool>>? constraints,
     List<Refinement<bool>>? refinements,
   }) {
-    return copyWithInternal(
-      strictPrimitiveParsing: strictPrimitiveParsing,
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-    );
-  }
-
-  @override
-  BooleanSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required bool? defaultValue,
-    required List<Constraint<bool>>? constraints,
-    required List<Refinement<bool>>? refinements,
-    // BooleanSchema specific
-    bool? strictPrimitiveParsing,
-  }) {
     return BooleanSchema(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,

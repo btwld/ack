@@ -24,14 +24,13 @@ final class StringSchema extends AckSchema<String>
       copyWith(strictPrimitiveParsing: value);
 
   @override
-  StringSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required String? defaultValue,
-    required List<Constraint<String>>? constraints,
-    required List<Refinement<String>>? refinements,
-    // StringSchema specific
+  StringSchema copyWith({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    String? defaultValue,
+    List<Constraint<String>>? constraints,
+    List<Refinement<String>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
     return StringSchema(
@@ -43,27 +42,6 @@ final class StringSchema extends AckSchema<String>
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
-    );
-  }
-
-  @override
-  StringSchema copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    String? defaultValue,
-    List<Constraint<String>>? constraints,
-    List<Refinement<String>>? refinements,
-    bool? strictPrimitiveParsing,
-  }) {
-    return copyWithInternal(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-      strictPrimitiveParsing: strictPrimitiveParsing,
     );
   }
 

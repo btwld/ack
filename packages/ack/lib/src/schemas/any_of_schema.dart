@@ -102,13 +102,13 @@ final class AnyOfSchema extends AckSchema<Object>
   }
 
   @override
-  AnyOfSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required Object? defaultValue,
-    required List<Constraint<Object>>? constraints,
-    required List<Refinement<Object>>? refinements,
+  AnyOfSchema copyWith({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    Object? defaultValue,
+    List<Constraint<Object>>? constraints,
+    List<Refinement<Object>>? refinements,
   }) {
     // defaultValue is ignored - AnyOfSchema does not support defaults
     return AnyOfSchema(

@@ -43,13 +43,13 @@ final class AnySchema extends AckSchema<Object>
   }
 
   @override
-  AnySchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required Object? defaultValue,
-    required List<Constraint<Object>>? constraints,
-    required List<Refinement<Object>>? refinements,
+  AnySchema copyWith({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    Object? defaultValue,
+    List<Constraint<Object>>? constraints,
+    List<Refinement<Object>>? refinements,
   }) {
     return AnySchema(
       isNullable: isNullable ?? this.isNullable,
@@ -72,7 +72,14 @@ final class AnySchema extends AckSchema<Object>
           }
         : {
             // Accepts any type except null - use explicit type array for better compatibility
-            'type': ['boolean', 'number', 'integer', 'string', 'object', 'array'],
+            'type': [
+              'boolean',
+              'number',
+              'integer',
+              'string',
+              'object',
+              'array'
+            ],
             if (description != null) 'description': description,
             if (defaultValue != null) 'default': defaultValue,
           };

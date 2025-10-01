@@ -95,19 +95,10 @@ class SchemaConstraintsError extends SchemaError {
 
   ConstraintError? getConstraint<S extends Constraint>() {
     for (final constraintError in constraints) {
-      if (constraintError.constraint.runtimeType == S) {
+      if (constraintError.constraint is S) {
         return constraintError;
       }
     }
-    // Fallback for generic constraints
-    final baseClassName = S.toString().split('<').first;
-    for (final constraintError in constraints) {
-      if (constraintError.constraint.runtimeType.toString().split('<').first ==
-          baseClassName) {
-        return constraintError;
-      }
-    }
-
     return null;
   }
 

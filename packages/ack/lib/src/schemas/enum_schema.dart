@@ -51,7 +51,9 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       }
     }
     // Try to match by index if input is an int
-    else if (inputValue is int && inputValue >= 0 && inputValue < values.length) {
+    else if (inputValue is int &&
+        inputValue >= 0 &&
+        inputValue < values.length) {
       parsed = values[inputValue];
     }
 
@@ -85,27 +87,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }
 
   @override
-  EnumSchema<T> copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required T? defaultValue,
-    required List<Constraint<T>>? constraints,
-    required List<Refinement<T>>? refinements,
-    List<T>? values,
-  }) {
-    return EnumSchema(
-      values: values ?? this.values,
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
-  }
-
-  @override
   EnumSchema<T> copyWith({
     List<T>? values,
     bool? isNullable,
@@ -115,14 +96,14 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
-    return copyWithInternal(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-      values: values,
+    return EnumSchema(
+      values: values ?? this.values,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
   }
 

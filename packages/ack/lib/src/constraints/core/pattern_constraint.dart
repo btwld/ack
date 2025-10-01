@@ -166,8 +166,8 @@ class PatternConstraint extends Constraint<String>
           // Must contain timezone indicator (Z or +/-HH:MM)
           final hasTimeSeparator = v.contains('T') || v.contains('t');
           final hasTimezone = v.endsWith('Z') ||
-                              v.endsWith('z') ||
-                              RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(v);
+              v.endsWith('z') ||
+              RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(v);
 
           return hasTimeSeparator && hasTimezone;
         },

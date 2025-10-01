@@ -54,28 +54,6 @@ final class IntegerSchema extends NumSchema<int>
     List<Refinement<int>>? refinements,
     bool? strictPrimitiveParsing,
   }) {
-    return copyWithInternal(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-      strictPrimitiveParsing: strictPrimitiveParsing,
-    );
-  }
-
-  @override
-  IntegerSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required int? defaultValue,
-    required List<Constraint<int>>? constraints,
-    required List<Refinement<int>>? refinements,
-    // NumSchema specific
-    bool? strictPrimitiveParsing,
-  }) {
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
@@ -127,28 +105,6 @@ final class DoubleSchema extends NumSchema<double>
     double? defaultValue,
     List<Constraint<double>>? constraints,
     List<Refinement<double>>? refinements,
-    bool? strictPrimitiveParsing,
-  }) {
-    return copyWithInternal(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-      strictPrimitiveParsing: strictPrimitiveParsing,
-    );
-  }
-
-  @override
-  DoubleSchema copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required double? defaultValue,
-    required List<Constraint<double>>? constraints,
-    required List<Refinement<double>>? refinements,
-    // NumSchema specific
     bool? strictPrimitiveParsing,
   }) {
     return DoubleSchema(

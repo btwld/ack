@@ -50,7 +50,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     }
 
     // Custom list validation logic
-    final inputList = inputValue as List;
+    final inputList = inputValue;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
@@ -103,28 +103,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     List<V>? defaultValue,
     List<Constraint<List<V>>>? constraints,
     List<Refinement<List<V>>>? refinements,
-  }) {
-    return copyWithInternal(
-      itemSchema: itemSchema,
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      defaultValue: defaultValue,
-      constraints: constraints,
-      refinements: refinements,
-    );
-  }
-
-  @override
-  ListSchema<V> copyWithInternal({
-    required bool? isNullable,
-    required bool? isOptional,
-    required String? description,
-    required List<V>? defaultValue,
-    required List<Constraint<List<V>>>? constraints,
-    required List<Refinement<List<V>>>? refinements,
-    // ListSchema specific
-    AckSchema<V>? itemSchema,
   }) {
     // defaultValue is ignored - ListSchema does not support defaults
     return ListSchema(
