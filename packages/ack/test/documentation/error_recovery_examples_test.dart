@@ -28,7 +28,7 @@ void main() {
           dynamic input,
           Map<String, dynamic> defaults,
         ) {
-          final result = schema.validate(input);
+          final result = schema.safeParse(input);
           if (result.isOk) {
             return result.getOrThrow()!;
           }
@@ -44,7 +44,7 @@ void main() {
                 try {
                   final fieldSchema = getFieldSchema(entry.key);
                   if (fieldSchema != null) {
-                    final fieldResult = fieldSchema.validate(entry.value);
+                    final fieldResult = fieldSchema.safeParse(entry.value);
                     if (fieldResult.isOk) {
                       output[entry.key] = fieldResult.getOrThrow();
                     }
@@ -127,19 +127,19 @@ void main() {
 
         ValidationStage validateProgressively(dynamic input) {
           // Try complete validation first
-          final completeResult = completeSchema.validate(input);
+          final completeResult = completeSchema.safeParse(input);
           if (completeResult.isOk) {
             return ValidationStage.complete(completeResult.getOrThrow()!);
           }
 
           // Fall back to enhanced validation
-          final enhancedResult = enhancedSchema.validate(input);
+          final enhancedResult = enhancedSchema.safeParse(input);
           if (enhancedResult.isOk) {
             return ValidationStage.enhanced(enhancedResult.getOrThrow()!);
           }
 
           // Fall back to basic validation
-          final basicResult = basicSchema.validate(input);
+          final basicResult = basicSchema.safeParse(input);
           if (basicResult.isOk) {
             return ValidationStage.basic(basicResult.getOrThrow()!);
           }
@@ -216,7 +216,7 @@ void main() {
             final fieldSchema = entry.value;
 
             if (data.containsKey(fieldName)) {
-              final fieldResult = fieldSchema.validate(data[fieldName]);
+              final fieldResult = fieldSchema.safeParse(data[fieldName]);
               if (fieldResult.isFail) {
                 errors.add(ValidationError(
                   fieldName,
@@ -269,7 +269,7 @@ void main() {
             }
 
             // Success on third attempt
-            final result = schema.validate(input);
+            final result = schema.safeParse(input);
             if (result.isOk) {
               return ValidationResult.success(result.getOrThrow() as String);
             } else {
@@ -351,7 +351,7 @@ void main() {
 
         for (final testCase in testCases) {
           final schema = testCase['schema'] as AckSchema;
-          final result = schema.validate(testCase['input']);
+          final result = schema.safeParse(testCase['input']);
           expect(result.isFail, isTrue);
 
           final friendlyMessage = formatUserFriendlyError(result.getError());

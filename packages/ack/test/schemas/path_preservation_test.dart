@@ -7,7 +7,7 @@ void main() {
       test('should preserve path for invalid list items', () {
         final schema = Ack.list(Ack.string().minLength(5));
 
-        final result = schema.validate(['valid', 'bad', 'another']);
+        final result = schema.safeParse(['valid', 'bad', 'another']);
 
         expect(result.isFail, isTrue);
         final error = result.getError();
@@ -28,7 +28,7 @@ void main() {
           'items': Ack.list(Ack.integer().min(10)),
         });
 
-        final result = schema.validate({
+        final result = schema.safeParse({
           'items': [15, 5, 20], // 5 is invalid
         });
 
@@ -70,7 +70,7 @@ void main() {
           },
         );
 
-        final result = schema.validate({
+        final result = schema.safeParse({
           'type': 'bird', // Invalid discriminator
         });
 
@@ -93,7 +93,7 @@ void main() {
           },
         );
 
-        final result = schema.validate({
+        final result = schema.safeParse({
           'kind': 'user',
           'email': 'invalid-email', // Bad email
         });
@@ -114,7 +114,7 @@ void main() {
           ]),
         });
 
-        final result = schema.validate({
+        final result = schema.safeParse({
           'value': 3, // Too small for integer, not a string
         });
 
@@ -136,7 +136,7 @@ void main() {
         defaultValue: 'DEFAULT_OUTPUT',
       );
 
-      final result = transformedSchema.validate(null);
+      final result = transformedSchema.safeParse(null);
 
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), equals('DEFAULT_OUTPUT'),
@@ -148,7 +148,7 @@ void main() {
           .transform((value) => value?.toUpperCase() ?? '')
           .copyWith(defaultValue: 'DEFAULT');
 
-      final result = schema.validate('hello');
+      final result = schema.safeParse('hello');
 
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), equals('HELLO'));
@@ -159,7 +159,7 @@ void main() {
           .nullable()
           .transform((value) => value?.toUpperCase() ?? '');
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
 
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), equals(''),
@@ -181,7 +181,7 @@ void main() {
       ];
 
       for (final testMap in testCases) {
-        final result = schema.validate(testMap);
+        final result = schema.safeParse(testMap);
         expect(result.isOk, isTrue,
             reason: 'Should accept ${testMap.runtimeType}');
       }
@@ -198,7 +198,7 @@ void main() {
       ];
 
       for (final testList in testCases) {
-        final result = schema.validate(testList);
+        final result = schema.safeParse(testList);
         expect(result.isOk, isTrue,
             reason: 'Should accept ${testList.runtimeType}');
       }
@@ -213,7 +213,7 @@ void main() {
       });
 
       // Test ~ escaping
-      final result1 = schema.validate({
+      final result1 = schema.safeParse({
         'user/name': 'valid',
         'config~value': 5, // Invalid: too small
       });
@@ -230,7 +230,7 @@ void main() {
       }
 
       // Test / escaping
-      final result2 = schema.validate({
+      final result2 = schema.safeParse({
         'user/name': 'bad', // Invalid: too short
         'config~value': 15,
       });
@@ -252,7 +252,7 @@ void main() {
         'path~/to/file': Ack.string().minLength(5),
       });
 
-      final result = schema.validate({
+      final result = schema.safeParse({
         'path~/to/file': 'bad', // Invalid: too short
       });
 
@@ -275,7 +275,7 @@ void main() {
         }),
       });
 
-      final result = schema.validate({
+      final result = schema.safeParse({
         'level1': {
           'level~/2': 'bad', // Invalid: too short
         },

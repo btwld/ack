@@ -29,22 +29,22 @@ void main() {
 
     group('Basic validation', () {
       test('validates cat correctly', () {
-        final result = animalSchema.validate({'type': 'cat', 'meow': true});
+        final result = animalSchema.safeParse({'type': 'cat', 'meow': true});
         expect(result.isOk, isTrue);
       });
 
       test('validates dog correctly', () {
-        final result = animalSchema.validate({'type': 'dog', 'bark': false});
+        final result = animalSchema.safeParse({'type': 'dog', 'bark': false});
         expect(result.isOk, isTrue);
       });
 
       test('fails for unknown discriminator value', () {
-        final result = animalSchema.validate({'type': 'bird', 'fly': true});
+        final result = animalSchema.safeParse({'type': 'bird', 'fly': true});
         expect(result.isOk, isFalse);
       });
 
       test('fails for missing discriminator', () {
-        final result = animalSchema.validate({'meow': true});
+        final result = animalSchema.safeParse({'meow': true});
         expect(result.isOk, isFalse);
       });
     });
@@ -57,7 +57,7 @@ void main() {
         expect(animalSchema.isNullable, isFalse); // Original unchanged
 
         // Test null validation
-        final nullResult = nullableSchema.validate(null);
+        final nullResult = nullableSchema.safeParse(null);
         expect(nullResult.isOk, isTrue);
       });
 

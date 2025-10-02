@@ -18,7 +18,7 @@ void main() {
 
     group('Valid signup data', () {
       test('should succeed with matching passwords and valid email', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': 'securePassword123',
           'confirmPassword': 'securePassword123',
@@ -41,7 +41,7 @@ void main() {
         ];
 
         for (final email in testCases) {
-          final result = signupSchema.validate({
+          final result = signupSchema.safeParse({
             'email': email,
             'password': 'validPassword123',
             'confirmPassword': 'validPassword123',
@@ -53,7 +53,7 @@ void main() {
       });
 
       test('should succeed with exactly 8 character passwords', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'test@example.com',
           'password': '12345678',
           'confirmPassword': '12345678',
@@ -66,7 +66,7 @@ void main() {
     group('Password mismatch', () {
       test('should fail with emoji error message when passwords do not match',
           () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': 'password123',
           'confirmPassword': 'differentPassword123',
@@ -80,7 +80,7 @@ void main() {
       });
 
       test('should fail even when both passwords meet length requirements', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'valid@email.com',
           'password': 'longEnoughPassword1',
           'confirmPassword': 'longEnoughPassword2',
@@ -94,7 +94,7 @@ void main() {
       });
 
       test('should fail with case-sensitive password mismatch', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'test@example.com',
           'password': 'Password123',
           'confirmPassword': 'password123',
@@ -122,7 +122,7 @@ void main() {
         ];
 
         for (final email in invalidEmails) {
-          final result = signupSchema.validate({
+          final result = signupSchema.safeParse({
             'email': email,
             'password': 'validPassword123',
             'confirmPassword': 'validPassword123',
@@ -144,7 +144,7 @@ void main() {
 
       test('should fail before checking password match if email is invalid',
           () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'invalid-email',
           'password': 'password123',
           'confirmPassword': 'differentPassword',
@@ -163,7 +163,7 @@ void main() {
 
     group('Password length validation', () {
       test('should fail when password is too short', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': '1234567',
           'confirmPassword': '1234567',
@@ -180,7 +180,7 @@ void main() {
       });
 
       test('should fail when confirmPassword is too short', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': 'validPassword123',
           'confirmPassword': '1234567',
@@ -197,7 +197,7 @@ void main() {
       });
 
       test('should validate base constraints before refinement', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': 'short',
           'confirmPassword': 'different',
@@ -237,7 +237,7 @@ void main() {
 
     group('Edge cases', () {
       test('should handle empty passwords', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': '',
           'confirmPassword': '',
@@ -254,7 +254,7 @@ void main() {
       });
 
       test('should handle missing fields', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
         });
 
@@ -269,7 +269,7 @@ void main() {
       });
 
       test('should handle null values', () {
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': null,
           'confirmPassword': null,
@@ -280,7 +280,7 @@ void main() {
 
       test('should handle special characters in passwords', () {
         final specialPassword = r'P@$$w0rd!#$%^&*()';
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': specialPassword,
           'confirmPassword': specialPassword,
@@ -291,7 +291,7 @@ void main() {
 
       test('should handle unicode characters in passwords', () {
         final unicodePassword = 'пароль123😊';
-        final result = signupSchema.validate({
+        final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': unicodePassword,
           'confirmPassword': unicodePassword,

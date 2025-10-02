@@ -54,7 +54,7 @@ void main() {
         );
 
         // Valid case
-        final validResult = signupSchema.validate({
+        final validResult = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': 'password123',
           'confirmPassword': 'password123',
@@ -62,7 +62,7 @@ void main() {
         expect(validResult.isOk, isTrue);
 
         // Invalid case - passwords don't match
-        final invalidResult = signupSchema.validate({
+        final invalidResult = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': 'password123',
           'confirmPassword': 'password456',
@@ -89,7 +89,7 @@ void main() {
         );
 
         // Valid case
-        final validOrder = orderSchema.validate({
+        final validOrder = orderSchema.safeParse({
           'items': [
             {'price': 10.00, 'quantity': 2},
             {'price': 5.50, 'quantity': 3},
@@ -99,7 +99,7 @@ void main() {
         expect(validOrder.isOk, isTrue);
 
         // Invalid case - wrong total
-        final invalidOrder = orderSchema.validate({
+        final invalidOrder = orderSchema.safeParse({
           'items': [
             {'price': 10.00, 'quantity': 2},
             {'price': 5.50, 'quantity': 3},
@@ -135,7 +135,7 @@ void main() {
         });
 
         // Test credit card payment
-        final cardPayment = paymentSchema.validate({
+        final cardPayment = paymentSchema.safeParse({
           'amount': 99.99,
           'method': {
             'type': 'card',
@@ -146,14 +146,14 @@ void main() {
         expect(cardPayment.isOk, isTrue);
 
         // Test PayPal email payment
-        final paypalPayment = paymentSchema.validate({
+        final paypalPayment = paymentSchema.safeParse({
           'amount': 49.99,
           'method': 'user@paypal.com',
         });
         expect(paypalPayment.isOk, isTrue);
 
         // Test crypto payment
-        final cryptoPayment = paymentSchema.validate({
+        final cryptoPayment = paymentSchema.safeParse({
           'amount': 150.00,
           'method': {
             'type': 'crypto',
@@ -164,7 +164,7 @@ void main() {
         expect(cryptoPayment.isOk, isTrue);
 
         // Test invalid payment method
-        final invalidPayment = paymentSchema.validate({
+        final invalidPayment = paymentSchema.safeParse({
           'amount': 10.00,
           'method': 'cash', // Not a valid payment method
         });
@@ -199,7 +199,7 @@ void main() {
         );
 
         // Test email notification
-        final emailNotif = notificationSchema.validate({
+        final emailNotif = notificationSchema.safeParse({
           'type': 'email',
           'to': 'user@example.com',
           'subject': 'Hello!',
@@ -208,7 +208,7 @@ void main() {
         expect(emailNotif.isOk, isTrue);
 
         // Test SMS notification
-        final smsNotif = notificationSchema.validate({
+        final smsNotif = notificationSchema.safeParse({
           'type': 'sms',
           'phone': '+12345678901',
           'message': 'Your OTP is 123456',
@@ -216,7 +216,7 @@ void main() {
         expect(smsNotif.isOk, isTrue);
 
         // Test push notification with optional badge
-        final pushNotif = notificationSchema.validate({
+        final pushNotif = notificationSchema.safeParse({
           'type': 'push',
           'deviceId': '550e8400-e29b-41d4-a716-446655440000',
           'title': 'New Message',
@@ -226,7 +226,7 @@ void main() {
         expect(pushNotif.isOk, isTrue);
 
         // Test push notification without badge (optional field)
-        final pushNotifNoBadge = notificationSchema.validate({
+        final pushNotifNoBadge = notificationSchema.safeParse({
           'type': 'push',
           'deviceId': '550e8400-e29b-41d4-a716-446655440000',
           'title': 'New Message',
@@ -235,7 +235,7 @@ void main() {
         expect(pushNotifNoBadge.isOk, isTrue);
 
         // Test invalid notification type
-        final invalidNotif = notificationSchema.validate({
+        final invalidNotif = notificationSchema.safeParse({
           'type': 'webhook',
           'url': 'https://example.com/webhook',
         });
@@ -272,7 +272,7 @@ void main() {
         );
 
         // Test success response
-        final successResponse = apiResponseSchema.validate({
+        final successResponse = apiResponseSchema.safeParse({
           'status': 'success',
           'data': {'userId': 123, 'name': 'John'},
           'timestamp': '2024-01-15T10:30:00Z',
@@ -284,7 +284,7 @@ void main() {
         expect(successData['requestId'], startsWith('test-request-id-'));
 
         // Test error response (no timestamp required)
-        final errorResponse = apiResponseSchema.validate({
+        final errorResponse = apiResponseSchema.safeParse({
           'status': 'error',
           'code': 404,
           'message': 'Resource not found',
@@ -294,7 +294,7 @@ void main() {
         expect(errorData['requestId'], isNotNull);
 
         // Test invalid success response (missing timestamp)
-        final invalidSuccess = apiResponseSchema.validate({
+        final invalidSuccess = apiResponseSchema.safeParse({
           'status': 'success',
           'data': {'userId': 123},
           // Missing timestamp!
@@ -302,7 +302,7 @@ void main() {
         expect(invalidSuccess.isFail, isTrue);
 
         // Test invalid error code
-        final invalidError = apiResponseSchema.validate({
+        final invalidError = apiResponseSchema.safeParse({
           'status': 'error',
           'code': 200, // Not in 400-599 range
           'message': 'This should fail',

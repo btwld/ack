@@ -39,7 +39,7 @@ void main() {
         ];
 
         for (final test in testCases) {
-          final result = test.schema.validate(test.input);
+          final result = test.schema.safeParse(test.input);
           expect(result.isFail, isTrue,
               reason: 'Should fail for: ${test.name}');
 
@@ -111,7 +111,7 @@ void main() {
         ];
 
         for (final test in testCases) {
-          final result = test.schema.validate(test.input);
+          final result = test.schema.safeParse(test.input);
           expect(result.isFail, isTrue,
               reason: 'Should fail for: ${test.name}');
 
@@ -151,7 +151,7 @@ void main() {
         ];
 
         for (final testCase in testCases) {
-          final result = schema.validate(testCase['input']);
+          final result = schema.safeParse(testCase['input']);
           expect(result.isFail, isTrue,
               reason: 'Should fail for: ${testCase['name']}');
 
@@ -190,7 +190,7 @@ void main() {
           },
         };
 
-        final result = schema.validate(testData);
+        final result = schema.safeParse(testData);
         expect(result.isFail, isTrue);
 
         final error = result.getError();
@@ -217,7 +217,7 @@ void main() {
           'another@example.com'
         ];
 
-        final result = schema.validate(testData);
+        final result = schema.safeParse(testData);
         expect(result.isFail, isTrue);
 
         final error = result.getError();
@@ -261,7 +261,7 @@ void main() {
 
         for (final testCase in testCases) {
           final schema = testCase['schema'] as AckSchema;
-          final result = schema.validate(testCase['input']);
+          final result = schema.safeParse(testCase['input']);
           expect(result.isFail, isTrue,
               reason: 'Should fail for: ${testCase['name']}');
 
@@ -299,7 +299,7 @@ void main() {
 
         for (final testCase in testCases) {
           final schema = testCase['schema'] as AckSchema;
-          final result = schema.validate(testCase['input']);
+          final result = schema.safeParse(testCase['input']);
           expect(result.isFail, isTrue,
               reason: 'Should fail for: ${testCase['name']}');
 
@@ -318,7 +318,7 @@ void main() {
     group('Error messages should be user-friendly', () {
       test('technical jargon should be minimized', () {
         final schema = Ack.string().email();
-        final result = schema.validate('invalid');
+        final result = schema.safeParse('invalid');
         expect(result.isFail, isTrue);
 
         final error = result.getError().toString().toLowerCase();
@@ -336,9 +336,9 @@ void main() {
 
       test('error messages should be concise but informative', () {
         final testCases = [
-          Ack.string().minLength(5).validate('hi'),
-          Ack.integer().positive().validate(-1),
-          Ack.string().email().validate('invalid'),
+          Ack.string().minLength(5).safeParse('hi'),
+          Ack.integer().positive().safeParse(-1),
+          Ack.string().email().safeParse('invalid'),
         ];
 
         for (final result in testCases) {

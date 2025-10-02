@@ -74,7 +74,7 @@ abstract class SchemaModel<T extends Object> {
   /// Returns a [SchemaResult] containing either the validated model instance
   /// or validation errors.
   SchemaResult<T> parse(Object? input) {
-    final result = schema.validate(input);
+    final result = schema.safeParse(input);
     _hasBeenValidated = true; // Mark as validated regardless of result
 
     if (result.isOk) {

@@ -11,7 +11,7 @@ void main() {
     group('strict', () {
       test('should fail with additional properties', () {
         final schema = userSchema.strict();
-        final result = schema.validate({
+        final result = schema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
           'extra': 'field',
@@ -25,7 +25,7 @@ void main() {
 
       test('should pass without additional properties', () {
         final schema = userSchema.strict();
-        final result = schema.validate({
+        final result = schema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
         });
@@ -36,7 +36,7 @@ void main() {
     group('passthrough', () {
       test('should pass with additional properties', () {
         final schema = userSchema.passthrough();
-        final result = schema.validate({
+        final result = schema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
           'extra': 'field',
@@ -51,7 +51,7 @@ void main() {
           'street': Ack.string(),
         });
         final mergedSchema = userSchema.merge(addressSchema);
-        final result = mergedSchema.validate({
+        final result = mergedSchema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
           'street': '123 Main St',
@@ -59,7 +59,7 @@ void main() {
         expect(result.isOk, isTrue);
 
         final result2 =
-            mergedSchema.validate({'name': 'Leo', 'email': 'leo@example.com'});
+            mergedSchema.safeParse({'name': 'Leo', 'email': 'leo@example.com'});
         expect(result2.isOk, isFalse);
         final error = result2.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
@@ -71,7 +71,7 @@ void main() {
     group('partial', () {
       test('should make all properties optional', () {
         final partialSchema = userSchema.partial();
-        final result = partialSchema.validate({'name': 'Leo'});
+        final result = partialSchema.safeParse({'name': 'Leo'});
         expect(result.isOk, isTrue);
       });
     });
@@ -79,11 +79,11 @@ void main() {
     group('pick', () {
       test('should pick specified properties and be strict by default', () {
         final pickedSchema = userSchema.pick(['name']);
-        final result = pickedSchema.validate({'name': 'Leo'});
+        final result = pickedSchema.safeParse({'name': 'Leo'});
         expect(result.isOk, isTrue);
 
         final result2 =
-            pickedSchema.validate({'name': 'Leo', 'email': 'a@b.com'});
+            pickedSchema.safeParse({'name': 'Leo', 'email': 'a@b.com'});
         expect(result2.isOk, isFalse);
         final error = result2.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
@@ -94,7 +94,7 @@ void main() {
       test('picked schema can be made to passthrough', () {
         final pickedSchema = userSchema.pick(['name']).passthrough();
         final result =
-            pickedSchema.validate({'name': 'Leo', 'email': 'a@b.com'});
+            pickedSchema.safeParse({'name': 'Leo', 'email': 'a@b.com'});
         expect(result.isOk, isTrue);
       });
     });
@@ -102,10 +102,10 @@ void main() {
     group('omit', () {
       test('should omit specified properties', () {
         final omittedSchema = userSchema.omit(['email']);
-        final result = omittedSchema.validate({'name': 'Leo'});
+        final result = omittedSchema.safeParse({'name': 'Leo'});
         expect(result.isOk, isTrue);
 
-        final result2 = omittedSchema.validate({'email': 'a@b.com'});
+        final result2 = omittedSchema.safeParse({'email': 'a@b.com'});
         expect(result2.isOk, isFalse);
         final error = result2.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
@@ -121,7 +121,7 @@ void main() {
           'phone': StringSchema(),
         });
 
-        final result = extendedSchema.validate({
+        final result = extendedSchema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
           'age': 30,
@@ -137,14 +137,14 @@ void main() {
         });
 
         // Should fail with short name due to override
-        final result = extendedSchema.validate({
+        final result = extendedSchema.safeParse({
           'name': 'Leo', // Only 3 characters
           'email': 'leo@example.com',
         });
         expect(result.isOk, isFalse);
 
         // Should pass with longer name
-        final result2 = extendedSchema.validate({
+        final result2 = extendedSchema.safeParse({
           'name': 'Leonardo',
           'email': 'leo@example.com',
         });
@@ -157,14 +157,14 @@ void main() {
         });
 
         // Should fail without age (required by default)
-        final result = extendedSchema.validate({
+        final result = extendedSchema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
         });
         expect(result.isOk, isFalse);
 
         // Should pass with age
-        final result2 = extendedSchema.validate({
+        final result2 = extendedSchema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
           'age': 30,
@@ -178,7 +178,7 @@ void main() {
         }, additionalProperties: true, description: 'Extended user schema');
 
         // Should allow additional properties
-        final result = extendedSchema.validate({
+        final result = extendedSchema.safeParse({
           'name': 'Leo',
           'email': 'leo@example.com',
           'extra': 'value',

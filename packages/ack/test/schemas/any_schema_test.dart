@@ -7,24 +7,24 @@ void main() {
       final schema = Ack.any();
 
       // Test various types
-      expect(schema.validate(42).getOrThrow(), equals(42));
-      expect(schema.validate("hello").getOrThrow(), equals("hello"));
-      expect(schema.validate([1, 2, 3]).getOrThrow(), equals([1, 2, 3]));
-      expect(schema.validate({"a": 1}).getOrThrow(), equals({"a": 1}));
-      expect(schema.validate(true).getOrThrow(), equals(true));
-      expect(schema.validate(3.14).getOrThrow(), equals(3.14));
+      expect(schema.safeParse(42).getOrThrow(), equals(42));
+      expect(schema.safeParse("hello").getOrThrow(), equals("hello"));
+      expect(schema.safeParse([1, 2, 3]).getOrThrow(), equals([1, 2, 3]));
+      expect(schema.safeParse({"a": 1}).getOrThrow(), equals({"a": 1}));
+      expect(schema.safeParse(true).getOrThrow(), equals(true));
+      expect(schema.safeParse(3.14).getOrThrow(), equals(3.14));
     });
 
     test('should reject null by default', () {
       final schema = Ack.any();
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
 
       expect(result.isFail, isTrue);
     });
 
     test('should accept null when nullable', () {
       final schema = Ack.any().nullable();
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
 
       expect(result.isOk, isTrue);
       expect(result.getOrThrow(), isNull);
@@ -32,7 +32,7 @@ void main() {
 
     test('should use default value when provided', () {
       final schema = Ack.any().withDefault("default");
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
 
       expect(result.isOk, isTrue);
       expect(result.getOrThrow(), equals("default"));
@@ -43,10 +43,10 @@ void main() {
           message:
               "Value must have string representation longer than 5 characters");
 
-      expect(schema.validate("hello world").isOk, isTrue);
-      expect(schema.validate("hi").isFail, isTrue);
-      expect(schema.validate(123456).isOk, isTrue);
-      expect(schema.validate(123).isFail, isTrue);
+      expect(schema.safeParse("hello world").isOk, isTrue);
+      expect(schema.safeParse("hi").isFail, isTrue);
+      expect(schema.safeParse(123456).isOk, isTrue);
+      expect(schema.safeParse(123).isFail, isTrue);
     });
 
     test('should generate correct JSON schema', () {

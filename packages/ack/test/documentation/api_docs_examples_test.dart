@@ -4,17 +4,17 @@ import 'package:test/test.dart';
 void main() {
   group('API Documentation Examples', () {
     group('AckSchema class examples', () {
-      test('validate method example', () {
-        /// Example from validate() documentation
+      test('safeParse method example (basic usage)', () {
+        /// Example from safeParse() documentation
         final schema = Ack.string().email();
 
         // Valid input
-        final result = schema.validate('user@example.com');
+        final result = schema.safeParse('user@example.com');
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), equals('user@example.com'));
 
         // Invalid input returns failure
-        final invalidResult = schema.validate('not-an-email');
+        final invalidResult = schema.safeParse('not-an-email');
         expect(invalidResult.isFail, isTrue);
         expect(invalidResult.getError(), isA<SchemaError>());
       });
@@ -32,17 +32,6 @@ void main() {
           () => schema.parse('not-an-email'),
           throwsA(isA<AckException>()),
         );
-      });
-
-      test('tryParse method example', () {
-        /// Example from tryParse() documentation
-        final schema = Ack.integer().positive();
-
-        final validResult = schema.tryParse(42);
-        expect(validResult, equals(42));
-
-        final invalidResult = schema.tryParse(-5);
-        expect(invalidResult, isNull);
       });
 
       test('safeParse method example', () {
@@ -148,7 +137,7 @@ void main() {
           'age': 30,
         };
 
-        final result = userSchema.validate(validUser);
+        final result = userSchema.safeParse(validUser);
         expect(result.isOk, isTrue);
 
         final parsedData = result.getOrThrow()!;
@@ -175,7 +164,7 @@ void main() {
           },
         };
 
-        final result = userSchema.validate(validData);
+        final result = userSchema.safeParse(validData);
         expect(result.isOk, isTrue);
 
         final parsedData = result.getOrThrow()!;
@@ -188,7 +177,7 @@ void main() {
       test('basic list schema example', () {
         final tagsSchema = Ack.list(Ack.string());
 
-        final result = tagsSchema.validate(['dart', 'flutter', 'validation']);
+        final result = tagsSchema.safeParse(['dart', 'flutter', 'validation']);
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), equals(['dart', 'flutter', 'validation']));
       });
@@ -198,7 +187,7 @@ void main() {
             Ack.list(Ack.string().email()).minItems(1).maxItems(5);
 
         final validEmails = ['user@example.com', 'admin@example.com'];
-        final result = emailListSchema.validate(validEmails);
+        final result = emailListSchema.safeParse(validEmails);
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), equals(validEmails));
 
@@ -242,14 +231,14 @@ void main() {
         );
 
         // Success case
-        final successResult = resultSchema.validate({
+        final successResult = resultSchema.safeParse({
           'type': 'success',
           'data': 'Operation completed',
         });
         expect(successResult.isOk, isTrue);
 
         // Error case
-        final errorResult = resultSchema.validate({
+        final errorResult = resultSchema.safeParse({
           'type': 'error',
           'message': 'Not found',
           'code': 'NOT_FOUND',
@@ -272,7 +261,7 @@ void main() {
         final schema = Ack.string().minLength(5);
 
         // Valid case
-        final validResult = schema.validate('hello world');
+        final validResult = schema.safeParse('hello world');
         expect(validResult.isOk, isTrue);
         expect(validResult.isFail, isFalse);
         expect(validResult.getOrThrow(), equals('hello world'));
@@ -280,7 +269,7 @@ void main() {
         expect(validResult.getOrElse(() => 'default'), equals('hello world'));
 
         // Invalid case
-        final invalidResult = schema.validate('hi');
+        final invalidResult = schema.safeParse('hi');
         expect(invalidResult.isOk, isFalse);
         expect(invalidResult.isFail, isTrue);
         expect(invalidResult.getOrNull(), isNull);

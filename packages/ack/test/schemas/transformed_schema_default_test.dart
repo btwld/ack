@@ -8,7 +8,7 @@ void main() {
           .transform((v) => v?.toUpperCase() ?? '')
           .copyWith(defaultValue: 'DEF');
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), equals('DEF'));
     });
@@ -19,7 +19,7 @@ void main() {
           .refine((out) => out.length >= 3, message: 'Too short')
           .copyWith(defaultValue: 'X');
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaValidationError>());
     });

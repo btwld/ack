@@ -7,7 +7,7 @@ void main() {
     group('isNullable', () {
       test('non-nullable StringSchema should fail on null', () {
         final schema = StringSchema(isNullable: false);
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
         expect(error.getConstraint<NonNullableConstraint>(), isNotNull);
@@ -17,20 +17,20 @@ void main() {
 
       test('nullable StringSchema should pass on null', () {
         final schema = StringSchema(isNullable: true);
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), isNull);
       });
 
       test('non-nullable IntegerSchema should fail on null', () {
         final schema = IntegerSchema(isNullable: false);
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isFalse);
       });
 
       test('nullable IntegerSchema should pass on null', () {
         final schema = IntegerSchema(isNullable: true);
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
       });
     });
@@ -38,21 +38,21 @@ void main() {
     group('defaultValue', () {
       test('should apply default value for null input', () {
         final schema = StringSchema(defaultValue: 'default');
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), 'default');
       });
 
       test('should not apply default value for non-null input', () {
         final schema = StringSchema(defaultValue: 'default');
-        final result = schema.validate('actual');
+        final result = schema.safeParse('actual');
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), 'actual');
       });
 
       test('default value is still validated against constraints', () {
         final schema = StringSchema(defaultValue: 'short').minLength(10);
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
         // The default value should be validated against constraints.
@@ -64,7 +64,7 @@ void main() {
       test('nullable schema default should honor constraints', () {
         final schema = Ack.string().nullable().minLength(5).withDefault('oops');
 
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
 
         expect(result.isOk, isFalse);
         final error = result.getError();
@@ -83,7 +83,7 @@ void main() {
             .minLength(5)
             .withDefault('tiny'); // Default on base schema, not optional
 
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
 
         // Should fail because default doesn't satisfy constraints
         expect(result.isOk, isFalse);
@@ -100,7 +100,7 @@ void main() {
       test('StringSchema should fail for non-string input with strict parsing',
           () {
         final schema = StringSchema().strictParsing();
-        final result = schema.validate(123);
+        final result = schema.safeParse(123);
         expect(result.isOk, isFalse);
         final error = result.getError() as TypeMismatchError;
         expect(error.expectedType, equals('string'));
@@ -109,7 +109,7 @@ void main() {
 
       test('IntegerSchema should fail for non-integer input', () {
         final schema = IntegerSchema();
-        final result = schema.validate('not-a-number');
+        final result = schema.safeParse('not-a-number');
         expect(result.isOk, isFalse);
         // IntegerSchema accepts strings for coercion, so this fails during conversion, not type checking
         final error = result.getError() as SchemaValidationError;
@@ -118,7 +118,7 @@ void main() {
 
       test('IntegerSchema should enforce strict parsing when enabled', () {
         const schema = IntegerSchema(strictPrimitiveParsing: true);
-        final result = schema.validate('123');
+        final result = schema.safeParse('123');
 
         expect(result.isOk, isFalse);
         final error = result.getError() as TypeMismatchError;
@@ -128,7 +128,7 @@ void main() {
 
       test('BooleanSchema should fail for non-boolean input', () {
         final schema = BooleanSchema();
-        final result = schema.validate(1);
+        final result = schema.safeParse(1);
         expect(result.isOk, isFalse);
         final error = result.getError() as TypeMismatchError;
         expect(error.expectedType, equals('boolean'));
@@ -139,7 +139,7 @@ void main() {
           'DoubleSchema should accept ints even in strict mode (integers are numbers)',
           () {
         const schema = DoubleSchema(strictPrimitiveParsing: true);
-        final result = schema.validate(42);
+        final result = schema.safeParse(42);
 
         // Integers ARE numbers in JSON Schema semantics, so this should pass
         // Strict mode only prevents string→number coercion
@@ -152,7 +152,7 @@ void main() {
       test('should fail when nullable item resolves to null', () {
         final schema = Ack.list(Ack.string().nullable());
 
-        final result = schema.validate(['valid', null, 'also valid']);
+        final result = schema.safeParse(['valid', null, 'also valid']);
 
         expect(result.isOk, isFalse);
         expect(result.getError(), isA<SchemaNestedError>());

@@ -19,7 +19,7 @@ void main() {
           'age': 30
         };
 
-        final result = userSchema.validate(validData);
+        final result = userSchema.safeParse(validData);
         expect(result.isOk, isTrue);
 
         final parsedData = result.getOrThrow()!;
@@ -41,7 +41,7 @@ void main() {
           'email': 'jane@example.com',
         };
 
-        final result = userSchema.validate(validDataNoAge);
+        final result = userSchema.safeParse(validDataNoAge);
         expect(result.isOk, isTrue);
 
         final parsedData = result.getOrThrow()!;
@@ -64,7 +64,7 @@ void main() {
           'age': 30
         };
 
-        final result = userSchema.validate(invalidData);
+        final result = userSchema.safeParse(invalidData);
         expect(result.isFail, isTrue);
 
         final error = result.getError();
@@ -92,7 +92,7 @@ void main() {
           'age': 30
         };
 
-        final result = userSchema.validate(invalidData);
+        final result = userSchema.safeParse(invalidData);
         expect(result.isFail, isTrue);
 
         final error = result.getError();
@@ -152,44 +152,44 @@ void main() {
       test('string schema examples', () {
         // Basic string
         final nameSchema = Ack.string();
-        final nameResult = nameSchema.validate('Hello');
+        final nameResult = nameSchema.safeParse('Hello');
         expect(nameResult.isOk, isTrue);
         expect(nameResult.getOrThrow(), equals('Hello'));
 
         // String with constraints
         final usernameSchema = Ack.string().minLength(3).maxLength(20);
 
-        final usernameResult = usernameSchema.validate('john_doe');
+        final usernameResult = usernameSchema.safeParse('john_doe');
         expect(usernameResult.isOk, isTrue);
         expect(usernameResult.getOrThrow(), equals('john_doe'));
 
         // Too short username should fail
-        final shortResult = usernameSchema.validate('jo');
+        final shortResult = usernameSchema.safeParse('jo');
         expect(shortResult.isFail, isTrue);
       });
 
       test('string format validations', () {
         // Email validation
         final emailSchema = Ack.string().email();
-        final emailResult = emailSchema.validate('test@example.com');
+        final emailResult = emailSchema.safeParse('test@example.com');
         expect(emailResult.isOk, isTrue);
         expect(emailResult.getOrThrow(), equals('test@example.com'));
 
         // Invalid email should fail
-        final invalidEmailResult = emailSchema.validate('invalid-email');
+        final invalidEmailResult = emailSchema.safeParse('invalid-email');
         expect(invalidEmailResult.isFail, isTrue);
       });
 
       test('numeric schema examples', () {
         // Integer validation
         final ageSchema = Ack.integer().min(0).max(150);
-        final ageResult = ageSchema.validate(25);
+        final ageResult = ageSchema.safeParse(25);
         expect(ageResult.isOk, isTrue);
         expect(ageResult.getOrThrow(), equals(25));
 
         // Double validation
         final priceSchema = Ack.double().positive();
-        final priceResult = priceSchema.validate(19.99);
+        final priceResult = priceSchema.safeParse(19.99);
         expect(priceResult.isOk, isTrue);
         expect(priceResult.getOrThrow(), equals(19.99));
       });
@@ -197,11 +197,11 @@ void main() {
       test('boolean schema examples', () {
         final boolSchema = Ack.boolean();
 
-        final trueResult = boolSchema.validate(true);
+        final trueResult = boolSchema.safeParse(true);
         expect(trueResult.isOk, isTrue);
         expect(trueResult.getOrThrow(), equals(true));
 
-        final falseResult = boolSchema.validate(false);
+        final falseResult = boolSchema.safeParse(false);
         expect(falseResult.isOk, isTrue);
         expect(falseResult.getOrThrow(), equals(false));
       });
@@ -210,7 +210,7 @@ void main() {
         // Basic list
         final tagsSchema = Ack.list(Ack.string());
         final tagsResult =
-            tagsSchema.validate(['dart', 'flutter', 'validation']);
+            tagsSchema.safeParse(['dart', 'flutter', 'validation']);
         expect(tagsResult.isOk, isTrue);
         expect(
             tagsResult.getOrThrow(), equals(['dart', 'flutter', 'validation']));
@@ -220,7 +220,7 @@ void main() {
             Ack.list(Ack.string().email()).minItems(1).maxItems(5);
 
         final emailListResult =
-            emailListSchema.validate(['user@example.com', 'admin@example.com']);
+            emailListSchema.safeParse(['user@example.com', 'admin@example.com']);
         expect(emailListResult.isOk, isTrue);
         expect(emailListResult.getOrThrow(),
             equals(['user@example.com', 'admin@example.com']));
@@ -232,12 +232,12 @@ void main() {
         final nullableStringSchema = Ack.string().nullable();
 
         // Valid string
-        final stringResult = nullableStringSchema.validate('hello');
+        final stringResult = nullableStringSchema.safeParse('hello');
         expect(stringResult.isOk, isTrue);
         expect(stringResult.getOrThrow(), equals('hello'));
 
         // Valid null
-        final nullResult = nullableStringSchema.validate(null);
+        final nullResult = nullableStringSchema.safeParse(null);
         expect(nullResult.isOk, isTrue);
         expect(nullResult.getOrThrow(), isNull);
       });
@@ -246,11 +246,11 @@ void main() {
         // String enum
         final statusSchema = Ack.enumString(['active', 'inactive', 'pending']);
 
-        final validResult = statusSchema.validate('active');
+        final validResult = statusSchema.safeParse('active');
         expect(validResult.isOk, isTrue);
         expect(validResult.getOrThrow(), equals('active'));
 
-        final invalidResult = statusSchema.validate('unknown');
+        final invalidResult = statusSchema.safeParse('unknown');
         expect(invalidResult.isFail, isTrue);
       });
 
@@ -271,14 +271,14 @@ void main() {
         );
 
         // Success case
-        final successResult = resultSchema.validate({
+        final successResult = resultSchema.safeParse({
           'status': 'success',
           'data': 'Operation completed',
         });
         expect(successResult.isOk, isTrue);
 
         // Error case
-        final errorResult = resultSchema.validate({
+        final errorResult = resultSchema.safeParse({
           'status': 'error',
           'message': 'Not found',
           'code': 'NOT_FOUND',

@@ -11,7 +11,7 @@ void main() {
         Ack.integer(),
       ]);
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isOk, isTrue,
           reason: 'Nullable member schema should accept null');
       expect(result.getOrNull(), isNull);
@@ -23,7 +23,7 @@ void main() {
         Ack.integer(),
       ]);
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isFail, isTrue,
           reason: 'Should fail when no member schema accepts null');
     });
@@ -34,7 +34,7 @@ void main() {
         Ack.integer(),
       ]).nullable();
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isOk, isTrue,
           reason: 'AnyOfSchema.nullable() should accept null');
       expect(result.getOrNull(), isNull);
@@ -49,7 +49,7 @@ void main() {
         Ack.integer(),
       ]).nullable(); // AnyOfSchema is also nullable
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), isNull);
     });
@@ -61,7 +61,7 @@ void main() {
         Ack.boolean(),
       ]);
 
-      final result = schema.validate(null);
+      final result = schema.safeParse(null);
       expect(result.isOk, isTrue,
           reason: 'First nullable member should accept null');
     });
@@ -74,14 +74,14 @@ void main() {
       ]).nullable();
 
       // String works
-      expect(schema.validate('hello').isOk, isTrue);
+      expect(schema.safeParse('hello').isOk, isTrue);
       // Integer works
-      expect(schema.validate(10).isOk, isTrue);
+      expect(schema.safeParse(10).isOk, isTrue);
       // Null works (via AnyOfSchema nullable)
-      expect(schema.validate(null).isOk, isTrue);
+      expect(schema.safeParse(null).isOk, isTrue);
       // Invalid values still fail
-      expect(schema.validate('hi').isFail, isTrue);
-      expect(schema.validate(5).isFail, isTrue);
+      expect(schema.safeParse('hi').isFail, isTrue);
+      expect(schema.safeParse(5).isFail, isTrue);
     });
   });
   // Defaults on AnyOf are not supported by design; no tests for defaults here
@@ -93,7 +93,7 @@ void main() {
         Ack.integer().min(100),
       ]);
 
-      final result = schema.validate(5);
+      final result = schema.safeParse(5);
       expect(result.isFail, isTrue);
 
       final error = result.getError();
@@ -111,7 +111,7 @@ void main() {
     test('should handle empty schemas list gracefully', () {
       final schema = Ack.anyOf([]);
 
-      final result = schema.validate('anything');
+      final result = schema.safeParse('anything');
       expect(result.isFail, isTrue, reason: 'Empty anyOf should always fail');
     });
 
@@ -120,8 +120,8 @@ void main() {
         Ack.string().minLength(3),
       ]);
 
-      expect(schema.validate('hello').isOk, isTrue);
-      expect(schema.validate('hi').isFail, isTrue);
+      expect(schema.safeParse('hello').isOk, isTrue);
+      expect(schema.safeParse('hi').isFail, isTrue);
     });
 
     test('should work with deeply nested anyOf', () {
@@ -133,10 +133,10 @@ void main() {
         Ack.boolean(),
       ]);
 
-      expect(schema.validate('text').isOk, isTrue);
-      expect(schema.validate(42).isOk, isTrue);
-      expect(schema.validate(true).isOk, isTrue);
-      expect(schema.validate([]).isFail, isTrue);
+      expect(schema.safeParse('text').isOk, isTrue);
+      expect(schema.safeParse(42).isOk, isTrue);
+      expect(schema.safeParse(true).isOk, isTrue);
+      expect(schema.safeParse([]).isFail, isTrue);
     });
 
     test('should handle anyOf with optional member schemas', () {
@@ -148,8 +148,8 @@ void main() {
       });
 
       // Optional in anyOf is a bit unusual, but should work
-      expect(schema.validate({'value': 'text'}).isOk, isTrue);
-      expect(schema.validate({'value': 42}).isOk, isTrue);
+      expect(schema.safeParse({'value': 'text'}).isOk, isTrue);
+      expect(schema.safeParse({'value': 42}).isOk, isTrue);
     });
   });
 

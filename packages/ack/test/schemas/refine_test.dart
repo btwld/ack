@@ -8,7 +8,7 @@ void main() {
         (value) => value.startsWith('ack'),
         message: 'Must start with "ack"',
       );
-      final result = schema.validate('ack is awesome');
+      final result = schema.safeParse('ack is awesome');
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), 'ack is awesome');
     });
@@ -19,7 +19,7 @@ void main() {
         (value) => value.startsWith('ack'),
         message: 'Custom Error: Must start with "ack"',
       );
-      final result = schema.validate('hello world');
+      final result = schema.safeParse('hello world');
       expect(result.isFail, isTrue);
       expect(
         (result.getError() as SchemaValidationError).message,
@@ -34,7 +34,7 @@ void main() {
           );
 
       // This input fails the minLength constraint
-      final result = schema.validate('short');
+      final result = schema.safeParse('short');
       expect(result.isFail, isTrue);
       // Crucially, the error should be from minLength, not the refinement.
       expect(
@@ -56,7 +56,7 @@ void main() {
             message: 'Second refinement: must contain "world"',
           );
 
-      final result = schema.validate('hello'); // Fails first refinement
+      final result = schema.safeParse('hello'); // Fails first refinement
       expect(result.isFail, isTrue);
       expect(
         (result.getError() as SchemaValidationError).message,
@@ -74,14 +74,14 @@ void main() {
       );
 
       // Success case
-      final resultSuccess = schema.validate({
+      final resultSuccess = schema.safeParse({
         'password': 'password123',
         'confirmPassword': 'password123',
       });
       expect(resultSuccess.isOk, isTrue);
 
       // Failure case
-      final resultFailure = schema.validate({
+      final resultFailure = schema.safeParse({
         'password': 'password123',
         'confirmPassword': 'password456',
       });

@@ -9,15 +9,15 @@ void main() {
       final schema = Ack.string().minLength(5).optional();
 
       // Valid non-null value
-      expect(schema.validate('hello').isOk, isTrue);
+      expect(schema.safeParse('hello').isOk, isTrue);
 
       // Invalid non-null value (too short)
-      final result = schema.validate('hi');
+      final result = schema.safeParse('hi');
       expect(result.isFail, isTrue);
       expect(result.getError().toString(), contains('Minimum 5'));
 
       // Null should fail (optional does NOT imply nullable)
-      expect(schema.validate(null).isFail, isTrue);
+      expect(schema.safeParse(null).isFail, isTrue);
     });
 
     test('refinements after optional() should work', () {
@@ -28,16 +28,16 @@ void main() {
           message: 'Must be at least 5 characters');
 
       // Valid non-null value
-      expect(schema.validate('hello').isOk, isTrue);
+      expect(schema.safeParse('hello').isOk, isTrue);
 
       // Invalid non-null value (too short)
-      final result = schema.validate('hi');
+      final result = schema.safeParse('hi');
       expect(result.isFail, isTrue);
       expect(result.getError().toString(),
           contains('Must be at least 5 characters'));
 
       // Null should fail (optional does NOT imply nullable)
-      expect(schema.validate(null).isFail, isTrue);
+      expect(schema.safeParse(null).isFail, isTrue);
     });
 
     test('multiple refinements with optional in the middle', () {
@@ -47,20 +47,20 @@ void main() {
           .refine((v) => v.length <= 10, message: 'Too long');
 
       // Valid value
-      expect(schema.validate('hello').isOk, isTrue);
+      expect(schema.safeParse('hello').isOk, isTrue);
 
       // Too short (refinement before optional)
-      final shortResult = schema.validate('hi');
+      final shortResult = schema.safeParse('hi');
       expect(shortResult.isFail, isTrue);
       expect(shortResult.getError().toString(), contains('Too short'));
 
       // Too long (refinement after optional)
-      final longResult = schema.validate('this is too long');
+      final longResult = schema.safeParse('this is too long');
       expect(longResult.isFail, isTrue);
       expect(longResult.getError().toString(), contains('Too long'));
 
       // Null fails (optional does NOT imply nullable)
-      expect(schema.validate(null).isFail, isTrue);
+      expect(schema.safeParse(null).isFail, isTrue);
     });
 
     test('refinements are checked when value is present', () {
@@ -70,11 +70,11 @@ void main() {
           .refine((v) => v.contains('@'), message: 'Must contain @');
 
       // Non-null value is checked against refinements
-      expect(schema.validate('test@example').isOk, isTrue);
-      expect(schema.validate('invalid').isFail, isTrue);
+      expect(schema.safeParse('test@example').isOk, isTrue);
+      expect(schema.safeParse('invalid').isFail, isTrue);
 
       // Null fails (optional does NOT imply nullable)
-      expect(schema.validate(null).isFail, isTrue);
+      expect(schema.safeParse(null).isFail, isTrue);
     });
   });
 }

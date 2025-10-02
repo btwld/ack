@@ -34,7 +34,7 @@ void main() {
           'updatedAt': '2024-01-01T00:00:00Z',
         };
 
-        final userResult = userSchema.validate(userData);
+        final userResult = userSchema.safeParse(userData);
         expect(userResult.isOk, isTrue);
 
         final postData = {
@@ -44,7 +44,7 @@ void main() {
           'createdAt': '2024-01-01T00:00:00Z',
         };
 
-        final postResult = postSchema.validate(postData);
+        final postResult = postSchema.safeParse(postData);
         expect(postResult.isOk, isTrue);
       });
     });
@@ -57,7 +57,7 @@ void main() {
         });
 
         ValidationResult<Map<String, dynamic>> validateUser(dynamic data) {
-          final result = schema.validate(data);
+          final result = schema.safeParse(data);
           if (result.isOk) {
             return ValidationResult.valid(result.getOrThrow()!);
           } else {
@@ -198,7 +198,7 @@ void main() {
           },
         };
 
-        final result = customerSchema.validate(customerData);
+        final result = customerSchema.safeParse(customerData);
         expect(result.isOk, isTrue);
       });
     });
@@ -210,7 +210,7 @@ void main() {
           AckSchema schema,
           T fallback,
         ) {
-          final result = schema.validate(input);
+          final result = schema.safeParse(input);
           return result.isOk ? result.getOrThrow() as T : fallback;
         }
 
@@ -249,7 +249,7 @@ void main() {
           },
         };
 
-        final result = userSchema.validate(userData);
+        final result = userSchema.safeParse(userData);
         expect(result.isOk, isTrue);
 
         // Verify descriptions are set
@@ -277,7 +277,7 @@ void main() {
         ];
 
         for (final userData in users) {
-          final result = userSchema.validate(userData);
+          final result = userSchema.safeParse(userData);
           expect(result.isOk, isTrue);
         }
       });

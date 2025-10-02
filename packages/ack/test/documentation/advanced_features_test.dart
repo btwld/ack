@@ -12,15 +12,15 @@ void main() {
 
         // Valid - middleName is present with null value
         final validData1 = {'name': 'John', 'middleName': null};
-        expect(userSchema.validate(validData1).isOk, isTrue);
+        expect(userSchema.safeParse(validData1).isOk, isTrue);
 
         // Valid - middleName is present with string value
         final validData2 = {'name': 'John', 'middleName': 'Robert'};
-        expect(userSchema.validate(validData2).isOk, isTrue);
+        expect(userSchema.safeParse(validData2).isOk, isTrue);
 
         // Invalid - middleName is missing entirely
         final invalidData = {'name': 'John'};
-        expect(userSchema.validate(invalidData).isOk, isFalse);
+        expect(userSchema.safeParse(invalidData).isOk, isFalse);
       });
 
       test('should demonstrate optional field behavior', () {
@@ -31,15 +31,15 @@ void main() {
 
         // Valid - age field is omitted
         final validData1 = {'name': 'John'};
-        expect(userSchema.validate(validData1).isOk, isTrue);
+        expect(userSchema.safeParse(validData1).isOk, isTrue);
 
         // Valid - age field is present with value
         final validData2 = {'name': 'John', 'age': 30};
-        expect(userSchema.validate(validData2).isOk, isTrue);
+        expect(userSchema.safeParse(validData2).isOk, isTrue);
 
         // Invalid - age field cannot be null (optional ≠ nullable)
         final invalidData = {'name': 'John', 'age': null};
-        expect(userSchema.validate(invalidData).isFail, isTrue);
+        expect(userSchema.safeParse(invalidData).isFail, isTrue);
       });
 
       test('should demonstrate optional and nullable combined', () {
@@ -50,16 +50,16 @@ void main() {
 
         // All of these are valid:
         final valid1 = {'name': 'John'}; // bio omitted
-        expect(userSchema.validate(valid1).isOk, isTrue);
+        expect(userSchema.safeParse(valid1).isOk, isTrue);
 
         final valid2 = {'name': 'John', 'bio': null}; // bio is null
-        expect(userSchema.validate(valid2).isOk, isTrue);
+        expect(userSchema.safeParse(valid2).isOk, isTrue);
 
         final valid3 = {
           'name': 'John',
           'bio': 'Software developer'
         }; // bio has value
-        expect(userSchema.validate(valid3).isOk, isTrue);
+        expect(userSchema.safeParse(valid3).isOk, isTrue);
       });
     });
 
@@ -81,12 +81,12 @@ void main() {
               message: 'Password must contain at least one special character',
             );
 
-        expect(strongPasswordSchema.validate('Password123!').isOk, isTrue);
-        expect(strongPasswordSchema.validate('password123!').isOk,
+        expect(strongPasswordSchema.safeParse('Password123!').isOk, isTrue);
+        expect(strongPasswordSchema.safeParse('password123!').isOk,
             isFalse); // No uppercase
-        expect(strongPasswordSchema.validate('Password!').isOk,
+        expect(strongPasswordSchema.safeParse('Password!').isOk,
             isFalse); // No number
-        expect(strongPasswordSchema.validate('Password123').isOk,
+        expect(strongPasswordSchema.safeParse('Password123').isOk,
             isFalse); // No special char
       });
     });
@@ -99,7 +99,7 @@ void main() {
           return DateTime.parse(dateStr!);
         });
 
-        final result = dateSchema.validate('2024-01-15');
+        final result = dateSchema.safeParse('2024-01-15');
         expect(result.isOk, isTrue);
         final transformedDate = result.getOrThrow() as DateTime;
         expect(transformedDate, isA<DateTime>());
@@ -115,7 +115,7 @@ void main() {
           return phone!.replaceAll(RegExp(r'[^\d\+]'), '');
         });
 
-        final result = phoneSchema.validate('+1 (555) 123-4567');
+        final result = phoneSchema.safeParse('+1 (555) 123-4567');
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), equals('+15551234567'));
       });
@@ -145,7 +145,7 @@ void main() {
           'lastLogin': '2024-01-15T10:30:00Z',
         };
 
-        expect(adminUserSchema.validate(adminData).isOk, isTrue);
+        expect(adminUserSchema.safeParse(adminData).isOk, isTrue);
       });
 
       test('should support property picking', () {
@@ -167,14 +167,14 @@ void main() {
           'email': 'john@example.com',
         };
 
-        expect(publicUserSchema.validate(publicData).isOk, isTrue);
+        expect(publicUserSchema.safeParse(publicData).isOk, isTrue);
 
         // Should fail if password is included
         final dataWithPassword = {
           ...publicData,
           'password': 'secret123',
         };
-        expect(publicUserSchema.validate(dataWithPassword).isOk, isFalse);
+        expect(publicUserSchema.safeParse(dataWithPassword).isOk, isFalse);
       });
 
       test('should support property omission', () {
@@ -194,14 +194,14 @@ void main() {
           'email': 'john@example.com',
         };
 
-        expect(safeUserSchema.validate(safeData).isOk, isTrue);
+        expect(safeUserSchema.safeParse(safeData).isOk, isTrue);
 
         // Should fail if password is included
         final dataWithPassword = {
           ...safeData,
           'password': 'secret123',
         };
-        expect(safeUserSchema.validate(dataWithPassword).isOk, isFalse);
+        expect(safeUserSchema.safeParse(dataWithPassword).isOk, isFalse);
       });
 
       test('should support partial schemas', () {
@@ -215,13 +215,13 @@ void main() {
         final partialUserSchema = userSchema.partial();
 
         // All these should be valid:
-        expect(partialUserSchema.validate(<String, Object?>{}).isOk,
+        expect(partialUserSchema.safeParse(<String, Object?>{}).isOk,
             isTrue); // Empty object
-        expect(partialUserSchema.validate({'name': 'John'}).isOk,
+        expect(partialUserSchema.safeParse({'name': 'John'}).isOk,
             isTrue); // Only name
         expect(
             partialUserSchema
-                .validate({'email': 'john@example.com', 'age': 30}).isOk,
+                .safeParse({'email': 'john@example.com', 'age': 30}).isOk,
             isTrue); // Subset
       });
 
@@ -234,11 +234,11 @@ void main() {
         // Strict: reject additional properties
         final strictSchema = baseSchema.strict();
         final dataWithExtra = {'id': '1', 'name': 'Test', 'extra': 'value'};
-        expect(strictSchema.validate(dataWithExtra).isOk, isFalse);
+        expect(strictSchema.safeParse(dataWithExtra).isOk, isFalse);
 
         // Passthrough: allow additional properties (default behavior)
         final passthroughSchema = baseSchema.passthrough();
-        expect(passthroughSchema.validate(dataWithExtra).isOk, isTrue);
+        expect(passthroughSchema.safeParse(dataWithExtra).isOk, isTrue);
       });
     });
   });

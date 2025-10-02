@@ -11,14 +11,14 @@ void main() {
 
       // Warm up
       for (int i = 0; i < 100; i++) {
-        schema.tryParse(testEmail);
+        schema.safeParse(testEmail);
       }
 
       final stopwatch = Stopwatch()..start();
       const iterations = 10000;
 
       for (int i = 0; i < iterations; i++) {
-        schema.tryParse(testEmail);
+        schema.safeParse(testEmail);
       }
 
       stopwatch.stop();

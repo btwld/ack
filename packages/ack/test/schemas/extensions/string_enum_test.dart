@@ -25,15 +25,15 @@ void main() {
     test('should handle empty string if allowed', () {
       final schema = Ack.string().enumString(['', 'yes', 'no']);
 
-      expect(schema.tryParse(''), isNotNull);
+      expect(schema.safeParse('').isOk, isTrue);
     });
 
     test('should work with nullable string schema', () {
       final schema = Ack.string().nullable().enumString(['active', 'inactive']);
 
-      expect(schema.tryParse(null), isNull);
-      expect(schema.tryParse('active'), isNotNull);
-      expect(schema.tryParse('pending'), isNull);
+      expect(schema.safeParse(null).isOk, isTrue);
+      expect(schema.safeParse('active').isOk, isTrue);
+      expect(schema.safeParse('pending').isFail, isTrue);
     });
 
     test('should generate correct JSON schema', () {

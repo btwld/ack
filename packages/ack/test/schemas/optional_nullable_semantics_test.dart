@@ -12,17 +12,17 @@ void main() {
 
         // Test 1: Missing field should pass
         final missingField = {'name': 'John'};
-        final result1 = schema.validate(missingField);
+        final result1 = schema.safeParse(missingField);
         expect(result1.isOk, isTrue, reason: 'Optional field can be missing');
 
         // Test 2: Present with value should pass
         final withValue = {'name': 'John', 'age': 30};
-        final result2 = schema.validate(withValue);
+        final result2 = schema.safeParse(withValue);
         expect(result2.isOk, isTrue, reason: 'Optional field can have value');
 
         // Test 3: Present with null should FAIL (CORRECTED BEHAVIOR)
         final withNull = {'name': 'John', 'age': null};
-        final result3 = schema.validate(withNull);
+        final result3 = schema.safeParse(withNull);
         expect(result3.isFail, isTrue,
             reason:
                 'Optional field should reject null unless also marked nullable');
@@ -53,7 +53,7 @@ void main() {
           'age': Ack.integer().optional().withDefault(40),
         });
 
-        final result = schema.validate({'name': 'John'});
+        final result = schema.safeParse({'name': 'John'});
         expect(result.isOk, isTrue);
         final map = result.getOrNull();
         expect(map?['age'], equals(40));
@@ -65,7 +65,7 @@ void main() {
           'age': Ack.integer().min(10).optional().withDefault(5),
         });
 
-        final result = schema.validate({'name': 'John'});
+        final result = schema.safeParse({'name': 'John'});
         expect(result.isFail, isTrue);
         expect(result.getError(), isA<SchemaNestedError>());
       });
@@ -74,7 +74,7 @@ void main() {
         final schema =
             Ack.string().nullable().minLength(5).withDefault('default');
 
-        final result = schema.validate(null);
+        final result = schema.safeParse(null);
         expect(result.isOk, isTrue,
             reason: 'Should apply default value even for nullable schema');
         expect(result.getOrNull(), equals('default'),
@@ -91,13 +91,13 @@ void main() {
 
         // Missing required field should fail
         final missingRequired = {'optional': 'value'};
-        final result1 = schema.validate(missingRequired);
+        final result1 = schema.safeParse(missingRequired);
         expect(result1.isFail, isTrue,
             reason: 'Should fail when required field is missing');
 
         // Missing optional field should pass
         final missingOptional = {'required': 'value'};
-        final result2 = schema.validate(missingOptional);
+        final result2 = schema.safeParse(missingOptional);
         expect(result2.isOk, isTrue,
             reason: 'Should pass when optional field is missing');
       });
@@ -116,18 +116,18 @@ void main() {
                 'Calling nullable() after optional() should make it nullable');
 
         // Test 1: Missing field
-        final result1 = objectSchema.validate({'name': 'John'});
+        final result1 = objectSchema.safeParse({'name': 'John'});
         expect(result1.isOk, isTrue, reason: 'Optional field can be missing');
 
         // Test 2: Explicit null value
         final result2 =
-            objectSchema.validate({'name': 'John', 'nickname': null});
+            objectSchema.safeParse({'name': 'John', 'nickname': null});
         expect(result2.isOk, isTrue,
             reason: 'Nullable optional field should accept null');
 
         // Test 3: Actual value
         final result3 =
-            objectSchema.validate({'name': 'John', 'nickname': 'Johnny'});
+            objectSchema.safeParse({'name': 'John', 'nickname': 'Johnny'});
         expect(result3.isOk, isTrue);
       });
 
@@ -228,7 +228,7 @@ void main() {
       ];
 
       for (final (email, shouldPass, reason) in testCases) {
-        final result = schema.validate(email);
+        final result = schema.safeParse(email);
         expect(result.isOk, equals(shouldPass), reason: '$reason: $email');
       }
     });
@@ -240,7 +240,7 @@ void main() {
         'password': Ack.string().minLength(8),
       });
 
-      final result = schema.validate({
+      final result = schema.safeParse({
         'password': 'short',
       });
 
@@ -253,7 +253,7 @@ void main() {
         () {
       final schema = Ack.string().minLength(5);
 
-      final result = schema.validate('hi');
+      final result = schema.safeParse('hi');
 
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaConstraintsError>(),

@@ -52,7 +52,7 @@ void main() {
 
       // Verify all examples
       for (final example in examples) {
-        final result = example.schema.validate(example.input);
+        final result = example.schema.safeParse(example.input);
         expect(result.isFail, isTrue,
             reason: 'Should fail for: ${example.description}');
 
@@ -156,7 +156,7 @@ void main() {
       errorCatalog['Constraint Validation'] = examples;
 
       for (final example in examples) {
-        final result = example.schema.validate(example.input);
+        final result = example.schema.safeParse(example.input);
         expect(result.isFail, isTrue,
             reason: 'Should fail for: ${example.description}');
       }
@@ -223,7 +223,7 @@ void main() {
       errorCatalog['Complex Validation'] = examples;
 
       for (final example in examples) {
-        final result = example.schema.validate(example.input);
+        final result = example.schema.safeParse(example.input);
         expect(result.isFail, isTrue,
             reason: 'Should fail for: ${example.description}');
       }
@@ -253,7 +253,7 @@ void main() {
       errorCatalog['Null and Undefined'] = examples;
 
       for (final example in examples) {
-        final result = example.schema.validate(example.input);
+        final result = example.schema.safeParse(example.input);
         expect(result.isFail, isTrue,
             reason: 'Should fail for: ${example.description}');
       }
@@ -262,9 +262,9 @@ void main() {
     test('error message consistency', () {
       // Test that similar errors have consistent message patterns
       final stringLengthErrors = [
-        Ack.string().minLength(5).validate('hi'),
-        Ack.string().maxLength(3).validate('hello'),
-        Ack.string().length(5).validate('hi'),
+        Ack.string().minLength(5).safeParse('hi'),
+        Ack.string().maxLength(3).safeParse('hello'),
+        Ack.string().length(5).safeParse('hi'),
       ];
 
       for (final result in stringLengthErrors) {
@@ -275,9 +275,9 @@ void main() {
       }
 
       final numberRangeErrors = [
-        Ack.integer().min(0).validate(-1),
-        Ack.integer().max(100).validate(101),
-        Ack.double().positive().validate(-1.5),
+        Ack.integer().min(0).safeParse(-1),
+        Ack.integer().max(100).safeParse(101),
+        Ack.double().positive().safeParse(-1.5),
       ];
 
       for (final result in numberRangeErrors) {

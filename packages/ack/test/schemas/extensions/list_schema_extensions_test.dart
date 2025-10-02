@@ -6,13 +6,13 @@ void main() {
     group('minLength', () {
       test('should pass if list is long enough', () {
         final schema = ListSchema(StringSchema()).minItems(2);
-        final result = schema.validate(['a', 'b']);
+        final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isTrue);
       });
 
       test('should fail if list is too short', () {
         final schema = ListSchema(StringSchema()).minItems(3);
-        final result = schema.validate(['a', 'b']);
+        final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isFalse);
         expect(
             (result.getError() as SchemaConstraintsError)
@@ -26,13 +26,13 @@ void main() {
     group('maxLength', () {
       test('should pass if list is short enough', () {
         final schema = ListSchema(StringSchema()).maxItems(2);
-        final result = schema.validate(['a', 'b']);
+        final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isTrue);
       });
 
       test('should fail if list is too long', () {
         final schema = ListSchema(StringSchema()).maxItems(1);
-        final result = schema.validate(['a', 'b']);
+        final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isFalse);
         expect(
             (result.getError() as SchemaConstraintsError)
@@ -46,13 +46,13 @@ void main() {
     group('exactLength', () {
       test('length should pass if string is exact length', () {
         final schema = Ack.list(Ack.string()).exactLength(2);
-        final result = schema.validate(['a', 'b']);
+        final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isTrue);
       });
 
       test('length should fail if string is not exact length', () {
         final schema = Ack.list(Ack.string()).exactLength(2);
-        final result = schema.validate(['a']);
+        final result = schema.safeParse(['a']);
         expect(result.isOk, isFalse);
         expect(
           (result.getError() as SchemaConstraintsError)
@@ -67,13 +67,13 @@ void main() {
     group('nonEmpty', () {
       test('nonempty should pass if list is not empty', () {
         final schema = Ack.list(Ack.string()).nonEmpty();
-        final result = schema.validate(['a']);
+        final result = schema.safeParse(['a']);
         expect(result.isOk, isTrue);
       });
 
       test('nonempty should fail if list is empty', () {
         final schema = Ack.list(Ack.string()).nonEmpty();
-        final result = schema.validate([]);
+        final result = schema.safeParse([]);
         expect(result.isOk, isFalse);
         expect(
           (result.getError() as SchemaConstraintsError)

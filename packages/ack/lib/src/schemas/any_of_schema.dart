@@ -13,10 +13,10 @@ part of 'schema.dart';
 ///   Ack.boolean(),
 /// ]);
 ///
-/// schema.validate('hello');  // Ok
-/// schema.validate(42);        // Ok
-/// schema.validate(true);      // Ok
-/// schema.validate([]);        // Fail - not matching any schema
+/// schema.safeParse('hello');  // Ok
+/// schema.safeParse(42);        // Ok
+/// schema.safeParse(true);      // Ok
+/// schema.safeParse([]);        // Fail - not matching any schema
 /// ```
 /// Note: AnyOfSchema does not support default values. Use defaults on the
 /// individual member schemas instead.
