@@ -685,6 +685,9 @@ enum Status { active, inactive, pending }
 Map<String, Object?> normalizeZodFixture(Map<String, Object?> zodSchema) {
   final normalized = Map<String, Object?>.from(zodSchema);
 
+  // Remove $schema field if present (we add it in toJsonSchema())
+  normalized.remove('\$schema');
+
   // Helper to remove JS safe bounds from a schema
   void removeSafeBounds(Map<String, Object?> schema) {
     if (schema['type'] == 'integer') {

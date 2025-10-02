@@ -123,8 +123,7 @@ final class AnyOfSchema extends AckSchema<Object>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final anyOfClauses =
-        schemas.map((s) => s.toJsonSchema()).toList();
+    final anyOfClauses = schemas.map((s) => s.toJsonSchema()).toList();
 
     final baseSchema = {
       'anyOf': anyOfClauses,
