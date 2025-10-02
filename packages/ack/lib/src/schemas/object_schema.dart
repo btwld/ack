@@ -205,11 +205,32 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
+    // Convert additionalProperties to match Zod format
+    // Zod uses {} (empty schema) for true, false for false
+    final additionalPropertiesValue = additionalProperties ? {} : false;
+
+    if (isNullable) {
+      final baseSchema = {
+        'type': 'object',
+        'properties': propsJsonSchema,
+        if (requiredFields.isNotEmpty) 'required': requiredFields,
+        'additionalProperties': additionalPropertiesValue,
+        if (description != null) 'description': description,
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
     final schema = {
-      'type': isNullable ? ['object', 'null'] : 'object',
+      'type': 'object',
       'properties': propsJsonSchema,
       if (requiredFields.isNotEmpty) 'required': requiredFields,
-      'additionalProperties': additionalProperties,
+      'additionalProperties': additionalPropertiesValue,
       if (description != null) 'description': description,
     };
 

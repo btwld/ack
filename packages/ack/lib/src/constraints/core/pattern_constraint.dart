@@ -74,7 +74,7 @@ class PatternConstraint extends Constraint<String>
   static PatternConstraint email() => PatternConstraint(
         type: PatternType.regex,
         pattern: RegExp(
-          r'^(?!.*\.\.)(?!.*\.$)(?!^\.)([a-zA-Z0-9._%+-]+)@(?!.*\.\.)([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$',
+          r'''^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$''',
         ),
         constraintKey: 'string_format_email',
         description: 'Must be a valid email address.',
@@ -86,7 +86,7 @@ class PatternConstraint extends Constraint<String>
   static PatternConstraint uuid() => PatternConstraint(
         type: PatternType.regex,
         pattern: RegExp(
-          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+          r'^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$',
         ),
         constraintKey: 'string_format_uuid',
         description: 'Must be a valid UUID.',
@@ -276,7 +276,11 @@ class PatternConstraint extends Constraint<String>
       case PatternType.regex:
         final standardFormat = _keyToFormat[constraintKey];
         if (standardFormat != null) {
-          return {'format': standardFormat};
+          // For email and uuid, include BOTH format and pattern (match Zod)
+          return {
+            'format': standardFormat,
+            'pattern': pattern!.pattern,
+          };
         }
 
         return {'pattern': pattern!.pattern};

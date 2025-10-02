@@ -167,32 +167,46 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final oneOfClauses = <Map<String, Object?>>[];
+    final anyOfClauses = <Map<String, Object?>>[];
     schemas.forEach((discriminatorValue, objectSchema) {
       final subSchemaJson = objectSchema.toJsonSchema();
       // Ensure the discriminator property is correctly constrained in the sub-schema JSON
+      // Include both 'type' and 'const' to match Zod's format
       subSchemaJson['properties'] = {
         ...?(subSchemaJson['properties'] as Map?),
-        discriminatorKey: {'const': discriminatorValue},
+        discriminatorKey: {
+          'type': 'string',
+          'const': discriminatorValue,
+        },
       };
-      subSchemaJson['required'] = {
-        ...?(subSchemaJson['required'] as List?)?.cast<String>(),
+      // Build required array with discriminator first (match Zod's ordering)
+      final existingRequired =
+          (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
+      final requiredFields = <String>[
         discriminatorKey,
-      }.toList();
-      oneOfClauses.add(subSchemaJson);
+        ...existingRequired.where((field) => field != discriminatorKey),
+      ];
+      subSchemaJson['required'] = requiredFields;
+      anyOfClauses.add(subSchemaJson);
     });
 
-    // Add null as an option if nullable
-    if (isNullable) {
-      oneOfClauses.insert(0, {'type': 'null'});
-    }
-
-    final schema = {
-      'oneOf': oneOfClauses,
-      if (description != null) 'description': description,
+    final baseSchema = {
+      'anyOf': anyOfClauses,
+      if (!isNullable && description != null) 'description': description,
     };
 
-    return mergeConstraintSchemas(schema);
+    // Wrap in another anyOf with null if nullable (match Zod's format)
+    if (isNullable) {
+      return {
+        if (description != null) 'description': description,
+        'anyOf': [
+          baseSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    return mergeConstraintSchemas(baseSchema);
   }
 
   @override

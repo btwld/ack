@@ -17,8 +17,23 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 
   @override
   Map<String, Object?> toJsonSchema() {
+    if (isNullable) {
+      final baseSchema = {
+        'type': 'number',
+        if (description != null) 'description': description,
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
     final schema = {
-      'type': isNullable ? ['number', 'null'] : 'number',
+      'type': 'number',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };
@@ -70,8 +85,11 @@ final class IntegerSchema extends NumSchema<int>
   Map<String, Object?> toJsonSchema() {
     final schema = super.toJsonSchema();
     // Override the type to be 'integer' instead of 'number'
-    if (isNullable) {
-      schema['type'] = ['integer', 'null'];
+    // Handle both direct type and anyOf nullable pattern
+    if (schema.containsKey('anyOf')) {
+      final anyOf = schema['anyOf'] as List;
+      final firstOption = anyOf[0] as Map<String, Object?>;
+      firstOption['type'] = 'integer';
     } else {
       schema['type'] = 'integer';
     }

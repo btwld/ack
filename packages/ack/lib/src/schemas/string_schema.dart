@@ -47,8 +47,24 @@ final class StringSchema extends AckSchema<String>
 
   @override
   Map<String, Object?> toJsonSchema() {
+    if (isNullable) {
+      final baseSchema = {
+        'type': 'string',
+        if (description != null) 'description': description,
+        // Don't include default in baseSchema - it goes at anyOf level
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
     final schema = {
-      'type': isNullable ? ['string', 'null'] : 'string',
+      'type': 'string',
       if (description != null) 'description': description,
       if (defaultValue != null) 'default': defaultValue,
     };

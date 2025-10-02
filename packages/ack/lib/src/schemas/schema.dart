@@ -262,6 +262,13 @@ sealed class AckSchema<DartType extends Object> {
     List<Refinement<DartType>>? refinements,
   });
 
+  /// Converts this schema to a JSON Schema Draft-7 representation.
+  ///
+  /// Returns a Map containing the JSON Schema structure.
+  ///
+  /// Subclasses must override this to provide their specific JSON Schema structure.
+  /// The implementation should call [mergeConstraintSchemas] at the structurally
+  /// appropriate point for the schema type.
   Map<String, Object?> toJsonSchema();
 
   Map<String, Object?> toMap() {
