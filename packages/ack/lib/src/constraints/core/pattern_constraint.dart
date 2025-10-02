@@ -73,7 +73,9 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint email() => PatternConstraint(
         type: PatternType.regex,
-        pattern: RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+        pattern: RegExp(
+          r'^(?!.*\.\.)(?!.*\.$)(?!^\.)([a-zA-Z0-9._%+-]+)@(?!.*\.\.)([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$',
+        ),
         constraintKey: 'string_format_email',
         description: 'Must be a valid email address.',
         example: 'user@example.com',

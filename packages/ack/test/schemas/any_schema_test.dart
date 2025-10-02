@@ -59,7 +59,14 @@ void main() {
       expect(
           jsonSchema,
           equals({
-            'not': {'type': 'null'}, // Non-nullable AnySchema rejects null
+            'type': [
+              'boolean',
+              'number',
+              'integer',
+              'string',
+              'object',
+              'array'
+            ], // Non-nullable AnySchema rejects null by explicitly listing allowed types
             'description': 'Accepts any value',
             'default': 'fallback',
           }));

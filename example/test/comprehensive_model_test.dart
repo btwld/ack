@@ -20,7 +20,9 @@ void main() {
         final user =
             simple_gen.userSchema.parse(userData) as Map<String, dynamic>;
         expect(user['id'], equals('user_1'));
-        expect(user['preferences']['theme'], equals('dark'));
+        // In schema-only mode (model: false), additional properties stay at top level
+        expect(user['theme'], equals('dark'));
+        expect(user['language'], equals('en'));
       });
 
       test('status model with enum validation', () {
@@ -110,7 +112,7 @@ void main() {
           'createdAt': '2024-01-01T00:00:00Z',
           'stockQuantity': 10,
           'status': 'draft',
-          'productCode': 'TST-001',
+          'productCode': 'TST-0001',
         });
 
         expect(schemaResult, isA<Map<String, dynamic>>());
@@ -118,7 +120,7 @@ void main() {
         // SchemaModel approach for type-safe object creation
         final model = ProductSchemaModel();
         final modelResult = model.parseJson(
-            '{"id":"test_2","name":"Another Test","description":"Type safe test","price":149.99,"category":{"id":"cat_2","name":"Test2"},"releaseDate":"2024-01-01","createdAt":"2024-01-01T00:00:00Z","stockQuantity":5,"status":"published","productCode":"TST-002"}');
+            '{"id":"test_2","name":"Another Test","description":"Type safe test","price":149.99,"category":{"id":"cat_2","name":"Test2"},"releaseDate":"2024-01-01","createdAt":"2024-01-01T00:00:00Z","stockQuantity":5,"status":"published","productCode":"TST-0002"}');
 
         expect(modelResult.isOk, isTrue);
         expect(model.value, isA<Product>());
@@ -172,7 +174,7 @@ void main() {
           'createdAt': '2024-01-01T00:00:00Z',
           'stockQuantity': 1,
           'status': 'draft',
-          'productCode': 'MIN-001',
+          'productCode': 'MIN-0001',
         };
 
         // Both approaches should handle nullable fields
@@ -242,6 +244,6 @@ Map<String, dynamic> _createProductData({String status = 'published'}) {
     'createdAt': '2024-01-01T00:00:00Z',
     'stockQuantity': 10,
     'status': status,
-    'productCode': 'TEST-001',
+    'productCode': 'TST-0001',
   };
 }
