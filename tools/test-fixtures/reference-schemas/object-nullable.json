@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "anyOf": [
+    {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    {
+      "type": "null"
+    }
+  ]
+}
