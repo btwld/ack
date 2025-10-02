@@ -216,7 +216,38 @@ sealed class AckSchema<DartType extends Object> {
     return applyConstraintsAndRefinements(convertedValue, context);
   }
 
-  SchemaResult<DartType> validate(Object? value, {String? debugName}) {
+  /// Parses and validates a value, throwing an [AckException] if validation fails.
+  ///
+  /// This is the primary method for validation when you want exceptions.
+  /// For error handling without exceptions, use [safeParse] instead.
+  ///
+  /// Example:
+  /// ```dart
+  /// final email = emailSchema.parse(input); // throws if invalid
+  /// ```
+  DartType? parse(Object? value, {String? debugName}) {
+    final result = safeParse(value, debugName: debugName);
+    return result.getOrThrow();
+  }
+
+  /// Parses and validates a value, returning a [SchemaResult].
+  ///
+  /// This method never throws exceptions. Instead, it returns a [SchemaResult]
+  /// which can be either [Ok] (success) or [Fail] (validation error).
+  ///
+  /// This is the primary method for validation when you want explicit error handling.
+  /// For throwing exceptions on error, use [parse] instead.
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = emailSchema.safeParse(input);
+  /// if (result.isOk) {
+  ///   final email = result.getOrNull();
+  /// } else {
+  ///   print('Error: ${result.getError()}');
+  /// }
+  /// ```
+  SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
     // Use provided debugName or derive from runtime type (e.g., "StringSchema" -> "string")
     final typeName = runtimeType
         .toString()
@@ -227,30 +258,6 @@ sealed class AckSchema<DartType extends Object> {
         SchemaContext(name: effectiveDebugName, schema: this, value: value);
 
     return parseAndValidate(value, context);
-  }
-
-  /// validateOrThrow is a convenience method that validates the value
-  /// and throws an exception if validation fails.
-  void validateOrThrow(Object? value, {String? debugName}) {
-    final result = validate(value, debugName: debugName);
-
-    result.getOrThrow();
-  }
-
-  DartType? parse(Object? value, {String? debugName}) {
-    final result = validate(value, debugName: debugName);
-
-    return result.getOrThrow();
-  }
-
-  DartType? tryParse(Object? value, {String? debugName}) {
-    final result = validate(value, debugName: debugName);
-
-    return result.getOrNull();
-  }
-
-  SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
-    return validate(value, debugName: debugName);
   }
 
   AckSchema<DartType> copyWith({
