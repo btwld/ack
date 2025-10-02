@@ -507,8 +507,9 @@ void main() {
         test('should generate correct JSON schema', () {
           final jsonSchema = vehicleSchema.toJsonSchema();
 
-          expect(jsonSchema['oneOf'], isNotNull);
-          expect((jsonSchema['oneOf'] as List).length, equals(2));
+          // Discriminated unions use anyOf (not oneOf) in JSON Schema
+          expect(jsonSchema['anyOf'], isNotNull);
+          expect((jsonSchema['anyOf'] as List).length, equals(2));
         });
       });
 
@@ -803,7 +804,12 @@ void main() {
         final nullableString = Ack.string().nullable();
         final jsonSchema = nullableString.toJsonSchema();
 
-        expect(jsonSchema['type'], equals(['string', 'null']));
+        // Nullable schemas use anyOf pattern with null type
+        expect(jsonSchema.containsKey('anyOf'), isTrue);
+        final anyOfList = jsonSchema['anyOf'] as List;
+        expect(anyOfList.length, equals(2));
+        final types = anyOfList.map((s) => (s as Map)['type']).toSet();
+        expect(types, containsAll(['string', 'null']));
       });
 
       test('should handle default values in JSON generation', () {

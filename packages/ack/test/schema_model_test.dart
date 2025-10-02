@@ -209,14 +209,14 @@ void main() {
         expect(jsonSchema['type'], equals('object'));
         expect(jsonSchema['required'], contains('id'));
         expect(jsonSchema['required'], contains('name'));
-        // Age is optional().nullable(), so type should be ['integer', 'null']
-        expect(
-          jsonSchema['properties']['age']['type'],
-          anyOf([
-            equals(['integer', 'null']),
-            equals(['null', 'integer']),
-          ]),
-        );
+        // Age is optional().nullable(), so it uses anyOf pattern with null
+        final ageSchema = jsonSchema['properties']['age'] as Map;
+        expect(ageSchema.containsKey('anyOf'), isTrue);
+        final anyOfList = ageSchema['anyOf'] as List;
+        expect(anyOfList.length, equals(2));
+        // Should have integer and null types
+        final types = anyOfList.map((s) => (s as Map)['type']).toSet();
+        expect(types, containsAll(['integer', 'null']));
       });
     });
 

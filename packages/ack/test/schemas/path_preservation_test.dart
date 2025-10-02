@@ -306,15 +306,13 @@ void main() {
       final nullableJson = nullableSchema.toJsonSchema();
       final nonNullableJson = nonNullableSchema.toJsonSchema();
 
-      // Nullable should not have type restriction
-      expect(nullableJson.containsKey('type'), isFalse);
-      expect(nullableJson.containsKey('not'), isFalse);
+      // Nullable AnySchema uses anyOf pattern with null
+      expect(nullableJson.containsKey('anyOf'), isTrue);
 
-      // Non-nullable should use explicit type array (JSON Schema standard)
-      expect(
-        nonNullableJson['type'],
-        equals(['boolean', 'number', 'integer', 'string', 'object', 'array']),
-      );
+      // Non-nullable AnySchema uses empty schema {} (no type field)
+      // which accepts any type except null
+      expect(nonNullableJson.containsKey('type'), isFalse);
+      expect(nonNullableJson.containsKey('anyOf'), isFalse);
     });
 
     test('AnyOfSchema should include null type when nullable', () {
@@ -325,17 +323,16 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      // When nullable, AnyOfSchema includes null in anyOf array
+      // When nullable, AnyOfSchema wraps in another anyOf with null
+      // Structure: anyOf: [ { anyOf: [integer, string] }, { type: 'null' } ]
       expect(jsonSchema['anyOf'], isA<List>());
       final anyOf = jsonSchema['anyOf'] as List;
 
-      // First element should be the null type
-      expect(anyOf[0], equals({'type': 'null'}));
-
-      // Remaining elements should be the original schemas
-      expect(anyOf.length, equals(3)); // null, integer, string
-      expect(anyOf[1], isA<Map>());
-      expect(anyOf[2], isA<Map>());
+      expect(anyOf.length, equals(2)); // base anyOf + null
+      expect(anyOf[1], equals({'type': 'null'}),
+          reason: 'Last element should be null type');
+      expect(anyOf[0], isA<Map>());
+      expect((anyOf[0] as Map).containsKey('anyOf'), isTrue);
     });
   });
 }

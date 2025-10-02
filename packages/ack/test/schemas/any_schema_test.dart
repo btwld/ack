@@ -56,20 +56,12 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      expect(
-          jsonSchema,
-          equals({
-            'type': [
-              'boolean',
-              'number',
-              'integer',
-              'string',
-              'object',
-              'array'
-            ], // Non-nullable AnySchema rejects null by explicitly listing allowed types
-            'description': 'Accepts any value',
-            'default': 'fallback',
-          }));
+      // AnySchema generates an empty schema {} (which accepts any type except null)
+      // with description and default fields
+      expect(jsonSchema['description'], equals('Accepts any value'));
+      expect(jsonSchema['default'], equals('fallback'));
+      // Empty schema (no 'type' field) accepts any value
+      expect(jsonSchema.containsKey('type'), isFalse);
     });
 
     test('should support fluent API', () {

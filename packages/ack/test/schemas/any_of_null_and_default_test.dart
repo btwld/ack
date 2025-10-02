@@ -164,9 +164,13 @@ void main() {
       expect(jsonSchema['anyOf'], isA<List>());
 
       final anyOfList = jsonSchema['anyOf'] as List;
-      expect(anyOfList[0], equals({'type': 'null'}),
-          reason: 'First element should be null type');
-      expect(anyOfList.length, equals(3)); // null, string, integer
+      // Nullable anyOf wraps the base anyOf in another anyOf with null
+      // Structure: anyOf: [ { anyOf: [string, integer] }, { type: 'null' } ]
+      expect(anyOfList.length, equals(2)); // base anyOf + null
+      expect(anyOfList[1], equals({'type': 'null'}),
+          reason: 'Last element should be null type');
+      expect(anyOfList[0], isA<Map>());
+      expect((anyOfList[0] as Map).containsKey('anyOf'), isTrue);
     });
 
     test('should not include null type when AnyOfSchema is not nullable', () {

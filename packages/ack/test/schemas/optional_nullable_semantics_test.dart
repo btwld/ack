@@ -197,16 +197,14 @@ void main() {
         final properties = jsonSchema['properties'] as Map<String, Object?>;
         final nicknameSchema = properties['nickname'] as Map<String, Object?>;
 
-        // Now it should include null
-        final nicknameType = nicknameSchema['type'];
-        expect(
-          nicknameType,
-          anyOf([
-            equals(['string', 'null']),
-            equals(['null', 'string']),
-          ]),
-          reason: 'Nullable optional field should include "null" in type array',
-        );
+        // Nullable fields use anyOf pattern with null type
+        expect(nicknameSchema.containsKey('anyOf'), isTrue,
+            reason: 'Nullable optional field should use anyOf pattern');
+        final anyOfList = nicknameSchema['anyOf'] as List;
+        expect(anyOfList.length, equals(2));
+        final types = anyOfList.map((s) => (s as Map)['type']).toSet();
+        expect(types, containsAll(['string', 'null']),
+            reason: 'Nullable optional field should include "null" in anyOf');
 
         // And it should NOT be in the required array
         final required = jsonSchema['required'] as List?;
