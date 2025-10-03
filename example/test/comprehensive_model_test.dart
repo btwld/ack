@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/product_model.dart';
-import 'package:ack_example/simple_examples.g.dart' as simple_gen;
-import 'package:ack_example/status_model.g.dart';
+import 'package:ack_example/simple_examples.dart' as simple;
+import 'package:ack_example/status_model.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -17,8 +17,7 @@ void main() {
           'language': 'en',
         };
 
-        final user =
-            simple_gen.userSchema.parse(userData) as Map<String, dynamic>;
+        final user = simple.userSchema.parse(userData) as Map<String, dynamic>;
         expect(user['id'], equals('user_1'));
         // In schema-only mode (model: false), additional properties stay at top level
         expect(user['theme'], equals('dark'));
@@ -44,10 +43,8 @@ void main() {
       });
     });
 
-    group('SchemaModel approach (model: true)', () {
-      test('Product with SchemaModel - type safety', () {
-        final model = ProductSchemaModel();
-
+    group('Schema validation with nested models', () {
+      test('Product schema with nested category', () {
         final data = {
           'id': 'prod_123',
           'name': 'Laptop Pro',
@@ -66,21 +63,15 @@ void main() {
           'manufacturer': 'TechCorp',
         };
 
-        final result = model.parse(data);
-        expect(result.isOk, isTrue);
-
-        final product = model.value!;
-        // Type-safe access
-        expect(product.id, equals('prod_123'));
-        expect(product.price, equals(1299.99));
-        expect(product.category.name, equals('Electronics'));
-        expect(product.metadata['warranty'], equals('2 years'));
-        expect(product.metadata['manufacturer'], equals('TechCorp'));
+        final result = productSchema.parse(data) as Map<String, dynamic>;
+        expect(result['id'], equals('prod_123'));
+        expect(result['price'], equals(1299.99));
+        expect(result['category']['name'], equals('Electronics'));
+        expect(result['warranty'], equals('2 years'));
+        expect(result['manufacturer'], equals('TechCorp'));
       });
 
-      test('Category with SchemaModel - nested usage', () {
-        final model = CategorySchemaModel();
-
+      test('Category schema with additional properties', () {
         final data = {
           'id': 'cat_books',
           'name': 'Books',
@@ -89,23 +80,19 @@ void main() {
           'sortOrder': 1,
         };
 
-        final result = model.parse(data);
-        expect(result.isOk, isTrue);
-
-        final category = model.value!;
-        expect(category.id, equals('cat_books'));
-        expect(category.metadata['parentCategory'], equals('media'));
-        expect(category.metadata['sortOrder'], equals(1));
+        final result = categorySchema.parse(data) as Map<String, dynamic>;
+        expect(result['id'], equals('cat_books'));
+        expect(result['parentCategory'], equals('media'));
+        expect(result['sortOrder'], equals(1));
       });
     });
 
-    group('Mixed usage patterns', () {
-      test('can use both approaches in same codebase', () {
-        // Schema variable approach for simple validation
+    group('Schema usage patterns', () {
+      test('schema validation with valid data', () {
         final schemaResult = productSchema.parse({
           'id': 'test_1',
           'name': 'Test Product',
-          'description': 'Testing mixed approach',
+          'description': 'Testing schema approach',
           'price': 99.99,
           'category': {'id': 'cat_1', 'name': 'Test'},
           'releaseDate': '2024-01-01',
@@ -116,14 +103,9 @@ void main() {
         });
 
         expect(schemaResult, isA<Map<String, dynamic>>());
-
-        // SchemaModel approach for type-safe object creation
-        final model = ProductSchemaModel();
-        final modelResult = model.parseJson(
-            '{"id":"test_2","name":"Another Test","description":"Type safe test","price":149.99,"category":{"id":"cat_2","name":"Test2"},"releaseDate":"2024-01-01","createdAt":"2024-01-01T00:00:00Z","stockQuantity":5,"status":"published","productCode":"TST-0002"}');
-
-        expect(modelResult.isOk, isTrue);
-        expect(model.value, isA<Product>());
+        final result = schemaResult as Map<String, dynamic>;
+        expect(result['id'], equals('test_1'));
+        expect(result['price'], equals(99.99));
       });
     });
 
@@ -145,8 +127,6 @@ void main() {
       });
 
       test('additional properties handling', () {
-        final model = ProductSchemaModel();
-
         final dataWithExtras = _createProductData()
           ..addAll({
             'customField1': 'value1',
@@ -154,13 +134,10 @@ void main() {
             'customField3': {'nested': 'data'},
           });
 
-        final result = model.parse(dataWithExtras);
-        expect(result.isOk, isTrue);
-
-        final product = model.value!;
-        expect(product.metadata['customField1'], equals('value1'));
-        expect(product.metadata['customField2'], equals(123));
-        expect(product.metadata['customField3'], equals({'nested': 'data'}));
+        final result = productSchema.parse(dataWithExtras) as Map<String, dynamic>;
+        expect(result['customField1'], equals('value1'));
+        expect(result['customField2'], equals(123));
+        expect(result['customField3'], equals({'nested': 'data'}));
       });
 
       test('nullable fields handling', () {
@@ -177,18 +154,10 @@ void main() {
           'productCode': 'MIN-0001',
         };
 
-        // Both approaches should handle nullable fields
-        final schemaResult = productSchema.parse(minimalData);
-        expect(schemaResult!['contactEmail'], isNull);
+        final schemaResult = productSchema.parse(minimalData) as Map<String, dynamic>;
+        expect(schemaResult['contactEmail'], isNull);
         expect(schemaResult['imageUrl'], isNull);
         expect(schemaResult['updatedAt'], isNull);
-
-        final model = ProductSchemaModel();
-        final modelResult = model.parse(minimalData);
-        expect(modelResult.isOk, isTrue);
-        expect(model.value!.contactEmail, isNull);
-        expect(model.value!.imageUrl, isNull);
-        expect(model.value!.updatedAt, isNull);
       });
     });
 

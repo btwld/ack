@@ -67,7 +67,7 @@ void main() {
       expect(() => productSchema.parse(invalidData), throwsException);
     });
 
-    test('SchemaModel should validate and transform data', () {
+    test('Schema should validate and transform data', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
@@ -99,7 +99,7 @@ void main() {
       expect(result['category'], isA<Map<String, dynamic>>());
     });
 
-    test('Using direct constructor instead of SchemaModel.get', () {
+    test('Using schema variable directly', () {
       final productData = {
         'id': '456',
         'name': 'Test Transform',
