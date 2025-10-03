@@ -49,13 +49,14 @@ Ack.string().notEmpty()
 ```
 
 ### `matches(String pattern, {String? example})`
-Ensures the string fully matches the given regular expression `pattern`. The pattern is automatically anchored with `^` and `$` if not already present.
+Ensures the string matches the given regular expression `pattern`. Add anchors (`^`, `$`) to the pattern when you want to match the entire string.
 ```dart
 // Simple alphanumeric pattern
-Ack.string().matches(r'[a-zA-Z0-9]+')
+Ack.string().matches(r'^[a-zA-Z0-9]+$')
 
 // UUID pattern
-Ack.string().matches(r'[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}')
+Ack.string()
+    .matches(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$')
 ```
 
 ### `contains(String pattern, {String? example})`
@@ -148,7 +149,7 @@ Ack.double().max(100.0) // <= 100.0
 Ensures the number is a multiple of the `factor`.
 ```dart
 Ack.integer().multipleOf(5) // Must be divisible by 5
-Ack.double().multipleOf(0.01) // Allows up to 2 decimal places
+Ack.double().multipleOf(0.5) // Use factors that avoid floating point rounding issues
 ```
 
 ### `positive()`

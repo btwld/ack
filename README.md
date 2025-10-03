@@ -45,7 +45,7 @@ final userSchema = Ack.object({
 });
 
 // Validate data against the schema
-final result = userSchema.validate({
+final result = userSchema.safeParse({
   'name': 'John Doe',
   'email': 'john@example.com',
   'age': 30
@@ -98,7 +98,7 @@ final orderSchema = Ack.object({
 );
 
 // Validate complex data
-final result = orderSchema.validate(orderData);
+final result = orderSchema.safeParse(orderData);
 if (result.isOk) {
   final validOrder = result.getOrThrow();
   print('Valid order: ${validOrder['id']}');

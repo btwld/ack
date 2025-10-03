@@ -1,3 +1,4 @@
+import '../../constraints/constraint.dart';
 import '../../schemas/schema.dart';
 
 /// Core extensions for all AckSchema types.
@@ -27,6 +28,25 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
     return copyWith(isOptional: value);
   }
 
+  /// Adds a raw [constraint] to the schema. This is useful for composing
+  /// declarative constraints in addition to the built-in helpers.
+  AckSchema<T> constrain(
+    Constraint<T> constraint, {
+    String? message,
+  }) {
+    if (constraint is! Validator<T>) {
+      throw ArgumentError(
+        'Constraint ${constraint.runtimeType} must implement Validator<T>.',
+      );
+    }
+
+    final effectiveConstraint = message == null
+        ? constraint
+        : _ConstraintMessageOverride<T>(constraint, message);
+
+    return copyWith(constraints: [...constraints, effectiveConstraint]);
+  }
+
   /// Transforms the validated value using the provided transformer function.
   ///
   /// The transformer is applied after all validations pass.
@@ -35,5 +55,38 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
     R Function(T? value) transformer,
   ) {
     return TransformedSchema(this, transformer);
+  }
+}
+
+class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
+  _ConstraintMessageOverride(this.inner, this.customMessage)
+      : super(
+          constraintKey: inner.constraintKey,
+          description: inner.description,
+        );
+
+  final Constraint<T> inner;
+  final String customMessage;
+
+  Validator<T> get _validator => inner as Validator<T>;
+
+  @override
+  bool isValid(T value) => _validator.isValid(value);
+
+  @override
+  String buildMessage(T value) => customMessage;
+
+  @override
+  Map<String, Object?> buildContext(T value) {
+    return _validator.buildContext(value);
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    if (inner is JsonSchemaSpec<T>) {
+      return (inner as JsonSchemaSpec<T>).toJsonSchema();
+    }
+    return const {};
   }
 }

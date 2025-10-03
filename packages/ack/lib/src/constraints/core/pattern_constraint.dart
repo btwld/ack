@@ -155,6 +155,17 @@ class PatternConstraint extends Constraint<String>
         customMessageBuilder: (v) => '"$v" does not end with "$suffix".',
       );
 
+  static PatternConstraint contains(String pattern, {String? example}) =>
+      PatternConstraint(
+        type: PatternType.regex,
+        pattern: RegExp(pattern),
+        constraintKey: 'string_contains',
+        description: 'Must contain pattern "$pattern".',
+        example: example,
+        customMessageBuilder: (v) =>
+            'Value "$v" must contain pattern "$pattern".',
+      );
+
   static PatternConstraint dateTimeIso8601() => PatternConstraint(
         type: PatternType.format,
         // RFC 3339 / ISO-8601 validation using Dart's built-in DateTime parser
@@ -198,6 +209,30 @@ class PatternConstraint extends Constraint<String>
         example: '2023-10-27',
         customMessageBuilder: (v) =>
             'Invalid ISO 8601 date format (YYYY-MM-DD), got "$v".',
+      );
+
+  static PatternConstraint time() => PatternConstraint(
+        type: PatternType.format,
+        formatValidator: (value) {
+          final match = RegExp(r'^\d{2}:\d{2}:\d{2}$').firstMatch(value);
+          if (match == null) return false;
+          final parts = value.split(':').map(int.parse).toList();
+          if (parts.length != 3) return false;
+          final hours = parts[0];
+          final minutes = parts[1];
+          final seconds = parts[2];
+          return hours >= 0 &&
+              hours < 24 &&
+              minutes >= 0 &&
+              minutes < 60 &&
+              seconds >= 0 &&
+              seconds < 60;
+        },
+        constraintKey: 'string_format_time',
+        description: 'Must be a valid time in HH:MM:SS format.',
+        example: '23:59:59',
+        customMessageBuilder: (value) =>
+            'Invalid time format (HH:MM:SS), got "$value".',
       );
 
   static PatternConstraint jsonString() => PatternConstraint(

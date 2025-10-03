@@ -8,14 +8,14 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 - **Simplify Validation**: Easily handle complex data validation logic.
 - **Ensure Data Integrity**: Guarantee data consistency from external sources (APIs, user input).
 - **Single Source of Truth**: Define data structures and rules in one place.
-- **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion.
+- **Reduce Boilerplate**: Minimize repetitive validation code.
 
 ## What Ack Does
 
-- Ensures data conforms to your defined schemas
-- Facilitates seamless conversion between JSON and Dart models
-- Generates JSON Schema specifications from your schemas
-- Delivers detailed and easy-to-understand validation error messages
+- Validates data against defined schemas
+- Provides detailed error messages for validation failures
+- Generates JSON Schema specifications
+- Works seamlessly with JSON data from APIs
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ final dataToValidate = {
 };
 
 // Perform the validation against the schema.
-final result = userSchema.validate(dataToValidate);
+final result = userSchema.safeParse(dataToValidate);
 
 // Check the validation outcome.
 if (result.isOk) {
@@ -65,18 +65,27 @@ Ack provides a comprehensive set of features for data validation and transformat
 
 - **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
 - **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
-- **[Schema Validation](/core-concepts/typesafe-schemas)**: Comprehensive schema validation with fluent API
 - **[Error Handling](/core-concepts/error-handling)**: Get detailed, structured error messages for validation failures
 - **[JSON Serialization](/core-concepts/json-serialization)**: Convert between JSON and typed models
+- **[Schema Validation](/core-concepts/typesafe-schemas)**: Comprehensive schema validation with fluent API
 
-### Advanced Schema Validation
+## Next Steps
 
-Create complex validation schemas with the fluent API:
+Ready to dive deeper? Start with the [Quickstart Tutorial](/getting-started/quickstart-tutorial) for a step-by-step guide, or explore specific topics:
+
+- [Schema Types](/core-concepts/schemas) - Learn about all available schema types
+- [Validation Rules](/core-concepts/validation) - Master validation constraints
+- [Error Handling](/core-concepts/error-handling) - Handle validation errors effectively
+- [Flutter Integration](/guides/flutter-form-validation) - Validate Flutter forms
+
+## Advanced Features
+
+### Nested Objects and Lists
+
+Validate complex nested data structures:
 
 ```dart
-import 'package:ack/ack.dart';
-
-// Complex nested validation
+// Nested object validation
 final orderSchema = Ack.object({
   'id': Ack.string().uuid(),
   'customer': Ack.object({
@@ -89,7 +98,15 @@ final orderSchema = Ack.object({
     'price': Ack.double().positive(),
   })).minLength(1),
   'total': Ack.double().positive(),
-}).refine(
+});
+```
+
+### Custom Validation with Refine
+
+Add custom validation logic beyond built-in constraints:
+
+```dart
+final validatedOrder = orderSchema.refine(
   (order) {
     // Custom validation: total should match sum of items
     final items = order['items'] as List;
@@ -104,29 +121,20 @@ final orderSchema = Ack.object({
   },
   message: 'Total must match sum of item prices',
 );
-
-// Validate complex data
-final result = orderSchema.validate(orderData);
-if (result.isOk) {
-  final validOrder = result.getOrThrow();
-  print('Valid order: ${validOrder['id']}');
-} else {
-  print('Validation failed: ${result.getError()}');
-}
 ```
 
-### Schema Features
+### Union Types and Discriminated Unions
 
-**1. Union Types and Discriminated Unions**
+Handle polymorphic data with union types:
 
 ```dart
-// Union type - value can be string or number
+// Simple union - value can be string or number
 final stringOrNumber = Ack.anyOf([
-  Ack.string(),
+  Ack.string().strictParsing(),
   Ack.integer(),
 ]);
 
-// Discriminated union for polymorphic data
+// Discriminated union for type-safe polymorphism
 final shapeSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {
@@ -143,17 +151,13 @@ final shapeSchema = Ack.discriminated(
 );
 ```
 
-**2. Flexible Data Handling**
+### Data Transformation
+
+Transform validated data into a different shape:
 
 ```dart
-// Accept any data for gradual migration
-final flexibleSchema = Ack.object({
-  'id': Ack.string(),
-  'data': Ack.any(), // Accept anything
-});
-
-// Transform data after validation
-final processedSchema = Ack.object({
+// Calculate age from birth year
+final personSchema = Ack.object({
   'name': Ack.string(),
   'birthYear': Ack.integer(),
 }).transform((data) {
@@ -162,20 +166,12 @@ final processedSchema = Ack.object({
 });
 ```
 
-**3. JSON Schema Generation**
+### JSON Schema Generation
+
+Generate JSON Schema specifications for API documentation:
 
 ```dart
 // Generate JSON Schema for documentation
 final jsonSchema = orderSchema.toJsonSchema();
 print(jsonEncode(jsonSchema)); // Use in API docs, OpenAPI specs, etc.
-```
-
-### Error Handling
-
-```dart
-if (result.isFail) {
-  // Get formatted error message (or the full error object)
-  final error = result.getError();
-  print('${error.name}: $error'); // Full error details
-}
 ```

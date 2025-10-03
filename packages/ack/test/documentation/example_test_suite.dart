@@ -77,14 +77,24 @@ void main() {
     });
 
     group('Manual Schema Examples', () {
-      test('basic validation examples should work', () {
-        // This test validates that the manual schema examples from the docs work
-        // We'll create some basic examples here to ensure the API works as documented
+      test('migration guide classes are present without deprecated parameters',
+          () async {
+        final productModelFile = File('../../example/lib/product_model.dart');
+        expect(productModelFile.existsSync(), isTrue);
+        final content = await productModelFile.readAsString();
 
-        // Note: We can't import from the example package directly due to dependency issues,
-        // so we'll create equivalent examples here
+        expect(content, contains('@AckModel()'));
+        expect(content, isNot(contains('@AckModel(model: true)')));
+        expect(content, contains('part \'product_model.g.dart\';'));
+      });
 
-        expect(true, isTrue, reason: 'Manual schema examples placeholder');
+      test('generated schema matches migration examples', () async {
+        final generatedFile = File('../../example/lib/product_model.g.dart');
+        expect(generatedFile.existsSync(), isTrue);
+        final content = await generatedFile.readAsString();
+
+        expect(content, contains('final productSchema = Ack.object'));
+        expect(content, contains("'name': Ack.string()"));
       });
     });
 

@@ -59,13 +59,13 @@ Make sure you have [installed Ack](./installation.mdx) in your Dart or Flutter p
     ```
 
 4.  **Validate Data:**
-    Use the `validate()` method of your schema to check the data. This returns a `SchemaResult` object.
+    Use the `safeParse()` method of your schema to check the data. This returns a `SchemaResult` object.
 
     ```dart
-    final result1 = userSchema.validate(validData);
-    final result2 = userSchema.validate(validDataNoAge);
-    final result3 = userSchema.validate(invalidDataShortName);
-    final result4 = userSchema.validate(invalidDataMissingName);
+    final result1 = userSchema.safeParse(validData);
+    final result2 = userSchema.safeParse(validDataNoAge);
+    final result3 = userSchema.safeParse(invalidDataShortName);
+    final result4 = userSchema.safeParse(invalidDataMissingName);
     ```
 
 5.  **Handle the Result:**
@@ -121,10 +121,10 @@ void main() {
   final invalidDataMissingName = {'age': 40};
 
   // Validate Data
-  final result1 = userSchema.validate(validData);
-  final result2 = userSchema.validate(validDataNoAge);
-  final result3 = userSchema.validate(invalidDataShortName);
-  final result4 = userSchema.validate(invalidDataMissingName);
+  final result1 = userSchema.safeParse(validData);
+  final result2 = userSchema.safeParse(validDataNoAge);
+  final result3 = userSchema.safeParse(invalidDataShortName);
+  final result4 = userSchema.safeParse(invalidDataMissingName);
 
   // Handle Results
   checkResult(result1, validData);

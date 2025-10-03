@@ -159,4 +159,28 @@ void main() {
       });
     });
   });
+
+  group('Backward compatibility helpers', () {
+    test('validate delegates to safeParse', () {
+      final schema = Ack.integer();
+
+      // ignore: deprecated_member_use
+      final okResult = schema.validate(123);
+      expect(okResult.isOk, isTrue);
+
+      // ignore: deprecated_member_use
+      final failResult = schema.validate('oops');
+      expect(failResult.isFail, isTrue);
+    });
+
+    test('tryParse returns null on failure', () {
+      final schema = Ack.integer();
+
+      // ignore: deprecated_member_use
+      expect(schema.tryParse(42), equals(42));
+
+      // ignore: deprecated_member_use
+      expect(schema.tryParse('bad'), isNull);
+    });
+  });
 }

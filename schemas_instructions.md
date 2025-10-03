@@ -47,8 +47,8 @@ final quantitySchema = Ack.integer()
     .withDefault(1);
 
 quantitySchema.validateOrThrow(5);      // passes
-quantitySchema.validate('3');           // Ok(3) via lenient parsing
-Ack.integer(strictPrimitiveParsing: true).validate('3'); // Fails
+quantitySchema.safeParse('3');           // Ok(3) via lenient parsing
+Ack.integer(strictPrimitiveParsing: true).safeParse('3'); // Fails
 ```
 
 When `strictPrimitiveParsing` is `true`, only integers are accepted—strings and doubles become validation failures.
@@ -62,7 +62,7 @@ final priceSchema = Ack.double()
         message: 'Prices must align with 5¢ increments.');
 
 priceSchema.safeParse(19.95);           // Ok(19.95)
-Ack.double(strictPrimitiveParsing: true).validate(10); // Fails (int cannot be coerced)
+Ack.double(strictPrimitiveParsing: true).safeParse(10); // Fails (int cannot be coerced)
 ```
 
 ### BooleanSchema
@@ -71,8 +71,8 @@ Ack.double(strictPrimitiveParsing: true).validate(10); // Fails (int cannot be c
 final enabledSchema = Ack.boolean().withDefault(false);
 
 enabledSchema.parseOrThrow(true);       // returns true
-Ack.boolean().validate('true');          // Ok(true) when strict parsing is off
-Ack.boolean().strictParsing().validate('true'); // Fails
+Ack.boolean().safeParse('true');          // Ok(true) when strict parsing is off
+Ack.boolean().strictParsing().safeParse('true'); // Fails
 ```
 
 ### AnySchema
@@ -120,7 +120,7 @@ final ok = userSchema.safeParse({
 final fail = userSchema.safeParse({'email': 'missing id'});
 ```
 
-Use `.optional()` to mark a property as omit-able. `.nullable()` allows `null` values but still requires the field to exist. Set `additionalProperties: true` when you want to forward unknown keys; `SchemaModel.extractAdditionalProperties` uses that flag for metadata maps.
+Use `.optional()` to mark a property as omit-able. `.nullable()` allows `null` values but still requires the field to exist. Set `additionalProperties: true` when you want to forward unknown keys in your schema validation.
 
 ### Optional vs Nullable
 
@@ -226,10 +226,6 @@ Every schema exposes `toJsonSchema()` for tooling interoperability:
 final jsonSchema = userSchema.toJsonSchema();
 print(jsonSchema['type']); // object
 ```
-
-### SchemaModel Integration
-
-When using code generation (`model: true` on `@AckModel`), Ack produces both schema variables and strongly typed `SchemaModel` classes. These expose the same schema API (`parse`, `safeParse`, `toJsonSchema`) but also construct domain objects via `createFromMap`.
 
 ---
 

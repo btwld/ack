@@ -43,7 +43,6 @@ dev_dependencies:
 
 **Features:**
 - Automatic schema generation from annotated classes
-- Type-safe model creation with `SchemaModel` classes
 - Support for complex types including discriminated unions
 - Comprehensive error handling with detailed messages
 
@@ -60,7 +59,7 @@ import 'package:ack/ack.dart';
 final nameSchema = Ack.string().minLength(3);
 
 // 2. Validate some data against the schema
-final result = nameSchema.validate('John');
+final result = nameSchema.safeParse('John');
 
 // 3. Check the result
 if (result.isOk) {

@@ -260,6 +260,18 @@ sealed class AckSchema<DartType extends Object> {
     return parseAndValidate(value, context);
   }
 
+  /// Legacy alias for [safeParse].
+  @Deprecated('Use safeParse(...) instead.')
+  SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
+      safeParse(value, debugName: debugName);
+
+  /// Legacy helper that returns the parsed value or `null` when validation fails.
+  @Deprecated('Use safeParse(...).getOrNull() instead.')
+  DartType? tryParse(Object? value, {String? debugName}) {
+    final result = safeParse(value, debugName: debugName);
+    return result.getOrNull();
+  }
+
   AckSchema<DartType> copyWith({
     bool? isNullable,
     bool? isOptional,

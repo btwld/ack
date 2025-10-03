@@ -3,6 +3,7 @@ import '../../constraints/core/ip_constraint.dart';
 import '../../constraints/core/pattern_constraint.dart';
 import '../../constraints/string/literal_constraint.dart';
 import '../schema.dart';
+import 'ack_schema_extensions.dart';
 
 /// Adds fluent validation methods to [StringSchema].
 extension StringSchemaExtensions on StringSchema {
@@ -21,6 +22,11 @@ extension StringSchemaExtensions on StringSchema {
     return withConstraint(ComparisonConstraint.stringExactLength(n));
   }
 
+  /// Adds a constraint that the string must not be empty.
+  StringSchema notEmpty() {
+    return minLength(1);
+  }
+
   /// Adds a constraint that the string must be a valid email address.
   StringSchema email() {
     return withConstraint(PatternConstraint.email());
@@ -37,13 +43,41 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must match the given regex pattern.
-  StringSchema matches(String pattern, {String? example}) {
-    return withConstraint(PatternConstraint.regex(pattern, example: example));
+  /// Patterns are automatically anchored so the entire value must match.
+  StringSchema matches(
+    String pattern, {
+    String? example,
+    String? message,
+  }) {
+    final constraint = PatternConstraint.regex(
+      pattern,
+      example: example,
+    );
+
+    return this.constrain(constraint, message: message) as StringSchema;
+  }
+
+  /// Adds a constraint that the string must contain the given [pattern] somewhere.
+  StringSchema contains(String pattern, {String? example, String? message}) {
+    return this.constrain(
+      PatternConstraint.contains(pattern, example: example),
+      message: message,
+    ) as StringSchema;
   }
 
   /// Adds a constraint that the string must be a valid ISO 8601 date-time.
   StringSchema datetime() {
     return withConstraint(PatternConstraint.dateTimeIso8601());
+  }
+
+  /// Adds a constraint that the string must be a valid ISO 8601 date (YYYY-MM-DD).
+  StringSchema date() {
+    return withConstraint(PatternConstraint.dateIso8601());
+  }
+
+  /// Adds a constraint that the string must be a valid time (HH:MM:SS).
+  StringSchema time() {
+    return withConstraint(PatternConstraint.time());
   }
 
   /// Adds a constraint that the string must start with [value].
@@ -56,11 +90,22 @@ extension StringSchemaExtensions on StringSchema {
     return withConstraint(PatternConstraint.endsWith(value));
   }
 
+  /// Adds a constraint that the string must be a valid URI.
+  StringSchema uri() {
+    return withConstraint(PatternConstraint.uri());
+  }
+
   /// Adds a constraint that the string must be a valid IP address.
   /// If [version] is provided, it must be 4 or 6.
   StringSchema ip({int? version}) {
     return withConstraint(IpConstraint(version: version));
   }
+
+  /// Adds a constraint that the string must be a valid IPv4 address.
+  StringSchema ipv4() => ip(version: 4);
+
+  /// Adds a constraint that the string must be a valid IPv6 address.
+  StringSchema ipv6() => ip(version: 6);
 
   /// Adds a constraint that the string must be one of the allowed values.
   StringSchema enumString(List<String> allowedValues) {
