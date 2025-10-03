@@ -101,7 +101,7 @@ class StringSchema {}
               'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(model: true)
+@AckModel()
 class TestModel {
   final String name;
   TestModel({required this.name});

@@ -4,13 +4,13 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'discriminated_example.g.dart';
 
 // Base discriminated class for animals
-@AckModel(discriminatedKey: 'type', model: true)
+@AckModel(discriminatedKey: 'type')
 abstract class Animal {
   String get type;
 }
 
 // Concrete implementations with discriminator values
-@AckModel(discriminatedValue: 'cat', model: true)
+@AckModel(discriminatedValue: 'cat')
 class Cat extends Animal {
   @override
   String get type => 'cat';
@@ -24,7 +24,7 @@ class Cat extends Animal {
   });
 }
 
-@AckModel(discriminatedValue: 'dog', model: true)
+@AckModel(discriminatedValue: 'dog')
 class Dog extends Animal {
   @override
   String get type => 'dog';
@@ -38,7 +38,7 @@ class Dog extends Animal {
   });
 }
 
-@AckModel(discriminatedValue: 'bird', model: true)
+@AckModel(discriminatedValue: 'bird')
 class Bird extends Animal {
   @override
   String get type => 'bird';
@@ -53,13 +53,13 @@ class Bird extends Animal {
 }
 
 // Another discriminated hierarchy for shapes
-@AckModel(discriminatedKey: 'kind', model: true)
+@AckModel(discriminatedKey: 'kind')
 abstract class Shape {
   String get kind;
   double get area;
 }
 
-@AckModel(discriminatedValue: 'circle', model: true)
+@AckModel(discriminatedValue: 'circle')
 class Circle extends Shape {
   @override
   String get kind => 'circle';
@@ -72,7 +72,7 @@ class Circle extends Shape {
   double get area => 3.14159 * radius * radius;
 }
 
-@AckModel(discriminatedValue: 'rectangle', model: true)
+@AckModel(discriminatedValue: 'rectangle')
 class Rectangle extends Shape {
   @override
   String get kind => 'rectangle';

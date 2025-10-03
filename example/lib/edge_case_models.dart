@@ -36,7 +36,7 @@ part 'edge_case_models.g.dart';
 // }
 
 // Test very large number of fields (performance) - THIS WORKS
-@AckModel(model: true)
+@AckModel()
 class LargeFieldModel {
   final String field1;
   final String field2;
@@ -84,7 +84,7 @@ class LargeFieldModel {
 }
 
 // Test special characters in field names - THIS WORKS
-@AckModel(model: true)
+@AckModel()
 class SpecialFieldsModel {
   @AckField(jsonKey: 'user-id')
   final String userId;

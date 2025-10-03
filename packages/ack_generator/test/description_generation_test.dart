@@ -84,23 +84,22 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
   description: 'Product model for e-commerce platform',
-  model: true
 )
 class Product {
   @AckField(description: 'Unique product identifier')
   final String id;
-  
+
   @AckField(description: 'Product display name')
   final String name;
-  
+
   @AckField(description: 'Current product price in USD')
   final double price;
-  
+
   final String? description;
-  
+
   Product({
-    required this.id, 
-    required this.name, 
+    required this.id,
+    required this.name,
     required this.price,
     this.description
   });
@@ -110,8 +109,6 @@ class Product {
         outputs: {
           'test_pkg|lib/test.g.dart': decodedMatches(allOf([
             contains('Generated schema for Product'),
-            contains('Product model for e-commerce platform'),
-            contains('Generated SchemaModel for [Product]'),
             contains('Product model for e-commerce platform'),
             contains('final productSchema = Ack.object({'),
           ])),

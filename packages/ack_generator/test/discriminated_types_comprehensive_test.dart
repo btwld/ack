@@ -21,12 +21,12 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'animals.g.dart';
 
-@AckModel(discriminatedKey: 'type', model: true)
+@AckModel(discriminatedKey: 'type')
 abstract class Animal {
   String get type;
 }
 
-@AckModel(discriminatedValue: 'cat', model: true)
+@AckModel(discriminatedValue: 'cat')
 class Cat extends Animal {
   @override
   String get type => 'cat';
@@ -37,7 +37,7 @@ class Cat extends Animal {
   Cat({required this.meow, this.lives = 9});
 }
 
-@AckModel(discriminatedValue: 'dog', model: true)
+@AckModel(discriminatedValue: 'dog')
 class Dog extends Animal {
   @override
   String get type => 'dog';
@@ -175,7 +175,7 @@ class Address {
   Address({required this.street, required this.city});
 }
 
-@AckModel(discriminatedKey: 'personType', model: true)
+@AckModel(discriminatedKey: 'personType')
 abstract class Person {
   String get personType;
   final String name;
@@ -183,7 +183,7 @@ abstract class Person {
   Person({required this.name, required this.address});
 }
 
-@AckModel(discriminatedValue: 'employee', model: true)
+@AckModel(discriminatedValue: 'employee')
 class Employee extends Person {
   @override
   String get personType => 'employee';
@@ -199,7 +199,7 @@ class Employee extends Person {
   });
 }
 
-@AckModel(discriminatedValue: 'customer', model: true)
+@AckModel(discriminatedValue: 'customer')
 class Customer extends Person {
   @override
   String get personType => 'customer';

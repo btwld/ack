@@ -34,17 +34,6 @@ class ModelAnalyzer {
             ? null
             : annotation.read('additionalPropertiesField').stringValue;
 
-    // Extract model flag (with fallback for backward compatibility)
-    bool model = false;
-    try {
-      model = annotation.read('model').isNull
-          ? false
-          : annotation.read('model').boolValue;
-    } catch (e) {
-      // Field doesn't exist in annotation, default to false
-      model = false;
-    }
-
     // Extract discriminated type parameters
     final discriminatedKey = annotation.read('discriminatedKey').isNull
         ? null
@@ -100,7 +89,6 @@ class ModelAnalyzer {
       requiredFields: requiredFields,
       additionalProperties: additionalProperties,
       additionalPropertiesField: additionalPropertiesField,
-      model: model,
       // New discriminated properties
       isDiscriminatedBase: discriminatedKey != null,
       isDiscriminatedSubtype: discriminatedValue != null,
@@ -282,7 +270,6 @@ class ModelAnalyzer {
         hasDiscriminator: baseClass.hasDiscriminator,
         additionalProperties: baseClass.additionalProperties,
         additionalPropertiesField: baseClass.additionalPropertiesField,
-        model: baseClass.model,
         isDiscriminatedBase: true,
         isDiscriminatedSubtype: false,
         discriminatorKey: discriminatorKey,
@@ -315,7 +302,6 @@ class ModelAnalyzer {
         hasDiscriminator: subtype.hasDiscriminator,
         additionalProperties: subtype.additionalProperties,
         additionalPropertiesField: subtype.additionalPropertiesField,
-        model: subtype.model,
         isDiscriminatedBase: false,
         isDiscriminatedSubtype: true,
         discriminatorKey:

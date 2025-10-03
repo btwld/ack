@@ -11,7 +11,6 @@ class ModelInfo {
   final bool hasDiscriminator;
   final bool additionalProperties;
   final String? additionalPropertiesField;
-  final bool model;
 
   // New discriminated type properties
   /// Whether this class is a discriminated base class (has discriminatedKey)
@@ -38,7 +37,6 @@ class ModelInfo {
     this.hasDiscriminator = false,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    this.model = false,
     // New discriminated parameters
     this.isDiscriminatedBase = false,
     this.isDiscriminatedSubtype = false,

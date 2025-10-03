@@ -20,7 +20,7 @@ void main() {
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
-  model: true,
+  
   schemaName: 'FlexibleUserSchema',
   description: 'A flexible user model with additional properties',
   additionalProperties: true,
@@ -71,7 +71,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
   discriminatedKey: 'type',
-  model: true,
+  
   description: 'Base notification class'
 )
 abstract class Notification {
@@ -82,7 +82,7 @@ abstract class Notification {
 
 @AckModel(
   discriminatedValue: 'email',
-  model: true,
+  
   description: 'Email notification'
 )
 class EmailNotification extends Notification {
@@ -99,7 +99,7 @@ class EmailNotification extends Notification {
 
 @AckModel(
   discriminatedValue: 'sms',
-  model: true,
+  
   description: 'SMS notification'
 )
 class SmsNotification extends Notification {
@@ -160,7 +160,7 @@ class SmsNotification extends Notification {
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
-  model: true,
+  
   additionalProperties: true,
   additionalPropertiesField: 'extras'
 )
@@ -208,7 +208,7 @@ class FieldWithAdditionalProps {
             'test_pkg|lib/nested_with_fields.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(model: true)
+@AckModel()
 class Address {
   @AckField(jsonKey: 'street_address')
   final String street;
@@ -226,7 +226,7 @@ class Address {
   });
 }
 
-@AckModel(model: true, description: 'User with address information')
+@AckModel( description: 'User with address information')
 class UserWithAddress {
   @AckField(jsonKey: 'full_name', constraints: ['notEmpty'])
   final String name;
@@ -355,7 +355,7 @@ enum UserRole { admin, user, guest }
 enum SubscriptionStatus { active, inactive, pending, cancelled }
 
 @AckModel(
-  model: true,
+  
   schemaName: 'ApiUserSchema',
   description: 'Complete user model for API responses',
   additionalProperties: true,

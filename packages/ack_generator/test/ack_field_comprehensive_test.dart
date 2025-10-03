@@ -228,7 +228,7 @@ class AllOptionsModel {
             'test_pkg|lib/field_with_model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(model: true)
+@AckModel()
 class FieldWithModelGeneration {
   @AckField(jsonKey: 'full_name', description: 'Complete name')
   final String name;

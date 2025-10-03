@@ -24,7 +24,6 @@ class NumericUserId extends UserId {
 /// Example 2: API Response that can return different types
 @AckModel(
   description: 'API response with different possible payloads',
-  model: true,
 )
 class ApiResponse {
   final String status;
@@ -48,7 +47,7 @@ final responseDataSchema = Ack.anyOf([
   listResponseSchema,
 ]);
 
-@AckModel(model: true)
+@AckModel()
 class UserResponse extends ResponseData {
   final String id;
   final String name;
@@ -61,7 +60,7 @@ class UserResponse extends ResponseData {
   });
 }
 
-@AckModel(model: true)
+@AckModel()
 class ErrorResponse extends ResponseData {
   final String code;
   final String message;
@@ -74,7 +73,7 @@ class ErrorResponse extends ResponseData {
   });
 }
 
-@AckModel(model: true)
+@AckModel()
 class ListResponse extends ResponseData {
   final List<String> items;
   final int total;
@@ -90,7 +89,6 @@ class ListResponse extends ResponseData {
 /// Example 3: Settings value that can be different types
 @AckModel(
   description: 'Configuration setting with flexible value type',
-  model: true,
 )
 class Setting {
   final String key;

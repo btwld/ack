@@ -72,12 +72,6 @@ class AckModel {
   /// Must be a `Map<String, dynamic>` field in your class
   final String? additionalPropertiesField;
 
-  /// Whether to generate a SchemaModel class in addition to the schema variable
-  /// When true, generates both:
-  /// - Schema variable (e.g., productSchema)
-  /// - SchemaModel class (e.g., ProductSchemaModel)
-  final bool model;
-
   /// Field name to use for discriminating between types in a polymorphic hierarchy.
   /// Use this on abstract/base classes to indicate which field contains the type discriminator.
   /// Example: @AckModel(discriminatedKey: 'type')
@@ -95,7 +89,6 @@ class AckModel {
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    this.model = false,
     this.discriminatedKey,
     this.discriminatedValue,
   }) : assert(

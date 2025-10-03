@@ -20,10 +20,9 @@ class BasicUser {
   });
 }
 
-/// Example 2: SchemaModel generation
+/// Example 2: Enhanced user with validation
 @AckModel(
-  description: 'Enhanced user with SchemaModel for type safety',
-  model: true,
+  description: 'Enhanced user with comprehensive validation',
 )
 class EnhancedUser {
   final String id;
@@ -58,10 +57,9 @@ class Order {
   });
 }
 
-/// Example 4: Complex nested model with SchemaModel
+/// Example 4: Complex nested model
 @AckModel(
   description: 'Blog post with author - demonstrates nested models',
-  model: true,
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
 )
@@ -88,7 +86,6 @@ class BlogPost {
 /// Example 5: Model with various constraints
 @AckModel(
   description: 'Product inventory with comprehensive constraints',
-  model: true,
 )
 class ProductInventory {
   @MinLength(3)
@@ -135,8 +132,8 @@ void main() {
     print('   ❌ Error: $e');
   }
 
-  // Example 2: SchemaModel with type safety
-  print('\n2️⃣ Enhanced User (with SchemaModel):');
+  // Example 2: Enhanced User validation
+  print('\n2️⃣ Enhanced User (schema validation):');
   final enhancedUserData = {
     'id': 'user_456',
     'username': 'janedoe',
@@ -144,15 +141,14 @@ void main() {
     'createdAt': '2024-01-15T10:30:00Z',
   };
 
-  final userModel = EnhancedUserSchemaModel();
-  final userResult = userModel.parse(enhancedUserData);
-
-  if (userResult.isOk) {
-    final user = userModel.value!;
-    print('   ✅ Type-safe access:');
-    print('      Username: ${user.username}');
-    print('      Email: ${user.email}');
-    print('      Created: ${user.createdAt}');
+  try {
+    final result = enhancedUserSchema.parse(enhancedUserData) as Map<String, dynamic>;
+    print('   ✅ Valid user:');
+    print('      Username: ${result['username']}');
+    print('      Email: ${result['email']}');
+    print('      Created: ${result['createdAt']}');
+  } catch (e) {
+    print('   ❌ Error: $e');
   }
 
   // Example 3: Enum validation
@@ -170,7 +166,7 @@ void main() {
     print('   ❌ Error: $e');
   }
 
-  // Example 4: Nested models with SchemaModel
+  // Example 4: Nested models validation
   print('\n4️⃣ Blog Post (nested models):');
   final blogData = {
     'id': 'post_001',
@@ -183,20 +179,18 @@ void main() {
     'featured': true,
   };
 
-  final blogModel = BlogPostSchemaModel();
-  final blogResult = blogModel.parse(blogData);
-
-  if (blogResult.isOk) {
-    final post = blogModel.value!;
-    print('   ✅ Blog post: ${post.title}');
-    print('      Author: ${post.author.username}');
-    print('      Tags: ${post.tags.join(', ')}');
-    print('      Metadata: ${post.metadata}');
+  try {
+    final result = blogPostSchema.parse(blogData) as Map<String, dynamic>;
+    print('   ✅ Blog post: ${result['title']}');
+    print('      Author: ${(result['author'] as Map<String, dynamic>)['username']}');
+    print('      Tags: ${(result['tags'] as List).join(', ')}');
+    print('      Metadata: ${result['metadata']}');
+  } catch (e) {
+    print('   ❌ Error: $e');
   }
 
   // Example 5: Constraints validation
   print('\n5️⃣ Product Inventory (constraints):');
-  final inventoryModel = ProductInventorySchemaModel();
 
   // Valid data
   final validInventory = {
@@ -207,9 +201,11 @@ void main() {
     'isAvailable': true,
   };
 
-  final invResult = inventoryModel.parse(validInventory);
-  if (invResult.isOk) {
-    print('   ✅ Valid inventory: SKU ${inventoryModel.value!.sku}');
+  try {
+    final result = productInventorySchema.parse(validInventory) as Map<String, dynamic>;
+    print('   ✅ Valid inventory: SKU ${result['sku']}');
+  } catch (e) {
+    print('   ❌ Error: $e');
   }
 
   // Invalid data
@@ -221,14 +217,14 @@ void main() {
     'isAvailable': true,
   };
 
-  final invalidResult = inventoryModel.parse(invalidInventory);
-  if (!invalidResult.isOk) {
+  try {
+    productInventorySchema.parse(invalidInventory);
+  } catch (e) {
     print('   ❌ Validation errors detected');
   }
 
   print('\n✨ Examples demonstrate:');
-  print('   - Schema-only for simple validation');
-  print('   - SchemaModel for type-safe object creation');
+  print('   - Schema validation');
   print('   - Enum validation');
   print('   - Nested model support');
   print('   - Constraint validation');

@@ -5,7 +5,9 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-part of 'product_model.dart';
+// // GENERATED CODE - DO NOT MODIFY BY HAND
+
+import 'package:ack/ack.dart';
 
 /// Generated schema for Product
 /// A product model with validation
@@ -32,117 +34,3 @@ final categorySchema = Ack.object({
   'name': Ack.string(),
   'description': Ack.string().optional().nullable(),
 }, additionalProperties: true);
-
-/// Generated SchemaModel for [Product].
-/// A product model with validation
-class ProductSchemaModel extends SchemaModel<Product> {
-  ProductSchemaModel._internal(ObjectSchema this.schema);
-
-  factory ProductSchemaModel() {
-    return ProductSchemaModel._internal(productSchema);
-  }
-
-  ProductSchemaModel._withSchema(ObjectSchema customSchema)
-      : schema = customSchema;
-
-  @override
-  final ObjectSchema schema;
-
-  @override
-  Product createFromMap(Map<String, dynamic> map) {
-    return Product(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      description: map['description'] as String,
-      price: map['price'] as double,
-      contactEmail: map['contactEmail'] as String?,
-      imageUrl: map['imageUrl'] as String?,
-      category: CategorySchemaModel().createFromMap(
-        map['category'] as Map<String, dynamic>,
-      ),
-      releaseDate: map['releaseDate'] as String,
-      createdAt: map['createdAt'] as String,
-      updatedAt: map['updatedAt'] as String?,
-      stockQuantity: map['stockQuantity'] as int,
-      status: map['status'] as String,
-      productCode: map['productCode'] as String,
-      metadata: extractAdditionalProperties(map, {
-        'id',
-        'name',
-        'description',
-        'price',
-        'contactEmail',
-        'imageUrl',
-        'category',
-        'releaseDate',
-        'createdAt',
-        'updatedAt',
-        'stockQuantity',
-        'status',
-        'productCode',
-      }),
-    );
-  }
-
-  /// Returns a new schema with the specified description.
-  ProductSchemaModel describe(String description) {
-    final newSchema = schema.copyWith(description: description);
-    return ProductSchemaModel._withSchema(newSchema);
-  }
-
-  /// Returns a new schema with the specified default value.
-  ProductSchemaModel withDefault(Map<String, dynamic> defaultValue) {
-    final newSchema = schema.copyWith(defaultValue: defaultValue);
-    return ProductSchemaModel._withSchema(newSchema);
-  }
-
-  /// Returns a new schema with nullable flag set to the specified value.
-  ProductSchemaModel nullable([bool value = true]) {
-    final newSchema = schema.copyWith(isNullable: value);
-    return ProductSchemaModel._withSchema(newSchema);
-  }
-}
-
-/// Generated SchemaModel for [Category].
-/// A category for organizing products
-class CategorySchemaModel extends SchemaModel<Category> {
-  CategorySchemaModel._internal(ObjectSchema this.schema);
-
-  factory CategorySchemaModel() {
-    return CategorySchemaModel._internal(categorySchema);
-  }
-
-  CategorySchemaModel._withSchema(ObjectSchema customSchema)
-      : schema = customSchema;
-
-  @override
-  final ObjectSchema schema;
-
-  @override
-  Category createFromMap(Map<String, dynamic> map) {
-    return Category(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      description: map['description'] as String?,
-      metadata: extractAdditionalProperties(map, {'id', 'name', 'description'}),
-    );
-  }
-
-  /// Returns a new schema with the specified description.
-  CategorySchemaModel describe(String description) {
-    final newSchema = schema.copyWith(description: description);
-    return CategorySchemaModel._withSchema(newSchema);
-  }
-
-  /// Returns a new schema with the specified default value.
-  CategorySchemaModel withDefault(Map<String, dynamic> defaultValue) {
-    final newSchema = schema.copyWith(defaultValue: defaultValue);
-    return CategorySchemaModel._withSchema(newSchema);
-  }
-
-  /// Returns a new schema with nullable flag set to the specified value.
-  CategorySchemaModel nullable([bool value = true]) {
-    final newSchema = schema.copyWith(isNullable: value);
-    return CategorySchemaModel._withSchema(newSchema);
-  }
-}

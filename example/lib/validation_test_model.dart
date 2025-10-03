@@ -19,7 +19,7 @@ part 'validation_test_model.g.dart';
 // }
 
 // Simple model that DOES work with the generator
-@AckModel(model: true)
+@AckModel()
 class SimpleValidationModel {
   final String id;
   final String name;

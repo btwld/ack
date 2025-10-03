@@ -3,6 +3,69 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-10-02
+
+### BREAKING CHANGES
+
+**SchemaModel generation removed**
+
+The `model: bool` parameter has been removed from `@AckModel` annotation. ACK now focuses exclusively on schema generation and validation. SchemaModel classes are no longer generated.
+
+**Migration Guide:**
+
+Before (with SchemaModel):
+```dart
+@AckModel(model: true)
+class User {
+  final String id;
+  final String name;
+}
+
+// Usage
+final userModel = UserSchemaModel();
+final result = userModel.parse(data);
+if (result.isOk) {
+  final user = userModel.value!;
+  print(user.name); // Type-safe access
+}
+```
+
+After (schema-only):
+```dart
+@AckModel()
+class User {
+  final String id;
+  final String name;
+}
+
+// Usage
+final result = userSchema.parse(data) as Map<String, dynamic>;
+print(result['name']); // Map access
+```
+
+**Removed:**
+- `model` parameter from `@AckModel` annotation
+- `SchemaModel` base class
+- SchemaModel class generation (e.g., `ProductSchemaModel`)
+- Part file generation (`.g.dart` files now standalone)
+
+**Kept:**
+- `@AckModel` annotation (required for schema generation)
+- All validation features
+- Discriminated types support
+- Additional properties support
+- All constraint annotations
+
+---
+
+Packages with breaking changes:
+
+ - `ack` - Breaking changes to code generation
+ - `ack_annotations` - Removed `model` parameter
+ - `ack_generator` - Simplified to schema-only generation
+
+---
+
 ## 2025-06-25
 
 ### Changes

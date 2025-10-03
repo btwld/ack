@@ -7,17 +7,15 @@ import 'package:source_gen/source_gen.dart';
 
 import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
-import 'builders/schema_model_builder.dart';
 import 'models/model_info.dart';
 import 'utils/error_messages.dart';
 import 'validation/code_validator.dart';
 import 'validation/model_validator.dart';
 
-/// Generates SchemaModel implementations for classes annotated with @AckModel
+/// Generates schemas for classes annotated with @AckModel
 ///
 /// This generator processes all annotated classes in a source file together to create
-/// a single .g.dart file with proper imports and all schema classes. This approach
-/// solves the multiple-classes-per-file issue that occurs with GeneratorForAnnotation.
+/// a single .g.dart file with schema variables.
 class AckSchemaGenerator extends Generator {
   final _formatter = DartFormatter(
     languageVersion: DartFormatter.latestLanguageVersion,
@@ -42,12 +40,10 @@ class AckSchemaGenerator extends Generator {
       return '';
     }
 
-    // Generate all schema fields and SchemaModel classes for this file
+    // Generate all schema fields for this file
     final schemaFields = <Field>[];
-    final schemaModelClasses = <Class>[];
     final analyzer = ModelAnalyzer();
     final schemaBuilder = SchemaBuilder();
-    final schemaModelBuilder = SchemaModelBuilder();
 
     // First pass: Analyze all models individually
     final modelInfos = <ModelInfo>[];
@@ -92,111 +88,50 @@ class AckSchemaGenerator extends Generator {
           );
         }
 
-        // Always build the schema field
+        // Build the schema field
         final schemaField = schemaBuilder.buildSchemaField(modelInfo);
         schemaFields.add(schemaField);
-
-        // Check if model generation is requested
-        if (modelInfo.model) {
-          // Build SchemaModel class too
-          final schemaModelClass =
-              schemaModelBuilder.buildSchemaModelClass(modelInfo);
-          schemaModelClasses.add(schemaModelClass);
-        }
       } catch (e) {
         throw GenErrorMessages.forSchemaGenerationError(element, e);
       }
     }
 
-    // Build the complete library with all schemas
-    // Schema variables must come first as SchemaModel classes depend on them
-    final allGeneratedElements = <Spec>[
-      ...schemaFields, // Schema variables first (dependencies)
-      ...schemaModelClasses, // SchemaModel classes after (use schemas)
-    ];
-
-    // Only add imports and headers if we have content
-    if (allGeneratedElements.isEmpty) {
+    // Only generate if we have content
+    if (schemaFields.isEmpty) {
       return '';
     }
 
-    // Check if we need to generate as a part file or standalone
-    final needsPartOf = schemaModelClasses.isNotEmpty;
+    // Generate standalone file with schema variables only
+    final generatedLibrary = Library((b) => b
+      ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
+      ..directives.addAll([
+        Directive.import('package:ack/ack.dart'),
+      ])
+      ..body.addAll(schemaFields));
 
-    if (needsPartOf) {
-      // Generate as a part file manually to avoid import issues
-      final fileName =
-          buildStep.inputId.pathSegments.last.replaceAll('.g.dart', '.dart');
+    final emitter = DartEmitter(
+      allocator: Allocator.none,
+      orderDirectives: true,
+      useNullSafetySyntax: true,
+    );
 
-      // Manually build the content to avoid emitter import issues
-      final buffer = StringBuffer();
-      buffer.writeln("part of '$fileName';");
-      buffer.writeln();
+    final generatedCode = generatedLibrary.accept(emitter).toString();
 
-      // Add schema fields first
-      for (final schemaField in schemaFields) {
-        final emitter = DartEmitter(allocator: Allocator.none);
-        buffer.writeln(schemaField.accept(emitter));
-        buffer.writeln();
-      }
-
-      // Add SchemaModel classes using code_builder
-      // Use the final ModelInfos with discriminator relationships
-      for (final modelInfo in finalModelInfos) {
-        if (modelInfo.model) {
-          final schemaModelClass =
-              schemaModelBuilder.buildSchemaModelClass(modelInfo);
-          final emitter = DartEmitter(allocator: Allocator.none);
-          buffer.writeln(schemaModelClass.accept(emitter));
-          buffer.writeln();
-        }
-      }
-
-      final output = buffer.toString();
-
-      // Validate generated code before formatting
-      final validation = CodeValidator.validate(output);
-      if (validation.isFailure) {
-        throw InvalidGenerationSourceError(
-          'Generated code validation failed: ${validation.errorMessage}',
-          todo: 'Fix the code generation logic to produce valid Dart syntax',
-        );
-      }
-
-      try {
-        return _formatter.format(output);
-      } catch (e) {
-        // If formatting fails, return unformatted code
-        print('Warning: Failed to format generated code: $e');
-        return output;
-      }
-    } else {
-      // Generate as standalone file with imports
-      final generatedLibrary = Library((b) => b
-        ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
-        ..directives.addAll([
-          Directive.import('package:ack/ack.dart'),
-        ])
-        ..body.addAll(allGeneratedElements));
-
-      final emitter = DartEmitter(
-        allocator: Allocator.none,
-        orderDirectives: true,
-        useNullSafetySyntax: true,
+    // Validate generated code before formatting
+    final validation = CodeValidator.validate(generatedCode);
+    if (validation.isFailure) {
+      throw InvalidGenerationSourceError(
+        'Generated code validation failed: ${validation.errorMessage}',
+        todo: 'Fix the code generation logic to produce valid Dart syntax',
       );
+    }
 
-      final generatedCode = generatedLibrary.accept(emitter).toString();
-
-      // Validate generated code before formatting
-      final validation = CodeValidator.validate(generatedCode);
-      if (validation.isFailure) {
-        throw InvalidGenerationSourceError(
-          'Generated code validation failed: ${validation.errorMessage}',
-          todo: 'Fix the code generation logic to produce valid Dart syntax',
-        );
-      }
-
+    try {
       return _formatter.format(generatedCode);
+    } catch (e) {
+      // If formatting fails, return unformatted code
+      print('Warning: Failed to format generated code: $e');
+      return generatedCode;
     }
   }
 

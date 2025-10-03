@@ -5,7 +5,6 @@ part 'described_model.g.dart';
 
 @AckModel(
   description: 'User profile with comprehensive field descriptions',
-  model: true,
 )
 class UserProfile {
   @AckField(description: 'Unique identifier for the user')
@@ -52,22 +51,15 @@ void main() {
   };
 
   try {
-    final userModel = UserProfileSchemaModel();
-    final result = userModel.parse(testData);
-
-    if (result.isOk) {
-      final user = userModel.value!;
-      print('✅ User validation successful!');
-      print('   ID: ${user.id}');
-      print('   Name: ${user.name}');
-      print('   Email: ${user.email}');
-      print('   Age: ${user.age}');
-      print('   Avatar: ${user.avatarUrl ?? 'None'}');
-      print('   Bio: ${user.bio ?? 'Not provided'}');
-    } else {
-      print('❌ Validation failed: ${result.getError()}');
-    }
+    final result = userProfileSchema.parse(testData) as Map<String, dynamic>;
+    print('✅ User validation successful!');
+    print('   ID: ${result['id']}');
+    print('   Name: ${result['name']}');
+    print('   Email: ${result['email']}');
+    print('   Age: ${result['age']}');
+    print('   Avatar: ${result['avatarUrl'] ?? 'None'}');
+    print('   Bio: ${result['bio'] ?? 'Not provided'}');
   } catch (e) {
-    print('❌ Error: $e');
+    print('❌ Validation error: $e');
   }
 }
