@@ -21,7 +21,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(validData);
+      final result = schema.safeParse(validData);
       expect(result.isOk, isTrue);
 
       final parsedData = result.getOrThrow()!;
@@ -46,7 +46,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -68,7 +68,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(dataWithOptionalFieldsOmitted);
+      final result = schema.safeParse(dataWithOptionalFieldsOmitted);
       expect(result.isOk, isTrue);
 
       final parsedData = result.getOrThrow()!;
@@ -96,7 +96,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(dataWithNulls);
+      final result = schema.safeParse(dataWithNulls);
       expect(result.isOk, isTrue);
 
       final parsedData = result.getOrThrow()!;
@@ -114,7 +114,7 @@ void main() {
       };
 
       final schema = categorySchema;
-      final result = schema.validate(categoryData);
+      final result = schema.safeParse(categoryData);
       expect(result.isOk, isTrue);
 
       final parsedData = result.getOrThrow()!;
@@ -130,7 +130,7 @@ void main() {
       };
 
       final schema = categorySchema;
-      final result = schema.validate(categoryData);
+      final result = schema.safeParse(categoryData);
       expect(result.isOk, isTrue);
 
       final parsedData = result.getOrThrow()!;

@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'status_model.dart';
 
 /// Generated schema for StatusModel
 /// A model demonstrating enum field validation

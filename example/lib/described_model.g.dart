@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'described_model.dart';
 
 /// Generated schema for UserProfile
 /// User profile with comprehensive field descriptions

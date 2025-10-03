@@ -101,11 +101,12 @@ class AckSchemaGenerator extends Generator {
       return '';
     }
 
-    // Generate standalone file with schema variables only
+    // Generate part file with schema variables only
+    final inputFileName = buildStep.inputId.pathSegments.last;
     final generatedLibrary = Library((b) => b
       ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
       ..directives.addAll([
-        Directive.import('package:ack/ack.dart'),
+        Directive.partOf(inputFileName),
       ])
       ..body.addAll(schemaFields));
 

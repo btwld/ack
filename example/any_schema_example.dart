@@ -7,30 +7,30 @@ void main() {
   final anySchema = Ack.any();
 
   print('Basic AnySchema validation:');
-  print('  42: ${anySchema.validate(42).getOrThrow()}');
-  print('  "hello": ${anySchema.validate("hello").getOrThrow()}');
-  print('  [1,2,3]: ${anySchema.validate([1, 2, 3]).getOrThrow()}');
-  print('  {"a": 1}: ${anySchema.validate({"a": 1}).getOrThrow()}');
-  print('  true: ${anySchema.validate(true).getOrThrow()}');
-  print('  3.14: ${anySchema.validate(3.14).getOrThrow()}');
+  print('  42: ${anySchema.safeParse(42).getOrThrow()}');
+  print('  "hello": ${anySchema.safeParse("hello").getOrThrow()}');
+  print('  [1,2,3]: ${anySchema.safeParse([1, 2, 3]).getOrThrow()}');
+  print('  {"a": 1}: ${anySchema.safeParse({"a": 1}).getOrThrow()}');
+  print('  true: ${anySchema.safeParse(true).getOrThrow()}');
+  print('  3.14: ${anySchema.safeParse(3.14).getOrThrow()}');
 
   // Null handling
   print('\nNull handling:');
-  final nullResult = anySchema.validate(null);
+  final nullResult = anySchema.safeParse(null);
   print(
       '  null (non-nullable): ${nullResult.isFail ? "REJECTED" : "ACCEPTED"}');
 
   // With nullable support
   final nullableAny = Ack.any().nullable();
-  final nullableResult = nullableAny.validate(null);
+  final nullableResult = nullableAny.safeParse(null);
   print('  null (nullable): ${nullableResult.isOk ? "ACCEPTED" : "REJECTED"}');
 
   // With default value
   print('\nWith default value:');
   final withDefault = Ack.any().withDefault("fallback");
   print(
-      '  null input with default: ${withDefault.validate(null).getOrThrow()}');
-  print('  42 input with default: ${withDefault.validate(42).getOrThrow()}');
+      '  null input with default: ${withDefault.safeParse(null).getOrThrow()}');
+  print('  42 input with default: ${withDefault.safeParse(42).getOrThrow()}');
 
   // With refinements for custom validation
   print('\nWith refinements:');
@@ -38,13 +38,13 @@ void main() {
       message: "String representation must be longer than 3 characters");
 
   print(
-      '  "hello" (length > 3): ${refinedAny.validate("hello").isOk ? "PASS" : "FAIL"}');
+      '  "hello" (length > 3): ${refinedAny.safeParse("hello").isOk ? "PASS" : "FAIL"}');
   print(
-      '  "hi" (length <= 3): ${refinedAny.validate("hi").isOk ? "PASS" : "FAIL"}');
+      '  "hi" (length <= 3): ${refinedAny.safeParse("hi").isOk ? "PASS" : "FAIL"}');
   print(
-      '  12345 (length > 3): ${refinedAny.validate(12345).isOk ? "PASS" : "FAIL"}');
+      '  12345 (length > 3): ${refinedAny.safeParse(12345).isOk ? "PASS" : "FAIL"}');
   print(
-      '  42 (length <= 3): ${refinedAny.validate(42).isOk ? "PASS" : "FAIL"}');
+      '  42 (length <= 3): ${refinedAny.safeParse(42).isOk ? "PASS" : "FAIL"}');
 
   // JSON Schema generation
   print('\nJSON Schema generation:');
@@ -77,9 +77,9 @@ void main() {
   };
 
   print(
-      '  Config with object settings: ${configSchema.validate(config1).isOk ? "VALID" : "INVALID"}');
+      '  Config with object settings: ${configSchema.safeParse(config1).isOk ? "VALID" : "INVALID"}');
   print(
-      '  Config with array settings: ${configSchema.validate(config2).isOk ? "VALID" : "INVALID"}');
+      '  Config with array settings: ${configSchema.safeParse(config2).isOk ? "VALID" : "INVALID"}');
 
   // 2. API endpoints with flexible payloads
   print('\n2. Flexible API payload:');
@@ -99,7 +99,7 @@ void main() {
   };
 
   print(
-      '  API call validation: ${apiSchema.validate(apiCall).isOk ? "VALID" : "INVALID"}');
+      '  API call validation: ${apiSchema.safeParse(apiCall).isOk ? "VALID" : "INVALID"}');
 
   // 3. Migration scenarios
   print('\n3. Migration scenario:');
@@ -115,5 +115,5 @@ void main() {
   };
 
   print(
-      '  Legacy data validation: ${legacySchema.validate(legacyData).isOk ? "VALID" : "INVALID"}');
+      '  Legacy data validation: ${legacySchema.safeParse(legacyData).isOk ? "VALID" : "INVALID"}');
 }

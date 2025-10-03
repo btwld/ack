@@ -218,7 +218,7 @@ class AllOptionsModel {
         );
       });
 
-      test('should handle AckField with SchemaModel generation', () async {
+      test('should handle AckField with complex jsonKey and constraints', () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
         await testBuilder(
@@ -232,10 +232,10 @@ import 'package:ack_annotations/ack_annotations.dart';
 class FieldWithModelGeneration {
   @AckField(jsonKey: 'full_name', description: 'Complete name')
   final String name;
-  
+
   @AckField(jsonKey: 'user_age', constraints: ['min(0)', 'max(150)'])
   final int age;
-  
+
   FieldWithModelGeneration({
     required this.name,
     required this.age,
@@ -249,12 +249,6 @@ class FieldWithModelGeneration {
               contains('final fieldWithModelGenerationSchema = Ack.object({'),
               contains("'full_name': Ack.string()"),
               contains("'user_age': Ack.integer().min(0).max(150)"),
-
-              // SchemaModel generation
-              contains('class FieldWithModelGenerationSchemaModel'),
-              contains('extends SchemaModel<FieldWithModelGeneration>'),
-              contains('name: map[\'full_name\'] as String'),
-              contains('age: map[\'user_age\'] as int'),
             ])),
           },
         );

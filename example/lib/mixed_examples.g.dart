@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'mixed_examples.dart';
 
 /// Generated schema for BasicUser
 /// Basic user model - generates only schema variable

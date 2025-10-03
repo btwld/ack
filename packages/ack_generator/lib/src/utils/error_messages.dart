@@ -92,13 +92,13 @@ class GenErrorMessages {
 ''',
         ),
       'model' => InvalidGenerationSourceError(
-          'Missing model field in @AckModel annotation',
+          'The "model" field has been removed from @AckModel annotation',
           element: element,
           todo: '''
+• The model field was removed - ACK now only generates schemas
+• Remove model: true from your @AckModel annotations
 • Update ack_annotations package to latest version:
   dart pub upgrade ack_annotations
-• The 'model' field controls SchemaModel class generation
-• Example: @AckModel(model: true) generates both schema and SchemaModel
 ''',
         ),
       _ => InvalidGenerationSourceError(
@@ -107,8 +107,8 @@ class GenErrorMessages {
           todo: '''
 • Update ack_annotations package: dart pub upgrade ack_annotations
 • Check annotation syntax and available fields
-• Valid fields: schemaName, description, additionalProperties, 
-  additionalPropertiesField, model, discriminatedKey, discriminatedValue
+• Valid fields: schemaName, description, additionalProperties,
+  additionalPropertiesField, discriminatedKey, discriminatedValue
 ''',
         ),
     };
@@ -128,10 +128,9 @@ class GenErrorMessages {
   - description: String?
   - additionalProperties: bool (default: false)
   - additionalPropertiesField: String?
-  - model: bool (default: false)
   - discriminatedKey: String? (abstract classes only)
   - discriminatedValue: String? (concrete classes only)
-• Example: @AckModel(model: true, description: "User model")
+• Example: @AckModel(description: "User model")
 • Error details: $errorDetails
 ''',
     );

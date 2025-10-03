@@ -1,7 +1,7 @@
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-// Import generated schemas
-import 'simple_examples.g.dart';
+part 'simple_examples.g.dart';
 
 /// Example 1: User with Additional Properties
 /// Shows how to store flexible user preferences

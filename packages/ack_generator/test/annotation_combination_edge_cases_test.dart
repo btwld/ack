@@ -20,7 +20,6 @@ void main() {
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
-  
   schemaName: 'FlexibleUserSchema',
   description: 'A flexible user model with additional properties',
   additionalProperties: true,
@@ -30,7 +29,7 @@ class FlexibleUser {
   final String name;
   final int age;
   final Map<String, dynamic> metadata;
-  
+
   FlexibleUser({
     required this.name,
     required this.age,
@@ -48,18 +47,12 @@ class FlexibleUser {
 
               // Additional properties
               contains('}, additionalProperties: true)'),
-
-              // SchemaModel generation
-              contains(
-                  'class FlexibleUserSchemaModel extends SchemaModel<FlexibleUser>'),
-              contains('extractAdditionalProperties(map, {'),
-              contains("'name', 'age'"),
             ])),
           },
         );
       });
 
-      test('should handle discriminated types with model generation', () async {
+      test('should handle discriminated types with schemas', () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
         await testBuilder(
@@ -71,7 +64,6 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
   discriminatedKey: 'type',
-  
   description: 'Base notification class'
 )
 abstract class Notification {
@@ -82,15 +74,14 @@ abstract class Notification {
 
 @AckModel(
   discriminatedValue: 'email',
-  
   description: 'Email notification'
 )
 class EmailNotification extends Notification {
   @override
   String get type => 'email';
-  
+
   final String recipient;
-  
+
   EmailNotification({
     required super.message,
     required this.recipient,
@@ -99,15 +90,14 @@ class EmailNotification extends Notification {
 
 @AckModel(
   discriminatedValue: 'sms',
-  
   description: 'SMS notification'
 )
 class SmsNotification extends Notification {
   @override
   String get type => 'sms';
-  
+
   final String phoneNumber;
-  
+
   SmsNotification({
     required super.message,
     required this.phoneNumber,
@@ -125,22 +115,6 @@ class SmsNotification extends Notification {
               // Individual schemas
               contains('final emailNotificationSchema = Ack.object({'),
               contains('final smsNotificationSchema = Ack.object({'),
-
-              // SchemaModel classes
-              contains(
-                  'class NotificationSchemaModel extends SchemaModel<Notification>'),
-              contains(
-                  'class EmailNotificationSchemaModel extends SchemaModel<EmailNotification>'),
-              contains(
-                  'class SmsNotificationSchemaModel extends SchemaModel<SmsNotification>'),
-
-              // Switch logic in base class
-              contains("final type = map['type'] as String;"),
-              contains('return switch (type) {'),
-              contains(
-                  "'email' => EmailNotificationSchemaModel().createFromMap(map)"),
-              contains(
-                  "'sms' => SmsNotificationSchemaModel().createFromMap(map)"),
             ])),
           },
         );
@@ -160,19 +134,18 @@ class SmsNotification extends Notification {
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
-  
   additionalProperties: true,
   additionalPropertiesField: 'extras'
 )
 class FieldWithAdditionalProps {
   @AckField(jsonKey: 'user_name', required: true)
   final String name;
-  
+
   @AckField(jsonKey: 'user_email', constraints: ['email'])
   final String email;
-  
+
   final Map<String, dynamic> extras;
-  
+
   FieldWithAdditionalProps({
     required this.name,
     required this.email,
@@ -187,12 +160,6 @@ class FieldWithAdditionalProps {
               contains("'user_name': Ack.string()"),
               contains("'user_email': Ack.string()"),
               contains('}, additionalProperties: true)'),
-
-              // SchemaModel with additional properties extraction
-              contains('extractAdditionalProperties(map, {'),
-              contains("'user_name', 'user_email'"),
-              contains('name: map[\'user_name\'] as String'),
-              contains('email: map[\'user_email\'] as String'),
             ])),
           },
         );
@@ -226,17 +193,17 @@ class Address {
   });
 }
 
-@AckModel( description: 'User with address information')
+@AckModel(description: 'User with address information')
 class UserWithAddress {
   @AckField(jsonKey: 'full_name', constraints: ['notEmpty'])
   final String name;
-  
+
   @AckField(jsonKey: 'home_address')
   final Address homeAddress;
-  
+
   @AckField(jsonKey: 'work_address')
   final Address? workAddress;
-  
+
   UserWithAddress({
     required this.name,
     required this.homeAddress,
@@ -256,14 +223,6 @@ class UserWithAddress {
               contains("'full_name': Ack.string()"),
               contains("'home_address': addressSchema"),
               contains("'work_address': addressSchema.optional().nullable()"),
-
-              // SchemaModel createFromMap with custom keys
-              contains('street: map[\'street_address\'] as String'),
-              contains('city: map[\'city_name\'] as String'),
-              contains('postalCode: map[\'postal_code\'] as String?'),
-              contains('name: map[\'full_name\'] as String'),
-              contains('homeAddress: AddressSchemaModel().createFromMap('),
-              contains('map[\'home_address\'] as Map<String, dynamic>'),
             ])),
           },
         );
@@ -355,7 +314,6 @@ enum UserRole { admin, user, guest }
 enum SubscriptionStatus { active, inactive, pending, cancelled }
 
 @AckModel(
-  
   schemaName: 'ApiUserSchema',
   description: 'Complete user model for API responses',
   additionalProperties: true,
@@ -364,7 +322,7 @@ enum SubscriptionStatus { active, inactive, pending, cancelled }
 class ApiUser {
   @AckField(jsonKey: 'user_id', description: 'Unique user identifier')
   final String id;
-  
+
   @AckField(
     jsonKey: 'email_address',
     description: 'User email address',
@@ -372,28 +330,28 @@ class ApiUser {
     required: true
   )
   final String email;
-  
+
   @AckField(
     jsonKey: 'display_name',
     description: 'User display name',
     constraints: ['minLength(1)', 'maxLength(100)']
   )
   final String? displayName;
-  
+
   @AckField(jsonKey: 'user_role')
   final UserRole role;
-  
+
   @AckField(jsonKey: 'subscription_status')
   final SubscriptionStatus? subscriptionStatus;
-  
+
   @AckField(jsonKey: 'profile_tags')
   final List<String> tags;
-  
+
   @AckField(jsonKey: 'user_preferences')
   final Map<String, String> preferences;
-  
+
   final Map<String, dynamic> customFields;
-  
+
   ApiUser({
     required this.id,
     required this.email,
@@ -434,17 +392,6 @@ class ApiUser {
 
               // Additional properties
               contains('}, additionalProperties: true)'),
-
-              // SchemaModel with all features
-              contains('class ApiUserSchemaModel extends SchemaModel<ApiUser>'),
-              contains('extractAdditionalProperties(map, {'),
-              contains("'user_id'"),
-              contains("'email_address'"),
-              contains("'display_name'"),
-              contains("'user_role'"),
-              contains("'subscription_status'"),
-              contains("'profile_tags'"),
-              contains("'user_preferences'"),
             ])),
           },
         );

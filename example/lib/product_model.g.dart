@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'product_model.dart';
 
 /// Generated schema for Product
 /// A product model with validation

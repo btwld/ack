@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'validation_test_model.dart';
 
 /// Generated schema for SimpleValidationModel
 final simpleValidationModelSchema = Ack.object({

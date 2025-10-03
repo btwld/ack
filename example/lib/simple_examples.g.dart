@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'simple_examples.dart';
 
 /// Generated schema for User
 /// User with flexible preferences

@@ -4,7 +4,7 @@ import '../lib/product_model.dart';
 
 void main() {
   group('Comprehensive Constraint Annotations Test', () {
-    test('should validate all constraint types successfully', () {
+    test('should safeParse all constraint types successfully', () {
       final validData = {
         'id': 'prod123',
         'name': 'Valid Product Name', // 3-100 chars
@@ -25,12 +25,12 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(validData);
+      final result = schema.safeParse(validData);
 
       // Check validation was successful
       expect(result.isOk, isTrue);
 
-      // Test all field values from validated data
+      // Test all field values from safeParsed data
       final parsedData = result.getOrThrow()!;
       expect(parsedData['id'], equals('prod123'));
       expect(parsedData['name'], equals('Valid Product Name'));
@@ -61,7 +61,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -81,7 +81,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -100,7 +100,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -119,7 +119,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -139,7 +139,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -159,7 +159,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(invalidData);
+      final result = schema.safeParse(invalidData);
       expect(result.isOk, isFalse);
     });
 
@@ -184,7 +184,7 @@ void main() {
       };
 
       final schema = productSchema;
-      final result = schema.validate(dataWithNulls);
+      final result = schema.safeParse(dataWithNulls);
       expect(result.isOk, isTrue);
 
       final parsedData = result.getOrThrow()!;

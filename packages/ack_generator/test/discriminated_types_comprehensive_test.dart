@@ -64,27 +64,6 @@ class Dog extends Animal {
               contains('final dogSchema = Ack.object({'),
               contains("'bark': Ack.boolean()"),
               contains("'breed': Ack.string()"),
-
-              // Base SchemaModel with switch logic
-              contains('class AnimalSchemaModel extends SchemaModel<Animal>'),
-              contains('final type = map[\'type\'] as String;'),
-              contains('return switch (type) {'),
-              contains("'cat' => CatSchemaModel().createFromMap(map)"),
-              contains("'dog' => DogSchemaModel().createFromMap(map)"),
-              contains('_ => throw ArgumentError('),
-              contains(
-                  "'Unknown type: \$type. Valid values: \\'cat\\', \\'dog\\'"),
-
-              // Subtype SchemaModels
-              contains('class CatSchemaModel extends SchemaModel<Cat>'),
-              contains('return Cat('),
-              contains('meow: map[\'meow\'] as bool'),
-              contains('lives: map[\'lives\'] as int'),
-
-              contains('class DogSchemaModel extends SchemaModel<Dog>'),
-              contains('return Dog('),
-              contains('bark: map[\'bark\'] as bool'),
-              contains('breed: map[\'breed\'] as String'),
             ])),
           },
         );
@@ -240,31 +219,6 @@ class Customer extends Person {
               contains('final customerSchema = Ack.object({'),
               contains("'customerId': Ack.string()"),
               contains("'preferences': Ack.list(Ack.string())"),
-
-              // SchemaModel with complex createFromMap
-              contains('class PersonSchemaModel extends SchemaModel<Person>'),
-              contains("final personType = map['personType'] as String;"),
-              contains(
-                  "'employee' => EmployeeSchemaModel().createFromMap(map)"),
-              contains(
-                  "'customer' => CustomerSchemaModel().createFromMap(map)"),
-
-              // Employee createFromMap with nested model
-              contains(
-                  'class EmployeeSchemaModel extends SchemaModel<Employee>'),
-              contains('return Employee('),
-              contains('name: map[\'name\'] as String'),
-              contains('address: AddressSchemaModel().createFromMap('),
-              contains('employeeId: map[\'employeeId\'] as String'),
-              contains('salary: map[\'salary\'] as double'),
-
-              // Customer createFromMap with list
-              contains(
-                  'class CustomerSchemaModel extends SchemaModel<Customer>'),
-              contains('return Customer('),
-              contains('customerId: map[\'customerId\'] as String'),
-              contains(
-                  'preferences: (map[\'preferences\'] as List).cast<String>()'),
             ])),
           },
         );

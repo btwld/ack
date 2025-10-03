@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'discriminated_example.dart';
 
 /// Generated schema for Animal
 final animalSchema = Ack.discriminated(

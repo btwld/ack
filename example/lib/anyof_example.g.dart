@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'anyof_example.dart';
 
 /// Generated schema for ApiResponse
 /// API response with different possible payloads

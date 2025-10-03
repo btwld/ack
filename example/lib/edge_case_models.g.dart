@@ -7,7 +7,7 @@
 
 // // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'package:ack/ack.dart';
+part of 'edge_case_models.dart';
 
 /// Generated schema for LargeFieldModel
 final largeFieldModelSchema = Ack.object({

@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-// Import generated schemas
 part 'product_model.g.dart';
 
 @AckModel(
@@ -112,7 +111,8 @@ void main() {
     print('\n✅ Schema validation successful!');
     print('   Product ID: ${result['id']}');
     print('   Product Name: ${result['name']}');
-    print('   Category: ${(result['category'] as Map<String, dynamic>)['name']}');
+    print(
+        '   Category: ${(result['category'] as Map<String, dynamic>)['name']}');
     print('   Additional properties: ${result['metadata']}');
   } catch (e) {
     print('❌ Schema validation error: $e');
