@@ -24,7 +24,7 @@ final productSchema = Ack.object({
   'updatedAt': Ack.string().optional().nullable(),
   'stockQuantity': Ack.integer().positive(),
   'status': Ack.string().enumString(['draft', 'published', 'archived']),
-  'productCode': Ack.string().matches(r'^[A-Z]{2,3}-\d{4}$'),
+  'productCode': Ack.string().matches(r'''^[A-Z]{2,3}-\d{4}$'''),
 }, additionalProperties: true);
 
 /// Generated schema for Category
