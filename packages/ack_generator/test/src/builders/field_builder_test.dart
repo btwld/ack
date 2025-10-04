@@ -141,6 +141,74 @@ void main() {
         final schema = builder.buildFieldSchema(field);
         expect(schema, equals('Ack.object({}, additionalProperties: true)'));
       });
+
+      test('builds map schema with String keys', () {
+        final field = createMapField('settings', keyType: 'String', valueType: 'dynamic');
+        final schema = builder.buildFieldSchema(field);
+        expect(schema, equals('Ack.object({}, additionalProperties: true)'));
+      });
+
+      test('builds map schema with non-String keys (int)', () {
+        final field = createMapField('intKeys', keyType: 'int', valueType: 'String');
+        final schema = builder.buildFieldSchema(field);
+        // Should generate code successfully, not throw
+        expect(schema, equals('Ack.object({}, additionalProperties: true)'));
+      });
+
+      test('builds map schema with non-String keys (bool)', () {
+        final field = createMapField('boolKeys', keyType: 'bool', valueType: 'int');
+        final schema = builder.buildFieldSchema(field);
+        // Should generate code successfully, not throw
+        expect(schema, equals('Ack.object({}, additionalProperties: true)'));
+      });
+    });
+
+    group('constraint validation', () {
+      test('silently ignores unknown constraints', () {
+        final field = MockFieldInfo(
+          name: 'username',
+          typeName: 'String',
+          isRequired: true,
+          isNullable: false,
+          constraints: [
+            ConstraintInfo(name: 'minLenght', arguments: ['5']), // Typo: should be minLength
+          ],
+          isPrimitive: true,
+          isList: false,
+          isMap: false,
+        );
+
+        // Unknown constraints are silently ignored (allows custom extensions)
+        // The Dart compiler will catch method-not-found errors if constraint is a typo
+        final schema = builder.buildFieldSchema(field);
+        expect(schema, equals('Ack.string()'));
+      });
+
+      test('accepts all known constraints', () {
+        final knownConstraints = [
+          'minLength', 'maxLength', 'notEmpty', 'email', 'url', 'matches',
+          'min', 'max', 'positive', 'multipleOf',
+          'minItems', 'maxItems', 'enumString',
+        ];
+
+        for (final constraintName in knownConstraints) {
+          final field = MockFieldInfo(
+            name: 'test',
+            typeName: 'String',
+            isRequired: true,
+            isNullable: false,
+            constraints: [
+              ConstraintInfo(name: constraintName, arguments: ['test']),
+            ],
+            isPrimitive: true,
+            isList: false,
+            isMap: false,
+          );
+
+          // Should not throw
+          expect(() => builder.buildFieldSchema(field), returnsNormally);
+        }
+      });
     });
   });
 }

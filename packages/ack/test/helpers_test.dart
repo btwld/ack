@@ -114,25 +114,6 @@ void main() {
     });
   });
 
-  group('looksLikeJson', () {
-    test('should return true for JSON-like strings', () {
-      expect(looksLikeJson(' { "a": 1 } '), isTrue);
-      expect(looksLikeJson(' [1, 2, 3] '), isTrue);
-      expect(looksLikeJson(' "hello" '), isTrue);
-      expect(looksLikeJson(' 123.45 '), isTrue);
-      expect(looksLikeJson(' true '), isTrue);
-      expect(looksLikeJson(' false '), isTrue);
-      expect(looksLikeJson(' null '), isTrue);
-    });
-
-    test('should return false for non-JSON-like strings', () {
-      expect(looksLikeJson('hello'), isFalse);
-      expect(looksLikeJson('{ "a": 1'), isFalse); // Mismatched braces
-      expect(looksLikeJson(''), isFalse);
-      expect(looksLikeJson('a123'), isFalse);
-    });
-  });
-
   group('IterableExtensions', () {
     group('duplicates', () {
       test('should return duplicate elements', () {

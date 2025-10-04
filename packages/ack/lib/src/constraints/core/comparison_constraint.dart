@@ -113,17 +113,25 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
         constraintKey: 'number_range',
         description: 'Number must be between $min and $max (inclusive).',
       );
-  static ComparisonConstraint<N> numberMultipleOf<N extends num>(N multiple) =>
-      ComparisonConstraint<N>(
-        type: ComparisonType.eq,
-        threshold: 0,
-        multipleValue: multiple,
-        valueExtractor: (n) => n.remainder(multiple), // Check if remainder is 0
-        constraintKey: 'number_multiple_of',
-        description: 'Number must be a multiple of $multiple.',
-        customMessageBuilder: (value, _) =>
-            'Must be a multiple of $multiple. $value is not.',
+  static ComparisonConstraint<N> numberMultipleOf<N extends num>(N multiple) {
+    if (multiple == 0) {
+      throw ArgumentError.value(
+        multiple,
+        'multiple',
+        'multipleOf value cannot be zero',
       );
+    }
+    return ComparisonConstraint<N>(
+      type: ComparisonType.eq,
+      threshold: 0,
+      multipleValue: multiple,
+      valueExtractor: (n) => n.remainder(multiple), // Check if remainder is 0
+      constraintKey: 'number_multiple_of',
+      description: 'Number must be a multiple of $multiple.',
+      customMessageBuilder: (value, _) =>
+          'Must be a multiple of $multiple. $value is not.',
+    );
+  }
 
   static ComparisonConstraint<N> numberPositive<N extends num>() =>
       ComparisonConstraint<N>(

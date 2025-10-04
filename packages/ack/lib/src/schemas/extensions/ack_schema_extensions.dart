@@ -54,7 +54,12 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
   TransformedSchema<T, R> transform<R extends Object>(
     R Function(T? value) transformer,
   ) {
-    return TransformedSchema(this, transformer);
+    return TransformedSchema(
+      this,
+      transformer,
+      isOptional: isOptional,
+      isNullable: isNullable,
+    );
   }
 }
 

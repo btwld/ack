@@ -1,5 +1,6 @@
 import 'package:ack_generator/src/models/constraint_info.dart';
 import 'package:ack_generator/src/models/field_info.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 
 // Mock implementation of FieldInfo for testing
@@ -18,9 +19,6 @@ class MockFieldInfo implements FieldInfo {
 
   @override
   final List<ConstraintInfo> constraints;
-
-  @override
-  final String? defaultValue;
 
   @override
   final String? description;
@@ -48,12 +46,13 @@ class MockFieldInfo implements FieldInfo {
 
   final String typeName;
   final String? listItemTypeName;
+  final String? mapKeyTypeName;
+  final String? mapValueTypeName;
 
   MockFieldInfo({
     required this.name,
     required this.typeName,
     required this.isRequired,
-    required this.defaultValue,
     required this.isNullable,
     required this.constraints,
     required this.isPrimitive,
@@ -65,21 +64,30 @@ class MockFieldInfo implements FieldInfo {
     this.isEnum = false,
     this.enumValues = const [],
     this.listItemTypeName,
+    this.mapKeyTypeName,
+    this.mapValueTypeName,
   }) : jsonKey = name;
 
   @override
   bool get isNestedSchema => !isPrimitive && !isList && !isMap;
 
   @override
-  DartType get type => MockDartType(typeName, listItemTypeName);
+  DartType get type => MockDartType(
+    typeName,
+    listItemTypeName,
+    keyTypeName: mapKeyTypeName,
+    valueTypeName: mapValueTypeName,
+  );
 }
 
 // Mock DartType for testing
 class MockDartType implements DartType {
   final String typeName;
   final String? itemTypeName;
+  final String? keyTypeName;
+  final String? valueTypeName;
 
-  MockDartType(this.typeName, this.itemTypeName);
+  MockDartType(this.typeName, this.itemTypeName, {this.keyTypeName, this.valueTypeName});
 
   @override
   String getDisplayString({bool withNullability = true}) => typeName;
@@ -100,13 +108,31 @@ class MockDartType implements DartType {
   bool get isDartCoreBool => typeName == 'bool';
   @override
   bool get isDartCoreNum => typeName == 'num';
+  @override
+  bool get isDartCoreObject => typeName == 'Object';
+  @override
+  bool get isDartCoreSet => typeName.startsWith('Set<');
+
+  @override
+  Element? get element => null; // Return null for mock types
 
   List<DartType> get typeArguments {
+    // For Map types, return [keyType, valueType]
+    if (keyTypeName != null && valueTypeName != null) {
+      return [
+        MockDartType(keyTypeName!, null),
+        MockDartType(valueTypeName!, null),
+      ];
+    }
+    // For List/Set types, return [itemType]
     if (itemTypeName != null) {
       return [MockDartType(itemTypeName!, null)];
     }
     return [];
   }
+
+  @override
+  String toString() => typeName;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -123,7 +149,6 @@ FieldInfo createField(
   return MockFieldInfo(
     name: name,
     typeName: typeName,
-    defaultValue: null,
     isRequired: isRequired,
     isNullable: isNullable,
     constraints: constraints,
@@ -144,7 +169,6 @@ FieldInfo createListField(
     isRequired: !isNullable,
     isNullable: isNullable,
     constraints: [],
-    defaultValue: null,
     isPrimitive: false,
     isList: true,
     isMap: false,
@@ -152,16 +176,21 @@ FieldInfo createListField(
   );
 }
 
-FieldInfo createMapField(String name) {
+FieldInfo createMapField(
+  String name, {
+  String keyType = 'String',
+  String valueType = 'dynamic',
+}) {
   return MockFieldInfo(
     name: name,
-    defaultValue: null,
-    typeName: 'Map<String, dynamic>',
+    typeName: 'Map<$keyType, $valueType>',
     isRequired: true,
     isNullable: false,
     constraints: [],
     isPrimitive: false,
     isList: false,
     isMap: true,
+    mapKeyTypeName: keyType,
+    mapValueTypeName: valueType,
   );
 }

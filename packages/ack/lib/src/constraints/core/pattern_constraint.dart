@@ -58,18 +58,31 @@ class PatternConstraint extends Constraint<String>
     String regexPattern, {
     String? patternName,
     String? example,
-  }) =>
-      PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(regexPattern),
-        constraintKey: patternName != null
-            ? 'string_pattern_$patternName'
-            : 'custom_regex_pattern',
-        description: patternName != null
-            ? 'Must match the $patternName pattern.'
-            : 'Must match regex: $regexPattern',
-        example: example,
+  }) {
+    // Validate regex pattern at construction time with actionable error
+    late final RegExp compiledPattern;
+    try {
+      compiledPattern = RegExp(regexPattern);
+    } on FormatException catch (e) {
+      throw ArgumentError.value(
+        regexPattern,
+        'regexPattern',
+        'Invalid regular expression pattern: ${e.message}',
       );
+    }
+
+    return PatternConstraint(
+      type: PatternType.regex,
+      pattern: compiledPattern,
+      constraintKey: patternName != null
+          ? 'string_pattern_$patternName'
+          : 'custom_regex_pattern',
+      description: patternName != null
+          ? 'Must match the $patternName pattern.'
+          : 'Must match regex: $regexPattern',
+      example: example,
+    );
+  }
 
   static PatternConstraint email() => PatternConstraint(
         type: PatternType.regex,

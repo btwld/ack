@@ -129,7 +129,7 @@ class ComplexModel {
   final Set<String> unique;
   final Map<String, Map<String, dynamic>> nested;
   final List<Map<String, Set<int>>> superComplex;
-  
+
   ComplexModel({
     required this.matrix,
     required this.grouped,
@@ -155,5 +155,36 @@ class ComplexModel {
     },
         skip:
             'Complex nested collections (List<Map<String, Set<int>>>) are intentionally not supported due to validation complexity');
+
+    test('should fail validation for Maps with non-String keys', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      // Maps with non-String keys fail at validation time with clear error message
+      // explaining that JSON serialization requires String keys
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/non_string_map_keys.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+class NonStringMapKeys {
+  final Map<int, String> intKeys;
+  final Map<bool, int> boolKeys;
+  final Map<double, dynamic> doubleKeys;
+
+  NonStringMapKeys({
+    required this.intKeys,
+    required this.boolKeys,
+    required this.doubleKeys,
+  });
+}
+''',
+        },
+        // When validation fails, no output is generated
+        outputs: {},
+      );
+    });
   });
 }

@@ -187,5 +187,31 @@ void main() {
         expect(schema.safeParse('world').isOk, isFalse);
       });
     });
+
+    group('matches (regex validation)', () {
+      test('should throw ArgumentError for invalid regex pattern', () {
+        expect(
+          () => StringSchema().matches(r'[unclosed'),
+          throwsA(isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('Invalid regular expression pattern'),
+          )),
+        );
+      });
+
+      test('should throw ArgumentError for invalid regex with context', () {
+        expect(
+          () => StringSchema().matches(r'(?P<invalid>test)'),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('should accept valid regex patterns', () {
+        final schema = StringSchema().matches(r'^\d{3}-\d{3}-\d{4}$');
+        expect(schema.safeParse('555-123-4567').isOk, isTrue);
+        expect(schema.safeParse('invalid').isOk, isFalse);
+      });
+    });
   });
 }

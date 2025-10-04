@@ -10,7 +10,6 @@ class FieldInfo {
   final bool isRequired;
   final bool isNullable;
   final List<ConstraintInfo> constraints;
-  final String? defaultValue;
   final String? description;
 
   const FieldInfo({
@@ -20,7 +19,6 @@ class FieldInfo {
     required this.isRequired,
     required this.isNullable,
     required this.constraints,
-    this.defaultValue,
     this.description,
   });
 

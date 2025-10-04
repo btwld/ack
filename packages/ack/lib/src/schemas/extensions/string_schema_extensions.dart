@@ -54,12 +54,12 @@ extension StringSchemaExtensions on StringSchema {
       example: example,
     );
 
-    return this.constrain(constraint, message: message) as StringSchema;
+    return constrain(constraint, message: message) as StringSchema;
   }
 
   /// Adds a constraint that the string must contain the given [pattern] somewhere.
   StringSchema contains(String pattern, {String? example, String? message}) {
-    return this.constrain(
+    return constrain(
       PatternConstraint.contains(pattern, example: example),
       message: message,
     ) as StringSchema;

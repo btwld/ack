@@ -6,7 +6,7 @@ import 'schema_error.dart';
 /// containing a [SchemaError].
 ///
 /// This class promotes explicit error handling without relying on exceptions
-/// for control flow when using the `validate()` method.
+/// for control flow when using the `safeParse()` method.
 sealed class SchemaResult<T extends Object> {
   const SchemaResult();
 

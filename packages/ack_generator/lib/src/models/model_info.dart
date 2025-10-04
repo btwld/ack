@@ -7,18 +7,14 @@ class ModelInfo {
   final String schemaClassName;
   final String? description;
   final List<FieldInfo> fields;
-  final List<String> requiredFields;
-  final bool hasDiscriminator;
   final bool additionalProperties;
   final String? additionalPropertiesField;
 
+  /// Computed property: returns list of required field JSON keys
+  List<String> get requiredFields =>
+      fields.where((f) => f.isRequired).map((f) => f.jsonKey).toList();
+
   // New discriminated type properties
-  /// Whether this class is a discriminated base class (has discriminatedKey)
-  final bool isDiscriminatedBase;
-
-  /// Whether this class is a discriminated subtype (has discriminatedValue)
-  final bool isDiscriminatedSubtype;
-
   /// Field name for discrimination (only for base classes)
   final String? discriminatorKey;
 
@@ -28,18 +24,20 @@ class ModelInfo {
   /// Map of discriminator values to class elements (only for base classes)
   final Map<String, ClassElement>? subtypes;
 
+  /// Computed property: Whether this class is a discriminated base class (has discriminatedKey)
+  bool get isDiscriminatedBase => discriminatorKey != null;
+
+  /// Computed property: Whether this class is a discriminated subtype (has discriminatedValue)
+  bool get isDiscriminatedSubtype => discriminatorValue != null;
+
   const ModelInfo({
     required this.className,
     required this.schemaClassName,
     this.description,
     required this.fields,
-    required this.requiredFields,
-    this.hasDiscriminator = false,
     this.additionalProperties = false,
     this.additionalPropertiesField,
     // New discriminated parameters
-    this.isDiscriminatedBase = false,
-    this.isDiscriminatedSubtype = false,
     this.discriminatorKey,
     this.discriminatorValue,
     this.subtypes,

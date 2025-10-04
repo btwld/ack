@@ -56,73 +56,22 @@ class ModelValidator {
   static List<String> _validateField(FieldInfo field) {
     final issues = <String>[];
 
-    // Check for complex nested generics that break generation
-    if (_isComplexNestedGeneric(field.type)) {
-      issues.add(
-          'Field ${field.name} has complex nested generics (${field.type.getDisplayString()}) '
-          'that may not generate correctly. Consider using simpler types or Map<String, dynamic>.');
-    }
-
-    // Check for unsupported collection nesting
-    if (_hasUnsupportedNesting(field.type)) {
-      issues.add(
-          'Field ${field.name} has unsupported collection nesting (${field.type.getDisplayString()}). '
-          'Deep nesting like List<Map<String, List<T>>> is not fully supported.');
-    }
-
-    return issues;
-  }
-
-  /// Checks if a type has complex nested generics that cause generation issues.
-  static bool _isComplexNestedGeneric(DartType type) {
-    if (type is! ParameterizedType) return false;
-
-    // Count nesting depth of generic types
-    var depth = 0;
-    DartType currentType = type;
-
-    while (currentType is ParameterizedType &&
-        currentType.typeArguments.isNotEmpty) {
-      depth++;
-      if (depth > 2) {
-        return true; // Too deep
-      }
-      currentType = currentType.typeArguments.first;
-    }
-
-    return false;
-  }
-
-  /// Checks for unsupported collection nesting patterns.
-  static bool _hasUnsupportedNesting(DartType type) {
-    // Look for patterns like List<Map<String, List<String>>>
-    if (type is ParameterizedType) {
-      final typeName = type.element?.name;
-
-      // If it's a List or Set
-      if (typeName == 'List' || typeName == 'Set') {
-        if (type.typeArguments.isNotEmpty) {
-          final innerType = type.typeArguments.first;
-
-          // Check if the inner type is also a complex generic
-          if (innerType is ParameterizedType) {
-            final innerTypeName = innerType.element?.name;
-
-            // List<Map<...>> or similar patterns
-            if (innerTypeName == 'Map' && innerType.typeArguments.length >= 2) {
-              final mapValueType = innerType.typeArguments[1];
-
-              // Map value is also a generic? This gets complex
-              if (mapValueType is ParameterizedType) {
-                return true;
-              }
-            }
-          }
+    // Only validate what the generator truly can't handle
+    // Let natural generation failures surface for edge cases
+    if (field.isMap && field.type is ParameterizedType) {
+      final mapType = field.type as ParameterizedType;
+      if (mapType.typeArguments.length >= 2) {
+        final keyType = mapType.typeArguments[0];
+        if (!keyType.isDartCoreString) {
+          issues.add(
+            'Field ${field.name} has Map with non-String key type. '
+            'JSON requires String keys.',
+          );
         }
       }
     }
 
-    return false;
+    return issues;
   }
 }
 

@@ -11,7 +11,7 @@ import '../models/constraint_info.dart';
 class FieldAnalyzer {
   FieldInfo analyze(FieldElement field) {
     // Check for @AckField annotation
-    final ackFieldAnnotation = _getAckFieldAnnotation(field);
+    final ackFieldAnnotation = TypeChecker.fromRuntime(AckField).firstAnnotationOf(field);
 
     // Determine JSON key (from annotation or field name)
     final jsonKey = _getJsonKey(field, ackFieldAnnotation);
@@ -21,9 +21,6 @@ class FieldAnalyzer {
 
     // Extract constraints
     final constraints = _extractConstraints(field, ackFieldAnnotation);
-
-    // Get default value if any
-    final defaultValue = _getDefaultValue(field);
 
     // Extract description from annotation
     final description = _getDescription(field, ackFieldAnnotation);
@@ -35,15 +32,8 @@ class FieldAnalyzer {
       isRequired: isRequired,
       isNullable: field.type.nullabilitySuffix != NullabilitySuffix.none,
       constraints: constraints,
-      defaultValue: defaultValue,
       description: description,
     );
-  }
-
-  DartObject? _getAckFieldAnnotation(FieldElement field) {
-    final annotation =
-        TypeChecker.fromRuntime(AckField).firstAnnotationOf(field);
-    return annotation;
   }
 
   String _getJsonKey(FieldElement field, DartObject? annotation) {
@@ -160,12 +150,6 @@ class FieldAnalyzer {
 
     // Simple constraint without parentheses
     return ConstraintInfo(name: constraint, arguments: []);
-  }
-
-  String? _getDefaultValue(FieldElement field) {
-    // For now, return null - extracting default values is complex
-    // and may not be needed for initial implementation
-    return null;
   }
 
   List<ConstraintInfo> _extractDecoratorConstraints(FieldElement field) {

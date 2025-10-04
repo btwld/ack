@@ -6,6 +6,45 @@ import '../models/model_info.dart';
 
 /// Builds field schema expressions
 class FieldBuilder {
+  // Centralized type-to-schema mapping
+  static const _primitiveSchemas = {
+    'String': 'Ack.string()',
+    'int': 'Ack.integer()',
+    'double': 'Ack.double()',
+    'bool': 'Ack.boolean()',
+    'num': 'Ack.double()',
+  };
+
+  static const _specialTypeSchemas = {
+    'DateTime': 'Ack.string().datetime()',
+    'Duration': 'Ack.integer()',
+    'Uri': 'Ack.string().uri()',
+  };
+
+  // Constraint application registry
+  static final _constraints = {
+    'minLength': (schema, args) => '$schema.minLength(${args[0]})',
+    'maxLength': (schema, args) => '$schema.maxLength(${args[0]})',
+    'notEmpty': (schema, args) => '$schema.notEmpty()',
+    'email': (schema, args) => '$schema.email()',
+    'url': (schema, args) => '$schema.url()',
+    // Use triple quotes to handle all regex edge cases (including single quotes)
+    'matches': (schema, args) => "$schema.matches(r'''${args[0]}''')",
+    'min': (schema, args) => '$schema.min(${args[0]})',
+    'max': (schema, args) => '$schema.max(${args[0]})',
+    'positive': (schema, args) => '$schema.positive()',
+    'multipleOf': (schema, args) => '$schema.multipleOf(${args[0]})',
+    'minItems': (schema, args) => '$schema.minItems(${args[0]})',
+    'maxItems': (schema, args) => '$schema.maxItems(${args[0]})',
+    'enumString': (schema, args) {
+      final values = args.map((v) => "'$v'").join(', ');
+      return '$schema.enumString([$values])';
+    },
+    // Use triple quotes for pattern as well
+    'pattern': (schema, args) => "$schema.matches(r'''${args[0]}''')",
+    'enumFromType': (schema, args) => schema,
+  };
+
   String buildFieldSchema(FieldInfo field, [ModelInfo? model]) {
     // Check if this field is a discriminator field in a subtype
     if (model != null &&
@@ -19,7 +58,7 @@ class FieldBuilder {
     String schema;
 
     if (field.isPrimitive) {
-      schema = _buildPrimitiveSchema(field);
+      schema = _buildSchemaForType(field.type);
     } else if (field.isEnum) {
       schema = _buildEnumSchema(field);
     } else if (field.isGeneric) {
@@ -31,7 +70,8 @@ class FieldBuilder {
     } else if (field.isSet) {
       schema = _buildSetSchema(field);
     } else {
-      schema = _buildNestedSchema(field);
+      // Nested schema reference (custom type with its own schema)
+      schema = _buildSchemaForType(field.type);
     }
 
     // Apply constraints
@@ -50,23 +90,6 @@ class FieldBuilder {
     }
 
     return schema;
-  }
-
-  String _buildPrimitiveSchema(FieldInfo field) {
-    if (field.type.isDartCoreString) {
-      return 'Ack.string()';
-    } else if (field.type.isDartCoreInt) {
-      return 'Ack.integer()';
-    } else if (field.type.isDartCoreDouble) {
-      return 'Ack.double()';
-    } else if (field.type.isDartCoreBool) {
-      return 'Ack.boolean()';
-    } else if (field.type.isDartCoreNum) {
-      return 'Ack.double()'; // Map num to double
-    } else {
-      throw UnsupportedError(
-          'Unsupported primitive type: ${field.type.getDisplayString()}');
-    }
   }
 
   String _buildListSchema(FieldInfo field) {
@@ -89,15 +112,9 @@ class FieldBuilder {
 
     // Try to get type arguments from the DartType
     if (mapType is ParameterizedType && mapType.typeArguments.length == 2) {
-      final keyType = mapType.typeArguments[0];
-
-      // Verify key type is String (required for JSON)
-      if (!keyType.isDartCoreString) {
-        throw UnsupportedError(
-            'Map keys must be String for JSON serialization. Found: ${keyType.getDisplayString()}');
-      }
-
       // Use object with additionalProperties for all Maps
+      // Note: Non-String map keys will fail at runtime during JSON serialization,
+      // which is acceptable behavior - the generator should not prevent code generation
       return 'Ack.object({}, additionalProperties: true)';
     }
 
@@ -121,54 +138,57 @@ class FieldBuilder {
   }
 
   String _buildSchemaForType(DartType type) {
-    // Helper method to build schema for any DartType
-    if (type.isDartCoreString) {
-      return 'Ack.string()';
-    } else if (type.isDartCoreInt) {
-      return 'Ack.integer()';
-    } else if (type.isDartCoreDouble) {
-      return 'Ack.double()';
-    } else if (type.isDartCoreBool) {
-      return 'Ack.boolean()';
-    } else if (type.isDartCoreNum) {
-      return 'Ack.double()'; // Map num to double
-    } else if (type.toString() == 'dynamic' || type.isDartCoreObject) {
+    final typeName = type.getDisplayString().replaceAll('?', '');
+
+    // Check primitives via registry (use simple string matching)
+    if (_primitiveSchemas.containsKey(typeName)) {
+      return _primitiveSchemas[typeName]!;
+    }
+
+    // Check special types via registry
+    for (final entry in _specialTypeSchemas.entries) {
+      if (_isDartCoreType(type, entry.key)) {
+        return entry.value;
+      }
+    }
+
+    // Dynamic/Object
+    if (type.toString() == 'dynamic' || type.isDartCoreObject) {
       return 'Ack.any()';
-    } else if (type is TypeParameterType) {
-      // Generic type parameter
+    }
+
+    // Generic type parameter
+    if (type is TypeParameterType) {
       return 'Ack.any()';
-    } else if (type.isDartCoreList) {
-      // Nested list
+    }
+
+    // Collections (recursive)
+    if (type.isDartCoreList) {
       if (type is ParameterizedType && type.typeArguments.isNotEmpty) {
-        final itemType = type.typeArguments[0];
-        return 'Ack.list(${_buildSchemaForType(itemType)})';
+        return 'Ack.list(${_buildSchemaForType(type.typeArguments[0])})';
       }
       return 'Ack.list(Ack.any())';
-    } else if (type.isDartCoreMap) {
-      // Nested map - use object with additionalProperties
+    }
+
+    if (type.isDartCoreMap) {
       return 'Ack.object({}, additionalProperties: true)';
-    } else if (type.isDartCoreSet) {
-      // Nested set
+    }
+
+    if (type.isDartCoreSet) {
       if (type is ParameterizedType && type.typeArguments.isNotEmpty) {
-        final elementType = type.typeArguments[0];
-        return 'Ack.list(${_buildSchemaForType(elementType)}).unique()';
+        return 'Ack.list(${_buildSchemaForType(type.typeArguments[0])}).unique()';
       }
       return 'Ack.list(Ack.any()).unique()';
-    } else {
-      // Assume it's a custom schema model - reference as a variable
-      final typeName = type.getDisplayString().replaceAll('?', '');
-      final camelCaseName =
-          '${typeName[0].toLowerCase()}${typeName.substring(1)}';
-      return '${camelCaseName}Schema';
     }
+
+    // Custom schema reference
+    return '${typeName[0].toLowerCase()}${typeName.substring(1)}Schema';
   }
 
-  String _buildNestedSchema(FieldInfo field) {
-    final typeName = field.type.getDisplayString();
-    final baseType = typeName.replaceAll('?', '');
-    final camelCaseName =
-        '${baseType[0].toLowerCase()}${baseType.substring(1)}';
-    return '${camelCaseName}Schema';
+  /// Checks if a type is a specific dart:core type by name
+  bool _isDartCoreType(DartType type, String typeName) {
+    final element = type.element;
+    return element?.name == typeName && element?.library?.name == 'dart.core';
   }
 
   String _buildEnumSchema(FieldInfo field) {
@@ -190,55 +210,13 @@ class FieldBuilder {
   }
 
   String _applyConstraint(String schema, ConstraintInfo constraint) {
-    switch (constraint.name) {
-      // STRING LENGTH CONSTRAINTS
-      case 'minLength':
-        return '$schema.minLength(${constraint.arguments.first})';
-      case 'maxLength':
-        return '$schema.maxLength(${constraint.arguments.first})';
-      case 'notEmpty':
-        return '$schema.notEmpty()';
-
-      // STRING FORMAT CONSTRAINTS
-      case 'email':
-        return '$schema.email()';
-      case 'url':
-        return '$schema.url()';
-
-      // STRING PATTERN CONSTRAINTS
-      case 'matches':
-        return '$schema.matches(r\'${constraint.arguments.first}\')';
-
-      // NUMERIC CONSTRAINTS
-      case 'min':
-        return '$schema.min(${constraint.arguments.first})';
-      case 'max':
-        return '$schema.max(${constraint.arguments.first})';
-      case 'positive':
-        return '$schema.positive()';
-      case 'multipleOf':
-        return '$schema.multipleOf(${constraint.arguments.first})';
-
-      // LIST CONSTRAINTS
-      case 'minItems':
-        return '$schema.minItems(${constraint.arguments.first})';
-      case 'maxItems':
-        return '$schema.maxItems(${constraint.arguments.first})';
-
-      // ENUM CONSTRAINTS
-      case 'enumString':
-        final values = constraint.arguments.map((v) => "'$v'").join(', ');
-        return '$schema.enumString([$values])';
-
-      // LEGACY SUPPORT
-      case 'pattern':
-        return '$schema.matches(r\'${constraint.arguments.first}\')';
-      case 'enumFromType':
-        return schema;
-
-      default:
-        // Unknown constraint, ignore for now
-        return schema;
+    final generator = _constraints[constraint.name];
+    if (generator != null) {
+      return generator(schema, constraint.arguments);
     }
+
+    // Unknown constraint - silently ignore (allows custom extensions)
+    // The Dart compiler will catch method-not-found errors if constraint is a typo
+    return schema;
   }
 }

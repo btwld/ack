@@ -31,18 +31,3 @@ Map<String, Object?> deepMerge(
 
   return result;
 }
-
-/// Basic heuristic to check if a string looks like it could be JSON.
-/// This is not a validator, just a quick check.
-bool looksLikeJson(String value) {
-  if (value.isEmpty) return false;
-  final trimmed = value.trim();
-
-  return (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
-      (trimmed == 'null') ||
-      (trimmed == 'true' || trimmed == 'false') ||
-      (double.tryParse(trimmed) != null &&
-          !trimmed.contains(RegExp(r'[a-zA-Z]'))) || // Number
-      (trimmed.startsWith('"') && trimmed.endsWith('"')); // String literal
-}

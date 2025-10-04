@@ -8,7 +8,6 @@ import 'package:source_gen/source_gen.dart';
 import 'analyzer/model_analyzer.dart';
 import 'builders/schema_builder.dart';
 import 'models/model_info.dart';
-import 'utils/error_messages.dart';
 import 'validation/code_validator.dart';
 import 'validation/model_validator.dart';
 
@@ -60,7 +59,11 @@ class AckSchemaGenerator extends Generator {
         final modelInfo = analyzer.analyze(element, annotationReader);
         modelInfos.add(modelInfo);
       } catch (e) {
-        throw GenErrorMessages.forAnnotationError(element, e);
+        throw InvalidGenerationSourceError(
+          'Invalid @AckModel annotation on class ${element.name}: $e',
+          element: element,
+          todo: 'Check annotation syntax. See: https://ack.dev/docs/annotations',
+        );
       }
     }
 
@@ -92,7 +95,11 @@ class AckSchemaGenerator extends Generator {
         final schemaField = schemaBuilder.buildSchemaField(modelInfo);
         schemaFields.add(schemaField);
       } catch (e) {
-        throw GenErrorMessages.forSchemaGenerationError(element, e);
+        throw InvalidGenerationSourceError(
+          'Schema generation failed for ${element.name}: $e',
+          element: element,
+          todo: 'Ensure all field types are supported. See: https://ack.dev/docs/supported-types',
+        );
       }
     }
 

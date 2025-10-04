@@ -3,7 +3,6 @@ import 'package:source_gen/source_gen.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
-import '../utils/naming.dart';
 import 'field_analyzer.dart';
 
 /// Analyzes classes annotated with @AckModel
@@ -16,8 +15,7 @@ class ModelAnalyzer {
         ? null
         : annotation.read('schemaName').stringValue;
 
-    final schemaClassName =
-        schemaName ?? NamingUtils.getSchemaClassName(element.name);
+    final schemaClassName = schemaName ?? '${element.name}Schema';
 
     // Extract description if provided
     final description = annotation.read('description').isNull
@@ -49,7 +47,6 @@ class ModelAnalyzer {
 
     // Analyze all fields
     final fields = <FieldInfo>[];
-    final requiredFields = <String>[];
 
     // Get all fields including inherited ones
     final allFields = [
@@ -69,10 +66,6 @@ class ModelAnalyzer {
       }
 
       fields.add(fieldInfo);
-
-      if (fieldInfo.isRequired) {
-        requiredFields.add(fieldInfo.jsonKey);
-      }
     }
 
     // Validate additionalPropertiesField if specified
@@ -86,12 +79,9 @@ class ModelAnalyzer {
       schemaClassName: schemaClassName,
       description: description,
       fields: fields,
-      requiredFields: requiredFields,
       additionalProperties: additionalProperties,
       additionalPropertiesField: additionalPropertiesField,
       // New discriminated properties
-      isDiscriminatedBase: discriminatedKey != null,
-      isDiscriminatedSubtype: discriminatedValue != null,
       discriminatorKey: discriminatedKey,
       discriminatorValue: discriminatedValue,
       // subtypes will be populated later in a second pass
@@ -266,12 +256,8 @@ class ModelAnalyzer {
         schemaClassName: baseClass.schemaClassName,
         description: baseClass.description,
         fields: baseClass.fields,
-        requiredFields: baseClass.requiredFields,
-        hasDiscriminator: baseClass.hasDiscriminator,
         additionalProperties: baseClass.additionalProperties,
         additionalPropertiesField: baseClass.additionalPropertiesField,
-        isDiscriminatedBase: true,
-        isDiscriminatedSubtype: false,
         discriminatorKey: discriminatorKey,
         discriminatorValue: null,
         subtypes: matchingSubtypes,
@@ -298,12 +284,8 @@ class ModelAnalyzer {
         schemaClassName: subtype.schemaClassName,
         description: subtype.description,
         fields: subtype.fields,
-        requiredFields: subtype.requiredFields,
-        hasDiscriminator: subtype.hasDiscriminator,
         additionalProperties: subtype.additionalProperties,
         additionalPropertiesField: subtype.additionalPropertiesField,
-        isDiscriminatedBase: false,
-        isDiscriminatedSubtype: true,
         discriminatorKey:
             parentDiscriminatorKey, // Add parent's discriminator key
         discriminatorValue: subtype.discriminatorValue,

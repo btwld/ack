@@ -46,13 +46,6 @@ class CodeValidator {
       );
     }
   }
-
-  /// Quick syntax check that returns true if code is valid.
-  ///
-  /// This is a convenience method for simple validation scenarios.
-  static bool isValid(String dartCode) {
-    return validate(dartCode).isSuccess;
-  }
 }
 
 /// Result of code validation containing success status and error details.

@@ -131,8 +131,47 @@ void main() {
         expect(result3.isOk, isTrue);
       });
 
-      test('transform should work with optional nullable', () {},
-          skip: 'TODO: Fix transform with optional nullable');
+      test('transform should work with optional nullable', () {
+        // The key issue being tested: transform must preserve isOptional and isNullable flags
+        // so that ObjectSchema correctly recognizes the field as optional/nullable
+        final transformedSchema = Ack.string()
+            .optional()
+            .nullable()
+            .transform((val) => val ?? 'anonymous');
+
+        // Verify flags are preserved
+        expect(transformedSchema.isOptional, isTrue,
+            reason: 'Transform must preserve isOptional flag');
+        expect(transformedSchema.isNullable, isTrue,
+            reason: 'Transform must preserve isNullable flag');
+
+        final objectSchema = Ack.object({
+          'name': Ack.string(),
+          'nickname': transformedSchema,
+        });
+
+        // Test 1: Missing field (optional) - field should not be present in result
+        final result1 = objectSchema.safeParse({'name': 'John'});
+        expect(result1.isOk, isTrue,
+            reason: 'Optional field should allow missing value');
+        expect(result1.getOrThrow()?['nickname'], isNull,
+            reason: 'Missing optional field should be null/absent in result');
+
+        // Test 2: Explicit null value (nullable) - transform should be called
+        final result2 =
+            objectSchema.safeParse({'name': 'John', 'nickname': null});
+        expect(result2.isOk, isTrue,
+            reason: 'Nullable field should accept null');
+        expect(result2.getOrThrow()?['nickname'], 'anonymous',
+            reason: 'Transform should convert null to default value');
+
+        // Test 3: Actual value - transform should pass through
+        final result3 =
+            objectSchema.safeParse({'name': 'John', 'nickname': 'Johnny'});
+        expect(result3.isOk, isTrue);
+        expect(result3.getOrThrow()?['nickname'], 'Johnny',
+            reason: 'Transform should pass through non-null values');
+      });
     });
 
     group('JSON Schema output', () {

@@ -22,7 +22,6 @@ void main() {
           createField('name', 'String', isRequired: true),
           createField('email', 'String', isNullable: true),
         ],
-        requiredFields: ['id', 'name'],
         additionalProperties: false,
       );
 
@@ -51,7 +50,6 @@ void main() {
           createField('inStock', 'bool', isRequired: true),
           createField('description', 'String', isNullable: true),
         ],
-        requiredFields: ['name', 'price', 'inStock'],
         additionalProperties: false,
       );
 
@@ -73,7 +71,6 @@ void main() {
           createField('title', 'String', isRequired: true),
           createListField('tags', 'String'),
         ],
-        requiredFields: ['title', 'tags'],
         additionalProperties: false,
       );
 
@@ -92,7 +89,6 @@ void main() {
           createField('id', 'String', isRequired: true),
           createField('customer', 'Customer', isRequired: true),
         ],
-        requiredFields: ['id', 'customer'],
         additionalProperties: false,
       );
 
@@ -110,7 +106,6 @@ void main() {
         fields: [
           createField('value', 'String', isRequired: true),
         ],
-        requiredFields: ['value'],
         additionalProperties: false,
       );
 
@@ -129,7 +124,6 @@ void main() {
         fields: [
           createField('name', 'String', isRequired: true),
         ],
-        requiredFields: ['name'],
         additionalProperties: true,
       );
 

@@ -192,6 +192,28 @@ void main() {
                 .message,
             'Must be a multiple of 5. 11 is not.');
       });
+
+      test('should throw ArgumentError when multipleOf is zero', () {
+        expect(
+          () => IntegerSchema().multipleOf(0),
+          throwsA(isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            'multipleOf value cannot be zero',
+          )),
+        );
+      });
+
+      test('should throw ArgumentError when multipleOf is zero for doubles', () {
+        expect(
+          () => DoubleSchema().multipleOf(0.0),
+          throwsA(isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            'multipleOf value cannot be zero',
+          )),
+        );
+      });
     });
   });
 
