@@ -62,7 +62,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSourceError(
           'Invalid @AckModel annotation on class ${element.name}: $e',
           element: element,
-          todo: 'Check annotation syntax. See: https://ack.dev/docs/annotations',
+          todo: 'Check annotation syntax. See: https://docs.page/btwld/ack/annotations',
         );
       }
     }
@@ -98,7 +98,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSourceError(
           'Schema generation failed for ${element.name}: $e',
           element: element,
-          todo: 'Ensure all field types are supported. See: https://ack.dev/docs/supported-types',
+          todo: 'Ensure all field types are supported. See: https://docs.page/btwld/ack/supported-types',
         );
       }
     }

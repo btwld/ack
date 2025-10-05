@@ -204,7 +204,8 @@ void main() {
         );
       });
 
-      test('should throw ArgumentError when multipleOf is zero for doubles', () {
+      test('should throw ArgumentError when multipleOf is zero for doubles',
+          () {
         expect(
           () => DoubleSchema().multipleOf(0.0),
           throwsA(isA<ArgumentError>().having(

@@ -41,7 +41,7 @@ import 'package:ack/ack.dart';
 final userSchema = Ack.object({
   'name': Ack.string().minLength(2).maxLength(50),
   'email': Ack.string().email(),
-  'age': Ack.integer().min(0).max(120).optional().nullable(),
+  'age': Ack.integer().min(0).max(120).optional(),
 });
 
 // Validate data against the schema
@@ -60,6 +60,8 @@ if (result.isOk) {
   print('Validation failed: $error');
 }
 ```
+
+Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
 
 ### Advanced Usage
 

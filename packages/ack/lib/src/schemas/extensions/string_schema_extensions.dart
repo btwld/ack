@@ -117,4 +117,22 @@ extension StringSchemaExtensions on StringSchema {
   StringSchema literal(String value) {
     return withConstraint(StringLiteralConstraint(value));
   }
+
+  /// Trims leading and trailing whitespace from the string before validation.
+  /// Returns a transformed schema that applies String.trim() to the input.
+  TransformedSchema<String, String> trim() {
+    return transform((s) => s?.trim() ?? '');
+  }
+
+  /// Converts the string to lowercase after validation.
+  /// Returns a transformed schema that applies String.toLowerCase() to the input.
+  TransformedSchema<String, String> toLowerCase() {
+    return transform((s) => s?.toLowerCase() ?? '');
+  }
+
+  /// Converts the string to uppercase after validation.
+  /// Returns a transformed schema that applies String.toUpperCase() to the input.
+  TransformedSchema<String, String> toUpperCase() {
+    return transform((s) => s?.toUpperCase() ?? '');
+  }
 }

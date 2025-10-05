@@ -13,8 +13,8 @@ void main() {
         test('should validate basic string', () {
           final schema = Ack.string();
           expect(schema.safeParse('hello').isOk, isTrue);
-          expect(
-              schema.safeParse(123).isOk, isTrue); // Type coercion: 123 -> "123"
+          expect(schema.safeParse(123).isOk,
+              isTrue); // Type coercion: 123 -> "123"
         });
 
         test('should validate with constraints', () {
@@ -355,8 +355,8 @@ void main() {
           });
 
           expect(schema.safeParse({'name': 'John', 'age': 30}).isOk, isTrue);
-          expect(
-              schema.safeParse({'name': 'John', 'age': 'thirty'}).isOk, isFalse);
+          expect(schema.safeParse({'name': 'John', 'age': 'thirty'}).isOk,
+              isFalse);
         });
 
         test('should validate required properties', () {
@@ -375,14 +375,15 @@ void main() {
             'name': Ack.string(),
           }, additionalProperties: true);
 
-          expect(
-              schema.safeParse({'name': 'John', 'extra': 'value'}).isOk, isTrue);
+          expect(schema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
+              isTrue);
 
           final strictSchema = Ack.object({
             'name': Ack.string(),
           }, additionalProperties: false);
 
-          expect(strictSchema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
+          expect(
+              strictSchema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
               isFalse);
         });
 

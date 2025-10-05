@@ -19,11 +19,12 @@ Add the following dependencies to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_annotations: ^1.0.0
+  # Ack 1.0 is in progress; use the latest 0.3 alpha until stable is released
+  ack: ^latest
+  ack_annotations: ^latest
 
 dev_dependencies:
-  ack_generator: ^1.0.0
+  ack_generator: ^latest
   build_runner: ^2.4.0
 ```
 
@@ -122,9 +123,9 @@ class Product {
 // Generated schema
 final productSchema = Ack.object({
   'name': Ack.string(),
-  'price': Ack.number(),
+  'price': Ack.double(),
   'inStock': Ack.boolean(),
-  'tags': Ack.array(Ack.string()),
+  'tags': Ack.list(Ack.string()),
 });
 ```
 
@@ -275,13 +276,13 @@ The generator creates a discriminated schema that validates based on the discrim
 // Generated schemas
 final circleSchema = Ack.object({
   'type': Ack.literal('circle'),
-  'radius': Ack.number().positive(),
+  'radius': Ack.double().positive(),
 });
 
 final rectangleSchema = Ack.object({
   'type': Ack.literal('rectangle'),
-  'width': Ack.number().positive(),
-  'height': Ack.number().positive(),
+  'width': Ack.double().positive(),
+  'height': Ack.double().positive(),
 });
 
 final shapeSchema = Ack.discriminated(
@@ -335,11 +336,17 @@ You can use the following constraints with `@AckField`:
 - `positive()` - Positive numbers only
 - `negative()` - Negative numbers only
 - `nonNegative()` - Zero or positive numbers
+- `nonPositive()` - Zero or negative numbers
 
-**Array constraints:**
-- `minLength(n)` - Minimum array length
-- `maxLength(n)` - Maximum array length
-- `notEmpty` - Non-empty array
+**List constraints:**
+- `minLength(n)` - Minimum list length
+- `maxLength(n)` - Maximum list length
+- `notEmpty` - Non-empty list
+
+```dart
+final priceSchema = Ack.double().nonNegative().max(100);
+```
+Use `nonNegative()` / `nonPositive()` as concise aliases for `.min(0)` / `.max(0)` while keeping consistent error messages.
 
 ## Usage examples
 
@@ -369,7 +376,7 @@ void handleCreateUser(Map<String, dynamic> requestBody) {
   final result = createUserRequestSchema.safeParse(requestBody);
 
   if (!result.isOk) {
-    return sendError(400, result.error.toString());
+    return sendError(400, result.getError().toString());
   }
 
   final validatedData = result.getOrThrow();
@@ -416,7 +423,7 @@ void loadConfig(String jsonString) {
   final result = databaseConfigSchema.safeParse(json);
 
   if (!result.isOk) {
-    throw ConfigurationError('Invalid database config: ${result.error}');
+    throw ConfigurationError('Invalid database config: ${result.getError()}');
   }
 
   final validatedData = result.getOrThrow();

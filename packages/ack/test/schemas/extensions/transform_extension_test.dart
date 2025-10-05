@@ -86,17 +86,23 @@ void main() {
     });
 
     test('should preserve isOptional flag after transform', () {
-      final schema = Ack.string().optional().transform((val) => val ?? 'default');
+      final schema =
+          Ack.string().optional().transform((val) => val ?? 'default');
       expect(schema.isOptional, isTrue);
     });
 
     test('should preserve isNullable flag after transform', () {
-      final schema = Ack.string().nullable().transform((val) => val ?? 'default');
+      final schema =
+          Ack.string().nullable().transform((val) => val ?? 'default');
       expect(schema.isNullable, isTrue);
     });
 
-    test('should preserve both isOptional and isNullable flags after transform', () {
-      final schema = Ack.string().optional().nullable().transform((val) => val ?? 'default');
+    test('should preserve both isOptional and isNullable flags after transform',
+        () {
+      final schema = Ack.string()
+          .optional()
+          .nullable()
+          .transform((val) => val ?? 'default');
       expect(schema.isOptional, isTrue);
       expect(schema.isNullable, isTrue);
     });

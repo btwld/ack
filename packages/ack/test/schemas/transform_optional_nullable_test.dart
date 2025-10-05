@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 /// This test investigates the skipped test in optional_nullable_semantics_test.dart:134-135
 void main() {
   group('Transform with optional().nullable() combination', () {
-    test('should handle .optional().nullable().transform() - missing field', () {
+    test('should handle .optional().nullable().transform() - missing field',
+        () {
       final schema = Ack.string().optional().nullable().transform((val) {
         if (val == null) return 'default';
         return val.toUpperCase();
@@ -19,7 +20,8 @@ void main() {
         print('Error: ${result.getError()}');
       }
 
-      expect(result.isOk, isTrue, reason: 'Should successfully transform a string value');
+      expect(result.isOk, isTrue,
+          reason: 'Should successfully transform a string value');
       expect(result.getOrNull(), equals('HELLO'));
     });
 
@@ -41,7 +43,8 @@ void main() {
       expect(result.getOrNull(), equals('default'));
     });
 
-    test('should work in object context with optional().nullable().transform()', () {
+    test('should work in object context with optional().nullable().transform()',
+        () {
       final schema = Ack.object({
         'name': Ack.string(),
         'nickname': Ack.string().optional().nullable().transform((val) {
@@ -77,7 +80,8 @@ void main() {
         print('  Error: ${result3.getError()}');
       }
 
-      expect(result1.isOk, isTrue, reason: 'Should handle missing optional field');
+      expect(result1.isOk, isTrue,
+          reason: 'Should handle missing optional field');
       expect(result2.isOk, isTrue, reason: 'Should handle null value');
       expect(result3.isOk, isTrue, reason: 'Should handle actual value');
 
