@@ -26,21 +26,27 @@ class TypeBuilder {
     final typeName = _getExtensionTypeName(model);
     final schemaVarName = _toCamelCase(model.schemaClassName);
 
+    final isObjectSchema = model.representationType == kMapType;
+    final valueVarName = isObjectSchema ? '_data' : '_value';
+
     return ExtensionType(
       (b) => b
         ..name = typeName
         ..docs.addAll(_buildDocs(model))
         ..representationDeclaration = RepresentationDeclaration(
           (r) => r
-            ..declaredRepresentationType = refer('Map<String, Object?>')
-            ..name = '_data',
+            ..declaredRepresentationType = refer(model.representationType)
+            ..name = valueVarName,
         )
-        ..implements.add(refer('Map<String, Object?>'))
+        ..implements.add(refer(model.representationType))
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
           ..._buildGetters(model, allModels),
-          _buildToJson(),
-          if (model.fields.isNotEmpty) _buildCopyWith(model),
+          // Only add toJson and copyWith for object schemas
+          if (isObjectSchema) ...[
+            _buildToJson(),
+            if (model.fields.isNotEmpty) _buildCopyWith(model),
+          ],
         ]),
     );
   }
@@ -212,13 +218,16 @@ class TypeBuilder {
   }
 
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
+    final typeName = _getExtensionTypeName(model);
+    final castType = model.representationType;
+
     return [
       // Static parse factory
       Method(
         (m) => m
           ..name = 'parse'
           ..static = true
-          ..returns = refer(_getExtensionTypeName(model))
+          ..returns = refer(typeName)
           ..requiredParameters.add(
             Parameter(
               (p) => p
@@ -228,7 +237,7 @@ class TypeBuilder {
           )
           ..body = Code('''
 final validated = $schemaVarName.parse(data);
-return ${_getExtensionTypeName(model)}(validated as Map<String, Object?>);
+return $typeName(validated as $castType);
 '''),
       ),
       // Static safeParse method
@@ -236,7 +245,7 @@ return ${_getExtensionTypeName(model)}(validated as Map<String, Object?>);
         (m) => m
           ..name = 'safeParse'
           ..static = true
-          ..returns = refer('SchemaResult<${_getExtensionTypeName(model)}>')
+          ..returns = refer('SchemaResult<$typeName>')
           ..requiredParameters.add(
             Parameter(
               (p) => p
@@ -247,7 +256,7 @@ return ${_getExtensionTypeName(model)}(validated as Map<String, Object?>);
           ..body = Code('''
 final result = $schemaVarName.safeParse(data);
 return result.match(
-  onOk: (validated) => SchemaResult.ok(${_getExtensionTypeName(model)}(validated as Map<String, Object?>)),
+  onOk: (validated) => SchemaResult.ok($typeName(validated as $castType)),
   onFail: (error) => SchemaResult.fail(error),
 );'''),
       ),

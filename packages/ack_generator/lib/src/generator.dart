@@ -93,7 +93,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSourceError(
           'Failed to analyze schema variable "${variable.name}": $e',
           element: variable,
-          todo: 'Ensure the variable uses Ack.object({...}) syntax',
+          todo: 'Ensure the variable uses Ack schema syntax (e.g., Ack.object(), Ack.string())',
         );
       }
     }

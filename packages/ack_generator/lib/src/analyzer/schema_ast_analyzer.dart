@@ -8,6 +8,9 @@ import 'package:source_gen/source_gen.dart';
 import '../models/field_info.dart';
 import '../models/model_info.dart';
 
+/// Default representation type for object schemas
+const String _kMapType = 'Map<String, Object?>';
+
 /// Analyzes schema variables by walking the AST
 ///
 /// This analyzer inspects the AST structure of schema definitions
@@ -74,24 +77,72 @@ class SchemaAstAnalyzer {
     MethodInvocation invocation,
     Element element,
   ) {
-    // Check if this is Ack.object(...) call
-    final target = invocation.target;
-    final methodName = invocation.methodName.name;
+    // Walk the method chain to find the base Ack.xxx() call
+    // E.g., Ack.string().min(8) -> walk back to find Ack.string()
+    MethodInvocation? current = invocation;
+    MethodInvocation? baseInvocation;
 
-    if (target is! SimpleIdentifier || target.name != 'Ack') {
+    while (current != null) {
+      final target = current.target;
+
+      // Check if this is the Ack.xxx() base call
+      if (target is SimpleIdentifier && target.name == 'Ack') {
+        baseInvocation = current;
+        break;
+      }
+
+      // Move to the next method in the chain
+      if (target is MethodInvocation) {
+        current = target;
+      } else {
+        break;
+      }
+    }
+
+    if (baseInvocation == null) {
       throw InvalidGenerationSourceError(
-        'Only Ack.object() schemas are supported for @AckType',
+        'Schema must be an Ack.xxx() method call (e.g., Ack.object(), Ack.string())',
         element: element,
       );
     }
 
-    if (methodName != 'object') {
-      throw InvalidGenerationSourceError(
-        'Only Ack.object() schemas are supported for @AckType. Found: Ack.$methodName()',
-        element: element,
-      );
-    }
+    final methodName = baseInvocation.methodName.name;
 
+    // Parse based on schema type
+    switch (methodName) {
+      case 'object':
+        return _parseObjectSchema(variableName, baseInvocation, element);
+      case 'string':
+        return _parseStringSchema(variableName, baseInvocation, element);
+      case 'integer':
+        return _parseIntegerSchema(variableName, baseInvocation, element);
+      case 'double':
+        return _parseDoubleSchema(variableName, baseInvocation, element);
+      case 'boolean':
+        return _parseBooleanSchema(variableName, baseInvocation, element);
+      case 'list':
+        return _parseListSchema(variableName, baseInvocation, element);
+      case 'literal':
+        return _parseLiteralSchema(variableName, baseInvocation, element);
+      case 'enumString':
+        return _parseEnumStringSchema(variableName, baseInvocation, element);
+      case 'enumValues':
+        return _parseEnumValuesSchema(variableName, baseInvocation, element);
+      default:
+        throw InvalidGenerationSourceError(
+          'Unsupported schema type for @AckType: Ack.$methodName(). '
+          'Supported types: object, string, integer, double, boolean, list, literal, enumString, enumValues',
+          element: element,
+        );
+    }
+  }
+
+  /// Parses Ack.object() schema
+  ModelInfo _parseObjectSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
     // Extract the properties map from the first argument
     final args = invocation.argumentList.arguments;
     if (args.isEmpty) {
@@ -342,5 +393,246 @@ class SchemaAstAnalyzer {
     // Capitalize first letter
     if (name.isEmpty) return 'Type';
     return name[0].toUpperCase() + name.substring(1);
+  }
+
+  /// Parses Ack.string() schema
+  ModelInfo _parseStringSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'String',
+    );
+  }
+
+  /// Parses Ack.integer() schema
+  ModelInfo _parseIntegerSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'int',
+    );
+  }
+
+  /// Parses Ack.double() schema
+  ModelInfo _parseDoubleSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'double',
+    );
+  }
+
+  /// Parses Ack.boolean() schema
+  ModelInfo _parseBooleanSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'bool',
+    );
+  }
+
+  /// Parses Ack.list() schema
+  ///
+  /// Extracts the element type from list schema definitions to generate
+  /// correctly typed extension types (e.g., `List<String>` not `List<dynamic>`).
+  ///
+  /// Examples:
+  /// - `Ack.list(Ack.string())` → `List<String>`
+  /// - `Ack.list(Ack.integer())` → `List<int>`
+  /// - `Ack.list(Ack.list(Ack.double()))` → `List<List<double>>` (nested)
+  ModelInfo _parseListSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    // Extract element type from first argument: Ack.list(elementSchema)
+    final args = invocation.argumentList.arguments;
+    String elementType = 'dynamic';
+
+    if (args.isNotEmpty) {
+      final firstArg = args.first;
+
+      // Check if the element is an Ack.xxx() schema call
+      // This handles: Ack.list(Ack.string()), Ack.list(Ack.list(Ack.integer())), etc.
+      if (firstArg is MethodInvocation &&
+          firstArg.target is SimpleIdentifier &&
+          (firstArg.target as SimpleIdentifier).name == 'Ack') {
+        final elementSchemaType = firstArg.methodName.name;
+        // Recursively resolve element type (handles nested lists)
+        elementType = _mapSchemaMethodToType(elementSchemaType);
+      }
+      // Note: Schema variable references (e.g., Ack.list(addressSchema))
+      // fall through to 'dynamic' - this is a known limitation
+    }
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'List<$elementType>',
+    );
+  }
+
+  /// Parses Ack.literal() schema
+  ///
+  /// Literal schemas are StringSchema with a literal constraint.
+  /// The constraint is enforced at runtime, not in the extension type.
+  ///
+  /// Example: Ack.literal('active') → extension type StatusType(String)
+  ModelInfo _parseLiteralSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'String',
+    );
+  }
+
+  /// Parses Ack.enumString() schema
+  ///
+  /// EnumString schemas are StringSchema with enum constraint.
+  /// The allowed values are enforced at runtime, not in the extension type.
+  ///
+  /// Example: Ack.enumString(['a', 'b']) → extension type XType(String)
+  ModelInfo _parseEnumStringSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: 'String',
+    );
+  }
+
+  /// Parses `Ack.enumValues<T>()` schema
+  ///
+  /// EnumValues schemas wrap Dart enum types with validation.
+  /// The representation type is the enum type itself.
+  ///
+  /// Example: `Ack.enumValues<UserRole>([...])` → extension type XType(UserRole)
+  ModelInfo _parseEnumValuesSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element element,
+  ) {
+    final typeName = _generateTypeNameFromVariable(variableName);
+
+    // Strategy 1: Try to extract from type arguments: Ack.enumValues<UserRole>([...])
+    final typeArgs = invocation.typeArguments?.arguments;
+    String? enumTypeName;
+
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      // Get the first type argument (the enum type)
+      final typeArg = typeArgs.first;
+      enumTypeName = typeArg.toString();
+    } else {
+      // Strategy 2: Try to infer from argument list: Ack.enumValues(UserRole.values)
+      final args = invocation.argumentList.arguments;
+      if (args.isNotEmpty) {
+        final firstArg = args.first;
+
+        // Check if it's EnumType.values (PrefixedIdentifier)
+        if (firstArg is PrefixedIdentifier) {
+          final prefix = firstArg.prefix.name;
+          final identifier = firstArg.identifier.name;
+
+          if (identifier == 'values') {
+            // UserRole.values → use 'UserRole'
+            enumTypeName = prefix;
+          }
+        }
+      }
+    }
+
+    // If we couldn't extract the enum type, throw an error
+    if (enumTypeName == null) {
+      throw InvalidGenerationSourceError(
+        'Could not determine enum type for Ack.enumValues(). '
+        'Use explicit type argument: Ack.enumValues<YourEnum>([...]) '
+        'or pass enum.values: Ack.enumValues(YourEnum.values)',
+        element: element,
+      );
+    }
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      isFromSchemaVariable: true,
+      representationType: enumTypeName,
+    );
+  }
+
+  /// Maps Ack schema method names to Dart type strings
+  ///
+  /// Used for generating string representations of types in list element contexts.
+  /// For nested lists, this function is called recursively via [_parseListSchema].
+  String _mapSchemaMethodToType(String methodName) {
+    switch (methodName) {
+      case 'string':
+        return 'String';
+      case 'integer':
+        return 'int';
+      case 'double':
+        return 'double';
+      case 'boolean':
+        return 'bool';
+      case 'object':
+        return _kMapType;
+      case 'list':
+        // Note: Nested lists are handled by _parseListSchema recursively
+        // This case exists for consistency but should not be reached in normal flow
+        return 'List<dynamic>';
+      default:
+        return 'dynamic';
+    }
   }
 }

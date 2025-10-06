@@ -1,6 +1,9 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'field_info.dart';
 
+/// Default representation type for object schemas
+const String kMapType = 'Map<String, Object?>';
+
 /// Information about an annotated model class
 class ModelInfo {
   final String className;
@@ -33,6 +36,9 @@ class ModelInfo {
   /// Whether this ModelInfo was created from a schema variable (not a class)
   final bool isFromSchemaVariable;
 
+  /// Representation type for extension type (e.g., 'String', 'int', 'Map&lt;String, Object?&gt;')
+  final String representationType;
+
   const ModelInfo({
     required this.className,
     required this.schemaClassName,
@@ -45,5 +51,6 @@ class ModelInfo {
     this.discriminatorValue,
     this.subtypes,
     this.isFromSchemaVariable = false,
+    this.representationType = kMapType,
   });
 }

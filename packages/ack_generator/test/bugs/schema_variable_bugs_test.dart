@@ -1,19 +1,18 @@
-/// Tests for critical bugs in schema variable type extraction
+/// Tests for critical bugs in schema variable type extraction.
 ///
 /// This file contains reproduction tests for 3 critical issues:
-/// 1. List type extraction returns List<dynamic> instead of proper types
+/// 1. List type extraction returns `List<dynamic>` instead of proper types
 /// 2. Nested schema references are silently ignored (return null)
 /// 3. Method chain walker has no safety guards (could infinite loop)
 ///
 /// These tests DOCUMENT THE BUGS and will FAIL until the bugs are fixed.
+library;
 
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:ack_generator/src/analyzer/schema_ast_analyzer.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
-import 'package:source_gen/source_gen.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/test_assets.dart';
