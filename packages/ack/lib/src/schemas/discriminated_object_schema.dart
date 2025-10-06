@@ -4,8 +4,6 @@ part of 'schema.dart';
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
 /// `schemas` to validate the object.
-///
-/// Note: DiscriminatedObjectSchema does not support default values.
 @immutable
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, DiscriminatedObjectSchema> {
@@ -18,35 +16,34 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     super.isNullable,
     super.isOptional,
     super.description,
+    super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(defaultValue: null);
+  });
 
   @override
   SchemaType get schemaType => SchemaType.discriminated;
 
-  /// DiscriminatedObjectSchema uses custom polymorphic validation logic,
-  /// so it overrides parseAndValidate directly.
-  ///
-  /// Key behaviors:
-  /// 1. For non-null input: validates discriminator and routes to appropriate schema
-  /// 2. For null input with default: recursively validates default through discriminator logic
-  /// 3. For null input without default but nullable: returns null
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Inline null handling - DiscriminatedObjectSchema does not support defaults
+    // Null handling with default cloning
     if (inputValue == null) {
+      if (defaultValue != null) {
+        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
+        // Recursively validate (routes by discriminator)
+        return parseAndValidate(clonedDefault, context);
+      }
       if (isNullable) {
         return SchemaResult.ok(null);
       }
       return failNonNullable(context);
     }
 
-    // Inline type guard
+    // Type guard
     if (inputValue is! Map) {
       final actualType = AckSchema.getSchemaType(inputValue);
       return SchemaResult.fail(
@@ -57,8 +54,6 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         ),
       );
     }
-
-    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
     final mapValue = inputValue is MapValue
         ? inputValue
         : inputValue.cast<String, Object?>();
@@ -115,8 +110,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       ));
     }
 
-    // Validate the selected branch, but keep path at object level
-    // Branch name is for debug only; errors point to the object, not a sub-path
+    // Validate the selected branch; branch name for debug only
     final subSchemaContext = context.createChild(
       name: 'when $discriminatorKey="$discValueRaw"',
       schema: selectedSubSchema,
@@ -138,7 +132,6 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
     final validatedValue = result.getOrThrow() as MapValue;
 
-    // Use centralized constraints and refinements check
     return applyConstraintsAndRefinements(validatedValue, context);
   }
 
@@ -153,13 +146,13 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
-    // defaultValue is ignored - DiscriminatedObjectSchema does not support defaults
     return DiscriminatedObjectSchema(
       discriminatorKey: discriminatorKey ?? this.discriminatorKey,
       schemas: schemas ?? this.schemas,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -170,8 +163,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     final anyOfClauses = <Map<String, Object?>>[];
     schemas.forEach((discriminatorValue, objectSchema) {
       final subSchemaJson = objectSchema.toJsonSchema();
-      // Ensure the discriminator property is correctly constrained in the sub-schema JSON
-      // Include both 'type' and 'const' to match Zod's format
+      // Constrain discriminator property with type and const
       subSchemaJson['properties'] = {
         ...?(subSchemaJson['properties'] as Map?),
         discriminatorKey: {
@@ -179,7 +171,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
           'const': discriminatorValue,
         },
       };
-      // Build required array with discriminator first (match Zod's ordering)
+      // Build required array with discriminator first
       final existingRequired =
           (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
       final requiredFields = <String>[
@@ -193,12 +185,14 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
+      if (!isNullable && defaultValue != null) 'default': defaultValue,
     };
 
-    // Wrap in another anyOf with null if nullable (match Zod's format)
+    // Wrap in anyOf with null if nullable
     if (isNullable) {
       return {
         if (description != null) 'description': description,
+        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           baseSchema,
           {'type': 'null'},
@@ -215,7 +209,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      // defaultValue omitted - DiscriminatedObjectSchema does not support defaults
+      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'discriminatorKey': discriminatorKey,
       'schemas': schemas.length,

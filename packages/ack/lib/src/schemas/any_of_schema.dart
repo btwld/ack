@@ -18,8 +18,6 @@ part of 'schema.dart';
 /// schema.safeParse(true);      // Ok
 /// schema.safeParse([]);        // Fail - not matching any schema
 /// ```
-/// Note: AnyOfSchema does not support default values. Use defaults on the
-/// individual member schemas instead.
 @immutable
 final class AnyOfSchema extends AckSchema<Object>
     with FluentSchema<Object, AnyOfSchema> {
@@ -30,71 +28,61 @@ final class AnyOfSchema extends AckSchema<Object>
     super.isNullable,
     super.isOptional,
     super.description,
+    super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(defaultValue: null);
+  });
 
   @override
   SchemaType get schemaType => SchemaType.anyOf;
 
-  /// AnyOfSchema tries multiple schemas, so it overrides parseAndValidate directly.
-  ///
-  /// Key behaviors:
-  /// 1. Tries ALL member schemas with the input value (including null)
-  /// 2. Returns success on first matching schema
-  /// 3. If no schema matches and input is null, checks AnyOfSchema's own nullable
-  /// 4. Collects all errors for comprehensive debugging
   @override
   @protected
   SchemaResult<Object> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // STEP 1: Try all member schemas first (including with null input!)
-    // This allows patterns like: Ack.anyOf([Ack.string().nullable(), Ack.integer()])
-    // where the nullable member schema should accept null.
+    // Handle defaults with cloning
+    if (inputValue == null && defaultValue != null) {
+      final clonedDefault = cloneDefault(defaultValue!) as Object;
+      return parseAndValidate(clonedDefault, context);
+    }
+
+    // Try all member schemas (including with null input for nullable members)
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
-      // Keep branch name for debug but DON'T pollute the JSON Pointer path
-      // User errors should point to their field path, not #/field/anyOf:0
-      // Empty pathSegment means "inherit parent's path"
+      // Branch name for debugging; inherit parent path (no segment pollution)
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
         value: inputValue,
-        pathSegment: '', // Inherit parent path, don't add segment
+        pathSegment: '', // Inherit parent path
       );
 
       final result = schema.parseAndValidate(inputValue, childContext);
 
-      // Early return on first success for better performance
       if (result.isOk) {
         final validatedValue = result.getOrNull();
 
-        // If member schema returned null (because it's nullable), return directly
-        // We don't apply AnyOfSchema's own constraints to null values
+        // Nullable member returned null - pass through
         if (validatedValue == null) {
           return SchemaResult.ok(null);
         }
 
-        // Apply AnyOfSchema's own constraints and refinements to non-null values
+        // Apply AnyOfSchema's own constraints to non-null values
         return applyConstraintsAndRefinements(validatedValue, context);
       }
 
-      // Collect error for comprehensive error reporting
       errors.add(result.getError());
     }
 
-    // STEP 2: No member schema accepted the value
-    // If input is null, check AnyOfSchema's own nullable settings
-    if (inputValue == null) {
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
+    // No member schema matched; check AnyOfSchema's own nullable flag
+    if (inputValue == null && isNullable) {
+      return SchemaResult.ok(null);
     }
 
-    // STEP 3: Nothing worked - return comprehensive errors
+    // Return all errors for debugging
     return SchemaResult.fail(SchemaNestedError(
       errors: errors,
       context: context,
@@ -110,12 +98,12 @@ final class AnyOfSchema extends AckSchema<Object>
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
-    // defaultValue is ignored - AnyOfSchema does not support defaults
     return AnyOfSchema(
       schemas, // schemas are immutable once created
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -128,12 +116,14 @@ final class AnyOfSchema extends AckSchema<Object>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
+      if (!isNullable && defaultValue != null) 'default': defaultValue,
     };
 
     // Wrap in another anyOf with null if nullable (match Zod's format)
     if (isNullable) {
       return {
         if (description != null) 'description': description,
+        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           baseSchema,
           {'type': 'null'},
@@ -150,7 +140,7 @@ final class AnyOfSchema extends AckSchema<Object>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      // defaultValue omitted - AnyOfSchema does not support defaults
+      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'schemas': schemas.length,
     };

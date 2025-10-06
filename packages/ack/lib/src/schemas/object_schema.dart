@@ -1,9 +1,6 @@
 part of 'schema.dart';
 
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
-///
-/// Note: ObjectSchema does not support default values. Use property schemas with
-/// defaults or optional properties instead.
 @immutable
 final class ObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, ObjectSchema> {
@@ -16,31 +13,34 @@ final class ObjectSchema extends AckSchema<MapValue>
     super.isNullable,
     super.isOptional,
     super.description,
+    super.defaultValue,
     super.constraints,
     super.refinements,
-  })  : properties = properties ?? const {},
-        super(defaultValue: null);
+  }) : properties = properties ?? const {};
 
   @override
   SchemaType get schemaType => SchemaType.object;
 
-  /// ObjectSchema uses custom validation logic for properties,
-  /// so it overrides parseAndValidate directly.
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Inline null handling - ObjectSchema does not support defaults
+    // Null handling with default cloning to prevent mutation
     if (inputValue == null) {
+      if (defaultValue != null) {
+        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
+        // Recursively validate the cloned default
+        return parseAndValidate(clonedDefault, context);
+      }
       if (isNullable) {
         return SchemaResult.ok(null);
       }
       return failNonNullable(context);
     }
 
-    // Inline type guard
+    // Type guard
     if (inputValue is! Map) {
       final actualType = AckSchema.getSchemaType(inputValue);
       return SchemaResult.fail(
@@ -52,7 +52,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    // Custom object validation logic
     // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
     final mapValue = inputValue is Map<String, Object?>
         ? inputValue
@@ -60,20 +59,17 @@ final class ObjectSchema extends AckSchema<MapValue>
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
-    // Optimized single-loop approach: handle both required property validation and input validation
-    // First, validate all properties defined in the schema
+    // Validate all properties defined in the schema
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        // Property is missing from input
+        // Property missing from input
         if (schema.isOptional) {
-          // Optional field - check for default value
-          // Policy: Use wrapped schema's defaultValue (via OptionalSchema getter proxy)
+          // Optional field with default - validate it
           if (schema.defaultValue != null) {
-            // Optional field with default - validate the default value
             final propertyContext = context.createChild(
               name: key,
               schema: schema,
@@ -91,9 +87,9 @@ final class ObjectSchema extends AckSchema<MapValue>
               onFail: validationErrors.add,
             );
           }
-          // Else: optional field without default - omit from output map (do nothing)
+          // Optional field without default - omit from output
         } else {
-          // Required field missing - error
+          // Required field missing
           final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
               .validate(mapValue);
           if (ce != null) {
@@ -109,7 +105,7 @@ final class ObjectSchema extends AckSchema<MapValue>
           }
         }
       } else {
-        // Property exists in input, validate the actual value
+        // Property exists - validate it
         final propertyValue = mapValue[key];
         final propertyContext = context.createChild(
           name: key,
@@ -127,15 +123,13 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    // Handle additional properties (those not in schema)
+    // Handle additional properties
     final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
       if (!knownKeys.contains(key)) {
-        // Property not defined in schema
         if (additionalProperties) {
-          validatedMap[key] = mapValue[key]; // Keep the original value
+          validatedMap[key] = mapValue[key];
         } else {
-          // Property not in schema and not allowed
           validationErrors.add(
             SchemaConstraintsError(
               constraints: [
@@ -165,7 +159,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       ));
     }
 
-    // Use centralized constraints and refinements check
     return applyConstraintsAndRefinements(validatedMap, context);
   }
 
@@ -180,13 +173,13 @@ final class ObjectSchema extends AckSchema<MapValue>
     List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
-    // defaultValue is ignored - ObjectSchema does not support defaults
     return ObjectSchema(
       properties ?? this.properties,
       additionalProperties: additionalProperties ?? this.additionalProperties,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -219,6 +212,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       };
       final mergedSchema = mergeConstraintSchemas(baseSchema);
       return {
+        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           mergedSchema,
           {'type': 'null'},
@@ -232,6 +226,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       if (requiredFields.isNotEmpty) 'required': requiredFields,
       'additionalProperties': additionalPropertiesValue,
       if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
     };
 
     return mergeConstraintSchemas(schema);
@@ -243,7 +238,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      // defaultValue omitted - ObjectSchema does not support defaults
+      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'properties': properties.length,
       'additionalProperties': additionalProperties,

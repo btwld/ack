@@ -9,7 +9,6 @@ import '../helpers.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
-part 'schema_type.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
@@ -19,6 +18,7 @@ part 'fluent_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
+part 'schema_type.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
 
@@ -49,13 +49,8 @@ sealed class AckSchema<DartType extends Object> {
 
   /// Applies constraints and refinements to a validated value.
   ///
-  /// This method centralizes the final validation step used by all schemas.
-  /// Checks constraints first, then runs refinements if constraints pass.
-  ///
-  /// Schemas should call this after parsing/conversion:
-  /// ```dart
-  /// return applyConstraintsAndRefinements(validatedValue, context);
-  /// ```
+  /// Checks constraints first, then runs refinements if all constraints pass.
+  /// Schemas call this after type validation and conversion.
   @protected
   SchemaResult<DartType> applyConstraintsAndRefinements(
     DartType value,
@@ -109,10 +104,10 @@ sealed class AckSchema<DartType extends Object> {
     return SchemaResult.ok(value);
   }
 
-  /// Helper method to merge constraint JSON schemas into a base schema.
+  /// Merges constraint JSON schemas into a base schema.
   ///
-  /// This is used in toJsonSchema() implementations to fold constraint-specific
-  /// JSON schema definitions into the base schema structure.
+  /// Folds constraint-specific JSON schema definitions into the base structure.
+  /// Used in toJsonSchema() implementations.
   @protected
   Map<String, Object?> mergeConstraintSchemas(Map<String, Object?> baseSchema) {
     final constraintSchemas = <Map<String, Object?>>[];
@@ -127,9 +122,7 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
-  /// Helper method to create a standard non-nullable constraint error.
-  ///
-  /// Returns a SchemaResult.fail with a NonNullableConstraint error.
+  /// Creates a non-nullable constraint error result.
   @protected
   SchemaResult<DartType> failNonNullable(SchemaContext context) {
     final constraintError = NonNullableConstraint().validate(null);
@@ -141,28 +134,13 @@ sealed class AckSchema<DartType extends Object> {
 
   /// The schema type category for this schema.
   ///
-  /// Each schema subclass must override this to specify its schema type.
-  /// Primitive schemas return their JSON type (string, integer, etc.).
-  /// Schema-specific types return their category (any, anyOf, discriminated, etc.).
-  ///
-  /// Examples:
-  /// - `StringSchema`: returns `SchemaType.string`
-  /// - `IntegerSchema`: returns `SchemaType.integer`
-  /// - `ObjectSchema`: returns `SchemaType.object`
-  /// - `ListSchema`: returns `SchemaType.array`
-  /// - `AnyOfSchema`: returns `SchemaType.anyOf`
-  /// - `DiscriminatedObjectSchema`: returns `SchemaType.discriminated`
+  /// Subclasses must override to specify their type.
+  /// Primitives return JSON types (string, integer), composites return
+  /// schema categories (anyOf, discriminated).
   @protected
   SchemaType get schemaType;
 
-  /// Returns a human-readable type name for this schema.
-  ///
-  /// Uses the schema's [SchemaType] to provide consistent naming across
-  /// all schema types, including primitives (string, integer, etc.) and
-  /// schema-specific categories (anyOf, discriminated, etc.).
-  ///
-  /// This is used in error messages and debugging output to provide
-  /// clear, standards-aligned type information.
+  /// Human-readable type name for error messages and debugging.
   String get schemaTypeName => schemaType.typeName;
 
   /// Whether this schema uses strict primitive parsing.
@@ -179,11 +157,13 @@ sealed class AckSchema<DartType extends Object> {
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Inline null handling for scalar schemas
-    // Composite schemas (Object, List, AnyOf, Discriminated) override this method entirely
+    // Null handling for scalar schemas (primitives).
+    // Composite schemas (Object, List, AnyOf, Discriminated) override entirely.
     if (inputValue == null) {
       if (defaultValue != null) {
-        return applyConstraintsAndRefinements(defaultValue!, context);
+        // Clone mutable defaults (Map/List) to prevent shared-state bugs
+        final clonedDefault = cloneDefault(defaultValue!) as DartType;
+        return applyConstraintsAndRefinements(clonedDefault, context);
       }
       if (isNullable) {
         return SchemaResult.ok(null);
@@ -194,7 +174,7 @@ sealed class AckSchema<DartType extends Object> {
     final targetType = schemaType;
     final actualType = AckSchema.getSchemaType(inputValue);
 
-    // Type checking: ask SchemaType if it can accept the source type
+    // Type compatibility check
     if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
       return SchemaResult.fail(
         TypeMismatchError(
@@ -205,14 +185,13 @@ sealed class AckSchema<DartType extends Object> {
       );
     }
 
-    // Parse using SchemaType's centralized parsing logic
+    // Parse using SchemaType's parsing logic
     final convertedResult =
         targetType.parse<DartType>(inputValue, actualType, context);
     if (convertedResult.isFail) return convertedResult;
 
     final convertedValue = convertedResult.getOrThrow()!;
 
-    // Use centralized constraints and refinements check
     return applyConstraintsAndRefinements(convertedValue, context);
   }
 
@@ -261,12 +240,12 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Legacy alias for [safeParse].
-  @Deprecated('Use safeParse(...) instead.')
+  @Deprecated('Use safeParse(...) instead. Will be removed in 2.0.')
   SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
       safeParse(value, debugName: debugName);
 
   /// Legacy helper that returns the parsed value or `null` when validation fails.
-  @Deprecated('Use safeParse(...).getOrNull() instead.')
+  @Deprecated('Use safeParse(...).getOrNull() instead. Will be removed in 2.0.')
   DartType? tryParse(Object? value, {String? debugName}) {
     final result = safeParse(value, debugName: debugName);
     return result.getOrNull();

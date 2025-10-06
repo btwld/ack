@@ -141,9 +141,3 @@ final class SchemaTransformError extends SchemaError {
     super.stackTrace,
   }) : super(message);
 }
-
-// @visibleForTesting
-// class SchemaMockError extends SchemaError {
-//   SchemaMockError({super.context = const SchemaMockContext()})
-//       : super(errorKey: 'schema_mock_error');
-// }

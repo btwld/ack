@@ -1,9 +1,6 @@
 part of 'schema.dart';
 
 /// Schema for validating lists (`List<V>`) where each item conforms to `itemSchema`.
-///
-/// Note: ListSchema does not support default values. Use item schemas with defaults
-/// or optional properties instead.
 @immutable
 final class ListSchema<V extends Object> extends AckSchema<List<V>>
     with FluentSchema<List<V>, ListSchema<V>> {
@@ -14,30 +11,34 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     super.isNullable,
     super.isOptional,
     super.description,
+    super.defaultValue,
     super.constraints,
     super.refinements,
-  }) : super(defaultValue: null);
+  });
 
   @override
   SchemaType get schemaType => SchemaType.array;
 
-  /// ListSchema uses custom validation logic for items,
-  /// so it overrides parseAndValidate directly.
   @override
   @protected
   SchemaResult<List<V>> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Inline null handling - ListSchema does not support defaults
+    // Null handling with default cloning to prevent mutation
     if (inputValue == null) {
+      if (defaultValue != null) {
+        final clonedDefault = cloneDefault(defaultValue!);
+        // Recursively validate the cloned default
+        return parseAndValidate(clonedDefault, context);
+      }
       if (isNullable) {
         return SchemaResult.ok(null);
       }
       return failNonNullable(context);
     }
 
-    // Inline type guard
+    // Type guard
     if (inputValue is! List) {
       final actualType = AckSchema.getSchemaType(inputValue);
       return SchemaResult.fail(
@@ -48,8 +49,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         ),
       );
     }
-
-    // Custom list validation logic
     final inputList = inputValue;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
@@ -90,7 +89,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       ));
     }
 
-    // Use centralized constraints and refinements check
     return applyConstraintsAndRefinements(validatedItems, context);
   }
 
@@ -104,12 +102,12 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     List<Constraint<List<V>>>? constraints,
     List<Refinement<List<V>>>? refinements,
   }) {
-    // defaultValue is ignored - ListSchema does not support defaults
     return ListSchema(
       itemSchema ?? this.itemSchema,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -125,6 +123,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       };
       final mergedSchema = mergeConstraintSchemas(baseSchema);
       return {
+        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           mergedSchema,
           {'type': 'null'},
@@ -136,6 +135,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'type': 'array',
       'items': itemSchema.toJsonSchema(),
       if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
     };
 
     return mergeConstraintSchemas(schema);
@@ -147,7 +147,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      // defaultValue omitted - ListSchema does not support defaults
+      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'itemSchema': itemSchema.schemaType.typeName,
     };

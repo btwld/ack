@@ -164,11 +164,11 @@ void main() {
     test('validate delegates to safeParse', () {
       final schema = Ack.integer();
 
-      // ignore: deprecated_member_use
+      // ignore: deprecated_member_use_from_same_package
       final okResult = schema.validate(123);
       expect(okResult.isOk, isTrue);
 
-      // ignore: deprecated_member_use
+      // ignore: deprecated_member_use_from_same_package
       final failResult = schema.validate('oops');
       expect(failResult.isFail, isTrue);
     });
@@ -176,10 +176,10 @@ void main() {
     test('tryParse returns null on failure', () {
       final schema = Ack.integer();
 
-      // ignore: deprecated_member_use
+      // ignore: deprecated_member_use_from_same_package
       expect(schema.tryParse(42), equals(42));
 
-      // ignore: deprecated_member_use
+      // ignore: deprecated_member_use_from_same_package
       expect(schema.tryParse('bad'), isNull);
     });
   });

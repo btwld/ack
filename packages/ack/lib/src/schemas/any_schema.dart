@@ -30,7 +30,9 @@ final class AnySchema extends AckSchema<Object>
     // Inline null handling for scalar schema
     if (inputValue == null) {
       if (defaultValue != null) {
-        return applyConstraintsAndRefinements(defaultValue!, context);
+        // Clone the default to prevent mutation
+        final clonedDefault = cloneDefault(defaultValue!) as Object;
+        return applyConstraintsAndRefinements(clonedDefault, context);
       }
       if (isNullable) {
         return SchemaResult.ok(null);
