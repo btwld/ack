@@ -40,15 +40,21 @@ void main() {
 
         for (final test in testCases) {
           final result = test.schema.safeParse(test.input);
-          expect(result.isFail, isTrue,
-              reason: 'Should fail for: ${test.name}');
+          expect(
+            result.isFail,
+            isTrue,
+            reason: 'Should fail for: ${test.name}',
+          );
 
           final error = result.getError().toString().toLowerCase();
 
           for (final check in test.checks) {
-            expect(check(error), isTrue,
-                reason:
-                    'Error message for "${test.name}" should be clear: $error');
+            expect(
+              check(error),
+              isTrue,
+              reason:
+                  'Error message for "${test.name}" should be clear: $error',
+            );
           }
         }
       });
@@ -112,15 +118,21 @@ void main() {
 
         for (final test in testCases) {
           final result = test.schema.safeParse(test.input);
-          expect(result.isFail, isTrue,
-              reason: 'Should fail for: ${test.name}');
+          expect(
+            result.isFail,
+            isTrue,
+            reason: 'Should fail for: ${test.name}',
+          );
 
           final error = result.getError().toString().toLowerCase();
 
           for (final check in test.checks) {
-            expect(check(error), isTrue,
-                reason:
-                    'Error message for "${test.name}" should be specific: $error');
+            expect(
+              check(error),
+              isTrue,
+              reason:
+                  'Error message for "${test.name}" should be specific: $error',
+            );
           }
         }
       });
@@ -152,8 +164,11 @@ void main() {
 
         for (final testCase in testCases) {
           final result = schema.safeParse(testCase['input']);
-          expect(result.isFail, isTrue,
-              reason: 'Should fail for: ${testCase['name']}');
+          expect(
+            result.isFail,
+            isTrue,
+            reason: 'Should fail for: ${testCase['name']}',
+          );
 
           final error = result.getError().toString().toLowerCase();
           final expectedField = testCase['expectedField'] as String;
@@ -183,10 +198,7 @@ void main() {
 
         final testData = {
           'user': {
-            'profile': {
-              'age': -5,
-              'email': 'invalid-email',
-            },
+            'profile': {'age': -5, 'email': 'invalid-email'},
           },
         };
 
@@ -214,7 +226,7 @@ void main() {
         final testData = [
           'valid@example.com',
           'invalid-email',
-          'another@example.com'
+          'another@example.com',
         ];
 
         final result = schema.safeParse(testData);
@@ -262,15 +274,21 @@ void main() {
         for (final testCase in testCases) {
           final schema = testCase['schema'] as AckSchema;
           final result = schema.safeParse(testCase['input']);
-          expect(result.isFail, isTrue,
-              reason: 'Should fail for: ${testCase['name']}');
+          expect(
+            result.isFail,
+            isTrue,
+            reason: 'Should fail for: ${testCase['name']}',
+          );
 
           final error = result.getError().toString().toLowerCase();
           final expectedHints = testCase['expectedHints'] as List<String>;
 
           for (final hint in expectedHints) {
-            expect(error.contains(hint), isTrue,
-                reason: 'Error should contain hint "$hint": $error');
+            expect(
+              error.contains(hint),
+              isTrue,
+              reason: 'Error should contain hint "$hint": $error',
+            );
           }
         }
       });
@@ -300,17 +318,23 @@ void main() {
         for (final testCase in testCases) {
           final schema = testCase['schema'] as AckSchema;
           final result = schema.safeParse(testCase['input']);
-          expect(result.isFail, isTrue,
-              reason: 'Should fail for: ${testCase['name']}');
+          expect(
+            result.isFail,
+            isTrue,
+            reason: 'Should fail for: ${testCase['name']}',
+          );
 
           final error = result.getError().toString().toLowerCase();
           final expectedHints = testCase['expectedHints'] as List<String>;
 
           // At least one hint should be present
           final hasHint = expectedHints.any((hint) => error.contains(hint));
-          expect(hasHint, isTrue,
-              reason:
-                  'Error should contain at least one hint from $expectedHints: $error');
+          expect(
+            hasHint,
+            isTrue,
+            reason:
+                'Error should contain at least one hint from $expectedHints: $error',
+          );
         }
       });
     });
@@ -327,11 +351,15 @@ void main() {
         final friendlyTerms = ['email', 'format', 'invalid', 'expected'];
 
         // Should contain more friendly terms than technical ones
-        final friendlyCount =
-            friendlyTerms.where((term) => error.contains(term)).length;
+        final friendlyCount = friendlyTerms
+            .where((term) => error.contains(term))
+            .length;
 
-        expect(friendlyCount, greaterThanOrEqualTo(1),
-            reason: 'Error should contain user-friendly terms: $error');
+        expect(
+          friendlyCount,
+          greaterThanOrEqualTo(1),
+          reason: 'Error should contain user-friendly terms: $error',
+        );
       });
 
       test('error messages should be concise but informative', () {
@@ -346,10 +374,16 @@ void main() {
           final error = result.getError().toString();
 
           // Error should not be too short (less than 10 chars) or too long (more than 200 chars)
-          expect(error.length, greaterThan(10),
-              reason: 'Error message should be informative: $error');
-          expect(error.length, lessThan(200),
-              reason: 'Error message should be concise: $error');
+          expect(
+            error.length,
+            greaterThan(10),
+            reason: 'Error message should be informative: $error',
+          );
+          expect(
+            error.length,
+            lessThan(200),
+            reason: 'Error message should be concise: $error',
+          );
         }
       });
     });

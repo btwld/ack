@@ -54,8 +54,10 @@ String? findClosestStringMatch(
       // Compare with reasonably similar length strings
       if ((normalizedAllowed.length - normalizedValue.length).abs() <= 5 ||
           normalizedAllowed.length <= 10) {
-        final similarity =
-            _calculateStringSimilarity(normalizedValue, normalizedAllowed);
+        final similarity = _calculateStringSimilarity(
+          normalizedValue,
+          normalizedAllowed,
+        );
         if (similarity >= similarityThreshold &&
             similarity > highestSimilarity) {
           highestSimilarity = similarity;

@@ -45,13 +45,16 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.g.dart': decodedMatches(allOf([
-            contains('final userSchema = Ack.object('),
-            contains(
-                "'username': Ack.string().notEmpty().minLength(3).maxLength(50)"),
-            contains("'email': Ack.string().email()"),
-            contains("'age': Ack.integer().positive().max(150).optional()"),
-          ])),
+          'test_pkg|lib/user.g.dart': decodedMatches(
+            allOf([
+              contains('final userSchema = Ack.object('),
+              contains(
+                "'username': Ack.string().notEmpty().minLength(3).maxLength(50)",
+              ),
+              contains("'email': Ack.string().email()"),
+              contains("'age': Ack.integer().positive().max(150).optional()"),
+            ]),
+          ),
         },
       );
     });
@@ -86,12 +89,14 @@ class ApiResponse {
 ''',
         },
         outputs: {
-          'test_pkg|lib/api_model.g.dart': decodedMatches(allOf([
-            contains('final apiResponseSchema = Ack.object('),
-            contains("'response_id': Ack.string()"),
-            contains("'created_at': Ack.string()"),
-            contains("'is_successful': Ack.boolean()"),
-          ])),
+          'test_pkg|lib/api_model.g.dart': decodedMatches(
+            allOf([
+              contains('final apiResponseSchema = Ack.object('),
+              contains("'response_id': Ack.string()"),
+              contains("'created_at': Ack.string()"),
+              contains("'is_successful': Ack.boolean()"),
+            ]),
+          ),
         },
       );
     });
@@ -121,12 +126,14 @@ class Collection {
 ''',
         },
         outputs: {
-          'test_pkg|lib/collection.g.dart': decodedMatches(allOf([
-            contains('final collectionSchema = Ack.object('),
-            contains("'tags': Ack.list(Ack.string())"),
-            contains("'scores': Ack.list(Ack.integer())"),
-            contains("'categories': Ack.list(Ack.string()).optional()"),
-          ])),
+          'test_pkg|lib/collection.g.dart': decodedMatches(
+            allOf([
+              contains('final collectionSchema = Ack.object('),
+              contains("'tags': Ack.list(Ack.string())"),
+              contains("'scores': Ack.list(Ack.integer())"),
+              contains("'categories': Ack.list(Ack.string()).optional()"),
+            ]),
+          ),
         },
       );
     });
@@ -164,16 +171,18 @@ class Product {
 ''',
         },
         outputs: {
-          'test_pkg|lib/product.g.dart': decodedMatches(allOf([
-            contains('final productSchema = Ack.object('),
-            contains("'id': Ack.string()"),
-            contains("'name': Ack.string()"),
-            contains("'price': Ack.double()"),
-            contains("'isActive': Ack.boolean()"),
-            contains("'description': Ack.string().optional()"),
-            contains("'stock': Ack.integer().optional()"),
-            contains("'tags': Ack.list(Ack.string()).optional()"),
-          ])),
+          'test_pkg|lib/product.g.dart': decodedMatches(
+            allOf([
+              contains('final productSchema = Ack.object('),
+              contains("'id': Ack.string()"),
+              contains("'name': Ack.string()"),
+              contains("'price': Ack.double()"),
+              contains("'isActive': Ack.boolean()"),
+              contains("'description': Ack.string().optional()"),
+              contains("'stock': Ack.integer().optional()"),
+              contains("'tags': Ack.list(Ack.string()).optional()"),
+            ]),
+          ),
         },
       );
     });

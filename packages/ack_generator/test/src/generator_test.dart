@@ -50,11 +50,13 @@ class Other {
 ''',
         },
         outputs: {
-          'test_pkg|lib/models.ack.g.part': decodedMatches(allOf([
-            contains('final userSchema = Ack.object('),
-            contains('final productSchema = Ack.object('),
-            isNot(contains('otherSchema')),
-          ])),
+          'test_pkg|lib/models.ack.g.part': decodedMatches(
+            allOf([
+              contains('final userSchema = Ack.object('),
+              contains('final productSchema = Ack.object('),
+              isNot(contains('otherSchema')),
+            ]),
+          ),
         },
       );
     });
@@ -87,10 +89,12 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/address.ack.g.part':
-              decodedMatches(contains('final addressSchema = Ack.object(')),
-          'test_pkg|lib/user.ack.g.part':
-              decodedMatches(contains('addressSchema')),
+          'test_pkg|lib/address.ack.g.part': decodedMatches(
+            contains('final addressSchema = Ack.object('),
+          ),
+          'test_pkg|lib/user.ack.g.part': decodedMatches(
+            contains('addressSchema'),
+          ),
         },
       );
     });
@@ -116,7 +120,8 @@ class Model {
         },
         outputs: {
           'test_pkg|lib/model.ack.g.part': decodedMatches(
-              contains('// GENERATED CODE - DO NOT MODIFY BY HAND')),
+            contains('// GENERATED CODE - DO NOT MODIFY BY HAND'),
+          ),
         },
       );
     });
@@ -146,12 +151,15 @@ class WellFormatted {
 ''',
         },
         outputs: {
-          'test_pkg|lib/formatted.ack.g.part': decodedMatches(allOf([
-            isNot(contains('\t')), // No tabs
-            contains('  '), // Uses spaces for indentation
-            isNot(contains(
-                ' \n')), // No trailing whitespace (space before newline)
-          ])),
+          'test_pkg|lib/formatted.ack.g.part': decodedMatches(
+            allOf([
+              isNot(contains('\t')), // No tabs
+              contains('  '), // Uses spaces for indentation
+              isNot(
+                contains(' \n'),
+              ), // No trailing whitespace (space before newline)
+            ]),
+          ),
         },
       );
     });
@@ -179,7 +187,9 @@ abstract class BadModel {
         onLog: (log) {
           if (log.level.name == 'SEVERE') {
             expect(
-                log.message, contains('cannot be applied to abstract classes'));
+              log.message,
+              contains('cannot be applied to abstract classes'),
+            );
           }
         },
       );

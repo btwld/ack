@@ -5,18 +5,18 @@ void main() {
   group('Social Media Demo Tests', () {
     group('Demo 1: Transform Magic', () {
       test('should transform data with age calculation', () {
-        final userSchema = Ack.object({
-          'name': Ack.string(),
-          'birthYear': Ack.integer().min(1900).max(2024),
-        }).transform((data) {
-          final age = DateTime.now().year - (data!['birthYear'] as int);
-          return {...data, 'age': age};
-        });
+        final userSchema =
+            Ack.object({
+              'name': Ack.string(),
+              'birthYear': Ack.integer().min(1900).max(2024),
+            }).transform((data) {
+              final age = DateTime.now().year - (data!['birthYear'] as int);
+              return {...data, 'age': age};
+            });
 
-        final result = userSchema.parse({
-          'name': 'John Doe',
-          'birthYear': 1990,
-        }) as Map<String, dynamic>;
+        final result =
+            userSchema.parse({'name': 'John Doe', 'birthYear': 1990})
+                as Map<String, dynamic>;
 
         expect(result['name'], equals('John Doe'));
         expect(result['birthYear'], equals(1990));
@@ -24,19 +24,17 @@ void main() {
       });
 
       test('should validate birth year constraints', () {
-        final userSchema = Ack.object({
-          'name': Ack.string(),
-          'birthYear': Ack.integer().min(1900).max(2024),
-        }).transform((data) {
-          final age = DateTime.now().year - (data!['birthYear'] as int);
-          return {...data, 'age': age};
-        });
+        final userSchema =
+            Ack.object({
+              'name': Ack.string(),
+              'birthYear': Ack.integer().min(1900).max(2024),
+            }).transform((data) {
+              final age = DateTime.now().year - (data!['birthYear'] as int);
+              return {...data, 'age': age};
+            });
 
         expect(
-          () => userSchema.parse({
-            'name': 'Time Traveler',
-            'birthYear': 2025,
-          }),
+          () => userSchema.parse({'name': 'Time Traveler', 'birthYear': 2025}),
           throwsA(isA<AckException>()),
         );
       });
@@ -44,14 +42,15 @@ void main() {
 
     group('Demo 2: Custom Validation with refine()', () {
       test('should validate password confirmation', () {
-        final signupSchema = Ack.object({
-          'email': Ack.string().email(),
-          'password': Ack.string().minLength(8),
-          'confirmPassword': Ack.string().minLength(8),
-        }).refine(
-          (data) => data['password'] == data['confirmPassword'],
-          message: 'Passwords do not match!',
-        );
+        final signupSchema =
+            Ack.object({
+              'email': Ack.string().email(),
+              'password': Ack.string().minLength(8),
+              'confirmPassword': Ack.string().minLength(8),
+            }).refine(
+              (data) => data['password'] == data['confirmPassword'],
+              message: 'Passwords do not match!',
+            );
 
         // Valid case
         final validResult = signupSchema.safeParse({
@@ -68,25 +67,26 @@ void main() {
           'confirmPassword': 'password456',
         });
         expect(invalidResult.isFail, isTrue);
-        expect(invalidResult.getError().message,
-            contains('Passwords do not match!'));
+        expect(
+          invalidResult.getError().message,
+          contains('Passwords do not match!'),
+        );
       });
 
       test('should validate order total calculation', () {
-        final orderSchema = Ack.object({
-          'items': Ack.list(Ack.object({
-            'price': Ack.double(),
-            'quantity': Ack.integer(),
-          })),
-          'total': Ack.double(),
-        }).refine(
-          (order) {
-            final calculated = (order['items'] as List).fold(
-                0.0, (sum, item) => sum + item['price'] * item['quantity']);
-            return ((order['total'] as double) - calculated).abs() < 0.01;
-          },
-          message: 'Total doesn\'t match item prices!',
-        );
+        final orderSchema =
+            Ack.object({
+              'items': Ack.list(
+                Ack.object({'price': Ack.double(), 'quantity': Ack.integer()}),
+              ),
+              'total': Ack.double(),
+            }).refine((order) {
+              final calculated = (order['items'] as List).fold(
+                0.0,
+                (sum, item) => sum + item['price'] * item['quantity'],
+              );
+              return ((order['total'] as double) - calculated).abs() < 0.01;
+            }, message: 'Total doesn\'t match item prices!');
 
         // Valid case
         final validOrder = orderSchema.safeParse({
@@ -107,8 +107,10 @@ void main() {
           'total': 40.00,
         });
         expect(invalidOrder.isFail, isTrue);
-        expect(invalidOrder.getError().message,
-            contains('Total doesn\'t match item prices!'));
+        expect(
+          invalidOrder.getError().message,
+          contains('Total doesn\'t match item prices!'),
+        );
       });
     });
 
@@ -245,31 +247,35 @@ void main() {
 
     group('Demo 5: Chain Everything Together', () {
       test('should validate and transform API responses', () {
-        final apiResponseSchema = Ack.anyOf([
-          // Success response
-          Ack.object({
-            'status': Ack.literal('success'),
-            'data': Ack.any(),
-            'timestamp': Ack.string().datetime(),
-          }),
-          // Error response
-          Ack.object({
-            'status': Ack.literal('error'),
-            'code': Ack.integer().min(400).max(599),
-            'message': Ack.string(),
-          }),
-        ]).transform((response) {
-          // Add request ID for tracking
-          return {
-            ...response as Map<String, dynamic>,
-            'requestId':
-                'test-request-id-${DateTime.now().millisecondsSinceEpoch}'
-          };
-        }).refine(
-          (response) =>
-              response['timestamp'] != null || response['status'] == 'error',
-          message: 'Success responses must have timestamp!',
-        );
+        final apiResponseSchema =
+            Ack.anyOf([
+                  // Success response
+                  Ack.object({
+                    'status': Ack.literal('success'),
+                    'data': Ack.any(),
+                    'timestamp': Ack.string().datetime(),
+                  }),
+                  // Error response
+                  Ack.object({
+                    'status': Ack.literal('error'),
+                    'code': Ack.integer().min(400).max(599),
+                    'message': Ack.string(),
+                  }),
+                ])
+                .transform((response) {
+                  // Add request ID for tracking
+                  return {
+                    ...response as Map<String, dynamic>,
+                    'requestId':
+                        'test-request-id-${DateTime.now().millisecondsSinceEpoch}',
+                  };
+                })
+                .refine(
+                  (response) =>
+                      response['timestamp'] != null ||
+                      response['status'] == 'error',
+                  message: 'Success responses must have timestamp!',
+                );
 
         // Test success response
         final successResponse = apiResponseSchema.safeParse({

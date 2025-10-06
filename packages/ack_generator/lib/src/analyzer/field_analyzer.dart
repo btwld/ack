@@ -11,7 +11,9 @@ import '../models/constraint_info.dart';
 class FieldAnalyzer {
   FieldInfo analyze(FieldElement field) {
     // Check for @AckField annotation
-    final ackFieldAnnotation = TypeChecker.fromRuntime(AckField).firstAnnotationOf(field);
+    final ackFieldAnnotation = TypeChecker.fromRuntime(
+      AckField,
+    ).firstAnnotationOf(field);
 
     // Determine JSON key (from annotation or field name)
     final jsonKey = _getJsonKey(field, ackFieldAnnotation);
@@ -106,7 +108,9 @@ class FieldAnalyzer {
   }
 
   List<ConstraintInfo> _extractConstraints(
-      FieldElement field, DartObject? annotation) {
+    FieldElement field,
+    DartObject? annotation,
+  ) {
     final constraints = <ConstraintInfo>[];
 
     // Extract constraints from @AckField annotation (legacy support)
@@ -156,23 +160,27 @@ class FieldAnalyzer {
     final constraints = <ConstraintInfo>[];
 
     // STRING LENGTH CONSTRAINTS
-    final minLengthAnnotation =
-        TypeChecker.fromRuntime(MinLength).firstAnnotationOf(field);
+    final minLengthAnnotation = TypeChecker.fromRuntime(
+      MinLength,
+    ).firstAnnotationOf(field);
     if (minLengthAnnotation != null) {
       final length = minLengthAnnotation.getField('length')?.toIntValue();
       if (length != null) {
         constraints.add(
-            ConstraintInfo(name: 'minLength', arguments: [length.toString()]));
+          ConstraintInfo(name: 'minLength', arguments: [length.toString()]),
+        );
       }
     }
 
-    final maxLengthAnnotation =
-        TypeChecker.fromRuntime(MaxLength).firstAnnotationOf(field);
+    final maxLengthAnnotation = TypeChecker.fromRuntime(
+      MaxLength,
+    ).firstAnnotationOf(field);
     if (maxLengthAnnotation != null) {
       final length = maxLengthAnnotation.getField('length')?.toIntValue();
       if (length != null) {
         constraints.add(
-            ConstraintInfo(name: 'maxLength', arguments: [length.toString()]));
+          ConstraintInfo(name: 'maxLength', arguments: [length.toString()]),
+        );
       }
     }
 
@@ -186,8 +194,9 @@ class FieldAnalyzer {
     }
 
     // STRING PATTERN CONSTRAINTS
-    final patternAnnotation =
-        TypeChecker.fromRuntime(Pattern).firstAnnotationOf(field);
+    final patternAnnotation = TypeChecker.fromRuntime(
+      Pattern,
+    ).firstAnnotationOf(field);
     if (patternAnnotation != null) {
       final pattern = patternAnnotation.getField('pattern')?.toStringValue();
       if (pattern != null) {
@@ -200,8 +209,9 @@ class FieldAnalyzer {
     if (minAnnotation != null) {
       final value = minAnnotation.getField('value')?.toDoubleValue();
       if (value != null) {
-        constraints
-            .add(ConstraintInfo(name: 'min', arguments: [value.toString()]));
+        constraints.add(
+          ConstraintInfo(name: 'min', arguments: [value.toString()]),
+        );
       }
     }
 
@@ -209,8 +219,9 @@ class FieldAnalyzer {
     if (maxAnnotation != null) {
       final value = maxAnnotation.getField('value')?.toDoubleValue();
       if (value != null) {
-        constraints
-            .add(ConstraintInfo(name: 'max', arguments: [value.toString()]));
+        constraints.add(
+          ConstraintInfo(name: 'max', arguments: [value.toString()]),
+        );
       }
     }
 
@@ -218,40 +229,47 @@ class FieldAnalyzer {
       constraints.add(ConstraintInfo(name: 'positive', arguments: []));
     }
 
-    final multipleOfAnnotation =
-        TypeChecker.fromRuntime(MultipleOf).firstAnnotationOf(field);
+    final multipleOfAnnotation = TypeChecker.fromRuntime(
+      MultipleOf,
+    ).firstAnnotationOf(field);
     if (multipleOfAnnotation != null) {
       final value = multipleOfAnnotation.getField('value')?.toDoubleValue();
       if (value != null) {
         constraints.add(
-            ConstraintInfo(name: 'multipleOf', arguments: [value.toString()]));
+          ConstraintInfo(name: 'multipleOf', arguments: [value.toString()]),
+        );
       }
     }
 
     // LIST CONSTRAINTS
-    final minItemsAnnotation =
-        TypeChecker.fromRuntime(MinItems).firstAnnotationOf(field);
+    final minItemsAnnotation = TypeChecker.fromRuntime(
+      MinItems,
+    ).firstAnnotationOf(field);
     if (minItemsAnnotation != null) {
       final count = minItemsAnnotation.getField('count')?.toIntValue();
       if (count != null) {
         constraints.add(
-            ConstraintInfo(name: 'minItems', arguments: [count.toString()]));
+          ConstraintInfo(name: 'minItems', arguments: [count.toString()]),
+        );
       }
     }
 
-    final maxItemsAnnotation =
-        TypeChecker.fromRuntime(MaxItems).firstAnnotationOf(field);
+    final maxItemsAnnotation = TypeChecker.fromRuntime(
+      MaxItems,
+    ).firstAnnotationOf(field);
     if (maxItemsAnnotation != null) {
       final count = maxItemsAnnotation.getField('count')?.toIntValue();
       if (count != null) {
         constraints.add(
-            ConstraintInfo(name: 'maxItems', arguments: [count.toString()]));
+          ConstraintInfo(name: 'maxItems', arguments: [count.toString()]),
+        );
       }
     }
 
     // ENUM CONSTRAINTS
-    final enumStringAnnotation =
-        TypeChecker.fromRuntime(EnumString).firstAnnotationOf(field);
+    final enumStringAnnotation = TypeChecker.fromRuntime(
+      EnumString,
+    ).firstAnnotationOf(field);
     if (enumStringAnnotation != null) {
       final valuesList = enumStringAnnotation.getField('values')?.toListValue();
       if (valuesList != null) {
@@ -261,8 +279,9 @@ class FieldAnalyzer {
             .cast<String>()
             .toList();
         if (values.isNotEmpty) {
-          constraints
-              .add(ConstraintInfo(name: 'enumString', arguments: values));
+          constraints.add(
+            ConstraintInfo(name: 'enumString', arguments: values),
+          );
         }
       }
     }

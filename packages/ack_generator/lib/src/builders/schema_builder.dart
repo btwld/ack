@@ -14,12 +14,12 @@ class SchemaBuilder {
   String build(ModelInfo model, [String? sourceFileName]) {
     final schemaField = buildSchemaField(model);
 
-    final library = Library((b) => b
-      ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
-      ..directives.addAll([
-        Directive.import('package:ack/ack.dart'),
-      ])
-      ..body.add(schemaField));
+    final library = Library(
+      (b) => b
+        ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
+        ..directives.addAll([Directive.import('package:ack/ack.dart')])
+        ..body.add(schemaField),
+    );
 
     final emitter = DartEmitter(
       allocator: Allocator.none,
@@ -35,14 +35,16 @@ class SchemaBuilder {
     // e.g., "UserSchema" -> "userSchema", "CustomUserSchema" -> "customUserSchema"
     final variableName = _toCamelCase(model.schemaClassName);
 
-    return Field((b) => b
-      ..name = variableName
-      ..modifier = FieldModifier.final$
-      ..assignment = Code(_buildSchemaDefinition(model))
-      ..docs.addAll([
-        '/// Generated schema for ${model.className}',
-        if (model.description != null) '/// ${model.description}',
-      ]));
+    return Field(
+      (b) => b
+        ..name = variableName
+        ..modifier = FieldModifier.final$
+        ..assignment = Code(_buildSchemaDefinition(model))
+        ..docs.addAll([
+          '/// Generated schema for ${model.className}',
+          if (model.description != null) '/// ${model.description}',
+        ]),
+    );
   }
 
   String _toCamelCase(String text) {
@@ -96,7 +98,10 @@ class SchemaBuilder {
   ///
   /// Extracted from _buildSubtypeSchema and _buildRegularObjectSchema to eliminate duplication.
   /// The only difference is whether the model is passed to the field builder (for subtypes).
-  String _buildObjectSchema(ModelInfo model, {bool passModelToFieldBuilder = false}) {
+  String _buildObjectSchema(
+    ModelInfo model, {
+    bool passModelToFieldBuilder = false,
+  }) {
     final buffer = StringBuffer();
 
     // Build field definitions with descriptions
@@ -109,7 +114,8 @@ class SchemaBuilder {
       // Add description comment if available
       if (field.description != null && field.description!.isNotEmpty) {
         fieldDefs.add(
-            '// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema');
+          '// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema',
+        );
       } else {
         fieldDefs.add("'${field.jsonKey}': $fieldSchema");
       }

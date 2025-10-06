@@ -22,7 +22,8 @@ void main(List<String> args) async {
     print('🔧 Golden File Updater for ACK Generator');
     print('');
     print(
-        'Updates golden test files by extracting actual generator output from test failures.');
+      'Updates golden test files by extracting actual generator output from test failures.',
+    );
     print('');
     print('📋 When to use:');
     print('  ✅ After changing generator code');
@@ -35,9 +36,11 @@ void main(List<String> args) async {
     print('');
     print('Usage:');
     print(
-        '  dart tool/update_goldens.dart --all              # Update all golden files');
+      '  dart tool/update_goldens.dart --all              # Update all golden files',
+    );
     print(
-        '  dart tool/update_goldens.dart user_schema        # Update specific test');
+      '  dart tool/update_goldens.dart user_schema        # Update specific test',
+    );
     print('');
     print('Available tests:');
     print('  - user_schema    (simple schema with basic types)');
@@ -77,17 +80,13 @@ Future<void> _autoUpdateUserSchemaGolden() async {
 
   try {
     // Run the test and capture the detailed output
-    final result = await Process.run(
-      'dart',
-      [
-        'test',
-        'test/golden_test.dart',
-        '--plain-name',
-        'user schema golden test',
-        '--reporter=expanded'
-      ],
-      workingDirectory: Directory.current.path,
-    );
+    final result = await Process.run('dart', [
+      'test',
+      'test/golden_test.dart',
+      '--plain-name',
+      'user schema golden test',
+      '--reporter=expanded',
+    ], workingDirectory: Directory.current.path);
 
     final output = result.stdout.toString();
 
@@ -95,8 +94,9 @@ Future<void> _autoUpdateUserSchemaGolden() async {
     final content = _extractContentFromTestOutput(output);
 
     if (content != null && content.isNotEmpty) {
-      final goldenFile =
-          File(p.join('test', 'golden', 'user_schema.dart.golden'));
+      final goldenFile = File(
+        p.join('test', 'golden', 'user_schema.dart.golden'),
+      );
       await goldenFile.writeAsString(content);
       print('  ✅ Updated ${goldenFile.path}');
       print('  📝 Content length: ${content.length} characters');
@@ -107,9 +107,11 @@ Future<void> _autoUpdateUserSchemaGolden() async {
       print('     - Test output format has changed');
       print('     - Generator is not producing expected output');
       print(
-          '  🔧 Try running: dart test test/golden_test.dart --plain-name "user schema golden test"');
+        '  🔧 Try running: dart test test/golden_test.dart --plain-name "user schema golden test"',
+      );
       throw Exception(
-          'Failed to extract generator output for user_schema.dart.golden');
+        'Failed to extract generator output for user_schema.dart.golden',
+      );
     }
   } catch (e) {
     print('  ❌ Error running test: $e');

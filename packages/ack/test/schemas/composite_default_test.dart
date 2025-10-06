@@ -85,15 +85,13 @@ void main() {
         final defaultObj = {
           'user': {
             'name': 'Guest',
-            'settings': {'theme': 'dark'}
-          }
+            'settings': {'theme': 'dark'},
+          },
         };
         final schema = Ack.object({
           'user': Ack.object({
             'name': Ack.string(),
-            'settings': Ack.object({
-              'theme': Ack.string(),
-            }),
+            'settings': Ack.object({'theme': Ack.string()}),
           }),
         }).copyWith(defaultValue: defaultObj);
 
@@ -108,8 +106,9 @@ void main() {
     group('ListSchema defaults', () {
       test('should apply list default when input is null', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema =
-            Ack.list(Ack.string()).copyWith(defaultValue: defaultList);
+        final schema = Ack.list(
+          Ack.string(),
+        ).copyWith(defaultValue: defaultList);
 
         final result = schema.safeParse(null);
 
@@ -120,8 +119,9 @@ void main() {
 
       test('should clone list defaults to prevent mutation', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema =
-            Ack.list(Ack.string()).copyWith(defaultValue: defaultList);
+        final schema = Ack.list(
+          Ack.string(),
+        ).copyWith(defaultValue: defaultList);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -139,8 +139,9 @@ void main() {
 
       test('should validate list default items against item schema', () {
         final defaultList = [1, 2, 3];
-        final schema =
-            Ack.list(Ack.integer()).copyWith(defaultValue: defaultList);
+        final schema = Ack.list(
+          Ack.integer(),
+        ).copyWith(defaultValue: defaultList);
 
         final result = schema.safeParse(null);
 
@@ -151,8 +152,9 @@ void main() {
 
       test('should not apply default when input is provided', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema =
-            Ack.list(Ack.string()).copyWith(defaultValue: defaultList);
+        final schema = Ack.list(
+          Ack.string(),
+        ).copyWith(defaultValue: defaultList);
 
         final result = schema.safeParse(['x', 'y', 'z']);
 
@@ -163,8 +165,9 @@ void main() {
 
       test('should emit default in toJsonSchema', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema =
-            Ack.list(Ack.string()).copyWith(defaultValue: defaultList);
+        final schema = Ack.list(
+          Ack.string(),
+        ).copyWith(defaultValue: defaultList);
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -174,13 +177,10 @@ void main() {
       test('should handle list of objects as default', () {
         final defaultList = [
           {'id': 1, 'name': 'Item 1'},
-          {'id': 2, 'name': 'Item 2'}
+          {'id': 2, 'name': 'Item 2'},
         ];
         final schema = Ack.list(
-          Ack.object({
-            'id': Ack.integer(),
-            'name': Ack.string(),
-          }),
+          Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
         ).copyWith(defaultValue: defaultList);
 
         final result = schema.safeParse(null);
@@ -274,10 +274,7 @@ void main() {
               'type': Ack.string(),
               'radius': Ack.integer(),
             }),
-            'square': Ack.object({
-              'type': Ack.string(),
-              'side': Ack.integer(),
-            }),
+            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -297,10 +294,7 @@ void main() {
               'type': Ack.string(),
               'radius': Ack.integer(),
             }),
-            'square': Ack.object({
-              'type': Ack.string(),
-              'side': Ack.integer(),
-            }),
+            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -346,10 +340,7 @@ void main() {
               'type': Ack.string(),
               'radius': Ack.integer(),
             }),
-            'square': Ack.object({
-              'type': Ack.string(),
-              'side': Ack.integer(),
-            }),
+            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -383,13 +374,10 @@ void main() {
       test('should handle list of objects with defaults', () {
         final defaultList = [
           {'name': 'Item 1', 'count': 1},
-          {'name': 'Item 2', 'count': 2}
+          {'name': 'Item 2', 'count': 2},
         ];
         final schema = Ack.list(
-          Ack.object({
-            'name': Ack.string(),
-            'count': Ack.integer(),
-          }),
+          Ack.object({'name': Ack.string(), 'count': Ack.integer()}),
         ).copyWith(defaultValue: defaultList);
 
         final result = schema.safeParse(null);
@@ -404,7 +392,7 @@ void main() {
       test('should handle object with list defaults', () {
         final defaultObj = {
           'tags': ['tag1', 'tag2'],
-          'items': [1, 2, 3]
+          'items': [1, 2, 3],
         };
         final schema = Ack.object({
           'tags': Ack.list(Ack.string()),
@@ -423,16 +411,14 @@ void main() {
         final defaultObj = {
           'level1': {
             'level2': {
-              'level3': {'value': 'deep'}
-            }
-          }
+              'level3': {'value': 'deep'},
+            },
+          },
         };
         final schema = Ack.object({
           'level1': Ack.object({
             'level2': Ack.object({
-              'level3': Ack.object({
-                'value': Ack.string(),
-              }),
+              'level3': Ack.object({'value': Ack.string()}),
             }),
           }),
         }).copyWith(defaultValue: defaultObj);
@@ -442,9 +428,10 @@ void main() {
         expect(result.isOk, isTrue);
         final value = result.getOrThrow()!;
         expect(
-            (((value['level1'] as Map)['level2'] as Map)['level3']
-                as Map)['value'],
-            equals('deep'));
+          (((value['level1'] as Map)['level2'] as Map)['level3']
+              as Map)['value'],
+          equals('deep'),
+        );
       });
     });
   });

@@ -3,8 +3,5 @@ class ConstraintInfo {
   final String name;
   final List<String> arguments;
 
-  const ConstraintInfo({
-    required this.name,
-    required this.arguments,
-  });
+  const ConstraintInfo({required this.name, required this.arguments});
 }

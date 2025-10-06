@@ -8,15 +8,16 @@ import 'test_utils/test_assets.dart';
 void main() {
   group('Annotation Combination Edge Cases', () {
     group('AckModel Complex Combinations', () {
-      test('should handle model + additionalProperties + custom schema name',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should handle model + additionalProperties + custom schema name',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/complex_combo.dart': '''
+          await testBuilder(
+            builder,
+            {
+              ...allAssets,
+              'test_pkg|lib/complex_combo.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
@@ -37,20 +38,25 @@ class FlexibleUser {
   });
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/complex_combo.g.dart': decodedMatches(allOf([
-              // Custom schema name
-              contains('final flexibleUserSchema = Ack.object({'),
-              contains('/// Generated schema for FlexibleUser'),
-              contains('/// A flexible user model with additional properties'),
+            },
+            outputs: {
+              'test_pkg|lib/complex_combo.g.dart': decodedMatches(
+                allOf([
+                  // Custom schema name
+                  contains('final flexibleUserSchema = Ack.object({'),
+                  contains('/// Generated schema for FlexibleUser'),
+                  contains(
+                    '/// A flexible user model with additional properties',
+                  ),
 
-              // Additional properties
-              contains('}, additionalProperties: true)'),
-            ])),
-          },
-        );
-      });
+                  // Additional properties
+                  contains('}, additionalProperties: true)'),
+                ]),
+              ),
+            },
+          );
+        },
+      );
 
       test('should handle discriminated types with schemas', () async {
         final builder = ackGenerator(BuilderOptions.empty);
@@ -106,31 +112,33 @@ class SmsNotification extends Notification {
 ''',
           },
           outputs: {
-            'test_pkg|lib/discriminated_with_model.g.dart':
-                decodedMatches(allOf([
-              // Discriminated schema
-              contains('final notificationSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'type'"),
+            'test_pkg|lib/discriminated_with_model.g.dart': decodedMatches(
+              allOf([
+                // Discriminated schema
+                contains('final notificationSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'type'"),
 
-              // Individual schemas
-              contains('final emailNotificationSchema = Ack.object({'),
-              contains('final smsNotificationSchema = Ack.object({'),
-            ])),
+                // Individual schemas
+                contains('final emailNotificationSchema = Ack.object({'),
+                contains('final smsNotificationSchema = Ack.object({'),
+              ]),
+            ),
           },
         );
       });
     });
 
     group('Field and Model Annotation Combinations', () {
-      test('should handle AckField with AckModel additionalProperties',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should handle AckField with AckModel additionalProperties',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/field_with_additional.dart': '''
+          await testBuilder(
+            builder,
+            {
+              ...allAssets,
+              'test_pkg|lib/field_with_additional.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(
@@ -153,17 +161,20 @@ class FieldWithAdditionalProps {
   });
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/field_with_additional.g.dart': decodedMatches(allOf([
-              // Schema with custom keys
-              contains("'user_name': Ack.string()"),
-              contains("'user_email': Ack.string()"),
-              contains('}, additionalProperties: true)'),
-            ])),
-          },
-        );
-      });
+            },
+            outputs: {
+              'test_pkg|lib/field_with_additional.g.dart': decodedMatches(
+                allOf([
+                  // Schema with custom keys
+                  contains("'user_name': Ack.string()"),
+                  contains("'user_email': Ack.string()"),
+                  contains('}, additionalProperties: true)'),
+                ]),
+              ),
+            },
+          );
+        },
+      );
 
       test('should handle nested models with AckField annotations', () async {
         final builder = ackGenerator(BuilderOptions.empty);
@@ -213,33 +224,36 @@ class UserWithAddress {
 ''',
           },
           outputs: {
-            'test_pkg|lib/nested_with_fields.g.dart': decodedMatches(allOf([
-              // Address schema with custom keys
-              contains("'street_address': Ack.string()"),
-              contains("'city_name': Ack.string()"),
-              contains("'postal_code': Ack.string().optional().nullable()"),
+            'test_pkg|lib/nested_with_fields.g.dart': decodedMatches(
+              allOf([
+                // Address schema with custom keys
+                contains("'street_address': Ack.string()"),
+                contains("'city_name': Ack.string()"),
+                contains("'postal_code': Ack.string().optional().nullable()"),
 
-              // User schema with nested references
-              contains("'full_name': Ack.string()"),
-              contains("'home_address': addressSchema"),
-              contains("'work_address': addressSchema.optional().nullable()"),
-            ])),
+                // User schema with nested references
+                contains("'full_name': Ack.string()"),
+                contains("'home_address': addressSchema"),
+                contains("'work_address': addressSchema.optional().nullable()"),
+              ]),
+            ),
           },
         );
       });
     });
 
     group('Error Cases and Validation', () {
-      test('should handle contradictory AckField settings gracefully',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should handle contradictory AckField settings gracefully',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        // This should succeed despite the logical contradiction
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/contradictory.dart': '''
+          // This should succeed despite the logical contradiction
+          await testBuilder(
+            builder,
+            {
+              ...allAssets,
+              'test_pkg|lib/contradictory.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
@@ -250,15 +264,18 @@ class ContradictoryModel {
   ContradictoryModel({this.contradictoryField});
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/contradictory.g.dart': decodedMatches(allOf([
-              contains('final contradictoryModelSchema = Ack.object({'),
-              contains("'contradictoryField': Ack.string().nullable()"),
-            ])),
-          },
-        );
-      });
+            },
+            outputs: {
+              'test_pkg|lib/contradictory.g.dart': decodedMatches(
+                allOf([
+                  contains('final contradictoryModelSchema = Ack.object({'),
+                  contains("'contradictoryField': Ack.string().nullable()"),
+                ]),
+              ),
+            },
+          );
+        },
+      );
 
       test('should handle very long annotation values', () async {
         final builder = ackGenerator(BuilderOptions.empty);
@@ -287,13 +304,16 @@ class LongValuesModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/long_values.g.dart': decodedMatches(allOf([
-              contains(
-                  'final veryLongSchemaNameThatExceedsNormalLengthExpectationsAndTestsEdgeCasesForNameGeneration'),
-              contains('Ack.object({'),
-              contains("'extremely_long_json_key_name_that_tests_limits'"),
-              contains('/// This is a very long description'),
-            ])),
+            'test_pkg|lib/long_values.g.dart': decodedMatches(
+              allOf([
+                contains(
+                  'final veryLongSchemaNameThatExceedsNormalLengthExpectationsAndTestsEdgeCasesForNameGeneration',
+                ),
+                contains('Ack.object({'),
+                contains("'extremely_long_json_key_name_that_tests_limits'"),
+                contains('/// This is a very long description'),
+              ]),
+            ),
           },
         );
       });
@@ -366,33 +386,38 @@ class ApiUser {
 ''',
           },
           outputs: {
-            'test_pkg|lib/api_model.g.dart': decodedMatches(allOf([
-              // Custom schema name
-              contains('final apiUserSchema = Ack.object({'),
-              contains('/// Complete user model for API responses'),
+            'test_pkg|lib/api_model.g.dart': decodedMatches(
+              allOf([
+                // Custom schema name
+                contains('final apiUserSchema = Ack.object({'),
+                contains('/// Complete user model for API responses'),
 
-              // All field types with custom keys
-              contains("'user_id': Ack.string()"),
-              contains("'email_address': Ack.string()"),
-              contains("'display_name': Ack.string()"),
-              contains('.minLength(1)'),
-              contains('.maxLength(100)'),
-              contains('.optional()'),
-              contains('.nullable()'),
-              contains(
-                  "'user_role': Ack.string().enumString(['admin', 'user', 'guest'])"),
-              contains("'subscription_status': Ack.string()"),
-              contains(
-                  ".enumString(['active', 'inactive', 'pending', 'cancelled'])"),
-              contains('.optional()'),
-              contains('.nullable()'),
-              contains("'profile_tags': Ack.list(Ack.string())"),
-              contains(
-                  "'user_preferences': Ack.object({}, additionalProperties: true)"),
+                // All field types with custom keys
+                contains("'user_id': Ack.string()"),
+                contains("'email_address': Ack.string()"),
+                contains("'display_name': Ack.string()"),
+                contains('.minLength(1)'),
+                contains('.maxLength(100)'),
+                contains('.optional()'),
+                contains('.nullable()'),
+                contains(
+                  "'user_role': Ack.string().enumString(['admin', 'user', 'guest'])",
+                ),
+                contains("'subscription_status': Ack.string()"),
+                contains(
+                  ".enumString(['active', 'inactive', 'pending', 'cancelled'])",
+                ),
+                contains('.optional()'),
+                contains('.nullable()'),
+                contains("'profile_tags': Ack.list(Ack.string())"),
+                contains(
+                  "'user_preferences': Ack.object({}, additionalProperties: true)",
+                ),
 
-              // Additional properties
-              contains('}, additionalProperties: true)'),
-            ])),
+                // Additional properties
+                contains('}, additionalProperties: true)'),
+              ]),
+            ),
           },
         );
       });

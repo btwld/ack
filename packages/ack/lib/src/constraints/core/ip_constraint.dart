@@ -5,8 +5,9 @@ class IpConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
   final int? version; // 4, 6 or null for any
 
-  static final _ipv4Regex =
-      RegExp(r'^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$');
+  static final _ipv4Regex = RegExp(
+    r'^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$',
+  );
 
   // Regex for IPv6.
   static final _ipv6Regex = RegExp(
@@ -14,11 +15,11 @@ class IpConstraint extends Constraint<String>
   );
 
   const IpConstraint({this.version})
-      : super(
-          constraintKey: 'string.ip',
-          description:
-              'Value must be a valid IP${version != null ? 'v$version' : ''} address.',
-        );
+    : super(
+        constraintKey: 'string.ip',
+        description:
+            'Value must be a valid IP${version != null ? 'v$version' : ''} address.',
+      );
 
   @override
   bool isValid(String value) {
@@ -41,7 +42,7 @@ class IpConstraint extends Constraint<String>
       'oneOf': [
         {'format': 'ipv4'},
         {'format': 'ipv6'},
-      ]
+      ],
     };
   }
 }

@@ -8,10 +8,10 @@ const maxSafeInteger = 9007199254740991;
 /// IEEE-754 double precision number.
 class IsSafeIntegerConstraint extends Constraint<int> with Validator<int> {
   const IsSafeIntegerConstraint()
-      : super(
-          constraintKey: 'integer.isSafe',
-          description: 'Value must be a safe integer.',
-        );
+    : super(
+        constraintKey: 'integer.isSafe',
+        description: 'Value must be a safe integer.',
+      );
 
   @override
   bool isValid(int value) => value.abs() <= maxSafeInteger;

@@ -87,7 +87,12 @@ class MockDartType implements DartType {
   final String? keyTypeName;
   final String? valueTypeName;
 
-  MockDartType(this.typeName, this.itemTypeName, {this.keyTypeName, this.valueTypeName});
+  MockDartType(
+    this.typeName,
+    this.itemTypeName, {
+    this.keyTypeName,
+    this.valueTypeName,
+  });
 
   @override
   String getDisplayString({bool withNullability = true}) => typeName;

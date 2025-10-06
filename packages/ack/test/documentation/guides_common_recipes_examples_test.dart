@@ -6,10 +6,10 @@ import 'package:test/test.dart';
 class CommonPhoneNumberConstraint extends Constraint<String>
     with Validator<String> {
   CommonPhoneNumberConstraint()
-      : super(
-          constraintKey: 'phone_number',
-          description: 'Must be valid phone number (e.g., +1-234-567-8900)',
-        );
+    : super(
+        constraintKey: 'phone_number',
+        description: 'Must be valid phone number (e.g., +1-234-567-8900)',
+      );
 
   final RegExp _regex = RegExp(r'^\+\d{1,3}-\d{3}-\d{3}-\d{4}$');
 
@@ -28,10 +28,14 @@ void main() {
       final emailSchema = Ack.string().email().notEmpty();
       final passwordSchema = Ack.string()
           .minLength(8)
-          .matches(r'.*[A-Z].*',
-              message: 'Password must contain an uppercase letter')
-          .matches(r'.*[a-z].*',
-              message: 'Password must contain a lowercase letter')
+          .matches(
+            r'.*[A-Z].*',
+            message: 'Password must contain an uppercase letter',
+          )
+          .matches(
+            r'.*[a-z].*',
+            message: 'Password must contain a lowercase letter',
+          )
           .matches(r'.*[0-9].*', message: 'Password must contain a number');
 
       final loginSchema = Ack.object({
@@ -40,18 +44,20 @@ void main() {
       });
 
       expect(
-          loginSchema.safeParse({
-            'email': 'user@example.com',
-            'password': 'SecurePass123',
-          }).isOk,
-          isTrue);
+        loginSchema.safeParse({
+          'email': 'user@example.com',
+          'password': 'SecurePass123',
+        }).isOk,
+        isTrue,
+      );
 
       expect(
-          loginSchema.safeParse({
-            'email': 'user@example.com',
-            'password': 'weak',
-          }).isFail,
-          isTrue);
+        loginSchema.safeParse({
+          'email': 'user@example.com',
+          'password': 'weak',
+        }).isFail,
+        isTrue,
+      );
     });
 
     test('nested address validation handles optional billing address', () {
@@ -70,37 +76,41 @@ void main() {
       });
 
       expect(
-          userWithAddressSchema.safeParse({
-            'name': 'John Doe',
-            'email': 'john@example.com',
-            'shippingAddress': {
-              'street': '123 Main St',
-              'city': 'Springfield',
-              'zipCode': '12345',
-              'country': 'USA',
-            },
-          }).isOk,
-          isTrue);
+        userWithAddressSchema.safeParse({
+          'name': 'John Doe',
+          'email': 'john@example.com',
+          'shippingAddress': {
+            'street': '123 Main St',
+            'city': 'Springfield',
+            'zipCode': '12345',
+            'country': 'USA',
+          },
+        }).isOk,
+        isTrue,
+      );
     });
 
     test('list validation recipes enforce cart constraints', () {
       final cartSchema = Ack.object({
         'userId': Ack.string(),
-        'items': Ack.list(Ack.object({
-          'productId': Ack.string(),
-          'quantity': Ack.integer().positive(),
-          'price': Ack.double().positive(),
-        })).minLength(1).maxLength(50),
+        'items': Ack.list(
+          Ack.object({
+            'productId': Ack.string(),
+            'quantity': Ack.integer().positive(),
+            'price': Ack.double().positive(),
+          }),
+        ).minLength(1).maxLength(50),
       });
 
       expect(
-          cartSchema.safeParse({
-            'userId': 'user-1',
-            'items': [
-              {'productId': 'p-1', 'quantity': 2, 'price': 19.99},
-            ],
-          }).isOk,
-          isTrue);
+        cartSchema.safeParse({
+          'userId': 'user-1',
+          'items': [
+            {'productId': 'p-1', 'quantity': 2, 'price': 19.99},
+          ],
+        }).isOk,
+        isTrue,
+      );
 
       final postSchema = Ack.object({
         'title': Ack.string().minLength(5).maxLength(100),
@@ -109,12 +119,13 @@ void main() {
       });
 
       expect(
-          postSchema.safeParse({
-            'title': 'Hello World',
-            'content': 'This is a sample post with enough content.',
-            'tags': ['dart', 'validation'],
-          }).isOk,
-          isTrue);
+        postSchema.safeParse({
+          'title': 'Hello World',
+          'content': 'This is a sample post with enough content.',
+          'tags': ['dart', 'validation'],
+        }).isOk,
+        isTrue,
+      );
     });
 
     test('enum validation recipe restricts status and priority', () {
@@ -131,36 +142,40 @@ void main() {
       });
 
       expect(
-          orderSchema.safeParse({
-            'orderId': 'ORD-123',
-            'status': 'shipped',
-            'priority': 'high',
-          }).isOk,
-          isTrue);
-
-      expect(
-          orderSchema.safeParse({
-            'orderId': 'ORD-123',
-            'status': 'unknown',
-            'priority': 'low',
-          }).isFail,
-          isTrue);
-    });
-
-    test('custom validation recipes enforce phone and password confirmation',
-        () {
-      final registrationSchema = Ack.object({
-        'username': Ack.string().minLength(3),
-        'email': Ack.string().email(),
-        'phone': Ack.string().constrain(CommonPhoneNumberConstraint()),
-        'password': Ack.string().minLength(8),
-        'confirmPassword': Ack.string().minLength(8),
-      }).refine(
-        (data) => data['password'] == data['confirmPassword'],
-        message: 'Passwords do not match',
+        orderSchema.safeParse({
+          'orderId': 'ORD-123',
+          'status': 'shipped',
+          'priority': 'high',
+        }).isOk,
+        isTrue,
       );
 
       expect(
+        orderSchema.safeParse({
+          'orderId': 'ORD-123',
+          'status': 'unknown',
+          'priority': 'low',
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test(
+      'custom validation recipes enforce phone and password confirmation',
+      () {
+        final registrationSchema =
+            Ack.object({
+              'username': Ack.string().minLength(3),
+              'email': Ack.string().email(),
+              'phone': Ack.string().constrain(CommonPhoneNumberConstraint()),
+              'password': Ack.string().minLength(8),
+              'confirmPassword': Ack.string().minLength(8),
+            }).refine(
+              (data) => data['password'] == data['confirmPassword'],
+              message: 'Passwords do not match',
+            );
+
+        expect(
           registrationSchema.safeParse({
             'username': 'user123',
             'email': 'user@example.com',
@@ -168,9 +183,10 @@ void main() {
             'password': 'Password123',
             'confirmPassword': 'Password123',
           }).isOk,
-          isTrue);
+          isTrue,
+        );
 
-      expect(
+        expect(
           registrationSchema.safeParse({
             'username': 'user123',
             'email': 'user@example.com',
@@ -178,8 +194,10 @@ void main() {
             'password': 'Password123',
             'confirmPassword': 'Mismatch',
           }).isFail,
-          isTrue);
-    });
+          isTrue,
+        );
+      },
+    );
 
     test('API response validation recipe handles GitHub example', () async {
       final githubUserSchema = Ack.object({

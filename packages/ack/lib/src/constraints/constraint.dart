@@ -84,9 +84,9 @@ mixin Validator<T> on Constraint<T> {
   /// Stores both the raw value and its string representation for debugging.
   @protected
   Map<String, Object?> buildContext(T value) => {
-        'inputValue': value,
-        'stringValue': value.toString(),
-      };
+    'inputValue': value,
+    'stringValue': value.toString(),
+  };
 
   /// Validates the [value] against this constraint.
   ///

@@ -24,8 +24,9 @@ void main() {
       );
 
       // Add common fields to all variants
-      final enhancedSchema =
-          userTypeSchema.transform<Map<String, Object?>>((user) {
+      final enhancedSchema = userTypeSchema.transform<Map<String, Object?>>((
+        user,
+      ) {
         return {
           ...user!,
           'lastActive': DateTime.now().toIso8601String(),

@@ -10,7 +10,9 @@ import 'test_utils/test_assets.dart';
 
 /// Helper function to validate generated code with dart analyze
 Future<void> validateGeneratedCode(
-    String generatedCode, String testName) async {
+  String generatedCode,
+  String testName,
+) async {
   // Create a temporary directory for analysis
   final tempDir = Directory.systemTemp.createTempSync('ack_generator_test_');
 
@@ -19,7 +21,8 @@ Future<void> validateGeneratedCode(
     final tempFile = File(p.join(tempDir.path, 'generated_test.dart'));
 
     // Add necessary imports and wrap the generated code
-    final fullCode = '''
+    final fullCode =
+        '''
 // Generated code for testing - $testName
 import 'package:meta/meta.dart';
 
@@ -72,17 +75,19 @@ $generatedCode
     await tempFile.writeAsString(fullCode);
 
     // Run dart analyze on the temporary file
-    final result = await Process.run(
-      'dart',
-      ['analyze', '--fatal-infos', tempFile.path],
-      workingDirectory: tempDir.path,
-    );
+    final result = await Process.run('dart', [
+      'analyze',
+      '--fatal-infos',
+      tempFile.path,
+    ], workingDirectory: tempDir.path);
 
     if (result.exitCode != 0) {
-      fail('Generated code has analysis issues:\n'
-          'STDOUT: ${result.stdout}\n'
-          'STDERR: ${result.stderr}\n'
-          'Generated code:\n$generatedCode');
+      fail(
+        'Generated code has analysis issues:\n'
+        'STDOUT: ${result.stdout}\n'
+        'STDERR: ${result.stderr}\n'
+        'Generated code:\n$generatedCode',
+      );
     }
 
     print('✅ Generated code for $testName passed dart analyze');
@@ -128,16 +133,13 @@ class User {
         },
         outputs: {
           'test_pkg|lib/user.g.dart': decodedMatches(
-            predicate<String>(
-              (actual) {
-                return actual.contains('final userSchema = Ack.object(') &&
-                    actual.contains("'id': Ack.string()") &&
-                    actual.contains("'name': Ack.string()") &&
-                    actual.contains("'email': Ack.string()") &&
-                    actual.contains("'age': Ack.integer().optional()");
-              },
-              'matches golden file content',
-            ),
+            predicate<String>((actual) {
+              return actual.contains('final userSchema = Ack.object(') &&
+                  actual.contains("'id': Ack.string()") &&
+                  actual.contains("'name': Ack.string()") &&
+                  actual.contains("'email': Ack.string()") &&
+                  actual.contains("'age': Ack.integer().optional()");
+            }, 'matches golden file content'),
           ),
         },
       );
@@ -182,16 +184,13 @@ class Order {
         },
         outputs: {
           'test_pkg|lib/order.g.dart': decodedMatches(
-            predicate<String>(
-              (actual) {
-                return actual.contains('final orderItemSchema = Ack.object(') &&
-                    actual.contains('final orderSchema = Ack.object(') &&
-                    actual.contains("'productId': Ack.string()") &&
-                    actual.contains("'quantity': Ack.integer()") &&
-                    actual.contains("'price': Ack.double()");
-              },
-              'matches order golden file content',
-            ),
+            predicate<String>((actual) {
+              return actual.contains('final orderItemSchema = Ack.object(') &&
+                  actual.contains('final orderSchema = Ack.object(') &&
+                  actual.contains("'productId': Ack.string()") &&
+                  actual.contains("'quantity': Ack.integer()") &&
+                  actual.contains("'price': Ack.double()");
+            }, 'matches order golden file content'),
           ),
         },
       );
@@ -242,33 +241,32 @@ class SimpleProduct {
         },
         outputs: {
           'test_pkg|lib/product.g.dart': decodedMatches(
-            predicate<String>(
-              (actual) {
-                // Check Product schema with additional properties
-                final hasProductSchema =
-                    actual.contains('final productSchema = Ack.object(');
+            predicate<String>((actual) {
+              // Check Product schema with additional properties
+              final hasProductSchema = actual.contains(
+                'final productSchema = Ack.object(',
+              );
 
-                // Check SimpleProduct schema without additional properties
-                final hasSimpleProductSchema =
-                    actual.contains('final simpleProductSchema = Ack.object(');
+              // Check SimpleProduct schema without additional properties
+              final hasSimpleProductSchema = actual.contains(
+                'final simpleProductSchema = Ack.object(',
+              );
 
-                // Check field definitions
-                final hasProductFields = actual
-                        .contains("'name': Ack.string()") &&
-                    actual.contains("'price': Ack.double()") &&
-                    actual.contains("'description': Ack.string().optional()");
+              // Check field definitions
+              final hasProductFields =
+                  actual.contains("'name': Ack.string()") &&
+                  actual.contains("'price': Ack.double()") &&
+                  actual.contains("'description': Ack.string().optional()");
 
-                final hasSimpleProductFields =
-                    actual.contains("'name': Ack.string()") &&
-                        actual.contains("'price': Ack.double()");
+              final hasSimpleProductFields =
+                  actual.contains("'name': Ack.string()") &&
+                  actual.contains("'price': Ack.double()");
 
-                return hasProductSchema &&
-                    hasSimpleProductSchema &&
-                    hasProductFields &&
-                    hasSimpleProductFields;
-              },
-              'matches additional properties golden file content',
-            ),
+              return hasProductSchema &&
+                  hasSimpleProductSchema &&
+                  hasProductFields &&
+                  hasSimpleProductFields;
+            }, 'matches additional properties golden file content'),
           ),
         },
       );

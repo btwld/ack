@@ -24,8 +24,9 @@ void main() {
       // This is the key test - refinements added AFTER optional()
       // should still be applied to non-null values
       final schema = Ack.string().optional().refine(
-          (value) => value.length >= 5,
-          message: 'Must be at least 5 characters');
+        (value) => value.length >= 5,
+        message: 'Must be at least 5 characters',
+      );
 
       // Valid non-null value
       expect(schema.safeParse('hello').isOk, isTrue);
@@ -33,8 +34,10 @@ void main() {
       // Invalid non-null value (too short)
       final result = schema.safeParse('hi');
       expect(result.isFail, isTrue);
-      expect(result.getError().toString(),
-          contains('Must be at least 5 characters'));
+      expect(
+        result.getError().toString(),
+        contains('Must be at least 5 characters'),
+      );
 
       // Null should fail (optional does NOT imply nullable)
       expect(schema.safeParse(null).isFail, isTrue);
@@ -65,9 +68,10 @@ void main() {
 
     test('refinements are checked when value is present', () {
       // Verify that refinements added after optional() are actually applied
-      final schema = Ack.string()
-          .optional()
-          .refine((v) => v.contains('@'), message: 'Must contain @');
+      final schema = Ack.string().optional().refine(
+        (v) => v.contains('@'),
+        message: 'Must contain @',
+      );
 
       // Non-null value is checked against refinements
       expect(schema.safeParse('test@example').isOk, isTrue);

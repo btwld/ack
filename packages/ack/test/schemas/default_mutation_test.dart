@@ -20,8 +20,11 @@ void main() {
 
         // Values should be equal but not identical instances
         expect(value1, equals(value2));
-        expect(identical(value1, value2), isFalse,
-            reason: 'Each parse should return a separate cloned instance');
+        expect(
+          identical(value1, value2),
+          isFalse,
+          reason: 'Each parse should return a separate cloned instance',
+        );
 
         // Original default should not be affected
         expect(originalDefault, equals({'name': 'Guest', 'role': 'user'}));
@@ -31,8 +34,8 @@ void main() {
         final originalDefault = {
           'user': {
             'name': 'Guest',
-            'settings': {'theme': 'dark', 'notifications': true}
-          }
+            'settings': {'theme': 'dark', 'notifications': true},
+          },
         };
         final schema = Ack.any().copyWith(defaultValue: originalDefault);
 
@@ -47,14 +50,16 @@ void main() {
         expect(value, equals(originalDefault));
         expect(identical(value, originalDefault), isFalse);
         expect(
-            identical(user, (originalDefault['user'] as Map<String, Object?>)),
-            isFalse);
+          identical(user, (originalDefault['user'] as Map<String, Object?>)),
+          isFalse,
+        );
         expect(
-            identical(
-                settings,
-                ((originalDefault['user']
-                    as Map<String, Object?>)['settings'])),
-            isFalse);
+          identical(
+            settings,
+            ((originalDefault['user'] as Map<String, Object?>)['settings']),
+          ),
+          isFalse,
+        );
       });
 
       test('should return unmodifiable map', () {
@@ -90,8 +95,11 @@ void main() {
 
         // Values should be equal but not identical instances
         expect(value1, equals(value2));
-        expect(identical(value1, value2), isFalse,
-            reason: 'Each parse should return a separate cloned instance');
+        expect(
+          identical(value1, value2),
+          isFalse,
+          reason: 'Each parse should return a separate cloned instance',
+        );
 
         // Original default should not be affected
         expect(originalDefault, equals(['item1', 'item2', 'item3']));
@@ -102,8 +110,8 @@ void main() {
           'simple',
           ['nested', 'list'],
           {
-            'nested': ['deeply', 'nested', 'items']
-          }
+            'nested': ['deeply', 'nested', 'items'],
+          },
         ];
         final schema = Ack.any().copyWith(defaultValue: originalDefault);
 
@@ -152,8 +160,11 @@ void main() {
         // Strings are immutable, so same instance is fine
         expect(value1, equals(originalDefault));
         expect(value2, equals(originalDefault));
-        expect(identical(value1, value2), isTrue,
-            reason: 'Strings are immutable, same instance is safe');
+        expect(
+          identical(value1, value2),
+          isTrue,
+          reason: 'Strings are immutable, same instance is safe',
+        );
       });
 
       test('number defaults are immutable by nature', () {
@@ -195,7 +206,7 @@ void main() {
       test('should handle map containing lists', () {
         final originalDefault = {
           'tags': ['tag1', 'tag2'],
-          'counts': [1, 2, 3]
+          'counts': [1, 2, 3],
         };
         final schema = Ack.any().copyWith(defaultValue: originalDefault);
 
@@ -214,7 +225,7 @@ void main() {
       test('should handle list containing maps', () {
         final originalDefault = [
           {'id': 1, 'name': 'first'},
-          {'id': 2, 'name': 'second'}
+          {'id': 2, 'name': 'second'},
         ];
         final schema = Ack.any().copyWith(defaultValue: originalDefault);
 

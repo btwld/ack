@@ -31,8 +31,9 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library =
-            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
@@ -62,13 +63,15 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library =
-            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
-        final field =
-            classElement.fields.firstWhere((f) => f.name == 'firstName');
+        final field = classElement.fields.firstWhere(
+          (f) => f.name == 'firstName',
+        );
 
         final fieldInfo = analyzer.analyze(field);
 
@@ -94,16 +97,19 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library =
-            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
 
-        final nameField =
-            classElement.fields.firstWhere((f) => f.name == 'name');
-        final emailField =
-            classElement.fields.firstWhere((f) => f.name == 'email');
+        final nameField = classElement.fields.firstWhere(
+          (f) => f.name == 'name',
+        );
+        final emailField = classElement.fields.firstWhere(
+          (f) => f.name == 'email',
+        );
         final ageField = classElement.fields.firstWhere((f) => f.name == 'age');
 
         expect(analyzer.analyze(nameField).isNullable, isFalse);
@@ -132,14 +138,16 @@ class User {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library =
-            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'User');
 
-        final emailField =
-            classElement.fields.firstWhere((f) => f.name == 'email');
+        final emailField = classElement.fields.firstWhere(
+          (f) => f.name == 'email',
+        );
         final emailInfo = analyzer.analyze(emailField);
 
         expect(emailInfo.constraints.length, equals(3));
@@ -179,18 +187,22 @@ class Settings {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library =
-            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'Settings');
 
-        final enabledField =
-            classElement.fields.firstWhere((f) => f.name == 'enabled');
-        final retryField =
-            classElement.fields.firstWhere((f) => f.name == 'retryCount');
-        final themeField =
-            classElement.fields.firstWhere((f) => f.name == 'theme');
+        final enabledField = classElement.fields.firstWhere(
+          (f) => f.name == 'enabled',
+        );
+        final retryField = classElement.fields.firstWhere(
+          (f) => f.name == 'retryCount',
+        );
+        final themeField = classElement.fields.firstWhere(
+          (f) => f.name == 'theme',
+        );
 
         // Note: In actual implementation, extracting default values from AST
         // requires more complex analysis. For testing, we verify the field exists
@@ -228,8 +240,9 @@ class TypeTest {
       };
 
       await resolveSources(assets, (resolver) async {
-        final library =
-            await resolver.libraryFor(AssetId('test_pkg', 'lib/model.dart'));
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
         final classElement = library.topLevelElements
             .whereType<ClassElement>()
             .firstWhere((e) => e.name == 'TypeTest');

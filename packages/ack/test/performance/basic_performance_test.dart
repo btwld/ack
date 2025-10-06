@@ -10,11 +10,7 @@ void main() {
         'email': Ack.string().email(),
       });
 
-      final data = {
-        'name': 'John Doe',
-        'age': 30,
-        'email': 'john@example.com',
-      };
+      final data = {'name': 'John Doe', 'age': 30, 'email': 'john@example.com'};
 
       // Warm up
       for (int i = 0; i < 100; i++) {
@@ -33,7 +29,8 @@ void main() {
 
       final avgMicroseconds = stopwatch.elapsedMicroseconds / iterations;
       print(
-          'Simple schema validation: ${avgMicroseconds.toStringAsFixed(2)}μs per validation');
+        'Simple schema validation: ${avgMicroseconds.toStringAsFixed(2)}μs per validation',
+      );
 
       // Should be fast - less than 100 microseconds per validation
       expect(avgMicroseconds, lessThan(100));
@@ -58,10 +55,7 @@ void main() {
         if (depth == 0) {
           return 'leaf';
         }
-        return {
-          'value': 'level-$depth',
-          'nested': createNestedData(depth - 1),
-        };
+        return {'value': 'level-$depth', 'nested': createNestedData(depth - 1)};
       }
 
       final deepData = createNestedData(10);
@@ -71,41 +65,41 @@ void main() {
     });
 
     test('should validate large arrays efficiently', () {
-      final schema = Ack.list(Ack.object({
-        'id': Ack.string().uuid(),
-        'name': Ack.string(),
-        'active': Ack.boolean(),
-      }));
+      final schema = Ack.list(
+        Ack.object({
+          'id': Ack.string().uuid(),
+          'name': Ack.string(),
+          'active': Ack.boolean(),
+        }),
+      );
 
       // Create large array
       final largeArray = List.generate(
-          1000,
-          (i) => {
-                'id':
-                    '550e8400-e29b-41d4-a716-446655440${i.toString().padLeft(3, '0')}',
-                'name': 'Item $i',
-                'active': i % 2 == 0,
-              });
+        1000,
+        (i) => {
+          'id':
+              '550e8400-e29b-41d4-a716-446655440${i.toString().padLeft(3, '0')}',
+          'name': 'Item $i',
+          'active': i % 2 == 0,
+        },
+      );
 
       final stopwatch = Stopwatch()..start();
       schema.parse(largeArray);
       stopwatch.stop();
 
       print(
-          'Large array (1000 items) validation: ${stopwatch.elapsedMilliseconds}ms');
+        'Large array (1000 items) validation: ${stopwatch.elapsedMilliseconds}ms',
+      );
 
       // Should complete in reasonable time (less than 100ms)
       expect(stopwatch.elapsedMilliseconds, lessThan(100));
     });
 
     test('should not have memory leaks with repeated validations', () {
-      final schema = Ack.object({
-        'data': Ack.list(Ack.string()),
-      });
+      final schema = Ack.object({'data': Ack.list(Ack.string())});
 
-      final testData = {
-        'data': List.generate(100, (i) => 'item-$i'),
-      };
+      final testData = {'data': List.generate(100, (i) => 'item-$i')};
 
       // Run many validations to check for memory leaks
       // In a real scenario, we'd use memory profiling tools

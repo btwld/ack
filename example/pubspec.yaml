@@ -3,7 +3,7 @@ description: Example project for ACK schema generation.
 version: 0.3.0-alpha.0
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
   ack: ^0.3.0-alpha.0

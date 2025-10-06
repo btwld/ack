@@ -13,9 +13,11 @@ void main(List<String> args) async {
     await _showGeneratorOutput('user schema golden test');
   } else if (testName == 'order_schema' || testName == 'order') {
     print(
-        'ℹ️  Order schema test uses pattern matching, not golden file comparison');
+      'ℹ️  Order schema test uses pattern matching, not golden file comparison',
+    );
     print(
-        '   Run: dart test test/golden_test.dart --plain-name "complex nested schema golden test"');
+      '   Run: dart test test/golden_test.dart --plain-name "complex nested schema golden test"',
+    );
   } else {
     print('❌ Unknown test: $testName');
     print('Available tests: user_schema, order_schema');
@@ -29,17 +31,13 @@ Future<void> _showGeneratorOutput(String testName) async {
 
   try {
     // Run the specific golden test and capture its output
-    final result = await Process.run(
-      'dart',
-      [
-        'test',
-        'test/golden_test.dart',
-        '--plain-name',
-        testName,
-        '--reporter=expanded'
-      ],
-      workingDirectory: Directory.current.path,
-    );
+    final result = await Process.run('dart', [
+      'test',
+      'test/golden_test.dart',
+      '--plain-name',
+      testName,
+      '--reporter=expanded',
+    ], workingDirectory: Directory.current.path);
 
     final output = result.stdout.toString();
 

@@ -46,20 +46,19 @@ void main() {
           'name': Ack.string().minLength(2),
           'email': Ack.string().email(),
         }),
-        'items': Ack.list(Ack.object({
-          'product': Ack.string(),
-          'quantity': Ack.integer().positive(),
-          'price': Ack.double().positive(),
-        })).minLength(1),
+        'items': Ack.list(
+          Ack.object({
+            'product': Ack.string(),
+            'quantity': Ack.integer().positive(),
+            'price': Ack.double().positive(),
+          }),
+        ).minLength(1),
         'total': Ack.double().positive(),
       });
 
       final validOrder = {
         'id': '550e8400-e29b-41d4-a716-446655440000',
-        'customer': {
-          'name': 'Alice',
-          'email': 'alice@example.com',
-        },
+        'customer': {'name': 'Alice', 'email': 'alice@example.com'},
         'items': [
           {'product': 'Widget', 'quantity': 2, 'price': 19.99},
           {'product': 'Gadget', 'quantity': 1, 'price': 9.50},
@@ -87,35 +86,31 @@ void main() {
           'name': Ack.string().minLength(2),
           'email': Ack.string().email(),
         }),
-        'items': Ack.list(Ack.object({
-          'product': Ack.string(),
-          'quantity': Ack.integer().positive(),
-          'price': Ack.double().positive(),
-        })).minLength(1),
+        'items': Ack.list(
+          Ack.object({
+            'product': Ack.string(),
+            'quantity': Ack.integer().positive(),
+            'price': Ack.double().positive(),
+          }),
+        ).minLength(1),
         'total': Ack.double().positive(),
       });
 
-      final validatedOrder = orderSchema.refine(
-        (order) {
-          final items = order['items'] as List;
-          final calculatedTotal = items.fold<double>(0, (sum, item) {
-            final itemMap = item as Map<String, Object?>;
-            final quantity = itemMap['quantity'] as int;
-            final price = itemMap['price'] as double;
-            return sum + (quantity * price);
-          });
-          final total = order['total'] as double;
-          return (calculatedTotal - total).abs() < 0.01;
-        },
-        message: 'Total must match sum of item prices',
-      );
+      final validatedOrder = orderSchema.refine((order) {
+        final items = order['items'] as List;
+        final calculatedTotal = items.fold<double>(0, (sum, item) {
+          final itemMap = item as Map<String, Object?>;
+          final quantity = itemMap['quantity'] as int;
+          final price = itemMap['price'] as double;
+          return sum + (quantity * price);
+        });
+        final total = order['total'] as double;
+        return (calculatedTotal - total).abs() < 0.01;
+      }, message: 'Total must match sum of item prices');
 
       final validOrder = {
         'id': '550e8400-e29b-41d4-a716-446655440000',
-        'customer': {
-          'name': 'Alice',
-          'email': 'alice@example.com',
-        },
+        'customer': {'name': 'Alice', 'email': 'alice@example.com'},
         'items': [
           {'product': 'Widget', 'quantity': 2, 'price': 19.99},
           {'product': 'Gadget', 'quantity': 1, 'price': 9.50},
@@ -125,14 +120,13 @@ void main() {
 
       expect(validatedOrder.safeParse(validOrder).isOk, isTrue);
 
-      final invalidOrder = {
-        ...validOrder,
-        'total': 40.00,
-      };
+      final invalidOrder = {...validOrder, 'total': 40.00};
       final invalidResult = validatedOrder.safeParse(invalidOrder);
       expect(invalidResult.isFail, isTrue);
-      expect(invalidResult.getError().message,
-          contains('Total must match sum of item prices'));
+      expect(
+        invalidResult.getError().message,
+        contains('Total must match sum of item prices'),
+      );
     });
 
     test('union examples accept multiple data shapes', () {
@@ -181,14 +175,15 @@ void main() {
     });
 
     test('transformation example adds derived age field', () {
-      final personSchema = Ack.object({
-        'name': Ack.string(),
-        'birthYear': Ack.integer(),
-      }).transform((data) {
-        final birthYear = data!['birthYear'] as int;
-        final age = DateTime.now().year - birthYear;
-        return {...data, 'age': age};
-      });
+      final personSchema =
+          Ack.object({
+            'name': Ack.string(),
+            'birthYear': Ack.integer(),
+          }).transform((data) {
+            final birthYear = data!['birthYear'] as int;
+            final age = DateTime.now().year - birthYear;
+            return {...data, 'age': age};
+          });
 
       final result = personSchema.safeParse({
         'name': 'Taylor',
@@ -207,19 +202,23 @@ void main() {
           'name': Ack.string().minLength(2),
           'email': Ack.string().email(),
         }),
-        'items': Ack.list(Ack.object({
-          'product': Ack.string(),
-          'quantity': Ack.integer().positive(),
-          'price': Ack.double().positive(),
-        })).minLength(1),
+        'items': Ack.list(
+          Ack.object({
+            'product': Ack.string(),
+            'quantity': Ack.integer().positive(),
+            'price': Ack.double().positive(),
+          }),
+        ).minLength(1),
         'total': Ack.double().positive(),
       });
 
       final jsonSchema = orderSchema.toJsonSchema();
       expect(jsonSchema['type'], equals('object'));
       expect(jsonSchema['properties'], isA<Map<String, Object?>>());
-      expect(jsonSchema['required'],
-          containsAll(['id', 'customer', 'items', 'total']));
+      expect(
+        jsonSchema['required'],
+        containsAll(['id', 'customer', 'items', 'total']),
+      );
 
       final encoded = jsonEncode(jsonSchema);
       expect(encoded, contains('"type":"object"'));

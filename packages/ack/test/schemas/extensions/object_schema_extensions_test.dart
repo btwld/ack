@@ -19,8 +19,10 @@ void main() {
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
-        expect(constraintError.constraints.first.message,
-            'Property "extra" is not allowed.');
+        expect(
+          constraintError.constraints.first.message,
+          'Property "extra" is not allowed.',
+        );
       });
 
       test('should pass without additional properties', () {
@@ -47,9 +49,7 @@ void main() {
 
     group('merge', () {
       test('should merge properties and required fields', () {
-        final addressSchema = Ack.object({
-          'street': Ack.string(),
-        });
+        final addressSchema = Ack.object({'street': Ack.string()});
         final mergedSchema = userSchema.merge(addressSchema);
         final result = mergedSchema.safeParse({
           'name': 'Leo',
@@ -58,13 +58,17 @@ void main() {
         });
         expect(result.isOk, isTrue);
 
-        final result2 =
-            mergedSchema.safeParse({'name': 'Leo', 'email': 'leo@example.com'});
+        final result2 = mergedSchema.safeParse({
+          'name': 'Leo',
+          'email': 'leo@example.com',
+        });
         expect(result2.isOk, isFalse);
         final error = result2.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
-        expect(constraintError.constraints.first.message,
-            'Required property "street" is missing.');
+        expect(
+          constraintError.constraints.first.message,
+          'Required property "street" is missing.',
+        );
       });
     });
 
@@ -82,19 +86,25 @@ void main() {
         final result = pickedSchema.safeParse({'name': 'Leo'});
         expect(result.isOk, isTrue);
 
-        final result2 =
-            pickedSchema.safeParse({'name': 'Leo', 'email': 'a@b.com'});
+        final result2 = pickedSchema.safeParse({
+          'name': 'Leo',
+          'email': 'a@b.com',
+        });
         expect(result2.isOk, isFalse);
         final error = result2.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
-        expect(constraintError.constraints.first.message,
-            'Property "email" is not allowed.');
+        expect(
+          constraintError.constraints.first.message,
+          'Property "email" is not allowed.',
+        );
       });
 
       test('picked schema can be made to passthrough', () {
         final pickedSchema = userSchema.pick(['name']).passthrough();
-        final result =
-            pickedSchema.safeParse({'name': 'Leo', 'email': 'a@b.com'});
+        final result = pickedSchema.safeParse({
+          'name': 'Leo',
+          'email': 'a@b.com',
+        });
         expect(result.isOk, isTrue);
       });
     });
@@ -109,8 +119,10 @@ void main() {
         expect(result2.isOk, isFalse);
         final error = result2.getError() as SchemaNestedError;
         final constraintError = error.errors.first as SchemaConstraintsError;
-        expect(constraintError.constraints.first.message,
-            'Required property "name" is missing.');
+        expect(
+          constraintError.constraints.first.message,
+          'Required property "name" is missing.',
+        );
       });
     });
 
@@ -132,8 +144,9 @@ void main() {
 
       test('should override existing properties', () {
         final extendedSchema = userSchema.extend({
-          'name':
-              StringSchema().minLength(5), // Override with stricter constraint
+          'name': StringSchema().minLength(
+            5,
+          ), // Override with stricter constraint
         });
 
         // Should fail with short name due to override
@@ -152,9 +165,7 @@ void main() {
       });
 
       test('should add required fields by default', () {
-        final extendedSchema = userSchema.extend({
-          'age': Ack.integer().min(0),
-        });
+        final extendedSchema = userSchema.extend({'age': Ack.integer().min(0)});
 
         // Should fail without age (required by default)
         final result = extendedSchema.safeParse({
@@ -173,9 +184,11 @@ void main() {
       });
 
       test('should override schema construction elements', () {
-        final extendedSchema = userSchema.extend({
-          'extra': StringSchema(),
-        }, additionalProperties: true, description: 'Extended user schema');
+        final extendedSchema = userSchema.extend(
+          {'extra': StringSchema()},
+          additionalProperties: true,
+          description: 'Extended user schema',
+        );
 
         // Should allow additional properties
         final result = extendedSchema.safeParse({

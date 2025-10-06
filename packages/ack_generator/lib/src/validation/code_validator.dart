@@ -17,10 +17,7 @@ class CodeValidator {
   static ValidationResult validate(String dartCode) {
     try {
       // Use parseString with throwIfDiagnostics: false to capture errors
-      final result = parseString(
-        content: dartCode,
-        throwIfDiagnostics: false,
-      );
+      final result = parseString(content: dartCode, throwIfDiagnostics: false);
 
       // Check if there are any parsing errors
       if (result.errors.isEmpty) {
@@ -40,10 +37,9 @@ class CodeValidator {
       );
     } catch (e) {
       // If parseString throws an exception, treat it as a validation failure
-      return ValidationResult.failure(
-        'Failed to parse generated code',
-        ['Parsing exception: $e'],
-      );
+      return ValidationResult.failure('Failed to parse generated code', [
+        'Parsing exception: $e',
+      ]);
     }
   }
 }
@@ -66,10 +62,7 @@ class ValidationResult {
   }
 
   /// Creates a failed validation result with error details.
-  factory ValidationResult.failure(
-    String summary,
-    List<String> details,
-  ) {
+  factory ValidationResult.failure(String summary, List<String> details) {
     return ValidationResult._(
       isSuccess: false,
       errorSummary: summary,

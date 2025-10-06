@@ -77,7 +77,8 @@ class FieldInfo {
         // If there's any issue with the analyzer API, fall back to empty list
         // This maintains backward compatibility with manual @EnumString annotations
         print(
-            'Warning: Could not extract enum values for ${element.displayName}: $e');
+          'Warning: Could not extract enum values for ${element.displayName}: $e',
+        );
         return [];
       }
     }

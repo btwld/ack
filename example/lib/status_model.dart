@@ -8,7 +8,5 @@ class StatusModel {
   @EnumString(['active', 'inactive', 'pending'])
   final String simpleStatus;
 
-  StatusModel({
-    required this.simpleStatus,
-  });
+  StatusModel({required this.simpleStatus});
 }

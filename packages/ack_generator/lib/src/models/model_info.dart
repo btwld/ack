@@ -30,6 +30,9 @@ class ModelInfo {
   /// Computed property: Whether this class is a discriminated subtype (has discriminatedValue)
   bool get isDiscriminatedSubtype => discriminatorValue != null;
 
+  /// Whether this ModelInfo was created from a schema variable (not a class)
+  final bool isFromSchemaVariable;
+
   const ModelInfo({
     required this.className,
     required this.schemaClassName,
@@ -41,5 +44,6 @@ class ModelInfo {
     this.discriminatorKey,
     this.discriminatorValue,
     this.subtypes,
+    this.isFromSchemaVariable = false,
   });
 }

@@ -18,8 +18,13 @@ void main() {
 
     test('deep clones nested maps and lists', () {
       final original = {
-        'a': [1, {'b': 2}],
-        'nested': {'c': [3]}
+        'a': [
+          1,
+          {'b': 2},
+        ],
+        'nested': {
+          'c': [3],
+        },
       };
 
       final cloned = cloneDefault(original) as Map<String, Object?>;
@@ -35,13 +40,16 @@ void main() {
       (original['a'] as List)[1] = {'b': 99};
       (original['nested'] as Map)['c'] = [4];
 
-      final innerMap = (cloned['a'] as List<Object?>)[1] as Map<String, Object?>;
+      final innerMap =
+          (cloned['a'] as List<Object?>)[1] as Map<String, Object?>;
       expect(innerMap['b'], 2);
       expect((cloned['nested'] as Map<String, Object?>)['c'], equals([3]));
     });
 
     test('clones maps with non-string keys without losing key identity', () {
-      final original = {1: ['a']};
+      final original = {
+        1: ['a'],
+      };
 
       final cloned = cloneDefault(original) as Map<Object?, Object?>;
       final clonedList = cloned[1] as List<Object?>;

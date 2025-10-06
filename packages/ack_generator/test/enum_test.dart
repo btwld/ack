@@ -29,12 +29,15 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.g.dart': decodedMatches(allOf([
-            contains('final userSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            contains(
-                "'status': Ack.string().enumString(['active', 'inactive', 'pending'])"),
-          ])),
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains('final userSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              contains(
+                "'status': Ack.string().enumString(['active', 'inactive', 'pending'])",
+              ),
+            ]),
+          ),
         },
       );
     });
@@ -61,14 +64,16 @@ class Task {
 ''',
         },
         outputs: {
-          'test_pkg|lib/model.g.dart': decodedMatches(allOf([
-            contains('final taskSchema = Ack.object('),
-            contains("'title': Ack.string()"),
-            contains("'priority': Ack.string()"),
-            contains(".enumString(['low', 'medium', 'high'])"),
-            contains('.optional()'),
-            contains('.nullable()'),
-          ])),
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains('final taskSchema = Ack.object('),
+              contains("'title': Ack.string()"),
+              contains("'priority': Ack.string()"),
+              contains(".enumString(['low', 'medium', 'high'])"),
+              contains('.optional()'),
+              contains('.nullable()'),
+            ]),
+          ),
         },
       );
     });

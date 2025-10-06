@@ -9,16 +9,15 @@ void main() {
         'lastName': Ack.string(),
       });
 
-      final extendedSchema = baseSchema.extend({
-        'age': Ack.integer().min(0),
-        'email': Ack.string().email(),
-      }).transform<Map<String, dynamic>>((data) {
-        return {
-          ...data!,
-          'fullName': '${data['firstName']} ${data['lastName']}',
-          'isAdult': (data['age'] as int) >= 18,
-        };
-      });
+      final extendedSchema = baseSchema
+          .extend({'age': Ack.integer().min(0), 'email': Ack.string().email()})
+          .transform<Map<String, dynamic>>((data) {
+            return {
+              ...data!,
+              'fullName': '${data['firstName']} ${data['lastName']}',
+              'isAdult': (data['age'] as int) >= 18,
+            };
+          });
 
       final result = extendedSchema.parse({
         'firstName': 'John',
@@ -37,30 +36,25 @@ void main() {
         'id': Ack.string(),
         'password': Ack.string(),
         'email': Ack.string(),
-        'profile': Ack.object({
-          'name': Ack.string(),
-          'bio': Ack.string(),
-        }),
+        'profile': Ack.object({'name': Ack.string(), 'bio': Ack.string()}),
       });
 
       // Create public view by omitting sensitive data and transforming
-      final publicSchema =
-          schema.omit(['password']).transform<Map<String, dynamic>>((data) {
-        final profile = data!['profile'] as Map<String, Object?>;
-        return {
-          ...data,
-          'displayName': profile['name'],
-          'profileUrl': '/users/${data['id']}',
-        };
-      });
+      final publicSchema = schema
+          .omit(['password'])
+          .transform<Map<String, dynamic>>((data) {
+            final profile = data!['profile'] as Map<String, Object?>;
+            return {
+              ...data,
+              'displayName': profile['name'],
+              'profileUrl': '/users/${data['id']}',
+            };
+          });
 
       final result = publicSchema.parse({
         'id': '123',
         'email': 'user@example.com',
-        'profile': {
-          'name': 'Jane User',
-          'bio': 'Developer',
-        },
+        'profile': {'name': 'Jane User', 'bio': 'Developer'},
       });
 
       expect(result!.containsKey('password'), isFalse);

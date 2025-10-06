@@ -44,15 +44,8 @@ extension StringSchemaExtensions on StringSchema {
 
   /// Adds a constraint that the string must match the given regex pattern.
   /// Patterns are automatically anchored so the entire value must match.
-  StringSchema matches(
-    String pattern, {
-    String? example,
-    String? message,
-  }) {
-    final constraint = PatternConstraint.regex(
-      pattern,
-      example: example,
-    );
+  StringSchema matches(String pattern, {String? example, String? message}) {
+    final constraint = PatternConstraint.regex(pattern, example: example);
 
     return constrain(constraint, message: message) as StringSchema;
   }
@@ -60,9 +53,10 @@ extension StringSchemaExtensions on StringSchema {
   /// Adds a constraint that the string must contain the given [pattern] somewhere.
   StringSchema contains(String pattern, {String? example, String? message}) {
     return constrain(
-      PatternConstraint.contains(pattern, example: example),
-      message: message,
-    ) as StringSchema;
+          PatternConstraint.contains(pattern, example: example),
+          message: message,
+        )
+        as StringSchema;
   }
 
   /// Adds a constraint that the string must be a valid ISO 8601 date-time.

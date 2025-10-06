@@ -359,8 +359,9 @@ void main() {
     });
 
     test('list-with-description', () {
-      final ackSchema =
-          Ack.list(Ack.string()).describe('A list of string values');
+      final ackSchema = Ack.list(
+        Ack.string(),
+      ).describe('A list of string values');
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('list-with-description');
       expect(ackOutput, equals(zodReference));
@@ -396,10 +397,7 @@ void main() {
 
     test('list-of-objects', () {
       final ackSchema = Ack.list(
-        Ack.object({
-          'id': Ack.integer(),
-          'name': Ack.string(),
-        }),
+        Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
       );
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('list-of-objects');
@@ -489,11 +487,13 @@ void main() {
     });
 
     test('object-additional-properties-allowed', () {
-      final ackSchema =
-          Ack.object({'name': Ack.string()}, additionalProperties: true);
+      final ackSchema = Ack.object({
+        'name': Ack.string(),
+      }, additionalProperties: true);
       final ackOutput = ackSchema.toJsonSchema();
-      final zodReference =
-          loadReferenceFixture('object-additional-properties-allowed');
+      final zodReference = loadReferenceFixture(
+        'object-additional-properties-allowed',
+      );
       expect(ackOutput, equals(zodReference));
     });
 
@@ -515,20 +515,14 @@ void main() {
 
   group('JSON Schema Conformance - AnyOf Schemas', () {
     test('anyof-string-or-integer', () {
-      final ackSchema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]);
+      final ackSchema = Ack.anyOf([Ack.string(), Ack.integer()]);
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('anyof-string-or-integer');
       expect(ackOutput, equals(zodReference));
     });
 
     test('anyof-nullable', () {
-      final ackSchema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]).nullable();
+      final ackSchema = Ack.anyOf([Ack.string(), Ack.integer()]).nullable();
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('anyof-nullable');
       expect(ackOutput, equals(zodReference));
@@ -603,8 +597,9 @@ void main() {
         },
       ).describe('A discriminated event union');
       final ackOutput = ackSchema.toJsonSchema();
-      final zodReference =
-          loadReferenceFixture('discriminated-with-description');
+      final zodReference = loadReferenceFixture(
+        'discriminated-with-description',
+      );
       expect(ackOutput, equals(zodReference));
     });
 
@@ -656,16 +651,18 @@ void main() {
     });
 
     test('enum-with-default', () {
-      final ackSchema =
-          Ack.enumValues(UserRole.values).withDefault(UserRole.user);
+      final ackSchema = Ack.enumValues(
+        UserRole.values,
+      ).withDefault(UserRole.user);
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('enum-with-default');
       expect(ackOutput, equals(zodReference));
     });
 
     test('enum-with-description', () {
-      final ackSchema =
-          Ack.enumValues(Status.values).describe('Status of the entity');
+      final ackSchema = Ack.enumValues(
+        Status.values,
+      ).describe('Status of the entity');
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('enum-with-description');
       expect(ackOutput, equals(zodReference));
@@ -717,8 +714,9 @@ Map<String, Object?> normalizeZodFixture(Map<String, Object?> zodSchema) {
 
   // Handle array item schemas
   if (normalized['items'] is Map<String, Object?>) {
-    normalized['items'] =
-        normalizeZodFixture(normalized['items'] as Map<String, Object?>);
+    normalized['items'] = normalizeZodFixture(
+      normalized['items'] as Map<String, Object?>,
+    );
   }
 
   // Handle object property schemas
@@ -749,8 +747,10 @@ Map<String, Object?> loadReferenceFixture(String name) {
   final file = File(fixturePath);
 
   if (!file.existsSync()) {
-    throw Exception('Reference fixture not found: $fixturePath\n'
-        'Make sure to run: npm run fixtures (from tools/ directory)');
+    throw Exception(
+      'Reference fixture not found: $fixturePath\n'
+      'Make sure to run: npm run fixtures (from tools/ directory)',
+    );
   }
 
   final content = file.readAsStringSync();

@@ -27,12 +27,14 @@ class Container<T> {
 ''',
         },
         outputs: {
-          'test_pkg|lib/generic.g.dart': decodedMatches(allOf([
-            contains('final containerSchema = Ack.object('),
-            contains("'id': Ack.string()"),
-            // Generic type T should use Ack.any() instead of TSchema
-            contains("'value': Ack.any()"),
-          ])),
+          'test_pkg|lib/generic.g.dart': decodedMatches(
+            allOf([
+              contains('final containerSchema = Ack.object('),
+              contains("'id': Ack.string()"),
+              // Generic type T should use Ack.any() instead of TSchema
+              contains("'value': Ack.any()"),
+            ]),
+          ),
         },
       );
     });
@@ -57,12 +59,14 @@ class Response<T> {
 ''',
         },
         outputs: {
-          'test_pkg|lib/nullable_generic.g.dart': decodedMatches(allOf([
-            contains('final responseSchema = Ack.object('),
-            contains("'success': Ack.boolean()"),
-            // Nullable generic type should use Ack.any().optional().nullable()
-            contains("'data': Ack.any().optional().nullable()"),
-          ])),
+          'test_pkg|lib/nullable_generic.g.dart': decodedMatches(
+            allOf([
+              contains('final responseSchema = Ack.object('),
+              contains("'success': Ack.boolean()"),
+              // Nullable generic type should use Ack.any().optional().nullable()
+              contains("'data': Ack.any().optional().nullable()"),
+            ]),
+          ),
         },
       );
     });
@@ -87,12 +91,14 @@ class Collection<T> {
 ''',
         },
         outputs: {
-          'test_pkg|lib/list_generic.g.dart': decodedMatches(allOf([
-            contains('final collectionSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            // List of generic type should use Ack.list(Ack.any)
-            contains("'items': Ack.list(Ack.any())"),
-          ])),
+          'test_pkg|lib/list_generic.g.dart': decodedMatches(
+            allOf([
+              contains('final collectionSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              // List of generic type should use Ack.list(Ack.any)
+              contains("'items': Ack.list(Ack.any())"),
+            ]),
+          ),
         },
       );
     });

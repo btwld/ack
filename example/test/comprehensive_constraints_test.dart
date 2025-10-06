@@ -12,10 +12,7 @@ void main() {
         'price': 99.99, // min 0.01, max 999999.99
         'contactEmail': 'test@example.com', // valid email
         'imageUrl': 'https://example.com/image.jpg',
-        'category': {
-          'id': 'cat1',
-          'name': 'Electronics',
-        },
+        'category': {'id': 'cat1', 'name': 'Electronics'},
         'releaseDate': '2024-01-15', // valid date format
         'createdAt': '2024-01-15T10:30:00Z', // valid datetime format
         'updatedAt': '2024-01-16T11:45:00Z', // nullable datetime

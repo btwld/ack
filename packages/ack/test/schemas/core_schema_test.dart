@@ -11,8 +11,10 @@ void main() {
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
         expect(error.getConstraint<NonNullableConstraint>(), isNotNull);
-        expect(error.constraints.first.message,
-            'Value is required and cannot be null.');
+        expect(
+          error.constraints.first.message,
+          'Value is required and cannot be null.',
+        );
       });
 
       test('nullable StringSchema should pass on null', () {
@@ -57,8 +59,10 @@ void main() {
         final error = result.getError() as SchemaConstraintsError;
         // The default value should be validated against constraints.
         // This was fixed in the refactor - now default values are properly validated.
-        expect(error.constraints.first.message,
-            'Too short. Minimum 10 characters, got 5.');
+        expect(
+          error.constraints.first.message,
+          'Too short. Minimum 10 characters, got 5.',
+        );
       });
 
       test('nullable schema default should honor constraints', () {
@@ -97,15 +101,17 @@ void main() {
     });
 
     group('Type Conversion', () {
-      test('StringSchema should fail for non-string input with strict parsing',
-          () {
-        final schema = StringSchema().strictParsing();
-        final result = schema.safeParse(123);
-        expect(result.isOk, isFalse);
-        final error = result.getError() as TypeMismatchError;
-        expect(error.expectedType, equals('string'));
-        expect(error.actualType, equals('integer'));
-      });
+      test(
+        'StringSchema should fail for non-string input with strict parsing',
+        () {
+          final schema = StringSchema().strictParsing();
+          final result = schema.safeParse(123);
+          expect(result.isOk, isFalse);
+          final error = result.getError() as TypeMismatchError;
+          expect(error.expectedType, equals('string'));
+          expect(error.actualType, equals('integer'));
+        },
+      );
 
       test('IntegerSchema should fail for non-integer input', () {
         final schema = IntegerSchema();
@@ -136,16 +142,17 @@ void main() {
       });
 
       test(
-          'DoubleSchema should accept ints even in strict mode (integers are numbers)',
-          () {
-        const schema = DoubleSchema(strictPrimitiveParsing: true);
-        final result = schema.safeParse(42);
+        'DoubleSchema should accept ints even in strict mode (integers are numbers)',
+        () {
+          const schema = DoubleSchema(strictPrimitiveParsing: true);
+          final result = schema.safeParse(42);
 
-        // Integers ARE numbers in JSON Schema semantics, so this should pass
-        // Strict mode only prevents string→number coercion
-        expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), equals(42.0));
-      });
+          // Integers ARE numbers in JSON Schema semantics, so this should pass
+          // Strict mode only prevents string→number coercion
+          expect(result.isOk, isTrue);
+          expect(result.getOrThrow(), equals(42.0));
+        },
+      );
     });
 
     group('ListSchema', () {

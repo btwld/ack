@@ -37,7 +37,8 @@ void main() {
       }
 
       processApiResponse(
-          '{"name": "Alice", "age": 30, "email": "alice@example.com"}');
+        '{"name": "Alice", "age": 30, "email": "alice@example.com"}',
+      );
       expect(logs.last, contains('Valid JSON received'));
 
       processApiResponse('{"name": "Bob", "age": -5}');

@@ -13,22 +13,26 @@ void main() {
       expect(result.getOrNull(), 'ack is awesome');
     });
 
-    test('should fail with custom message when refinement condition is not met',
-        () {
-      final schema = Ack.string().refine(
-        (value) => value.startsWith('ack'),
-        message: 'Custom Error: Must start with "ack"',
-      );
-      final result = schema.safeParse('hello world');
-      expect(result.isFail, isTrue);
-      expect(
-        (result.getError() as SchemaValidationError).message,
-        'Custom Error: Must start with "ack"',
-      );
-    });
+    test(
+      'should fail with custom message when refinement condition is not met',
+      () {
+        final schema = Ack.string().refine(
+          (value) => value.startsWith('ack'),
+          message: 'Custom Error: Must start with "ack"',
+        );
+        final result = schema.safeParse('hello world');
+        expect(result.isFail, isTrue);
+        expect(
+          (result.getError() as SchemaValidationError).message,
+          'Custom Error: Must start with "ack"',
+        );
+      },
+    );
 
     test('should execute refinements only after base constraints are met', () {
-      final schema = Ack.string().minLength(10).refine(
+      final schema = Ack.string()
+          .minLength(10)
+          .refine(
             (value) => value.contains('fail'),
             message: 'Refine should not run',
           );
@@ -44,34 +48,36 @@ void main() {
     });
 
     test(
-        'should chain multiple refinements and fail on the first one that fails',
-        () {
-      final schema = Ack.string()
-          .refine(
-            (value) => value.length > 5,
-            message: 'First refinement: must be > 5 chars',
-          )
-          .refine(
-            (value) => value.contains('world'),
-            message: 'Second refinement: must contain "world"',
-          );
+      'should chain multiple refinements and fail on the first one that fails',
+      () {
+        final schema = Ack.string()
+            .refine(
+              (value) => value.length > 5,
+              message: 'First refinement: must be > 5 chars',
+            )
+            .refine(
+              (value) => value.contains('world'),
+              message: 'Second refinement: must contain "world"',
+            );
 
-      final result = schema.safeParse('hello'); // Fails first refinement
-      expect(result.isFail, isTrue);
-      expect(
-        (result.getError() as SchemaValidationError).message,
-        'First refinement: must be > 5 chars',
-      );
-    });
+        final result = schema.safeParse('hello'); // Fails first refinement
+        expect(result.isFail, isTrue);
+        expect(
+          (result.getError() as SchemaValidationError).message,
+          'First refinement: must be > 5 chars',
+        );
+      },
+    );
 
     test('should work on complex types like ObjectSchema', () {
-      final schema = Ack.object({
-        'password': Ack.string().minLength(8),
-        'confirmPassword': Ack.string().minLength(8),
-      }).refine(
-        (data) => data['password'] == data['confirmPassword'],
-        message: 'Passwords do not match',
-      );
+      final schema =
+          Ack.object({
+            'password': Ack.string().minLength(8),
+            'confirmPassword': Ack.string().minLength(8),
+          }).refine(
+            (data) => data['password'] == data['confirmPassword'],
+            message: 'Passwords do not match',
+          );
 
       // Success case
       final resultSuccess = schema.safeParse({

@@ -55,12 +55,12 @@ class TypeMismatchError extends SchemaError {
     required SchemaType expectedType,
     required SchemaType actualType,
     required SchemaContext context,
-  })  : _expectedJsonType = expectedType,
-        _actualJsonType = actualType,
-        super(
-          'Expected ${expectedType.typeName}, got ${actualType.typeName}',
-          context: context,
-        );
+  }) : _expectedJsonType = expectedType,
+       _actualJsonType = actualType,
+       super(
+         'Expected ${expectedType.typeName}, got ${actualType.typeName}',
+         context: context,
+       );
 
   final SchemaType _expectedJsonType;
   final SchemaType _actualJsonType;
@@ -86,12 +86,10 @@ class TypeMismatchError extends SchemaError {
 class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
 
-  SchemaConstraintsError({
-    required this.constraints,
-    required super.context,
-  }) : super(
-          'Constraints not met: ${constraints.map((c) => c.message).join(', ')}',
-        );
+  SchemaConstraintsError({required this.constraints, required super.context})
+    : super(
+        'Constraints not met: ${constraints.map((c) => c.message).join(', ')}',
+      );
 
   ConstraintError? getConstraint<S extends Constraint>() {
     for (final constraintError in constraints) {
@@ -116,7 +114,7 @@ class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
   const SchemaNestedError({required this.errors, required super.context})
-      : super('One or more nested schemas failed validation.');
+    : super('One or more nested schemas failed validation.');
 
   @override
   Map<String, Object?> toMap() {
@@ -130,7 +128,7 @@ class SchemaNestedError extends SchemaError {
 @immutable
 class SchemaValidationError extends SchemaError {
   SchemaValidationError({required String message, required super.context})
-      : super(message);
+    : super(message);
 }
 
 final class SchemaTransformError extends SchemaError {

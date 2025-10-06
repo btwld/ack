@@ -82,8 +82,10 @@ void main() {
           ],
         );
         final schema = builder.buildFieldSchema(field);
-        expect(schema,
-            equals('Ack.string().notEmpty().minLength(8).maxLength(100)'));
+        expect(
+          schema,
+          equals('Ack.string().notEmpty().minLength(8).maxLength(100)'),
+        );
       });
 
       test('applies numeric constraints', () {
@@ -143,20 +145,32 @@ void main() {
       });
 
       test('builds map schema with String keys', () {
-        final field = createMapField('settings', keyType: 'String', valueType: 'dynamic');
+        final field = createMapField(
+          'settings',
+          keyType: 'String',
+          valueType: 'dynamic',
+        );
         final schema = builder.buildFieldSchema(field);
         expect(schema, equals('Ack.object({}, additionalProperties: true)'));
       });
 
       test('builds map schema with non-String keys (int)', () {
-        final field = createMapField('intKeys', keyType: 'int', valueType: 'String');
+        final field = createMapField(
+          'intKeys',
+          keyType: 'int',
+          valueType: 'String',
+        );
         final schema = builder.buildFieldSchema(field);
         // Should generate code successfully, not throw
         expect(schema, equals('Ack.object({}, additionalProperties: true)'));
       });
 
       test('builds map schema with non-String keys (bool)', () {
-        final field = createMapField('boolKeys', keyType: 'bool', valueType: 'int');
+        final field = createMapField(
+          'boolKeys',
+          keyType: 'bool',
+          valueType: 'int',
+        );
         final schema = builder.buildFieldSchema(field);
         // Should generate code successfully, not throw
         expect(schema, equals('Ack.object({}, additionalProperties: true)'));
@@ -171,7 +185,10 @@ void main() {
           isRequired: true,
           isNullable: false,
           constraints: [
-            ConstraintInfo(name: 'minLenght', arguments: ['5']), // Typo: should be minLength
+            ConstraintInfo(
+              name: 'minLenght',
+              arguments: ['5'],
+            ), // Typo: should be minLength
           ],
           isPrimitive: true,
           isList: false,
@@ -186,9 +203,19 @@ void main() {
 
       test('accepts all known constraints', () {
         final knownConstraints = [
-          'minLength', 'maxLength', 'notEmpty', 'email', 'url', 'matches',
-          'min', 'max', 'positive', 'multipleOf',
-          'minItems', 'maxItems', 'enumString',
+          'minLength',
+          'maxLength',
+          'notEmpty',
+          'email',
+          'url',
+          'matches',
+          'min',
+          'max',
+          'positive',
+          'multipleOf',
+          'minItems',
+          'maxItems',
+          'enumString',
         ];
 
         for (final constraintName in knownConstraints) {

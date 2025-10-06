@@ -4,8 +4,11 @@ import 'package:test/test.dart';
 void main() {
   group('Performance Regression Guards', () {
     test('string validation with multiple constraints should remain fast', () {
-      final schema =
-          Ack.string().minLength(5).maxLength(50).email().endsWith('.com');
+      final schema = Ack.string()
+          .minLength(5)
+          .maxLength(50)
+          .email()
+          .endsWith('.com');
 
       const testEmail = 'test.user@example.com';
 
@@ -55,7 +58,7 @@ void main() {
         {
           'type': 'admin',
           'name': 'Jane',
-          'permissions': ['read', 'write']
+          'permissions': ['read', 'write'],
         },
         {'type': 'guest', 'sessionId': 'abc123'},
       ];
@@ -76,10 +79,7 @@ void main() {
     });
 
     test('transform operations should not add significant overhead', () {
-      final baseSchema = Ack.object({
-        'x': Ack.integer(),
-        'y': Ack.integer(),
-      });
+      final baseSchema = Ack.object({'x': Ack.integer(), 'y': Ack.integer()});
 
       final transformedSchema = baseSchema.transform<int>((point) {
         return (point!['x'] as int) + (point['y'] as int);
@@ -101,7 +101,8 @@ void main() {
       }
       transformStopwatch.stop();
 
-      final overhead = transformStopwatch.elapsedMicroseconds /
+      final overhead =
+          transformStopwatch.elapsedMicroseconds /
           baseStopwatch.elapsedMicroseconds;
 
       // Transform should add less than 50% overhead
@@ -109,9 +110,7 @@ void main() {
     });
 
     test('refine operations should short-circuit on validation failure', () {
-      final schema = Ack.object({
-        'value': Ack.integer(),
-      }).refine((data) {
+      final schema = Ack.object({'value': Ack.integer()}).refine((data) {
         // This should not be called if basic validation fails
         fail('Refine should not run on invalid data');
       });

@@ -38,8 +38,9 @@ void main() {
         expect(alnumSchema.safeParse('User42').isOk, isTrue);
         expect(alnumSchema.safeParse('User 42').isFail, isTrue);
 
-        final uuidSchema = Ack.string()
-            .matches(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$');
+        final uuidSchema = Ack.string().matches(
+          r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$',
+        );
         expect(
           uuidSchema.safeParse('550e8400-e29b-41d4-a716-446655440000').isOk,
           isTrue,
@@ -61,24 +62,30 @@ void main() {
         expect(Ack.string().date().safeParse('2024-01-01').isOk, isTrue);
         expect(Ack.string().date().safeParse('01/01/2024').isFail, isTrue);
 
-        expect(Ack.string().datetime().safeParse('2024-01-01T12:00:00Z').isOk,
-            isTrue);
+        expect(
+          Ack.string().datetime().safeParse('2024-01-01T12:00:00Z').isOk,
+          isTrue,
+        );
         expect(Ack.string().time().safeParse('12:30:45').isOk, isTrue);
         expect(
-            Ack.string().uri().safeParse('https://example.com').isOk, isTrue);
+          Ack.string().uri().safeParse('https://example.com').isOk,
+          isTrue,
+        );
         expect(
-            Ack.string()
-                .uuid()
-                .safeParse('550e8400-e29b-41d4-a716-446655440000')
-                .isOk,
-            isTrue);
+          Ack.string()
+              .uuid()
+              .safeParse('550e8400-e29b-41d4-a716-446655440000')
+              .isOk,
+          isTrue,
+        );
         expect(Ack.string().ipv4().safeParse('192.168.0.1').isOk, isTrue);
         expect(
-            Ack.string()
-                .ipv6()
-                .safeParse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')
-                .isOk,
-            isTrue);
+          Ack.string()
+              .ipv6()
+              .safeParse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')
+              .isOk,
+          isTrue,
+        );
 
         final statusSchema = Ack.enumString(['active', 'inactive', 'pending']);
         expect(statusSchema.safeParse('active').isOk, isTrue);
@@ -110,21 +117,31 @@ void main() {
     group('List constraints', () {
       test('length and uniqueness', () {
         expect(
-            Ack.list(Ack.string()).minLength(1).safeParse([]).isFail, isTrue);
-        expect(Ack.list(Ack.string()).minLength(1).safeParse(['item']).isOk,
-            isTrue);
+          Ack.list(Ack.string()).minLength(1).safeParse([]).isFail,
+          isTrue,
+        );
+        expect(
+          Ack.list(Ack.string()).minLength(1).safeParse(['item']).isOk,
+          isTrue,
+        );
 
         expect(
           Ack.list(Ack.integer()).maxLength(2).safeParse([1, 2, 3]).isFail,
           isTrue,
         );
-        expect(Ack.list(Ack.boolean()).length(2).safeParse([true, false]).isOk,
-            isTrue);
         expect(
-            Ack.list(Ack.object({})).notEmpty().safeParse([]).isFail, isTrue);
+          Ack.list(Ack.boolean()).length(2).safeParse([true, false]).isOk,
+          isTrue,
+        );
+        expect(
+          Ack.list(Ack.object({})).notEmpty().safeParse([]).isFail,
+          isTrue,
+        );
 
         expect(
-            Ack.list(Ack.string()).unique().safeParse(['a', 'b']).isOk, isTrue);
+          Ack.list(Ack.string()).unique().safeParse(['a', 'b']).isOk,
+          isTrue,
+        );
         expect(
           Ack.list(Ack.string()).unique().safeParse(['dup', 'dup']).isFail,
           isTrue,

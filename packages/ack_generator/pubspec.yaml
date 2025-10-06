@@ -5,7 +5,7 @@ repository: https://github.com/btwld/ack
 publish_to: none
 
 environment:
-  sdk: ^3.3.0
+  sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
   # Core code generation dependencies

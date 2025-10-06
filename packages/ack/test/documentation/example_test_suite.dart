@@ -7,16 +7,25 @@ void main() {
     group('Example Package Validation', () {
       test('example package should exist and be properly structured', () {
         final exampleDir = Directory('../../example');
-        expect(exampleDir.existsSync(), isTrue,
-            reason: 'Example package directory should exist');
+        expect(
+          exampleDir.existsSync(),
+          isTrue,
+          reason: 'Example package directory should exist',
+        );
 
         final libDir = Directory('../../example/lib');
-        expect(libDir.existsSync(), isTrue,
-            reason: 'Example lib directory should exist');
+        expect(
+          libDir.existsSync(),
+          isTrue,
+          reason: 'Example lib directory should exist',
+        );
 
         final testDir = Directory('../../example/test');
-        expect(testDir.existsSync(), isTrue,
-            reason: 'Example test directory should exist');
+        expect(
+          testDir.existsSync(),
+          isTrue,
+          reason: 'Example test directory should exist',
+        );
       });
 
       test('example package should have required files', () {
@@ -29,8 +38,11 @@ void main() {
 
         for (final filePath in requiredFiles) {
           final file = File(filePath);
-          expect(file.existsSync(), isTrue,
-              reason: 'Required file $filePath should exist');
+          expect(
+            file.existsSync(),
+            isTrue,
+            reason: 'Required file $filePath should exist',
+          );
         }
       });
 
@@ -42,51 +54,58 @@ void main() {
 
         for (final filePath in generatedFiles) {
           final file = File(filePath);
-          expect(file.existsSync(), isTrue,
-              reason: 'Generated file $filePath should exist');
+          expect(
+            file.existsSync(),
+            isTrue,
+            reason: 'Generated file $filePath should exist',
+          );
         }
       });
     });
 
     group('Example Code Compilation', () {
       test('example package should compile without major errors', () async {
-        final result = await Process.run(
-          'dart',
-          ['analyze'],
-          workingDirectory: '../../example',
-        );
+        final result = await Process.run('dart', [
+          'analyze',
+        ], workingDirectory: '../../example');
 
         // Allow warnings but not errors (exit code 3 means warnings, 1+ means errors)
-        expect(result.exitCode, lessThanOrEqualTo(3),
-            reason:
-                'Example package should not have major errors:\n${result.stderr}');
+        expect(
+          result.exitCode,
+          lessThanOrEqualTo(3),
+          reason:
+              'Example package should not have major errors:\n${result.stderr}',
+        );
       });
 
       test('example tests should run (may have failures)', () async {
-        final result = await Process.run(
-          'dart',
-          ['test'],
-          workingDirectory: '../../example',
-        );
+        final result = await Process.run('dart', [
+          'test',
+        ], workingDirectory: '../../example');
 
         // Just check that tests can run, don't require them to pass
         // Exit code 1 means test failures, which is acceptable for this check
-        expect([0, 1], contains(result.exitCode),
-            reason: 'Example tests should be runnable:\n${result.stderr}');
+        expect(
+          [0, 1],
+          contains(result.exitCode),
+          reason: 'Example tests should be runnable:\n${result.stderr}',
+        );
       });
     });
 
     group('Manual Schema Examples', () {
-      test('migration guide classes are present without deprecated parameters',
-          () async {
-        final productModelFile = File('../../example/lib/product_model.dart');
-        expect(productModelFile.existsSync(), isTrue);
-        final content = await productModelFile.readAsString();
+      test(
+        'migration guide classes are present without deprecated parameters',
+        () async {
+          final productModelFile = File('../../example/lib/product_model.dart');
+          expect(productModelFile.existsSync(), isTrue);
+          final content = await productModelFile.readAsString();
 
-        expect(content, contains('@AckModel()'));
-        expect(content, isNot(contains('@AckModel(model: true)')));
-        expect(content, contains('part \'product_model.g.dart\';'));
-      });
+          expect(content, contains('@AckModel()'));
+          expect(content, isNot(contains('@AckModel(model: true)')));
+          expect(content, contains('part \'product_model.g.dart\';'));
+        },
+      );
 
       test('generated schema matches migration examples', () async {
         final generatedFile = File('../../example/lib/product_model.g.dart');
@@ -106,12 +125,21 @@ void main() {
         final content = await readmeFile.readAsString();
 
         // Check that README mentions key concepts
-        expect(content, contains('ack'),
-            reason: 'README should mention ack package');
-        expect(content, contains('validation'),
-            reason: 'README should mention validation');
-        expect(content, contains('build_runner'),
-            reason: 'README should mention build_runner');
+        expect(
+          content,
+          contains('ack'),
+          reason: 'README should mention ack package',
+        );
+        expect(
+          content,
+          contains('validation'),
+          reason: 'README should mention validation',
+        );
+        expect(
+          content,
+          contains('build_runner'),
+          reason: 'README should mention build_runner',
+        );
       });
 
       test('example files should have proper documentation', () async {
@@ -125,14 +153,19 @@ void main() {
           final content = await file.readAsString();
 
           // Check for documentation comments (either /// or //)
-          expect(content, anyOf([contains('///'), contains('//')]),
-              reason:
-                  'Example file $filePath should have some documentation comments');
+          expect(
+            content,
+            anyOf([contains('///'), contains('//')]),
+            reason:
+                'Example file $filePath should have some documentation comments',
+          );
 
           // Check for @AckModel annotations
-          expect(content, contains('@AckModel'),
-              reason:
-                  'Example file $filePath should use @AckModel annotations');
+          expect(
+            content,
+            contains('@AckModel'),
+            reason: 'Example file $filePath should use @AckModel annotations',
+          );
         }
       });
     });
@@ -143,8 +176,11 @@ void main() {
         expect(buildFile.existsSync(), isTrue);
 
         final content = await buildFile.readAsString();
-        expect(content, contains('ack_generator'),
-            reason: 'build.yaml should reference ack_generator');
+        expect(
+          content,
+          contains('ack_generator'),
+          reason: 'build.yaml should reference ack_generator',
+        );
       });
 
       test('pubspec.yaml should have correct dependencies', () async {
@@ -154,13 +190,22 @@ void main() {
         final content = await pubspecFile.readAsString();
 
         // Check for required dependencies
-        expect(content, contains('ack:'),
-            reason: 'pubspec.yaml should include ack dependency');
+        expect(
+          content,
+          contains('ack:'),
+          reason: 'pubspec.yaml should include ack dependency',
+        );
         // Note: ack_annotations is not required in the current setup
-        expect(content, contains('ack_generator:'),
-            reason: 'pubspec.yaml should include ack_generator dev dependency');
-        expect(content, contains('build_runner:'),
-            reason: 'pubspec.yaml should include build_runner dev dependency');
+        expect(
+          content,
+          contains('ack_generator:'),
+          reason: 'pubspec.yaml should include ack_generator dev dependency',
+        );
+        expect(
+          content,
+          contains('build_runner:'),
+          reason: 'pubspec.yaml should include build_runner dev dependency',
+        );
       });
     });
 
@@ -181,47 +226,62 @@ void main() {
           final content = await file.readAsString();
 
           // Basic checks for generated content
-          expect(content, contains('// GENERATED CODE'),
-              reason: 'Generated file should have generation header');
-          expect(content, contains('class'),
-              reason: 'Generated file should contain class definitions');
+          expect(
+            content,
+            contains('// GENERATED CODE'),
+            reason: 'Generated file should have generation header',
+          );
+          expect(
+            content,
+            contains('class'),
+            reason: 'Generated file should contain class definitions',
+          );
         }
       });
 
       test('generated code should compile', () async {
         // This is already covered by the analyze test above, but we can add specific checks
-        final result = await Process.run(
-          'dart',
-          [
-            'compile',
-            'kernel',
-            '--no-sound-null-safety',
-            'lib/simple_examples.dart'
-          ],
-          workingDirectory: '../../example',
-        );
+        final result = await Process.run('dart', [
+          'compile',
+          'kernel',
+          '--no-sound-null-safety',
+          'lib/simple_examples.dart',
+        ], workingDirectory: '../../example');
 
         // We expect this to succeed or at least not fail due to syntax errors
         // Exit code 254 typically means compilation succeeded but there were warnings
-        expect([0, 254], contains(result.exitCode),
-            reason: 'Generated code should compile without syntax errors');
+        expect(
+          [0, 254],
+          contains(result.exitCode),
+          reason: 'Generated code should compile without syntax errors',
+        );
       });
     });
 
     group('Example Functionality', () {
       test('example models should demonstrate key features', () async {
-        final simpleExamplesFile =
-            File('../../example/lib/simple_examples.dart');
+        final simpleExamplesFile = File(
+          '../../example/lib/simple_examples.dart',
+        );
         final content = await simpleExamplesFile.readAsString();
 
         // Check that examples demonstrate key features
-        expect(content, contains('additionalProperties: true'),
-            reason: 'Examples should demonstrate additional properties');
-        expect(content, contains('additionalPropertiesField:'),
-            reason:
-                'Examples should show additional properties field configuration');
-        expect(content, contains('Map<String, dynamic>'),
-            reason: 'Examples should show metadata/preferences fields');
+        expect(
+          content,
+          contains('additionalProperties: true'),
+          reason: 'Examples should demonstrate additional properties',
+        );
+        expect(
+          content,
+          contains('additionalPropertiesField:'),
+          reason:
+              'Examples should show additional properties field configuration',
+        );
+        expect(
+          content,
+          contains('Map<String, dynamic>'),
+          reason: 'Examples should show metadata/preferences fields',
+        );
       });
 
       test('example tests should cover important scenarios', () async {
@@ -231,17 +291,26 @@ void main() {
             .where((f) => f.path.endsWith('_test.dart'))
             .toList();
 
-        expect(testFiles.isNotEmpty, isTrue,
-            reason: 'Example package should have test files');
+        expect(
+          testFiles.isNotEmpty,
+          isTrue,
+          reason: 'Example package should have test files',
+        );
 
         for (final testFile in testFiles) {
           final content = await testFile.readAsString();
 
           // Check that tests use proper testing patterns
-          expect(content, contains('test('),
-              reason: 'Test files should contain test cases');
-          expect(content, contains('expect('),
-              reason: 'Test files should contain assertions');
+          expect(
+            content,
+            contains('test('),
+            reason: 'Test files should contain test cases',
+          );
+          expect(
+            content,
+            contains('expect('),
+            reason: 'Test files should contain assertions',
+          );
         }
       });
     });

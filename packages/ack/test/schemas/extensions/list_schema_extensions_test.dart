@@ -15,11 +15,12 @@ void main() {
         final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Too few items. Minimum 3, got 2.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Too few items. Minimum 3, got 2.',
+        );
       });
     });
 
@@ -35,11 +36,12 @@ void main() {
         final result = schema.safeParse(['a', 'b']);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Too many items. Maximum 1, got 2.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Too many items. Maximum 1, got 2.',
+        );
       });
     });
 

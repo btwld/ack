@@ -57,7 +57,7 @@ void main() {
 
         final valid3 = {
           'name': 'John',
-          'bio': 'Software developer'
+          'bio': 'Software developer',
         }; // bio has value
         expect(userSchema.safeParse(valid3).isOk, isTrue);
       });
@@ -82,12 +82,18 @@ void main() {
             );
 
         expect(strongPasswordSchema.safeParse('Password123!').isOk, isTrue);
-        expect(strongPasswordSchema.safeParse('password123!').isOk,
-            isFalse); // No uppercase
-        expect(strongPasswordSchema.safeParse('Password!').isOk,
-            isFalse); // No number
-        expect(strongPasswordSchema.safeParse('Password123').isOk,
-            isFalse); // No special char
+        expect(
+          strongPasswordSchema.safeParse('password123!').isOk,
+          isFalse,
+        ); // No uppercase
+        expect(
+          strongPasswordSchema.safeParse('Password!').isOk,
+          isFalse,
+        ); // No number
+        expect(
+          strongPasswordSchema.safeParse('Password123').isOk,
+          isFalse,
+        ); // No special char
       });
     });
 
@@ -96,8 +102,8 @@ void main() {
         final dateSchema = Ack.string()
             .matches(r'^\d{4}-\d{2}-\d{2}$')
             .transform<DateTime>((dateStr) {
-          return DateTime.parse(dateStr!);
-        });
+              return DateTime.parse(dateStr!);
+            });
 
         final result = dateSchema.safeParse('2024-01-15');
         expect(result.isOk, isTrue);
@@ -109,11 +115,12 @@ void main() {
       });
 
       test('should support data normalization', () {
-        final phoneSchema =
-            Ack.string().matches(r'^[\d\s\-\(\)\+]+$').transform((phone) {
-          // Remove all non-digit characters except +
-          return phone!.replaceAll(RegExp(r'[^\d\+]'), '');
-        });
+        final phoneSchema = Ack.string()
+            .matches(r'^[\d\s\-\(\)\+]+$')
+            .transform((phone) {
+              // Remove all non-digit characters except +
+              return phone!.replaceAll(RegExp(r'[^\d\+]'), '');
+            });
 
         final result = phoneSchema.safeParse('+1 (555) 123-4567');
         expect(result.isOk, isTrue);
@@ -170,10 +177,7 @@ void main() {
         expect(publicUserSchema.safeParse(publicData).isOk, isTrue);
 
         // Should fail if password is included
-        final dataWithPassword = {
-          ...publicData,
-          'password': 'secret123',
-        };
+        final dataWithPassword = {...publicData, 'password': 'secret123'};
         expect(publicUserSchema.safeParse(dataWithPassword).isOk, isFalse);
       });
 
@@ -197,10 +201,7 @@ void main() {
         expect(safeUserSchema.safeParse(safeData).isOk, isTrue);
 
         // Should fail if password is included
-        final dataWithPassword = {
-          ...safeData,
-          'password': 'secret123',
-        };
+        final dataWithPassword = {...safeData, 'password': 'secret123'};
         expect(safeUserSchema.safeParse(dataWithPassword).isOk, isFalse);
       });
 
@@ -215,14 +216,21 @@ void main() {
         final partialUserSchema = userSchema.partial();
 
         // All these should be valid:
-        expect(partialUserSchema.safeParse(<String, Object?>{}).isOk,
-            isTrue); // Empty object
-        expect(partialUserSchema.safeParse({'name': 'John'}).isOk,
-            isTrue); // Only name
         expect(
-            partialUserSchema
-                .safeParse({'email': 'john@example.com', 'age': 30}).isOk,
-            isTrue); // Subset
+          partialUserSchema.safeParse(<String, Object?>{}).isOk,
+          isTrue,
+        ); // Empty object
+        expect(
+          partialUserSchema.safeParse({'name': 'John'}).isOk,
+          isTrue,
+        ); // Only name
+        expect(
+          partialUserSchema.safeParse({
+            'email': 'john@example.com',
+            'age': 30,
+          }).isOk,
+          isTrue,
+        ); // Subset
       });
 
       test('should support strict vs passthrough modes', () {

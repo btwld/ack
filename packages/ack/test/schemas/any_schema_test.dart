@@ -39,9 +39,11 @@ void main() {
     });
 
     test('should support refinements on Object type', () {
-      final schema = Ack.any().refine((value) => value.toString().length > 5,
-          message:
-              "Value must have string representation longer than 5 characters");
+      final schema = Ack.any().refine(
+        (value) => value.toString().length > 5,
+        message:
+            "Value must have string representation longer than 5 characters",
+      );
 
       expect(schema.safeParse("hello world").isOk, isTrue);
       expect(schema.safeParse("hi").isFail, isTrue);

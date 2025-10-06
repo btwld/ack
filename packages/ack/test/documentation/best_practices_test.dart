@@ -105,9 +105,7 @@ void main() {
     group('Gradual Validation Pattern', () {
       test('should support progressive validation', () {
         // Best practice: Progressive validation
-        final basicSchema = Ack.object({
-          'email': Ack.string().email(),
-        });
+        final basicSchema = Ack.object({'email': Ack.string().email()});
 
         final profileSchema = Ack.object({
           'email': Ack.string().email(),
@@ -136,9 +134,7 @@ void main() {
         }
 
         // Start with basic
-        final step1 = validateSignup({
-          'email': 'user@example.com',
-        });
+        final step1 = validateSignup({'email': 'user@example.com'});
         expect(step1!['email'], equals('user@example.com'));
 
         // Add profile
@@ -186,10 +182,7 @@ void main() {
         final customerData = {
           'id': '550e8400-e29b-41d4-a716-446655440000',
           'name': 'John Doe',
-          'contact': {
-            'email': 'john@example.com',
-            'phone': '+1-555-0123',
-          },
+          'contact': {'email': 'john@example.com', 'phone': '+1-555-0123'},
           'billingAddress': {
             'street': '123 Main St',
             'city': 'Anytown',
@@ -205,11 +198,7 @@ void main() {
 
     group('Validation with Fallbacks', () {
       test('should provide fallback values on validation failure', () {
-        T parseWithFallback<T>(
-          dynamic input,
-          AckSchema schema,
-          T fallback,
-        ) {
+        T parseWithFallback<T>(dynamic input, AckSchema schema, T fallback) {
           final result = schema.safeParse(input);
           return result.isOk ? result.getOrThrow() as T : fallback;
         }
@@ -232,10 +221,13 @@ void main() {
               .max(120)
               .withDescription('User age in years'),
           'preferences': Ack.object({
-            'theme': Ack.enumString(['light', 'dark'])
-                .withDescription('UI theme preference'),
-            'notifications':
-                Ack.boolean().withDescription('Email notifications enabled'),
+            'theme': Ack.enumString([
+              'light',
+              'dark',
+            ]).withDescription('UI theme preference'),
+            'notifications': Ack.boolean().withDescription(
+              'Email notifications enabled',
+            ),
           }).withDescription('User preferences'),
         }).withDescription('User profile data');
 
@@ -243,10 +235,7 @@ void main() {
           'id': '550e8400-e29b-41d4-a716-446655440000',
           'email': 'user@example.com',
           'age': 25,
-          'preferences': {
-            'theme': 'dark',
-            'notifications': true,
-          },
+          'preferences': {'theme': 'dark', 'notifications': true},
         };
 
         final result = userSchema.safeParse(userData);
@@ -271,7 +260,7 @@ void main() {
           {'primaryEmail': 'user1@example.com'},
           {
             'primaryEmail': 'user2@example.com',
-            'secondaryEmail': 'alt2@example.com'
+            'secondaryEmail': 'alt2@example.com',
           },
           {'primaryEmail': 'user3@example.com'},
         ];
@@ -290,10 +279,6 @@ class ValidationResult<T> {
   final T? value;
   final String? error;
 
-  ValidationResult.valid(this.value)
-      : isValid = true,
-        error = null;
-  ValidationResult.invalid(this.error)
-      : isValid = false,
-        value = null;
+  ValidationResult.valid(this.value) : isValid = true, error = null;
+  ValidationResult.invalid(this.error) : isValid = false, value = null;
 }

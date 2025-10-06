@@ -21,73 +21,74 @@ void main() {
       exampleDir = Directory(p.join(projectRoot.path, 'example'));
     });
 
-    test('example folder should build successfully with build_runner',
-        () async {
-      // Clean previous builds
-      final cleanResult = await Process.run(
-        'dart',
-        ['run', 'build_runner', 'clean'],
-        workingDirectory: exampleDir.path,
-      );
+    test(
+      'example folder should build successfully with build_runner',
+      () async {
+        // Clean previous builds
+        final cleanResult = await Process.run('dart', [
+          'run',
+          'build_runner',
+          'clean',
+        ], workingDirectory: exampleDir.path);
 
-      expect(
-        cleanResult.exitCode,
-        0,
-        reason: 'build_runner clean should succeed\n'
-            'STDOUT: ${cleanResult.stdout}\n'
-            'STDERR: ${cleanResult.stderr}',
-      );
+        expect(
+          cleanResult.exitCode,
+          0,
+          reason:
+              'build_runner clean should succeed\n'
+              'STDOUT: ${cleanResult.stdout}\n'
+              'STDERR: ${cleanResult.stderr}',
+        );
 
-      // Run build_runner
-      final buildResult = await Process.run(
-        'dart',
-        [
+        // Run build_runner
+        final buildResult = await Process.run('dart', [
           'run',
           'build_runner',
           'build',
           '--delete-conflicting-outputs',
-        ],
-        workingDirectory: exampleDir.path,
-      );
+        ], workingDirectory: exampleDir.path);
 
-      expect(
-        buildResult.exitCode,
-        0,
-        reason: 'build_runner should complete successfully\n'
-            'STDOUT: ${buildResult.stdout}\n'
-            'STDERR: ${buildResult.stderr}',
-      );
+        expect(
+          buildResult.exitCode,
+          0,
+          reason:
+              'build_runner should complete successfully\n'
+              'STDOUT: ${buildResult.stdout}\n'
+              'STDERR: ${buildResult.stderr}',
+        );
 
-      // Verify that generated files were created
-      final generatedFiles = exampleDir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.g.dart'))
-          .toList();
+        // Verify that generated files were created
+        final generatedFiles = exampleDir
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.g.dart'))
+            .toList();
 
-      expect(
-        generatedFiles,
-        isNotEmpty,
-        reason: 'At least one .g.dart file should be generated',
-      );
+        expect(
+          generatedFiles,
+          isNotEmpty,
+          reason: 'At least one .g.dart file should be generated',
+        );
 
-      print('✅ Generated ${generatedFiles.length} files:');
-      for (final file in generatedFiles) {
-        print('   - ${p.relative(file.path, from: exampleDir.path)}');
-      }
-    }, timeout: const Timeout(Duration(minutes: 2)));
+        print('✅ Generated ${generatedFiles.length} files:');
+        for (final file in generatedFiles) {
+          print('   - ${p.relative(file.path, from: exampleDir.path)}');
+        }
+      },
+      timeout: const Timeout(Duration(minutes: 2)),
+    );
 
     test('example folder should have no dart analyze errors', () async {
-      final analyzeResult = await Process.run(
-        'dart',
-        ['analyze', '--fatal-infos'],
-        workingDirectory: exampleDir.path,
-      );
+      final analyzeResult = await Process.run('dart', [
+        'analyze',
+        '--fatal-infos',
+      ], workingDirectory: exampleDir.path);
 
       expect(
         analyzeResult.exitCode,
         0,
-        reason: 'dart analyze should find no issues\n'
+        reason:
+            'dart analyze should find no issues\n'
             'STDOUT: ${analyzeResult.stdout}\n'
             'STDERR: ${analyzeResult.stderr}',
       );
@@ -155,16 +156,16 @@ void main() {
     });
 
     test('example folder pub get should succeed', () async {
-      final pubGetResult = await Process.run(
-        'dart',
-        ['pub', 'get'],
-        workingDirectory: exampleDir.path,
-      );
+      final pubGetResult = await Process.run('dart', [
+        'pub',
+        'get',
+      ], workingDirectory: exampleDir.path);
 
       expect(
         pubGetResult.exitCode,
         0,
-        reason: 'dart pub get should succeed\n'
+        reason:
+            'dart pub get should succeed\n'
             'STDOUT: ${pubGetResult.stdout}\n'
             'STDERR: ${pubGetResult.stderr}',
       );

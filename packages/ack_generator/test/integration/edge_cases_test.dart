@@ -30,7 +30,9 @@ abstract class AbstractModel {
         onLog: (log) {
           if (log.level.name == 'SEVERE') {
             expect(
-                log.message, contains('cannot be applied to abstract classes'));
+              log.message,
+              contains('cannot be applied to abstract classes'),
+            );
           }
         },
       );
@@ -65,20 +67,16 @@ enum Status { active, inactive }
     test('ignores classes without AckModel annotation', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/model.dart': '''
+      await testBuilder(builder, {
+        ...allAssets,
+        'test_pkg|lib/model.dart': '''
 class RegularClass {
   final String name;
   
   RegularClass(this.name);
 }
 ''',
-        },
-        outputs: {},
-      );
+      }, outputs: {});
     });
 
     test('handles empty class', () async {
@@ -96,10 +94,12 @@ class Empty {}
 ''',
         },
         outputs: {
-          'test_pkg|lib/empty.g.dart': decodedMatches(allOf([
-            contains('final emptySchema = Ack.object('),
-            contains('Ack.object({})'),
-          ])),
+          'test_pkg|lib/empty.g.dart': decodedMatches(
+            allOf([
+              contains('final emptySchema = Ack.object('),
+              contains('Ack.object({})'),
+            ]),
+          ),
         },
       );
     });
@@ -122,12 +122,14 @@ class Constants {
 ''',
         },
         outputs: {
-          'test_pkg|lib/constants.g.dart': decodedMatches(allOf([
-            contains('final constantsSchema = Ack.object('),
-            contains('Ack.object({})'),
-            isNot(contains('apiUrl')),
-            isNot(contains('timeout')),
-          ])),
+          'test_pkg|lib/constants.g.dart': decodedMatches(
+            allOf([
+              contains('final constantsSchema = Ack.object('),
+              contains('Ack.object({})'),
+              isNot(contains('apiUrl')),
+              isNot(contains('timeout')),
+            ]),
+          ),
         },
       );
     });
@@ -164,11 +166,13 @@ class User extends BaseEntity {
 ''',
         },
         outputs: {
-          'test_pkg|lib/inheritance.g.dart': decodedMatches(allOf([
-            contains('final userSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            contains("'email': Ack.string()"),
-          ])),
+          'test_pkg|lib/inheritance.g.dart': decodedMatches(
+            allOf([
+              contains('final userSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              contains("'email': Ack.string()"),
+            ]),
+          ),
         },
       );
     });
@@ -198,13 +202,15 @@ class Response<T> {
 ''',
         },
         outputs: {
-          'test_pkg|lib/generic.g.dart': decodedMatches(allOf([
-            contains('final responseSchema = Ack.object('),
-            contains("'success': Ack.boolean"),
-            contains("'error': Ack.string().optional()"),
-            // Generic type T would be treated as dynamic/any
-            contains("'data': Ack.any().optional()"),
-          ])),
+          'test_pkg|lib/generic.g.dart': decodedMatches(
+            allOf([
+              contains('final responseSchema = Ack.object('),
+              contains("'success': Ack.boolean"),
+              contains("'error': Ack.string().optional()"),
+              // Generic type T would be treated as dynamic/any
+              contains("'data': Ack.any().optional()"),
+            ]),
+          ),
         },
       );
     });

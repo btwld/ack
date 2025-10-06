@@ -71,10 +71,14 @@ void main() {
     });
 
     test('should respect the similarity threshold', () {
-      expect(findClosestStringMatch('Bna', allowed, similarityThreshold: 0.8),
-          isNull);
-      expect(findClosestStringMatch('Bna', allowed, similarityThreshold: 0.4),
-          'Banana');
+      expect(
+        findClosestStringMatch('Bna', allowed, similarityThreshold: 0.8),
+        isNull,
+      );
+      expect(
+        findClosestStringMatch('Bna', allowed, similarityThreshold: 0.4),
+        'Banana',
+      );
     });
   });
 
@@ -94,16 +98,16 @@ void main() {
     test('should recursively merge nested maps', () {
       final map1 = {
         'a': 1,
-        'nested': {'x': 10, 'y': 20}
+        'nested': {'x': 10, 'y': 20},
       };
       final map2 = {
         'b': 2,
-        'nested': {'y': 30, 'z': 40}
+        'nested': {'y': 30, 'z': 40},
       };
       expect(deepMerge(map1, map2), {
         'a': 1,
         'b': 2,
-        'nested': {'x': 10, 'y': 30, 'z': 40}
+        'nested': {'x': 10, 'y': 30, 'z': 40},
       });
     });
 

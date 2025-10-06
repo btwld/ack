@@ -43,10 +43,7 @@ void main() {
       ) {
         if (result.isOk) {
           final validatedData = result.getOrThrow()!;
-          return {
-            'status': 'OK',
-            'data': validatedData,
-          };
+          return {'status': 'OK', 'data': validatedData};
         } else {
           final error = result.getError();
           return {
@@ -61,17 +58,11 @@ void main() {
       final valid = {'name': 'Alice', 'age': 30};
       final invalid = {'age': 40};
 
-      final okSnapshot = checkResult(
-        userSchema.safeParse(valid),
-        valid,
-      );
+      final okSnapshot = checkResult(userSchema.safeParse(valid), valid);
       expect(okSnapshot['status'], equals('OK'));
       expect(okSnapshot['data'], equals(valid));
 
-      final failSnapshot = checkResult(
-        userSchema.safeParse(invalid),
-        invalid,
-      );
+      final failSnapshot = checkResult(userSchema.safeParse(invalid), invalid);
       expect(failSnapshot['status'], equals('FAILED'));
       expect(failSnapshot['errorName'], isNotNull);
       expect(failSnapshot['errorMessage'], isA<String>());

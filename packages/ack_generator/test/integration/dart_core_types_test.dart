@@ -98,12 +98,16 @@ class EventModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/datetime_model.g.dart': decodedMatches(allOf([
-            contains('final eventModelSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            contains("'createdAt': Ack.string().datetime()"),
-            contains("'updatedAt': Ack.string().datetime().optional().nullable()"),
-          ])),
+          'test_pkg|lib/datetime_model.g.dart': decodedMatches(
+            allOf([
+              contains('final eventModelSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              contains("'createdAt': Ack.string().datetime()"),
+              contains(
+                "'updatedAt': Ack.string().datetime().optional().nullable()",
+              ),
+            ]),
+          ),
         },
       );
     });
@@ -133,12 +137,14 @@ class TimerModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/duration_model.g.dart': decodedMatches(allOf([
-            contains('final timerModelSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            contains("'timeout': Ack.integer()"),
-            contains("'interval': Ack.integer().optional().nullable()"),
-          ])),
+          'test_pkg|lib/duration_model.g.dart': decodedMatches(
+            allOf([
+              contains('final timerModelSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              contains("'timeout': Ack.integer()"),
+              contains("'interval': Ack.integer().optional().nullable()"),
+            ]),
+          ),
         },
       );
     });
@@ -168,12 +174,14 @@ class LinkModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/uri_model.g.dart': decodedMatches(allOf([
-            contains('final linkModelSchema = Ack.object('),
-            contains("'title': Ack.string()"),
-            contains("'url': Ack.string().uri()"),
-            contains("'referrer': Ack.string().uri().optional().nullable()"),
-          ])),
+          'test_pkg|lib/uri_model.g.dart': decodedMatches(
+            allOf([
+              contains('final linkModelSchema = Ack.object('),
+              contains("'title': Ack.string()"),
+              contains("'url': Ack.string().uri()"),
+              contains("'referrer': Ack.string().uri().optional().nullable()"),
+            ]),
+          ),
         },
       );
     });
@@ -211,16 +219,24 @@ class ComprehensiveModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/comprehensive_model.g.dart': decodedMatches(allOf([
-            contains('final comprehensiveModelSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            contains("'timestamp': Ack.string().datetime()"),
-            contains("'elapsed': Ack.integer()"),
-            contains("'endpoint': Ack.string().uri()"),
-            contains("'optionalDate': Ack.string().datetime().optional().nullable()"),
-            contains("'optionalDuration': Ack.integer().optional().nullable()"),
-            contains("'optionalUri': Ack.string().uri().optional().nullable()"),
-          ])),
+          'test_pkg|lib/comprehensive_model.g.dart': decodedMatches(
+            allOf([
+              contains('final comprehensiveModelSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              contains("'timestamp': Ack.string().datetime()"),
+              contains("'elapsed': Ack.integer()"),
+              contains("'endpoint': Ack.string().uri()"),
+              contains(
+                "'optionalDate': Ack.string().datetime().optional().nullable()",
+              ),
+              contains(
+                "'optionalDuration': Ack.integer().optional().nullable()",
+              ),
+              contains(
+                "'optionalUri': Ack.string().uri().optional().nullable()",
+              ),
+            ]),
+          ),
         },
       );
     });
@@ -248,11 +264,13 @@ class ScheduleModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/list_datetime_model.g.dart': decodedMatches(allOf([
-            contains('final scheduleModelSchema = Ack.object('),
-            contains("'name': Ack.string()"),
-            contains("'appointments': Ack.list(Ack.string().datetime())"),
-          ])),
+          'test_pkg|lib/list_datetime_model.g.dart': decodedMatches(
+            allOf([
+              contains('final scheduleModelSchema = Ack.object('),
+              contains("'name': Ack.string()"),
+              contains("'appointments': Ack.list(Ack.string().datetime())"),
+            ]),
+          ),
         },
       );
     });
@@ -280,11 +298,13 @@ class BookmarksModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/list_uri_model.g.dart': decodedMatches(allOf([
-            contains('final bookmarksModelSchema = Ack.object('),
-            contains("'category': Ack.string()"),
-            contains("'links': Ack.list(Ack.string().uri())"),
-          ])),
+          'test_pkg|lib/list_uri_model.g.dart': decodedMatches(
+            allOf([
+              contains('final bookmarksModelSchema = Ack.object('),
+              contains("'category': Ack.string()"),
+              contains("'links': Ack.list(Ack.string().uri())"),
+            ]),
+          ),
         },
       );
     });

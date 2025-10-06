@@ -8,15 +8,16 @@ import 'test_utils/test_assets.dart';
 void main() {
   group('Discriminated Types Comprehensive Tests', () {
     group('Basic Discriminated Schema Generation', () {
-      test('should generate discriminated schema for simple hierarchy',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should generate discriminated schema for simple hierarchy',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/animals.dart': '''
+          await testBuilder(
+            builder,
+            {
+              ...allAssets,
+              'test_pkg|lib/animals.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'animals.g.dart';
@@ -48,36 +49,40 @@ class Dog extends Animal {
   Dog({required this.bark, required this.breed});
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/animals.g.dart': decodedMatches(allOf([
-              // Discriminated schema generation
-              contains('final animalSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'type'"),
-              contains("schemas: {'cat': catSchema, 'dog': dogSchema}"),
+            },
+            outputs: {
+              'test_pkg|lib/animals.g.dart': decodedMatches(
+                allOf([
+                  // Discriminated schema generation
+                  contains('final animalSchema = Ack.discriminated('),
+                  contains("discriminatorKey: 'type'"),
+                  contains("schemas: {'cat': catSchema, 'dog': dogSchema}"),
 
-              // Individual schemas
-              contains('final catSchema = Ack.object({'),
-              contains("'meow': Ack.boolean()"),
-              contains("'lives': Ack.integer()"),
+                  // Individual schemas
+                  contains('final catSchema = Ack.object({'),
+                  contains("'meow': Ack.boolean()"),
+                  contains("'lives': Ack.integer()"),
 
-              contains('final dogSchema = Ack.object({'),
-              contains("'bark': Ack.boolean()"),
-              contains("'breed': Ack.string()"),
-            ])),
-          },
-        );
-      });
+                  contains('final dogSchema = Ack.object({'),
+                  contains("'bark': Ack.boolean()"),
+                  contains("'breed': Ack.string()"),
+                ]),
+              ),
+            },
+          );
+        },
+      );
 
-      test('should handle multiple discriminated hierarchies in same file',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should handle multiple discriminated hierarchies in same file',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/multi_hierarchy.dart': '''
+          await testBuilder(
+            builder,
+            {
+              ...allAssets,
+              'test_pkg|lib/multi_hierarchy.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'multi_hierarchy.g.dart';
@@ -110,28 +115,31 @@ class Circle extends Shape {
   Circle({required this.radius});
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/multi_hierarchy.g.dart': decodedMatches(allOf([
-              // Two separate discriminated schemas
-              contains('final animalSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'type'"),
-              contains("schemas: {'cat': catSchema}"),
+            },
+            outputs: {
+              'test_pkg|lib/multi_hierarchy.g.dart': decodedMatches(
+                allOf([
+                  // Two separate discriminated schemas
+                  contains('final animalSchema = Ack.discriminated('),
+                  contains("discriminatorKey: 'type'"),
+                  contains("schemas: {'cat': catSchema}"),
 
-              contains('final shapeSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'kind'"),
-              contains("schemas: {'circle': circleSchema}"),
+                  contains('final shapeSchema = Ack.discriminated('),
+                  contains("discriminatorKey: 'kind'"),
+                  contains("schemas: {'circle': circleSchema}"),
 
-              // Individual schemas for each type
-              contains('final catSchema = Ack.object({'),
-              contains("'meow': Ack.boolean()"),
+                  // Individual schemas for each type
+                  contains('final catSchema = Ack.object({'),
+                  contains("'meow': Ack.boolean()"),
 
-              contains('final circleSchema = Ack.object({'),
-              contains("'radius': Ack.double()"),
-            ])),
-          },
-        );
-      });
+                  contains('final circleSchema = Ack.object({'),
+                  contains("'radius': Ack.double()"),
+                ]),
+              ),
+            },
+          );
+        },
+      );
     });
 
     group('Complex Discriminated Types', () {
@@ -196,30 +204,33 @@ class Customer extends Person {
 ''',
           },
           outputs: {
-            'test_pkg|lib/complex_discriminated.g.dart': decodedMatches(allOf([
-              // Address schema (dependency)
-              contains('final addressSchema = Ack.object({'),
-              contains("'street': Ack.string()"),
-              contains("'city': Ack.string()"),
+            'test_pkg|lib/complex_discriminated.g.dart': decodedMatches(
+              allOf([
+                // Address schema (dependency)
+                contains('final addressSchema = Ack.object({'),
+                contains("'street': Ack.string()"),
+                contains("'city': Ack.string()"),
 
-              // Discriminated person schema
-              contains('final personSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'personType'"),
-              contains(
-                  "schemas: {'employee': employeeSchema, 'customer': customerSchema}"),
+                // Discriminated person schema
+                contains('final personSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'personType'"),
+                contains(
+                  "schemas: {'employee': employeeSchema, 'customer': customerSchema}",
+                ),
 
-              // Employee schema with nested address
-              contains('final employeeSchema = Ack.object({'),
-              contains("'name': Ack.string()"),
-              contains("'address': addressSchema"),
-              contains("'employeeId': Ack.string()"),
-              contains("'salary': Ack.double()"),
+                // Employee schema with nested address
+                contains('final employeeSchema = Ack.object({'),
+                contains("'name': Ack.string()"),
+                contains("'address': addressSchema"),
+                contains("'employeeId': Ack.string()"),
+                contains("'salary': Ack.double()"),
 
-              // Customer schema with list
-              contains('final customerSchema = Ack.object({'),
-              contains("'customerId': Ack.string()"),
-              contains("'preferences': Ack.list(Ack.string())"),
-            ])),
+                // Customer schema with list
+                contains('final customerSchema = Ack.object({'),
+                contains("'customerId': Ack.string()"),
+                contains("'preferences': Ack.list(Ack.string())"),
+              ]),
+            ),
           },
         );
       });
@@ -281,32 +292,34 @@ class Boat extends Vehicle {
 ''',
           },
           outputs: {
-            'test_pkg|lib/deep_hierarchy.g.dart': decodedMatches(allOf([
-              // Top-level discriminated schema
-              contains('final vehicleSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'vehicleType'"),
-              contains("'car': carSchema"),
-              contains("'motorcycle': motorcycleSchema"),
-              contains("'boat': boatSchema"),
+            'test_pkg|lib/deep_hierarchy.g.dart': decodedMatches(
+              allOf([
+                // Top-level discriminated schema
+                contains('final vehicleSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'vehicleType'"),
+                contains("'car': carSchema"),
+                contains("'motorcycle': motorcycleSchema"),
+                contains("'boat': boatSchema"),
 
-              // Nested discriminated schema for land vehicles
-              contains('final landVehicleSchema = Ack.discriminated('),
-              contains("discriminatorKey: 'landType'"),
-              contains("'car': carSchema, 'motorcycle': motorcycleSchema"),
+                // Nested discriminated schema for land vehicles
+                contains('final landVehicleSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'landType'"),
+                contains("'car': carSchema, 'motorcycle': motorcycleSchema"),
 
-              // Leaf schemas
-              contains('final carSchema = Ack.object({'),
-              contains("'doors': Ack.integer()"),
-              contains("'fuelType': Ack.string()"),
+                // Leaf schemas
+                contains('final carSchema = Ack.object({'),
+                contains("'doors': Ack.integer()"),
+                contains("'fuelType': Ack.string()"),
 
-              contains('final motorcycleSchema = Ack.object({'),
-              contains("'hasSidecar': Ack.boolean()"),
-              contains("'engineSize': Ack.integer()"),
+                contains('final motorcycleSchema = Ack.object({'),
+                contains("'hasSidecar': Ack.boolean()"),
+                contains("'engineSize': Ack.integer()"),
 
-              contains('final boatSchema = Ack.object({'),
-              contains("'length': Ack.double()"),
-              contains("'propulsionType': Ack.string()"),
-            ])),
+                contains('final boatSchema = Ack.object({'),
+                contains("'length': Ack.double()"),
+                contains("'propulsionType': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -314,16 +327,16 @@ class Boat extends Vehicle {
 
     group('Discriminated Types Validation', () {
       test(
-          'should validate discriminatedKey and discriminatedValue are mutually exclusive',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+        'should validate discriminatedKey and discriminatedValue are mutually exclusive',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await expectLater(
-          () => testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/invalid.dart': '''
+          await expectLater(
+            () => testBuilder(
+              builder,
+              {
+                ...allAssets,
+                'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(discriminatedKey: 'type', discriminatedValue: 'invalid')
@@ -332,25 +345,25 @@ class InvalidModel {
   InvalidModel({required this.name});
 }
 ''',
-            },
-            outputs: {
-              'test_pkg|lib/invalid.g.dart': anything,
-            },
-          ),
-          throwsA(isA<Exception>()),
-        );
-      });
+              },
+              outputs: {'test_pkg|lib/invalid.g.dart': anything},
+            ),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
-      test('should validate discriminatedKey only on abstract classes',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should validate discriminatedKey only on abstract classes',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await expectLater(
-          () => testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/invalid.dart': '''
+          await expectLater(
+            () => testBuilder(
+              builder,
+              {
+                ...allAssets,
+                'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(discriminatedKey: 'type')
@@ -359,25 +372,25 @@ class ConcreteWithKey { // Concrete class with discriminatedKey - invalid
   ConcreteWithKey({required this.name});
 }
 ''',
-            },
-            outputs: {
-              'test_pkg|lib/invalid.g.dart': anything,
-            },
-          ),
-          throwsA(isA<Exception>()),
-        );
-      });
+              },
+              outputs: {'test_pkg|lib/invalid.g.dart': anything},
+            ),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
-      test('should validate discriminatedValue only on concrete classes',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should validate discriminatedValue only on concrete classes',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await expectLater(
-          () => testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/invalid.dart': '''
+          await expectLater(
+            () => testBuilder(
+              builder,
+              {
+                ...allAssets,
+                'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(discriminatedValue: 'abstract')
@@ -386,25 +399,25 @@ abstract class AbstractWithValue { // Abstract class with discriminatedValue - i
   AbstractWithValue({required this.name});
 }
 ''',
-            },
-            outputs: {
-              'test_pkg|lib/invalid.g.dart': anything,
-            },
-          ),
-          throwsA(isA<Exception>()),
-        );
-      });
+              },
+              outputs: {'test_pkg|lib/invalid.g.dart': anything},
+            ),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
-      test('should validate discriminator field exists in base class',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should validate discriminator field exists in base class',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await expectLater(
-          () => testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/invalid.dart': '''
+          await expectLater(
+            () => testBuilder(
+              builder,
+              {
+                ...allAssets,
+                'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(discriminatedKey: 'missingField')
@@ -413,14 +426,13 @@ abstract class BaseWithMissingField { // No field named 'missingField'
   BaseWithMissingField({required this.name});
 }
 ''',
-            },
-            outputs: {
-              'test_pkg|lib/invalid.g.dart': anything,
-            },
-          ),
-          throwsA(isA<Exception>()),
-        );
-      });
+              },
+              outputs: {'test_pkg|lib/invalid.g.dart': anything},
+            ),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
       test('should validate duplicate discriminator values', () async {
         final builder = ackGenerator(BuilderOptions.empty);
@@ -455,9 +467,7 @@ class Second extends Base {
 }
 ''',
             },
-            outputs: {
-              'test_pkg|lib/invalid.g.dart': anything,
-            },
+            outputs: {'test_pkg|lib/invalid.g.dart': anything},
           ),
           throwsA(isA<Exception>()),
         );

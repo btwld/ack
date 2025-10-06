@@ -92,7 +92,7 @@ class AckModel {
     this.discriminatedKey,
     this.discriminatedValue,
   }) : assert(
-          discriminatedKey == null || discriminatedValue == null,
-          'discriminatedKey and discriminatedValue cannot be used together',
-        );
+         discriminatedKey == null || discriminatedValue == null,
+         'discriminatedKey and discriminatedValue cannot be used together',
+       );
 }

@@ -43,17 +43,19 @@ void main() {
       expect(result2.getOrThrow(), 'was not null');
     });
 
-    test('should error when transformer returns null for non-nullable output',
-        () {
-      final schema = Ack.string().transform<int>((val) {
-        return (null as dynamic);
-      });
+    test(
+      'should error when transformer returns null for non-nullable output',
+      () {
+        final schema = Ack.string().transform<int>((val) {
+          return (null as dynamic);
+        });
 
-      final result = schema.safeParse('value');
+        final result = schema.safeParse('value');
 
-      expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaTransformError>());
-    });
+        expect(result.isFail, isTrue);
+        expect(result.getError(), isA<SchemaTransformError>());
+      },
+    );
 
     test('should return a SchemaTransformError if the transformer fails', () {
       final schema = Ack.string().transform<int>((val) {
@@ -74,8 +76,9 @@ void main() {
     });
 
     test('should fail validation before the transformer is ever called', () {
-      final schema =
-          Ack.string().minLength(10).transform((val) => 'transformed');
+      final schema = Ack.string()
+          .minLength(10)
+          .transform((val) => 'transformed');
 
       final result = schema.safeParse('short');
 
@@ -86,25 +89,28 @@ void main() {
     });
 
     test('should preserve isOptional flag after transform', () {
-      final schema =
-          Ack.string().optional().transform((val) => val ?? 'default');
+      final schema = Ack.string().optional().transform(
+        (val) => val ?? 'default',
+      );
       expect(schema.isOptional, isTrue);
     });
 
     test('should preserve isNullable flag after transform', () {
-      final schema =
-          Ack.string().nullable().transform((val) => val ?? 'default');
+      final schema = Ack.string().nullable().transform(
+        (val) => val ?? 'default',
+      );
       expect(schema.isNullable, isTrue);
     });
 
-    test('should preserve both isOptional and isNullable flags after transform',
-        () {
-      final schema = Ack.string()
-          .optional()
-          .nullable()
-          .transform((val) => val ?? 'default');
-      expect(schema.isOptional, isTrue);
-      expect(schema.isNullable, isTrue);
-    });
+    test(
+      'should preserve both isOptional and isNullable flags after transform',
+      () {
+        final schema = Ack.string().optional().nullable().transform(
+          (val) => val ?? 'default',
+        );
+        expect(schema.isOptional, isTrue);
+        expect(schema.isNullable, isTrue);
+      },
+    );
   });
 }

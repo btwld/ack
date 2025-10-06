@@ -26,18 +26,14 @@ void main() {
 
       test('status model with enum validation', () {
         // Valid enum value
-        final validData = {
-          'simpleStatus': 'active',
-        };
+        final validData = {'simpleStatus': 'active'};
 
         final result =
             statusModelSchema.parse(validData) as Map<String, dynamic>;
         expect(result['simpleStatus'], equals('active'));
 
         // Invalid enum value should throw
-        final invalidData = {
-          'simpleStatus': 'invalid_status',
-        };
+        final invalidData = {'simpleStatus': 'invalid_status'};
 
         expect(() => statusModelSchema.parse(invalidData), throwsException);
       });
@@ -50,10 +46,7 @@ void main() {
           'name': 'Laptop Pro',
           'description': 'High-performance laptop',
           'price': 1299.99,
-          'category': {
-            'id': 'cat_electronics',
-            'name': 'Electronics',
-          },
+          'category': {'id': 'cat_electronics', 'name': 'Electronics'},
           'releaseDate': '2024-01-01',
           'createdAt': '2024-01-01T00:00:00Z',
           'stockQuantity': 25,
@@ -134,7 +127,8 @@ void main() {
             'customField3': {'nested': 'data'},
           });
 
-        final result = productSchema.parse(dataWithExtras) as Map<String, dynamic>;
+        final result =
+            productSchema.parse(dataWithExtras) as Map<String, dynamic>;
         expect(result['customField1'], equals('value1'));
         expect(result['customField2'], equals(123));
         expect(result['customField3'], equals({'nested': 'data'}));
@@ -154,7 +148,8 @@ void main() {
           'productCode': 'MIN-0001',
         };
 
-        final schemaResult = productSchema.parse(minimalData) as Map<String, dynamic>;
+        final schemaResult =
+            productSchema.parse(minimalData) as Map<String, dynamic>;
         expect(schemaResult['contactEmail'], isNull);
         expect(schemaResult['imageUrl'], isNull);
         expect(schemaResult['updatedAt'], isNull);
@@ -167,11 +162,7 @@ void main() {
         // demonstrate how it can be done manually
         final flexibleSchema = Ack.object({
           'id': Ack.string(),
-          'value': Ack.anyOf([
-            Ack.string(),
-            Ack.double(),
-            Ack.boolean(),
-          ]),
+          'value': Ack.anyOf([Ack.string(), Ack.double(), Ack.boolean()]),
         });
 
         // Test with string value
@@ -190,7 +181,7 @@ void main() {
         expect(
           () => flexibleSchema.parse({
             'id': '4',
-            'value': ['array']
+            'value': ['array'],
           }),
           throwsException,
         );
@@ -205,10 +196,7 @@ Map<String, dynamic> _createProductData({String status = 'published'}) {
     'name': 'Test Product',
     'description': 'A test product description',
     'price': 99.99,
-    'category': {
-      'id': 'test_cat',
-      'name': 'Test Category',
-    },
+    'category': {'id': 'test_cat', 'name': 'Test Category'},
     'releaseDate': '2024-01-01',
     'createdAt': '2024-01-01T00:00:00Z',
     'stockQuantity': 10,

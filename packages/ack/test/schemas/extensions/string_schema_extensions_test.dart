@@ -15,11 +15,12 @@ void main() {
         final result = schema.safeParse('hi');
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Too short. Minimum 5 characters, got 2.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Too short. Minimum 5 characters, got 2.',
+        );
       });
 
       test('maxLength should pass if string is short enough', () {
@@ -33,11 +34,12 @@ void main() {
         final result = schema.safeParse('hello');
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Too long. Maximum 3 characters, got 5.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Too long. Maximum 3 characters, got 5.',
+        );
       });
 
       test('length should pass if string is exact length', () {
@@ -51,11 +53,12 @@ void main() {
         final result = schema.safeParse('hell');
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be exactly 5 characters, got 4.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be exactly 5 characters, got 4.',
+        );
       });
 
       test('should chain length constraints', () {
@@ -78,11 +81,12 @@ void main() {
         final result = schema.safeParse('not-an-email');
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Invalid email format. Expected format like user@example.com, got "not-an-email".');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Invalid email format. Expected format like user@example.com, got "not-an-email".',
+        );
       });
 
       test('url should pass for valid url', () {
@@ -96,11 +100,12 @@ void main() {
         final result = schema.safeParse('not-a-url');
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Invalid URI format, got "not-a-url".');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Invalid URI format, got "not-a-url".',
+        );
       });
 
       test('uuid should pass for valid uuid', () {
@@ -114,11 +119,12 @@ void main() {
         final result = schema.safeParse('not-a-uuid');
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Invalid UUID format, got "not-a-uuid".');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Invalid UUID format, got "not-a-uuid".',
+        );
       });
     });
 
@@ -127,20 +133,19 @@ void main() {
       final result = schema.safeParse('a@b.com');
       expect(result.isOk, isFalse);
       expect(
-          (result.getError() as SchemaConstraintsError)
-              .constraints
-              .first
-              .message,
-          'Too short. Minimum 10 characters, got 7.');
+        (result.getError() as SchemaConstraintsError).constraints.first.message,
+        'Too short. Minimum 10 characters, got 7.',
+      );
 
       final result2 = schema.safeParse('this-is-not-an-email');
       expect(result2.isOk, isFalse);
       expect(
-          (result2.getError() as SchemaConstraintsError)
-              .constraints
-              .first
-              .message,
-          'Invalid email format. Expected format like user@example.com, got "this-is-not-an-email".');
+        (result2.getError() as SchemaConstraintsError)
+            .constraints
+            .first
+            .message,
+        'Invalid email format. Expected format like user@example.com, got "this-is-not-an-email".',
+      );
 
       final result3 = schema.safeParse('long.email@example.com');
       expect(result3.isOk, isTrue);
@@ -160,8 +165,10 @@ void main() {
         final result = schema.safeParse('world');
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
-        expect(error.constraints.first.message,
-            equals('Must be exactly "hello", but got "world".'));
+        expect(
+          error.constraints.first.message,
+          equals('Must be exactly "hello", but got "world".'),
+        );
       });
 
       test('should work with empty string', () {
@@ -192,11 +199,13 @@ void main() {
       test('should throw ArgumentError for invalid regex pattern', () {
         expect(
           () => StringSchema().matches(r'[unclosed'),
-          throwsA(isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Invalid regular expression pattern'),
-          )),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('Invalid regular expression pattern'),
+            ),
+          ),
         );
       });
 

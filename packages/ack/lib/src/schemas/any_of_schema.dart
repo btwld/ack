@@ -83,10 +83,9 @@ final class AnyOfSchema extends AckSchema<Object>
     }
 
     // Return all errors for debugging
-    return SchemaResult.fail(SchemaNestedError(
-      errors: errors,
-      context: context,
-    ));
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
   }
 
   @override

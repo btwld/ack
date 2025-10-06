@@ -6,10 +6,10 @@ import 'constraint.dart';
 class NonNullableConstraint extends Constraint<Object?>
     with Validator<Object?> {
   const NonNullableConstraint()
-      : super(
-          constraintKey: 'core_non_nullable',
-          description: 'Value must not be null.',
-        );
+    : super(
+        constraintKey: 'core_non_nullable',
+        description: 'Value must not be null.',
+      );
 
   @override
   bool isValid(Object? value) => value != null;
@@ -26,19 +26,19 @@ class InvalidTypeConstraint extends Constraint<Object?>
   final Type? actualType;
 
   InvalidTypeConstraint({required this.expectedType, Object? inputValue})
-      : actualType = inputValue?.runtimeType,
-        super(
-          constraintKey: 'core_invalid_type',
-          description: 'Value must be of type $expectedType.',
-        );
+    : actualType = inputValue?.runtimeType,
+      super(
+        constraintKey: 'core_invalid_type',
+        description: 'Value must be of type $expectedType.',
+      );
 
   const InvalidTypeConstraint.withTypes({
     required this.expectedType,
     this.actualType,
   }) : super(
-          constraintKey: 'core_invalid_type',
-          description: 'Value must be of type $expectedType.',
-        );
+         constraintKey: 'core_invalid_type',
+         description: 'Value must be of type $expectedType.',
+       );
 
   @override
   bool isValid(Object? value) {
@@ -63,9 +63,9 @@ class InvalidTypeConstraint extends Constraint<Object?>
 
   @override
   Map<String, Object?> buildContext(Object? value) => {
-        'expectedType': expectedType,
-        'actualType': actualType,
-      };
+    'expectedType': expectedType,
+    'actualType': actualType,
+  };
 }
 
 // --- Object Specific Constraints ---
@@ -78,11 +78,11 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
     with Validator<MapValue> {
   final String unexpectedPropertyKey;
   ObjectNoAdditionalPropertiesConstraint({required this.unexpectedPropertyKey})
-      : super(
-          constraintKey: 'object_additional_properties_disallowed',
-          description:
-              'Object must not contain properties beyond those defined in the schema.',
-        );
+    : super(
+        constraintKey: 'object_additional_properties_disallowed',
+        description:
+            'Object must not contain properties beyond those defined in the schema.',
+      );
 
   @override
   bool isValid(MapValue value) {
@@ -103,10 +103,10 @@ class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
     with Validator<MapValue> {
   final String missingPropertyKey;
   ObjectRequiredPropertiesConstraint({required this.missingPropertyKey})
-      : super(
-          constraintKey: 'object_required_property_missing',
-          description: 'Object must contain all required properties.',
-        );
+    : super(
+        constraintKey: 'object_required_property_missing',
+        description: 'Object must contain all required properties.',
+      );
 
   @override
   bool isValid(MapValue value) {

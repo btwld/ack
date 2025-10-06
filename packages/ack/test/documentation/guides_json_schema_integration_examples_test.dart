@@ -8,8 +8,9 @@ void main() {
   group('Docs /guides/json-schema-integration.mdx', () {
     AckSchema<Map<String, Object?>> buildUserSchema() {
       return Ack.object({
-        'id':
-            Ack.integer().positive().withDescription('Unique user identifier'),
+        'id': Ack.integer().positive().withDescription(
+          'Unique user identifier',
+        ),
         'name': Ack.string()
             .minLength(2)
             .maxLength(50)
@@ -17,10 +18,9 @@ void main() {
         'email': Ack.string().email().withDescription("User's email address"),
         'role': Ack.enumString(['admin', 'user', 'guest']).withDefault('user'),
         'isActive': Ack.boolean().withDefault(true),
-        'tags': Ack.list(Ack.string())
-            .unique()
-            .withDescription('List of user tags')
-            .nullable(),
+        'tags': Ack.list(
+          Ack.string(),
+        ).unique().withDescription('List of user tags').nullable(),
         'age': Ack.integer()
             .min(0)
             .max(120)
@@ -35,7 +35,9 @@ void main() {
 
       expect(jsonSchema['type'], equals('object'));
       expect(
-          jsonSchema['description'], equals('Represents a user in the system'));
+        jsonSchema['description'],
+        equals('Represents a user in the system'),
+      );
       final properties = jsonSchema['properties'] as Map<String, Object?>;
       expect(properties['id'], isA<Map<String, Object?>>());
       final required = jsonSchema['required'] as List<Object?>;
@@ -47,9 +49,7 @@ void main() {
         final userJsonSchema = buildUserSchema().toJsonSchema();
 
         return {
-          'schemas': {
-            'User': userJsonSchema,
-          },
+          'schemas': {'User': userJsonSchema},
           'endpoints': {
             '/users': {
               'post': {

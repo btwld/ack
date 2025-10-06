@@ -17,16 +17,17 @@ void main() {
           expect(nestedErrors, isNotEmpty);
           final firstError = nestedErrors.first;
           if (firstError is SchemaConstraintsError) {
-            expect(firstError.context.path, equals('#/1'),
-                reason: 'Error should have JSON Pointer path #/1');
+            expect(
+              firstError.context.path,
+              equals('#/1'),
+              reason: 'Error should have JSON Pointer path #/1',
+            );
           }
         }
       });
 
       test('should show JSON pointer path for nested list items', () {
-        final schema = Ack.object({
-          'items': Ack.list(Ack.integer().min(10)),
-        });
+        final schema = Ack.object({'items': Ack.list(Ack.integer().min(10))});
 
         final result = schema.safeParse({
           'items': [15, 5, 20], // 5 is invalid
@@ -46,8 +47,11 @@ void main() {
             expect(listErrors, isNotEmpty);
             final indexError = listErrors.first;
             if (indexError is SchemaConstraintsError) {
-              expect(indexError.context.path, equals('#/items/1'),
-                  reason: 'Error should have full JSON Pointer path #/items/1');
+              expect(
+                indexError.context.path,
+                equals('#/items/1'),
+                reason: 'Error should have full JSON Pointer path #/items/1',
+              );
             }
           }
         }
@@ -76,10 +80,16 @@ void main() {
 
         expect(result.isFail, isTrue);
         final error = result.getError();
-        expect(error.toString(), contains('type'),
-            reason: 'Error should mention discriminator field');
-        expect(error.toString(), contains(RegExp(r'cat.*dog')),
-            reason: 'Error should list valid options');
+        expect(
+          error.toString(),
+          contains('type'),
+          reason: 'Error should mention discriminator field',
+        );
+        expect(
+          error.toString(),
+          contains(RegExp(r'cat.*dog')),
+          reason: 'Error should list valid options',
+        );
       });
 
       test('should preserve path for nested validation in selected branch', () {
@@ -100,8 +110,11 @@ void main() {
 
         expect(result.isFail, isTrue);
         final error = result.getError();
-        expect(error.toString(), contains('email'),
-            reason: 'Error should show field that failed');
+        expect(
+          error.toString(),
+          contains('email'),
+          reason: 'Error should show field that failed',
+        );
       });
     });
 
@@ -120,8 +133,11 @@ void main() {
 
         expect(result.isFail, isTrue);
         final error = result.getError();
-        expect(error.toString(), contains('value'),
-            reason: 'Error should show field path');
+        expect(
+          error.toString(),
+          contains('value'),
+          reason: 'Error should show field path',
+        );
       });
     });
   });
@@ -139,8 +155,11 @@ void main() {
       final result = transformedSchema.safeParse(null);
 
       expect(result.isOk, isTrue);
-      expect(result.getOrNull(), equals('DEFAULT_OUTPUT'),
-          reason: 'Should use output default, not transformer default');
+      expect(
+        result.getOrNull(),
+        equals('DEFAULT_OUTPUT'),
+        reason: 'Should use output default, not transformer default',
+      );
     });
 
     test('should apply transformation when input is not null', () {
@@ -155,23 +174,24 @@ void main() {
     });
 
     test('nullable transformed schema with null input and no default', () {
-      final schema = Ack.string()
-          .nullable()
-          .transform((value) => value?.toUpperCase() ?? '');
+      final schema = Ack.string().nullable().transform(
+        (value) => value?.toUpperCase() ?? '',
+      );
 
       final result = schema.safeParse(null);
 
       expect(result.isOk, isTrue);
-      expect(result.getOrNull(), equals(''),
-          reason: 'Transformer converts null to empty string');
+      expect(
+        result.getOrNull(),
+        equals(''),
+        reason: 'Transformer converts null to empty string',
+      );
     });
   });
 
   group('InvalidTypeConstraint Map/List Handling', () {
     test('should accept any Map implementation', () {
-      final schema = Ack.object({
-        'name': Ack.string(),
-      });
+      final schema = Ack.object({'name': Ack.string()});
 
       // Different Map implementations
       final testCases = [
@@ -182,8 +202,11 @@ void main() {
 
       for (final testMap in testCases) {
         final result = schema.safeParse(testMap);
-        expect(result.isOk, isTrue,
-            reason: 'Should accept ${testMap.runtimeType}');
+        expect(
+          result.isOk,
+          isTrue,
+          reason: 'Should accept ${testMap.runtimeType}',
+        );
       }
     });
 
@@ -199,8 +222,11 @@ void main() {
 
       for (final testList in testCases) {
         final result = schema.safeParse(testList);
-        expect(result.isOk, isTrue,
-            reason: 'Should accept ${testList.runtimeType}');
+        expect(
+          result.isOk,
+          isTrue,
+          reason: 'Should accept ${testList.runtimeType}',
+        );
       }
     });
   });
@@ -224,8 +250,11 @@ void main() {
         final nestedError = error1.errors.first;
         if (nestedError is SchemaConstraintsError) {
           // ~ should be escaped as ~0
-          expect(nestedError.context.path, equals('#/config~0value'),
-              reason: 'Tilde ~ should be escaped as ~0 per RFC 6901');
+          expect(
+            nestedError.context.path,
+            equals('#/config~0value'),
+            reason: 'Tilde ~ should be escaped as ~0 per RFC 6901',
+          );
         }
       }
 
@@ -241,16 +270,17 @@ void main() {
         final nestedError = error2.errors.first;
         if (nestedError is SchemaConstraintsError) {
           // / should be escaped as ~1
-          expect(nestedError.context.path, equals('#/user~1name'),
-              reason: 'Forward slash / should be escaped as ~1 per RFC 6901');
+          expect(
+            nestedError.context.path,
+            equals('#/user~1name'),
+            reason: 'Forward slash / should be escaped as ~1 per RFC 6901',
+          );
         }
       }
     });
 
     test('should escape both ~ and / when present together', () {
-      final schema = Ack.object({
-        'path~/to/file': Ack.string().minLength(5),
-      });
+      final schema = Ack.object({'path~/to/file': Ack.string().minLength(5)});
 
       final result = schema.safeParse({
         'path~/to/file': 'bad', // Invalid: too short
@@ -262,17 +292,18 @@ void main() {
         final nestedError = error.errors.first;
         if (nestedError is SchemaConstraintsError) {
           // ~ first (becomes ~0), then / (becomes ~1)
-          expect(nestedError.context.path, equals('#/path~0~1to~1file'),
-              reason: 'Should escape ~ as ~0 and / as ~1 per RFC 6901');
+          expect(
+            nestedError.context.path,
+            equals('#/path~0~1to~1file'),
+            reason: 'Should escape ~ as ~0 and / as ~1 per RFC 6901',
+          );
         }
       }
     });
 
     test('should escape in nested paths', () {
       final schema = Ack.object({
-        'level1': Ack.object({
-          'level~/2': Ack.string().minLength(5),
-        }),
+        'level1': Ack.object({'level~/2': Ack.string().minLength(5)}),
       });
 
       final result = schema.safeParse({
@@ -290,8 +321,11 @@ void main() {
           final level2Error = level1Error.errors.first;
           if (level2Error is SchemaConstraintsError) {
             // 'level~/2' becomes 'level~0~12' (~ -> ~0, / -> ~1, 2 stays as 2)
-            expect(level2Error.context.path, equals('#/level1/level~0~12'),
-                reason: 'Nested paths should also escape special characters');
+            expect(
+              level2Error.context.path,
+              equals('#/level1/level~0~12'),
+              reason: 'Nested paths should also escape special characters',
+            );
           }
         }
       }
@@ -316,10 +350,7 @@ void main() {
     });
 
     test('AnyOfSchema should include null type when nullable', () {
-      final schema = Ack.anyOf([
-        Ack.integer(),
-        Ack.string(),
-      ]).nullable();
+      final schema = Ack.anyOf([Ack.integer(), Ack.string()]).nullable();
 
       final jsonSchema = schema.toJsonSchema();
 
@@ -329,8 +360,11 @@ void main() {
       final anyOf = jsonSchema['anyOf'] as List;
 
       expect(anyOf.length, equals(2)); // base anyOf + null
-      expect(anyOf[1], equals({'type': 'null'}),
-          reason: 'Last element should be null type');
+      expect(
+        anyOf[1],
+        equals({'type': 'null'}),
+        reason: 'Last element should be null type',
+      );
       expect(anyOf[0], isA<Map>());
       expect((anyOf[0] as Map).containsKey('anyOf'), isTrue);
     });

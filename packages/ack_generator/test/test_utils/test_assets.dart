@@ -30,6 +30,7 @@ library ack_annotations;
 
 export 'src/ack_model.dart';
 export 'src/ack_field.dart';
+export 'src/ack_type.dart';
 ''',
   'ack_annotations|lib/src/ack_model.dart': '''
 import 'package:meta/meta_meta.dart';
@@ -67,13 +68,21 @@ class AckField {
   final String? jsonKey;
   final String? description;
   final List<String> constraints;
-  
+
   const AckField({
     this.required = false,
     this.jsonKey,
     this.description,
     this.constraints = const [],
   });
+}
+''',
+  'ack_annotations|lib/src/ack_type.dart': '''
+import 'package:meta/meta_meta.dart';
+
+@Target({TargetKind.topLevelVariable, TargetKind.classType, TargetKind.getter})
+class AckType {
+  const AckType();
 }
 ''',
 };
@@ -116,9 +125,10 @@ class StringSchema extends AckSchema<String> {
   StringSchema maxLength(int length) => this;
   StringSchema enumString(List<String> values) => this;
   StringSchema nullable() => this;
+  StringSchema optional() => this;
   StringSchema describe(String description) => this;
   StringSchema withDefault(String defaultValue) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'string'};
 }
@@ -128,39 +138,44 @@ class IntegerSchema extends AckSchema<int> {
   IntegerSchema max(int value) => this;
   IntegerSchema positive() => this;
   IntegerSchema nullable() => this;
+  IntegerSchema optional() => this;
   IntegerSchema describe(String description) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'integer'};
 }
 class DoubleSchema extends AckSchema<double> {
   const DoubleSchema();
   DoubleSchema nullable() => this;
+  DoubleSchema optional() => this;
   DoubleSchema describe(String description) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'number'};
 }
 class NumberSchema extends AckSchema<num> {
   const NumberSchema();
   NumberSchema nullable() => this;
+  NumberSchema optional() => this;
   NumberSchema describe(String description) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'number'};
 }
 class BooleanSchema extends AckSchema<bool> {
   const BooleanSchema();
   BooleanSchema nullable() => this;
+  BooleanSchema optional() => this;
   BooleanSchema describe(String description) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'boolean'};
 }
 class AnySchema extends AckSchema<dynamic> {
   const AnySchema();
   AnySchema nullable() => this;
-  
+  AnySchema optional() => this;
+
   @override
   Map<String, Object?> toJsonSchema() => {};
 }
@@ -168,9 +183,10 @@ class ListSchema<T> extends AckSchema<List<T>> {
   final AckSchema<T> itemSchema;
   const ListSchema(this.itemSchema);
   ListSchema<T> nullable() => this;
+  ListSchema<T> optional() => this;
   ListSchema<T> unique() => this;
   ListSchema<T> describe(String description) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {
     'type': 'array',
@@ -181,8 +197,9 @@ class MapSchema<T> extends AckSchema<Map<String, T>> {
   final AckSchema<T> valueSchema;
   const MapSchema(this.valueSchema);
   MapSchema<T> nullable() => this;
+  MapSchema<T> optional() => this;
   MapSchema<T> describe(String description) => this;
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {
     'type': 'object',
@@ -278,7 +295,7 @@ abstract class SchemaModel<T> {
 
 /// Combine all assets for easy use in tests
 Map<String, String> get allAssets => {
-      ...metaAssets,
-      ...ackAnnotationsAsset,
-      ...ackPackageAsset,
-    };
+  ...metaAssets,
+  ...ackAnnotationsAsset,
+  ...ackPackageAsset,
+};

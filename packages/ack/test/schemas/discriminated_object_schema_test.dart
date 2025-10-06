@@ -8,22 +8,13 @@ void main() {
     late DiscriminatedObjectSchema animalSchema;
 
     setUp(() {
-      catSchema = Ack.object({
-        'type': Ack.string(),
-        'meow': Ack.boolean(),
-      });
+      catSchema = Ack.object({'type': Ack.string(), 'meow': Ack.boolean()});
 
-      dogSchema = Ack.object({
-        'type': Ack.string(),
-        'bark': Ack.boolean(),
-      });
+      dogSchema = Ack.object({'type': Ack.string(), 'bark': Ack.boolean()});
 
       animalSchema = Ack.discriminated(
         discriminatorKey: 'type',
-        schemas: {
-          'cat': catSchema,
-          'dog': dogSchema,
-        },
+        schemas: {'cat': catSchema, 'dog': dogSchema},
       );
     });
 
@@ -72,8 +63,9 @@ void main() {
       test('fluent methods can be chained (excluding default)', () {
         const description = 'Nullable animal schema';
 
-        final fullyConfiguredSchema =
-            animalSchema.nullable().withDescription(description);
+        final fullyConfiguredSchema = animalSchema.nullable().withDescription(
+          description,
+        );
 
         expect(fullyConfiguredSchema.isNullable, isTrue);
         expect(fullyConfiguredSchema.description, equals(description));
@@ -93,16 +85,18 @@ void main() {
     });
 
     group('copyWith method', () {
-      test('copyWith preserves original values when no parameters provided',
-          () {
-        final copy = animalSchema.copyWith();
+      test(
+        'copyWith preserves original values when no parameters provided',
+        () {
+          final copy = animalSchema.copyWith();
 
-        expect(copy.discriminatorKey, equals(animalSchema.discriminatorKey));
-        expect(copy.schemas, equals(animalSchema.schemas));
-        expect(copy.isNullable, equals(animalSchema.isNullable));
-        expect(copy.description, equals(animalSchema.description));
-        // No default expected on discriminated schema
-      });
+          expect(copy.discriminatorKey, equals(animalSchema.discriminatorKey));
+          expect(copy.schemas, equals(animalSchema.schemas));
+          expect(copy.isNullable, equals(animalSchema.isNullable));
+          expect(copy.description, equals(animalSchema.description));
+          // No default expected on discriminated schema
+        },
+      );
 
       test('copyWith updates specific values', () {
         final birdSchema = Ack.object({

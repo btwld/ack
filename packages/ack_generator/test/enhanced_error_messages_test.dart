@@ -6,20 +6,21 @@ import 'package:test/test.dart';
 void main() {
   group('Enhanced Error Messages', () {
     group('Annotation Field Errors', () {
-      test('should fail build with missing discriminated type fields',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should fail build with missing discriminated type fields',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        // Build should fail when using old annotation format
-        await expectLater(
-          () => testBuilder(
-            builder,
-            {
-              // Old annotation without discriminated fields
-              'ack_annotations|lib/ack_annotations.dart': '''
+          // Build should fail when using old annotation format
+          await expectLater(
+            () => testBuilder(
+              builder,
+              {
+                // Old annotation without discriminated fields
+                'ack_annotations|lib/ack_annotations.dart': '''
 export 'src/ack_model.dart';
 ''',
-              'ack_annotations|lib/src/ack_model.dart': '''
+                'ack_annotations|lib/src/ack_model.dart': '''
 class AckModel {
   final String? schemaName;
   final String? description;
@@ -36,7 +37,7 @@ class AckModel {
   });
 }
 ''',
-              'ack|lib/ack.dart': '''
+                'ack|lib/ack.dart': '''
 class Ack {
   static ObjectSchema object(Map<String, dynamic> fields) => ObjectSchema();
   static StringSchema string() => StringSchema();
@@ -44,7 +45,7 @@ class Ack {
 class ObjectSchema {}
 class StringSchema {}
 ''',
-              'test_pkg|lib/model.dart': '''
+                'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
@@ -53,14 +54,13 @@ class TestModel {
   TestModel({required this.name});
 }
 ''',
-            },
-            outputs: {
-              'test_pkg|lib/model.g.dart': anything,
-            },
-          ),
-          throwsA(isA<Exception>()),
-        );
-      });
+              },
+              outputs: {'test_pkg|lib/model.g.dart': anything},
+            ),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
       test('should fail build with missing model field', () async {
         final builder = ackGenerator(BuilderOptions.empty);
@@ -108,9 +108,7 @@ class TestModel {
 }
 ''',
             },
-            outputs: {
-              'test_pkg|lib/model.g.dart': anything,
-            },
+            outputs: {'test_pkg|lib/model.g.dart': anything},
           ),
           throwsA(isA<Exception>()),
         );
@@ -118,18 +116,19 @@ class TestModel {
     });
 
     group('Schema Generation Validation', () {
-      test('should handle supported types correctly (DateTime example)',
-          () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should handle supported types correctly (DateTime example)',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        // DateTime should be handled as a string in schema generation
-        await testBuilder(
-          builder,
-          {
-            'ack_annotations|lib/ack_annotations.dart': '''
+          // DateTime should be handled as a string in schema generation
+          await testBuilder(
+            builder,
+            {
+              'ack_annotations|lib/ack_annotations.dart': '''
 export 'src/ack_model.dart';
 ''',
-            'ack_annotations|lib/src/ack_model.dart': '''
+              'ack_annotations|lib/src/ack_model.dart': '''
 class AckModel {
   final String? schemaName;
   final String? description;
@@ -150,7 +149,7 @@ class AckModel {
   });
 }
 ''',
-            'ack|lib/ack.dart': '''
+              'ack|lib/ack.dart': '''
 class Ack {
   static ObjectSchema object(Map<String, dynamic> fields) => ObjectSchema();
   static StringSchema string() => StringSchema();
@@ -158,7 +157,7 @@ class Ack {
 class ObjectSchema {}
 class StringSchema {}
 ''',
-            'test_pkg|lib/model.dart': '''
+              'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
@@ -167,12 +166,11 @@ class TestModel {
   TestModel({required this.timestamp});
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/model.g.dart': isNotEmpty,
-          },
-        );
-      });
+            },
+            outputs: {'test_pkg|lib/model.g.dart': isNotEmpty},
+          );
+        },
+      );
     });
 
     group('Validation Error Messages', () {
@@ -226,9 +224,7 @@ abstract class AbstractModel { // Abstract without discriminatedKey
 }
 ''',
             },
-            outputs: {
-              'test_pkg|lib/model.g.dart': anything,
-            },
+            outputs: {'test_pkg|lib/model.g.dart': anything},
           ),
           throwsA(isA<Exception>()),
         );

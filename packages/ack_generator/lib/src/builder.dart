@@ -5,8 +5,5 @@ import 'generator.dart';
 
 /// Creates the builder for ack_generator
 Builder ackGenerator(BuilderOptions options) {
-  return LibraryBuilder(
-    AckSchemaGenerator(),
-    generatedExtension: '.g.dart',
-  );
+  return LibraryBuilder(AckSchemaGenerator(), generatedExtension: '.g.dart');
 }

@@ -195,7 +195,8 @@ class FieldBuilder {
     final enumValues = field.enumValues;
     if (enumValues.isEmpty) {
       throw UnsupportedError(
-          'Enum ${field.type.getDisplayString()} has no values');
+        'Enum ${field.type.getDisplayString()} has no values',
+      );
     }
 
     // Generate enum schema with string values

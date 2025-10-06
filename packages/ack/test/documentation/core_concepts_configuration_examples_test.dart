@@ -4,10 +4,10 @@ import 'package:test/test.dart';
 class ConfigIsPositiveConstraint extends Constraint<double>
     with Validator<double> {
   ConfigIsPositiveConstraint()
-      : super(
-          constraintKey: 'is_positive',
-          description: 'Number must be positive',
-        );
+    : super(
+        constraintKey: 'is_positive',
+        description: 'Number must be positive',
+      );
 
   @override
   bool isValid(double value) => value > 0;

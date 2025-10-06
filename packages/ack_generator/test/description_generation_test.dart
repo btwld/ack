@@ -27,11 +27,13 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/test.g.dart': decodedMatches(allOf([
-            contains('Generated schema for User'),
-            contains('A comprehensive user model for testing'),
-            contains('final userSchema = Ack.object({'),
-          ])),
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('Generated schema for User'),
+              contains('A comprehensive user model for testing'),
+              contains('final userSchema = Ack.object({'),
+            ]),
+          ),
         },
       );
     });
@@ -61,13 +63,15 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/test.g.dart': decodedMatches(allOf([
-            contains('Generated schema for User'),
-            contains('User model with documented fields'),
-            contains('final userSchema = Ack.object({'),
-            // Note: Field descriptions would need to be added to schema generation
-            // This test documents current behavior and future enhancement
-          ])),
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('Generated schema for User'),
+              contains('User model with documented fields'),
+              contains('final userSchema = Ack.object({'),
+              // Note: Field descriptions would need to be added to schema generation
+              // This test documents current behavior and future enhancement
+            ]),
+          ),
         },
       );
     });
@@ -107,11 +111,13 @@ class Product {
 ''',
         },
         outputs: {
-          'test_pkg|lib/test.g.dart': decodedMatches(allOf([
-            contains('Generated schema for Product'),
-            contains('Product model for e-commerce platform'),
-            contains('final productSchema = Ack.object({'),
-          ])),
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('Generated schema for Product'),
+              contains('Product model for e-commerce platform'),
+              contains('final productSchema = Ack.object({'),
+            ]),
+          ),
         },
       );
     });
@@ -135,15 +141,19 @@ class SimpleModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/test.g.dart': decodedMatches(allOf([
-            contains('Generated schema for SimpleModel'),
-            // Should have the standard generated comment but no additional description
-            isNot(contains(
-                '/// A')), // No additional description starting with "/// A"
-            isNot(contains(
-                '/// This')), // No additional description starting with "/// This"
-            contains('final simpleModelSchema = Ack.object({'),
-          ])),
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('Generated schema for SimpleModel'),
+              // Should have the standard generated comment but no additional description
+              isNot(
+                contains('/// A'),
+              ), // No additional description starting with "/// A"
+              isNot(
+                contains('/// This'),
+              ), // No additional description starting with "/// This"
+              contains('final simpleModelSchema = Ack.object({'),
+            ]),
+          ),
         },
       );
     });
@@ -167,11 +177,13 @@ class SpecialModel {
 ''',
         },
         outputs: {
-          'test_pkg|lib/test.g.dart': decodedMatches(allOf([
-            contains('Generated schema for SpecialModel'),
-            contains('Model with "quotes" and special characters'),
-            contains('final specialModelSchema = Ack.object({'),
-          ])),
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('Generated schema for SpecialModel'),
+              contains('Model with "quotes" and special characters'),
+              contains('final specialModelSchema = Ack.object({'),
+            ]),
+          ),
         },
       );
     });

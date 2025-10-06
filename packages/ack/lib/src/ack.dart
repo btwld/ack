@@ -26,21 +26,16 @@ final class Ack {
   static ObjectSchema object(
     Map<String, AckSchema> properties, {
     bool additionalProperties = false,
-  }) =>
-      ObjectSchema(
-        properties,
-        additionalProperties: additionalProperties,
-      );
+  }) => ObjectSchema(properties, additionalProperties: additionalProperties);
 
   /// Creates a discriminated object schema for polymorphic validation.
   static DiscriminatedObjectSchema discriminated({
     required String discriminatorKey,
     required Map<String, AckSchema> schemas,
-  }) =>
-      DiscriminatedObjectSchema(
-        discriminatorKey: discriminatorKey,
-        schemas: schemas,
-      );
+  }) => DiscriminatedObjectSchema(
+    discriminatorKey: discriminatorKey,
+    schemas: schemas,
+  );
 
   /// Creates a list schema with the given item schema.
   static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) =>

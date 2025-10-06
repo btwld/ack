@@ -61,10 +61,7 @@ void main() {
         // minLength example
         final minLengthSchema = Ack.string().minLength(3);
         expect(minLengthSchema.parse('hello'), equals('hello'));
-        expect(
-          () => minLengthSchema.parse('hi'),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => minLengthSchema.parse('hi'), throwsA(isA<AckException>()));
 
         // maxLength example
         final maxLengthSchema = Ack.string().maxLength(10);
@@ -87,7 +84,9 @@ void main() {
         // email example
         final emailSchema = Ack.string().email();
         expect(
-            emailSchema.parse('user@example.com'), equals('user@example.com'));
+          emailSchema.parse('user@example.com'),
+          equals('user@example.com'),
+        );
 
         // Invalid email should throw
         expect(
@@ -102,26 +101,17 @@ void main() {
         // min/max example
         final rangeSchema = Ack.integer().min(1).max(100);
         expect(rangeSchema.parse(50), equals(50));
-        expect(
-          () => rangeSchema.parse(150),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => rangeSchema.parse(150), throwsA(isA<AckException>()));
 
         // positive example
         final positiveSchema = Ack.integer().positive();
         expect(positiveSchema.parse(42), equals(42));
-        expect(
-          () => positiveSchema.parse(-5),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => positiveSchema.parse(-5), throwsA(isA<AckException>()));
 
         // double constraints
         final doubleSchema = Ack.double().positive();
         expect(doubleSchema.parse(3.14), equals(3.14));
-        expect(
-          () => doubleSchema.parse(-1.5),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => doubleSchema.parse(-1.5), throwsA(isA<AckException>()));
       });
     });
 
@@ -132,10 +122,7 @@ void main() {
           'age': Ack.integer().min(0).optional(),
         });
 
-        final validUser = {
-          'name': 'John Doe',
-          'age': 30,
-        };
+        final validUser = {'name': 'John Doe', 'age': 30};
 
         final result = userSchema.safeParse(validUser);
         expect(result.isOk, isTrue);
@@ -158,10 +145,7 @@ void main() {
 
         final validData = {
           'name': 'John Doe',
-          'address': {
-            'street': '123 Main St',
-            'city': 'Anytown',
-          },
+          'address': {'street': '123 Main St', 'city': 'Anytown'},
         };
 
         final result = userSchema.safeParse(validData);
@@ -183,8 +167,9 @@ void main() {
       });
 
       test('list with constraints example', () {
-        final emailListSchema =
-            Ack.list(Ack.string().email()).minItems(1).maxItems(5);
+        final emailListSchema = Ack.list(
+          Ack.string().email(),
+        ).minItems(1).maxItems(5);
 
         final validEmails = ['user@example.com', 'admin@example.com'];
         final result = emailListSchema.safeParse(validEmails);
@@ -192,10 +177,7 @@ void main() {
         expect(result.getOrThrow(), equals(validEmails));
 
         // Empty list should fail minItems constraint
-        expect(
-          () => emailListSchema.parse([]),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => emailListSchema.parse([]), throwsA(isA<AckException>()));
       });
     });
 
@@ -247,10 +229,7 @@ void main() {
 
         // Invalid discriminator should fail
         expect(
-          () => resultSchema.parse({
-            'type': 'unknown',
-            'data': 'test',
-          }),
+          () => resultSchema.parse({'type': 'unknown', 'data': 'test'}),
           throwsA(isA<AckException>()),
         );
       });
@@ -276,10 +255,7 @@ void main() {
         expect(invalidResult.getOrElse(() => 'default'), equals('default'));
         expect(invalidResult.getError(), isA<SchemaError>());
 
-        expect(
-          () => invalidResult.getOrThrow(),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => invalidResult.getOrThrow(), throwsA(isA<AckException>()));
       });
     });
   });

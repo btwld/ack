@@ -7,10 +7,10 @@ import '../constraint.dart';
 class UniqueItemsConstraint<T> extends Constraint<List<T>>
     with Validator<List<T>>, JsonSchemaSpec<List<T>> {
   const UniqueItemsConstraint()
-      : super(
-          constraintKey: 'list.unique',
-          description: 'All items in the list must be unique.',
-        );
+    : super(
+        constraintKey: 'list.unique',
+        description: 'All items in the list must be unique.',
+      );
 
   @override
   bool isValid(List<T> value) {

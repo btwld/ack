@@ -93,10 +93,7 @@ class ModelValidationResult {
   }
 
   /// Creates a failed validation result with issue details.
-  factory ModelValidationResult.failure(
-    String summary,
-    List<String> issues,
-  ) {
+  factory ModelValidationResult.failure(String summary, List<String> issues) {
     return ModelValidationResult._(
       isSuccess: false,
       errorSummary: summary,

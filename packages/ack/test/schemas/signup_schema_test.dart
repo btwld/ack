@@ -6,14 +6,15 @@ void main() {
     late AckSchema signupSchema;
 
     setUp(() {
-      signupSchema = Ack.object({
-        'email': Ack.string().email(),
-        'password': Ack.string().minLength(8),
-        'confirmPassword': Ack.string().minLength(8),
-      }).refine(
-        (data) => data['password'] == data['confirmPassword'],
-        message: '❌ Passwords do not match!',
-      );
+      signupSchema =
+          Ack.object({
+            'email': Ack.string().email(),
+            'password': Ack.string().minLength(8),
+            'confirmPassword': Ack.string().minLength(8),
+          }).refine(
+            (data) => data['password'] == data['confirmPassword'],
+            message: '❌ Passwords do not match!',
+          );
     });
 
     group('Valid signup data', () {
@@ -47,8 +48,11 @@ void main() {
             'confirmPassword': 'validPassword123',
           });
 
-          expect(result.isOk, isTrue,
-              reason: 'Should accept valid email: $email');
+          expect(
+            result.isOk,
+            isTrue,
+            reason: 'Should accept valid email: $email',
+          );
         }
       });
 
@@ -64,20 +68,22 @@ void main() {
     });
 
     group('Password mismatch', () {
-      test('should fail with emoji error message when passwords do not match',
-          () {
-        final result = signupSchema.safeParse({
-          'email': 'user@example.com',
-          'password': 'password123',
-          'confirmPassword': 'differentPassword123',
-        });
+      test(
+        'should fail with emoji error message when passwords do not match',
+        () {
+          final result = signupSchema.safeParse({
+            'email': 'user@example.com',
+            'password': 'password123',
+            'confirmPassword': 'differentPassword123',
+          });
 
-        expect(result.isFail, isTrue);
-        expect(
-          (result.getError() as SchemaValidationError).message,
-          '❌ Passwords do not match!',
-        );
-      });
+          expect(result.isFail, isTrue);
+          expect(
+            (result.getError() as SchemaValidationError).message,
+            '❌ Passwords do not match!',
+          );
+        },
+      );
 
       test('should fail even when both passwords meet length requirements', () {
         final result = signupSchema.safeParse({
@@ -128,8 +134,11 @@ void main() {
             'confirmPassword': 'validPassword123',
           });
 
-          expect(result.isFail, isTrue,
-              reason: 'Should reject invalid email: $email');
+          expect(
+            result.isFail,
+            isTrue,
+            reason: 'Should reject invalid email: $email',
+          );
 
           final error = result.getError();
           if (error is SchemaConstraintsError) {
@@ -142,23 +151,25 @@ void main() {
         }
       });
 
-      test('should fail before checking password match if email is invalid',
-          () {
-        final result = signupSchema.safeParse({
-          'email': 'invalid-email',
-          'password': 'password123',
-          'confirmPassword': 'differentPassword',
-        });
+      test(
+        'should fail before checking password match if email is invalid',
+        () {
+          final result = signupSchema.safeParse({
+            'email': 'invalid-email',
+            'password': 'password123',
+            'confirmPassword': 'differentPassword',
+          });
 
-        expect(result.isFail, isTrue);
-        final error = result.getError();
-        if (error is SchemaConstraintsError) {
-          expect(
-            error.constraints.any((c) => c.message.contains('email')),
-            isTrue,
-          );
-        }
-      });
+          expect(result.isFail, isTrue);
+          final error = result.getError();
+          if (error is SchemaConstraintsError) {
+            expect(
+              error.constraints.any((c) => c.message.contains('email')),
+              isTrue,
+            );
+          }
+        },
+      );
     });
 
     group('Password length validation', () {
@@ -254,9 +265,7 @@ void main() {
       });
 
       test('should handle missing fields', () {
-        final result = signupSchema.safeParse({
-          'email': 'user@example.com',
-        });
+        final result = signupSchema.safeParse({'email': 'user@example.com'});
 
         expect(result.isFail, isTrue);
         final error = result.getError();

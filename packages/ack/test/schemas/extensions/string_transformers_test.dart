@@ -21,9 +21,9 @@ void main() {
 
       test('should work with notEmpty constraint (validates after trim)', () {
         final schema = Ack.string().trim().refine(
-              (s) => s.isNotEmpty,
-              message: 'String cannot be empty after trimming',
-            );
+          (s) => s.isNotEmpty,
+          message: 'String cannot be empty after trimming',
+        );
 
         final result = schema.safeParse('  hello  ');
         expect(result.isOk, isTrue);
@@ -79,9 +79,9 @@ void main() {
 
       test('should work with pattern matching after transformation', () {
         final schema = Ack.string().toLowerCase().refine(
-              (s) => s.startsWith('hello'),
-              message: 'Must start with hello (lowercase)',
-            );
+          (s) => s.startsWith('hello'),
+          message: 'Must start with hello (lowercase)',
+        );
 
         expect(schema.parse('HELLO WORLD'), equals('hello world'));
         expect(schema.parse('Hello World'), equals('hello world'));
@@ -136,9 +136,9 @@ void main() {
 
       test('should work with pattern matching after transformation', () {
         final schema = Ack.string().toUpperCase().refine(
-              (s) => s.startsWith('HELLO'),
-              message: 'Must start with HELLO (uppercase)',
-            );
+          (s) => s.startsWith('HELLO'),
+          message: 'Must start with HELLO (uppercase)',
+        );
 
         expect(schema.parse('hello world'), equals('HELLO WORLD'));
         expect(schema.parse('Hello World'), equals('HELLO WORLD'));
@@ -171,16 +171,18 @@ void main() {
 
     group('Combining transformers with transform()', () {
       test('should combine trim and toLowerCase using transform', () {
-        final schema =
-            Ack.string().transform((s) => s?.trim().toLowerCase() ?? '');
+        final schema = Ack.string().transform(
+          (s) => s?.trim().toLowerCase() ?? '',
+        );
 
         expect(schema.parse('  HELLO  '), equals('hello'));
         expect(schema.parse('\tHeLLo\n'), equals('hello'));
       });
 
       test('should combine trim and toUpperCase using transform', () {
-        final schema =
-            Ack.string().transform((s) => s?.trim().toUpperCase() ?? '');
+        final schema = Ack.string().transform(
+          (s) => s?.trim().toUpperCase() ?? '',
+        );
 
         expect(schema.parse('  hello  '), equals('HELLO'));
         expect(schema.parse('\theLLo\n'), equals('HELLO'));
@@ -197,11 +199,12 @@ void main() {
       });
 
       test('should apply transformation and then refinements', () {
-        final schema =
-            Ack.string().transform((s) => s?.trim().toLowerCase() ?? '').refine(
-                  (s) => s == 'hello',
-                  message: 'Must be "hello" after normalization',
-                );
+        final schema = Ack.string()
+            .transform((s) => s?.trim().toLowerCase() ?? '')
+            .refine(
+              (s) => s == 'hello',
+              message: 'Must be "hello" after normalization',
+            );
 
         expect(schema.parse('  HELLO  '), equals('hello'));
         expect(schema.parse('  HeLLo  '), equals('hello'));
@@ -215,9 +218,9 @@ void main() {
       });
 
       test('should validate constraints before transformation', () {
-        final schema = Ack.string()
-            .email()
-            .transform((s) => s?.trim().toLowerCase() ?? '');
+        final schema = Ack.string().email().transform(
+          (s) => s?.trim().toLowerCase() ?? '',
+        );
 
         // Email validation happens first - spaces cause validation to fail
         final result = schema.safeParse('  not-an-email  ');
@@ -260,11 +263,12 @@ void main() {
     group('Real-world use cases', () {
       test('should normalize email addresses', () {
         // Transform first (trim + lowercase), then validate email
-        final emailSchema =
-            Ack.string().transform((s) => s?.trim().toLowerCase() ?? '').refine(
-                  (s) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s),
-                  message: 'Invalid email',
-                );
+        final emailSchema = Ack.string()
+            .transform((s) => s?.trim().toLowerCase() ?? '')
+            .refine(
+              (s) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s),
+              message: 'Invalid email',
+            );
 
         final result = emailSchema.safeParse('  Test@Example.COM  ');
         expect(result.isOk, isTrue);

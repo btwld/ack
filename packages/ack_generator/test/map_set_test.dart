@@ -32,13 +32,18 @@ class Config {
 ''',
         },
         outputs: {
-          'test_pkg|lib/config.g.dart': decodedMatches(allOf([
-            contains('final configSchema = Ack.object('),
-            contains("'settings': Ack.object({}, additionalProperties: true)"),
-            contains("'counts': Ack.object({}, additionalProperties: true)"),
-            contains(
-                "'groupedData': Ack.object({}, additionalProperties: true)"),
-          ])),
+          'test_pkg|lib/config.g.dart': decodedMatches(
+            allOf([
+              contains('final configSchema = Ack.object('),
+              contains(
+                "'settings': Ack.object({}, additionalProperties: true)",
+              ),
+              contains("'counts': Ack.object({}, additionalProperties: true)"),
+              contains(
+                "'groupedData': Ack.object({}, additionalProperties: true)",
+              ),
+            ]),
+          ),
         },
       );
     });
@@ -68,12 +73,14 @@ class UniqueData {
 ''',
         },
         outputs: {
-          'test_pkg|lib/unique_data.g.dart': decodedMatches(allOf([
-            contains('final uniqueDataSchema = Ack.object('),
-            contains("'tags': Ack.list(Ack.string()).unique()"),
-            contains("'ids': Ack.list(Ack.integer()).unique()"),
-            contains("'mixed': Ack.list(Ack.any()).unique()"),
-          ])),
+          'test_pkg|lib/unique_data.g.dart': decodedMatches(
+            allOf([
+              contains('final uniqueDataSchema = Ack.object('),
+              contains("'tags': Ack.list(Ack.string()).unique()"),
+              contains("'ids': Ack.list(Ack.integer()).unique()"),
+              contains("'mixed': Ack.list(Ack.any()).unique()"),
+            ]),
+          ),
         },
       );
     });
@@ -101,25 +108,31 @@ class NullableCollections {
 ''',
         },
         outputs: {
-          'test_pkg|lib/nullable_collections.g.dart': decodedMatches(allOf([
-            contains('final nullableCollectionsSchema = Ack.object('),
-            contains(
-                "'metadata': Ack.object({}, additionalProperties: true).optional()"),
-            contains(
-                "'categories': Ack.list(Ack.string()).unique().optional()"),
-          ])),
+          'test_pkg|lib/nullable_collections.g.dart': decodedMatches(
+            allOf([
+              contains('final nullableCollectionsSchema = Ack.object('),
+              contains(
+                "'metadata': Ack.object({}, additionalProperties: true).optional()",
+              ),
+              contains(
+                "'categories': Ack.list(Ack.string()).unique().optional()",
+              ),
+            ]),
+          ),
         },
       );
     });
 
-    test('should handle complex nested collection types', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'should handle complex nested collection types',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/complex_collections.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/complex_collections.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
@@ -139,22 +152,30 @@ class ComplexModel {
   });
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/complex_collections.g.dart': decodedMatches(allOf([
-            contains('final complexModelSchema = Ack.object('),
-            contains("'matrix': Ack.list(Ack.list(Ack.string()))"),
-            contains("'grouped': Ack.object({}, additionalProperties: true)"),
-            contains("'unique': Ack.list(Ack.string()).unique()"),
-            contains("'nested': Ack.object({}, additionalProperties: true)"),
-            contains(
-                "'superComplex': Ack.list(Ack.object({}, additionalProperties: true))"),
-          ])),
-        },
-      );
-    },
-        skip:
-            'Complex nested collections (List<Map<String, Set<int>>>) are intentionally not supported due to validation complexity');
+          },
+          outputs: {
+            'test_pkg|lib/complex_collections.g.dart': decodedMatches(
+              allOf([
+                contains('final complexModelSchema = Ack.object('),
+                contains("'matrix': Ack.list(Ack.list(Ack.string()))"),
+                contains(
+                  "'grouped': Ack.object({}, additionalProperties: true)",
+                ),
+                contains("'unique': Ack.list(Ack.string()).unique()"),
+                contains(
+                  "'nested': Ack.object({}, additionalProperties: true)",
+                ),
+                contains(
+                  "'superComplex': Ack.list(Ack.object({}, additionalProperties: true))",
+                ),
+              ]),
+            ),
+          },
+        );
+      },
+      skip:
+          'Complex nested collections (List<Map<String, Set<int>>>) are intentionally not supported due to validation complexity',
+    );
 
     test('should fail validation for Maps with non-String keys', () async {
       final builder = ackGenerator(BuilderOptions.empty);

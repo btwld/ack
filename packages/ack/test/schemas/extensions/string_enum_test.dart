@@ -17,8 +17,10 @@ void main() {
       final result = schema.safeParse('yellow');
       expect(result.isOk, isFalse);
       final error = result.getError() as SchemaConstraintsError;
-      expect(error.constraints.first.message,
-          contains('is not one of the allowed values'));
+      expect(
+        error.constraints.first.message,
+        contains('is not one of the allowed values'),
+      );
       expect(error.constraints.first.message, contains('"yellow"'));
     });
 

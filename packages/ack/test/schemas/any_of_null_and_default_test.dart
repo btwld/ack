@@ -6,53 +6,54 @@ void main() {
     test('should accept null through nullable member schema', () {
       // This is the critical test case from the feedback
       // A nullable member schema should be able to accept null
-      final schema = Ack.anyOf([
-        Ack.string().nullable(),
-        Ack.integer(),
-      ]);
+      final schema = Ack.anyOf([Ack.string().nullable(), Ack.integer()]);
 
       final result = schema.safeParse(null);
-      expect(result.isOk, isTrue,
-          reason: 'Nullable member schema should accept null');
+      expect(
+        result.isOk,
+        isTrue,
+        reason: 'Nullable member schema should accept null',
+      );
       expect(result.getOrNull(), isNull);
     });
 
     test('should reject null when no member accepts it', () {
-      final schema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]);
+      final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
 
       final result = schema.safeParse(null);
-      expect(result.isFail, isTrue,
-          reason: 'Should fail when no member schema accepts null');
+      expect(
+        result.isFail,
+        isTrue,
+        reason: 'Should fail when no member schema accepts null',
+      );
     });
 
     test('should accept null when AnyOfSchema itself is nullable', () {
-      final schema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]).nullable();
+      final schema = Ack.anyOf([Ack.string(), Ack.integer()]).nullable();
 
       final result = schema.safeParse(null);
-      expect(result.isOk, isTrue,
-          reason: 'AnyOfSchema.nullable() should accept null');
+      expect(
+        result.isOk,
+        isTrue,
+        reason: 'AnyOfSchema.nullable() should accept null',
+      );
       expect(result.getOrNull(), isNull);
     });
 
     test(
-        'should prefer member schema null acceptance over AnyOfSchema nullable',
-        () {
-      // When a member schema is nullable, it should match first
-      final schema = Ack.anyOf([
-        Ack.string().nullable(),
-        Ack.integer(),
-      ]).nullable(); // AnyOfSchema is also nullable
+      'should prefer member schema null acceptance over AnyOfSchema nullable',
+      () {
+        // When a member schema is nullable, it should match first
+        final schema = Ack.anyOf([
+          Ack.string().nullable(),
+          Ack.integer(),
+        ]).nullable(); // AnyOfSchema is also nullable
 
-      final result = schema.safeParse(null);
-      expect(result.isOk, isTrue);
-      expect(result.getOrNull(), isNull);
-    });
+        final result = schema.safeParse(null);
+        expect(result.isOk, isTrue);
+        expect(result.getOrNull(), isNull);
+      },
+    );
 
     test('should work with multiple nullable member schemas', () {
       final schema = Ack.anyOf([
@@ -62,8 +63,11 @@ void main() {
       ]);
 
       final result = schema.safeParse(null);
-      expect(result.isOk, isTrue,
-          reason: 'First nullable member should accept null');
+      expect(
+        result.isOk,
+        isTrue,
+        reason: 'First nullable member should accept null',
+      );
     });
 
     test('should try all schemas before checking AnyOfSchema nullable', () {
@@ -100,8 +104,11 @@ void main() {
       expect(error, isA<SchemaNestedError>());
 
       final nestedError = error as SchemaNestedError;
-      expect(nestedError.errors.length, equals(2),
-          reason: 'Should collect errors from all branches');
+      expect(
+        nestedError.errors.length,
+        equals(2),
+        reason: 'Should collect errors from all branches',
+      );
     });
 
     // No default-related error tests (defaults unsupported on AnyOf)
@@ -116,9 +123,7 @@ void main() {
     });
 
     test('should handle single schema in anyOf', () {
-      final schema = Ack.anyOf([
-        Ack.string().minLength(3),
-      ]);
+      final schema = Ack.anyOf([Ack.string().minLength(3)]);
 
       expect(schema.safeParse('hello').isOk, isTrue);
       expect(schema.safeParse('hi').isFail, isTrue);
@@ -126,10 +131,7 @@ void main() {
 
     test('should work with deeply nested anyOf', () {
       final schema = Ack.anyOf([
-        Ack.anyOf([
-          Ack.string(),
-          Ack.integer(),
-        ]),
+        Ack.anyOf([Ack.string(), Ack.integer()]),
         Ack.boolean(),
       ]);
 
@@ -141,10 +143,7 @@ void main() {
 
     test('should handle anyOf with optional member schemas', () {
       final schema = Ack.object({
-        'value': Ack.anyOf([
-          Ack.string().optional(),
-          Ack.integer(),
-        ]),
+        'value': Ack.anyOf([Ack.string().optional(), Ack.integer()]),
       });
 
       // Optional in anyOf is a bit unusual, but should work
@@ -155,10 +154,7 @@ void main() {
 
   group('AnyOf JSON Schema Generation', () {
     test('should include null type when AnyOfSchema is nullable', () {
-      final schema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]).nullable();
+      final schema = Ack.anyOf([Ack.string(), Ack.integer()]).nullable();
 
       final jsonSchema = schema.toJsonSchema();
       expect(jsonSchema['anyOf'], isA<List>());
@@ -167,17 +163,17 @@ void main() {
       // Nullable anyOf wraps the base anyOf in another anyOf with null
       // Structure: anyOf: [ { anyOf: [string, integer] }, { type: 'null' } ]
       expect(anyOfList.length, equals(2)); // base anyOf + null
-      expect(anyOfList[1], equals({'type': 'null'}),
-          reason: 'Last element should be null type');
+      expect(
+        anyOfList[1],
+        equals({'type': 'null'}),
+        reason: 'Last element should be null type',
+      );
       expect(anyOfList[0], isA<Map>());
       expect((anyOfList[0] as Map).containsKey('anyOf'), isTrue);
     });
 
     test('should not include null type when AnyOfSchema is not nullable', () {
-      final schema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]);
+      final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
 
       final jsonSchema = schema.toJsonSchema();
       expect(jsonSchema['anyOf'], isA<List>());

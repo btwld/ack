@@ -83,10 +83,9 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     }
 
     if (itemErrors.isNotEmpty) {
-      return SchemaResult.fail(SchemaNestedError(
-        errors: itemErrors,
-        context: context,
-      ));
+      return SchemaResult.fail(
+        SchemaNestedError(errors: itemErrors, context: context),
+      );
     }
 
     return applyConstraintsAndRefinements(validatedItems, context);

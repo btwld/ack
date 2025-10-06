@@ -63,15 +63,19 @@ enum SchemaType {
     if (this == sourceType) return true;
 
     return switch (this) {
-      SchemaType.integer => !strict &&
-          (sourceType == SchemaType.number || sourceType == SchemaType.string),
-      SchemaType.string => !strict &&
-          (sourceType == SchemaType.integer ||
-              sourceType == SchemaType.number ||
-              sourceType == SchemaType.boolean),
+      SchemaType.integer =>
+        !strict &&
+            (sourceType == SchemaType.number ||
+                sourceType == SchemaType.string),
+      SchemaType.string =>
+        !strict &&
+            (sourceType == SchemaType.integer ||
+                sourceType == SchemaType.number ||
+                sourceType == SchemaType.boolean),
       SchemaType.boolean => !strict && sourceType == SchemaType.string,
-      SchemaType.number => sourceType == SchemaType.integer ||
-          (!strict && sourceType == SchemaType.string),
+      SchemaType.number =>
+        sourceType == SchemaType.integer ||
+            (!strict && sourceType == SchemaType.string),
       _ => false,
     };
   }
@@ -96,8 +100,9 @@ enum SchemaType {
         _parseIntFromString(s, context) as SchemaResult<T>,
 
       // number conversions
-      (SchemaType.number, SchemaType.integer, int i) =>
-        SchemaResult.ok(i.toDouble() as T),
+      (SchemaType.number, SchemaType.integer, int i) => SchemaResult.ok(
+        i.toDouble() as T,
+      ),
       (SchemaType.number, SchemaType.string, String s) =>
         _parseDoubleFromString(s, context) as SchemaResult<T>,
 
@@ -110,26 +115,26 @@ enum SchemaType {
 
       // unsupported conversion
       _ => SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Cannot parse ${sourceType.typeName} to $typeName',
-            context: context,
-          ),
+        SchemaValidationError(
+          message: 'Cannot parse ${sourceType.typeName} to $typeName',
+          context: context,
         ),
+      ),
     };
   }
 
   /// Infers the [SchemaType] for [value].
   static SchemaType of(Object? value) => switch (value) {
-        null => SchemaType.null_,
-        Map() => SchemaType.object,
-        List() => SchemaType.array,
-        Enum() => SchemaType.enum_,
-        String() => SchemaType.string,
-        bool() => SchemaType.boolean,
-        int() => SchemaType.integer,
-        num() => SchemaType.number,
-        _ => throw ArgumentError('Unknown schema type for value: $value'),
-      };
+    null => SchemaType.null_,
+    Map() => SchemaType.object,
+    List() => SchemaType.array,
+    Enum() => SchemaType.enum_,
+    String() => SchemaType.string,
+    bool() => SchemaType.boolean,
+    int() => SchemaType.integer,
+    num() => SchemaType.number,
+    _ => throw ArgumentError('Unknown schema type for value: $value'),
+  };
 
   static SchemaResult<int> _convertDoubleToInt(
     double value,

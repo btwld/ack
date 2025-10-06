@@ -51,19 +51,13 @@ class Product {
 
 /// Example 3: Simple Model (No Additional Properties)
 /// Shows traditional fixed schema for comparison
-@AckModel(
-  description: 'Simple model without additional properties',
-)
+@AckModel(description: 'Simple model without additional properties')
 class SimpleItem {
   final String id;
   final String name;
   final bool active;
 
-  SimpleItem({
-    required this.id,
-    required this.name,
-    this.active = true,
-  });
+  SimpleItem({required this.id, required this.name, this.active = true});
 }
 
 /// Demo function to test the examples

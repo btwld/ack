@@ -37,12 +37,14 @@ class RequiredFieldsModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/required_fields.g.dart': decodedMatches(allOf([
-              contains('final requiredFieldsModelSchema = Ack.object({'),
-              contains("'mandatoryField': Ack.string()"),
-              contains("'optionalField': Ack.string().optional().nullable()"),
-              contains("'defaultField': Ack.string()"),
-            ])),
+            'test_pkg|lib/required_fields.g.dart': decodedMatches(
+              allOf([
+                contains('final requiredFieldsModelSchema = Ack.object({'),
+                contains("'mandatoryField': Ack.string()"),
+                contains("'optionalField': Ack.string().optional().nullable()"),
+                contains("'defaultField': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -77,12 +79,14 @@ class JsonKeyModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/json_key.g.dart': decodedMatches(allOf([
-              contains('final jsonKeyModelSchema = Ack.object({'),
-              contains("'user_name': Ack.string()"),
-              contains("'email_address': Ack.string()"),
-              contains("'phone-number': Ack.string()"),
-            ])),
+            'test_pkg|lib/json_key.g.dart': decodedMatches(
+              allOf([
+                contains('final jsonKeyModelSchema = Ack.object({'),
+                contains("'user_name': Ack.string()"),
+                contains("'email_address': Ack.string()"),
+                contains("'phone-number': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -117,12 +121,14 @@ class FieldDescriptionsModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/field_descriptions.g.dart': decodedMatches(allOf([
-              contains('final fieldDescriptionsModelSchema = Ack.object({'),
-              contains("'name': Ack.string()"),
-              contains("'age': Ack.integer()"),
-              contains("'email': Ack.string().optional().nullable()"),
-            ])),
+            'test_pkg|lib/field_descriptions.g.dart': decodedMatches(
+              allOf([
+                contains('final fieldDescriptionsModelSchema = Ack.object({'),
+                contains("'name': Ack.string()"),
+                contains("'age': Ack.integer()"),
+                contains("'email': Ack.string().optional().nullable()"),
+              ]),
+            ),
           },
         );
       });
@@ -157,12 +163,14 @@ class FieldConstraintsModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/field_constraints.g.dart': decodedMatches(allOf([
-              contains('final fieldConstraintsModelSchema = Ack.object({'),
-              contains("'age': Ack.integer()"),
-              contains("'name': Ack.string()"),
-              contains("'email': Ack.string()"),
-            ])),
+            'test_pkg|lib/field_constraints.g.dart': decodedMatches(
+              allOf([
+                contains('final fieldConstraintsModelSchema = Ack.object({'),
+                contains("'age': Ack.integer()"),
+                contains("'name': Ack.string()"),
+                contains("'email': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -205,27 +213,31 @@ class AllOptionsModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/all_options.g.dart': decodedMatches(allOf([
-              contains('final allOptionsModelSchema = Ack.object({'),
-              contains("'user_email': Ack.string().email().notEmpty()"),
-              contains("'display_name': Ack.string()"),
-              contains('.minLength(1)'),
-              contains('.maxLength(100)'),
-              contains('.optional()'),
-              contains('.nullable()'),
-            ])),
+            'test_pkg|lib/all_options.g.dart': decodedMatches(
+              allOf([
+                contains('final allOptionsModelSchema = Ack.object({'),
+                contains("'user_email': Ack.string().email().notEmpty()"),
+                contains("'display_name': Ack.string()"),
+                contains('.minLength(1)'),
+                contains('.maxLength(100)'),
+                contains('.optional()'),
+                contains('.nullable()'),
+              ]),
+            ),
           },
         );
       });
 
-      test('should handle AckField with complex jsonKey and constraints', () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+      test(
+        'should handle AckField with complex jsonKey and constraints',
+        () async {
+          final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/field_with_model.dart': '''
+          await testBuilder(
+            builder,
+            {
+              ...allAssets,
+              'test_pkg|lib/field_with_model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
@@ -242,17 +254,22 @@ class FieldWithModelGeneration {
   });
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/field_with_model.g.dart': decodedMatches(allOf([
-              // Schema generation
-              contains('final fieldWithModelGenerationSchema = Ack.object({'),
-              contains("'full_name': Ack.string()"),
-              contains("'user_age': Ack.integer().min(0).max(150)"),
-            ])),
-          },
-        );
-      });
+            },
+            outputs: {
+              'test_pkg|lib/field_with_model.g.dart': decodedMatches(
+                allOf([
+                  // Schema generation
+                  contains(
+                    'final fieldWithModelGenerationSchema = Ack.object({',
+                  ),
+                  contains("'full_name': Ack.string()"),
+                  contains("'user_age': Ack.integer().min(0).max(150)"),
+                ]),
+              ),
+            },
+          );
+        },
+      );
     });
 
     group('AckField Edge Cases', () {
@@ -282,11 +299,13 @@ class EmptyConstraintsModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/empty_constraints.g.dart': decodedMatches(allOf([
-              contains('final emptyConstraintsModelSchema = Ack.object({'),
-              contains("'emptyConstraints': Ack.string()"),
-              contains("'emptyStringConstraint': Ack.string()"),
-            ])),
+            'test_pkg|lib/empty_constraints.g.dart': decodedMatches(
+              allOf([
+                contains('final emptyConstraintsModelSchema = Ack.object({'),
+                contains("'emptyConstraints': Ack.string()"),
+                contains("'emptyStringConstraint': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -325,13 +344,15 @@ class SpecialJsonKeysModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/special_json_keys.g.dart': decodedMatches(allOf([
-              contains('final specialJsonKeysModelSchema = Ack.object({'),
-              contains("'field-with-dashes': Ack.string()"),
-              contains("'field_with_underscores': Ack.string()"),
-              contains("'field.with.dots': Ack.string()"),
-              contains("'field with spaces': Ack.string()"),
-            ])),
+            'test_pkg|lib/special_json_keys.g.dart': decodedMatches(
+              allOf([
+                contains('final specialJsonKeysModelSchema = Ack.object({'),
+                contains("'field-with-dashes': Ack.string()"),
+                contains("'field_with_underscores': Ack.string()"),
+                contains("'field.with.dots': Ack.string()"),
+                contains("'field with spaces': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -366,12 +387,14 @@ class ComplexConstraintsModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/complex_constraints.g.dart': decodedMatches(allOf([
-              contains('final complexConstraintsModelSchema = Ack.object({'),
-              contains("'emailRegex': Ack.string()"),
-              contains("'status': Ack.string()"),
-              contains("'complexConstraint': Ack.string()"),
-            ])),
+            'test_pkg|lib/complex_constraints.g.dart': decodedMatches(
+              allOf([
+                contains('final complexConstraintsModelSchema = Ack.object({'),
+                contains("'emailRegex': Ack.string()"),
+                contains("'status': Ack.string()"),
+                contains("'complexConstraint': Ack.string()"),
+              ]),
+            ),
           },
         );
       });
@@ -426,17 +449,22 @@ class VariousTypesModel {
 ''',
           },
           outputs: {
-            'test_pkg|lib/various_types.g.dart': decodedMatches(allOf([
-              contains('final variousTypesModelSchema = Ack.object({'),
-              contains("'text_field': Ack.string()"),
-              contains("'number_field': Ack.integer()"),
-              contains("'decimal_field': Ack.double()"),
-              contains("'boolean_field': Ack.boolean()"),
-              contains(
-                  "'enum_field': Ack.string().enumString(['active', 'inactive'])"),
-              contains("'list_field': Ack.list(Ack.string())"),
-              contains("'nullable_field': Ack.string().optional().nullable()"),
-            ])),
+            'test_pkg|lib/various_types.g.dart': decodedMatches(
+              allOf([
+                contains('final variousTypesModelSchema = Ack.object({'),
+                contains("'text_field': Ack.string()"),
+                contains("'number_field': Ack.integer()"),
+                contains("'decimal_field': Ack.double()"),
+                contains("'boolean_field': Ack.boolean()"),
+                contains(
+                  "'enum_field': Ack.string().enumString(['active', 'inactive'])",
+                ),
+                contains("'list_field': Ack.list(Ack.string())"),
+                contains(
+                  "'nullable_field': Ack.string().optional().nullable()",
+                ),
+              ]),
+            ),
           },
         );
       });

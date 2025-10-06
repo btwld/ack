@@ -14,7 +14,9 @@ void main() {
 
       expect(() => result.getOrThrow(), throwsA(isA<AckException>()));
       expect(
-          result.getOrElse(() => 'default_string'), equals('default_string'));
+        result.getOrElse(() => 'default_string'),
+        equals('default_string'),
+      );
       expect(result.getOrNull(), isNull);
     });
 
@@ -22,9 +24,7 @@ void main() {
       final userSchema = Ack.object({
         'name': Ack.string(),
         'age': Ack.integer().min(18),
-        'address': Ack.object({
-          'city': Ack.string(),
-        }),
+        'address': Ack.object({'city': Ack.string()}),
       });
 
       final invalidData = {

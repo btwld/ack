@@ -14,11 +14,12 @@ void main() {
         final result = schema.safeParse(5);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be greater than 5, got 5.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be greater than 5, got 5.',
+        );
       });
 
       test('should fail if value is less than', () {
@@ -26,11 +27,12 @@ void main() {
         final result = schema.safeParse(4);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be greater than 5, got 4.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be greater than 5, got 4.',
+        );
       });
     });
 
@@ -50,11 +52,12 @@ void main() {
         final result = schema.safeParse(4);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be at least 5, got 4.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be at least 5, got 4.',
+        );
       });
     });
 
@@ -69,11 +72,12 @@ void main() {
         final result = schema.safeParse(5);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be less than 5, got 5.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be less than 5, got 5.',
+        );
       });
 
       test('should fail if value is greater than', () {
@@ -81,11 +85,12 @@ void main() {
         final result = schema.safeParse(6);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be less than 5, got 6.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be less than 5, got 6.',
+        );
       });
     });
 
@@ -105,11 +110,12 @@ void main() {
         final result = schema.safeParse(6);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be at most 5, got 6.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be at most 5, got 6.',
+        );
       });
     });
 
@@ -124,11 +130,12 @@ void main() {
         final result = schema.safeParse(0);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be positive, but got 0.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be positive, but got 0.',
+        );
       });
 
       test('should fail for negative number', () {
@@ -136,11 +143,12 @@ void main() {
         final result = schema.safeParse(-1);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be positive, but got -1.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be positive, but got -1.',
+        );
       });
     });
 
@@ -155,11 +163,12 @@ void main() {
         final result = schema.safeParse(0);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be negative, but got 0.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be negative, but got 0.',
+        );
       });
 
       test('should fail for positive number', () {
@@ -167,11 +176,12 @@ void main() {
         final result = schema.safeParse(1);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be negative, but got 1.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be negative, but got 1.',
+        );
       });
     });
 
@@ -186,35 +196,42 @@ void main() {
         final result = schema.safeParse(11);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Must be a multiple of 5. 11 is not.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Must be a multiple of 5. 11 is not.',
+        );
       });
 
       test('should throw ArgumentError when multipleOf is zero', () {
         expect(
           () => IntegerSchema().multipleOf(0),
-          throwsA(isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            'multipleOf value cannot be zero',
-          )),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              'multipleOf value cannot be zero',
+            ),
+          ),
         );
       });
 
-      test('should throw ArgumentError when multipleOf is zero for doubles',
-          () {
-        expect(
-          () => DoubleSchema().multipleOf(0.0),
-          throwsA(isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            'multipleOf value cannot be zero',
-          )),
-        );
-      });
+      test(
+        'should throw ArgumentError when multipleOf is zero for doubles',
+        () {
+          expect(
+            () => DoubleSchema().multipleOf(0.0),
+            throwsA(
+              isA<ArgumentError>().having(
+                (e) => e.message,
+                'message',
+                'multipleOf value cannot be zero',
+              ),
+            ),
+          );
+        },
+      );
     });
   });
 
@@ -230,11 +247,12 @@ void main() {
         final result = schema.safeParse(double.infinity);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Value must be finite, but was not.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Value must be finite, but was not.',
+        );
       });
 
       test('should fail for negative infinity', () {
@@ -242,11 +260,12 @@ void main() {
         final result = schema.safeParse(double.negativeInfinity);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Value must be finite, but was not.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Value must be finite, but was not.',
+        );
       });
 
       test('should fail for NaN', () {
@@ -254,11 +273,12 @@ void main() {
         final result = schema.safeParse(double.nan);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Value must be finite, but was not.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Value must be finite, but was not.',
+        );
       });
     });
   });
@@ -279,11 +299,12 @@ void main() {
         final result = schema.safeParse(maxSafeInteger + 1);
         expect(result.isOk, isFalse);
         expect(
-            (result.getError() as SchemaConstraintsError)
-                .constraints
-                .first
-                .message,
-            'Value must be between -$maxSafeInteger and $maxSafeInteger, but was ${maxSafeInteger + 1}.');
+          (result.getError() as SchemaConstraintsError)
+              .constraints
+              .first
+              .message,
+          'Value must be between -$maxSafeInteger and $maxSafeInteger, but was ${maxSafeInteger + 1}.',
+        );
       });
     });
   });

@@ -3,9 +3,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'described_model.g.dart';
 
-@AckModel(
-  description: 'User profile with comprehensive field descriptions',
-)
+@AckModel(description: 'User profile with comprehensive field descriptions')
 class UserProfile {
   @AckField(description: 'Unique identifier for the user')
   final String id;

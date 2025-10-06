@@ -99,17 +99,17 @@ void main() {
         final partialResult = parseWithDefaults(partialInput, defaults);
         expect(partialResult['name'], equals('Jane Doe')); // Valid field kept
         expect(partialResult['age'], equals(0)); // Default used
-        expect(partialResult['email'],
-            equals('jane@example.com')); // Valid field kept
+        expect(
+          partialResult['email'],
+          equals('jane@example.com'),
+        ); // Valid field kept
       });
     });
 
     group('Progressive Validation Patterns', () {
       test('should validate in stages with recovery', () {
         // Stage 1: Basic validation (required fields only)
-        final basicSchema = Ack.object({
-          'id': Ack.string(),
-        });
+        final basicSchema = Ack.object({'id': Ack.string()});
 
         // Stage 2: Enhanced validation (with constraints)
         final enhancedSchema = Ack.object({
@@ -171,18 +171,14 @@ void main() {
         expect(enhancedStage.data!['name'], equals('Jane Doe'));
 
         // Basic valid data (minimal fields)
-        final basicData = {
-          'id': 'simple-id',
-        };
+        final basicData = {'id': 'simple-id'};
 
         final basicStage = validateProgressively(basicData);
         expect(basicStage.level, equals(ValidationLevel.basic));
         expect(basicStage.data!['id'], equals('simple-id'));
 
         // Invalid data
-        final invalidData = {
-          'invalid': 'data',
-        };
+        final invalidData = {'invalid': 'data'};
 
         final failedStage = validateProgressively(invalidData);
         expect(failedStage.level, equals(ValidationLevel.failed));
@@ -191,62 +187,63 @@ void main() {
     });
 
     group('Error Collection and Reporting', () {
-      test('should collect all validation errors for comprehensive feedback',
-          () {
-        List<ValidationError> collectAllErrors(dynamic input) {
-          final errors = <ValidationError>[];
+      test(
+        'should collect all validation errors for comprehensive feedback',
+        () {
+          List<ValidationError> collectAllErrors(dynamic input) {
+            final errors = <ValidationError>[];
 
-          if (input is! Map<String, dynamic>) {
-            errors.add(ValidationError('root', 'Expected object'));
+            if (input is! Map<String, dynamic>) {
+              errors.add(ValidationError('root', 'Expected object'));
+              return errors;
+            }
+
+            final data = input;
+
+            // Check each field individually
+            final fieldSchemas = <String, AckSchema>{
+              'name': Ack.string().minLength(2),
+              'age': Ack.integer().min(0).max(150),
+              'email': Ack.string().email(),
+              'tags': Ack.list(Ack.string().minLength(1)),
+            };
+
+            for (final entry in fieldSchemas.entries) {
+              final fieldName = entry.key;
+              final fieldSchema = entry.value;
+
+              if (data.containsKey(fieldName)) {
+                final fieldResult = fieldSchema.safeParse(data[fieldName]);
+                if (fieldResult.isFail) {
+                  errors.add(
+                    ValidationError(fieldName, fieldResult.getError().message),
+                  );
+                }
+              } else {
+                errors.add(ValidationError(fieldName, 'Field is required'));
+              }
+            }
+
             return errors;
           }
 
-          final data = input;
-
-          // Check each field individually
-          final fieldSchemas = <String, AckSchema>{
-            'name': Ack.string().minLength(2),
-            'age': Ack.integer().min(0).max(150),
-            'email': Ack.string().email(),
-            'tags': Ack.list(Ack.string().minLength(1)),
+          final invalidData = {
+            'name': 'J', // Too short
+            'age': -5, // Below minimum
+            'email': 'invalid-email', // Invalid format
+            'tags': ['', 'valid-tag'], // Contains empty string
           };
 
-          for (final entry in fieldSchemas.entries) {
-            final fieldName = entry.key;
-            final fieldSchema = entry.value;
+          final errors = collectAllErrors(invalidData);
+          expect(errors.length, greaterThan(0));
 
-            if (data.containsKey(fieldName)) {
-              final fieldResult = fieldSchema.safeParse(data[fieldName]);
-              if (fieldResult.isFail) {
-                errors.add(ValidationError(
-                  fieldName,
-                  fieldResult.getError().message,
-                ));
-              }
-            } else {
-              errors.add(ValidationError(fieldName, 'Field is required'));
-            }
-          }
-
-          return errors;
-        }
-
-        final invalidData = {
-          'name': 'J', // Too short
-          'age': -5, // Below minimum
-          'email': 'invalid-email', // Invalid format
-          'tags': ['', 'valid-tag'], // Contains empty string
-        };
-
-        final errors = collectAllErrors(invalidData);
-        expect(errors.length, greaterThan(0));
-
-        // Should have errors for multiple fields
-        final fieldNames = errors.map((e) => e.field).toSet();
-        expect(fieldNames, contains('name'));
-        expect(fieldNames, contains('age'));
-        expect(fieldNames, contains('email'));
-      });
+          // Should have errors for multiple fields
+          final fieldNames = errors.map((e) => e.field).toSet();
+          expect(fieldNames, contains('name'));
+          expect(fieldNames, contains('age'));
+          expect(fieldNames, contains('email'));
+        },
+      );
     });
 
     group('Retry and Recovery Strategies', () {
@@ -357,9 +354,12 @@ void main() {
           final friendlyMessage = formatUserFriendlyError(result.getError());
           final expectedPattern = testCase['expectedPattern'] as String;
 
-          expect(friendlyMessage.toLowerCase(), contains(expectedPattern),
-              reason:
-                  'Friendly message should contain "$expectedPattern": $friendlyMessage');
+          expect(
+            friendlyMessage.toLowerCase(),
+            contains(expectedPattern),
+            reason:
+                'Friendly message should contain "$expectedPattern": $friendlyMessage',
+          );
         }
       });
     });
@@ -374,17 +374,17 @@ class ValidationStage {
   final String? error;
 
   ValidationStage.basic(this.data)
-      : level = ValidationLevel.basic,
-        error = null;
+    : level = ValidationLevel.basic,
+      error = null;
   ValidationStage.enhanced(this.data)
-      : level = ValidationLevel.enhanced,
-        error = null;
+    : level = ValidationLevel.enhanced,
+      error = null;
   ValidationStage.complete(this.data)
-      : level = ValidationLevel.complete,
-        error = null;
+    : level = ValidationLevel.complete,
+      error = null;
   ValidationStage.failed(this.error)
-      : level = ValidationLevel.failed,
-        data = null;
+    : level = ValidationLevel.failed,
+      data = null;
 }
 
 class ValidationError {
@@ -402,10 +402,6 @@ class ValidationResult<T> {
   final T? value;
   final String? error;
 
-  ValidationResult.success(this.value)
-      : isSuccess = true,
-        error = null;
-  ValidationResult.failure(this.error)
-      : isSuccess = false,
-        value = null;
+  ValidationResult.success(this.value) : isSuccess = true, error = null;
+  ValidationResult.failure(this.error) : isSuccess = false, value = null;
 }

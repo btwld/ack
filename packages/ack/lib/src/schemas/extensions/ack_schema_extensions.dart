@@ -30,10 +30,7 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
 
   /// Adds a raw [constraint] to the schema. This is useful for composing
   /// declarative constraints in addition to the built-in helpers.
-  AckSchema<T> constrain(
-    Constraint<T> constraint, {
-    String? message,
-  }) {
+  AckSchema<T> constrain(Constraint<T> constraint, {String? message}) {
     if (constraint is! Validator<T>) {
       throw ArgumentError(
         'Constraint ${constraint.runtimeType} must implement Validator<T>.',
@@ -66,10 +63,7 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
 class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
   _ConstraintMessageOverride(this.inner, this.customMessage)
-      : super(
-          constraintKey: inner.constraintKey,
-          description: inner.description,
-        );
+    : super(constraintKey: inner.constraintKey, description: inner.description);
 
   final Constraint<T> inner;
   final String customMessage;

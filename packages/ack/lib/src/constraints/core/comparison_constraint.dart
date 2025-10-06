@@ -33,9 +33,9 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     required this.valueExtractor,
     this.customMessageBuilder,
   }) : assert(
-          type != ComparisonType.range || maxThreshold != null,
-          'maxThreshold is required for range comparisons.',
-        );
+         type != ComparisonType.range || maxThreshold != null,
+         'maxThreshold is required for range comparisons.',
+       );
 
   // --- Factory methods for specific use cases ---
 
@@ -188,28 +188,26 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   // Object properties count
   static ComparisonConstraint<Map<String, Object?>> objectMinProperties(
     int min,
-  ) =>
-      ComparisonConstraint<Map<String, Object?>>(
-        type: ComparisonType.gte,
-        threshold: min,
-        valueExtractor: (m) => m.keys.length,
-        constraintKey: 'object_min_properties',
-        description: 'Object must have at least $min properties.',
-        customMessageBuilder: (value, extracted) =>
-            'Too few properties. Minimum $min, got ${extracted.toInt()}.',
-      );
+  ) => ComparisonConstraint<Map<String, Object?>>(
+    type: ComparisonType.gte,
+    threshold: min,
+    valueExtractor: (m) => m.keys.length,
+    constraintKey: 'object_min_properties',
+    description: 'Object must have at least $min properties.',
+    customMessageBuilder: (value, extracted) =>
+        'Too few properties. Minimum $min, got ${extracted.toInt()}.',
+  );
   static ComparisonConstraint<Map<String, Object?>> objectMaxProperties(
     int max,
-  ) =>
-      ComparisonConstraint<Map<String, Object?>>(
-        type: ComparisonType.lte,
-        threshold: max,
-        valueExtractor: (m) => m.keys.length,
-        constraintKey: 'object_max_properties',
-        description: 'Object must have at most $max properties.',
-        customMessageBuilder: (value, extracted) =>
-            'Too many properties. Maximum $max, got ${extracted.toInt()}.',
-      );
+  ) => ComparisonConstraint<Map<String, Object?>>(
+    type: ComparisonType.lte,
+    threshold: max,
+    valueExtractor: (m) => m.keys.length,
+    constraintKey: 'object_max_properties',
+    description: 'Object must have at most $max properties.',
+    customMessageBuilder: (value, extracted) =>
+        'Too many properties. Maximum $max, got ${extracted.toInt()}.',
+  );
 
   // Generic Comparable factories removed due to type safety and JSON Schema issues.
   // These methods had incorrect type bounds (Comparable<Object> excludes DateTime)
@@ -276,7 +274,8 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       case ComparisonType.gt:
         return {'exclusiveMinimum': threshold};
       case ComparisonType.gte:
-        final isStringLength = constraintKey.startsWith('string_') &&
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
             (constraintKey.contains('length') ||
                 constraintKey.contains('exact'));
         final isListItems = constraintKey.startsWith('list_');
@@ -290,7 +289,8 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       case ComparisonType.lt:
         return {'exclusiveMaximum': threshold};
       case ComparisonType.lte:
-        final isStringLength = constraintKey.startsWith('string_') &&
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
             (constraintKey.contains('length') ||
                 constraintKey.contains('exact'));
         final isListItems = constraintKey.startsWith('list_');
@@ -304,7 +304,8 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       case ComparisonType.eq:
         final isMultipleOf =
             constraintKey == 'number_multiple_of' && multipleValue != null;
-        final isStringLength = constraintKey.startsWith('string_') &&
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
             (constraintKey.contains('length') ||
                 constraintKey.contains('exact'));
 
@@ -318,7 +319,8 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
         return {'const': threshold};
       case ComparisonType.range:
-        final isStringLength = constraintKey.startsWith('string_') &&
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
             (constraintKey.contains('length') ||
                 constraintKey.contains('exact'));
         final isListItems = constraintKey.startsWith('list_');

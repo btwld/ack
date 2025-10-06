@@ -29,8 +29,8 @@ class ModelAnalyzer {
 
     final additionalPropertiesField =
         annotation.read('additionalPropertiesField').isNull
-            ? null
-            : annotation.read('additionalPropertiesField').stringValue;
+        ? null
+        : annotation.read('additionalPropertiesField').stringValue;
 
     // Extract discriminated type parameters
     final discriminatedKey = annotation.read('discriminatedKey').isNull
@@ -43,7 +43,10 @@ class ModelAnalyzer {
 
     // Validate discriminated type usage
     _validateDiscriminatedTypeUsage(
-        element, discriminatedKey, discriminatedValue);
+      element,
+      discriminatedKey,
+      discriminatedValue,
+    );
 
     // Analyze all fields
     final fields = <FieldInfo>[];
@@ -71,7 +74,10 @@ class ModelAnalyzer {
     // Validate additionalPropertiesField if specified
     if (additionalPropertiesField != null) {
       _validateAdditionalPropertiesField(
-          element, additionalPropertiesField, additionalProperties);
+        element,
+        additionalPropertiesField,
+        additionalProperties,
+      );
     }
 
     return ModelInfo(
@@ -164,7 +170,9 @@ class ModelAnalyzer {
 
   /// Validates that the discriminator field exists and is properly typed
   void _validateDiscriminatorField(
-      ClassElement element, String discriminatorKey) {
+    ClassElement element,
+    String discriminatorKey,
+  ) {
     // Check if the field exists (including inherited fields)
     final allFields = [
       ...element.fields,
@@ -174,9 +182,9 @@ class ModelAnalyzer {
     ];
 
     final discriminatorField = allFields.cast<FieldElement?>().firstWhere(
-          (field) => field?.name == discriminatorKey,
-          orElse: () => null,
-        );
+      (field) => field?.name == discriminatorKey,
+      orElse: () => null,
+    );
 
     if (discriminatorField == null) {
       throw ArgumentError(
@@ -272,7 +280,9 @@ class ModelAnalyzer {
       String? parentDiscriminatorKey;
       for (final baseClass in baseClasses) {
         if (_isSubtypeOf(
-            elements[modelInfos.indexOf(subtype)], baseClass.className)) {
+          elements[modelInfos.indexOf(subtype)],
+          baseClass.className,
+        )) {
           parentDiscriminatorKey = baseClass.discriminatorKey;
           break;
         }

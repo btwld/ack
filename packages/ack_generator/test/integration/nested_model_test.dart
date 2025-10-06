@@ -45,18 +45,20 @@ class User {
 ''',
         },
         outputs: {
-          'test_pkg|lib/models.g.dart': decodedMatches(allOf([
-            // Address schema
-            contains('final addressSchema = Ack.object('),
-            contains("'street': Ack.string"),
-            contains("'city': Ack.string"),
-            contains("'zipCode': Ack.string"),
+          'test_pkg|lib/models.g.dart': decodedMatches(
+            allOf([
+              // Address schema
+              contains('final addressSchema = Ack.object('),
+              contains("'street': Ack.string"),
+              contains("'city': Ack.string"),
+              contains("'zipCode': Ack.string"),
 
-            // User schema
-            contains('final userSchema = Ack.object('),
-            contains("'address': addressSchema"),
-            contains("'mailingAddress': addressSchema.optional()"),
-          ])),
+              // User schema
+              contains('final userSchema = Ack.object('),
+              contains("'address': addressSchema"),
+              contains("'mailingAddress': addressSchema.optional()"),
+            ]),
+          ),
         },
       );
     });
@@ -99,11 +101,13 @@ class Order {
 ''',
         },
         outputs: {
-          'test_pkg|lib/order.g.dart': decodedMatches(allOf([
-            contains("'items': Ack.list(orderItemSchema)"),
-            contains('final orderItemSchema = Ack.object('),
-            contains('final orderSchema = Ack.object('),
-          ])),
+          'test_pkg|lib/order.g.dart': decodedMatches(
+            allOf([
+              contains("'items': Ack.list(orderItemSchema)"),
+              contains('final orderItemSchema = Ack.object('),
+              contains('final orderSchema = Ack.object('),
+            ]),
+          ),
         },
       );
     });
@@ -157,20 +161,22 @@ class Company {
 ''',
         },
         outputs: {
-          'test_pkg|lib/company.g.dart': decodedMatches(allOf([
-            // Contact schema
-            contains('final contactSchema = Ack.object('),
-            contains("'phone': Ack.string().optional()"),
+          'test_pkg|lib/company.g.dart': decodedMatches(
+            allOf([
+              // Contact schema
+              contains('final contactSchema = Ack.object('),
+              contains("'phone': Ack.string().optional()"),
 
-            // Department schema
-            contains('final departmentSchema = Ack.object('),
-            contains("'manager': contactSchema"),
-            contains("'employees': Ack.list(contactSchema)"),
+              // Department schema
+              contains('final departmentSchema = Ack.object('),
+              contains("'manager': contactSchema"),
+              contains("'employees': Ack.list(contactSchema)"),
 
-            // Company schema
-            contains('final companySchema = Ack.object('),
-            contains("'departments': Ack.list(departmentSchema)"),
-          ])),
+              // Company schema
+              contains('final companySchema = Ack.object('),
+              contains("'departments': Ack.list(departmentSchema)"),
+            ]),
+          ),
         },
       );
     });

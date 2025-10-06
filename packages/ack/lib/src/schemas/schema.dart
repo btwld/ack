@@ -58,10 +58,12 @@ sealed class AckSchema<DartType extends Object> {
   ) {
     final constraintViolations = _checkConstraints(value, context);
     if (constraintViolations.isNotEmpty) {
-      return SchemaResult.fail(SchemaConstraintsError(
-        constraints: constraintViolations,
-        context: context,
-      ));
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: constraintViolations,
+          context: context,
+        ),
+      );
     }
     return _runRefinements(value, context);
   }
@@ -93,10 +95,7 @@ sealed class AckSchema<DartType extends Object> {
     for (final refinement in refinements) {
       if (!refinement.validate(value)) {
         return SchemaResult.fail(
-          SchemaValidationError(
-            message: refinement.message,
-            context: context,
-          ),
+          SchemaValidationError(message: refinement.message, context: context),
         );
       }
     }
@@ -126,10 +125,12 @@ sealed class AckSchema<DartType extends Object> {
   @protected
   SchemaResult<DartType> failNonNullable(SchemaContext context) {
     final constraintError = NonNullableConstraint().validate(null);
-    return SchemaResult.fail(SchemaConstraintsError(
-      constraints: constraintError != null ? [constraintError] : [],
-      context: context,
-    ));
+    return SchemaResult.fail(
+      SchemaConstraintsError(
+        constraints: constraintError != null ? [constraintError] : [],
+        context: context,
+      ),
+    );
   }
 
   /// The schema type category for this schema.
@@ -186,8 +187,11 @@ sealed class AckSchema<DartType extends Object> {
     }
 
     // Parse using SchemaType's parsing logic
-    final convertedResult =
-        targetType.parse<DartType>(inputValue, actualType, context);
+    final convertedResult = targetType.parse<DartType>(
+      inputValue,
+      actualType,
+      context,
+    );
     if (convertedResult.isFail) return convertedResult;
 
     final convertedValue = convertedResult.getOrThrow()!;
@@ -233,8 +237,11 @@ sealed class AckSchema<DartType extends Object> {
         .replaceFirst(RegExp(r'Schema$'), '')
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
-    final context =
-        SchemaContext(name: effectiveDebugName, schema: this, value: value);
+    final context = SchemaContext(
+      name: effectiveDebugName,
+      schema: this,
+      value: value,
+    );
 
     return parseAndValidate(value, context);
   }

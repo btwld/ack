@@ -5,25 +5,17 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'mixed_examples.g.dart';
 
 /// Example 1: Schema-only (default behavior)
-@AckModel(
-  description: 'Basic user model - generates only schema variable',
-)
+@AckModel(description: 'Basic user model - generates only schema variable')
 class BasicUser {
   final String id;
   final String username;
   final String? email;
 
-  BasicUser({
-    required this.id,
-    required this.username,
-    this.email,
-  });
+  BasicUser({required this.id, required this.username, this.email});
 }
 
 /// Example 2: Enhanced user with validation
-@AckModel(
-  description: 'Enhanced user with comprehensive validation',
-)
+@AckModel(description: 'Enhanced user with comprehensive validation')
 class EnhancedUser {
   final String id;
   final String username;
@@ -39,9 +31,7 @@ class EnhancedUser {
 }
 
 /// Example 3: Enum example with schema-only
-@AckModel(
-  description: 'Order with status enum - schema only',
-)
+@AckModel(description: 'Order with status enum - schema only')
 class Order {
   final String id;
 
@@ -50,11 +40,7 @@ class Order {
 
   final double total;
 
-  Order({
-    required this.id,
-    required this.status,
-    required this.total,
-  });
+  Order({required this.id, required this.status, required this.total});
 }
 
 /// Example 4: Complex nested model
@@ -84,9 +70,7 @@ class BlogPost {
 }
 
 /// Example 5: Model with various constraints
-@AckModel(
-  description: 'Product inventory with comprehensive constraints',
-)
+@AckModel(description: 'Product inventory with comprehensive constraints')
 class ProductInventory {
   @MinLength(3)
   @MaxLength(50)
@@ -142,7 +126,8 @@ void main() {
   };
 
   try {
-    final result = enhancedUserSchema.parse(enhancedUserData) as Map<String, dynamic>;
+    final result =
+        enhancedUserSchema.parse(enhancedUserData) as Map<String, dynamic>;
     print('   ✅ Valid user:');
     print('      Username: ${result['username']}');
     print('      Email: ${result['email']}');
@@ -153,11 +138,7 @@ void main() {
 
   // Example 3: Enum validation
   print('\n3️⃣ Order Status (enum validation):');
-  final orderData = {
-    'id': 'order_789',
-    'status': 'shipped',
-    'total': 149.99,
-  };
+  final orderData = {'id': 'order_789', 'status': 'shipped', 'total': 149.99};
 
   try {
     final result = orderSchema.parse(orderData) as Map<String, dynamic>;
@@ -182,7 +163,9 @@ void main() {
   try {
     final result = blogPostSchema.parse(blogData) as Map<String, dynamic>;
     print('   ✅ Blog post: ${result['title']}');
-    print('      Author: ${(result['author'] as Map<String, dynamic>)['username']}');
+    print(
+      '      Author: ${(result['author'] as Map<String, dynamic>)['username']}',
+    );
     print('      Tags: ${(result['tags'] as List).join(', ')}');
     print('      Metadata: ${result['metadata']}');
   } catch (e) {
@@ -202,7 +185,8 @@ void main() {
   };
 
   try {
-    final result = productInventorySchema.parse(validInventory) as Map<String, dynamic>;
+    final result =
+        productInventorySchema.parse(validInventory) as Map<String, dynamic>;
     print('   ✅ Valid inventory: SKU ${result['sku']}');
   } catch (e) {
     print('   ❌ Error: $e');

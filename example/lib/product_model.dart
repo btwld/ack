@@ -91,10 +91,7 @@ void main() {
     'name': 'Test Product',
     'description': 'A test product',
     'price': 19.99,
-    'category': {
-      'id': 'cat1',
-      'name': 'Test Category',
-    },
+    'category': {'id': 'cat1', 'name': 'Test Category'},
     'releaseDate': '2024-01-15',
     'createdAt': '2024-01-15T10:30:00Z',
     'stockQuantity': 100,
@@ -112,7 +109,8 @@ void main() {
     print('   Product ID: ${result['id']}');
     print('   Product Name: ${result['name']}');
     print(
-        '   Category: ${(result['category'] as Map<String, dynamic>)['name']}');
+      '   Category: ${(result['category'] as Map<String, dynamic>)['name']}',
+    );
     print('   Additional properties: ${result['metadata']}');
   } catch (e) {
     print('❌ Schema validation error: $e');

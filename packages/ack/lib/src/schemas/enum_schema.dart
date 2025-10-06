@@ -143,8 +143,8 @@ class _EnumValuesConstraint extends Constraint<Object?> {
   final List<String> allowed;
 
   _EnumValuesConstraint(this.allowed)
-      : super(
-          constraintKey: 'enum_value',
-          description: 'Value must be one of: ${allowed.join(", ")}',
-        );
+    : super(
+        constraintKey: 'enum_value',
+        description: 'Value must be one of: ${allowed.join(", ")}',
+      );
 }

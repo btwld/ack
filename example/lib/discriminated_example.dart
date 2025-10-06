@@ -18,10 +18,7 @@ class Cat extends Animal {
   final bool meow;
   final int lives;
 
-  Cat({
-    required this.meow,
-    this.lives = 9,
-  });
+  Cat({required this.meow, this.lives = 9});
 }
 
 @AckModel(discriminatedValue: 'dog')
@@ -32,10 +29,7 @@ class Dog extends Animal {
   final bool bark;
   final String breed;
 
-  Dog({
-    required this.bark,
-    required this.breed,
-  });
+  Dog({required this.bark, required this.breed});
 }
 
 @AckModel(discriminatedValue: 'bird')
@@ -46,10 +40,7 @@ class Bird extends Animal {
   final bool canFly;
   final double wingspan;
 
-  Bird({
-    required this.canFly,
-    required this.wingspan,
-  });
+  Bird({required this.canFly, required this.wingspan});
 }
 
 // Another discriminated hierarchy for shapes
@@ -80,10 +71,7 @@ class Rectangle extends Shape {
   final double width;
   final double height;
 
-  Rectangle({
-    required this.width,
-    required this.height,
-  });
+  Rectangle({required this.width, required this.height});
 
   @override
   double get area => width * height;

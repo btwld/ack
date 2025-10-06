@@ -13,10 +13,7 @@ void main() {
         'description': 'A test product',
         'price': 19.99,
         'contactEmail': 'test@example.com',
-        'category': {
-          'id': 'cat1',
-          'name': 'Test Category',
-        },
+        'category': {'id': 'cat1', 'name': 'Test Category'},
         'releaseDate': '2024-01-15',
         'createdAt': '2024-01-15T10:30:00Z',
         'stockQuantity': 100,
@@ -36,9 +33,13 @@ void main() {
 
       // Access nested category data
       expect(
-          (result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
-      expect((result['category'] as Map<String, dynamic>)['name'],
-          equals('Test Category'));
+        (result['category'] as Map<String, dynamic>)['id'],
+        equals('cat1'),
+      );
+      expect(
+        (result['category'] as Map<String, dynamic>)['name'],
+        equals('Test Category'),
+      );
 
       // Verify other fields
       expect(result['id'], equals('123'));
@@ -52,9 +53,13 @@ void main() {
       expect(result['status'], equals('published'));
       expect(result['productCode'], equals('ABC-1234'));
       expect(
-          (result['category'] as Map<String, dynamic>)['id'], equals('cat1'));
-      expect((result['category'] as Map<String, dynamic>)['name'],
-          equals('Test Category'));
+        (result['category'] as Map<String, dynamic>)['id'],
+        equals('cat1'),
+      );
+      expect(
+        (result['category'] as Map<String, dynamic>)['name'],
+        equals('Test Category'),
+      );
     });
 
     test('should reject invalid product data', () {
@@ -73,10 +78,7 @@ void main() {
         'name': 'Test Transform',
         'description': 'Testing validation',
         'price': 29.99,
-        'category': {
-          'id': 'cat2',
-          'name': 'Transform Category',
-        },
+        'category': {'id': 'cat2', 'name': 'Transform Category'},
         'releaseDate': '2024-01-15',
         'createdAt': '2024-01-15T10:30:00Z',
         'stockQuantity': 25,
@@ -105,10 +107,7 @@ void main() {
         'name': 'Test Transform',
         'description': 'Testing validateAndTransform',
         'price': 29.99,
-        'category': {
-          'id': 'cat2',
-          'name': 'Transform Category',
-        },
+        'category': {'id': 'cat2', 'name': 'Transform Category'},
         'releaseDate': '2024-01-15',
         'createdAt': '2024-01-15T10:30:00Z',
         'stockQuantity': 15,
@@ -133,10 +132,7 @@ void main() {
     });
 
     test('Using direct constructor with CategorySchema', () {
-      final categoryData = {
-        'id': 'cat3',
-        'name': 'Test Category',
-      };
+      final categoryData = {'id': 'cat3', 'name': 'Test Category'};
 
       print('categorySchema function available');
 
@@ -187,14 +183,10 @@ void main() {
       print('Result type: ${testResult.runtimeType}');
 
       // Variable-based approach doesn't use registry
-      print(
-        'Variable-based schemas don\'t use Type.toString() or registries',
-      );
+      print('Variable-based schemas don\'t use Type.toString() or registries');
 
       // No registry in function-based approach
-      print(
-        'Variable-based approach: simply use productSchema',
-      );
+      print('Variable-based approach: simply use productSchema');
 
       // Variable-based approach doesn't need generic type handling
 
@@ -208,10 +200,7 @@ void main() {
         'name': 'Custom Implementation',
         'description': 'A custom implementation',
         'price': 39.99,
-        'category': {
-          'id': 'cat4',
-          'name': 'Custom Category',
-        },
+        'category': {'id': 'cat4', 'name': 'Custom Category'},
         'releaseDate': '2024-01-15',
         'createdAt': '2024-01-15T10:30:00Z',
         'stockQuantity': 5,

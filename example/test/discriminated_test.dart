@@ -25,11 +25,7 @@ void main() {
 
     group('Schema Validation Tests', () {
       test('Animal schema validates Cat data', () {
-        final catData = {
-          'type': 'cat',
-          'meow': true,
-          'lives': 9,
-        };
+        final catData = {'type': 'cat', 'meow': true, 'lives': 9};
 
         final result = animalSchema.safeParse(catData);
         expect(result.isOk, isTrue);
@@ -53,11 +49,7 @@ void main() {
       });
 
       test('Animal schema validates Bird data', () {
-        final birdData = {
-          'type': 'bird',
-          'canFly': true,
-          'wingspan': 2.5,
-        };
+        final birdData = {'type': 'bird', 'canFly': true, 'wingspan': 2.5};
 
         final result = animalSchema.safeParse(birdData);
         expect(result.isOk, isTrue);
@@ -67,10 +59,7 @@ void main() {
       });
 
       test('Animal schema rejects unknown type', () {
-        final invalidData = {
-          'type': 'fish',
-          'swimming': true,
-        };
+        final invalidData = {'type': 'fish', 'swimming': true};
 
         expect(() => animalSchema.parse(invalidData), throwsException);
       });
@@ -78,10 +67,7 @@ void main() {
 
     group('Shape Discriminated Types Tests', () {
       test('Shape schema validates Circle data', () {
-        final circleData = {
-          'kind': 'circle',
-          'radius': 5.0,
-        };
+        final circleData = {'kind': 'circle', 'radius': 5.0};
 
         final result = shapeSchema.safeParse(circleData);
         expect(result.isOk, isTrue);
@@ -104,11 +90,7 @@ void main() {
       });
 
       test('Shape schema rejects unknown kind', () {
-        final invalidData = {
-          'kind': 'triangle',
-          'base': 5.0,
-          'height': 4.0,
-        };
+        final invalidData = {'kind': 'triangle', 'base': 5.0, 'height': 4.0};
 
         expect(() => shapeSchema.parse(invalidData), throwsException);
       });
@@ -116,10 +98,7 @@ void main() {
 
     group('Individual Schema Tests', () {
       test('Cat schema validates correctly', () {
-        final catData = {
-          'meow': true,
-          'lives': 7,
-        };
+        final catData = {'meow': true, 'lives': 7};
 
         final result = catSchema.parse(catData) as Map<String, dynamic>;
         expect(result['meow'], isTrue);
@@ -127,10 +106,7 @@ void main() {
       });
 
       test('Dog schema validates correctly', () {
-        final dogData = {
-          'bark': true,
-          'breed': 'Labrador',
-        };
+        final dogData = {'bark': true, 'breed': 'Labrador'};
 
         final result = dogSchema.parse(dogData) as Map<String, dynamic>;
         expect(result['bark'], isTrue);

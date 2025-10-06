@@ -24,7 +24,8 @@ Future<void> main(List<String> args) async {
       }
     } else {
       print(
-          '❌ Invalid package name. Available packages: ${ackPackages.join(', ')}');
+        '❌ Invalid package name. Available packages: ${ackPackages.join(', ')}',
+      );
       printUsage();
       exit(1);
     }
@@ -68,8 +69,10 @@ Future<void> main(List<String> args) async {
 
 Future<String> getLatestVersion(String packageName) async {
   try {
-    final result = await Process.run(
-        'curl', ['-s', 'https://pub.dev/api/packages/$packageName']);
+    final result = await Process.run('curl', [
+      '-s',
+      'https://pub.dev/api/packages/$packageName',
+    ]);
 
     if (result.exitCode == 0) {
       final json = jsonDecode(result.stdout);
@@ -77,14 +80,19 @@ Future<String> getLatestVersion(String packageName) async {
     }
   } catch (e) {
     print(
-        '⚠️  Could not fetch latest version for $packageName, please specify version manually');
+      '⚠️  Could not fetch latest version for $packageName, please specify version manually',
+    );
   }
 
   exit(1);
 }
 
-Future<void> checkPackage(String packageName, String cleanVersion,
-    String displayVersion, List<String> reports) async {
+Future<void> checkPackage(
+  String packageName,
+  String cleanVersion,
+  String displayVersion,
+  List<String> reports,
+) async {
   print('📦 Checking $packageName package...');
 
   final reportFile = 'api-compat-$packageName-vs-$displayVersion.md';
@@ -100,7 +108,7 @@ Future<void> checkPackage(String packageName, String cleanVersion,
     'markdown',
     '--report-file-path',
     reportFile,
-    '--ignore-prerelease'
+    '--ignore-prerelease',
   ]);
 
   if (result.exitCode == 0) {
@@ -129,15 +137,19 @@ void printUsage() {
   print('           If not provided, checks all packages');
   print('  VERSION  Version to compare against (e.g., v0.2.0 or 0.2.0)');
   print(
-      '           If not provided with single package, uses latest from pub.dev');
+    '           If not provided with single package, uses latest from pub.dev',
+  );
   print('');
   print('Examples:');
   print(
-      '  dart scripts/api_check.dart ack                    # Check ack against latest');
+    '  dart scripts/api_check.dart ack                    # Check ack against latest',
+  );
   print(
-      '  dart scripts/api_check.dart ack v0.2.0            # Check ack against v0.2.0');
+    '  dart scripts/api_check.dart ack v0.2.0            # Check ack against v0.2.0',
+  );
   print(
-      '  dart scripts/api_check.dart v0.2.0                # Check all packages against v0.2.0');
+    '  dart scripts/api_check.dart v0.2.0                # Check all packages against v0.2.0',
+  );
   print('');
   print('Melos usage:');
   print('  melos api-check ack v0.2.0');

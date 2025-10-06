@@ -9,10 +9,10 @@ class StringLiteralConstraint extends Constraint<String>
   final String expectedValue;
 
   const StringLiteralConstraint(this.expectedValue)
-      : super(
-          constraintKey: 'string_literal_equals',
-          description: 'String must be exactly "$expectedValue".',
-        );
+    : super(
+        constraintKey: 'string_literal_equals',
+        description: 'String must be exactly "$expectedValue".',
+      );
 
   @override
   bool isValid(String value) {
@@ -25,7 +25,7 @@ class StringLiteralConstraint extends Constraint<String>
 
   @override
   Map<String, Object?> toJsonSchema() => {
-        // 'const' is the most direct JSON Schema keyword for this.
-        'const': expectedValue,
-      };
+    // 'const' is the most direct JSON Schema keyword for this.
+    'const': expectedValue,
+  };
 }

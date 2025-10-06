@@ -26,8 +26,10 @@ void main() {
         final nameSchema = Ack.string();
         expect(nameSchema.parse('Hello'), equals('Hello'));
 
-        final usernameSchema =
-            Ack.string().minLength(3).maxLength(20).matches(r'^[a-zA-Z0-9_]+$');
+        final usernameSchema = Ack.string()
+            .minLength(3)
+            .maxLength(20)
+            .matches(r'^[a-zA-Z0-9_]+$');
         expect(usernameSchema.safeParse('user_123').isOk, isTrue);
         expect(usernameSchema.safeParse('u').isFail, isTrue);
 
@@ -81,15 +83,15 @@ void main() {
         final tagsSchema = Ack.list(Ack.string());
         expect(tagsSchema.safeParse(['news', 'tech']).isOk, isTrue);
 
-        final itemsSchema =
-            Ack.list(Ack.string()).minLength(1).maxLength(3).unique();
+        final itemsSchema = Ack.list(
+          Ack.string(),
+        ).minLength(1).maxLength(3).unique();
         expect(itemsSchema.safeParse(['a', 'b']).isOk, isTrue);
         expect(itemsSchema.safeParse([]).isFail, isTrue);
 
-        final usersSchema = Ack.list(Ack.object({
-          'id': Ack.integer(),
-          'name': Ack.string(),
-        }));
+        final usersSchema = Ack.list(
+          Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
+        );
         expect(
           usersSchema.safeParse([
             {'id': 1, 'name': 'Jane'},
@@ -158,8 +160,11 @@ void main() {
           isTrue,
         );
         expect(
-          shapeSchema.safeParse(
-              {'type': 'rectangle', 'width': 4.0, 'height': 2.0}).isOk,
+          shapeSchema.safeParse({
+            'type': 'rectangle',
+            'width': 4.0,
+            'height': 2.0,
+          }).isOk,
           isTrue,
         );
         expect(
@@ -189,10 +194,14 @@ void main() {
           'middleName': Ack.string().nullable(),
         });
 
-        expect(schema.safeParse({'name': 'John', 'middleName': null}).isOk,
-            isTrue);
-        expect(schema.safeParse({'name': 'John', 'middleName': 'Robert'}).isOk,
-            isTrue);
+        expect(
+          schema.safeParse({'name': 'John', 'middleName': null}).isOk,
+          isTrue,
+        );
+        expect(
+          schema.safeParse({'name': 'John', 'middleName': 'Robert'}).isOk,
+          isTrue,
+        );
         expect(schema.safeParse({'name': 'John'}).isFail, isTrue);
       });
 
@@ -215,8 +224,10 @@ void main() {
 
         expect(schema.safeParse({'name': 'John'}).isOk, isTrue);
         expect(schema.safeParse({'name': 'John', 'bio': null}).isOk, isTrue);
-        expect(schema.safeParse({'name': 'John', 'bio': 'Developer'}).isOk,
-            isTrue);
+        expect(
+          schema.safeParse({'name': 'John', 'bio': 'Developer'}).isOk,
+          isTrue,
+        );
       });
     });
 
@@ -237,13 +248,14 @@ void main() {
         });
 
         expect(
-            extendedSchema.safeParse({
-              'id': '1',
-              'name': 'Admin',
-              'email': 'admin@example.com',
-              'role': 'admin',
-            }).isOk,
-            isTrue);
+          extendedSchema.safeParse({
+            'id': '1',
+            'name': 'Admin',
+            'email': 'admin@example.com',
+            'role': 'admin',
+          }).isOk,
+          isTrue,
+        );
 
         expect(modifiedSchema.safeParse({'id': '1'}).isOk, isTrue);
       });
@@ -261,21 +273,23 @@ void main() {
         final safeSchema = fullSchema.omit(['password']);
 
         expect(
-            publicSchema.safeParse({
-              'id': '1',
-              'name': 'Jane',
-              'email': 'jane@example.com',
-            }).isOk,
-            isTrue);
+          publicSchema.safeParse({
+            'id': '1',
+            'name': 'Jane',
+            'email': 'jane@example.com',
+          }).isOk,
+          isTrue,
+        );
 
         expect(
-            safeSchema.safeParse({
-              'id': '1',
-              'name': 'Jane',
-              'email': 'jane@example.com',
-              'createdAt': '2024-01-01T00:00:00Z',
-            }).isOk,
-            isTrue);
+          safeSchema.safeParse({
+            'id': '1',
+            'name': 'Jane',
+            'email': 'jane@example.com',
+            'createdAt': '2024-01-01T00:00:00Z',
+          }).isOk,
+          isTrue,
+        );
 
         expect(
           publicSchema.safeParse({
@@ -299,105 +313,114 @@ void main() {
         expect(partialSchema.safeParse({}).isOk, isTrue);
         expect(partialSchema.safeParse({'name': 'Jane'}).isOk, isTrue);
         expect(
-            partialSchema
-                .safeParse({'email': 'jane@example.com', 'age': 30}).isOk,
-            isTrue);
+          partialSchema.safeParse({
+            'email': 'jane@example.com',
+            'age': 30,
+          }).isOk,
+          isTrue,
+        );
       });
 
       test('additional properties control extra keys', () {
-        final baseSchema = Ack.object({
-          'id': Ack.string(),
-        });
+        final baseSchema = Ack.object({'id': Ack.string()});
 
         final flexible = baseSchema.passthrough();
         final strict = baseSchema.strict();
 
         expect(
-            flexible.safeParse({'id': '1', 'extra': 'allowed'}).isOk, isTrue);
+          flexible.safeParse({'id': '1', 'extra': 'allowed'}).isOk,
+          isTrue,
+        );
         expect(strict.safeParse({'id': '1', 'extra': 'nope'}).isFail, isTrue);
       });
     });
 
     group('Custom validation and transformations', () {
       test('refine enforces password confirmation and totals', () {
-        final passwordSchema = Ack.object({
-          'password': Ack.string().minLength(8),
-          'confirmPassword': Ack.string(),
-        }).refine(
-          (data) => data['password'] == data['confirmPassword'],
-          message: 'Passwords must match',
+        final passwordSchema =
+            Ack.object({
+              'password': Ack.string().minLength(8),
+              'confirmPassword': Ack.string(),
+            }).refine(
+              (data) => data['password'] == data['confirmPassword'],
+              message: 'Passwords must match',
+            );
+
+        expect(
+          passwordSchema.safeParse({
+            'password': 'pass1234',
+            'confirmPassword': 'pass1234',
+          }).isOk,
+          isTrue,
+        );
+        expect(
+          passwordSchema.safeParse({
+            'password': 'pass1234',
+            'confirmPassword': 'different',
+          }).isFail,
+          isTrue,
         );
 
-        expect(
-            passwordSchema.safeParse({
-              'password': 'pass1234',
-              'confirmPassword': 'pass1234',
-            }).isOk,
-            isTrue);
-        expect(
-            passwordSchema.safeParse({
-              'password': 'pass1234',
-              'confirmPassword': 'different',
-            }).isFail,
-            isTrue);
+        final orderSchema =
+            Ack.object({
+              'items': Ack.list(
+                Ack.object({'price': Ack.double(), 'quantity': Ack.integer()}),
+              ),
+              'total': Ack.double(),
+            }).refine((order) {
+              final items = order['items'] as List;
+              final calculated = items.fold<double>(0, (sum, item) {
+                final itemMap = item as Map<String, Object?>;
+                return sum +
+                    (itemMap['price'] as double) * (itemMap['quantity'] as int);
+              });
+              final total = order['total'] as double;
+              return (calculated - total).abs() < 0.01;
+            }, message: 'Total must match sum of items');
 
-        final orderSchema = Ack.object({
-          'items': Ack.list(Ack.object({
-            'price': Ack.double(),
-            'quantity': Ack.integer(),
-          })),
-          'total': Ack.double(),
-        }).refine(
-          (order) {
-            final items = order['items'] as List;
-            final calculated = items.fold<double>(0, (sum, item) {
-              final itemMap = item as Map<String, Object?>;
-              return sum +
-                  (itemMap['price'] as double) * (itemMap['quantity'] as int);
-            });
-            final total = order['total'] as double;
-            return (calculated - total).abs() < 0.01;
-          },
-          message: 'Total must match sum of items',
+        expect(
+          orderSchema.safeParse({
+            'items': [
+              {'price': 10.0, 'quantity': 2},
+              {'price': 5.5, 'quantity': 1},
+            ],
+            'total': 25.5,
+          }).isOk,
+          isTrue,
         );
-
         expect(
-            orderSchema.safeParse({
-              'items': [
-                {'price': 10.0, 'quantity': 2},
-                {'price': 5.5, 'quantity': 1},
-              ],
-              'total': 25.5,
-            }).isOk,
-            isTrue);
-        expect(
-            orderSchema.safeParse({
-              'items': [
-                {'price': 10.0, 'quantity': 2},
-              ],
-              'total': 100.0,
-            }).isFail,
-            isTrue);
+          orderSchema.safeParse({
+            'items': [
+              {'price': 10.0, 'quantity': 2},
+            ],
+            'total': 100.0,
+          }).isFail,
+          isTrue,
+        );
       });
 
       test('transform examples adjust output data', () {
-        final upperSchema =
-            Ack.string().transform((s) => s?.toUpperCase() ?? '');
+        final upperSchema = Ack.string().transform(
+          (s) => s?.toUpperCase() ?? '',
+        );
         expect(upperSchema.safeParse('hello').getOrThrow(), equals('HELLO'));
 
-        final userWithAgeSchema = Ack.object({
-          'name': Ack.string(),
-          'birthYear': Ack.integer(),
-        }).transform((data) {
-          final birthYear = data!['birthYear'] as int;
-          final age = DateTime.now().year - birthYear;
-          return {...data, 'age': age};
-        });
+        final userWithAgeSchema =
+            Ack.object({
+              'name': Ack.string(),
+              'birthYear': Ack.integer(),
+            }).transform((data) {
+              final birthYear = data!['birthYear'] as int;
+              final age = DateTime.now().year - birthYear;
+              return {...data, 'age': age};
+            });
 
-        final transformed = userWithAgeSchema.safeParse({
-          'name': 'Alex',
-          'birthYear': DateTime.now().year - 30,
-        }).getOrThrow() as Map<String, Object?>;
+        final transformed =
+            userWithAgeSchema.safeParse({
+                  'name': 'Alex',
+                  'birthYear': DateTime.now().year - 30,
+                }).getOrThrow()
+                as Map<String, Object?>;
         expect(transformed['age'], equals(30));
 
         final dateSchema = Ack.string()

@@ -76,8 +76,10 @@ final class ObjectSchema extends AckSchema<MapValue>
               value: schema.defaultValue,
               pathSegment: key,
             );
-            final result =
-                schema.parseAndValidate(schema.defaultValue, propertyContext);
+            final result = schema.parseAndValidate(
+              schema.defaultValue,
+              propertyContext,
+            );
             result.match(
               onOk: (validatedValue) {
                 if (validatedValue != null) {
@@ -90,18 +92,21 @@ final class ObjectSchema extends AckSchema<MapValue>
           // Optional field without default - omit from output
         } else {
           // Required field missing
-          final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-              .validate(mapValue);
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
           if (ce != null) {
-            validationErrors.add(SchemaConstraintsError(
-              constraints: [ce],
-              context: context.createChild(
-                name: key,
-                schema: schema,
-                value: null,
-                pathSegment: key,
+            validationErrors.add(
+              SchemaConstraintsError(
+                constraints: [ce],
+                context: context.createChild(
+                  name: key,
+                  schema: schema,
+                  value: null,
+                  pathSegment: key,
+                ),
               ),
-            ));
+            );
           }
         }
       } else {
@@ -153,10 +158,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     if (validationErrors.isNotEmpty) {
-      return SchemaResult.fail(SchemaNestedError(
-        errors: validationErrors,
-        context: context,
-      ));
+      return SchemaResult.fail(
+        SchemaNestedError(errors: validationErrors, context: context),
+      );
     }
 
     return applyConstraintsAndRefinements(validatedMap, context);

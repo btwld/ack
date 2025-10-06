@@ -13,8 +13,10 @@ void main() {
         test('should validate basic string', () {
           final schema = Ack.string();
           expect(schema.safeParse('hello').isOk, isTrue);
-          expect(schema.safeParse(123).isOk,
-              isTrue); // Type coercion: 123 -> "123"
+          expect(
+            schema.safeParse(123).isOk,
+            isTrue,
+          ); // Type coercion: 123 -> "123"
         });
 
         test('should validate with constraints', () {
@@ -38,8 +40,10 @@ void main() {
 
         test('should validate UUID format', () {
           final schema = Ack.string().uuid();
-          expect(schema.safeParse('123e4567-e89b-12d3-a456-426614174000').isOk,
-              isTrue);
+          expect(
+            schema.safeParse('123e4567-e89b-12d3-a456-426614174000').isOk,
+            isTrue,
+          );
           expect(schema.safeParse('not-a-uuid').isOk, isFalse);
         });
 
@@ -181,45 +185,59 @@ void main() {
             expect(schema.safeParse('fAlSe').getOrNull(), isFalse);
           });
 
-          test('should maintain case-insensitive behavior after optimization',
-              () {
-            final schema = Ack.boolean();
-            // Test various case combinations that would break if toLowerCase() optimization fails
-            final trueCases = [
-              'true',
-              'TRUE',
-              'True',
-              'tRuE',
-              'TrUe',
-              'TRue',
-              'trUE',
-              'TRUe'
-            ];
-            final falseCases = [
-              'false',
-              'FALSE',
-              'False',
-              'fAlSe',
-              'FaLsE',
-              'FALse',
-              'falSE',
-              'FALsE'
-            ];
+          test(
+            'should maintain case-insensitive behavior after optimization',
+            () {
+              final schema = Ack.boolean();
+              // Test various case combinations that would break if toLowerCase() optimization fails
+              final trueCases = [
+                'true',
+                'TRUE',
+                'True',
+                'tRuE',
+                'TrUe',
+                'TRue',
+                'trUE',
+                'TRUe',
+              ];
+              final falseCases = [
+                'false',
+                'FALSE',
+                'False',
+                'fAlSe',
+                'FaLsE',
+                'FALse',
+                'falSE',
+                'FALsE',
+              ];
 
-            for (final testCase in trueCases) {
-              expect(schema.safeParse(testCase).isOk, isTrue,
-                  reason: 'Failed for: $testCase');
-              expect(schema.safeParse(testCase).getOrNull(), isTrue,
-                  reason: 'Wrong value for: $testCase');
-            }
+              for (final testCase in trueCases) {
+                expect(
+                  schema.safeParse(testCase).isOk,
+                  isTrue,
+                  reason: 'Failed for: $testCase',
+                );
+                expect(
+                  schema.safeParse(testCase).getOrNull(),
+                  isTrue,
+                  reason: 'Wrong value for: $testCase',
+                );
+              }
 
-            for (final testCase in falseCases) {
-              expect(schema.safeParse(testCase).isOk, isTrue,
-                  reason: 'Failed for: $testCase');
-              expect(schema.safeParse(testCase).getOrNull(), isFalse,
-                  reason: 'Wrong value for: $testCase');
-            }
-          });
+              for (final testCase in falseCases) {
+                expect(
+                  schema.safeParse(testCase).isOk,
+                  isTrue,
+                  reason: 'Failed for: $testCase',
+                );
+                expect(
+                  schema.safeParse(testCase).getOrNull(),
+                  isFalse,
+                  reason: 'Wrong value for: $testCase',
+                );
+              }
+            },
+          );
 
           test('should reject invalid string values', () {
             final schema = Ack.boolean();
@@ -231,12 +249,15 @@ void main() {
               'on',
               'off',
               'truee',
-              'fals'
+              'fals',
             ];
 
             for (final testCase in invalidCases) {
-              expect(schema.safeParse(testCase).isOk, isFalse,
-                  reason: 'Should reject: $testCase');
+              expect(
+                schema.safeParse(testCase).isOk,
+                isFalse,
+                reason: 'Should reject: $testCase',
+              );
             }
           });
 
@@ -269,12 +290,15 @@ void main() {
               'TRUE',
               'FALSE',
               'True',
-              'False'
+              'False',
             ];
 
             for (final testCase in stringCases) {
-              expect(schema.safeParse(testCase).isOk, isFalse,
-                  reason: 'Should reject with strict parsing: $testCase');
+              expect(
+                schema.safeParse(testCase).isOk,
+                isFalse,
+                reason: 'Should reject with strict parsing: $testCase',
+              );
             }
           });
         });
@@ -314,8 +338,10 @@ void main() {
         test('should validate basic list', () {
           final schema = Ack.list(Ack.string());
           expect(schema.safeParse(['hello', 'world']).isOk, isTrue);
-          expect(schema.safeParse([1, 2, 3]).isOk,
-              isTrue); // Type coercion: numbers -> strings
+          expect(
+            schema.safeParse([1, 2, 3]).isOk,
+            isTrue,
+          ); // Type coercion: numbers -> strings
         });
 
         test('should validate with list constraints', () {
@@ -328,16 +354,18 @@ void main() {
         test('should validate nested lists', () {
           final schema = Ack.list(Ack.list(Ack.integer()));
           expect(
-              schema.safeParse([
-                [1, 2],
-                [3, 4]
-              ]).isOk,
-              isTrue);
+            schema.safeParse([
+              [1, 2],
+              [3, 4],
+            ]).isOk,
+            isTrue,
+          );
           expect(
-              schema.safeParse([
-                ['not', 'numbers']
-              ]).isOk,
-              isFalse);
+            schema.safeParse([
+              ['not', 'numbers'],
+            ]).isOk,
+            isFalse,
+          );
         });
 
         test('should validate unique items', () {
@@ -355,8 +383,10 @@ void main() {
           });
 
           expect(schema.safeParse({'name': 'John', 'age': 30}).isOk, isTrue);
-          expect(schema.safeParse({'name': 'John', 'age': 'thirty'}).isOk,
-              isFalse);
+          expect(
+            schema.safeParse({'name': 'John', 'age': 'thirty'}).isOk,
+            isFalse,
+          );
         });
 
         test('should validate required properties', () {
@@ -375,16 +405,19 @@ void main() {
             'name': Ack.string(),
           }, additionalProperties: true);
 
-          expect(schema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
-              isTrue);
+          expect(
+            schema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
+            isTrue,
+          );
 
           final strictSchema = Ack.object({
             'name': Ack.string(),
           }, additionalProperties: false);
 
           expect(
-              strictSchema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
-              isFalse);
+            strictSchema.safeParse({'name': 'John', 'extra': 'value'}).isOk,
+            isFalse,
+          );
         });
 
         test('should validate nested objects', () {
@@ -393,17 +426,13 @@ void main() {
               'name': Ack.string(),
               'email': Ack.string().email(),
             }),
-            'posts': Ack.list(Ack.object({
-              'title': Ack.string(),
-              'content': Ack.string(),
-            })),
+            'posts': Ack.list(
+              Ack.object({'title': Ack.string(), 'content': Ack.string()}),
+            ),
           });
 
           final validData = {
-            'user': {
-              'name': 'John',
-              'email': 'john@example.com',
-            },
+            'user': {'name': 'John', 'email': 'john@example.com'},
             'posts': [
               {'title': 'First Post', 'content': 'Hello World'},
               {'title': 'Second Post', 'content': 'Another post'},
@@ -434,47 +463,30 @@ void main() {
 
           vehicleSchema = Ack.discriminated(
             discriminatorKey: 'type',
-            schemas: {
-              'car': carSchema,
-              'bike': bikeSchema,
-            },
+            schemas: {'car': carSchema, 'bike': bikeSchema},
           );
         });
 
         test('should validate car correctly', () {
-          final carData = {
-            'type': 'car',
-            'doors': 4,
-            'engine': 'V6',
-          };
+          final carData = {'type': 'car', 'doors': 4, 'engine': 'V6'};
 
           expect(vehicleSchema.safeParse(carData).isOk, isTrue);
         });
 
         test('should validate bike correctly', () {
-          final bikeData = {
-            'type': 'bike',
-            'wheels': 2,
-            'pedals': true,
-          };
+          final bikeData = {'type': 'bike', 'wheels': 2, 'pedals': true};
 
           expect(vehicleSchema.safeParse(bikeData).isOk, isTrue);
         });
 
         test('should fail for unknown discriminator', () {
-          final unknownVehicle = {
-            'type': 'plane',
-            'wings': 2,
-          };
+          final unknownVehicle = {'type': 'plane', 'wings': 2};
 
           expect(vehicleSchema.safeParse(unknownVehicle).isOk, isFalse);
         });
 
         test('should fail for missing discriminator', () {
-          final invalidData = {
-            'doors': 4,
-            'engine': 'V6',
-          };
+          final invalidData = {'doors': 4, 'engine': 'V6'};
 
           expect(vehicleSchema.safeParse(invalidData).isOk, isFalse);
         });
@@ -491,15 +503,8 @@ void main() {
 
           final complexData = {
             'id': 'vehicle-001',
-            'vehicle': {
-              'type': 'car',
-              'doors': 4,
-              'engine': 'V8',
-            },
-            'owner': {
-              'name': 'John Doe',
-              'license': 'ABC123',
-            },
+            'vehicle': {'type': 'car', 'doors': 4, 'engine': 'V8'},
+            'owner': {'name': 'John Doe', 'license': 'ABC123'},
           };
 
           expect(complexSchema.safeParse(complexData).isOk, isTrue);
@@ -516,23 +521,19 @@ void main() {
 
       group('AnyOfSchema', () {
         test('should validate string or integer', () {
-          final schema = Ack.anyOf([
-            Ack.string(),
-            Ack.integer(),
-          ]);
+          final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
 
           expect(schema.safeParse('hello').isOk, isTrue);
           expect(schema.safeParse(42).isOk, isTrue);
-          expect(schema.safeParse(true).isOk,
-              isTrue); // Type coercion: true -> "true"
+          expect(
+            schema.safeParse(true).isOk,
+            isTrue,
+          ); // Type coercion: true -> "true"
         });
 
         test('should validate complex anyOf schemas', () {
           final schema = Ack.anyOf([
-            Ack.object({
-              'type': Ack.literal('user'),
-              'name': Ack.string(),
-            }),
+            Ack.object({'type': Ack.literal('user'), 'name': Ack.string()}),
             Ack.object({
               'type': Ack.literal('admin'),
               'permissions': Ack.list(Ack.string()),
@@ -541,27 +542,24 @@ void main() {
           ]);
 
           expect(
-              schema.safeParse({
-                'type': 'user',
-                'name': 'John',
-              }).isOk,
-              isTrue);
+            schema.safeParse({'type': 'user', 'name': 'John'}).isOk,
+            isTrue,
+          );
 
           expect(
-              schema.safeParse({
-                'type': 'admin',
-                'permissions': ['read', 'write'],
-              }).isOk,
-              isTrue);
+            schema.safeParse({
+              'type': 'admin',
+              'permissions': ['read', 'write'],
+            }).isOk,
+            isTrue,
+          );
 
           expect(schema.safeParse('admin@example.com').isOk, isTrue);
 
           expect(
-              schema.safeParse({
-                'type': 'guest',
-                'name': 'Anonymous',
-              }).isOk,
-              isFalse);
+            schema.safeParse({'type': 'guest', 'name': 'Anonymous'}).isOk,
+            isFalse,
+          );
         });
 
         test('should validate nested anyOf schemas', () {
@@ -576,19 +574,19 @@ void main() {
           expect(schema.safeParse({'value': 'text'}).isOk, isTrue);
           expect(schema.safeParse({'value': 42}).isOk, isTrue);
           expect(
-              schema.safeParse({
-                'value': ['a', 'b', 'c']
-              }).isOk,
-              isTrue);
-          expect(schema.safeParse({'value': true}).isOk,
-              isTrue); // Type coercion: true -> "true"
+            schema.safeParse({
+              'value': ['a', 'b', 'c'],
+            }).isOk,
+            isTrue,
+          );
+          expect(
+            schema.safeParse({'value': true}).isOk,
+            isTrue,
+          ); // Type coercion: true -> "true"
         });
 
         test('should generate correct JSON schema', () {
-          final schema = Ack.anyOf([
-            Ack.string(),
-            Ack.integer(),
-          ]);
+          final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
 
           final jsonSchema = schema.toJsonSchema();
 
@@ -604,19 +602,18 @@ void main() {
           'status': Ack.integer().min(100).max(599),
           'data': Ack.anyOf([
             Ack.object({
-              'users': Ack.list(Ack.object({
-                'id': Ack.string().uuid(),
-                'name': Ack.string().minLength(1),
-                'email': Ack.string().email(),
-                'age': Ack.integer().min(0).max(150),
-                'roles': Ack.list(Ack.enumValues(Size.values)),
-              })),
+              'users': Ack.list(
+                Ack.object({
+                  'id': Ack.string().uuid(),
+                  'name': Ack.string().minLength(1),
+                  'email': Ack.string().email(),
+                  'age': Ack.integer().min(0).max(150),
+                  'roles': Ack.list(Ack.enumValues(Size.values)),
+                }),
+              ),
               'total': Ack.integer().min(0),
             }),
-            Ack.object({
-              'error': Ack.string(),
-              'code': Ack.string(),
-            }),
+            Ack.object({'error': Ack.string(), 'code': Ack.string()}),
           ]),
           'timestamp': Ack.string(),
         });
@@ -631,7 +628,7 @@ void main() {
                 'email': 'john@example.com',
                 'age': 30,
                 'roles': ['medium', 'large'],
-              }
+              },
             ],
             'total': 1,
           },
@@ -640,10 +637,7 @@ void main() {
 
         final errorResponse = {
           'status': 404,
-          'data': {
-            'error': 'Not Found',
-            'code': 'NOT_FOUND',
-          },
+          'data': {'error': 'Not Found', 'code': 'NOT_FOUND'},
           'timestamp': '2023-01-01T00:00:00Z',
         };
 
@@ -665,13 +659,17 @@ void main() {
               'zipCode': Ack.string(),
             }),
           }),
-          'items': Ack.list(Ack.object({
-            'productId': Ack.string(),
-            'name': Ack.string(),
-            'quantity': Ack.integer().min(1),
-            'price': Ack.double().min(0),
-            'category': Ack.enumValues(Color.values), // Using Color as category
-          })).minItems(1),
+          'items': Ack.list(
+            Ack.object({
+              'productId': Ack.string(),
+              'name': Ack.string(),
+              'quantity': Ack.integer().min(1),
+              'price': Ack.double().min(0),
+              'category': Ack.enumValues(
+                Color.values,
+              ), // Using Color as category
+            }),
+          ).minItems(1),
           'total': Ack.double().min(0),
           'status': Ack.anyOf([
             Ack.literal('pending'),
@@ -735,30 +733,27 @@ void main() {
 
     group('Error Handling and Edge Cases', () {
       test(
-          'should provide detailed error messages for nested validation failures',
-          () {
-        final schema = Ack.object({
-          'user': Ack.object({
-            'profile': Ack.object({
-              'email': Ack.string().email(),
+        'should provide detailed error messages for nested validation failures',
+        () {
+          final schema = Ack.object({
+            'user': Ack.object({
+              'profile': Ack.object({'email': Ack.string().email()}),
             }),
-          }),
-        });
+          });
 
-        final invalidData = {
-          'user': {
-            'profile': {
-              'email': 'invalid-email',
+          final invalidData = {
+            'user': {
+              'profile': {'email': 'invalid-email'},
             },
-          },
-        };
+          };
 
-        final result = schema.safeParse(invalidData);
-        expect(result.isOk, isFalse);
+          final result = schema.safeParse(invalidData);
+          expect(result.isOk, isFalse);
 
-        final error = result.getError();
-        expect(error, isA<SchemaNestedError>());
-      });
+          final error = result.getError();
+          expect(error, isA<SchemaNestedError>());
+        },
+      );
 
       test('should handle null values correctly in complex schemas', () {
         final schema = Ack.object({
@@ -794,10 +789,16 @@ void main() {
 
         for (final entry in schemas.entries) {
           final jsonSchema = entry.value.toJsonSchema();
-          expect(jsonSchema, isNotNull,
-              reason: '${entry.key} should generate JSON schema');
-          expect(jsonSchema, isA<Map<String, Object?>>(),
-              reason: '${entry.key} should be a Map');
+          expect(
+            jsonSchema,
+            isNotNull,
+            reason: '${entry.key} should generate JSON schema',
+          );
+          expect(
+            jsonSchema,
+            isA<Map<String, Object?>>(),
+            reason: '${entry.key} should be a Map',
+          );
         }
       });
 
@@ -860,7 +861,9 @@ void main() {
         expect(schema.safeParse([]).isOk, isFalse); // too short
         expect(schema.safeParse(['a', 'b', 'a']).isOk, isFalse); // not unique
         expect(
-            schema.safeParse(['a', '']).isOk, isFalse); // contains empty string
+          schema.safeParse(['a', '']).isOk,
+          isFalse,
+        ); // contains empty string
       });
     });
 
@@ -896,10 +899,7 @@ void main() {
           if (depth <= 0) {
             return 'leaf';
           }
-          return {
-            'level': depth,
-            'nested': createNestedData(depth - 1),
-          };
+          return {'level': depth, 'nested': createNestedData(depth - 1)};
         }
 
         final deepData = createNestedData(5);

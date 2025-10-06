@@ -22,17 +22,12 @@ class NumericUserId extends UserId {
 }
 
 /// Example 2: API Response that can return different types
-@AckModel(
-  description: 'API response with different possible payloads',
-)
+@AckModel(description: 'API response with different possible payloads')
 class ApiResponse {
   final String status;
   final ResponseData data; // This would be the AnyOf field
 
-  ApiResponse({
-    required this.status,
-    required this.data,
-  });
+  ApiResponse({required this.status, required this.data});
 }
 
 // Sealed class for different response types
@@ -87,17 +82,12 @@ class ListResponse extends ResponseData {
 }
 
 /// Example 3: Settings value that can be different types
-@AckModel(
-  description: 'Configuration setting with flexible value type',
-)
+@AckModel(description: 'Configuration setting with flexible value type')
 class Setting {
   final String key;
   final SettingValue value; // AnyOf: string, number, boolean, object
 
-  Setting({
-    required this.key,
-    required this.value,
-  });
+  Setting({required this.key, required this.value});
 }
 
 sealed class SettingValue {
@@ -137,10 +127,7 @@ void main() {
   print('🎯 AnyOf with Sealed Classes Example\n');
 
   // Example 1: Manual AnyOf schema for UserId
-  final userIdSchema = Ack.anyOf([
-    Ack.string(),
-    Ack.integer(),
-  ]);
+  final userIdSchema = Ack.anyOf([Ack.string(), Ack.integer()]);
 
   print('1️⃣ Simple UserId AnyOf:');
 
@@ -181,8 +168,10 @@ void main() {
     Ack.object({
       'code': Ack.string(),
       'message': Ack.string(),
-      'details':
-          Ack.object({}, additionalProperties: true).optional().nullable(),
+      'details': Ack.object(
+        {},
+        additionalProperties: true,
+      ).optional().nullable(),
     }),
     Ack.object({
       'items': Ack.list(Ack.string()),
@@ -199,11 +188,7 @@ void main() {
   // Test different response types
   final successResponse = {
     'status': 'success',
-    'data': {
-      'id': 'user_123',
-      'name': 'John Doe',
-      'email': 'john@example.com',
-    },
+    'data': {'id': 'user_123', 'name': 'John Doe', 'email': 'john@example.com'},
   };
 
   final errorResponse = {
@@ -228,7 +213,8 @@ void main() {
     try {
       final result = apiResponseSchema.parse(response);
       print(
-          '   ✅ Valid response: ${response['status']} - ${(result as Map<String, dynamic>)['data']}');
+        '   ✅ Valid response: ${response['status']} - ${(result as Map<String, dynamic>)['data']}',
+      );
     } catch (e) {
       print('   ❌ Invalid response: $e');
     }
