@@ -1,50 +1,57 @@
-import 'constraints/core/pattern_constraint.dart';
+import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
-class Ack {
-  static const string = StringSchema();
+/// The main entry point for creating schemas with the Ack validation library.
+///
+/// Provides a fluent API for creating various schema types.
+final class Ack {
+  /// Creates a string schema.
+  static StringSchema string() => const StringSchema();
 
-  static const boolean = BooleanSchema();
+  /// Creates a literal string schema that only accepts the exact [value].
+  /// Similar to Zod's `z.literal("value")`.
+  static StringSchema literal(String value) => string().literal(value);
 
-  static const int = IntegerSchema();
+  /// Creates an integer schema.
+  static IntegerSchema integer() => const IntegerSchema();
 
-  static const double = DoubleSchema();
+  /// Creates a double schema.
+  static DoubleSchema double() => const DoubleSchema();
 
-  const Ack._();
+  /// Creates a boolean schema.
+  static BooleanSchema boolean() => const BooleanSchema();
 
-  static ListSchema<T> list<T extends Object, S extends AckSchema<T>>(
-    S schema,
-  ) {
-    return ListSchema<T>(schema);
-  }
-
-  static DiscriminatedObjectSchema discriminated({
-    required String discriminatorKey,
-    required Map<String, ObjectSchema> schemas,
-  }) {
-    return DiscriminatedObjectSchema(
-      discriminatorKey: discriminatorKey,
-      schemas: schemas,
-    );
-  }
-
+  /// Creates an object schema with the given properties.
+  /// All properties are required by default unless wrapped with .optional().
   static ObjectSchema object(
     Map<String, AckSchema> properties, {
     bool additionalProperties = false,
-    List<String> required = const [],
-  }) {
-    return ObjectSchema(
-      properties,
-      additionalProperties: additionalProperties,
-      required: required,
-    );
-  }
+  }) => ObjectSchema(properties, additionalProperties: additionalProperties);
 
-  static StringSchema enumString(List<String> values) {
-    return StringSchema(constraints: [PatternConstraint.enumValues(values)]);
-  }
+  /// Creates a discriminated object schema for polymorphic validation.
+  static DiscriminatedObjectSchema discriminated({
+    required String discriminatorKey,
+    required Map<String, AckSchema> schemas,
+  }) => DiscriminatedObjectSchema(
+    discriminatorKey: discriminatorKey,
+    schemas: schemas,
+  );
 
-  static StringSchema enumValues(List<Enum> values) {
-    return enumString(values.map((e) => e.name).toList());
-  }
+  /// Creates a list schema with the given item schema.
+  static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) =>
+      ListSchema(itemSchema);
+
+  /// Creates an enum schema for validating enum values.
+  static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
+      EnumSchema(values: values);
+
+  static StringSchema enumString(List<String> values) =>
+      string().enumString(values);
+
+  /// Creates a schema that can be one of many types.
+  static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);
+
+  /// Creates a schema that accepts any value without type conversion or validation.
+  /// Useful for dynamic content or when you need maximum flexibility.
+  static AnySchema any() => const AnySchema();
 }

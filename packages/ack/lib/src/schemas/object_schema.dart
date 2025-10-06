@@ -1,189 +1,251 @@
 part of 'schema.dart';
 
-typedef MapValue = Map<String, Object?>;
-
+/// Schema for validating maps (`Map<String, Object?>`), often used for objects.
+@immutable
 final class ObjectSchema extends AckSchema<MapValue>
-    with SchemaFluentMethods<ObjectSchema, MapValue> {
-  final bool _additionalProperties;
-  final List<String> _required;
+    with FluentSchema<MapValue, ObjectSchema> {
+  final Map<String, AckSchema> properties;
+  final bool additionalProperties;
 
-  final Map<String, AckSchema> _properties;
-
-  ObjectSchema(
-    this._properties, {
-    bool additionalProperties = false,
-    super.constraints,
+  const ObjectSchema(
+    Map<String, AckSchema>? properties, {
+    this.additionalProperties = false,
+    super.isNullable,
+    super.isOptional,
     super.description,
-    List<String> required = const [],
-    super.nullable,
     super.defaultValue,
-  })  : _additionalProperties = additionalProperties,
-        _required = required,
-        super(type: SchemaType.object) {
-    if (!_properties.keys.containsAll(required)) {
-      throw ArgumentError(
-        'Required properties must be present in the properties map [${_properties.keys.getNonContainedValues(required).join(', ')}]',
+    super.constraints,
+    super.refinements,
+  }) : properties = properties ?? const {};
+
+  @override
+  SchemaType get schemaType => SchemaType.object;
+
+  @override
+  @protected
+  SchemaResult<MapValue> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Null handling with default cloning to prevent mutation
+    if (inputValue == null) {
+      if (defaultValue != null) {
+        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
+        // Recursively validate the cloned default
+        return parseAndValidate(clonedDefault, context);
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
+
+    // Type guard
+    if (inputValue is! Map) {
+      final actualType = AckSchema.getSchemaType(inputValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
       );
     }
 
-    // Check if properties has a key called 'type'
-    // TODO: need to remove this
-    if (_properties.containsKey('type')) {
-      log('Warning: Property name "type" is reserved for OpenAPI schema');
-    }
+    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
+    final mapValue = inputValue is Map<String, Object?>
+        ? inputValue
+        : inputValue.cast<String, Object?>();
+    final validatedMap = <String, Object?>{};
+    final validationErrors = <SchemaError>[];
 
-    if (_required.areNotUnique) {
-      throw ArgumentError('Required properties must be unique');
-    }
-  }
-
-  ObjectSchema extend(
-    Map<String, AckSchema> properties, {
-    bool? additionalProperties,
-    List<String>? required,
-    bool? nullable,
-    String? description,
-    List<Validator<MapValue>>? constraints,
-    MapValue? defaultValue,
-  }) {
-    // if property SchemaValue is of SchemaMap, we need to merge them
-    final mergedProperties = {..._properties};
-
+    // Validate all properties defined in the schema
     for (final entry in properties.entries) {
       final key = entry.key;
-      final prop = entry.value;
+      final schema = entry.value;
+      final hasValue = mapValue.containsKey(key);
 
-      final existingProp = mergedProperties[key];
-
-      if (existingProp is ObjectSchema && prop is ObjectSchema) {
-        mergedProperties[key] = existingProp.extend(
-          prop._properties,
-          additionalProperties: prop._additionalProperties,
-          required: prop._required,
-          constraints: prop._constraints,
-        );
+      if (!hasValue) {
+        // Property missing from input
+        if (schema.isOptional) {
+          // Optional field with default - validate it
+          if (schema.defaultValue != null) {
+            final propertyContext = context.createChild(
+              name: key,
+              schema: schema,
+              value: schema.defaultValue,
+              pathSegment: key,
+            );
+            final result = schema.parseAndValidate(
+              schema.defaultValue,
+              propertyContext,
+            );
+            result.match(
+              onOk: (validatedValue) {
+                if (validatedValue != null) {
+                  validatedMap[key] = validatedValue;
+                }
+              },
+              onFail: validationErrors.add,
+            );
+          }
+          // Optional field without default - omit from output
+        } else {
+          // Required field missing
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
+          if (ce != null) {
+            validationErrors.add(
+              SchemaConstraintsError(
+                constraints: [ce],
+                context: context.createChild(
+                  name: key,
+                  schema: schema,
+                  value: null,
+                  pathSegment: key,
+                ),
+              ),
+            );
+          }
+        }
       } else {
-        mergedProperties[key] = prop;
+        // Property exists - validate it
+        final propertyValue = mapValue[key];
+        final propertyContext = context.createChild(
+          name: key,
+          schema: schema,
+          value: propertyValue,
+          pathSegment: key,
+        );
+        final result = schema.parseAndValidate(propertyValue, propertyContext);
+        result.match(
+          onOk: (validatedValue) {
+            validatedMap[key] = validatedValue;
+          },
+          onFail: validationErrors.add,
+        );
       }
     }
 
-    final requiredProperties = <String>{..._required, ...?required}.toList();
-
-    return copyWith(
-      additionalProperties: additionalProperties,
-      required: requiredProperties,
-      properties: mergedProperties,
-      constraints: [..._constraints, ...?constraints],
-      nullable: nullable,
-      description: description,
-      defaultValue: defaultValue,
-    );
-  }
-
-  List<String> getRequiredProperties() => _required;
-
-  Map<String, AckSchema> getProperties() => _properties;
-
-  bool getAllowsAdditionalProperties() => _additionalProperties;
-
-  @override
-  List<ConstraintError> checkValidators(MapValue value) {
-    final extraValidation = [
-      ObjectNoAdditionalPropertiesConstraint(this),
-      ObjectRequiredPropertiesConstraint(this),
-    ];
-
-    return [
-      ...super.checkValidators(value),
-      ...extraValidation
-          .map((v) => v.validate(value))
-          .whereType<ConstraintError>(),
-    ];
-  }
-
-  @override
-  SchemaResult<MapValue> validateNonNullValue(MapValue value) {
-    final violations = <SchemaError>[];
-
-    for (final entry in _properties.entries) {
-      final propKey = entry.key;
-      final propSchema = entry.value;
-
-      final propValue = value[propKey];
-
-      final propResult = propSchema.validate(propValue, debugName: propKey);
-
-      if (propResult.isFail) {
-        violations.add(propResult.getError());
+    // Handle additional properties
+    final knownKeys = properties.keys.toSet();
+    for (final key in mapValue.keys) {
+      if (!knownKeys.contains(key)) {
+        if (additionalProperties) {
+          validatedMap[key] = mapValue[key];
+        } else {
+          validationErrors.add(
+            SchemaConstraintsError(
+              constraints: [
+                ConstraintError(
+                  constraint: ObjectNoAdditionalPropertiesConstraint(
+                    unexpectedPropertyKey: key,
+                  ),
+                  message: 'Property "$key" is not allowed.',
+                ),
+              ],
+              context: context.createChild(
+                name: key,
+                schema: this,
+                value: mapValue[key],
+                pathSegment: key,
+              ),
+            ),
+          );
+        }
       }
     }
 
-    if (violations.isEmpty) return SchemaResult.ok(value);
+    if (validationErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: validationErrors, context: context),
+      );
+    }
 
-    return SchemaResult.fail(
-      SchemaNestedError(errors: violations, context: context),
-    );
-  }
-
-  /// Will extend the ObjectSchema with the values passed into call method
-  ///
-  /// This method is intended to be used to extend the schema with additional
-  /// properties, required properties, nullable, strict, description, and constraints.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.object({
-  ///   'name': Ack.string,
-  /// })(additionalProperties: true);
-  /// ```
-  @override
-  ObjectSchema call({
-    bool? nullable,
-    String? description,
-    bool? additionalProperties,
-    List<String>? required,
-    Map<String, AckSchema>? properties,
-    List<Validator<MapValue>>? constraints,
-  }) {
-    return extend(
-      properties ?? _properties,
-      additionalProperties: additionalProperties,
-      required: required,
-      nullable: nullable,
-      description: description,
-      constraints: constraints,
-    );
+    return applyConstraintsAndRefinements(validatedMap, context);
   }
 
   @override
   ObjectSchema copyWith({
-    bool? additionalProperties,
-    List<String>? required,
     Map<String, AckSchema>? properties,
-    List<Validator<MapValue>>? constraints,
-    bool? nullable,
+    bool? additionalProperties,
+    bool? isNullable,
+    bool? isOptional,
     String? description,
     MapValue? defaultValue,
+    List<Constraint<MapValue>>? constraints,
+    List<Refinement<MapValue>>? refinements,
   }) {
     return ObjectSchema(
-      properties ?? _properties,
-      additionalProperties: additionalProperties ?? _additionalProperties,
-      constraints: constraints ?? _constraints,
-      description: description ?? _description,
-      required: required ?? _required,
-      nullable: nullable ?? _nullable,
-      defaultValue: defaultValue ?? _defaultValue,
+      properties ?? this.properties,
+      additionalProperties: additionalProperties ?? this.additionalProperties,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    final Map<String, Object?> propsJsonSchema = {};
+    final List<String> requiredFields = [];
+
+    for (final entry in properties.entries) {
+      propsJsonSchema[entry.key] = entry.value.toJsonSchema();
+      // All non-optional fields are required
+      if (!entry.value.isOptional) {
+        requiredFields.add(entry.key);
+      }
+    }
+
+    // Convert additionalProperties to match Zod format
+    // Zod uses {} (empty schema) for true, false for false
+    final additionalPropertiesValue = additionalProperties ? {} : false;
+
+    if (isNullable) {
+      final baseSchema = {
+        'type': 'object',
+        'properties': propsJsonSchema,
+        if (requiredFields.isNotEmpty) 'required': requiredFields,
+        'additionalProperties': additionalPropertiesValue,
+        if (description != null) 'description': description,
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    final schema = {
+      'type': 'object',
+      'properties': propsJsonSchema,
+      if (requiredFields.isNotEmpty) 'required': requiredFields,
+      'additionalProperties': additionalPropertiesValue,
+      if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
+    };
+
+    return mergeConstraintSchemas(schema);
   }
 
   @override
   Map<String, Object?> toMap() {
     return {
-      ...super.toMap(),
-      'properties':
-          _properties.map((key, value) => MapEntry(key, value.toMap())),
-      'additionalProperties': _additionalProperties,
-      'required': _required,
+      'type': schemaType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      'defaultValue': defaultValue,
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'properties': properties.length,
+      'additionalProperties': additionalProperties,
     };
   }
 }

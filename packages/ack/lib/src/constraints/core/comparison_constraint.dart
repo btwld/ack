@@ -3,205 +3,220 @@ import '../constraint.dart';
 /// Type of comparison operation to perform.
 enum ComparisonType { gt, gte, lt, lte, eq, range }
 
-/// A generic constraint that handles all numeric comparison operations.
+/// A generic constraint for various comparison-based validations.
 ///
-/// This constraint consolidates multiple specific comparison constraints into a single
-/// flexible implementation that can compare any extractable numeric value.
+/// This versatile constraint handles comparisons like minimum/maximum length for strings/lists,
+/// min/max value for numbers, property counts for objects, etc., by using a
+/// `valueExtractor` function to get a numeric value from the input type `T`.
+///
+/// It is generic on the non-nullable type `T`, but validates the nullable type `T?`.
+/// It will always pass if the input value is `null`.
 class ComparisonConstraint<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
-  /// The type of comparison to perform.
   final ComparisonType type;
-
-  /// The threshold value for comparison.
   final num threshold;
+  final num? maxThreshold; // Required for ComparisonType.range
+  final num? multipleValue; // For 'multipleOf' style checks
 
-  /// The maximum threshold for range comparisons.
-  final num? maxThreshold;
-
-  /// The multiple value for multipleOf constraints.
-  final num? multipleValue;
-
-  /// Function to extract a numeric value from the input for comparison.
   final num Function(T) valueExtractor;
 
-  /// Optional custom message builder.
-  final String Function(T value, num extracted)? customMessageBuilder;
+  /// Optional custom message builder. If provided, overrides default messages.
+  final String Function(T value, num extractedValue)? customMessageBuilder;
 
   const ComparisonConstraint({
+    required super.constraintKey,
+    required super.description,
     required this.type,
     required this.threshold,
     this.maxThreshold,
     this.multipleValue,
     required this.valueExtractor,
-    required super.constraintKey,
-    required super.description,
     this.customMessageBuilder,
   }) : assert(
-          type != ComparisonType.range || maxThreshold != null,
-          'maxThreshold is required for range comparisons',
-        );
+         type != ComparisonType.range || maxThreshold != null,
+         'maxThreshold is required for range comparisons.',
+       );
 
-  // Factory methods for string constraints
+  // --- Factory methods for specific use cases ---
 
-  /// {@template min_length_validator}
-  /// Validates that the string has at least the specified minimum length.
-  /// Useful for ensuring passwords, usernames, or other fields meet length requirements.
-  /// {@endtemplate}
+  // String length
   static ComparisonConstraint<String> stringMinLength(int min) =>
       ComparisonConstraint<String>(
         type: ComparisonType.gte,
         threshold: min,
-        valueExtractor: (value) => value.length,
+        valueExtractor: (s) => s.length,
         constraintKey: 'string_min_length',
-        description: 'String must be at least $min characters',
+        description: 'String must be at least $min characters.',
         customMessageBuilder: (value, extracted) =>
-            'Too short, min $min characters',
+            'Too short. Minimum $min characters, got ${extracted.toInt()}.',
       );
-
-  /// {@template max_length_validator}
-  /// Validates that the string does not exceed the specified maximum length.
-  /// Useful for database field limits or UI constraints.
-  /// {@endtemplate}
   static ComparisonConstraint<String> stringMaxLength(int max) =>
       ComparisonConstraint<String>(
         type: ComparisonType.lte,
         threshold: max,
-        valueExtractor: (value) => value.length,
+        valueExtractor: (s) => s.length,
         constraintKey: 'string_max_length',
-        description: 'String must be at most $max characters',
+        description: 'String must be at most $max characters.',
         customMessageBuilder: (value, extracted) =>
-            'Too long, max $max characters',
+            'Too long. Maximum $max characters, got ${extracted.toInt()}.',
       );
-
-  /// {@template is_empty_validator}
-  /// Validates that the string is empty (has zero length).
-  /// Equivalent to checking if string.length == 0.
-  /// {@endtemplate}
-  ///
-  /// {@template not_empty_validator}
-  /// Validates that the string is not empty (has at least one character).
-  /// Equivalent to checking if string.length > 0.
-  /// {@endtemplate}
   static ComparisonConstraint<String> stringExactLength(int length) =>
       ComparisonConstraint<String>(
         type: ComparisonType.eq,
         threshold: length,
-        valueExtractor: (value) => value.length,
+        valueExtractor: (s) => s.length,
         constraintKey: 'string_exact_length',
-        description: 'String must be exactly $length characters',
+        description: 'String must be exactly $length characters.',
         customMessageBuilder: (value, extracted) =>
-            'Must be exactly $length characters',
+            'Must be exactly $length characters, got ${extracted.toInt()}.',
       );
 
-  // Factory methods for number constraints
-  static ComparisonConstraint<T> numberMin<T extends num>(T min) =>
-      ComparisonConstraint<T>(
+  // Number value
+  static ComparisonConstraint<N> numberMin<N extends num>(N min) =>
+      ComparisonConstraint<N>(
         type: ComparisonType.gte,
         threshold: min,
-        valueExtractor: (value) => value,
+        valueExtractor: (n) => n,
         constraintKey: 'number_min',
-        description: 'Number must be at least $min',
+        description: 'Number must be at least $min.',
       );
-
-  static ComparisonConstraint<T> numberMax<T extends num>(T max) =>
-      ComparisonConstraint<T>(
+  static ComparisonConstraint<N> numberMax<N extends num>(N max) =>
+      ComparisonConstraint<N>(
         type: ComparisonType.lte,
         threshold: max,
-        valueExtractor: (value) => value,
+        valueExtractor: (n) => n,
         constraintKey: 'number_max',
-        description: 'Number must be at most $max',
+        description: 'Number must be at most $max.',
       );
-
-  static ComparisonConstraint<T> numberRange<T extends num>(T min, T max) =>
-      ComparisonConstraint<T>(
+  static ComparisonConstraint<N> numberExclusiveMin<N extends num>(N min) =>
+      ComparisonConstraint<N>(
+        type: ComparisonType.gt,
+        threshold: min,
+        valueExtractor: (n) => n,
+        constraintKey: 'number_exclusive_min',
+        description: 'Number must be greater than $min.',
+      );
+  static ComparisonConstraint<N> numberExclusiveMax<N extends num>(N max) =>
+      ComparisonConstraint<N>(
+        type: ComparisonType.lt,
+        threshold: max,
+        valueExtractor: (n) => n,
+        constraintKey: 'number_exclusive_max',
+        description: 'Number must be less than $max.',
+      );
+  static ComparisonConstraint<N> numberRange<N extends num>(N min, N max) =>
+      ComparisonConstraint<N>(
         type: ComparisonType.range,
         threshold: min,
         maxThreshold: max,
-        valueExtractor: (value) => value,
+        valueExtractor: (n) => n,
         constraintKey: 'number_range',
-        description: 'Number must be between $min and $max',
+        description: 'Number must be between $min and $max (inclusive).',
       );
+  static ComparisonConstraint<N> numberMultipleOf<N extends num>(N multiple) {
+    if (multiple == 0) {
+      throw ArgumentError.value(
+        multiple,
+        'multiple',
+        'multipleOf value cannot be zero',
+      );
+    }
+    return ComparisonConstraint<N>(
+      type: ComparisonType.eq,
+      threshold: 0,
+      multipleValue: multiple,
+      valueExtractor: (n) => n.remainder(multiple), // Check if remainder is 0
+      constraintKey: 'number_multiple_of',
+      description: 'Number must be a multiple of $multiple.',
+      customMessageBuilder: (value, _) =>
+          'Must be a multiple of $multiple. $value is not.',
+    );
+  }
 
-  static ComparisonConstraint<T> numberExclusiveMin<T extends num>(T min) =>
-      ComparisonConstraint<T>(
+  static ComparisonConstraint<N> numberPositive<N extends num>() =>
+      ComparisonConstraint<N>(
         type: ComparisonType.gt,
-        threshold: min,
-        valueExtractor: (value) => value,
-        constraintKey: 'number_exclusive_min',
-        description: 'Number must be greater than $min',
-      );
-
-  static ComparisonConstraint<T> numberExclusiveMax<T extends num>(T max) =>
-      ComparisonConstraint<T>(
-        type: ComparisonType.lt,
-        threshold: max,
-        valueExtractor: (value) => value,
-        constraintKey: 'number_exclusive_max',
-        description: 'Number must be less than $max',
-      );
-
-  static ComparisonConstraint<T> numberMultipleOf<T extends num>(T multiple) =>
-      ComparisonConstraint<T>(
-        type: ComparisonType.eq,
         threshold: 0,
-        multipleValue: multiple,
-        valueExtractor: (value) => value.remainder(multiple),
-        constraintKey: 'number_multiple_of',
-        description: 'Number must be a multiple of $multiple',
-        customMessageBuilder: (value, _) => 'Must be a multiple of $multiple',
+        valueExtractor: (n) => n,
+        constraintKey: 'number_positive',
+        description: 'Number must be positive.',
+        customMessageBuilder: (value, _) => 'Must be positive, but got $value.',
       );
 
-  // Factory methods for list constraints
-  static ComparisonConstraint<List<T>> listMinItems<T>(int min) =>
-      ComparisonConstraint<List<T>>(
+  static ComparisonConstraint<N> numberNegative<N extends num>() =>
+      ComparisonConstraint<N>(
+        type: ComparisonType.lt,
+        threshold: 0,
+        valueExtractor: (n) => n,
+        constraintKey: 'number_negative',
+        description: 'Number must be negative.',
+        customMessageBuilder: (value, _) => 'Must be negative, but got $value.',
+      );
+
+  // List items count
+  static ComparisonConstraint<List<E>> listMinItems<E>(int min) =>
+      ComparisonConstraint<List<E>>(
         type: ComparisonType.gte,
         threshold: min,
-        valueExtractor: (value) => value.length,
+        valueExtractor: (l) => l.length,
         constraintKey: 'list_min_items',
-        description: 'List must have at least $min items',
-        customMessageBuilder: (value, extracted) => 'Too few items, min $min',
+        description: 'List must have at least $min items.',
+        customMessageBuilder: (value, extracted) =>
+            'Too few items. Minimum $min, got ${extracted.toInt()}.',
       );
-
-  static ComparisonConstraint<List<T>> listMaxItems<T>(int max) =>
-      ComparisonConstraint<List<T>>(
+  static ComparisonConstraint<List<E>> listMaxItems<E>(int max) =>
+      ComparisonConstraint<List<E>>(
         type: ComparisonType.lte,
         threshold: max,
-        valueExtractor: (value) => value.length,
+        valueExtractor: (l) => l.length,
         constraintKey: 'list_max_items',
-        description: 'List must have at most $max items',
-        customMessageBuilder: (value, extracted) => 'Too many items, max $max',
+        description: 'List must have at most $max items.',
+        customMessageBuilder: (value, extracted) =>
+            'Too many items. Maximum $max, got ${extracted.toInt()}.',
+      );
+  static ComparisonConstraint<List<E>> listExactItems<E>(int length) =>
+      ComparisonConstraint<List<E>>(
+        type: ComparisonType.eq,
+        threshold: length,
+        valueExtractor: (l) => l.length,
+        constraintKey: 'list_exact_items',
+        description: 'List must have exactly $length items.',
+        customMessageBuilder: (value, extracted) =>
+            'Must have exactly $length items, got ${extracted.toInt()}.',
       );
 
-  // Factory methods for object constraints
-  static ComparisonConstraint<Map<String, dynamic>> objectMinProperties(
+  // Object properties count
+  static ComparisonConstraint<Map<String, Object?>> objectMinProperties(
     int min,
-  ) =>
-      ComparisonConstraint<Map<String, dynamic>>(
-        type: ComparisonType.gte,
-        threshold: min,
-        valueExtractor: (value) => value.length,
-        constraintKey: 'object_min_properties',
-        description: 'Object must have at least $min properties',
-        customMessageBuilder: (value, extracted) =>
-            'Too few properties, min $min',
-      );
-
-  static ComparisonConstraint<Map<String, dynamic>> objectMaxProperties(
+  ) => ComparisonConstraint<Map<String, Object?>>(
+    type: ComparisonType.gte,
+    threshold: min,
+    valueExtractor: (m) => m.keys.length,
+    constraintKey: 'object_min_properties',
+    description: 'Object must have at least $min properties.',
+    customMessageBuilder: (value, extracted) =>
+        'Too few properties. Minimum $min, got ${extracted.toInt()}.',
+  );
+  static ComparisonConstraint<Map<String, Object?>> objectMaxProperties(
     int max,
-  ) =>
-      ComparisonConstraint<Map<String, dynamic>>(
-        type: ComparisonType.lte,
-        threshold: max,
-        valueExtractor: (value) => value.length,
-        constraintKey: 'object_max_properties',
-        description: 'Object must have at most $max properties',
-        customMessageBuilder: (value, extracted) =>
-            'Too many properties, max $max',
-      );
+  ) => ComparisonConstraint<Map<String, Object?>>(
+    type: ComparisonType.lte,
+    threshold: max,
+    valueExtractor: (m) => m.keys.length,
+    constraintKey: 'object_max_properties',
+    description: 'Object must have at most $max properties.',
+    customMessageBuilder: (value, extracted) =>
+        'Too many properties. Maximum $max, got ${extracted.toInt()}.',
+  );
+
+  // Generic Comparable factories removed due to type safety and JSON Schema issues.
+  // These methods had incorrect type bounds (Comparable<Object> excludes DateTime)
+  // and would emit incorrect JSON Schema for non-numeric types.
+  // Use the specific typed factories above (numberMin, numberMax, etc.) instead.
 
   @override
   bool isValid(T value) {
-    final extracted = valueExtractor(value);
+    final num extracted = valueExtractor(value);
     switch (type) {
       case ComparisonType.gt:
         return extracted > threshold;
@@ -212,6 +227,12 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       case ComparisonType.lte:
         return extracted <= threshold;
       case ComparisonType.eq:
+        if (multipleValue != null && constraintKey == 'number_multiple_of') {
+          // extractor gives remainder; treat near-zero as zero for doubles
+          final rem = extracted.abs();
+          const eps = 1e-10;
+          return rem == 0 || rem < eps;
+        }
         return extracted == threshold;
       case ComparisonType.range:
         return extracted >= threshold && extracted <= maxThreshold!;
@@ -220,39 +241,46 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
   @override
   String buildMessage(T value) {
+    // This method is only called if isValid returns false, so value is non-null.
+    final nonNullValue = value;
+    final num extracted = valueExtractor(nonNullValue);
     if (customMessageBuilder != null) {
-      return customMessageBuilder!(value, valueExtractor(value));
+      return customMessageBuilder!(nonNullValue, extracted);
     }
-
+    // Default messages
     switch (type) {
       case ComparisonType.gt:
-        return 'Must be greater than $threshold';
+        return 'Must be greater than $threshold, got $extracted.';
       case ComparisonType.gte:
-        return 'Must be at least $threshold';
+        return 'Must be at least $threshold, got $extracted.';
       case ComparisonType.lt:
-        return 'Must be less than $threshold';
+        return 'Must be less than $threshold, got $extracted.';
       case ComparisonType.lte:
-        return 'Must be at most $threshold';
+        return 'Must be at most $threshold, got $extracted.';
       case ComparisonType.eq:
-        return 'Must equal $threshold';
+        if (multipleValue != null && constraintKey == 'number_multiple_of') {
+          return 'Must be a multiple of $multipleValue. $value is not.';
+        }
+
+        return 'Must be equal to $threshold, got $extracted.';
       case ComparisonType.range:
-        return 'Must be between $threshold and ${maxThreshold ?? threshold}';
+        return 'Must be between $threshold and ${maxThreshold!}, got $extracted.';
     }
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
-    // Improved constraint-specific key detection
-    final isStringLength = constraintKey.startsWith('string_') &&
-        (constraintKey.contains('length') || constraintKey.contains('exact'));
-    final isListItems = constraintKey.startsWith('list_');
-    final isObjectProperties = constraintKey.startsWith('object_');
-    final isMultipleOf = constraintKey == 'number_multiple_of';
-
     switch (type) {
       case ComparisonType.gt:
         return {'exclusiveMinimum': threshold};
       case ComparisonType.gte:
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+        final isListItems = constraintKey.startsWith('list_');
+        final isObjectProperties = constraintKey.startsWith('object_');
+
         if (isStringLength) return {'minLength': threshold.toInt()};
         if (isListItems) return {'minItems': threshold.toInt()};
         if (isObjectProperties) return {'minProperties': threshold.toInt()};
@@ -261,17 +289,27 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       case ComparisonType.lt:
         return {'exclusiveMaximum': threshold};
       case ComparisonType.lte:
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+        final isListItems = constraintKey.startsWith('list_');
+        final isObjectProperties = constraintKey.startsWith('object_');
+
         if (isStringLength) return {'maxLength': threshold.toInt()};
         if (isListItems) return {'maxItems': threshold.toInt()};
         if (isObjectProperties) return {'maxProperties': threshold.toInt()};
 
         return {'maximum': threshold};
       case ComparisonType.eq:
-        // Handle multipleOf constraint (uses eq with remainder check)
-        if (isMultipleOf && multipleValue != null) {
-          return {'multipleOf': multipleValue};
-        }
+        final isMultipleOf =
+            constraintKey == 'number_multiple_of' && multipleValue != null;
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
 
+        if (isMultipleOf) return {'multipleOf': multipleValue};
         if (isStringLength) {
           return {
             'minLength': threshold.toInt(),
@@ -281,6 +319,13 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
         return {'const': threshold};
       case ComparisonType.range:
+        final isStringLength =
+            constraintKey.startsWith('string_') &&
+            (constraintKey.contains('length') ||
+                constraintKey.contains('exact'));
+        final isListItems = constraintKey.startsWith('list_');
+        final isObjectProperties = constraintKey.startsWith('object_');
+
         if (isStringLength) {
           return {
             'minLength': threshold.toInt(),

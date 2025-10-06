@@ -1,17 +1,21 @@
+/// ACK - A Comprehensive Kotlin-inspired validation library for Dart
+library;
+
+// Main API
 export 'src/ack.dart';
-export 'src/annotations.dart';
-export 'src/builder_helpers/schema_registry.dart';
+// Constraints
 export 'src/constraints/constraint.dart';
-export 'src/constraints/list_extensions.dart';
-export 'src/constraints/number_extensions.dart';
-export 'src/constraints/object_extensions.dart';
-export 'src/constraints/schema_extensions.dart';
-export 'src/constraints/string_extensions.dart';
-export 'src/constraints/validators.dart';
-export 'src/deprecations.dart';
+// Context
+export 'src/context.dart';
+// Extensions
+export 'src/schemas/extensions/ack_schema_extensions.dart';
+export 'src/schemas/extensions/list_schema_extensions.dart';
+export 'src/schemas/extensions/numeric_extensions.dart';
+export 'src/schemas/extensions/object_schema_extensions.dart';
+export 'src/schemas/extensions/string_schema_extensions.dart';
+// Core schemas
 export 'src/schemas/schema.dart';
-export 'src/schemas/schema_model.dart';
-export 'src/utils/json_schema.dart';
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
+// Validation results
 export 'src/validation/schema_result.dart';

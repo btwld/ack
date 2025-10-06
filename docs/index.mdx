@@ -8,14 +8,14 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 - **Simplify Validation**: Easily handle complex data validation logic.
 - **Ensure Data Integrity**: Guarantee data consistency from external sources (APIs, user input).
 - **Single Source of Truth**: Define data structures and rules in one place.
-- **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion.
+- **Reduce Boilerplate**: Minimize repetitive validation code.
 
 ## What Ack Does
 
-- Ensures data conforms to your defined schemas
-- Facilitates seamless conversion between JSON and Dart models
-- Generates JSON Schema specifications from your schemas
-- Delivers detailed and easy-to-understand validation error messages
+- Validates data against defined schemas
+- Provides detailed error messages for validation failures
+- Generates JSON Schema specifications
+- Works seamlessly with JSON data from APIs
 
 ## Quick Start
 
@@ -32,10 +32,10 @@ import 'package:ack/ack.dart';
 
 // Define the structure and rules for a user object.
 final userSchema = Ack.object({
-  'name': Ack.string.minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
-  'age': Ack.int.min(0).max(120),                // Age must be an integer between 0 and 120.
-  'email': Ack.string.email().nullable(),      // Email must be a valid format, but can be null.
-}, required: ['name', 'age']); // Name and age are mandatory fields.
+  'name': Ack.string().minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
+  'age': Ack.integer().min(0).max(120),            // Age must be an integer between 0 and 120.
+  'email': Ack.string().email().nullable(),        // Email must be a valid format, but can be null.
+}); // All fields are required by default
 
 // Data to validate.
 final dataToValidate = {
@@ -45,7 +45,7 @@ final dataToValidate = {
 };
 
 // Perform the validation against the schema.
-final result = userSchema.validate(dataToValidate);
+final result = userSchema.safeParse(dataToValidate);
 
 // Check the validation outcome.
 if (result.isOk) {
@@ -65,99 +65,113 @@ Ack provides a comprehensive set of features for data validation and transformat
 
 - **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
 - **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
-- **[TypeSafe Schemas](/core-concepts/typesafe-schemas)**: Create type-safe schemas with automatic validation
 - **[Error Handling](/core-concepts/error-handling)**: Get detailed, structured error messages for validation failures
 - **[JSON Serialization](/core-concepts/json-serialization)**: Convert between JSON and typed models
+- **[Schema Validation](/core-concepts/typesafe-schemas)**: Comprehensive schema validation with fluent API
 
-### TypeSafe Schemas
+## Next Steps
 
-Turn any Dart class into a validating schema with annotations:
+Ready to dive deeper? Start with the [Quickstart Tutorial](/getting-started/quickstart-tutorial) for a step-by-step guide, or explore specific topics:
+
+- [Schema Types](/core-concepts/schemas) - Learn about all available schema types
+- [Validation Rules](/core-concepts/validation) - Master validation constraints
+- [Error Handling](/core-concepts/error-handling) - Handle validation errors effectively
+- [Flutter Integration](/guides/flutter-form-validation) - Validate Flutter forms
+
+## Advanced Features
+
+### Nested Objects and Lists
+
+Validate complex nested data structures:
 
 ```dart
-import 'package:ack/ack.dart';
-import 'dart:convert';
-
-// Define a model with validation and automatic inference
-@Schema()
-class User {
-  @MinLength(2)                    // Validation rule
-  final String name;               // Non-nullable, required from constructor
-
-  @IsEmail()                       // Validation rule
-  final String email;              // Non-nullable, required from constructor
-
-  @Min(18)                         // Validation rule
-  final int age;                   // Non-nullable, required from constructor
-
-  // Constructor parameters automatically determine required/optional status
-  User({
-    required this.name,            // → Automatically inferred as required
-    required this.email,           // → Automatically inferred as required
-    required this.age,             // → Automatically inferred as required
-  });
-}
-
-// Dynamic payload from API, form, etc.
-final Map<String, dynamic> payload = {
-  'name': 'John',
-  'email': 'john@example.com',
-  'age': 30
-};
+// Nested object validation
+final orderSchema = Ack.object({
+  'id': Ack.string().uuid(),
+  'customer': Ack.object({
+    'name': Ack.string().minLength(2),
+    'email': Ack.string().email(),
+  }),
+  'items': Ack.list(Ack.object({
+    'product': Ack.string(),
+    'quantity': Ack.integer().positive(),
+    'price': Ack.double().positive(),
+  })).minLength(1),
+  'total': Ack.double().positive(),
+});
 ```
 
-**Automatic Inference**: Ack automatically determines which fields are required or optional based on your constructor parameters (`required this.field` vs `this.field`) and field types (`String` vs `String?`). No need for redundant `@Required` or `@Nullable` annotations in most cases!
+### Custom Validation with Refine
 
-Generated schemas provide three main capabilities:
-
-**1. Type-safe property access**
+Add custom validation logic beyond built-in constraints:
 
 ```dart
-// Access typed properties directly from the schema
-final userSchema = UserSchema().parse(payload);
-if (userSchema.isValid) {
-  String name = userSchema.name;    // Typed as String
-  String email = userSchema.email;  // Typed as String
-  int age = userSchema.age;         // Typed as int
-  print('$name ($email) is $age years old');
-
-  // Create model when needed
-  final user = User(name: name, email: email, age: age);
-}
+final validatedOrder = orderSchema.refine(
+  (order) {
+    // Custom validation: total should match sum of items
+    final items = order['items'] as List;
+    final calculatedTotal = items.fold<double>(0, (sum, item) {
+      final itemMap = item as Map<String, Object?>;
+      final quantity = itemMap['quantity'] as int;
+      final price = itemMap['price'] as double;
+      return sum + (quantity * price);
+    });
+    final total = order['total'] as double;
+    return (calculatedTotal - total).abs() < 0.01;
+  },
+  message: 'Total must match sum of item prices',
+);
 ```
 
-**2. Flexible model creation patterns**
+### Union Types and Discriminated Unions
+
+Handle polymorphic data with union types:
 
 ```dart
-// Add factory method to your model
-class User {
-  // ... existing fields ...
-  
-  factory User.fromSchema(UserSchema schema) {
-    if (!schema.isValid) {
-      throw AckException(schema.getErrors()!);
-    }
-    return User(name: schema.name, email: schema.email, age: schema.age);
-  }
-}
+// Simple union - value can be string or number
+final stringOrNumber = Ack.anyOf([
+  Ack.string().strictParsing(),
+  Ack.integer(),
+]);
 
-// Usage
-final user = User.fromSchema(UserSchema().parse(payload));
+// Discriminated union for type-safe polymorphism
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': Ack.object({
+      'type': Ack.literal('circle'),
+      'radius': Ack.double().positive(),
+    }),
+    'rectangle': Ack.object({
+      'type': Ack.literal('rectangle'),
+      'width': Ack.double().positive(),
+      'height': Ack.double().positive(),
+    }),
+  },
+);
 ```
 
-**3. JSON Schema generation for documentation**
+### Data Transformation
+
+Transform validated data into a different shape:
 
 ```dart
-// Generate JSON Schema from the same model definition
-final jsonSchema = UserSchema().toJsonSchema();
-print(jsonEncode(jsonSchema));  // Use in API docs or client validation
+// Calculate age from birth year
+final personSchema = Ack.object({
+  'name': Ack.string(),
+  'birthYear': Ack.integer(),
+}).transform((data) {
+  final age = DateTime.now().year - (data!['birthYear'] as int);
+  return {...data, 'age': age};
+});
 ```
 
-### Error Handling
+### JSON Schema Generation
+
+Generate JSON Schema specifications for API documentation:
 
 ```dart
-if (result.isFail) {
-  // Get formatted error message (or the full error object)
-  final error = result.getError();
-  print('${error.name}: $error'); // Full error details
-}
+// Generate JSON Schema for documentation
+final jsonSchema = orderSchema.toJsonSchema();
+print(jsonEncode(jsonSchema)); // Use in API docs, OpenAPI specs, etc.
 ```

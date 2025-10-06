@@ -1,240 +1,120 @@
-import 'package:ack/src/constraints/constraint.dart';
-import 'package:ack/src/helpers.dart';
+import '../common_types.dart';
+import 'constraint.dart';
 
-import '../schemas/schema.dart';
+/// Constraint for validating that a value is not null.
+/// Typically used internally by `AckSchema` when `isNullable` is false.
+class NonNullableConstraint extends Constraint<Object?>
+    with Validator<Object?> {
+  const NonNullableConstraint()
+    : super(
+        constraintKey: 'core_non_nullable',
+        description: 'Value must not be null.',
+      );
 
-class InvalidTypeConstraint extends Constraint<Object>
-    with WithConstraintError<Object> {
-  /// The expected type of the value.
+  @override
+  bool isValid(Object? value) => value != null;
+
+  @override
+  String buildMessage(Object? value) => 'Value is required and cannot be null.';
+}
+
+/// Constraint for validating that a value is of an expected Dart type.
+/// Typically used internally by `AckSchema.tryConvertInput`.
+class InvalidTypeConstraint extends Constraint<Object?>
+    with Validator<Object?> {
   final Type expectedType;
+  final Type? actualType;
 
-  /// Creates a new [InvalidTypeConstraint] that validates that the value is of the expected type.
-  InvalidTypeConstraint({required this.expectedType})
-      : super(
-          constraintKey: 'invalid_type',
-          description: 'Expected type: $expectedType',
-        );
+  InvalidTypeConstraint({required this.expectedType, Object? inputValue})
+    : actualType = inputValue?.runtimeType,
+      super(
+        constraintKey: 'core_invalid_type',
+        description: 'Value must be of type $expectedType.',
+      );
 
-  @override
-  String buildMessage(Object value) =>
-      'Invalid type: (${value.runtimeType}). Expected type: ($expectedType)';
-}
-
-class NonNullableConstraint extends Constraint<Object>
-    with WithConstraintError<Object?> {
-  NonNullableConstraint()
-      : super(
-          constraintKey: 'non_nullable',
-          description: 'Value cannot be null',
-        );
+  const InvalidTypeConstraint.withTypes({
+    required this.expectedType,
+    this.actualType,
+  }) : super(
+         constraintKey: 'core_invalid_type',
+         description: 'Value must be of type $expectedType.',
+       );
 
   @override
-  String buildMessage(Object? value) => 'Cannot be null';
-}
+  bool isValid(Object? value) {
+    if (value == null) return false;
 
-/// {@template list_unique_items_validator}
-/// Validator that checks if a [List] has unique items
-///
-/// Equivalent of calling `list.toSet().length == list.length`
-/// {@endtemplate}
-class ListUniqueItemsConstraint<T extends Object> extends Constraint<List<T>>
-    with Validator<List<T>>, JsonSchemaSpec<List<T>> {
-  /// {@macro list_unique_items_validator}
-  const ListUniqueItemsConstraint()
-      : super(
-          constraintKey: 'list_unique_items',
-          description: 'List items must be unique',
-        );
+    final t = expectedType;
+    if (t == Object) return true;
+    if (t == String) return value is String;
+    if (t == int) return value is int;
+    if (t == double) return value is double;
+    if (t == bool) return value is bool;
+    if (t == MapValue || t == Map) return value is Map;
+    if (t == List) return value is List;
 
-  @override
-  bool isValid(List<T> value) => value.duplicates.isEmpty;
-
-  @override
-  Map<String, Object?> buildContext(List<T> value) {
-    return {'duplicates': value.duplicates.toList()};
+    // Conservative fallback for other types
+    return value.runtimeType == t;
   }
 
   @override
-  String buildMessage(List<T> value) {
-    final nonUniqueValues = value.duplicates.map((e) => '"$e"').join(', ');
-
-    return 'Must be unique. Duplicates found: $nonUniqueValues';
-  }
+  String buildMessage(Object? value) =>
+      'Invalid type. Expected $expectedType, but got ${value?.runtimeType ?? "null"}.';
 
   @override
-  Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
+  Map<String, Object?> buildContext(Object? value) => {
+    'expectedType': expectedType,
+    'actualType': actualType,
+  };
 }
 
-/// {@template object_unallowed_property_validator}
-/// Validator that checks if a [Map] has unallowed properties
-/// {@endtemplate}
+// --- Object Specific Constraints ---
+// These classes are used to create typed `ConstraintError` instances inside
+// `ObjectSchema`'s validation logic. They do not need a `Validator` mixin.
+
+/// Placeholder: Constraint for when an object has properties not defined in its schema
+/// and `allowAdditionalProperties` is false.
 class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
     with Validator<MapValue> {
-  final ObjectSchema schema;
-
-  /// {@macro object_unallowed_property_validator}
-  ObjectNoAdditionalPropertiesConstraint(this.schema)
-      : super(
-          constraintKey: 'object_no_additional_properties',
-          description:
-              'Unallowed additional properties: ${schema.getProperties().keys}',
-        );
-
-  Iterable<String> _getUnallowedProperties(MapValue value) =>
-      value.keys.toSet().difference(schema.getProperties().keys.toSet());
+  final String unexpectedPropertyKey;
+  ObjectNoAdditionalPropertiesConstraint({required this.unexpectedPropertyKey})
+    : super(
+        constraintKey: 'object_additional_properties_disallowed',
+        description:
+            'Object must not contain properties beyond those defined in the schema.',
+      );
 
   @override
-  bool isValid(MapValue value) => schema.getAllowsAdditionalProperties()
-      ? true
-      : _getUnallowedProperties(value).isEmpty;
-
-  @override
-  Map<String, Object?> buildContext(MapValue value) {
-    return {'unallowedProperties': _getUnallowedProperties(value).toList()};
+  bool isValid(MapValue value) {
+    // This logic is handled in ObjectSchema, so this validation is conceptual.
+    // We return false to ensure an error is always generated when this is used.
+    return false;
   }
 
   @override
   String buildMessage(MapValue value) {
-    final unallowedKeys = _getUnallowedProperties(value);
-
-    return 'Extra properties: $unallowedKeys';
+    return 'Unexpected property found: "$unexpectedPropertyKey".';
   }
 }
 
-/// {@template object_required_property_validator}
-/// Validator that checks if a [Map] has required properties
-/// {@endtemplate}
+/// Placeholder: Constraint for when an object is missing a required property.
+/// Logic is in ObjectSchema.
 class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
     with Validator<MapValue> {
-  /// The list of required keys
-  final ObjectSchema schema;
-
-  /// {@macro object_required_property_validator}
-  ObjectRequiredPropertiesConstraint(this.schema)
-      : super(
-          constraintKey: 'object_required_properties',
-          description: 'Required properties: ${schema.getRequiredProperties()}',
-        );
-
-  List<String> _getMissingProperties(MapValue value) => schema
-      .getRequiredProperties()
-      .toSet()
-      .difference(value.keys.toSet())
-      .toList();
+  final String missingPropertyKey;
+  ObjectRequiredPropertiesConstraint({required this.missingPropertyKey})
+    : super(
+        constraintKey: 'object_required_property_missing',
+        description: 'Object must contain all required properties.',
+      );
 
   @override
   bool isValid(MapValue value) {
-    return _getMissingProperties(value).isEmpty;
-  }
-
-  @override
-  Map<String, Object?> buildContext(MapValue value) {
-    return {'missingProperties': _getMissingProperties(value)};
+    return value.containsKey(missingPropertyKey);
   }
 
   @override
   String buildMessage(MapValue value) {
-    return 'Missing: ${_getMissingProperties(value)}';
-  }
-}
-
-/// Validates that schemas in a discriminated object are properly structured.
-/// Each schema must include the discriminator key as a required property.
-class ObjectDiscriminatorStructureConstraint
-    extends Constraint<Map<String, ObjectSchema>>
-    with Validator<Map<String, ObjectSchema>> {
-  final String discriminatorKey;
-
-  ObjectDiscriminatorStructureConstraint(this.discriminatorKey)
-      : super(
-          constraintKey: 'object_discriminator_structure',
-          description:
-              'All schemas must have "$discriminatorKey" as a required property',
-        );
-
-  /// Returns schemas missing the discriminator key in their properties
-  List<String> _getSchemasWithMissingDiscriminator(
-    Map<String, ObjectSchema> schemas,
-  ) {
-    return schemas.entries
-        .where((entry) =>
-            !entry.value.getProperties().containsKey(discriminatorKey))
-        .map((entry) => entry.key)
-        .toList();
-  }
-
-  /// Returns schemas where the discriminator is not a required property
-  List<String> _getSchemasWithNotRequiredDiscriminator(
-    Map<String, ObjectSchema> schemas,
-  ) {
-    return schemas.entries
-        .where((entry) =>
-            entry.value.getProperties().containsKey(discriminatorKey) &&
-            !entry.value.getRequiredProperties().contains(discriminatorKey))
-        .map((entry) => entry.key)
-        .toList();
-  }
-
-  @override
-  bool isValid(Map<String, ObjectSchema> value) {
-    return _getSchemasWithMissingDiscriminator(value).isEmpty &&
-        _getSchemasWithNotRequiredDiscriminator(value).isEmpty;
-  }
-
-  @override
-  String buildMessage(Map<String, ObjectSchema> value) {
-    final missing = _getSchemasWithMissingDiscriminator(value);
-    final notRequired = _getSchemasWithNotRequiredDiscriminator(value);
-
-    return '''
-Discriminator "$discriminatorKey" must be present & required.
-${missing.isNotEmpty ? 'Missing: ($missing)' : ''}
-${notRequired.isNotEmpty ? 'Not required: ($notRequired)' : ''}
-'''
-        .trim();
-  }
-}
-
-/// Validates that a value has a valid discriminator that matches a known schema.
-class ObjectDiscriminatorValueConstraint extends Constraint<MapValue>
-    with Validator<MapValue> {
-  final String discriminatorKey;
-  final Map<String, ObjectSchema> schemas;
-
-  ObjectDiscriminatorValueConstraint(this.discriminatorKey, this.schemas)
-      : super(
-          constraintKey: 'object_discriminator_value',
-          description: 'Value must have a valid discriminator',
-        );
-
-  @override
-  bool isValid(MapValue value) {
-    // Check if discriminator key exists
-    if (!value.containsKey(discriminatorKey)) {
-      return false;
-    }
-
-    // Get the discriminator value
-    final discriminatorValue = value[discriminatorKey];
-
-    // Check if value is a string and matches a schema
-    return discriminatorValue is String &&
-        schemas.containsKey(discriminatorValue);
-  }
-
-  @override
-  String buildMessage(MapValue value) {
-    final discriminatorValue = value[discriminatorKey];
-    final validSchemaKeys = schemas.keys.toList();
-
-    if (discriminatorValue == null) {
-      return 'Missing discriminator "$discriminatorKey"';
-    }
-
-    if (discriminatorValue is! String) {
-      return 'Discriminator "$discriminatorKey" must be a string, got ${discriminatorValue.runtimeType}';
-    }
-
-    return 'Invalid discriminator: $discriminatorValue. Allowed: ($validSchemaKeys)';
+    return 'Required property "$missingPropertyKey" is missing.';
   }
 }

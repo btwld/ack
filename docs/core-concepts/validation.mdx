@@ -11,8 +11,8 @@ Ack provides a rich set of built-in validation rules (constraints) that you can 
 Allows the value to be `null` in addition to the type's constraints.
 
 ```dart
-final optionalName = Ack.string.nullable();
-final optionalAge = Ack.int.nullable();
+final optionalName = Ack.string().nullable();
+final optionalAge = Ack.integer().nullable();
 ```
 
 ### `constrain(SchemaConstraint constraint)`
@@ -21,57 +21,58 @@ Applies a custom `SchemaConstraint`. See the [Custom Validation](../guides/custo
 
 ## String Constraints
 
-Apply these to [`Ack.string`](./schemas.mdx#string-schema) schemas.
+Apply these to [`Ack.string()`](./schemas.mdx#string-schema) schemas.
 
 ### `minLength(int min)`
 Ensures the string has at least `min` characters.
 ```dart
-Ack.string.minLength(5)
+Ack.string().minLength(5)
 ```
 
 ### `maxLength(int max)`
 Ensures the string has at most `max` characters.
 ```dart
-Ack.string.maxLength(100)
+Ack.string().maxLength(100)
 ```
 
 ### Exact Length
 To ensure a string has exactly a specific length, combine `minLength()` and `maxLength()`:
 ```dart
 // String must be exactly 10 characters
-Ack.string.minLength(10).maxLength(10)
+Ack.string().minLength(10).maxLength(10)
 ```
 
 ### `notEmpty()`
 Ensures the string is not empty (`''`). Equivalent to `minLength(1)`.
 ```dart
-Ack.string.notEmpty()
+Ack.string().notEmpty()
 ```
 
 ### `matches(String pattern, {String? example})`
-Ensures the string fully matches the given regular expression `pattern`. The pattern is automatically anchored with `^` and `$` if not already present.
+Ensures the string matches the given regular expression `pattern`. Add anchors (`^`, `$`) to the pattern when you want to match the entire string.
 ```dart
 // Simple alphanumeric pattern
-Ack.string.matches(r'[a-zA-Z0-9]+')
+Ack.string().matches(r'^[a-zA-Z0-9]+$')
 
 // UUID pattern
-Ack.string.matches(r'[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}')
+Ack.string()
+    .matches(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$')
 ```
 
 ### `contains(String pattern, {String? example})`
 Ensures the string contains the given pattern anywhere within it.
 ```dart
 // Password must contain at least one uppercase letter
-Ack.string.contains(r'[A-Z]')
+Ack.string().contains(r'[A-Z]')
 
 // Password must contain at least one digit
-Ack.string.contains(r'[0-9]')
+Ack.string().contains(r'[0-9]')
 ```
 
 ### `email()`
 Ensures the string is a valid email address format.
 ```dart
-Ack.string.email()
+Ack.string().email()
 ```
 
 
@@ -79,124 +80,124 @@ Ack.string.email()
 ### `date()`
 Ensures the string is a valid date format (YYYY-MM-DD).
 ```dart
-Ack.string.date()
+Ack.string().date()
 ```
 
-### `dateTime()`
+### `datetime()`
 Ensures the string is a valid date-time format (ISO 8601).
 ```dart
-Ack.string.dateTime()
+Ack.string().datetime()
 ```
 
 ### `time()`
 Ensures the string is a valid time format (HH:MM:SS).
 ```dart
-Ack.string.time()
+Ack.string().time()
 ```
 
 ### `uri()`
 Ensures the string is a valid URI according to RFC 3986.
 ```dart
-Ack.string.uri()
+Ack.string().uri()
 ```
 
 ### `uuid()`
 Ensures the string is a valid UUID according to RFC 4122.
 ```dart
-Ack.string.uuid()
+Ack.string().uuid()
 ```
 
 ### `ipv4()`
 Ensures the string is a valid IPv4 address.
 ```dart
-Ack.string.ipv4()
+Ack.string().ipv4()
 ```
 
 ### `ipv6()`
 Ensures the string is a valid IPv6 address.
 ```dart
-Ack.string.ipv6()
+Ack.string().ipv6()
 ```
 
 
 
-### `enumValues(List<String> allowedValues)`
+### `enumString(List<String> allowedValues)`
 Ensures the string is one of the `allowedValues`.
 ```dart
-Ack.string.enumValues(['active', 'inactive', 'pending'])
+Ack.enumString(['active', 'inactive', 'pending'])
 ```
 
 ## Number Constraints (Int and Double)
 
-Apply these to [`Ack.int`](./schemas.mdx#number-schemas) and [`Ack.double`](./schemas.mdx#number-schemas) schemas.
+Apply these to [`Ack.integer()`](./schemas.mdx#number-schemas) and [`Ack.double()`](./schemas.mdx#number-schemas) schemas.
 
 ### `min(num limit)`
 Ensures the number is greater than or equal to the `limit`.
 ```dart
-Ack.int.min(0) // >= 0
-Ack.double.min(0.0) // >= 0.0
+Ack.integer().min(0) // >= 0
+Ack.double().min(0.0) // >= 0.0
 ```
 
 ### `max(num limit)`
 Ensures the number is less than or equal to the `limit`.
 ```dart
-Ack.int.max(100) // <= 100
-Ack.double.max(100.0) // <= 100.0
+Ack.integer().max(100) // <= 100
+Ack.double().max(100.0) // <= 100.0
 ```
 
 ### `multipleOf(num factor)`
 Ensures the number is a multiple of the `factor`.
 ```dart
-Ack.int.multipleOf(5) // Must be divisible by 5
-Ack.double.multipleOf(0.01) // Allows up to 2 decimal places
+Ack.integer().multipleOf(5) // Must be divisible by 5
+Ack.double().multipleOf(0.5) // Use factors that avoid floating point rounding issues
 ```
 
 ### `positive()`
 Ensures the number is positive (greater than 0).
 ```dart
-Ack.int.positive() // > 0
-Ack.double.positive() // > 0.0
+Ack.integer().positive() // > 0
+Ack.double().positive() // > 0.0
 ```
 
 ### `negative()`
 Ensures the number is negative (less than 0).
 ```dart
-Ack.int.negative() // < 0
-Ack.double.negative() // < 0.0
+Ack.integer().negative() // < 0
+Ack.double().negative() // < 0.0
 ```
 
 ## List Constraints
 
-Apply these to [`Ack.list`](./schemas.mdx#list-schema) schemas.
+Apply these to [`Ack.list()`](./schemas.mdx#list-schema) schemas.
 
-### `minItems(int min)`
+### `minLength(int min)`
 Ensures the list has at least `min` items.
 ```dart
-Ack.list(Ack.string).minItems(1)
+Ack.list(Ack.string()).minLength(1)
 ```
 
-### `maxItems(int max)`
+### `maxLength(int max)`
 Ensures the list has at most `max` items.
 ```dart
-Ack.list(Ack.int).maxItems(10)
+Ack.list(Ack.integer()).maxLength(10)
 ```
 
-### `exactItems(int count)`
+### `length(int count)`
 Ensures the list has exactly `count` items.
 ```dart
-Ack.list(Ack.boolean).exactItems(5)
+Ack.list(Ack.boolean()).length(5)
 ```
 
 ### `notEmpty()`
-Ensures the list is not empty. Equivalent to `minItems(1)`.
+Ensures the list is not empty. Equivalent to `minLength(1)`.
 ```dart
-Ack.list(Ack.object({...})).notEmpty()
+Ack.list(Ack.object({})).notEmpty()
 ```
 
-### `uniqueItems()`
+### `unique()`
 Ensures all items in the list are unique. Uses `Set` comparison.
 ```dart
-Ack.list(Ack.string).uniqueItems()
+Ack.list(Ack.string()).unique()
 ```
 
 ## Combining Constraints
@@ -204,14 +205,14 @@ Ack.list(Ack.string).uniqueItems()
 You can chain multiple constraints together. They are evaluated in the order they are applied.
 
 ```dart
-final usernameSchema = Ack.string
+final usernameSchema = Ack.string()
   .minLength(3)        // First check min length
   .maxLength(20)       // Then check max length
   .matches(r'[a-z0-9_]+') // Then check pattern (lowercase alphanumeric/underscore)
   .notEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
 
-final quantitySchema = Ack.int
+final quantitySchema = Ack.integer()
   .min(1)              // Must be at least 1
   .max(100)            // Must be at most 100
-  .multipleOf(1);     // Must be an integer (redundant for Ack.int)
+  .multipleOf(1);     // Must be an integer (redundant for Ack.integer)
 ```

@@ -39,13 +39,13 @@ import 'package:ack/ack.dart';
 
 // Define a schema for a user object
 final userSchema = Ack.object({
-  'name': Ack.string.minLength(2).maxLength(50),
-  'email': Ack.string.email(),
-  'age': Ack.int.min(0).max(120).nullable(),
-}, required: ['name', 'email']);
+  'name': Ack.string().minLength(2).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).max(120).optional(),
+});
 
 // Validate data against the schema
-final result = userSchema.validate({
+final result = userSchema.safeParse({
   'name': 'John Doe',
   'email': 'john@example.com',
   'age': 30
@@ -61,66 +61,51 @@ if (result.isOk) {
 }
 ```
 
-### Code Generator (ack_generator)
+Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
 
-For type-safe schema generation from Dart models:
+### Advanced Usage
 
-```bash
-# Add dependencies
-dart pub add ack
-dart pub add dev:ack_generator dev:build_runner
-```
-
-Define a model with annotations:
+For more complex validation scenarios:
 
 ```dart
 import 'package:ack/ack.dart';
 
-part 'user.g.dart'; // Generated file
+// Complex nested object validation
+final orderSchema = Ack.object({
+  'id': Ack.string().uuid(),
+  'customer': Ack.object({
+    'name': Ack.string().minLength(2),
+    'email': Ack.string().email(),
+  }),
+  'items': Ack.list(Ack.object({
+    'product': Ack.string(),
+    'quantity': Ack.integer().positive(),
+    'price': Ack.double().positive(),
+  })).minLength(1),
+  'total': Ack.double().positive(),
+}).refine(
+  (order) {
+    // Custom validation: total should match sum of items
+    final items = order['items'] as List;
+    final calculatedTotal = items.fold<double>(0, (sum, item) {
+      final itemMap = item as Map<String, Object?>;
+      final quantity = itemMap['quantity'] as int;
+      final price = itemMap['price'] as double;
+      return sum + (quantity * price);
+    });
+    final total = order['total'] as double;
+    return (calculatedTotal - total).abs() < 0.01;
+  },
+  message: 'Total must match sum of item prices',
+);
 
-@Schema()
-class User {
-  @MinLength(2)
-  @MaxLength(50)
-  final String name;
-
-  @IsEmail()
-  final String email;
-
-  @Min(0)
-  @Max(120)
-  final int? age; // Nullable types are automatically detected
-
-  User({required this.name, required this.email, this.age});
-}
-```
-
-Generate schema classes:
-
-```bash
-dart run build_runner build
-```
-
-Use the generated schema:
-
-```dart
-// Create and validate in one step
-final userSchema = UserSchema({
-  'name': 'John Doe',
-  'email': 'john@example.com',
-  'age': 30
-});
-
-if (userSchema.isValid) {
-  // Access strongly-typed properties directly
-  print('User: ${userSchema.name}, ${userSchema.email}');
-  
-  // Create your model manually
-  final user = User(
-    name: userSchema.name,
-    email: userSchema.email,
-    age: userSchema.age,
-  );
+// Validate complex data
+final result = orderSchema.safeParse(orderData);
+if (result.isOk) {
+  final validOrder = result.getOrThrow();
+  print('Valid order: ${validOrder['id']}');
+} else {
+  print('Validation failed: ${result.getError()}');
 }
 ```
 

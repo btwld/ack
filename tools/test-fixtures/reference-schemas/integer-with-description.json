@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "A numeric integer field",
+  "type": "integer",
+  "minimum": -9007199254740991,
+  "maximum": 9007199254740991
+}

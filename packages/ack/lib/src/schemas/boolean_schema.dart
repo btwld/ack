@@ -1,30 +1,74 @@
 part of 'schema.dart';
 
-/// Schema for validating boolean values
-///
-/// BooleanSchema validates boolean data and supports:
-/// - Nullability via [nullable]
-/// - Default values via [defaultValue]
-/// - Strict parsing via [strict]
-/// - Custom descriptions via [description]
-final class BooleanSchema extends ScalarSchema<BooleanSchema, bool> {
-  /// Builder function to create new instances
+/// Schema for validating boolean (`bool`) values.
+@immutable
+final class BooleanSchema extends AckSchema<bool>
+    with FluentSchema<bool, BooleanSchema> {
   @override
-  final builder = BooleanSchema.new;
+  final bool strictPrimitiveParsing;
 
-  /// Creates a new BooleanSchema
-  ///
-  /// Parameters:
-  /// - [nullable] - Whether null values are allowed
-  /// - [constraints] - Additional validation constraints
-  /// - [strict] - Whether to use strict parsing
-  /// - [description] - Schema description
-  /// - [defaultValue] - Default value if none provided
   const BooleanSchema({
-    super.nullable,
-    super.constraints,
-    super.strict,
+    this.strictPrimitiveParsing = false,
+    super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
-  }) : super(type: SchemaType.boolean);
+    super.constraints,
+    super.refinements,
+  });
+
+  @override
+  SchemaType get schemaType => SchemaType.boolean;
+
+  /// Creates a new BooleanSchema with strict parsing enabled/disabled
+  BooleanSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
+
+  @override
+  BooleanSchema copyWith({
+    bool? strictPrimitiveParsing,
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    bool? defaultValue,
+    List<Constraint<bool>>? constraints,
+    List<Refinement<bool>>? refinements,
+  }) {
+    return BooleanSchema(
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
+      strictPrimitiveParsing:
+          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
+    );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    if (isNullable) {
+      final baseSchema = {
+        'type': 'boolean',
+        if (description != null) 'description': description,
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    final schema = {
+      'type': 'boolean',
+      if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
+    };
+
+    return mergeConstraintSchemas(schema);
+  }
 }

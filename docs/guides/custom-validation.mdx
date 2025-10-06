@@ -2,132 +2,93 @@
 title: Custom Validation Rules
 ---
 
-While Ack provides many [built-in validation rules](../core-concepts/validation.mdx), you can easily define your own custom validation logic using `SchemaConstraint`.
+While Ack provides many [built-in validation rules](../core-concepts/validation.mdx), you can extend them with your own value-level constraints or object-level refinement logic.
 
-## Creating a `SchemaConstraint`
+## Creating a Value Constraint
 
-To create a custom rule, extend the abstract `SchemaConstraint<T>` class, where `T` is the data type the constraint applies to (e.g., `String`, `int`, `num`, `List`, `Map`, `Object?`).
-
-You need to implement:
-
-1.  **Constructor:** Call `super()` with a unique `name` (used internally and potentially in errors) and a default `message` for validation failures.
-2.  **`validate(T value, [Map<String, dynamic>? data])` method:** This method contains your validation logic.
-    *   It receives the `value` being validated.
-    *   It optionally receives the entire `data` map (useful for cross-field validation).
-    *   It must return `true` if the value is valid according to this constraint, and `false` otherwise.
+To add reusable validation that only depends on the field value, implement a `Constraint<T>` that mixes in `Validator<T>`.
 
 ```dart
 import 'package:ack/ack.dart';
 
-// Example 1: Constraint for positive numbers (applies to `num`)
-class IsPositiveConstraint extends SchemaConstraint<num> {
-  // Provide a unique name and a default error message
-  IsPositiveConstraint() : super(name: 'is_positive', message: 'Number must be positive');
-
-  // Implement the validation logic
-  @override
-  bool validate(num value, [Map<String, dynamic>? data]) {
-    // Return true if the value is valid, false otherwise
-    return value > 0;
-  }
-}
-
-// Example 2: Constraint for password matching (applies to `String`)
-class PasswordMatchConstraint extends SchemaConstraint<String> {
-  final String fieldToMatch;
-
-  PasswordMatchConstraint(this.fieldToMatch) 
-      : super(name: 'password_match', message: 'Passwords do not match');
+class IsPositiveConstraint extends Constraint<double> with Validator<double> {
+  IsPositiveConstraint()
+      : super(
+          constraintKey: 'is_positive',
+          description: 'Number must be positive',
+        );
 
   @override
-  bool validate(String value, [Map<String, dynamic>? data]) {
-    // Access the other field's value from the optional data map
-    // This map contains the full object being validated by the parent Ack.object schema.
-    final otherPassword = data?[fieldToMatch] as String?;
-    return value == otherPassword;
-  }
+  bool isValid(double value) => value > 0;
+
+  @override
+  String buildMessage(double value) => 'Number must be positive';
 }
+
+final priceSchema = Ack.double().constrain(IsPositiveConstraint());
+
+print(priceSchema.safeParse(10.5).isOk); // true
+print(priceSchema.safeParse(-5).isFail); // true
 ```
 
-## Applying Custom Constraints
+## Cross-Field Rules with `.refine()`
 
-Use the [`.constrain()`](../core-concepts/validation.mdx#constrainschemaconstraint-constraint) method on any schema type to apply your custom `SchemaConstraint`.
+When validation depends on multiple fields, use `.refine()` on the parent object schema.
 
 ```dart
-// Applying the IsPositiveConstraint to a double schema
-final priceSchema = Ack.double.constrain(IsPositiveConstraint());
-
-print(priceSchema.validate(10.50).isOk); // true
-print(priceSchema.validate(-5.0).isOk);  // false
-print(priceSchema.validate(-5.0).getError()?.message); // Number must be positive
-
-
-// Applying the PasswordMatchConstraint within an object schema
-// See: [Object Schema](../core-concepts/schemas.mdx#object-schema)
 final signUpSchema = Ack.object({
-  'password': Ack.string.minLength(8),
-  'confirmPassword': Ack.string
-      .minLength(8)
-      // Apply the constraint, passing the name of the field to compare against
-      .constrain(PasswordMatchConstraint('password')) 
-}, required: ['password', 'confirmPassword']);
+  'password': Ack.string().minLength(8),
+  'confirmPassword': Ack.string().minLength(8),
+}).refine(
+  (data) => data['password'] == data['confirmPassword'],
+  message: 'Passwords do not match',
+);
 
-// Valid data
-final validPasswords = {
+final result = signUpSchema.safeParse({
   'password': 'pass1234',
-  'confirmPassword': 'pass1234'
-};
-print(signUpSchema.validate(validPasswords).isOk); // true
-
-// Invalid data
-final mismatchPasswords = {
-  'password': 'pass1234',
-  'confirmPassword': 'different'
-};
-final result = signUpSchema.validate(mismatchPasswords);
-print(result.isOk); // false
-print(result.getError()?.path); // ['confirmPassword']
-print(result.getError()?.message); // Passwords do not match
+  'confirmPassword': 'different',
+});
+print(result.isFail); // true
 ```
 
 ## Overriding Error Messages
 
-You can override the default `message` defined in your `SchemaConstraint` constructor when applying it by providing the optional `message` parameter to `.constrain()`.
-See also: [Custom Error Messages](../core-concepts/error-handling.mdx#custom-error-messages).
+The optional `message` parameter on `.constrain()` lets you customize the failure message.
 
 ```dart
-final schema = Ack.double
+final schema = Ack.double()
     .constrain(IsPositiveConstraint(), message: 'Price must be greater than zero.');
 
-print(schema.validate(-10).getError()?.message); // Price must be greater than zero.
+print(schema.safeParse(-10).getError().toString()); // Price must be greater than zero.
 ```
 
-## Reusable Constraints
+## Organizing Reusable Constraints
 
-Define your custom constraints in separate files or a utility library to reuse them across different schemas in your application.
+Place frequently used constraints in utility files so they can be shared across schemas.
 
 ```dart
 // file: validation/constraints.dart
 import 'package:ack/ack.dart';
 
-class IsPositiveConstraint extends SchemaConstraint<num> { /* ... */ }
-class PasswordMatchConstraint extends SchemaConstraint<String> { /* ... */ }
+class IsPositiveConstraint extends Constraint<double> with Validator<double> {
+  // ...
+}
 
 // file: schemas/user_schema.dart
 import 'package:ack/ack.dart';
 import '../validation/constraints.dart';
 
 final userSchema = Ack.object({
-  'age': Ack.int.constrain(IsPositiveConstraint()),
-  // ... other fields
+  'age': Ack.integer(),
+  'salary': Ack.double().constrain(IsPositiveConstraint()),
 });
 ```
 
-## When to Use Custom Constraints
+## When to Use Custom Logic
 
--   **Complex Business Logic:** Validation rules specific to your application domain.
--   **Cross-Field Validation:** Rules that depend on the values of multiple fields (like password confirmation).
--   **Reusable Patterns:** Common validation patterns used in multiple schemas.
--   **External Service Validation:** Checking a value against an external API or database (though be mindful of performance implications).
+- **Complex Business Rules:** Domain-specific checks that built-ins don’t cover.
+- **Cross-Field Relationships:** e.g. comparing password and confirmation fields.
+- **Reusable Patterns:** Common rules you apply across multiple schemas.
+- **External Service Checks:** Validating against APIs or databases (beware of performance/latency).
 
-For simple cases, chaining built-in constraints is often sufficient. Use custom constraints when the built-in rules don't cover your specific requirements. 
+For simple cases, chaining built-in constraints is often enough. Reach for custom constraints/refinements when you need extra flexibility.

@@ -1,7 +1,15 @@
 builders:
-  ack_schema:
+  ack_generator:
     import: "package:ack_generator/builder.dart"
-    builder_factories: ["ackSchemaBuilder"]
+    builder_factories: ["ackGenerator"]
     build_extensions: {".dart": [".g.dart"]}
     auto_apply: dependents
     build_to: source
+    required_inputs: [".dart"]
+
+# Global configuration for performance
+global_options:
+  ack_generator|ack_generator:
+    options:
+      # Enable verbose logging for debugging
+      verbose: false

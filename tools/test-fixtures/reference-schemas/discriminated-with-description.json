@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "A discriminated event union",
+  "anyOf": [
+    {
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "const": "click"
+        },
+        "x": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "y": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "eventType",
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "const": "scroll"
+        },
+        "delta": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "eventType",
+        "delta"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

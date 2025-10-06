@@ -1,53 +1,86 @@
-import 'dart:async';
+import 'package:meta/meta.dart';
 
-import 'package:ack/src/schemas/schema.dart';
+import 'schemas/schema.dart';
 
-import 'validation/schema_result.dart';
-
-final kSchemaContextKey = #schemaContextKey;
-
+/// Represents the context in which a schema validation is occurring.
+@immutable
 class SchemaContext {
   final String name;
   final Object? value;
   final AckSchema schema;
+  final SchemaContext? parent;
+  final String? pathSegment;
 
   const SchemaContext({
     required this.name,
     required this.schema,
     required this.value,
+    this.parent,
+    this.pathSegment,
   });
-}
 
-SchemaResult<T> executeWithContext<T extends Object>(
-  SchemaContext context,
-  SchemaResult<T> Function() action,
-) {
-  return wrapWithViolationContext(context, () => action());
-}
+  /// Escapes a JSON Pointer segment per RFC 6901.
+  ///
+  /// Per RFC 6901, `~` must be escaped as `~0` and `/` must be escaped as `~1`.
+  static String _escapeJsonPointerSegment(String segment) {
+    return segment.replaceAll('~', '~0').replaceAll('/', '~1');
+  }
 
-T wrapWithViolationContext<T>(SchemaContext context, T Function() action) {
-  return Zone.current
-      .fork(zoneValues: {kSchemaContextKey: context}).run(action);
-}
+  /// The full JSON Pointer path (RFC 6901) from root to this context.
+  ///
+  /// Returns a JSON Pointer string like `#/user/name` or `#/items/0`.
+  /// The `#` prefix indicates this is a JSON Pointer reference.
+  /// Special characters in segments (`~` and `/`) are escaped per RFC 6901.
+  ///
+  /// If pathSegment is explicitly set to empty string '', the child inherits
+  /// the parent's path without adding a new segment.
+  String get path {
+    if (parent == null) {
+      return '#';
+    }
 
-SchemaContext getCurrentSchemaContext() {
-  try {
-    return Zone.current[kSchemaContextKey] as SchemaContext;
-  } catch (e) {
-    Error.throwWithStackTrace(
-      StateError(
-        'SchemaMetadata.augment must be called within a Schema context',
-      ),
-      StackTrace.current,
+    final parentPath = parent!.path;
+
+    // Empty string pathSegment means "inherit parent path, don't add segment"
+    if (pathSegment == '') {
+      return parentPath;
+    }
+
+    final segment = pathSegment ?? name;
+    final escapedSegment = _escapeJsonPointerSegment(segment);
+
+    // All segments (including array indices) use `/` separator per RFC 6901
+    return parentPath == '#'
+        ? '#/$escapedSegment'
+        : '$parentPath/$escapedSegment';
+  }
+
+  /// Creates a child context for nested validation.
+  ///
+  /// If [pathSegment] is an empty string (''), the child inherits the parent's
+  /// path without adding a new segment. This is useful for schemas like AnyOf
+  /// or DiscriminatedObject that should not pollute the JSON Pointer path with
+  /// internal structure (e.g., avoiding paths like `#/field/anyOf:0`).
+  SchemaContext createChild({
+    required String name,
+    required AckSchema schema,
+    required Object? value,
+    String? pathSegment,
+  }) {
+    return SchemaContext(
+      name: name,
+      schema: schema,
+      value: value,
+      parent: this,
+      pathSegment: pathSegment,
     );
   }
-}
 
-class SchemaMockContext extends SchemaContext {
-  const SchemaMockContext()
-      : super(
-          name: 'mock_context',
-          schema: const StringSchema(),
-          value: 'mock_value',
-        );
+  @override
+  String toString() {
+    final schemaTypeString = schema.schemaTypeName;
+    final valueString = value?.toString() ?? 'null';
+
+    return 'SchemaContext(name: "$name", path: "$path", schema: $schemaTypeString, value: "$valueString")';
+  }
 }

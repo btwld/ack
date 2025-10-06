@@ -1,110 +1,224 @@
 part of 'schema.dart';
 
+/// Schema for validating a discriminated union of objects.
+///
+/// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
+/// `schemas` to validate the object.
+@immutable
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
-    with SchemaFluentMethods<DiscriminatedObjectSchema, MapValue> {
-  final String _discriminatorKey;
-  final Map<String, ObjectSchema> _schemas;
+    with FluentSchema<MapValue, DiscriminatedObjectSchema> {
+  final String discriminatorKey;
+  final Map<String, AckSchema> schemas;
 
-  DiscriminatedObjectSchema({
-    super.nullable,
-    required String discriminatorKey,
-    required Map<String, ObjectSchema> schemas,
-    super.constraints,
+  const DiscriminatedObjectSchema({
+    required this.discriminatorKey,
+    required this.schemas,
+    super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
-  })  : _discriminatorKey = discriminatorKey,
-        _schemas = schemas,
-        super(type: SchemaType.discriminatedObject);
-
-  /// Returns the discriminator value for the discriminated object schema.
-  String? _getDiscriminator(MapValue value) {
-    final discriminatorValue = value[_discriminatorKey];
-
-    return discriminatorValue != null ? discriminatorValue as String : null;
-  }
-
-  /// Returns the discriminator key for the discriminated object schema.
-  String getDiscriminatorKey() => _discriminatorKey;
-
-  /// Returns the schemas for the discriminated object schema.
-  List<ObjectSchema> getSchemas() => _schemas.values.toList();
-
-  /// Returns the schema mapping for the discriminated object schema.
-  /// This method is required for proper JSON Schema if/then/else conversion.
-  Map<String, ObjectSchema> getSchemasMap() => _schemas;
+    super.constraints,
+    super.refinements,
+  });
 
   @override
-  SchemaResult<MapValue> validateNonNullValue(MapValue value) {
-    final violations = [
-      ObjectDiscriminatorStructureConstraint(_discriminatorKey)
-          .validate(_schemas),
-      ObjectDiscriminatorValueConstraint(_discriminatorKey, _schemas)
-          .validate(value),
-    ].whereType<ConstraintError>();
+  SchemaType get schemaType => SchemaType.discriminated;
 
-    if (violations.isNotEmpty) {
+  @override
+  @protected
+  SchemaResult<MapValue> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Null handling with default cloning
+    if (inputValue == null) {
+      if (defaultValue != null) {
+        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
+        // Recursively validate (routes by discriminator)
+        return parseAndValidate(clonedDefault, context);
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
+
+    // Type guard
+    if (inputValue is! Map) {
+      final actualType = AckSchema.getSchemaType(inputValue);
       return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: violations.toList(),
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
           context: context,
         ),
       );
     }
+    final mapValue = inputValue is MapValue
+        ? inputValue
+        : inputValue.cast<String, Object?>();
 
-    final discriminatorValue = _getDiscriminator(value);
+    final Object? discValueRaw = mapValue[discriminatorKey];
 
-    final discriminatedSchema = _schemas[discriminatorValue]!;
+    if (discValueRaw == null) {
+      final constraintError = ObjectRequiredPropertiesConstraint(
+        missingPropertyKey: discriminatorKey,
+      ).validate(mapValue);
 
-    return discriminatedSchema.validate(
-      value,
-      debugName: discriminatorValue,
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: constraintError != null ? [constraintError] : [],
+          context: context.createChild(
+            name: discriminatorKey,
+            schema: const StringSchema(),
+            value: null,
+            pathSegment: discriminatorKey,
+          ),
+        ),
+      );
+    }
+
+    if (discValueRaw is! String) {
+      final constraintError = InvalidTypeConstraint(
+        expectedType: String,
+      ).validate(discValueRaw);
+
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: constraintError != null ? [constraintError] : [],
+          context: context.createChild(
+            name: discriminatorKey,
+            schema: const StringSchema(),
+            value: discValueRaw,
+            pathSegment: discriminatorKey,
+          ),
+        ),
+      );
+    }
+
+    final AckSchema? selectedSubSchema = schemas[discValueRaw];
+
+    if (selectedSubSchema == null) {
+      final allowed = schemas.keys.toList(growable: false);
+      final enumError = PatternConstraint.enumString(
+        allowed,
+      ).validate(discValueRaw);
+
+      // Error context for discriminator key, but inherit parent path
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: enumError != null ? [enumError] : [],
+          context: context.createChild(
+            name: discriminatorKey,
+            schema: const StringSchema(),
+            value: discValueRaw,
+            pathSegment:
+                discriminatorKey, // Point directly to the failing field
+          ),
+        ),
+      );
+    }
+
+    // Validate the selected branch; branch name for debug only
+    final subSchemaContext = context.createChild(
+      name: 'when $discriminatorKey="$discValueRaw"',
+      schema: selectedSubSchema,
+      value: mapValue,
+      pathSegment: '', // Inherit parent path
     );
-  }
 
-  @override
-  DiscriminatedObjectSchema call({
-    bool? nullable,
-    String? description,
-    String? discriminatorKey,
-    Map<String, ObjectSchema>? schemas,
-    List<Validator<MapValue>>? constraints,
-    MapValue? defaultValue,
-  }) {
-    return copyWith(
-      constraints: constraints,
-      discriminatorKey: discriminatorKey,
-      schemas: schemas,
-      nullable: nullable,
-      description: description,
-      defaultValue: defaultValue,
+    final result = selectedSubSchema.parseAndValidate(
+      mapValue,
+      subSchemaContext,
     );
+
+    if (result.isFail) {
+      return result.match(
+        onOk: (_) => throw StateError('Unreachable'),
+        onFail: (error) => SchemaResult.fail(error),
+      );
+    }
+
+    final validatedValue = result.getOrThrow() as MapValue;
+
+    return applyConstraintsAndRefinements(validatedValue, context);
   }
 
   @override
   DiscriminatedObjectSchema copyWith({
-    List<Validator<MapValue>>? constraints,
     String? discriminatorKey,
-    Map<String, ObjectSchema>? schemas,
-    bool? nullable,
+    Map<String, AckSchema>? schemas,
+    bool? isNullable,
+    bool? isOptional,
     String? description,
     MapValue? defaultValue,
+    List<Constraint<MapValue>>? constraints,
+    List<Refinement<MapValue>>? refinements,
   }) {
     return DiscriminatedObjectSchema(
-      nullable: nullable ?? _nullable,
-      discriminatorKey: discriminatorKey ?? _discriminatorKey,
-      schemas: schemas ?? _schemas,
-      constraints: constraints ?? _constraints,
-      description: description ?? _description,
-      defaultValue: defaultValue ?? _defaultValue,
+      discriminatorKey: discriminatorKey ?? this.discriminatorKey,
+      schemas: schemas ?? this.schemas,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    final anyOfClauses = <Map<String, Object?>>[];
+    schemas.forEach((discriminatorValue, objectSchema) {
+      final subSchemaJson = objectSchema.toJsonSchema();
+      // Constrain discriminator property with type and const
+      subSchemaJson['properties'] = {
+        ...?(subSchemaJson['properties'] as Map?),
+        discriminatorKey: {'type': 'string', 'const': discriminatorValue},
+      };
+      // Build required array with discriminator first
+      final existingRequired =
+          (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
+      final requiredFields = <String>[
+        discriminatorKey,
+        ...existingRequired.where((field) => field != discriminatorKey),
+      ];
+      subSchemaJson['required'] = requiredFields;
+      anyOfClauses.add(subSchemaJson);
+    });
+
+    final baseSchema = {
+      'anyOf': anyOfClauses,
+      if (!isNullable && description != null) 'description': description,
+      if (!isNullable && defaultValue != null) 'default': defaultValue,
+    };
+
+    // Wrap in anyOf with null if nullable
+    if (isNullable) {
+      return {
+        if (description != null) 'description': description,
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          baseSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    return mergeConstraintSchemas(baseSchema);
   }
 
   @override
   Map<String, Object?> toMap() {
     return {
-      ...super.toMap(),
-      'discriminatorKey': _discriminatorKey,
-      'schemas': _schemas.map((key, value) => MapEntry(key, value.toMap())),
+      'type': schemaType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      'defaultValue': defaultValue,
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'discriminatorKey': discriminatorKey,
+      'schemas': schemas.length,
     };
   }
 }

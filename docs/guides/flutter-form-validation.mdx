@@ -30,22 +30,22 @@ class _SignUpFormState extends State<SignUpForm> {
 
   // Define Ack schemas for validation rules
   // See: [Schema Types](../core-concepts/schemas.mdx), [Validation Rules](../core-concepts/validation.mdx)
-  final _usernameSchema = Ack.string
-    .minLength(3, message: 'Username must be at least 3 characters')
-    .maxLength(20, message: 'Username cannot exceed 20 characters')
-    .matches(r'[a-zA-Z0-9_]+', message: 'Username can only contain letters, numbers, and underscores')
-    .isNotEmpty(message: 'Username is required');
+  final _usernameSchema = Ack.string()
+    .minLength(3)
+    .maxLength(20)
+    .matches(r'^[a-zA-Z0-9_]+$')
+    .notEmpty();
 
-  final _emailSchema = Ack.string
-    .isEmail(message: 'Please enter a valid email address')
-    .isNotEmpty(message: 'Email is required');
+  final _emailSchema = Ack.string()
+    .email()
+    .notEmpty();
 
-  final _passwordSchema = Ack.string
-    .minLength(8, message: 'Password must be at least 8 characters')
-    .matches(r'.*[A-Z].*', message: 'Password must contain an uppercase letter')
-    .matches(r'.*[a-z].*', message: 'Password must contain a lowercase letter')
-    .matches(r'.*[0-9].*', message: 'Password must contain a digit')
-    .isNotEmpty(message: 'Password is required');
+  final _passwordSchema = Ack.string()
+    .minLength(8)
+    .matches(r'.*[A-Z].*')
+    .matches(r'.*[a-z].*')
+    .matches(r'.*[0-9].*')
+    .notEmpty();
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +60,10 @@ class _SignUpFormState extends State<SignUpForm> {
             decoration: const InputDecoration(labelText: 'Username'),
             // Use the schema's validate method in the validator
             validator: (value) {
-              final result = _usernameSchema.validate(value);
+              final result = _usernameSchema.safeParse(value);
               // Return the error message if validation fails
               // See: [Error Handling](../core-concepts/error-handling.mdx)
-              return result.isFail ? result.getError()?.message : null;
+              return result.isFail ? result.getError().toString() : null;
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
@@ -75,8 +75,8 @@ class _SignUpFormState extends State<SignUpForm> {
             decoration: const InputDecoration(labelText: 'Email'),
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
-              final result = _emailSchema.validate(value);
-              return result.isFail ? result.getError()?.message : null;
+              final result = _emailSchema.safeParse(value);
+              return result.isFail ? result.getError().toString() : null;
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
@@ -88,8 +88,8 @@ class _SignUpFormState extends State<SignUpForm> {
             decoration: const InputDecoration(labelText: 'Password'),
             obscureText: true,
             validator: (value) {
-              final result = _passwordSchema.validate(value);
-              return result.isFail ? result.getError()?.message : null;
+              final result = _passwordSchema.safeParse(value);
+              return result.isFail ? result.getError().toString() : null;
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
@@ -135,7 +135,7 @@ class _SignUpFormState extends State<SignUpForm> {
 **Key Points:**
 
 1.  **Define Schemas:** Create `AckSchema` instances for each form field using rules from [Validation Rules](../core-concepts/validation.mdx).
-2.  **`TextFormField.validator`:** Inside the `validator` function, call `schema.validate(value)`. If `result.isFail`, return `result.getError()?.message` to display the error (see [Error Handling](../core-concepts/error-handling.mdx)).
+2.  **`TextFormField.validator`:** Inside the `validator` function, call `schema.safeParse(value)`. If `result.isFail`, return `result.getError()?.message` to display the error (see [Error Handling](../core-concepts/error-handling.mdx)).
 3.  **`GlobalKey<FormState>`:** Use a key to manage the form and trigger validation on submission via `_formKey.currentState!.validate()`.
 4.  **`AutovalidateMode`:** Set `autovalidateMode` (e.g., `AutovalidateMode.onUserInteraction`) on `TextFormField` for real-time feedback as the user types or interacts.
 5.  **Custom Error Messages:** Provide custom error messages directly within the schema definition using the `message:` parameter (see [Error Handling](../core-concepts/error-handling.mdx#custom-error-messages)).
@@ -160,9 +160,9 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
   String? _emailErrorText; // State variable to hold the error message
 
   // Define the schema
-  final _emailSchema = Ack.string
-      .isEmail(message: 'Please enter a valid email')
-      .isNotEmpty(message: 'Email cannot be empty');
+  final _emailSchema = Ack.string()
+      .email()
+      .notEmpty();
 
   @override
   void initState() {
@@ -176,10 +176,10 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
     // Only validate if the field is not empty (or on first interaction)
     // Adjust logic based on desired UX (e.g., validate after first blur)
     if (text.isNotEmpty) {
-      final result = _emailSchema.validate(text);
+      final result = _emailSchema.safeParse(text);
       // Update the error state variable, triggering a rebuild
       setState(() {
-        _emailErrorText = result.isFail ? result.getError()?.message : null;
+        _emailErrorText = result.isFail ? result.getError().toString() : null;
       });
     } else {
       // Clear error if field becomes empty
@@ -218,7 +218,7 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
 
 1.  **State Variable:** Maintain a state variable (e.g., `_emailErrorText`) to hold the current error message for the field.
 2.  **Controller Listener:** Add a listener to the `TextEditingController` in `initState`.
-3.  **Validation Logic:** Inside the listener, call `schema.validate()` with the controller's text.
+3.  **Validation Logic:** Inside the listener, call `schema.safeParse()` with the controller's text.
 4.  **`setState`:** Call `setState` to update the error state variable based on the validation result. This triggers a UI rebuild to show/hide the error.
 5.  **Dispose:** Remember to remove the listener in `dispose`.
 
@@ -245,11 +245,12 @@ final _formSchema = Ack.object({
   'username': _usernameSchema, // Reuse field schemas
   'email': _emailSchema,
   'password': _passwordSchema,
-  'confirmPassword': Ack.string.isNotEmpty(message: 'Please confirm password')
+  'confirmPassword': Ack.string()
+      .notEmpty()
       // Example: Custom constraint for cross-field validation
       // See: [Custom Validation](./custom-validation.mdx)
       .constrain(PasswordMatchConstraint('password')),
-}, required: ['username', 'email', 'password', 'confirmPassword']);
+});
 
 void _submitForm() {
   // Gather all form data into a map
@@ -261,17 +262,16 @@ void _submitForm() {
   };
 
   // Validate the entire map
-  final result = _formSchema.validate(formData);
+  final result = _formSchema.safeParse(formData);
 
   if (result.isOk) {
     print('Entire form data is valid!');
     // Submit formData
   } else {
     final error = result.getError();
-    print('Form submission error: ${error?.message}');
+    print('Form submission error: $error');
     // You might need to map the error path back to specific fields
     // to display errors if not using TextFormField validators.
-    print('Error path: ${error?.path}');
   }
 }
 ```

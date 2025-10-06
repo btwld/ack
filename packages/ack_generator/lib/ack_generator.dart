@@ -1,4 +1,5 @@
-/// Code generator for ACK validation schemas
-library;
+// Export the builder for build.yaml
+export 'src/builder.dart' show ackGenerator;
 
-export 'src/generator.dart' show AckSchemaGenerator;
+// Export annotations from ack_annotations
+export 'package:ack_annotations/ack_annotations.dart';
