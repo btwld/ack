@@ -106,6 +106,16 @@ class SchemaBuilder {
 
     // Build field definitions with descriptions
     final fieldDefs = <String>[];
+
+    // For discriminated subtypes, add the discriminator field first
+    if (model.isDiscriminatedSubtype &&
+        model.discriminatorKey != null &&
+        model.discriminatorValue != null) {
+      fieldDefs.add(
+        "'${model.discriminatorKey}': Ack.literal('${model.discriminatorValue}')",
+      );
+    }
+
     for (final field in model.fields) {
       final fieldSchema = passModelToFieldBuilder
           ? _fieldBuilder.buildFieldSchema(field, model)

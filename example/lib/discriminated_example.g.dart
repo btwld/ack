@@ -22,22 +22,35 @@ final shapeSchema = Ack.discriminated(
 );
 
 /// Generated schema for Cat
-final catSchema = Ack.object({'meow': Ack.boolean(), 'lives': Ack.integer()});
+final catSchema = Ack.object({
+  'type': Ack.literal('cat'),
+  'meow': Ack.boolean(),
+  'lives': Ack.integer(),
+});
 
 /// Generated schema for Dog
-final dogSchema = Ack.object({'bark': Ack.boolean(), 'breed': Ack.string()});
+final dogSchema = Ack.object({
+  'type': Ack.literal('dog'),
+  'bark': Ack.boolean(),
+  'breed': Ack.string(),
+});
 
 /// Generated schema for Bird
 final birdSchema = Ack.object({
+  'type': Ack.literal('bird'),
   'canFly': Ack.boolean(),
   'wingspan': Ack.double(),
 });
 
 /// Generated schema for Circle
-final circleSchema = Ack.object({'radius': Ack.double()});
+final circleSchema = Ack.object({
+  'kind': Ack.literal('circle'),
+  'radius': Ack.double(),
+});
 
 /// Generated schema for Rectangle
 final rectangleSchema = Ack.object({
+  'kind': Ack.literal('rectangle'),
   'width': Ack.double(),
   'height': Ack.double(),
 });

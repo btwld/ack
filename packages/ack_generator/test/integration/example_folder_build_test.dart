@@ -114,11 +114,17 @@ void main() {
           reason: '$fileName should have generation warning',
         );
 
-        // Verify it contains Ack schema definitions
+        // Verify it contains either Ack schema definitions (@AckModel) OR extension types (@AckType)
+        final hasSchema = RegExp(r'final \w+Schema = Ack\.').hasMatch(content);
+        final hasExtensionType = RegExp(
+          r'extension type \w+Type',
+        ).hasMatch(content);
+
         expect(
-          content,
-          matches(RegExp(r'final \w+Schema = Ack\.')),
-          reason: '$fileName should contain Ack schema definitions',
+          hasSchema || hasExtensionType,
+          isTrue,
+          reason:
+              '$fileName should contain either Ack schema definitions or extension types',
         );
 
         // Verify it's a part file (generated files are parts of the main file)

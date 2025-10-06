@@ -13,10 +13,7 @@ void main() {
     });
 
     test('StatusType rejects non-literal values', () {
-      expect(
-        () => StatusType.parse('inactive'),
-        throwsA(isA<AckException>()),
-      );
+      expect(() => StatusType.parse('inactive'), throwsA(isA<AckException>()));
     });
 
     test('StatusType.safeParse returns correct result type', () {
@@ -53,10 +50,7 @@ void main() {
       expect(() => RoleType.parse('admin'), returnsNormally);
       expect(() => RoleType.parse('user'), returnsNormally);
       expect(() => RoleType.parse('guest'), returnsNormally);
-      expect(
-        () => RoleType.parse('superadmin'),
-        throwsA(isA<AckException>()),
-      );
+      expect(() => RoleType.parse('superadmin'), throwsA(isA<AckException>()));
     });
 
     test('RoleType works with String methods', () {
@@ -221,10 +215,7 @@ void main() {
     });
 
     test('Literal in collections preserves type', () {
-      final statuses = [
-        StatusType.parse('active'),
-        StatusType.parse('active'),
-      ];
+      final statuses = [StatusType.parse('active'), StatusType.parse('active')];
 
       expect(statuses, isA<List<StatusType>>());
       expect(statuses.every((s) => s == 'active'), true);

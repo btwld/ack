@@ -7,6 +7,7 @@ part 'schema_types_primitives.g.dart';
 
 /// Test enums for enumValues schema
 enum UserRole { admin, user, guest }
+
 enum Status { active, inactive, pending }
 
 // String schema
@@ -56,13 +57,21 @@ final optionalStatusSchema = Ack.literal('active').optional();
 final nullableRoleSchema = Ack.enumString(['admin', 'user']).nullable();
 
 @AckType()
-final defaultedEnumSchema = Ack.enumValues(UserRole.values).withDefault(UserRole.guest);
+final defaultedEnumSchema = Ack.enumValues(
+  UserRole.values,
+).withDefault(UserRole.guest);
 
 @AckType()
-final optionalNullableLiteralSchema = Ack.literal('pending').optional().nullable();
+final optionalNullableLiteralSchema = Ack.literal(
+  'pending',
+).optional().nullable();
 
 @AckType()
-final chainedEnumStringSchema = Ack.enumString(['read', 'write', 'execute']).withDefault('read');
+final chainedEnumStringSchema = Ack.enumString([
+  'read',
+  'write',
+  'execute',
+]).withDefault('read');
 
 // Test transform - this may not work as expected
 // @AckType()
@@ -73,5 +82,5 @@ final chainedEnumStringSchema = Ack.enumString(['read', 'write', 'execute']).wit
 // Test refine - this should work
 @AckType()
 final refinedAgeSchema = Ack.integer()
-  .min(0)
-  .refine((age) => age < 150, message: 'Age must be less than 150');
+    .min(0)
+    .refine((age) => age < 150, message: 'Age must be less than 150');

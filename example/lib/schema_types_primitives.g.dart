@@ -253,3 +253,19 @@ extension type ChainedEnumStringType(String _value) implements String {
     );
   }
 }
+
+/// Extension type for RefinedAge
+extension type RefinedAgeType(int _value) implements int {
+  static RefinedAgeType parse(Object? data) {
+    final validated = refinedAgeSchema.parse(data);
+    return RefinedAgeType(validated as int);
+  }
+
+  static SchemaResult<RefinedAgeType> safeParse(Object? data) {
+    final result = refinedAgeSchema.safeParse(data);
+    return result.match(
+      onOk: (validated) => SchemaResult.ok(RefinedAgeType(validated as int)),
+      onFail: (error) => SchemaResult.fail(error),
+    );
+  }
+}

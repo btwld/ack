@@ -98,17 +98,21 @@ void main() {
 
     group('Individual Schema Tests', () {
       test('Cat schema validates correctly', () {
-        final catData = {'meow': true, 'lives': 7};
+        // Sub-schemas now include discriminator field
+        final catData = {'type': 'cat', 'meow': true, 'lives': 7};
 
         final result = catSchema.parse(catData) as Map<String, dynamic>;
+        expect(result['type'], equals('cat'));
         expect(result['meow'], isTrue);
         expect(result['lives'], equals(7));
       });
 
       test('Dog schema validates correctly', () {
-        final dogData = {'bark': true, 'breed': 'Labrador'};
+        // Sub-schemas now include discriminator field
+        final dogData = {'type': 'dog', 'bark': true, 'breed': 'Labrador'};
 
         final result = dogSchema.parse(dogData) as Map<String, dynamic>;
+        expect(result['type'], equals('dog'));
         expect(result['bark'], isTrue);
         expect(result['breed'], equals('Labrador'));
       });

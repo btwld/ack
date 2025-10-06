@@ -90,8 +90,11 @@ void main() {
       expect(tags.first, 'dart');
       expect(tags.last, 'validation');
       expect(tags.contains('flutter'), true);
-      expect(tags.map((t) => t.toUpperCase()).toList(),
-          ['DART', 'FLUTTER', 'VALIDATION']);
+      expect(tags.map((t) => t.toUpperCase()).toList(), [
+        'DART',
+        'FLUTTER',
+        'VALIDATION',
+      ]);
     });
 
     test('ScoresType wraps List<int> and implements List<int>', () {
