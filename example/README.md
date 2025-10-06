@@ -1,16 +1,25 @@
 # Ack Example Package
 
-This package demonstrates how to use the `ack` validation library and the `ack_generator` code generator package.
+This package demonstrates how to use the `ack` validation library for schema-based data validation.
 
 ## Overview
 
 The code within `lib/` showcases:
 
--   Defining model classes (`User`, `Address`).
--   Annotating models with `@Schema` and validation annotations (e.g., `@IsEmail`, `@MinLength`, `@Min`, `@Required`) for use with `ack_generator`.
--   Running `build_runner` to generate the `.schema.dart` files.
--   Using the generated schema classes (`UserSchema`, `AddressSchema`) to validate data maps.
--   Manually defining validation schemas using `Ack.string`, `Ack.int`, `Ack.object`, etc., for comparison.
+-   Defining validation schemas using the fluent `Ack` API
+-   Validating complex nested data structures
+-   Using different schema types (string, number, object, list, etc.)
+-   Custom validation with refinements and transformations
+-   Error handling and validation results
+
+## Examples Included
+
+- **Basic Schema Validation**: Simple string, number, and boolean validation
+- **Object Validation**: Nested object structures with property validation
+- **List Validation**: Array validation with item schemas
+- **Custom Validation**: Using refinements for business logic validation
+- **Union Types**: Using `anyOf` and discriminated unions
+- **Flexible Schemas**: Using `AnySchema` for maximum flexibility
 
 ## Running the Example
 
@@ -21,16 +30,14 @@ The code within `lib/` showcases:
     melos bootstrap
     ```
 
-2.  **Generate Code:**
-    Navigate to the `example` directory and run the build runner:
+2.  **Run the Examples:**
     ```bash
     cd example
-    dart run build_runner build --delete-conflicting-outputs
+    dart run any_schema_example.dart
     ```
-    *(Alternatively, run `melos build` from the root which might be configured in `melos.yaml`)*
 
 3.  **Run Tests:**
-    The tests in the `test/` directory execute the validation logic using both generated and manual schemas.
+    The tests demonstrate various validation scenarios:
     ```bash
     # From the example directory
     dart test
@@ -39,4 +46,4 @@ The code within `lib/` showcases:
     melos test
     ```
 
-Explore the code in `lib/` and `test/` to understand the different ways to implement validation with Ack. 
+Explore the code in `lib/` and `test/` to understand different validation patterns with Ack schemas.

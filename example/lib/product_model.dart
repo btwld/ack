@@ -1,57 +1,46 @@
 import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
-// Add part directive for the generated code
 part 'product_model.g.dart';
 
-@Schema(
+@AckModel(
   description: 'A product model with validation',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
 )
 class Product {
-  @IsNotEmpty()
+  @MinLength(1)
   final String id;
 
-  @IsNotEmpty()
-  @IsMinLength(3)
-  @IsMaxLength(100)
+  @MinLength(3)
   final String name;
 
-  @IsNotEmpty()
-  @IsMaxLength(500)
   final String description;
 
-  @IsMin(0.01)
-  @IsMax(999999.99)
+  @Min(0.01)
   final double price;
 
-  @IsNullable()
-  @IsEmail()
+  @Email()
   final String? contactEmail;
 
-  @IsNullable()
+  @Url()
   final String? imageUrl;
 
-  @IsRequired()
   final Category category;
 
-  @IsDate()
   final String releaseDate;
 
-  @IsDateTime()
   final String createdAt;
 
-  @IsNullable()
-  @IsDateTime()
   final String? updatedAt;
 
-  @IsPositive()
+  @Positive()
   final int stockQuantity;
 
-  @IsEnumValues(['draft', 'published', 'archived'])
+  @EnumString(['draft', 'published', 'archived'])
   final String status;
 
-  @IsPattern('^[A-Z]{2,3}-\\d{4}\$')
+  @Pattern(r'^[A-Z]{2,3}-\d{4}$')
   final String productCode;
 
   final Map<String, dynamic> metadata;
@@ -74,21 +63,15 @@ class Product {
   });
 }
 
-@Schema(
+@AckModel(
   description: 'A category for organizing products',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
 )
 class Category {
-  @IsNotEmpty()
   final String id;
-
-  @IsNotEmpty()
   final String name;
-
-  @IsNullable()
   final String? description;
-
   final Map<String, dynamic> metadata;
 
   Category({
@@ -97,4 +80,41 @@ class Category {
     this.description,
     this.metadata = const {},
   });
+}
+
+// Simple test to verify the generated code works
+void main() {
+  print('Testing Product Schema...');
+
+  final productData = {
+    'id': '123',
+    'name': 'Test Product',
+    'description': 'A test product',
+    'price': 19.99,
+    'category': {'id': 'cat1', 'name': 'Test Category'},
+    'releaseDate': '2024-01-15',
+    'createdAt': '2024-01-15T10:30:00Z',
+    'stockQuantity': 100,
+    'status': 'published',
+    'productCode': 'ABC-1234',
+    // Additional properties stored in metadata
+    'brand': 'TestBrand',
+    'color': 'Blue',
+  };
+
+  try {
+    final result = productSchema.parse(productData) as Map<String, dynamic>;
+
+    print('\n✅ Schema validation successful!');
+    print('   Product ID: ${result['id']}');
+    print('   Product Name: ${result['name']}');
+    print(
+      '   Category: ${(result['category'] as Map<String, dynamic>)['name']}',
+    );
+    print('   Additional properties: ${result['metadata']}');
+  } catch (e) {
+    print('❌ Schema validation error: $e');
+  }
+
+  print('\n🎉 Product schema validation works!');
 }

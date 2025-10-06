@@ -6,110 +6,155 @@ This page provides a quick reference for the core Ack classes, methods, and anno
 
 ## Core `Ack` Class
 
-Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.mdx).
+Entry point for creating schemas. See [Schema Validation](../core-concepts/typesafe-schemas.mdx).
 
-- [`Ack.string`](../core-concepts/schemas.mdx#string-schema): Creates a `StringSchema`.
-- [`Ack.int`](../core-concepts/schemas.mdx#number-schemas): Creates an `IntSchema`.
-- [`Ack.double`](../core-concepts/schemas.mdx#number-schemas): Creates a `DoubleSchema`.
-- [`Ack.boolean`](../core-concepts/schemas.mdx#boolean-schema): Creates a `BooleanSchema`.
-- [`Ack.list(AckSchema itemSchema)`](../core-concepts/schemas.mdx#list-schema): Creates a `ListSchema`.
-- [`Ack.object(...)`](../core-concepts/schemas.mdx#object-schema): Creates an `ObjectSchema`.
+- `Ack.string()`: Creates a `StringSchema` for validating strings.
+- `Ack.integer()`: Creates an `IntegerSchema` for validating integers.
+- `Ack.double()`: Creates a `DoubleSchema` for validating floating-point numbers.
+- `Ack.boolean()`: Creates a `BooleanSchema` for validating booleans.
+- `Ack.list(AckSchema itemSchema)`: Creates a `ListSchema` for validating arrays.
+- `Ack.object(Map<String, AckSchema> properties)`: Creates an `ObjectSchema` for validating objects.
+- `Ack.enumValues(List<T> values)`: Creates an `EnumSchema` for validating enum values.
+- `Ack.enumString(List<String> values)`: Creates a string schema that only accepts specific values.
+- `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
+- `Ack.any()`: Creates an `AnySchema` that accepts any value.
+- `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema> schemas})`: Creates a discriminated union schema.
 
 ## `AckSchema<T>` (Base Class)
 
 Base class for all schema types.
 
-- [`SchemaResult<T> validate(dynamic data)`](../core-concepts/error-handling.mdx#the-schemaresult-object): Validates the input data against the schema.
-- [`AckSchema<T?> nullable()`](../core-concepts/schemas.mdx#making-schemas-nullable): Returns a new schema that also accepts `null`.
-- `AckSchema<T> description(String description)`: Adds a description (used by [`toJsonSchema()`](../guides/json-schema-integration.mdx)).
-- `AckSchema<T> defaultValue(T value)`: Sets a default value (used by [`toJsonSchema()`](../guides/json-schema-integration.mdx)).
-- [`AckSchema<T> constrain(...)`](../guides/custom-validation.mdx#applying-custom-constraints): Applies a custom validation constraint.
-- [`Map<String, dynamic> toJsonSchema()`](../guides/json-schema-integration.mdx#generating-json-schemas): Converts the schema to a JSON Schema Object map (requires `package:ack/json_schema.dart`).
+- `SchemaResult<T> validate(Object? data)`: Validates the input data against the schema.
+- `AckSchema<T> nullable()`: Returns a new schema that also accepts `null`.
+- `AckSchema<T> withDescription(String description)`: Adds a description for documentation.
+- `AckSchema<T> withDefault(T value)`: Sets a default value when input is null.
+- `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint.
+- `AckSchema<T> refine(bool Function(T) validate, {String message})`: Adds custom validation logic.
+- `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values.
+- `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema map.
 
-See also [TypeSafe Schemas](../core-concepts/typesafe-schemas.mdx) for working with schemas and Dart models.
+See also [Schema Validation](../core-concepts/typesafe-schemas.mdx) for detailed usage examples.
 
 ## `StringSchema`
 
-Schema for validating strings. See [String Constraints](../core-concepts/validation.mdx#string-constraints).
+Schema for validating strings. See [String Validation](../core-concepts/validation.mdx#string-constraints).
 
-- [`minLength(...)`](../core-concepts/validation.mdx#minlengthint-min)
-- [`maxLength(...)`](../core-concepts/validation.mdx#maxlengthint-max)
-- [`length(...)`](../core-concepts/validation.mdx#lengthint-exactlength)
-- [`isNotEmpty(...)`](../core-concepts/validation.mdx#isnotempty)
-- [`matches(...)`](../core-concepts/validation.mdx#matchesstring-pattern-string-example)
-- [`contains(...)`](../core-concepts/validation.mdx#containsstring-pattern-string-example)
-- [`isEmail(...)`](../core-concepts/validation.mdx#isemail)
-- [`isUrl(...)`](../core-concepts/validation.mdx#isurl)
-- [`date(...)`](../core-concepts/validation.mdx#date)
-- [`datetime(...)`](../core-concepts/validation.mdx#datetime)
-- [`isEnum(...)`](../core-concepts/validation.mdx#isenumliststring-allowedvalues)
+- `minLength(int min)`: Minimum string length
+- `maxLength(int max)`: Maximum string length
+- `length(int exact)`: Exact string length
+- `matches(String pattern)`: Must match regex pattern
+- `email()`: Must be valid email format
+- `url()`: Must be valid URL format
+- `uuid()`: Must be valid UUID format
+- `datetime()`: Must be valid ISO 8601 datetime
+- `literal(String value)`: Must exactly match the given value
+- `enumString(List<String> values)`: Must be one of the specified values
 
-## `IntSchema` / `DoubleSchema` (Number Schemas)
+## `IntegerSchema` / `DoubleSchema` (Number Schemas)
 
-Schemas for validating numbers. See [Number Constraints](../core-concepts/validation.mdx#number-constraints-int-and-double).
+Schemas for validating numbers. See [Number Validation](../core-concepts/validation.mdx#number-constraints).
 
-- [`min(...)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false)
-- [`max(...)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false)
-- [`positive(...)`](../core-concepts/validation.mdx#positive)
-- [`negative(...)`](../core-concepts/validation.mdx#negative)
-- [`multipleOf(...)`](../core-concepts/validation.mdx#multipleofnum-factor)
+- `min(num limit)`: Minimum value (inclusive)
+- `max(num limit)`: Maximum value (inclusive)
+- `positive()`: Must be greater than 0
+- `negative()`: Must be less than 0
+- `multipleOf(num factor)`: Must be a multiple of the factor
+- `finite()`: Must be finite (DoubleSchema only)
+- `safe()`: Must be within safe integer range (IntegerSchema only)
 
 ## `BooleanSchema`
 
-Schema for validating booleans. See [Boolean Schema](../core-concepts/schemas.mdx#boolean-schema). No specific constraints beyond type.
+Schema for validating booleans. Validates `true` and `false` values, with optional type coercion from strings and numbers.
 
-## `ListSchema<E>`
+## `ListSchema<T>`
 
-Schema for validating lists. See [List Constraints](../core-concepts/validation.mdx#list-constraints).
+Schema for validating arrays. See [List Validation](../core-concepts/validation.mdx#list-constraints).
 
-- [`minItems(...)`](../core-concepts/validation.mdx#minitemsint-min)
-- [`maxItems(...)`](../core-concepts/validation.mdx#maxitemsint-max)
-- [`exactItems(...)`](../core-concepts/validation.mdx#exactitemsint-count)
-- [`isNotEmpty(...)`](../core-concepts/validation.mdx#isnotempty-1)
-- [`uniqueItems(...)`](../core-concepts/validation.mdx#uniqueitems)
+- `minLength(int min)`: Minimum number of items
+- `maxLength(int max)`: Maximum number of items
+- `length(int exact)`: Exact number of items
+- `unique()`: All items must be unique
 
 ## `ObjectSchema`
 
-Schema for validating objects (maps). See [Object Schema](../core-concepts/schemas.mdx#object-schema).
+Schema for validating objects (maps). See [Object Validation](../core-concepts/schemas.mdx#object-schema).
 
-- Constructed using `Ack.object(...)`.
-- Configuration includes `properties`, `required`, `additionalProperties`.
+- Constructed using `Ack.object(Map<String, AckSchema> properties, {bool additionalProperties = false})`.
+- Use `.pick(List<String> keys)` to create schema with only specified properties.
+- Use `.omit(List<String> keys)` to create schema excluding specified properties.
+- Use `.extend(Map<String, AckSchema> newProperties)` to add more properties.
+- Use `.partial()` to make all properties optional.
+- Use `.strict()` to disallow additional properties.
 
 ## `SchemaResult<T>`
 
-Object returned by `validate()`. See [The SchemaResult Object](../core-concepts/error-handling.mdx#the-schemaresult-object).
+Object returned by `safeParse()`. See [Error Handling](../core-concepts/error-handling.mdx).
 
-- `bool isOk`
-- `bool isFail`
-- `T getOrThrow()`
-- `T? getOrNull()`
-- `SchemaError getError()`
-- `T getOrElse(T Function() defaultValue)`
+- `bool isOk`: True if validation succeeded
+- `bool isFail`: True if validation failed
+- `T getOrThrow()`: Returns the validated value or throws an exception
+- `T? getOrNull()`: Returns the validated value or null if validation failed
+- `SchemaError getError()`: Returns the validation error (only valid when `isFail` is true)
+- `T getOrElse(T Function() defaultValue)`: Returns the validated value or a default
 
 ## `SchemaError` (and Subclasses)
 
-Object representing a validation failure. See [Understanding SchemaError](../core-concepts/error-handling.mdx#understanding-schemaerror) and [Error Types](../core-concepts/error-handling.mdx#error-types).
+Object representing a validation failure. See [Error Handling](../core-concepts/error-handling.mdx).
 
-- `String name`
-- `String errorKey`
-- `Object? value`
-- `AckSchema schema`
+- `String message`: Human-readable error message
+- `SchemaContext context`: Context information about where the error occurred
 
-**Subclasses:** `SchemaTypeError`, `SchemaRequiredError`, `SchemaConstraintsError`, `SchemaNestedError`.
+**Subclasses:**
+- `SchemaConstraintsError`: Constraint validation failures
+- `SchemaNestedError`: Nested validation failures (for objects/arrays)
+- `SchemaValidationError`: Custom refinement failures
 
 ## `Constraint<T>`
 
-Base class for creating custom validation rules. See [Custom Validation Guide](../guides/custom-validation.mdx).
+Base class for creating custom validation rules. See [Custom Validation](../guides/custom-validation.mdx).
 
-- `Constraint({required String constraintKey, required String description})`
-- `bool isValid(T value)` (via `Validator<T>` mixin)
+- `ConstraintError? validate(T value)`: Validates a value and returns an error if invalid
+- `Map<String, Object?> toMap()`: Serializes the constraint for debugging
 
-## Code Generation (`ack_generator`)
+## Additional Schema Types
 
-Annotations for use on model classes when using code generation. See [Code Generation Guide](../guides/code-generation.mdx#available-annotations).
+### `EnumSchema<T>`
 
-**Class Annotations:** `@Schema(...)`
+Schema for validating enum values.
 
-**Property Annotations:** `@Required`, `@Nullable`, `@Description`, `@IsEmail`, `@IsDate`, `@IsDateTime`, `@MinLength`, `@MaxLength`, `@Pattern`, `@IsNotEmpty`, `@EnumValues`, `@Min`, `@Max`, `@IsPositive`, `@IsNegative`, `@MultipleOf`, `@MinItems`, `@MaxItems`, `@UniqueItems`.
+- Created using `Ack.enumValues(List<T> values)` where T extends Enum
 
-*Refer to the individual guides for detailed usage and examples.*
+### `AnyOfSchema`
+
+Schema for union types (value must match one of several schemas).
+
+- Created using `Ack.anyOf(List<AckSchema> schemas)`
+
+### `DiscriminatedObjectSchema`
+
+Schema for polymorphic validation based on a discriminator field.
+
+- Created using `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema> schemas})`
+
+### `AnySchema`
+
+Schema that accepts any value without validation.
+
+- Created using `Ack.any()`
+- Useful for gradual migration or maximum flexibility
+
+### `TransformedSchema<T, R>`
+
+Schema that transforms validated values.
+
+- Created using `schema.transform<R>(R Function(T?) transformer)`
+
+### Optional Schemas
+
+Every schema can be marked optional through the `optional({bool value = true})` fluent API.
+
+- Calling `schema.optional()` sets `isOptional` to `true` without wrapping the schema.
+- Use `schema.optional(value: false)` to clear the optional flag.
+- Optional affects object-field presence only; combine with `.nullable()` to also allow explicit `null`.
+
+*Refer to the [Schema Validation](../core-concepts/typesafe-schemas.mdx) guide for detailed usage and examples.*

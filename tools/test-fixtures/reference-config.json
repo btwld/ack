@@ -1,0 +1,394 @@
+{
+  "schemas": [
+    {
+      "name": "string-basic",
+      "path": "test-fixtures/reference-schemas/string-basic.json",
+      "description": "Reference fixture for string basic"
+    },
+    {
+      "name": "string-nullable",
+      "path": "test-fixtures/reference-schemas/string-nullable.json",
+      "description": "Reference fixture for string nullable"
+    },
+    {
+      "name": "string-with-default",
+      "path": "test-fixtures/reference-schemas/string-with-default.json",
+      "description": "Reference fixture for string with default"
+    },
+    {
+      "name": "string-with-description",
+      "path": "test-fixtures/reference-schemas/string-with-description.json",
+      "description": "Reference fixture for string with description"
+    },
+    {
+      "name": "string-minlength",
+      "path": "test-fixtures/reference-schemas/string-minlength.json",
+      "description": "Reference fixture for string minlength"
+    },
+    {
+      "name": "string-maxlength",
+      "path": "test-fixtures/reference-schemas/string-maxlength.json",
+      "description": "Reference fixture for string maxlength"
+    },
+    {
+      "name": "string-length-range",
+      "path": "test-fixtures/reference-schemas/string-length-range.json",
+      "description": "Reference fixture for string length range"
+    },
+    {
+      "name": "string-email",
+      "path": "test-fixtures/reference-schemas/string-email.json",
+      "description": "Reference fixture for string email"
+    },
+    {
+      "name": "string-url",
+      "path": "test-fixtures/reference-schemas/string-url.json",
+      "description": "Reference fixture for string url"
+    },
+    {
+      "name": "string-uuid",
+      "path": "test-fixtures/reference-schemas/string-uuid.json",
+      "description": "Reference fixture for string uuid"
+    },
+    {
+      "name": "string-pattern",
+      "path": "test-fixtures/reference-schemas/string-pattern.json",
+      "description": "Reference fixture for string pattern"
+    },
+    {
+      "name": "string-literal",
+      "path": "test-fixtures/reference-schemas/string-literal.json",
+      "description": "Reference fixture for string literal"
+    },
+    {
+      "name": "string-email-required",
+      "path": "test-fixtures/reference-schemas/string-email-required.json",
+      "description": "Reference fixture for string email required"
+    },
+    {
+      "name": "string-nullable-with-default",
+      "path": "test-fixtures/reference-schemas/string-nullable-with-default.json",
+      "description": "Reference fixture for string nullable with default"
+    },
+    {
+      "name": "integer-basic",
+      "path": "test-fixtures/reference-schemas/integer-basic.json",
+      "description": "Reference fixture for integer basic"
+    },
+    {
+      "name": "integer-nullable",
+      "path": "test-fixtures/reference-schemas/integer-nullable.json",
+      "description": "Reference fixture for integer nullable"
+    },
+    {
+      "name": "integer-with-default",
+      "path": "test-fixtures/reference-schemas/integer-with-default.json",
+      "description": "Reference fixture for integer with default"
+    },
+    {
+      "name": "integer-with-description",
+      "path": "test-fixtures/reference-schemas/integer-with-description.json",
+      "description": "Reference fixture for integer with description"
+    },
+    {
+      "name": "integer-min",
+      "path": "test-fixtures/reference-schemas/integer-min.json",
+      "description": "Reference fixture for integer min"
+    },
+    {
+      "name": "integer-max",
+      "path": "test-fixtures/reference-schemas/integer-max.json",
+      "description": "Reference fixture for integer max"
+    },
+    {
+      "name": "integer-range",
+      "path": "test-fixtures/reference-schemas/integer-range.json",
+      "description": "Reference fixture for integer range"
+    },
+    {
+      "name": "integer-positive",
+      "path": "test-fixtures/reference-schemas/integer-positive.json",
+      "description": "Reference fixture for integer positive"
+    },
+    {
+      "name": "integer-negative",
+      "path": "test-fixtures/reference-schemas/integer-negative.json",
+      "description": "Reference fixture for integer negative"
+    },
+    {
+      "name": "integer-nonnegative",
+      "path": "test-fixtures/reference-schemas/integer-nonnegative.json",
+      "description": "Reference fixture for integer nonnegative"
+    },
+    {
+      "name": "integer-nonpositive",
+      "path": "test-fixtures/reference-schemas/integer-nonpositive.json",
+      "description": "Reference fixture for integer nonpositive"
+    },
+    {
+      "name": "integer-age-example",
+      "path": "test-fixtures/reference-schemas/integer-age-example.json",
+      "description": "Reference fixture for integer age example"
+    },
+    {
+      "name": "double-basic",
+      "path": "test-fixtures/reference-schemas/double-basic.json",
+      "description": "Reference fixture for double basic"
+    },
+    {
+      "name": "double-nullable",
+      "path": "test-fixtures/reference-schemas/double-nullable.json",
+      "description": "Reference fixture for double nullable"
+    },
+    {
+      "name": "double-with-default",
+      "path": "test-fixtures/reference-schemas/double-with-default.json",
+      "description": "Reference fixture for double with default"
+    },
+    {
+      "name": "double-with-description",
+      "path": "test-fixtures/reference-schemas/double-with-description.json",
+      "description": "Reference fixture for double with description"
+    },
+    {
+      "name": "double-min",
+      "path": "test-fixtures/reference-schemas/double-min.json",
+      "description": "Reference fixture for double min"
+    },
+    {
+      "name": "double-max",
+      "path": "test-fixtures/reference-schemas/double-max.json",
+      "description": "Reference fixture for double max"
+    },
+    {
+      "name": "double-range",
+      "path": "test-fixtures/reference-schemas/double-range.json",
+      "description": "Reference fixture for double range"
+    },
+    {
+      "name": "double-positive",
+      "path": "test-fixtures/reference-schemas/double-positive.json",
+      "description": "Reference fixture for double positive"
+    },
+    {
+      "name": "double-finite",
+      "path": "test-fixtures/reference-schemas/double-finite.json",
+      "description": "Reference fixture for double finite"
+    },
+    {
+      "name": "double-price-example",
+      "path": "test-fixtures/reference-schemas/double-price-example.json",
+      "description": "Reference fixture for double price example"
+    },
+    {
+      "name": "boolean-basic",
+      "path": "test-fixtures/reference-schemas/boolean-basic.json",
+      "description": "Reference fixture for boolean basic"
+    },
+    {
+      "name": "boolean-nullable",
+      "path": "test-fixtures/reference-schemas/boolean-nullable.json",
+      "description": "Reference fixture for boolean nullable"
+    },
+    {
+      "name": "boolean-with-default-true",
+      "path": "test-fixtures/reference-schemas/boolean-with-default-true.json",
+      "description": "Reference fixture for boolean with default true"
+    },
+    {
+      "name": "boolean-with-default-false",
+      "path": "test-fixtures/reference-schemas/boolean-with-default-false.json",
+      "description": "Reference fixture for boolean with default false"
+    },
+    {
+      "name": "boolean-with-description",
+      "path": "test-fixtures/reference-schemas/boolean-with-description.json",
+      "description": "Reference fixture for boolean with description"
+    },
+    {
+      "name": "any-basic",
+      "path": "test-fixtures/reference-schemas/any-basic.json",
+      "description": "Reference fixture for any basic"
+    },
+    {
+      "name": "any-nullable",
+      "path": "test-fixtures/reference-schemas/any-nullable.json",
+      "description": "Reference fixture for any nullable"
+    },
+    {
+      "name": "any-with-default",
+      "path": "test-fixtures/reference-schemas/any-with-default.json",
+      "description": "Reference fixture for any with default"
+    },
+    {
+      "name": "any-with-description",
+      "path": "test-fixtures/reference-schemas/any-with-description.json",
+      "description": "Reference fixture for any with description"
+    },
+    {
+      "name": "list-of-strings",
+      "path": "test-fixtures/reference-schemas/list-of-strings.json",
+      "description": "Reference fixture for list of strings"
+    },
+    {
+      "name": "list-of-integers",
+      "path": "test-fixtures/reference-schemas/list-of-integers.json",
+      "description": "Reference fixture for list of integers"
+    },
+    {
+      "name": "list-nullable",
+      "path": "test-fixtures/reference-schemas/list-nullable.json",
+      "description": "Reference fixture for list nullable"
+    },
+    {
+      "name": "list-with-description",
+      "path": "test-fixtures/reference-schemas/list-with-description.json",
+      "description": "Reference fixture for list with description"
+    },
+    {
+      "name": "list-minlength",
+      "path": "test-fixtures/reference-schemas/list-minlength.json",
+      "description": "Reference fixture for list minlength"
+    },
+    {
+      "name": "list-maxlength",
+      "path": "test-fixtures/reference-schemas/list-maxlength.json",
+      "description": "Reference fixture for list maxlength"
+    },
+    {
+      "name": "list-length-range",
+      "path": "test-fixtures/reference-schemas/list-length-range.json",
+      "description": "Reference fixture for list length range"
+    },
+    {
+      "name": "list-of-emails",
+      "path": "test-fixtures/reference-schemas/list-of-emails.json",
+      "description": "Reference fixture for list of emails"
+    },
+    {
+      "name": "list-of-objects",
+      "path": "test-fixtures/reference-schemas/list-of-objects.json",
+      "description": "Reference fixture for list of objects"
+    },
+    {
+      "name": "object-basic",
+      "path": "test-fixtures/reference-schemas/object-basic.json",
+      "description": "Reference fixture for object basic"
+    },
+    {
+      "name": "object-nullable",
+      "path": "test-fixtures/reference-schemas/object-nullable.json",
+      "description": "Reference fixture for object nullable"
+    },
+    {
+      "name": "object-with-description",
+      "path": "test-fixtures/reference-schemas/object-with-description.json",
+      "description": "Reference fixture for object with description"
+    },
+    {
+      "name": "object-simple-user",
+      "path": "test-fixtures/reference-schemas/object-simple-user.json",
+      "description": "Reference fixture for object simple user"
+    },
+    {
+      "name": "object-required-fields",
+      "path": "test-fixtures/reference-schemas/object-required-fields.json",
+      "description": "Reference fixture for object required fields"
+    },
+    {
+      "name": "object-optional-fields",
+      "path": "test-fixtures/reference-schemas/object-optional-fields.json",
+      "description": "Reference fixture for object optional fields"
+    },
+    {
+      "name": "object-nested",
+      "path": "test-fixtures/reference-schemas/object-nested.json",
+      "description": "Reference fixture for object nested"
+    },
+    {
+      "name": "object-with-array",
+      "path": "test-fixtures/reference-schemas/object-with-array.json",
+      "description": "Reference fixture for object with array"
+    },
+    {
+      "name": "object-additional-properties-allowed",
+      "path": "test-fixtures/reference-schemas/object-additional-properties-allowed.json",
+      "description": "Reference fixture for object additional properties allowed"
+    },
+    {
+      "name": "object-comprehensive",
+      "path": "test-fixtures/reference-schemas/object-comprehensive.json",
+      "description": "Reference fixture for object comprehensive"
+    },
+    {
+      "name": "anyof-string-or-integer",
+      "path": "test-fixtures/reference-schemas/anyof-string-or-integer.json",
+      "description": "Reference fixture for anyof string or integer"
+    },
+    {
+      "name": "anyof-nullable",
+      "path": "test-fixtures/reference-schemas/anyof-nullable.json",
+      "description": "Reference fixture for anyof nullable"
+    },
+    {
+      "name": "anyof-with-description",
+      "path": "test-fixtures/reference-schemas/anyof-with-description.json",
+      "description": "Reference fixture for anyof with description"
+    },
+    {
+      "name": "anyof-multiple-types",
+      "path": "test-fixtures/reference-schemas/anyof-multiple-types.json",
+      "description": "Reference fixture for anyof multiple types"
+    },
+    {
+      "name": "anyof-objects",
+      "path": "test-fixtures/reference-schemas/anyof-objects.json",
+      "description": "Reference fixture for anyof objects"
+    },
+    {
+      "name": "discriminated-basic",
+      "path": "test-fixtures/reference-schemas/discriminated-basic.json",
+      "description": "Reference fixture for discriminated basic"
+    },
+    {
+      "name": "discriminated-nullable",
+      "path": "test-fixtures/reference-schemas/discriminated-nullable.json",
+      "description": "Reference fixture for discriminated nullable"
+    },
+    {
+      "name": "discriminated-with-description",
+      "path": "test-fixtures/reference-schemas/discriminated-with-description.json",
+      "description": "Reference fixture for discriminated with description"
+    },
+    {
+      "name": "discriminated-complex",
+      "path": "test-fixtures/reference-schemas/discriminated-complex.json",
+      "description": "Reference fixture for discriminated complex"
+    },
+    {
+      "name": "enum-user-role",
+      "path": "test-fixtures/reference-schemas/enum-user-role.json",
+      "description": "Reference fixture for enum user role"
+    },
+    {
+      "name": "enum-status",
+      "path": "test-fixtures/reference-schemas/enum-status.json",
+      "description": "Reference fixture for enum status"
+    },
+    {
+      "name": "enum-nullable",
+      "path": "test-fixtures/reference-schemas/enum-nullable.json",
+      "description": "Reference fixture for enum nullable"
+    },
+    {
+      "name": "enum-with-default",
+      "path": "test-fixtures/reference-schemas/enum-with-default.json",
+      "description": "Reference fixture for enum with default"
+    },
+    {
+      "name": "enum-with-description",
+      "path": "test-fixtures/reference-schemas/enum-with-description.json",
+      "description": "Reference fixture for enum with description"
+    }
+  ]
+}

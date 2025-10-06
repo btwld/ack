@@ -1,0 +1,9 @@
+# AI Agent Instructions (local only)
+.augment-guidelines
+.ai/
+CLAUDE.md
+
+# Dart/Flutter
+.dart_tool/
+.packages
+build/

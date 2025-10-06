@@ -1,138 +1,108 @@
 import 'ack_exception.dart';
 import 'schema_error.dart';
 
-/// Represents either a successful outcome or a failure.
+/// Represents the outcome of a schema validation, which can either be
+/// a success ([Ok]) containing the validated value, or a failure ([Fail])
+/// containing a [SchemaError].
 ///
-/// A [SchemaResult] encapsulates a successful value (an [Ok] instance)
-/// or a failure (a [Fail] instance containing a list of [SchemaError]s).
-abstract class SchemaResult<T extends Object> {
-  /// Creates a new [SchemaResult] instance.
+/// This class promotes explicit error handling without relying on exceptions
+/// for control flow when using the `safeParse()` method.
+sealed class SchemaResult<T extends Object> {
   const SchemaResult();
 
-  /// Returns a successful result that wraps the given [value].
-  static SchemaResult<T> ok<T extends Object>(T value) {
+  /// Creates a successful result wrapping the given [value].
+  /// If the schema is nullable and the input was null, [value] can be null.
+  static SchemaResult<T> ok<T extends Object>(T? value) {
     return Ok(value);
   }
 
-  /// Returns a failure result that wraps the specified list of [errors].
+  /// Creates a failure result wrapping the specified [error].
   static SchemaResult<T> fail<T extends Object>(SchemaError error) {
     return Fail(error);
   }
 
-  static SchemaResult<T> unit<T extends Object>() {
-    return Ok(null);
-  }
-
   /// Indicates whether this result is successful.
-  ///
-  /// Returns `true` if this instance is an [Ok].
   bool get isOk => this is Ok<T>;
 
   /// Indicates whether this result represents a failure.
-  ///
-  /// Returns `true` if this instance is a [Fail].
   bool get isFail => this is Fail<T>;
 
-  /// Returns the list of errors associated with this result.
-  ///
-  /// If this result is successful, it returns an empty list.
-  /// If this result is a failure, it returns the list of errors.
+  /// Returns the [SchemaError] if this result is a failure.
+  /// Throws a [StateError] if called on a successful result.
   SchemaError getError() {
-    return match(
-      onOk: (_) => throw Exception('Cannot get error from Ok'),
-      onFail: (error) => error,
-    );
+    return switch (this) {
+      Ok() => throw StateError('Cannot get error from a successful Ok result.'),
+      Fail(error: final e) => e,
+    };
   }
 
   /// Returns the contained value if this result is successful; otherwise, returns `null`.
+  /// The returned value itself can be `null` if `T` is nullable (e.g. `T = String?`)
+  /// and the validation resulted in `Ok(null)`.
   T? getOrNull() {
-    return match(onOk: (value) => value, onFail: (_) => null);
+    return switch (this) {
+      Ok(value: final v) => v,
+      Fail() => null,
+    };
   }
 
-  /// Returns the contained value if this result is successful; otherwise, returns the result of [orElse].
-  ///
-  /// If this instance is an [Ok], it returns its contained value.
-  /// Otherwise, it returns the value produced by invoking [orElse].
-  T getOrElse(T Function() orElse) {
-    return match(onOk: (value) => value ?? orElse(), onFail: (_) => orElse());
+  /// Returns the contained value if successful, otherwise returns the result of [orElse].
+  /// If the successful value is `null` (for nullable schemas), [orElse] is still NOT called.
+  T? getOrElse(T? Function() orElse) {
+    return switch (this) {
+      Ok(value: final v) => v,
+      Fail() => orElse(),
+    };
   }
 
-  /// Returns the contained value if this result is successful; otherwise, throws an [AckException].
-  ///
-  /// If this instance is an [Ok], it returns its contained value.
-  /// Otherwise, it throws an [AckException] with the associated errors.
-  T getOrThrow() {
-    return match(
-      onOk: (value) => value ?? (throw Exception('Value of ok is null')),
-      onFail: (error) => throw AckException(error),
-    );
+  /// Returns the contained value if successful; otherwise, throws an [AckException].
+  /// If the successful value is `null` (for nullable schemas), `null` is returned.
+  T? getOrThrow() {
+    return switch (this) {
+      Ok(value: final v) => v,
+      Fail(error: final e) => throw AckException([e]),
+    };
   }
 
-  /// Executes the appropriate callback based on whether this result is successful or a failure.
-  ///
-  /// If this instance is an [Ok], it invokes [onOk] with the contained value.
-  /// If this instance is a [Fail], it invokes [onFail] with the associated errors.
-  ///
-  /// Returns the result of the invoked callback.
+  /// Executes one of the provided callbacks based on the result's type.
   R match<R>({
     required R Function(T? value) onOk,
     required R Function(SchemaError error) onFail,
   }) {
-    final self = this;
-
-    if (self is Ok<T>) {
-      final value = self._value;
-
-      return onOk(value);
-    }
-
-    return onFail((self as Fail<T>).error);
+    return switch (this) {
+      Ok(value: final v) => onOk(v),
+      Fail(error: final e) => onFail(e),
+    };
   }
 
-  /// Invokes [onFail] if this result represents a failure.
-  ///
-  /// If this instance is a [Fail], it calls [onFail] with its list of errors.
-  /// Otherwise, it does nothing.
-  void onFail(void Function(SchemaError error) onFail) {
-    if (isFail) {
-      onFail(getError());
+  /// Executes [action] if this result is a failure.
+  void ifFail(void Function(SchemaError error) action) {
+    if (this case Fail(error: final e)) {
+      action(e);
     }
   }
 
-  /// Invokes [onOk] if this result is successful.
-  ///
-  /// If this instance is an [Ok], it calls [onOk] with its contained value.
-  /// Otherwise, it does nothing.
-  void onOk(void Function(T value) onOk) {
-    if (this is Ok<T>) {
-      final ok = this as Ok<T>;
-      final value = ok._value;
-      if (value != null) {
-        onOk(value);
-      }
+  /// Executes [action] if this result is successful.
+  /// The [value] passed to the action can be `null` if `T` is nullable.
+  void ifOk(void Function(T? value) action) {
+    if (this case Ok(value: final v)) {
+      action(v);
     }
   }
 }
 
-/// Represents a successful outcome that optionally wraps a value.
-///
-/// An [Ok] instance indicates that an operation succeeded and may contain a value.
-/// If no meaningful value is provided, [getOrNull] returns `null`.
+/// Represents a successful validation outcome, optionally wrapping a [value].
+/// The [_value] can be `null` if the schema was nullable and the input was validly null.
 class Ok<T extends Object> extends SchemaResult<T> {
   final T? _value;
-
   const Ok(this._value);
+
+  // Getter to access the value if needed, adhering to the interface
+  T? get value => _value;
 }
 
-/// Represents a failure outcome with associated errors.
-///
-/// A [Fail] instance indicates that an operation failed and encapsulates a list
-/// of [SchemaError]s describing what went wrong.
+/// Represents a failed validation outcome, containing a [SchemaError].
 class Fail<T extends Object> extends SchemaResult<T> {
-  /// The list of errors associated with this failure.
-
   final SchemaError error;
-
-  /// Creates a failure result with the specified [error].
   const Fail(this.error);
 }

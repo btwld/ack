@@ -1,88 +1,154 @@
 part of 'schema.dart';
 
+/// Schema for validating lists (`List<V>`) where each item conforms to `itemSchema`.
+@immutable
 final class ListSchema<V extends Object> extends AckSchema<List<V>>
-    with SchemaFluentMethods<ListSchema<V>, List<V>> {
-  final AckSchema<V> _itemSchema;
+    with FluentSchema<List<V>, ListSchema<V>> {
+  final AckSchema<V> itemSchema;
+
   const ListSchema(
-    AckSchema<V> itemSchema, {
-    super.constraints = const [],
-    super.nullable,
+    this.itemSchema, {
+    super.isNullable,
+    super.isOptional,
     super.description,
     super.defaultValue,
-  })  : _itemSchema = itemSchema,
-        super(type: SchemaType.list);
+    super.constraints,
+    super.refinements,
+  });
 
   @override
-  List<V>? _tryConvertType(Object? value) {
-    if (value is! List) return null;
-
-    List<V>? parsedList = <V>[];
-    for (final v in value) {
-      final parsed = _itemSchema._tryConvertType(v);
-      if (parsed == null) {
-        parsedList = null;
-        break;
-      }
-      parsedList!.add(parsed);
-    }
-
-    return parsedList;
-  }
-
-  AckSchema<V> getItemSchema() => _itemSchema;
+  SchemaType get schemaType => SchemaType.array;
 
   @override
-  SchemaResult<List<V>> validateNonNullValue(List<V> value) {
-    final itemsViolation = <SchemaError>[];
+  @protected
+  SchemaResult<List<V>> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    // Null handling with default cloning to prevent mutation
+    if (inputValue == null) {
+      if (defaultValue != null) {
+        final clonedDefault = cloneDefault(defaultValue!);
+        // Recursively validate the cloned default
+        return parseAndValidate(clonedDefault, context);
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return failNonNullable(context);
+    }
 
-    for (var i = 0; i < value.length; i++) {
-      final itemResult = _itemSchema.validate(value[i], debugName: '$i');
+    // Type guard
+    if (inputValue is! List) {
+      final actualType = AckSchema.getSchemaType(inputValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+    final inputList = inputValue;
+    final validatedItems = <V>[];
+    final itemErrors = <SchemaError>[];
 
-      if (itemResult.isFail) {
-        itemsViolation.add(itemResult.getError());
+    for (var i = 0; i < inputList.length; i++) {
+      final itemValue = inputList[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: itemValue,
+        pathSegment: '$i',
+      );
+
+      final itemResult = itemSchema.parseAndValidate(itemValue, itemContext);
+
+      if (itemResult.isOk) {
+        final validatedItemValue = itemResult.getOrNull();
+        if (validatedItemValue is V) {
+          validatedItems.add(validatedItemValue);
+        } else {
+          itemErrors.add(
+            SchemaValidationError(
+              message:
+                  'List item ${itemContext.name} resolved to null. Use non-nullable item schemas for Ack.list.',
+              context: itemContext,
+            ),
+          );
+        }
+      } else {
+        itemErrors.add(itemResult.getError());
       }
     }
 
-    if (itemsViolation.isEmpty) return SchemaResult.ok(value);
+    if (itemErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: itemErrors, context: context),
+      );
+    }
 
-    return SchemaResult.fail(
-      SchemaNestedError(errors: itemsViolation, context: context),
-    );
+    return applyConstraintsAndRefinements(validatedItems, context);
   }
 
   @override
   ListSchema<V> copyWith({
-    List<Validator<List<V>>>? constraints,
-    bool? nullable,
+    AckSchema<V>? itemSchema,
+    bool? isNullable,
+    bool? isOptional,
     String? description,
     List<V>? defaultValue,
+    List<Constraint<List<V>>>? constraints,
+    List<Refinement<List<V>>>? refinements,
   }) {
     return ListSchema(
-      _itemSchema,
-      constraints: constraints ?? _constraints,
-      nullable: nullable ?? _nullable,
-      description: description ?? _description,
-      defaultValue: defaultValue ?? _defaultValue,
+      itemSchema ?? this.itemSchema,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
   }
 
   @override
-  ListSchema<V> call({
-    bool? nullable,
-    String? description,
-    List<Validator<List<V>>>? constraints,
-    List<V>? defaultValue,
-  }) {
-    return copyWith(
-      constraints: constraints,
-      nullable: nullable,
-      description: description,
-      defaultValue: defaultValue,
-    );
+  Map<String, Object?> toJsonSchema() {
+    if (isNullable) {
+      final baseSchema = {
+        'type': 'array',
+        'items': itemSchema.toJsonSchema(),
+        if (description != null) 'description': description,
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    final schema = {
+      'type': 'array',
+      'items': itemSchema.toJsonSchema(),
+      if (description != null) 'description': description,
+      if (defaultValue != null) 'default': defaultValue,
+    };
+
+    return mergeConstraintSchemas(schema);
   }
 
   @override
   Map<String, Object?> toMap() {
-    return {...super.toMap(), 'itemSchema': _itemSchema.toMap()};
+    return {
+      'type': schemaType.typeName,
+      'isNullable': isNullable,
+      'description': description,
+      'defaultValue': defaultValue,
+      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'itemSchema': itemSchema.schemaType.typeName,
+    };
   }
 }

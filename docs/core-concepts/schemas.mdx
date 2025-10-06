@@ -1,302 +1,420 @@
 ---
-title: Schema Types in Ack
+title: Schemas
 ---
 
+This guide covers schema types, validation, and working with validated data in Ack.
 
-This guide covers all the built-in schema types in Ack and their specific validation options.
+## Overview
 
-## Basic Schema Types
-
-### String Schema
-
-Create string validators with various constraints:
+Ack provides a schema validation system built around the `AckSchema` base class. Use the `Ack` factory to create schemas, then validate data with the `safeParse()` method.
 
 ```dart
-// Basic string schema
-final nameSchema = Ack.string;
+import 'package:ack/ack.dart';
 
-// String with length constraints
-final usernameSchema = Ack.string
-  .minLength(3)
-  .maxLength(20)
-  .matches(r'[a-zA-Z0-9_]+', example: 'user_123'); // Regex: letters, numbers, underscore
+// Define schema
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'age': Ack.integer().min(0),
+  'email': Ack.string().email(),
+});
 
-// Email validation
-final emailSchema = Ack.string.email();
+// Validate data
+final result = userSchema.safeParse({
+  'name': 'John',
+  'age': 30,
+  'email': 'john@example.com',
+});
 
-// Enum values (select from options)
-final roleSchema = Ack.string.enumValues(['admin', 'user', 'guest']);
-
-// Note: For more constraints (e.g., regex patterns), see the [Validation](./validation.mdx) page.
-// For custom constraints, see the [Custom Validation](../guides/custom-validation.mdx) page.
+if (result.isOk) {
+  final validData = result.getOrThrow();
+  print('Valid: ${validData['name']}');
+} else {
+  print('Error: ${result.getError()}');
+}
 ```
 
-### Number Schemas
+## Schema Types
 
-Create validators for integer and decimal values:
+### String
+
+```dart
+// Basic string
+final nameSchema = Ack.string();
+
+// Enable strict type checking (no coercion)
+final strictNameSchema = Ack.string().strictParsing();
+
+// With constraints
+final usernameSchema = Ack.string()
+  .minLength(3)
+  .maxLength(20)
+  .matches(r'^[a-zA-Z0-9_]+$');
+
+// Email validation
+final emailSchema = Ack.string().email();
+
+// URL validation
+final websiteSchema = Ack.string().url();
+
+// Date/datetime strings
+final dateSchema = Ack.string().date(); // YYYY-MM-DD
+final datetimeSchema = Ack.string().datetime(); // ISO 8601
+
+// Enum values
+final roleSchema = Ack.string().enumString(['admin', 'user', 'guest']);
+```
+
+### Number
 
 ```dart
 // Integer validation
-final ageSchema = Ack.int
+final ageSchema = Ack.integer()
   .min(0)
   .max(120);
 
-// Double/decimal validation
-final priceSchema = Ack.double
-  .min(0.0) // Must be >= 0.0
-  .multipleOf(0.01); // Allow only 2 decimal places
+// Double validation
+final priceSchema = Ack.double()
+  .positive()
+  .multipleOf(0.5); // Use factors that avoid floating point rounding issues
 
-// Note: See the [Validation](./validation.mdx) page for more number constraints.
+// Negative/positive
+final temperatureSchema = Ack.integer(); // Any integer
+final scoreSchema = Ack.double().positive(); // > 0
+final debtSchema = Ack.double().negative(); // < 0
 ```
 
-### Boolean Schema
-
-Simple true/false validation:
+### Boolean
 
 ```dart
-final isActiveSchema = Ack.boolean;
+final isActiveSchema = Ack.boolean();
 ```
 
-### Date and Time Validation
-
-Validate date and time values using specialized string constraints:
-
-```dart
-// Basic date validation (YYYY-MM-DD)
-final birthdateSchema = Ack.string.date();
-
-// Date-time validation (ISO 8601 format)
-final appointmentSchema = Ack.string.dateTime();
-
-// For date range validation or custom formats, see the [Custom Validation](../guides/custom-validation.mdx) page.
-```
-
-## Collection Schemas
-
-### List Schema
-
-Validate arrays and lists containing elements of a specific schema type:
+### List
 
 ```dart
 // List of strings
-final tagsSchema = Ack.list(Ack.string);
+final tagsSchema = Ack.list(Ack.string());
 
-// List with constraints on the list itself
-final itemsSchema = Ack.list(Ack.string)
-  .minItems(1)       // Must have at least 1 item
-  .maxItems(10)      // Must have at most 10 items
-  .uniqueItems();   // All items must be unique
+// With constraints
+final itemsSchema = Ack.list(Ack.string())
+  .minLength(1)
+  .maxLength(10)
+  .unique();
 
-// List of complex objects (e.g., a list of users)
-final usersListSchema = Ack.list(
-  Ack.object({
-    'id': Ack.int.positive(),
-    'name': Ack.string
-  }, required: ['id', 'name'])
-);
+// List of objects
+final usersSchema = Ack.list(Ack.object({
+  'id': Ack.integer(),
+  'name': Ack.string(),
+}));
 ```
 
-### Map Schema (Using Object Schema)
+### Object
 
-While Ack doesn't have a dedicated `Ack.map` schema, you can validate key-value maps using an `Ack.object` with `additionalProperties`:
+The most common schema type for structured data:
 
 ```dart
-// Map that allows any additional properties
-final scoresSchema = Ack.object(
-  {}, // No predefined properties expected
-  additionalProperties: true // Allow any additional properties
-);
-
-// Validate a scores map
-final result = scoresSchema.validate({'math': 95, 'history': 88});
-print(result.isOk); // true
-
-// Note: To validate the types of additional properties,
-// define them explicitly in the properties map instead
-final typedScoresSchema = Ack.object({
-  'math': Ack.int.min(0).max(100),
-  'history': Ack.int.min(0).max(100),
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'age': Ack.integer().min(0),
+  'email': Ack.string().email(),
 });
 ```
 
-## Object Schema
-
-Validate structured data objects with defined properties and types. This is one of the most common schema types.
+**Nested Objects:**
 
 ```dart
-// User object schema
-final userSchema = Ack.object(
-  {
-    // Define properties and their schemas
-    'name': Ack.string.minLength(1),
-    'age': Ack.int.min(0),
-    'email': Ack.string.email(),
-    // Nested object for address
-    'address': Ack.object(
-      {
-        'street': Ack.string,
-        'city': Ack.string,
-        'zipCode': Ack.string.matches(r'\d{5}', example: '12345'), // Simple 5-digit zip code regex
-      },
-      required: ['street', 'city'], // Street and city are required *within* the address object
-    ),
-  },
-  // Specify required top-level properties for the *user* object
-  required: ['name', 'email'],
-);
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'address': Ack.object({
+    'street': Ack.string(),
+    'city': Ack.string(),
+    'zipCode': Ack.string().matches(r'^\d{5}$'),
+  }),
+});
 ```
 
-### Optional Fields
-
-By default, fields defined in an `Ack.object` are optional unless included in the `required` list.
-You can also make any field explicitly nullable using `.nullable()`. See [Making Schemas Nullable](#making-schemas-nullable) below.
+**Working with Validated Data:**
 
 ```dart
-final productSchema = Ack.object(
-  {
-    'id': Ack.string,         // Required
-    'name': Ack.string,       // Required
-    'description': Ack.string, // Optional (not in 'required' list)
-    'price': Ack.double.min(0), // Required
-    'tags': Ack.list(Ack.string).nullable(), // Optional list (can be null)
-  },
-  required: ['id', 'name', 'price'],
-);
+final result = userSchema.safeParse(data);
 
-// Valid: description is missing, tags is null
-final validData = {'id': 'p1', 'name': 'Thing', 'price': 9.99, 'tags': null};
-print(productSchema.validate(validData).isOk); // true
+if (result.isOk) {
+  final validData = result.getOrThrow();
 
-// Invalid: name is missing
-final invalidData = {'id': 'p2', 'price': 19.99};
-print(productSchema.validate(invalidData).isOk); // false
-```
-
-### Handling Nested Models
-
-When working with nested objects or lists of objects, Ack handles the validation recursively. If you are using code generation or the `SchemaModel` class, accessing nested data is straightforward.
-
-**Accessing Nested Data:**
-
-Assuming you have validated data or a model instance (`user`):
-
-```dart
-// Direct access (if using generated models or SchemaModel)
-// The type is automatically converted.
-Address billingAddress = user.billingAddress;
-print(billingAddress.city);
-
-// Accessing items in a list of models
-List<OrderItem> items = user.orderItems;
-for (final item in items) {
-  print(item.productName);
-}
-
-// If working directly with validated data (Map<String, dynamic>)
-final validatedData = result.getOrThrow();
-final addressMap = validatedData['address'] as Map<String, dynamic>?;
-if (addressMap != null) {
-  // You might need to validate/parse the nested part separately
-  // if not using generated models.
-  final nestedAddressSchema = Ack.object({...}); // Define address schema again
-  final addressResult = nestedAddressSchema.validate(addressMap);
-  if (addressResult.isOk) {
-    final city = addressResult.getOrThrow()['city'];
-    print(city);
-  }
+  // Type cast when accessing
+  final name = validData['name'] as String;
+  final address = validData['address'] as Map<String, Object?>;
+  final city = address['city'] as String;
 }
 ```
 
-**Updating Nested Data (Immutability):**
+### Union Types
 
-When updating, it's best practice to create new instances rather than modifying existing ones, especially if using immutable models.
+Validate against multiple possible schemas:
 
 ```dart
-// Assume 'user' is an existing immutable model instance
-final updatedUser = user.copyWith(
-  // Create a new Address instance with the changed city
-  address: user.address.copyWith(city: "Miami")
+// String or integer
+final idSchema = Ack.anyOf([
+  Ack.string().strictParsing(),
+  Ack.integer(),
+]);
+
+// Discriminated union (polymorphic data)
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': Ack.object({
+      'type': Ack.literal('circle'),
+      'radius': Ack.double().positive(),
+    }),
+    'rectangle': Ack.object({
+      'type': Ack.literal('rectangle'),
+      'width': Ack.double().positive(),
+      'height': Ack.double().positive(),
+    }),
+  },
+);
+```
+
+### Any
+
+Accept any value without validation (use sparingly):
+
+```dart
+final flexibleSchema = Ack.object({
+  'id': Ack.string(),
+  'metadata': Ack.any(), // Any value accepted
+});
+```
+
+## Optional vs Nullable
+
+Understanding the difference is crucial:
+
+**`.nullable()`** - Field must be present but can be `null`:
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'middleName': Ack.string().nullable(),
+});
+
+// ✅ Valid
+{'name': 'John', 'middleName': null}
+{'name': 'John', 'middleName': 'Robert'}
+
+// ❌ Invalid - middleName missing
+{'name': 'John'}
+```
+
+**`.optional()`** - Field can be completely omitted (but is still validated when present):
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'age': Ack.integer().optional(),
+});
+
+// ✅ Valid
+{'name': 'John'} // age omitted
+{'name': 'John', 'age': 30}
+
+// ❌ Invalid
+{'name': 'John', 'age': null} // Use .nullable() if null should be allowed
+```
+
+**Combining both** - Field can be missing OR null:
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'bio': Ack.string().optional().nullable(),
+});
+
+// All valid:
+{'name': 'John'}
+{'name': 'John', 'bio': null}
+{'name': 'John', 'bio': 'Developer'}
+```
+
+## Object Schema Operations
+
+### Extension
+
+Add or override properties:
+
+```dart
+final baseSchema = Ack.object({
+  'id': Ack.string(),
+  'name': Ack.string(),
+});
+
+// Add properties
+final extendedSchema = baseSchema.extend({
+  'email': Ack.string().email(),
+  'role': Ack.literal('admin'),
+});
+
+// Override properties
+final modifiedSchema = baseSchema.extend({
+  'name': Ack.string().optional(), // Make name optional
+});
+```
+
+### Pick and Omit
+
+Select or exclude properties:
+
+```dart
+final fullSchema = Ack.object({
+  'id': Ack.string(),
+  'name': Ack.string(),
+  'email': Ack.string().email(),
+  'password': Ack.string(),
+  'createdAt': Ack.string().datetime(),
+});
+
+// Pick specific fields
+final publicSchema = fullSchema.pick(['id', 'name', 'email']);
+
+// Omit sensitive fields
+final safeSchema = fullSchema.omit(['password']);
+```
+
+### Partial
+
+Make all properties optional:
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string().email(),
+  'age': Ack.integer(),
+});
+
+// All fields become optional
+final partialSchema = userSchema.partial();
+
+// All valid:
+partialSchema.safeParse({});
+partialSchema.safeParse({'name': 'John'});
+partialSchema.safeParse({'email': 'john@example.com', 'age': 30});
+```
+
+### Additional Properties
+
+Control handling of extra properties:
+
+```dart
+// Allow additional properties (default)
+final flexibleSchema = Ack.object({
+  'id': Ack.string(),
+}, additionalProperties: true);
+
+flexibleSchema.safeParse({'id': '1', 'extra': 'allowed'}); // ✅
+
+// Disallow additional properties
+final strictSchema = Ack.object({
+  'id': Ack.string(),
+}, additionalProperties: false);
+
+strictSchema.safeParse({'id': '1', 'extra': 'value'}); // ❌
+
+// Or use methods
+final strict = baseSchema.strict(); // Reject extra properties
+final passthrough = baseSchema.passthrough(); // Allow extra properties
+```
+
+## Custom Validation
+
+### Refinements
+
+Add custom validation logic:
+
+```dart
+// Password confirmation
+final passwordSchema = Ack.object({
+  'password': Ack.string().minLength(8),
+  'confirmPassword': Ack.string(),
+}).refine(
+  (data) => data['password'] == data['confirmPassword'],
+  message: 'Passwords must match',
 );
 
-// If using generated schemas, you might convert back for re-validation
-// final userData = updatedUser.toMap();
-// final validationResult = UserSchema().definition.validate(userData);
-```
-
-*For more details on using generated schemas, see the [Code Generation](../guides/code-generation.mdx) guide.*
-
-### Allowing Additional Properties
-
-By default, `Ack.object` ignores properties in the input data that are not defined in the schema. To capture these, use `additionalProperties`:
-
-```dart
-final flexibleSchema = Ack.object(
-  {
-    'id': Ack.int,
+// Business logic validation
+final orderSchema = Ack.object({
+  'items': Ack.list(Ack.object({
+    'price': Ack.double(),
+    'quantity': Ack.integer(),
+  })),
+  'total': Ack.double(),
+}).refine(
+  (order) {
+    final items = order['items'] as List;
+    final calculatedTotal = items.fold<double>(0, (sum, item) {
+      final itemMap = item as Map<String, Object?>;
+      final price = itemMap['price'] as double;
+      final qty = itemMap['quantity'] as int;
+      return sum + (price * qty);
+    });
+    final total = order['total'] as double;
+    return (calculatedTotal - total).abs() < 0.01;
   },
-  // Allow any other properties
-  additionalProperties: true,
+  message: 'Total must match sum of items',
 );
-
-final data = {'id': 1, 'name': 'Gadget', 'color': 'blue'};
-final result = flexibleSchema.validate(data);
-
-print(result.isOk); // true
-
-final validated = flexibleSchema.validate({'id': 1, 'name': 'Gadget'}).getOrThrow();
-print(validated); // {id: 1, name: Gadget} - Extra properties are included
 ```
 
-To *disallow* any extra properties, set `additionalProperties: false`:
+### Transformations
+
+Transform validated data:
 
 ```dart
-final strictSchema = Ack.object(
-  {
-    'id': Ack.int,
-    'name': Ack.string,
-  },
-  additionalProperties: false,
-);
+// Transform to uppercase
+final upperSchema = Ack.string().transform((s) => s?.toUpperCase() ?? '');
 
-final dataWithExtra = {'id': 1, 'name': 'Test', 'extra': 'disallowed'};
-final result = strictSchema.validate(dataWithExtra);
+// Add computed fields
+final userWithAgeSchema = Ack.object({
+  'name': Ack.string(),
+  'birthYear': Ack.integer(),
+}).transform((data) {
+  final birthYear = data!['birthYear'] as int;
+  final age = DateTime.now().year - birthYear;
+  return {...data, 'age': age};
+});
 
-print(result.isOk); // false
-print(result.getError()); // Contains info about disallowed property 'extra'
+// Type transformation
+final dateSchema = Ack.string()
+  .matches(r'^\d{4}-\d{2}-\d{2}$')
+  .transform<DateTime>((s) => DateTime.parse(s!));
 ```
 
-## Making Schemas Nullable
+## Validation Result
 
-Any schema type can be made nullable by appending `.nullable()`. This means the schema will accept both its defined type *and* the value `null`.
+The `safeParse()` method returns a `SchemaResult`:
 
 ```dart
-// Nullable string
-final middleNameSchema = Ack.string.nullable();
+final result = schema.safeParse(data);
 
-// Nullable date
-final optionalDateSchema = Ack.string.date().nullable();
+// Check success
+if (result.isOk) {
+  final data = result.getOrThrow();
+}
 
-// Nullable object (the entire address object can be null)
-final optionalAddressSchema = Ack.object(
-  {
-    'street': Ack.string,
-    'city': Ack.string,
-  },
-  required: ['street', 'city'],
-).nullable(); // Note .nullable() is outside Ack.object
+// Check failure
+if (result.isFail) {
+  final error = result.getError();
+}
 
-// --- Validation Examples ---
-
-// String checks
-print(middleNameSchema.validate(null).isOk); // true
-print(middleNameSchema.validate('Robert').isOk); // true
-
-// Object checks
-print(optionalAddressSchema.validate(null).isOk); // true (null object is allowed)
-final validAddress = {'street': '1 Elm St', 'city': 'Gotham'};
-print(optionalAddressSchema.validate(validAddress).isOk); // true (valid address object)
-
-// Invalid nested object still fails even if object is nullable
-final invalidAddress = {'street': '1 Elm St'}; // Missing required 'city'
-print(optionalAddressSchema.validate(invalidAddress).isOk); // false
+// Other methods
+final data = result.getOrNull(); // null if failed
+final data = result.getOrElse(() => defaultValue); // default if failed
 ```
+
+*See the [Error Handling](./error-handling.mdx) guide for details on working with errors.*
+
+## See Also
+
+- [Validation Rules](./validation.mdx) - Complete constraint reference
+- [Error Handling](./error-handling.mdx) - Handle validation errors
+- [Custom Validation](../guides/custom-validation.mdx) - Create custom constraints
+- [JSON Serialization](./json-serialization.mdx) - Validate JSON data

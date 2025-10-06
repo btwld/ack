@@ -1,914 +1,359 @@
-import 'package:ack/ack.dart';
+import 'dart:io';
+
+import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:source_gen/source_gen.dart';
 
-import 'analyzers/class_analyzer.dart';
-import 'analyzers/constraint_analyzer.dart';
-import 'analyzers/type_analyzer.dart';
-import 'models/class_info.dart';
-import 'models/discriminated_class_info.dart';
-import 'models/property_info.dart';
-import 'models/schema_data.dart';
-import 'models/type_name.dart';
-import 'utils/ack_types.dart';
+import 'analyzer/model_analyzer.dart';
+import 'analyzer/schema_ast_analyzer.dart';
+import 'builders/schema_builder.dart';
+import 'builders/type_builder.dart';
+import 'models/model_info.dart';
+import 'validation/code_validator.dart';
+import 'validation/model_validator.dart';
 
-/// Generator for Ack schema classes
-class AckSchemaGenerator extends GeneratorForAnnotation<Schema> {
-  final _formatter = DartFormatter();
-
-  /// Validates and formats generated Dart code using DartFormatter
-  /// This is the standard approach used by most Dart code generators
-  String _validateAndFormatCode(String code, String className) {
-    try {
-      // Use DartFormatter to validate syntax and format the code
-      // This will throw a FormatterException if the code has syntax errors
-      return _formatter.format(code);
-    } catch (e) {
-      throw Exception(
-        'Code generation failed for $className. '
-        'The generator produced invalid Dart code that could not be formatted.\n'
-        'Error: $e\n'
-        'Generated code:\n$code',
-      );
-    }
-  }
+/// Generates schemas for classes annotated with @AckModel
+///
+/// This generator processes all annotated classes in a source file together to create
+/// a single .g.dart file with schema variables.
+class AckSchemaGenerator extends Generator {
+  final _formatter = DartFormatter(
+    languageVersion: DartFormatter.latestLanguageVersion,
+  );
 
   @override
-  String generateForAnnotatedElement(
-    Element element,
-    ConstantReader annotation,
-    BuildStep buildStep,
-  ) {
-    if (element is! ClassElement) {
-      throw InvalidGenerationSourceError(
-        'Generator cannot target `${element.displayName}`.',
-        element: element,
-      );
+  String generate(LibraryReader library, BuildStep buildStep) {
+    final annotatedElements = <ClassElement>[];
+    final annotatedVariables = <TopLevelVariableElement>[];
+
+    // Find all classes annotated with @AckModel and variables annotated with @AckType
+    for (final element in library.allElements) {
+      if (element is ClassElement) {
+        final annotation = TypeChecker.fromRuntime(
+          AckModel,
+        ).firstAnnotationOf(element);
+        if (annotation != null) {
+          annotatedElements.add(element);
+        }
+      } else if (element is TopLevelVariableElement) {
+        if (_hasAckTypeAnnotation(element)) {
+          annotatedVariables.add(element);
+        }
+      }
     }
 
-    // Extract schema data
-    final schemaData = _extractSchemaData(annotation);
-
-    // Skip subclasses that are part of a sealed discriminated union
-    if (_isSubclassOfDiscriminatedUnion(element)) {
-      return ''; // Return empty string to skip generation
+    if (annotatedElements.isEmpty && annotatedVariables.isEmpty) {
+      return '';
     }
 
-    // Analyze class
-    ClassInfo classInfo = ClassAnalyzer.analyzeClass(
-      element,
-      schemaData.additionalPropertiesField,
-    );
+    // Generate all schema fields and extension types for this file
+    final schemaFields = <Field>[];
+    final extensionTypes = <Spec>[];
+    final analyzer = ModelAnalyzer();
+    final schemaAstAnalyzer = SchemaAstAnalyzer();
+    final schemaBuilder = SchemaBuilder();
+    final typeBuilder = TypeBuilder();
 
-    // Add dependencies
-    final dependencies = ClassAnalyzer.findClassDependencies(
-      classInfo.properties,
-    );
-    classInfo = classInfo.withDependencies(dependencies);
+    // First pass: Analyze all models individually (from @AckModel classes)
+    final modelInfos = <ModelInfo>[];
+    for (final element in annotatedElements) {
+      try {
+        // Validate element can be processed
+        _validateElement(element);
 
-    // Special handling for discriminated unions (sealed or abstract classes)
-    if ((element.isSealed || element.isAbstract) &&
-        schemaData.discriminatedKey != null) {
-      final discriminatedInfo = ClassAnalyzer.analyzeDiscriminatedClass(
-        element,
-        schemaData,
-      );
-      if (discriminatedInfo != null) {
-        return _generateDiscriminatedUnionSchema(
-          element,
-          schemaData,
-          discriminatedInfo,
+        final annotation = TypeChecker.fromRuntime(
+          AckModel,
+        ).firstAnnotationOf(element)!;
+        final annotationReader = ConstantReader(annotation);
+
+        // Analyze the model
+        final modelInfo = analyzer.analyze(element, annotationReader);
+        modelInfos.add(modelInfo);
+      } catch (e) {
+        throw InvalidGenerationSourceError(
+          'Invalid @AckModel annotation on class ${element.name}: $e',
+          element: element,
+          todo:
+              'Check annotation syntax. See: https://docs.page/btwld/ack/annotations',
         );
       }
     }
 
-    // Build schema class with code_builder
-    final schemaClass = _buildSchemaClass(
-      element,
-      element.name,
-      schemaData,
-      classInfo,
-      element.isAbstract,
-    );
-
-    // Generate and format
-    final library = Library((b) => b.body.add(schemaClass));
-    final code =
-        library.accept(DartEmitter(useNullSafetySyntax: true)).toString();
-
-    return _validateAndFormatCode(code, element.name);
-  }
-
-  SchemaData _extractSchemaData(ConstantReader annotation) {
-    return SchemaData(
-      description: annotation.peek('description')?.stringValue,
-      additionalProperties:
-          annotation.peek('additionalProperties')?.boolValue ?? false,
-      additionalPropertiesField:
-          annotation.peek('additionalPropertiesField')?.stringValue,
-      schemaClassName: annotation.peek('schemaClassName')?.stringValue,
-      discriminatedKey: annotation.peek('discriminatedKey')?.stringValue,
-      discriminatedValue: annotation.peek('discriminatedValue')?.stringValue,
-    );
-  }
-
-  Class _buildSchemaClass(
-    ClassElement element,
-    String modelClassName,
-    SchemaData schemaData,
-    ClassInfo classInfo,
-    bool isAbstract,
-  ) {
-    final schemaClassName =
-        schemaData.schemaClassName ?? '${modelClassName}Schema';
-
-    return Class(
-      (b) => b
-        ..name = schemaClassName
-        ..extend = refer('SchemaModel<$schemaClassName>')
-        ..docs.add('/// Generated schema for $modelClassName')
-        ..docs.addAll(
-          schemaData.description != null
-              ? ['/// ${schemaData.description}']
-              : [],
-        )
-        ..fields.add(_buildDefinitionField(classInfo, schemaData))
-        ..constructors.addAll([
-          _buildDefaultConstructor(),
-          _buildValidConstructor(),
-        ])
-        ..methods.addAll([
-          _buildParseMethod(schemaClassName),
-          _buildEnsureInitializeMethod(
-            schemaClassName,
-            modelClassName,
-            classInfo,
-          ),
-          ..._buildPropertyGetters(classInfo, schemaData),
-          if (schemaData.additionalPropertiesField != null)
-            _buildAdditionalPropertiesGetter(classInfo, schemaData),
-          _buildToJsonSchemaMethod(),
-        ]),
-    );
-  }
-
-  Field _buildDefinitionField(ClassInfo classInfo, SchemaData schemaData) {
-    return Field(
-      (b) => b
-        ..name = 'definition'
-        ..modifier = FieldModifier.final$
-        ..late = true
-        ..annotations.add(refer('override'))
-        ..assignment = Code(_buildSchemaExpression(classInfo, schemaData)),
-    );
-  }
-
-  String _buildSchemaExpression(ClassInfo classInfo, SchemaData schemaData) {
-    final properties = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
-
-    final propertyCode = _buildPropertySchemaCode(properties);
-    final requiredProps = _buildRequiredPropsString(classInfo, schemaData);
-
-    return '''Ack.object(
-      {
-$propertyCode
-      },
-      required: [$requiredProps],
-      additionalProperties: ${schemaData.additionalProperties},
-    )''';
-  }
-
-  Constructor _buildDefaultConstructor() {
-    return Constructor(
-      (b) => b..docs.add('/// Default constructor for parser instances'),
-    );
-  }
-
-  Constructor _buildValidConstructor() {
-    return Constructor(
-      (b) => b
-        ..name = '_valid'
-        ..requiredParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'data'
-              ..type = refer('Map<String, Object?>'),
-          ),
-        )
-        ..initializers.add(const Code('super.valid(data)'))
-        ..docs.add('/// Private constructor for validated instances'),
-    );
-  }
-
-  Method _buildParseMethod(String schemaClassName) {
-    return Method(
-      (b) => b
-        ..name = 'parse'
-        ..returns = refer(schemaClassName)
-        ..annotations.add(refer('override'))
-        ..requiredParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'data'
-              ..type = refer('Object?'),
-          ),
-        )
-        ..docs.add('/// Parse with validation - core implementation')
-        ..body = Code('''
-    final result = definition.validate(data);
-    if (result.isOk) {
-      final validatedData = Map<String, Object?>.from(
-        result.getOrThrow(),
-      );
-      return $schemaClassName._valid(validatedData);
-    }
-    throw AckException(result.getError());
-  '''),
-    );
-  }
-
-  Field _buildDiscriminatedDefinitionField(
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    final discriminatorMappingCode =
-        discriminatedInfo.discriminatorMapping.entries
-            .map(
-              (entry) =>
-                  "'${entry.key}': ${entry.value.name}Schema().definition",
-            )
-            .join(',\n        ');
-
-    final schemaCode = '''Ack.discriminated(
-      discriminatorKey: '${discriminatedInfo.discriminatorKey}',
-      schemas: {
-        $discriminatorMappingCode,
-      },
-    )''';
-
-    return Field(
-      (b) => b
-        ..name = 'definition'
-        ..modifier = FieldModifier.final$
-        ..late = true
-        ..annotations.add(refer('override'))
-        ..assignment = Code(schemaCode),
-    );
-  }
-
-  Field _buildSubclassDefinitionField(
-    String baseName,
-    List<PropertyInfo> subclassProperties,
-  ) {
-    // Build property map code
-    final propertyEntries = subclassProperties.map((prop) {
-      final schemaExpr = _buildPropertySchemaExpression(prop);
-      final key = prop.name;
-      return "'$key': $schemaExpr";
-    }).join(',\n      ');
-
-    // Build required fields
-    final requiredFields = subclassProperties
-        .where((prop) => prop.isRequired)
-        .map((prop) => "'${prop.name}'")
-        .join(', ');
-
-    final schemaCode = '''${baseName}Schema().definition.extend(
-      {
-        ${propertyEntries.isNotEmpty ? propertyEntries : '// No additional properties'}
-      },
-      ${requiredFields.isNotEmpty ? 'required: [$requiredFields],' : ''}
-      additionalProperties: false,
-    )''';
-
-    return Field(
-      (b) => b
-        ..name = 'definition'
-        ..modifier = FieldModifier.final$
-        ..late = true
-        ..annotations.add(refer('override'))
-        ..assignment = Code(schemaCode),
-    );
-  }
-
-  String _buildPropertySchemaExpression(PropertyInfo property) {
-    var expr = TypeAnalyzer.getSchemaModelType(property.typeName);
-
-    // Apply constraints
-    for (final constraint in property.constraints) {
-      expr = ConstraintAnalyzer.applyConstraint(expr, constraint);
-    }
-
-    // Apply nullable
-    if (property.isNullable) {
-      expr += '.nullable()';
-    }
-
-    return expr;
-  }
-
-  Method _buildEnsureInitializeMethod(
-    String schemaClassName,
-    String modelClassName,
-    ClassInfo classInfo,
-  ) {
-    final bodyParts = <String>[
-      '    SchemaRegistry.register<$schemaClassName>(',
-      '      (data) => $schemaClassName().parse(data),',
-      '    );',
-    ];
-
-    if (classInfo.dependencies.isNotEmpty) {
-      bodyParts.add('    // Register schema dependencies');
-      for (final dep in classInfo.dependencies) {
-        bodyParts.add('    ${dep}Schema.ensureInitialize();');
-      }
-    }
-
-    return Method(
-      (b) => b
-        ..name = 'ensureInitialize'
-        ..static = true
-        ..returns = refer('void')
-        ..docs.add(
-          '/// Ensures this schema and its dependencies are registered',
-        )
-        ..body = Code(bodyParts.join('\n')),
-    );
-  }
-
-  List<Method> _buildPropertyGetters(
-    ClassInfo classInfo,
-    SchemaData schemaData,
-  ) {
-    final properties = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values;
-
-    return properties.map((prop) => _buildPropertyGetter(prop)).toList();
-  }
-
-  Method _buildPropertyGetter(PropertyInfo property) {
-    final typeStr = TypeAnalyzer.getTypeString(property.typeName);
-    final isNullable = property.isNullable;
-    final body = _generateGetterBody(property, typeStr);
-
-    // Determine the correct return type
-    String returnType;
-    if (!TypeAnalyzer.isPrimitiveType(property.typeName)) {
-      // For custom model types, return the schema type
-      final schemaType = '${property.typeName.name}Schema';
-      returnType = isNullable ? '$schemaType?' : schemaType;
-    } else if (typeStr.startsWith('List<') &&
-        !TypeAnalyzer.isPrimitiveListType(property.typeName)) {
-      // For lists of custom models, return List<SchemaType>
-      final itemType = property.typeName.typeArguments.isNotEmpty
-          ? property.typeName.typeArguments.first.name
-          : 'dynamic';
-      final schemaType = '${itemType}Schema';
-      returnType = isNullable ? 'List<$schemaType>?' : 'List<$schemaType>';
-    } else {
-      // For primitive types, use the original type
-      returnType = isNullable ? '$typeStr?' : typeStr;
-    }
-
-    // Use arrow function only for simple primitive getters (not lists or custom types)
-    final isSimpleGetter = TypeAnalyzer.isPrimitiveType(property.typeName) &&
-        !property.typeName.name.startsWith('List');
-
-    return Method(
-      (b) => b
-        ..name = property.name
-        ..type = MethodType.getter
-        ..returns = refer(returnType)
-        ..body = Code(body)
-        ..lambda = isSimpleGetter,
-    );
-  }
-
-  String _generateGetterBody(PropertyInfo property, String typeStr) {
-    final propName = property.name;
-    final isNullable = property.isNullable;
-
-    // Primitives - use getValue
-    if (TypeAnalyzer.isPrimitiveType(property.typeName)) {
-      // Skip List types - they're handled separately below
-      if (property.typeName.name != 'List') {
-        // Special handling for Map types to use Object? instead of dynamic
-        if (property.typeName.name == 'Map') {
-          return "getValue<Map<String, Object?>>('$propName')${isNullable ? '' : '!'}";
+    // Also analyze schema variables annotated with @AckType
+    for (final variable in annotatedVariables) {
+      try {
+        final modelInfo = schemaAstAnalyzer.analyzeSchemaVariable(variable);
+        if (modelInfo != null) {
+          modelInfos.add(modelInfo);
         }
-        return "getValue<$typeStr>('$propName')${isNullable ? '' : '!'}";
+      } catch (e) {
+        throw InvalidGenerationSourceError(
+          'Failed to analyze schema variable "${variable.name}": $e',
+          element: variable,
+          todo:
+              'Ensure the variable uses Ack schema syntax (e.g., Ack.object(), Ack.string())',
+        );
       }
     }
 
-    // Custom model types
-    if (!property.typeName.name.startsWith('List')) {
-      final schemaType = '${property.typeName.name}Schema';
-      if (isNullable) {
-        return '''final data = getValue<Map<String, Object?>>('$propName');
-    return data != null ? $schemaType().parse(data) : null;''';
+    // Second pass: Build discriminator relationships
+    final finalModelInfos = analyzer.buildDiscriminatorRelationships(
+      modelInfos,
+      annotatedElements,
+    );
+
+    // Third pass: Generate code for all models
+    for (final modelInfo in finalModelInfos) {
+      // Skip schema generation for schema variables (they already exist)
+      if (modelInfo.isFromSchemaVariable) {
+        continue;
       }
-      return "return $schemaType().parse(getValue<Map<String, Object?>>('$propName')!);";
+
+      // Find the corresponding element for error reporting
+      final element = annotatedElements.firstWhere(
+        (e) => e.name == modelInfo.className,
+      );
+
+      try {
+        // Validate the model before generating code
+        final modelValidation = ModelValidator.validateModel(modelInfo);
+        if (modelValidation.isFailure) {
+          throw InvalidGenerationSourceError(
+            'Model validation failed: ${modelValidation.errorMessage}',
+            element: element,
+            todo: 'Simplify complex generic types or fix circular references',
+          );
+        }
+
+        // Build the schema field
+        final schemaField = schemaBuilder.buildSchemaField(modelInfo);
+        schemaFields.add(schemaField);
+      } catch (e) {
+        throw InvalidGenerationSourceError(
+          'Schema generation failed for ${element.name}: $e',
+          element: element,
+          todo:
+              'Ensure all field types are supported. See: https://docs.page/btwld/ack/supported-types',
+        );
+      }
     }
 
-    // List types
-    if (property.typeName.name == 'List' || typeStr.startsWith('List<')) {
-      final itemType = property.typeName.typeArguments.isNotEmpty
-          ? property.typeName.typeArguments.first
-          : null;
+    // Pass 3b: Generate extension types for models with @AckType
+    _generateExtensionTypes(
+      annotatedElements,
+      annotatedVariables,
+      finalModelInfos,
+      typeBuilder,
+      extensionTypes,
+    );
 
-      if (itemType != null) {
-        // List of primitives
-        if (TypeAnalyzer.isPrimitiveType(itemType)) {
-          if (isNullable) {
-            return '''final data = getValue<List?>('$propName');
-    return data?.cast<${itemType.name}>();''';
+    // Only generate if we have content
+    if (schemaFields.isEmpty && extensionTypes.isEmpty) {
+      return '';
+    }
+
+    // Generate part file with schema variables and extension types
+    final inputFileName = buildStep.inputId.pathSegments.last;
+    final generatedLibrary = Library(
+      (b) => b
+        ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
+        ..directives.addAll([Directive.partOf(inputFileName)])
+        ..body.addAll([...schemaFields, ...extensionTypes]),
+    );
+
+    final emitter = DartEmitter(
+      allocator: Allocator.none,
+      orderDirectives: true,
+      useNullSafetySyntax: true,
+    );
+
+    final generatedCode = generatedLibrary.accept(emitter).toString();
+
+    // Format code first - DartEmitter outputs valid but unformatted code
+    String formattedCode;
+    try {
+      formattedCode = _formatter.format(generatedCode);
+    } catch (e) {
+      // If formatting fails, use unformatted code but still validate
+      print('Warning: Failed to format generated code: $e');
+      formattedCode = generatedCode;
+    }
+
+    // Validate formatted code to ensure what we write is syntactically correct
+    final validation = CodeValidator.validate(formattedCode);
+    if (validation.isFailure) {
+      // Write to file for debugging
+      final outputPath = buildStep.inputId.changeExtension('.g.dart.debug');
+      final file = File(outputPath.path);
+      file.writeAsStringSync(formattedCode);
+
+      throw InvalidGenerationSourceError(
+        'Generated code validation failed: ${validation.errorMessage}\n'
+        'Debug output written to: ${outputPath.path}',
+        todo: 'Fix the code generation logic to produce valid Dart syntax',
+      );
+    }
+
+    return formattedCode;
+  }
+
+  /// Validates that the element can be processed by the generator
+  void _validateElement(ClassElement element) {
+    // Check if this is a discriminated base class (abstract is allowed for discriminated types)
+    final annotation = TypeChecker.fromRuntime(
+      AckModel,
+    ).firstAnnotationOf(element);
+    if (annotation != null) {
+      final annotationReader = ConstantReader(annotation);
+      final discriminatedKey = annotationReader.read('discriminatedKey').isNull
+          ? null
+          : annotationReader.read('discriminatedKey').stringValue;
+
+      // Allow abstract classes only if they have discriminatedKey
+      if (element.isAbstract && discriminatedKey == null) {
+        throw InvalidGenerationSourceError(
+          '@AckModel cannot be applied to abstract classes unless discriminatedKey is specified.',
+          element: element,
+        );
+      }
+    }
+  }
+
+  /// Generates extension types for models annotated with @AckType
+  void _generateExtensionTypes(
+    List<ClassElement> annotatedElements,
+    List<TopLevelVariableElement> annotatedVariables,
+    List<ModelInfo> finalModelInfos,
+    TypeBuilder typeBuilder,
+    List<Spec> extensionTypes,
+  ) {
+    // Collect models that have @AckType annotation
+    final typedModels = <ModelInfo>[];
+    final typedElements = <Element>[];
+
+    for (final modelInfo in finalModelInfos) {
+      Element? element;
+
+      // Find the corresponding element (class or variable)
+      if (modelInfo.isFromSchemaVariable) {
+        element = annotatedVariables.firstWhere(
+          (e) => e.name == modelInfo.schemaClassName,
+          orElse: () => throw InvalidGenerationSourceError(
+            'Could not find schema variable "${modelInfo.schemaClassName}"',
+            todo:
+                'Ensure the schema variable exists and is annotated with @AckType',
+          ),
+        );
+      } else {
+        element = annotatedElements.firstWhere(
+          (e) => e.name == modelInfo.className,
+          orElse: () => throw InvalidGenerationSourceError(
+            'Could not find class "${modelInfo.className}"',
+            todo: 'Ensure the class exists and is annotated with @AckModel',
+          ),
+        );
+      }
+
+      if (_hasAckTypeAnnotation(element)) {
+        typedModels.add(modelInfo);
+        typedElements.add(element);
+      }
+    }
+
+    if (typedModels.isEmpty) {
+      return;
+    }
+
+    // Sort by dependencies (topological sort)
+    List<ModelInfo> sortedModels;
+    try {
+      sortedModels = typeBuilder.topologicalSort(typedModels);
+    } catch (e) {
+      final element = typedElements.first;
+      throw InvalidGenerationSourceError(
+        'Extension type dependency resolution failed: $e',
+        element: element,
+        todo:
+            'Check for circular dependencies in your model hierarchy. '
+            'Ensure all nested types have @AckType annotation.',
+      );
+    }
+
+    // Generate extension types or sealed classes
+    for (final model in sortedModels) {
+      // Find the corresponding element (class or variable)
+      Element element;
+      if (model.isFromSchemaVariable) {
+        element = annotatedVariables.firstWhere(
+          (e) => e.name == model.schemaClassName,
+        );
+      } else {
+        element = annotatedElements.firstWhere(
+          (e) => e.name == model.className,
+        );
+      }
+
+      try {
+        // Check if this is a discriminated base class
+        if (model.isDiscriminatedBase) {
+          // Generate sealed class for discriminated base
+          final sealedClass = typeBuilder.buildSealedClass(model, sortedModels);
+          if (sealedClass != null) {
+            extensionTypes.add(sealedClass);
           }
-          return "return getValue<List>('$propName')!.cast<${itemType.name}>();";
-        }
 
-        // List of custom models
-        final schemaType = '${itemType.name}Schema';
-        if (isNullable) {
-          return '''final data = getValue<List?>('$propName');
-    if (data != null) {
-      return data.whereType<Map<String, Object?>>()
-          .map((item) => $schemaType().parse(item))
-          .toList();
-    }
-    return null;''';
-        }
-        return '''return getValue<List>('$propName')!
-        .whereType<Map<String, Object?>>()
-        .map((item) => $schemaType().parse(item))
-        .toList();''';
-      }
-
-      // If we can't determine the item type, assume it's a list of maps for schema types
-      if (typeStr.contains('Schema>')) {
-        final schemaTypeName =
-            typeStr.substring(5, typeStr.length - 1); // Extract from List<...>
-        return '''return getValue<List>('$propName')!
-        .whereType<Map<String, Object?>>()
-        .map((item) => $schemaTypeName(item))
-        .toList();''';
-      }
-    }
-
-    // Fallback - should not normally reach here for well-formed types
-    // For lists, we need to get the list and handle the elements
-    if (typeStr.startsWith('List<') && typeStr.endsWith('>')) {
-      // Extract the inner type
-      final innerType = typeStr.substring(5, typeStr.length - 1);
-
-      // If it's a Schema type, handle it properly
-      if (innerType.endsWith('Schema')) {
-        return '''return getValue<List>('$propName')!
-        .whereType<Map<String, dynamic>>()
-        .map((item) => $innerType().parse(item))
-        .toList();''';
-      }
-
-      // Otherwise, fallback to simple cast
-      return "return getValue<List>('$propName')!.cast<$innerType>();";
-    }
-
-    // Non-list fallback
-    return "return getValue<$typeStr>('$propName')${isNullable ? '' : '!'};";
-  }
-
-  Method _buildAdditionalPropertiesGetter(
-    ClassInfo classInfo,
-    SchemaData schemaData,
-  ) {
-    final fieldName = schemaData.additionalPropertiesField!;
-    final knownFields = classInfo
-        .getPropertiesExcluding(schemaData.additionalPropertiesField)
-        .values
-        .map((p) => "'${p.name}'")
-        .toSet();
-
-    final body = '''
-    final map = toMap();
-    final knownFields = {${knownFields.join(', ')}};
-    return Map.fromEntries(
-      map.entries.where((e) => !knownFields.contains(e.key))
-    );''';
-
-    return Method(
-      (b) => b
-        ..name = fieldName
-        ..type = MethodType.getter
-        ..returns = refer(AckTypes.mapStringObject)
-        ..body = Code(body),
-    );
-  }
-
-  Method _buildToJsonSchemaMethod() {
-    return Method(
-      (b) => b
-        ..name = 'toJsonSchema'
-        ..returns = refer(AckTypes.mapStringObject)
-        ..docs.add('/// Convert the schema to a JSON Schema')
-        ..body = const Code(
-          'JsonSchemaConverter(schema: definition).toSchema()',
-        )
-        ..lambda = true,
-    );
-  }
-
-  String _generateDiscriminatedUnionSchema(
-    ClassElement element,
-    SchemaData schemaData,
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    final schemaClassName =
-        schemaData.schemaClassName ?? '${element.name}Schema';
-
-    // Build base schema class using code_builder
-    final baseClass = _buildDiscriminatedBaseClass(
-      element,
-      schemaData,
-      discriminatedInfo,
-      schemaClassName,
-    );
-
-    // Generate subclass schemas
-    final subclassSchemas = <String>[];
-    for (final subclass in discriminatedInfo.subclasses) {
-      final subclassSchema = _generateSubclassSchema(
-        subclass,
-        element,
-        discriminatedInfo,
-      );
-      subclassSchemas.add(subclassSchema);
-    }
-
-    // Generate and format base class
-    final library = Library((b) => b.body.add(baseClass));
-    final baseCode =
-        library.accept(DartEmitter(useNullSafetySyntax: true)).toString();
-
-    final formattedBase = _validateAndFormatCode(baseCode, element.name);
-
-    // Combine all schemas
-    return [formattedBase, ...subclassSchemas].join('\n\n');
-  }
-
-  Class _buildDiscriminatedBaseClass(
-    ClassElement element,
-    SchemaData schemaData,
-    DiscriminatedClassInfo discriminatedInfo,
-    String schemaClassName,
-  ) {
-    return Class(
-      (b) => b
-        ..name = schemaClassName
-        ..extend = refer('SchemaModel<$schemaClassName>')
-        ..docs.addAll([
-          '/// Generated base schema for ${element.name} with inheritance support',
-          if (schemaData.description != null) '/// ${schemaData.description}',
-        ])
-        ..fields.add(_buildDiscriminatedDefinitionField(discriminatedInfo))
-        ..constructors.addAll([
-          _buildDefaultConstructor(),
-          _buildValidConstructor(),
-        ])
-        ..methods.addAll([
-          _buildParseMethod(schemaClassName),
-          _buildDiscriminatedEnsureInitializeMethod(
-            schemaClassName,
-            discriminatedInfo,
-          ),
-          ..._buildDiscriminatedGetters(element, discriminatedInfo),
-          ..._buildPatternMatchingMethods(discriminatedInfo),
-          _buildToJsonSchemaMethod(),
-        ]),
-    );
-  }
-
-  Method _buildDiscriminatedEnsureInitializeMethod(
-    String schemaClassName,
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    final dependencies = discriminatedInfo.subclasses
-        .map((subclass) => '${subclass.name}Schema.ensureInitialize();')
-        .join('\n    ');
-
-    return Method(
-      (b) => b
-        ..name = 'ensureInitialize'
-        ..static = true
-        ..returns = refer('void')
-        ..docs
-            .add('/// Ensures this schema and its dependencies are registered')
-        ..body = Code('''
-    SchemaRegistry.register<$schemaClassName>(
-      (data) => $schemaClassName().parse(data),
-    );
-    $dependencies'''),
-    );
-  }
-
-  List<Method> _buildDiscriminatedGetters(
-    ClassElement element,
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    // Create enhanced ClassInfo with discriminator field for consistent handling
-    final enhancedClassInfo = _addDiscriminatorToClassInfo(
-      ClassAnalyzer.analyzeClass(element, null),
-      discriminatedInfo.discriminatorKey,
-    );
-
-    final getters = <Method>[];
-
-    // Generate all getters using existing pattern (including discriminator)
-    for (final prop in enhancedClassInfo.properties.values) {
-      getters.add(_buildPropertyGetter(prop));
-    }
-
-    return getters;
-  }
-
-  List<Method> _buildPatternMatchingMethods(
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    return [
-      _buildWhenMethod(discriminatedInfo),
-      _buildMaybeWhenMethod(discriminatedInfo),
-    ];
-  }
-
-  Method _buildWhenMethod(DiscriminatedClassInfo discriminatedInfo) {
-    final parameters = discriminatedInfo.discriminatorMapping.entries
-        .map(
-          (entry) => Parameter(
-            (p) => p
-              ..name = _toCamelCase(entry.key)
-              ..type = refer('R Function(${entry.value.name}Schema)')
-              ..named = true
-              ..required = true,
-          ),
-        )
-        .toList();
-
-    final cases = discriminatedInfo.discriminatorMapping.entries
-        .map(
-          (entry) =>
-              "'${entry.key}' => ${_toCamelCase(entry.key)}(${entry.value.name}Schema().parse(toMap())),",
-        )
-        .join('\n        ');
-
-    return Method(
-      (b) => b
-        ..name = 'when'
-        ..types.add(refer('R'))
-        ..optionalParameters.addAll(parameters)
-        ..returns = refer('R')
-        ..body = Code('''switch (${discriminatedInfo.discriminatorKey}) {
-        $cases
-        _ => throw StateError('Unknown ${discriminatedInfo.baseClass.name.toLowerCase()} type: \$${discriminatedInfo.discriminatorKey}'),
-      }''')
-        ..lambda = true,
-    );
-  }
-
-  Method _buildMaybeWhenMethod(DiscriminatedClassInfo discriminatedInfo) {
-    final parameters = [
-      ...discriminatedInfo.discriminatorMapping.entries.map(
-        (entry) => Parameter(
-          (p) => p
-            ..name = _toCamelCase(entry.key)
-            ..type = refer('R Function(${entry.value.name}Schema)?')
-            ..named = true,
-        ),
-      ),
-      Parameter(
-        (p) => p
-          ..name = 'orElse'
-          ..type = refer('R Function()')
-          ..named = true
-          ..required = true,
-      ),
-    ];
-
-    final cases = discriminatedInfo.discriminatorMapping.entries
-        .map(
-          (entry) =>
-              "'${entry.key}' => ${_toCamelCase(entry.key)}?.call(${entry.value.name}Schema().parse(toMap())) ?? orElse(),",
-        )
-        .join('\n        ');
-
-    return Method(
-      (b) => b
-        ..name = 'maybeWhen'
-        ..types.add(refer('R'))
-        ..optionalParameters.addAll(parameters)
-        ..returns = refer('R')
-        ..body = Code('''switch (${discriminatedInfo.discriminatorKey}) {
-        $cases
-        _ => orElse(),
-      }''')
-        ..lambda = true,
-    );
-  }
-
-  String _toCamelCase(String input) {
-    if (!input.contains(RegExp(r'[_-]'))) return input;
-
-    final parts = input.split(RegExp(r'[_-]'));
-    return parts.first +
-        parts
-            .skip(1)
-            .map(
-              (p) => p.isEmpty
-                  ? ''
-                  : p[0].toUpperCase() + p.substring(1).toLowerCase(),
-            )
-            .join();
-  }
-
-  /// Check if a class is a subclass of a discriminated union (sealed or abstract)
-  /// This prevents duplicate generation of subclass schemas
-  bool _isSubclassOfDiscriminatedUnion(ClassElement element) {
-    // Check for discriminatedValue annotation
-    for (final annotation in element.metadata) {
-      if (annotation.element?.displayName == 'Schema') {
-        final reader = ConstantReader(annotation.computeConstantValue());
-        final discriminatedValue =
-            reader.peek('discriminatedValue')?.stringValue;
-        if (discriminatedValue != null) {
-          // Verify superclass is sealed or abstract
-          final supertype = element.supertype;
-          if (supertype != null) {
-            final superElement = supertype.element;
-            if (superElement is ClassElement &&
-                (superElement.isSealed || superElement.isAbstract)) {
-              // Verify parent has discriminatedKey annotation
-              final parentHasDiscriminator = superElement.metadata.any(
-                (ann) =>
-                    ann.element?.displayName == 'Schema' &&
-                    ConstantReader(ann.computeConstantValue())
-                            .peek('discriminatedKey')
-                            ?.stringValue !=
-                        null,
+          // Generate extension types for subtypes
+          final subtypes = model.subtypes;
+          if (subtypes != null) {
+            for (final subtypeElement in subtypes.values) {
+              final subtypeModel = sortedModels.firstWhere(
+                (m) => m.className == subtypeElement.name,
+                orElse: () => throw InvalidGenerationSourceError(
+                  'Subtype ${subtypeElement.name} not found in sorted models',
+                  element: element,
+                ),
               );
 
-              if (!parentHasDiscriminator) {
-                throw InvalidGenerationSourceError(
-                  '${element.name} has discriminatedValue but '
-                  '${superElement.name} is not a discriminated union. '
-                  'Parent class must have @Schema(discriminatedKey: "...") annotation.',
-                  element: element,
-                );
+              final subtypeExtension = typeBuilder.buildDiscriminatedSubtype(
+                subtypeModel,
+                model,
+                sortedModels,
+              );
+              if (subtypeExtension != null) {
+                extensionTypes.add(subtypeExtension);
               }
-
-              return true;
             }
           }
+        } else if (model.isDiscriminatedSubtype) {
+          // Skip - will be generated when processing base class
+          continue;
+        } else {
+          // Generate regular extension type
+          final extensionType = typeBuilder.buildExtensionType(
+            model,
+            sortedModels,
+          );
+          if (extensionType != null) {
+            extensionTypes.add(extensionType);
+          }
         }
+      } catch (e) {
+        throw InvalidGenerationSourceError(
+          'Extension type generation failed for ${element.name}: $e',
+          element: element,
+          todo:
+              'Ensure all nested types have @AckType annotation. '
+              'Generic classes are not supported.',
+        );
       }
     }
-
-    return false;
   }
 
-  /// Add discriminator field to ClassInfo as PropertyInfo
-  ClassInfo _addDiscriminatorToClassInfo(
-    ClassInfo classInfo,
-    String discriminatorKey,
-  ) {
-    // Create discriminator as PropertyInfo
-    final discriminatorProperty = PropertyInfo(
-      name: discriminatorKey,
-      typeName: const TypeName('String', []),
-      isRequired: true,
-      isNullable: false,
-      constraints: [],
-    );
-
-    // Add discriminator to properties map
-    final enhancedProperties = Map<String, PropertyInfo>.from(
-      classInfo.properties,
-    );
-    enhancedProperties[discriminatorKey] = discriminatorProperty;
-
-    return ClassInfo(
-      name: classInfo.name,
-      constructorParams: classInfo.constructorParams,
-      properties: enhancedProperties,
-      dependencies: classInfo.dependencies,
-    );
-  }
-
-  /// Build property schema code from properties
-  String _buildPropertySchemaCode(
-    Iterable<PropertyInfo> properties, {
-    bool includeTrailingComma = true,
-    String indent = '        ',
-  }) {
-    return properties.map((prop) {
-      final schemaExpr = _buildPropertySchemaExpression(prop);
-      final key = prop.name;
-      final entry = "$indent'$key': $schemaExpr";
-      return includeTrailingComma ? '$entry,' : entry;
-    }).join(includeTrailingComma ? '\n' : ',\n');
-  }
-
-  /// Build required properties string for schema generation
-  String _buildRequiredPropsString(ClassInfo classInfo, SchemaData schemaData) {
-    return classInfo
-        .getRequiredProperties(
-          excludeField: schemaData.additionalPropertiesField,
-        )
-        .map((p) => "'${p.name}'")
-        .join(', ');
-  }
-
-  /// Generate subclass schema that extends the base schema
-  String _generateSubclassSchema(
-    ClassElement subclassElement,
-    ClassElement baseElement,
-    DiscriminatedClassInfo discriminatedInfo,
-  ) {
-    final subclassName = subclassElement.name;
-    final baseName = baseElement.name;
-    final schemaClassName = '${subclassName}Schema';
-
-    // Analyze subclass properties
-    final subclassInfo = ClassAnalyzer.analyzeClass(subclassElement, null);
-
-    // Get base property names to exclude from subclass
-    final baseClassInfo = ClassAnalyzer.analyzeClass(baseElement, null);
-    final basePropertyNames = baseClassInfo.properties.keys.toSet();
-
-    // Get subclass-specific properties (excluding base properties)
-    final subclassProperties = subclassInfo.properties.values
-        .where((prop) => !basePropertyNames.contains(prop.name))
-        .toList();
-
-    // Get description from subclass annotation
-    final description = _getClassDescription(subclassElement);
-
-    // Build the complete subclass using code_builder
-    final subclass = Class((b) {
-      b
-        ..name = schemaClassName
-        ..extend = refer('${baseName}Schema')
-        ..docs.addAll([
-          '/// Generated schema for $subclassName extending ${baseName}Schema',
-          if (description != null) '/// $description',
-        ])
-        ..fields
-            .add(_buildSubclassDefinitionField(baseName, subclassProperties))
-        ..constructors.addAll([
-          _buildDefaultConstructor(),
-          _buildValidConstructor(),
-        ])
-        ..methods.addAll([
-          _buildParseMethod(schemaClassName),
-          _buildSubclassEnsureInitializeMethod(schemaClassName),
-          ...subclassProperties.map((prop) => _buildPropertyGetter(prop)),
-          _buildToJsonSchemaMethod(),
-        ]);
-    });
-
-    // Generate and format
-    final library = Library((b) => b.body.add(subclass));
-    final code =
-        library.accept(DartEmitter(useNullSafetySyntax: true)).toString();
-
-    return _validateAndFormatCode(code, subclassElement.name);
-  }
-
-  Method _buildSubclassEnsureInitializeMethod(String schemaClassName) {
-    return Method(
-      (b) => b
-        ..name = 'ensureInitialize'
-        ..static = true
-        ..returns = refer('void')
-        ..docs
-            .add('/// Ensures this schema and its dependencies are registered')
-        ..body = Code('''
-    SchemaRegistry.register<$schemaClassName>(
-      (data) => $schemaClassName(data),
-    );'''),
-    );
-  }
-
-  /// Get class description from annotation
-  String? _getClassDescription(ClassElement element) {
-    for (final annotation in element.metadata) {
-      if (annotation.element?.displayName == 'Schema') {
-        final reader = ConstantReader(annotation.computeConstantValue());
-        return reader.peek('description')?.stringValue;
-      }
-    }
-    return null;
+  /// Checks if an element has @AckType annotation
+  bool _hasAckTypeAnnotation(Element element) {
+    return TypeChecker.fromRuntime(AckType).hasAnnotationOfExact(element);
   }
 }

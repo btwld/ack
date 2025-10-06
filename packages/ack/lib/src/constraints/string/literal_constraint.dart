@@ -1,31 +1,31 @@
-import 'package:ack/src/constraints/constraint.dart';
+import '../constraint.dart';
 
-/// {@template string_literal_constraint}
-/// Validates that the input string equals the expected value exactly
+/// Validates that an input string is exactly equal to an `expectedValue`.
 ///
-/// This is particularly useful for discriminator fields in discriminated schemas.
-/// {@endtemplate}
+/// Useful for discriminator fields or fixed value properties.
+/// It will always pass if the input value is `null`.
 class StringLiteralConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
-  /// The expected string value
   final String expectedValue;
 
-  /// {@macro string_literal_constraint}
   const StringLiteralConstraint(this.expectedValue)
-      : super(
-          constraintKey: 'string_literal',
-          description: 'Must be exactly: "$expectedValue"',
-        );
+    : super(
+        constraintKey: 'string_literal_equals',
+        description: 'String must be exactly "$expectedValue".',
+      );
 
   @override
-  bool isValid(String value) => value == expectedValue;
+  bool isValid(String value) {
+    return value == expectedValue;
+  }
 
   @override
   String buildMessage(String value) =>
-      'Must be exactly: "$expectedValue" but got "$value"';
+      'Must be exactly "$expectedValue", but got "$value".';
 
   @override
   Map<String, Object?> toJsonSchema() => {
-        'enum': [expectedValue],
-      };
+    // 'const' is the most direct JSON Schema keyword for this.
+    'const': expectedValue,
+  };
 }

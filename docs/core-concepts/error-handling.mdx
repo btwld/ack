@@ -6,7 +6,7 @@ Ack provides detailed error information when validation fails. This guide explai
 
 ## The `SchemaResult` Object
 
-All `validate()` methods in Ack return a `SchemaResult` object. This object encapsulates either the successfully validated data or a `SchemaError`.
+All `safeParse()` methods in Ack return a `SchemaResult` object. This object encapsulates either the successfully validated data or a `SchemaError`.
 
 - `result.isOk`: Returns `true` if validation succeeded, `false` otherwise.
 - `result.isFail`: Returns `true` if validation failed, `false` otherwise.
@@ -18,8 +18,8 @@ All `validate()` methods in Ack return a `SchemaResult` object. This object enca
 ```dart
 import 'package:ack/ack.dart';
 
-final schema = Ack.string.minLength(5);
-final result = schema.validate('abc');
+final schema = Ack.string().minLength(5);
+final result = schema.safeParse('abc');
 
 if (result.isFail) {
   final error = result.getError();
@@ -49,12 +49,12 @@ The `SchemaError` object contains details about the validation failure.
 
 ```dart
 final userSchema = Ack.object({
-  'name': Ack.string,
-  'age': Ack.int.min(18),
+  'name': Ack.string(),
+  'age': Ack.integer().min(18),
   'address': Ack.object({
-    'city': Ack.string
+    'city': Ack.string()
   })
-}, required: ['name', 'age']);
+});
 
 final invalidData = {
   'name': 'Test',
@@ -64,7 +64,7 @@ final invalidData = {
   }
 };
 
-final result = userSchema.validate(invalidData);
+final result = userSchema.safeParse(invalidData);
 
 if (result.isFail) {
   final error = result.getError();
@@ -112,7 +112,7 @@ When using Ack with Flutter forms, you can extract the error message for display
 ```dart
 // Inside TextFormField validator
 validator: (value) {
-  final result = someSchema.validate(value);
+  final result = someSchema.safeParse(value);
   if (result.isFail) {
     // Return the error details for the UI
     return result.getError().toString();
@@ -129,11 +129,11 @@ Built-in constraints provide default error messages. For custom error messages, 
 
 ```dart
 // Built-in constraints use default messages
-final schema = Ack.string.minLength(5);
+final schema = Ack.string().minLength(5);
 
-final result = schema.validate('abc');
+final result = schema.safeParse('abc');
 if (result.isFail) {
-  final error = result.getError() as SchemaConstraintsError;
-  print(error.constraints.first.message); // Output: "Too short, min 5 characters"
+  final error = result.getError();
+  print(error.toString()); // Output: validation error details
 }
 ```

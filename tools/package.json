@@ -1,15 +1,16 @@
 {
   "name": "ack-json-schema-validator",
   "version": "1.0.0",
-  "description": "JSON Schema validator for Ack library compatibility testing",
+  "description": "JSON Schema tooling for Ack library - Reference fixture generation and validation",
   "main": "jsonschema-validator.js",
   "bin": {
     "jsonschema-validator": "./jsonschema-validator.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "validate": "node jsonschema-validator.js",
-    "install-deps": "npm install"
+    "generate-fixtures": "node generate_reference_fixtures.js",
+    "validate-fixtures": "node jsonschema-validator.js validate-batch --input test-fixtures/reference-config.json",
+    "fixtures": "npm run generate-fixtures && npm run validate-fixtures",
+    "validate": "node jsonschema-validator.js"
   },
   "keywords": [
     "json-schema",
@@ -23,7 +24,8 @@
   "dependencies": {
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
-    "commander": "^11.1.0"
+    "commander": "^11.1.0",
+    "zod": "^4.1.11"
   },
   "devDependencies": {},
   "engines": {

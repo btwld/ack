@@ -1,282 +1,491 @@
-# ACK Generator
+# Ack Generator
 
-Code generator for the ACK validation framework. This generator creates type-safe schema classes from your Dart model classes, providing validation without serialization.
+Code generator for the Ack validation library that automatically creates schema validation code from annotated Dart classes.
 
-## Breaking Changes in v2.0
+## Overview
 
-The `toModel()` method has been removed from generated schemas. ACK is now a pure validation library, giving you complete control over how you create model instances from validated data.
+Ack Generator analyzes your Dart models and produces corresponding `Ack.object()` schemas. You annotate your classes with `@AckModel()`, and the generator creates schema variables that you can use for runtime validation.
 
-### Migration Guide
+The generator handles:
+- Basic schema generation from class fields
+- Nested models and complex types
+- Discriminated types for polymorphic validation
+- Field-level constraints and customization
+- Additional properties support
 
-#### Before (v1.x)
-```dart
-final schema = UserSchema().parse(jsonData);
-if (schema.isValid) {
-  final user = schema.toModel(); // This method no longer exists
-}
-```
+## Installation
 
-#### After (v2.0)
+Add the following dependencies to your `pubspec.yaml`:
 
-**Option 1: Direct Property Access**
-```dart
-final schema = UserSchema().parse(jsonData);
-if (schema.isValid) {
-  // Access properties directly
-  print(schema.name);
-  print(schema.email);
-
-  // Create model manually
-  final user = User(
-    name: schema.name,
-    email: schema.email,
-    address: Address(
-      street: schema.address.street,
-      city: schema.address.city,
-    ),
-  );
-}
-```
-
-**Option 2: Factory Method Pattern**
-```dart
-class User {
-  factory User.fromSchema(UserSchema schema) {
-    if (!schema.isValid) {
-      throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
-    }
-    return User(
-      name: schema.name,
-      email: schema.email,
-      address: Address.fromSchema(schema.address),
-    );
-  }
-}
-
-// Usage
-final user = User.fromSchema(schema);
-```
-
-**Option 3: Extension Methods**
-```dart
-extension UserSchemaX on UserSchema {
-  User toUser() {
-    if (!isValid) throw AckException(getErrors() ?? throw StateError('Invalid schema with no error'));
-    return User(name: name, email: email);
-  }
-}
-
-// Usage
-final user = schema.toUser();
-```
-
-**Option 4: With dart_mappable Integration**
-```dart
-import 'package:dart_mappable/dart_mappable.dart';
-import 'package:ack/ack.dart';
-
-part 'user.mapper.dart';  // dart_mappable
-part 'user.g.dart';       // ack_generator
-
-@MappableClass(caseStyle: CaseStyle.snakeCase)
-@Schema()
-class User with UserMappable {
-  final String firstName;   // -> 'first_name' in both JSON and schema
-  final String lastName;    // -> 'last_name' in both JSON and schema
-
-  @MappableField(key: 'email_address')
-  @IsEmail()
-  final String email;       // -> 'email_address' in both
-
-  User({required this.firstName, required this.lastName, required this.email});
-}
-
-// Validation and serialization use the same field names automatically
-factory User.fromJson(Map<String, dynamic> json) {
-  // Validate first with transformed field names
-  final schema = UserSchema(json);
-  if (!schema.isValid) {
-    throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
-  }
-  // Then deserialize with dart_mappable (same field names)
-  return UserMapper.fromMap(json);
-}
-```
-
-**Option 5: With Other Serialization Libraries**
-```dart
-// Works seamlessly with json_serializable, freezed, etc.
-factory User.fromJson(Map<String, dynamic> json) {
-  // Validate first
-  final schema = UserSchema(json);
-  if (!schema.isValid) {
-    throw AckException(schema.getErrors() ?? throw StateError('Invalid schema with no error'));
-  }
-  // Then use your preferred serialization
-  return _$UserFromJson(json);
-}
-```
-
-## dart_mappable Integration
-
-ACK Generator now provides seamless integration with [dart_mappable](https://pub.dev/packages/dart_mappable), automatically synchronizing field names and case styles between validation schemas and serialization.
-
-### Key Features
-
-- **Automatic Case Style Transformation**: Supports snake_case, camelCase, kebab-case, and all other dart_mappable case styles
-- **Custom Field Key Support**: Respects `@MappableField(key: 'custom_name')` annotations
-- **Zero Configuration**: Just add dart_mappable annotations and ACK automatically applies the same transformations
-- **Backward Compatible**: Existing schemas continue to work unchanged
-
-### Supported Case Styles
-
-- `camelCase` (default, no transformation)
-- `snake_case`
-- `kebab-case` / `param-case`
-- `PascalCase`
-- `CONSTANT_CASE`
-- `dot.case`
-- `path/case`
-- `Sentence case`
-- `Header-Case`
-
-### Example
-
-```dart
-@MappableClass(caseStyle: CaseStyle.snakeCase)
-@Schema()
-class User with UserMappable {
-  final String firstName;   // Becomes 'first_name' in JSON and schema
-  final String lastName;    // Becomes 'last_name' in JSON and schema
-
-  @MappableField(key: 'email_addr')
-  @IsEmail()
-  final String email;       // Becomes 'email_addr' in JSON and schema
-}
-```
-
-Both dart_mappable serialization and ACK validation will use the same transformed field names automatically.
-
-## Benefits of This Change
-
-1. **Flexibility**: Choose your own serialization strategy
-2. **Smaller Generated Code**: ~30% reduction in file size
-3. **Better Separation of Concerns**: Validation is separate from object creation
-4. **Framework Agnostic**: Works with any Dart serialization library
-5. **Simpler Mental Model**: Schemas validate, they don't create
-6. **dart_mappable Integration**: Seamless compatibility with automatic field name synchronization
-
-## Implementation Status
-✅ Core files created:
-- `lib/builder.dart` - Builder registration
-- `lib/src/generator.dart` - Main generator using code_builder
-- `test/generator_test.dart` - Golden file tests
-- `ack_generator_plan_v2.md` - Simple migration plan
-
-## Next Steps to Complete Setup
-
-### 1. Copy Analyzers from Current Generator
-```bash
-# From ack_generator directory:
-cp -r ../ack_generator/lib/src/analyzers ./lib/src/
-cp -r ../ack_generator/lib/src/models ./lib/src/  # If exists
-
-# Or create models directory and copy individual files:
-mkdir -p lib/src/models
-cp ../ack_generator/lib/src/schema_data.dart ./lib/src/models/  # If not in analyzers
-```
-
-### 2. Create Test Directories
-```bash
-mkdir -p test/fixtures
-mkdir -p test/golden
-```
-
-### 3. Copy Test Fixtures
-```bash
-# Copy test models as fixtures
-cp ../ack_generator/test/models/user_model.dart ./test/fixtures/
-cp ../ack_generator/test/models/product_model.dart ./test/fixtures/
-cp ../ack_generator/test/models/block_model.dart ./test/fixtures/
-
-# Copy generated files as golden files
-cp ../ack_generator/test/models/user_model.g.dart ./test/golden/user_model.golden
-cp ../ack_generator/test/models/product_model.g.dart ./test/golden/product_model.golden
-cp ../ack_generator/test/models/block_model.g.dart ./test/golden/block_model.golden
-```
-
-### 4. Create pubspec.yaml
 ```yaml
-name: ack_generator
-description: Code generator for ACK validation schemas
-version: 0.1.0
-
-environment:
-  sdk: '>=3.0.0 <4.0.0'
-
 dependencies:
-  analyzer: ^6.3.0
-  build: ^2.4.1
-  code_builder: ^4.10.0
-  source_gen: ^1.4.0
-  dart_style: ^2.3.4
-  ack: ^0.2.0-beta.1
+  ack: ^1.0.0-beta.1
+  ack_annotations: ^1.0.0-beta.1
 
 dev_dependencies:
-  build_runner: ^2.4.6
-  build_test: ^2.2.0
-  test: ^1.25.0
+  ack_generator: ^1.0.0-beta.1
+  build_runner: ^2.4.0
 ```
 
-### 5. Create build.yaml
-```yaml
-builders:
-  ack_schema:
-    import: "package:ack_generator/builder.dart"
-    builder_factories: ["ackSchemaBuilder"]
-    build_extensions: {".dart": [".ack.dart"]}
-    auto_apply: dependents
-    build_to: source
-    applies_builders: ["source_gen|combining_builder"]
+> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.1`.
+
+Run `dart pub get` to install the packages.
+
+## Basic usage
+
+### 1. Annotate your model
+
+Create a Dart class and annotate it with `@AckModel()`:
+
+```dart
+// user.dart
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.g.dart';
+
+@AckModel()
+class User {
+  final String name;
+  final String email;
+  final int? age;
+
+  User({required this.name, required this.email, this.age});
+}
 ```
 
-### 6. Run Tests
+### 2. Generate the schema
+
+Run the build_runner to generate the schema code:
+
 ```bash
-# Install dependencies
-dart pub get
-
-# Run tests (will fail until golden files exist)
-dart test
-
-# Create/update golden files
-UPDATE_GOLDEN=true dart test
-
-# Run tests again to verify
-dart test
+dart run build_runner build
 ```
 
-## Key Implementation Notes
+This creates a `user.g.dart` file containing the generated schema:
 
-- The generator reuses ALL existing analyzers unchanged
-- Uses code_builder for type-safe generation instead of strings
-- Maintains exact same output as current generator
-- Discriminated unions temporarily use string generation (TODO for phase 2)
-- Total new code: ~400 lines (vs 900+ in over-engineered version)
+```dart
+// user.g.dart (generated)
 
-## Architecture
-
-```
-ack_generator/
-├── lib/
-│   ├── builder.dart (17 lines)
-│   └── src/
-│       ├── generator.dart (~400 lines)
-│       └── analyzers/ (copied from ack_generator)
-├── test/
-│   ├── generator_test.dart (86 lines)
-│   ├── fixtures/ (input dart files)
-│   └── golden/ (expected output files)
-└── pubspec.yaml
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string(),
+  'age': Ack.integer().optional(),
+});
 ```
 
-This is a true MVP - minimal new code, maximum reuse, same functionality.
+### 3. Use the generated schema
+
+Import the generated part file and use the schema for validation:
+
+```dart
+import 'user.dart';
+
+void main() {
+  final userData = {'name': 'Alice', 'email': 'alice@example.com', 'age': 30};
+
+  final result = userSchema.safeParse(userData);
+
+  if (result.isOk) {
+    final validatedData = result.getOrThrow();
+    final user = User(
+      name: validatedData['name'] as String,
+      email: validatedData['email'] as String,
+      age: validatedData['age'] as int?,
+    );
+    print('User created: ${user.name}');
+  } else {
+    print('Validation failed: ${result.getError()}');
+  }
+}
+```
+
+## Features
+
+### Automatic schema generation
+
+The generator creates schemas based on your class fields and their types:
+
+```dart
+@AckModel()
+class Product {
+  final String name;
+  final double price;
+  final bool inStock;
+  final List<String> tags;
+
+  Product({
+    required this.name,
+    required this.price,
+    required this.inStock,
+    required this.tags,
+  });
+}
+
+// Generated schema
+final productSchema = Ack.object({
+  'name': Ack.string(),
+  'price': Ack.double(),
+  'inStock': Ack.boolean(),
+  'tags': Ack.list(Ack.string()),
+});
+```
+
+### Field constraints
+
+Use `@AckField` to add validation constraints:
+
+```dart
+@AckModel()
+class User {
+  @AckField(constraints: ['minLength(1)', 'maxLength(50)'])
+  final String name;
+
+  @AckField(constraints: ['email'])
+  final String email;
+
+  @AckField(constraints: ['min(0)', 'max(150)'])
+  final int? age;
+
+  User({required this.name, required this.email, this.age});
+}
+
+// Generated schema includes constraints
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(1).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).max(150).optional(),
+});
+```
+
+### Custom JSON keys
+
+Map class fields to different JSON property names:
+
+```dart
+@AckModel()
+class User {
+  @AckField(jsonKey: 'full_name')
+  final String name;
+
+  @AckField(jsonKey: 'email_address')
+  final String email;
+
+  User({required this.name, required this.email});
+}
+
+// Generated schema uses custom keys
+final userSchema = Ack.object({
+  'full_name': Ack.string(),
+  'email_address': Ack.string(),
+});
+```
+
+### Additional properties
+
+Allow or disallow extra fields in validated objects:
+
+```dart
+@AckModel(additionalProperties: true)
+class FlexibleModel {
+  final String id;
+
+  FlexibleModel({required this.id});
+}
+
+// Generated schema allows additional properties
+final flexibleModelSchema = Ack.object({
+  'id': Ack.string(),
+}, additionalProperties: true);
+```
+
+By default, `additionalProperties` is `false`, which means the schema rejects any fields not explicitly defined in the class.
+
+### Nested models
+
+The generator handles nested model references:
+
+```dart
+@AckModel()
+class Address {
+  final String street;
+  final String city;
+
+  Address({required this.street, required this.city});
+}
+
+@AckModel()
+class User {
+  final String name;
+  final Address address;
+
+  User({required this.name, required this.address});
+}
+
+// Generated schemas
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+});
+
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'address': addressSchema,
+});
+```
+
+## Advanced features
+
+### Discriminated types
+
+Use discriminated types to validate polymorphic data structures. Define a base class with a discriminator key, then create subclasses with specific discriminator values:
+
+```dart
+@AckModel(discriminatedKey: 'type')
+abstract class Shape {
+  String get type;
+}
+
+@AckModel(discriminatedValue: 'circle')
+class Circle extends Shape {
+  @AckField(constraints: ['positive()'])
+  final double radius;
+
+  Circle({required this.radius});
+
+  @override
+  String get type => 'circle';
+}
+
+@AckModel(discriminatedValue: 'rectangle')
+class Rectangle extends Shape {
+  @AckField(constraints: ['positive()'])
+  final double width;
+
+  @AckField(constraints: ['positive()'])
+  final double height;
+
+  Rectangle({required this.width, required this.height});
+
+  @override
+  String get type => 'rectangle';
+}
+```
+
+The generator creates a discriminated schema that validates based on the discriminator field:
+
+```dart
+// Generated schemas
+final circleSchema = Ack.object({
+  'type': Ack.literal('circle'),
+  'radius': Ack.double().positive(),
+});
+
+final rectangleSchema = Ack.object({
+  'type': Ack.literal('rectangle'),
+  'width': Ack.double().positive(),
+  'height': Ack.double().positive(),
+});
+
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': circleSchema,
+    'rectangle': rectangleSchema,
+  },
+);
+```
+
+Use the discriminated schema to validate different shape types:
+
+```dart
+final circleData = {'type': 'circle', 'radius': 5.0};
+final rectangleData = {'type': 'rectangle', 'width': 10.0, 'height': 20.0};
+
+final circleResult = shapeSchema.safeParse(circleData);
+final rectangleResult = shapeSchema.safeParse(rectangleData);
+
+if (circleResult.isOk) {
+  final data = circleResult.getOrThrow();
+  final circle = Circle(radius: data['radius'] as double);
+  print('Circle with radius: ${circle.radius}');
+}
+
+if (rectangleResult.isOk) {
+  final data = rectangleResult.getOrThrow();
+  final rectangle = Rectangle(
+    width: data['width'] as double,
+    height: data['height'] as double,
+  );
+  print('Rectangle: ${rectangle.width} x ${rectangle.height}');
+}
+```
+
+### Supported constraints
+
+You can use the following constraints with `@AckField`:
+
+**String constraints:**
+- `minLength(n)` - Minimum string length
+- `maxLength(n)` - Maximum string length
+- `email` - Email format validation
+- `url` - URL format validation
+- `notEmpty` - Non-empty string
+
+**Number constraints:**
+- `min(n)` - Minimum value
+- `max(n)` - Maximum value
+- `positive()` - Positive numbers only
+- `negative()` - Negative numbers only
+- `nonNegative()` - Zero or positive numbers
+- `nonPositive()` - Zero or negative numbers
+
+**List constraints:**
+- `minLength(n)` - Minimum list length
+- `maxLength(n)` - Maximum list length
+- `notEmpty` - Non-empty list
+
+```dart
+final priceSchema = Ack.double().nonNegative().max(100);
+```
+Use `nonNegative()` / `nonPositive()` as concise aliases for `.min(0)` / `.max(0)` while keeping consistent error messages.
+
+## Usage examples
+
+### Validating API request data
+
+```dart
+@AckModel()
+class CreateUserRequest {
+  @AckField(constraints: ['minLength(1)', 'maxLength(100)'])
+  final String username;
+
+  @AckField(constraints: ['email'])
+  final String email;
+
+  @AckField(constraints: ['minLength(8)'])
+  final String password;
+
+  CreateUserRequest({
+    required this.username,
+    required this.email,
+    required this.password,
+  });
+}
+
+// In your API handler
+void handleCreateUser(Map<String, dynamic> requestBody) {
+  final result = createUserRequestSchema.safeParse(requestBody);
+
+  if (!result.isOk) {
+    return sendError(400, result.getError().toString());
+  }
+
+  final validatedData = result.getOrThrow();
+  final request = CreateUserRequest(
+    username: validatedData['username'] as String,
+    email: validatedData['email'] as String,
+    password: validatedData['password'] as String,
+  );
+
+  // Create user with validated data
+  createUser(request);
+}
+```
+
+### Validating configuration files
+
+```dart
+@AckModel()
+class DatabaseConfig {
+  @AckField(constraints: ['minLength(1)'])
+  final String host;
+
+  @AckField(constraints: ['min(1)', 'max(65535)'])
+  final int port;
+
+  @AckField(constraints: ['minLength(1)'])
+  final String database;
+
+  final String? username;
+  final String? password;
+
+  DatabaseConfig({
+    required this.host,
+    required this.port,
+    required this.database,
+    this.username,
+    this.password,
+  });
+}
+
+// Load and validate configuration
+void loadConfig(String jsonString) {
+  final json = jsonDecode(jsonString) as Map<String, dynamic>;
+  final result = databaseConfigSchema.safeParse(json);
+
+  if (!result.isOk) {
+    throw ConfigurationError('Invalid database config: ${result.getError()}');
+  }
+
+  final validatedData = result.getOrThrow();
+  final config = DatabaseConfig(
+    host: validatedData['host'] as String,
+    port: validatedData['port'] as int,
+    database: validatedData['database'] as String,
+    username: validatedData['username'] as String?,
+    password: validatedData['password'] as String?,
+  );
+
+  connectToDatabase(config);
+}
+```
+
+## Development
+
+### Regenerating code
+
+If you modify your annotated models or add new constraints, regenerate the schemas:
+
+```bash
+# Clean previous builds
+dart run build_runner clean
+
+# Generate fresh code
+dart run build_runner build
+
+# Or use watch mode during development
+dart run build_runner watch
+```
+
+### Troubleshooting
+
+**Part directive missing:**
+If you see errors about missing generated code, ensure your model file includes the part directive:
+
+```dart
+part 'your_file_name.g.dart';
+```
+
+**Build conflicts:**
+If the generator reports conflicts, run the build with the delete flag:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+**Type resolution errors:**
+Ensure all referenced types have `@AckModel()` annotations or are built-in Dart types that Ack supports.
+
+## Contributing
+
+Contributions are welcome. Follow these guidelines:
+
+1. Check existing issues before creating new ones
+2. Follow the existing code style and patterns
+3. Add tests for new features
+4. Update documentation for public API changes
+5. Run `melos test` to ensure all tests pass
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.

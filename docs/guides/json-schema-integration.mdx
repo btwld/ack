@@ -15,17 +15,14 @@ import 'dart:convert';
 
 // Example User Schema
 final userSchema = Ack.object({
-  'id': Ack.int.positive().description('Unique user identifier'),
-  'name': Ack.string.minLength(2).maxLength(50).description('User\'s full name'),
-  'email': Ack.string.email().description('User\'s email address'),
-  'role': Ack.string.enumValues(['admin', 'user', 'guest']).defaultValue('user'),
-  'isActive': Ack.boolean.defaultValue(true),
-  'tags': Ack.list(Ack.string).uniqueItems().description('List of user tags').nullable(),
-  'age': Ack.int.min(0).max(120).nullable().description('User\'s age'),
-}, 
-required: ['id', 'name', 'email'],
-description: 'Represents a user in the system'
-);
+  'id': Ack.integer().positive().withDescription('Unique user identifier'),
+  'name': Ack.string().minLength(2).maxLength(50).withDescription('User\'s full name'),
+  'email': Ack.string().email().withDescription('User\'s email address'),
+  'role': Ack.enumString(['admin', 'user', 'guest']).withDefault('user'),
+  'isActive': Ack.boolean().withDefault(true),
+  'tags': Ack.list(Ack.string()).unique().withDescription('List of user tags').nullable(),
+  'age': Ack.integer().min(0).max(120).nullable().withDescription('User\'s age'),
+}).withDescription('Represents a user in the system');
 
 void main() {
   // Convert the AckSchema to a JSON Schema Object Map
@@ -183,3 +180,79 @@ print(JsonEncoder.withIndent('  ').convert(fullApiSpec));
 ```
 
 This allows you to maintain your validation logic and API documentation source in one place (your Ack schemas).
+
+## Advanced JSON Schema Features
+
+### Schema Descriptions and Metadata
+
+Add descriptions and metadata to your schemas for better documentation:
+
+```dart
+final userSchema = Ack.object({
+  'id': Ack.string().uuid().withDescription('Unique user identifier'),
+  'name': Ack.string().minLength(1).withDescription('User\'s full name'),
+  'email': Ack.string().email().withDescription('User\'s email address'),
+  'age': Ack.integer().min(0).max(150).withDescription('User\'s age in years').optional(),
+}).withDescription('Represents a user in the system');
+
+final jsonSchema = userSchema.toJsonSchema();
+// Generated schema will include description fields
+```
+
+### Default Values in JSON Schema
+
+Schemas with default values will include them in the generated JSON Schema:
+
+```dart
+final configSchema = Ack.object({
+  'theme': Ack.enumString(['light', 'dark']).withDefault('light'),
+  'notifications': Ack.boolean().withDefault(true),
+  'maxItems': Ack.integer().min(1).max(100).withDefault(10),
+});
+
+final jsonSchema = configSchema.toJsonSchema();
+// Will include "default" properties in the JSON Schema
+```
+
+### Complex Schema Patterns
+
+JSON Schema generation works with all Ack schema types:
+
+```dart
+// Union types
+final mixedValueSchema = Ack.anyOf([
+  Ack.string(),
+  Ack.integer(),
+  Ack.boolean(),
+]);
+
+// Discriminated unions
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': Ack.object({
+      'type': Ack.literal('circle'),
+      'radius': Ack.double().positive(),
+    }),
+    'rectangle': Ack.object({
+      'type': Ack.literal('rectangle'),
+      'width': Ack.double().positive(),
+      'height': Ack.double().positive(),
+    }),
+  },
+);
+
+// Nested arrays and objects
+final complexSchema = Ack.object({
+  'users': Ack.list(userSchema).minLength(1),
+  'metadata': Ack.object({
+    'version': Ack.string(),
+    'tags': Ack.list(Ack.string()).unique(),
+  }).optional(),
+});
+
+// All generate valid JSON Schema
+final mixedJson = mixedValueSchema.toJsonSchema();
+final shapeJson = shapeSchema.toJsonSchema();
+final complexJson = complexSchema.toJsonSchema();
+```

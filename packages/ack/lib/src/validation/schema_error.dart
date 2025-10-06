@@ -1,96 +1,102 @@
-import 'package:ack/src/helpers.dart';
 import 'package:meta/meta.dart';
 
 import '../constraints/constraint.dart';
-import '../constraints/validators.dart';
 import '../context.dart';
 import '../schemas/schema.dart';
 
-/// Extension to add firstOrNull to Iterable
-extension IterableExtension<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
-}
+@immutable
+abstract class SchemaError {
+  final String message;
+  final SchemaContext context;
+  final Object? cause;
+  final StackTrace? stackTrace;
 
-abstract class SchemaError extends SchemaContext {
-  final String errorKey;
-
-  const SchemaError({
-    required super.name,
-    required super.schema,
-    required super.value,
-    required this.errorKey,
+  const SchemaError(
+    this.message, {
+    required this.context,
+    this.cause,
+    this.stackTrace,
   });
+
+  String get name => context.name;
+  AckSchema get schema => context.schema;
+  Object? get value => context.value;
+  String get path => context.path;
+
+  /// Returns a human-readable error string with path information.
+  String toErrorString() {
+    return '$message at path: $path';
+  }
 
   Map<String, Object?> toMap() {
     return {
-      'errorKey': errorKey,
-      'schema': schema.toMap(),
-      'value': value,
+      'message': message,
       'name': name,
+      'value': value,
+      'schemaType': schema.schemaTypeName,
+      'path': path,
     };
   }
 
   @override
-  String toString() =>
-      '$runtimeType: errorKey: $errorKey, name: $name, schema: ${schema.runtimeType}, value: ${value ?? 'N/A'}';
+  String toString() {
+    final loc = context.name;
+    final val = context.value;
+    final trace = stackTrace != null ? '\n$stackTrace' : '';
+    final causeMsg = cause != null ? '\nCaused by: $cause' : '';
+
+    return 'Validation failed for "$loc" with value "${val ?? 'null'}": $message$causeMsg$trace';
+  }
 }
 
-class SchemaUnknownError extends SchemaError {
-  final Object error;
-  final StackTrace stackTrace;
-  SchemaUnknownError({
-    required this.error,
-    required this.stackTrace,
+@immutable
+class TypeMismatchError extends SchemaError {
+  TypeMismatchError({
+    required SchemaType expectedType,
+    required SchemaType actualType,
     required SchemaContext context,
-  }) : super(
-          errorKey: 'schema_unknown_error',
-          name: context.name,
-          schema: context.schema,
-          value: context.value,
-        );
+  }) : _expectedJsonType = expectedType,
+       _actualJsonType = actualType,
+       super(
+         'Expected ${expectedType.typeName}, got ${actualType.typeName}',
+         context: context,
+       );
+
+  final SchemaType _expectedJsonType;
+  final SchemaType _actualJsonType;
+
+  String get expectedType => _expectedJsonType.typeName;
+  String get actualType => _actualJsonType.typeName;
 
   @override
-  String toString() => '$SchemaUnknownError: $error \n$stackTrace';
+  String toErrorString() {
+    return 'Expected ${_expectedJsonType.typeName}, got ${_actualJsonType.typeName} at path: ${context.path}';
+  }
 
   @override
   Map<String, Object?> toMap() {
-    return {...super.toMap(), 'error': error, 'stackTrace': stackTrace};
+    return {
+      ...super.toMap(),
+      'expectedType': expectedType,
+      'actualType': actualType,
+    };
   }
 }
 
 class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
-  SchemaConstraintsError({
-    required this.constraints,
-    required SchemaContext context,
-  }) : super(
-          errorKey: 'schema_constraints_error',
-          name: context.name,
-          schema: context.schema,
-          value: context.value,
-        );
 
-  bool get isInvalidType => getConstraint<InvalidTypeConstraint>() != null;
-
-  bool get isNonNullable => getConstraint<NonNullableConstraint>() != null;
+  SchemaConstraintsError({required this.constraints, required super.context})
+    : super(
+        'Constraints not met: ${constraints.map((c) => c.message).join(', ')}',
+      );
 
   ConstraintError? getConstraint<S extends Constraint>() {
-    // First try exact type match
-    final constraint = constraints.firstWhereOrNull((e) => e.type == S);
-    if (constraint != null) return constraint;
-
-    // For generic constraints, try matching the base class name
-    final baseClassName = S.toString().split('<').first;
-    final nonStrictConstraint = constraints.firstWhereOrNull(
-      (e) => e.type.toString().split('<').first == baseClassName,
-    );
-
-    // If we found a constraint with the same base class but different generics,
-    // return it instead of throwing an exception (graceful degradation)
-    if (nonStrictConstraint != null) {
-      return nonStrictConstraint;
+    for (final constraintError in constraints) {
+      if (constraintError.constraint is S) {
+        return constraintError;
+      }
     }
-
     return null;
   }
 
@@ -98,70 +104,38 @@ class SchemaConstraintsError extends SchemaError {
   Map<String, Object?> toMap() {
     return {
       ...super.toMap(),
-      'constraints': constraints.map((e) => e.toMap()).toList(),
+      'constraintViolations': constraints.map((e) => e.toMap()).toList(),
     };
   }
 }
 
+@immutable
 class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
-  SchemaNestedError({required this.errors, required SchemaContext context})
-      : super(
-          errorKey: 'schema_nested_error',
-          name: context.name,
-          schema: context.schema,
-          value: context.value,
-        ) {
-    assert(schema is ObjectSchema || schema is ListSchema,
-        'NestedSchemaError must be used with ObjectSchema or ListSchema');
-  }
-
-  S? getSchemaError<S extends SchemaError>() {
-    return errors.whereType<S>().firstOrNull;
-  }
+  const SchemaNestedError({required this.errors, required super.context})
+    : super('One or more nested schemas failed validation.');
 
   @override
   Map<String, Object?> toMap() {
-    return {...super.toMap(), 'errors': errors.map((e) => e.toMap()).toList()};
-  }
-}
-
-@visibleForTesting
-class SchemaMockError extends SchemaError {
-  SchemaMockError({SchemaContext context = const SchemaMockContext()})
-      : super(
-          errorKey: 'schema_mock_error',
-          name: context.name,
-          schema: context.schema,
-          value: context.value,
-        );
-}
-
-Map<String, Object?> composeSchemaErrorMap(SchemaError error) {
-  Map<String, Object?> errorMap;
-
-  if (error is SchemaConstraintsError) {
-    errorMap = {
-      'value': error.value,
-      'errors': error.constraints.map((c) => c.message).toList(),
+    return {
+      ...super.toMap(),
+      'nestedErrors': errors.map((e) => e.toMap()).toList(),
     };
-  } else if (error is SchemaNestedError) {
-    errorMap = {};
-    for (final e in error.errors) {
-      errorMap.addAll(composeSchemaErrorMap(e));
-    }
-  } else if (error is SchemaUnknownError) {
-    errorMap = {'error': error.error, 'stackTrace': error.stackTrace};
-  } else {
-    errorMap = {};
   }
+}
 
-  return {
-    error.name: <String, Object?>{
-      // 'errorKey': error.errorKey,
-      // 'value': error.value,
-      ...errorMap,
-    },
-  };
+@immutable
+class SchemaValidationError extends SchemaError {
+  SchemaValidationError({required String message, required super.context})
+    : super(message);
+}
+
+final class SchemaTransformError extends SchemaError {
+  const SchemaTransformError({
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  }) : super(message);
 }

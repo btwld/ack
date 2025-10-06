@@ -3,392 +3,346 @@ import 'dart:convert';
 import '../../helpers.dart';
 import '../constraint.dart';
 
-/// Type of pattern matching operation to perform.
-enum PatternType { regex, enumValues, notEnumValues, format }
+/// Type of pattern matching operation.
+enum PatternType { regex, enumString, notEnumString, format }
 
-/// A generic constraint that handles all pattern/format matching operations.
+/// A generic constraint for string pattern/format validations.
 ///
-/// This constraint consolidates multiple specific pattern constraints into a single
-/// flexible implementation that can match regex patterns, enums, or custom formats.
+/// Handles regex matching, checking against a list of allowed/disallowed enum strings,
+/// and validating against predefined formats (like date, email) using either regex
+/// or custom validation functions.
 class PatternConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
-  /// The type of pattern matching to perform.
   final PatternType type;
+  final RegExp? pattern; // For PatternType.regex
+  final List<String>?
+  allowedValues; // For PatternType.enumString, PatternType.notEnumString
+  final bool Function(String value)? formatValidator; // For PatternType.format
 
-  /// The regex pattern for regex type.
-  final RegExp? pattern;
-
-  /// The allowed values for enum type.
-  final List<String>? allowedValues;
-
-  /// The validation function for format type.
-  final bool Function(String)? formatValidator;
-
-  /// Optional custom message builder.
+  final String? example; // Optional example for documentation/error messages
   final String Function(String value)? customMessageBuilder;
 
-  /// Optional example value for documentation.
-  final String? example;
+  // Mapping logic for "format" vs "pattern"
+  static const Map<String, String> _keyToFormat = {
+    'string_format_email': 'email',
+    'string_format_uuid': 'uuid',
+    'string_format_datetime': 'date-time',
+    'string_format_date': 'date',
+    'string_format_time': 'time',
+    'string_format_uri': 'uri',
+    'string_format_ipv4': 'ipv4',
+    'string_format_ipv6': 'ipv6',
+    'string_format_hostname': 'hostname',
+  };
 
   const PatternConstraint({
+    required super.constraintKey,
+    required super.description,
     required this.type,
     this.pattern,
     this.allowedValues,
     this.formatValidator,
-    required super.constraintKey,
-    required super.description,
-    this.customMessageBuilder,
     this.example,
+    this.customMessageBuilder,
   }) : assert(
-          (type == PatternType.regex && pattern != null) ||
-              (type == PatternType.enumValues && allowedValues != null) ||
-              (type == PatternType.notEnumValues && allowedValues != null) ||
-              (type == PatternType.format && formatValidator != null),
-          'Pattern, allowedValues, or formatValidator must be provided based on type',
-        );
+         (type == PatternType.regex && pattern != null) ||
+             ((type == PatternType.enumString ||
+                     type == PatternType.notEnumString) &&
+                 allowedValues != null) ||
+             (type == PatternType.format && formatValidator != null),
+         'Pattern, allowedValues, or formatValidator must be provided based on type.',
+       );
 
-  // Factory methods for regex patterns
+  // --- Factory methods ---
   static PatternConstraint regex(
-    String pattern, {
+    String regexPattern, {
     String? patternName,
     String? example,
-  }) =>
+  }) {
+    // Validate regex pattern at construction time with actionable error
+    late final RegExp compiledPattern;
+    try {
+      compiledPattern = RegExp(regexPattern);
+    } on FormatException catch (e) {
+      throw ArgumentError.value(
+        regexPattern,
+        'regexPattern',
+        'Invalid regular expression pattern: ${e.message}',
+      );
+    }
+
+    return PatternConstraint(
+      type: PatternType.regex,
+      pattern: compiledPattern,
+      constraintKey: patternName != null
+          ? 'string_pattern_$patternName'
+          : 'custom_regex_pattern',
+      description: patternName != null
+          ? 'Must match the $patternName pattern.'
+          : 'Must match regex: $regexPattern',
+      example: example,
+    );
+  }
+
+  static PatternConstraint email() => PatternConstraint(
+    type: PatternType.regex,
+    pattern: RegExp(
+      r'''^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$''',
+    ),
+    constraintKey: 'string_format_email',
+    description: 'Must be a valid email address.',
+    example: 'user@example.com',
+    customMessageBuilder: (v) =>
+        'Invalid email format. Expected format like user@example.com, got "$v".',
+  );
+
+  static PatternConstraint uuid() => PatternConstraint(
+    type: PatternType.regex,
+    pattern: RegExp(
+      r'^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$',
+    ),
+    constraintKey: 'string_format_uuid',
+    description: 'Must be a valid UUID.',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    customMessageBuilder: (v) => 'Invalid UUID format, got "$v".',
+  );
+
+  static PatternConstraint hexColor() => PatternConstraint(
+    type: PatternType.regex,
+    pattern: RegExp(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$'),
+    constraintKey: 'string_format_hexcolor',
+    description: 'Must be a valid hex color code (e.g., #RRGGBB or #RGB).',
+    example: '#FF0000',
+    customMessageBuilder: (v) => 'Invalid hex color format, got "$v".',
+  );
+
+  static PatternConstraint uri() => PatternConstraint(
+    type: PatternType.format,
+    formatValidator: (v) {
+      final u = Uri.tryParse(v);
+      return u != null && u.hasScheme && u.host.isNotEmpty;
+    },
+    constraintKey: 'string_format_uri',
+    description: 'Must be a valid URI.',
+    customMessageBuilder: (v) => 'Invalid URI format, got "$v".',
+  );
+
+  static PatternConstraint enumString(List<String> values) => PatternConstraint(
+    type: PatternType.enumString,
+    allowedValues: values,
+    constraintKey: 'string_enum',
+    description: 'Must be one of: ${values.join(", ")}.',
+    customMessageBuilder: (v) {
+      final closest = findClosestStringMatch(v, values);
+      final suggestion = closest != null && closest != v
+          ? ' Did you mean "$closest"?'
+          : '';
+
+      return 'Value "$v" is not one of the allowed values: ${values.map((e) => '"$e"').join(', ')}.$suggestion';
+    },
+  );
+
+  static PatternConstraint notEnumString(
+    List<String> disallowedValues,
+  ) => PatternConstraint(
+    type: PatternType.notEnumString,
+    allowedValues: disallowedValues,
+    constraintKey: 'string_not_enum',
+    description: 'Must not be one of: ${disallowedValues.join(", ")}.',
+    customMessageBuilder: (v) =>
+        'Value "$v" is disallowed. Cannot be one of: ${disallowedValues.map((e) => '"$e"').join(', ')}.',
+  );
+
+  static PatternConstraint startsWith(String prefix) => PatternConstraint(
+    type: PatternType.regex,
+    pattern: RegExp('^${RegExp.escape(prefix)}'),
+    constraintKey: 'string.startsWith',
+    description: 'Value must start with "$prefix".',
+    customMessageBuilder: (v) => '"$v" does not start with "$prefix".',
+  );
+
+  static PatternConstraint endsWith(String suffix) => PatternConstraint(
+    type: PatternType.regex,
+    pattern: RegExp('${RegExp.escape(suffix)}\$'),
+    constraintKey: 'string.endsWith',
+    description: 'Value must end with "$suffix".',
+    customMessageBuilder: (v) => '"$v" does not end with "$suffix".',
+  );
+
+  static PatternConstraint contains(String pattern, {String? example}) =>
       PatternConstraint(
         type: PatternType.regex,
         pattern: RegExp(pattern),
-        constraintKey:
-            patternName != null ? 'string_pattern_$patternName' : 'regex',
-        description: patternName != null
-            ? 'Must match the pattern: $patternName${example != null ? '. Example: $example' : ''}'
-            : 'Must match regex pattern',
+        constraintKey: 'string_contains',
+        description: 'Must contain pattern "$pattern".',
         example: example,
+        customMessageBuilder: (v) =>
+            'Value "$v" must contain pattern "$pattern".',
       );
 
-  /// {@template email_validator}
-  /// Validates that the string is a valid email address.
-  /// Uses RFC 5322 compliant pattern to ensure proper email format.
-  /// Accepts standard email formats like user@example.com, test.email+tag@domain.co.uk.
-  /// {@endtemplate}
-  static PatternConstraint email() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-        constraintKey: 'email',
-        description: 'Must be a valid email address',
-        example: 'example@domain.com',
-        customMessageBuilder: (value) =>
-            'Invalid email format. Ex: example@domain.com',
-      );
+  static PatternConstraint dateTimeIso8601() => PatternConstraint(
+    type: PatternType.format,
+    // RFC 3339 / ISO-8601 validation using Dart's built-in DateTime parser
+    // Dart's tryParse implements RFC 3339, which is a subset of ISO-8601
+    formatValidator: (v) {
+      // Use Dart's built-in RFC 3339/ISO-8601 parser
+      final dt = DateTime.tryParse(v);
+      if (dt == null) return false;
 
-  /// {@template hex_color_validator}
-  /// Validates that the string is a valid hexadecimal color code.
-  /// Accepts both 3-digit (#RGB) and 6-digit (#RRGGBB) hex color formats.
-  /// Examples: #FF0000 (red), #00FF00 (green), #FFF (white).
-  /// {@endtemplate}
-  static PatternConstraint hexColor() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$'),
-        constraintKey: 'hex_color',
-        description: 'Must be a valid hex color',
-        example: '#f0f0f0',
-        customMessageBuilder: (value) =>
-            'Invalid hex color format. Ex: #f0f0f0',
-      );
+      // Must contain 'T' separator (distinguishes datetime from date-only)
+      // Must contain timezone indicator (Z or +/-HH:MM)
+      final hasTimeSeparator = v.contains('T') || v.contains('t');
+      final hasTimezone =
+          v.endsWith('Z') ||
+          v.endsWith('z') ||
+          RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(v);
 
-  // Factory methods for enum patterns
+      return hasTimeSeparator && hasTimezone;
+    },
+    constraintKey: 'string_format_datetime',
+    description: 'Must be a valid ISO 8601 date-time string.',
+    example: '2023-10-27T10:30:00Z',
+    customMessageBuilder: (v) => 'Invalid ISO 8601 date-time format, got "$v".',
+  );
 
-  /// {@template enum_validator}
-  /// Validates that the string is one of the specified allowed values.
-  /// Useful for validating against a predefined set of options.
-  /// {@endtemplate}
-  static PatternConstraint enumValues(List<String> values) => PatternConstraint(
-        type: PatternType.enumValues,
-        allowedValues: values,
-        constraintKey: 'string_enum',
-        description: 'Must be one of: $values',
-        customMessageBuilder: (value) {
-          final closestMatch = findClosestStringMatch(value, values);
-          final allowedValues = values.map((e) => '"$e"').join(', ');
+  static PatternConstraint dateIso8601() => PatternConstraint(
+    type: PatternType.format,
+    formatValidator: (v) {
+      if (v.length != 10) return false;
+      final date = DateTime.tryParse(v);
+      if (date == null) return false;
+      // Check if it's just a date part and matches YYYY-MM-DD
+      try {
+        return date.toIso8601String().startsWith(v);
+      } catch (_) {
+        return false;
+      }
+    },
+    constraintKey: 'string_format_date',
+    description: 'Must be a valid ISO 8601 date string (YYYY-MM-DD).',
+    example: '2023-10-27',
+    customMessageBuilder: (v) =>
+        'Invalid ISO 8601 date format (YYYY-MM-DD), got "$v".',
+  );
 
-          return closestMatch != null
-              ? 'Did you mean "$closestMatch"? Allowed: $allowedValues'
-              : 'Allowed: $allowedValues';
-        },
-      );
-
-  /// {@template not_one_of_validator}
-  /// Validates that the string is not one of the specified forbidden values.
-  /// Useful for blacklisting specific words or reserved terms.
-  /// {@endtemplate}
-  static PatternConstraint notEnumValues(List<String> values) =>
-      PatternConstraint(
-        type: PatternType.notEnumValues,
-        allowedValues: values,
-        constraintKey: 'not_one_of',
-        description: 'Must not be one of: $values',
-        customMessageBuilder: (value) =>
-            'Disallowed value: Cannot be one of $values',
-      );
-
-  // Factory methods for format patterns
-
-  /// {@template date_time_validator}
-  /// Validates that the string is a valid ISO 8601 date-time format.
-  /// Accepts formats like 2023-12-25T10:30:00Z or 2023-12-25T10:30:00+02:00.
-  /// Supports optional milliseconds and timezone information.
-  /// {@endtemplate}
-  static PatternConstraint dateTime() => PatternConstraint(
-        type: PatternType.format,
-        formatValidator: (value) => DateTime.tryParse(value) != null,
-        constraintKey: 'datetime',
-        description: 'Must be a valid ISO 8601 date-time',
-        customMessageBuilder: (value) =>
-            'Invalid date-time (ISO 8601 required)',
-      );
-
-  /// {@template date_validator}
-  /// Validates that the string is a valid date in YYYY-MM-DD format.
-  /// Follows ISO 8601 date format standard.
-  /// Examples: 2023-12-25, 2024-01-01, 1990-06-15.
-  /// {@endtemplate}
-  static PatternConstraint date() => PatternConstraint(
-        type: PatternType.format,
-        formatValidator: (value) {
-          final date = DateTime.tryParse(value);
-          if (date == null) return false;
-
-          final formatted = '${date.year.toString().padLeft(4, '0')}-'
-              '${date.month.toString().padLeft(2, '0')}-'
-              '${date.day.toString().padLeft(2, '0')}';
-
-          return formatted == value;
-        },
-        constraintKey: 'date',
-        description: 'Must be a valid date in YYYY-MM-DD format',
-        customMessageBuilder: (value) =>
-            'Invalid date. YYYY-MM-DD required. Ex: 2017-07-21',
-      );
-
-  /// {@template is_json_validator}
-  /// Validates that the string contains valid JSON data.
-  /// Accepts any valid JSON format including objects, arrays, strings, numbers, booleans, and null.
-  /// Examples: {"key": "value"}, [1, 2, 3], "string", 42, true, null.
-  /// {@endtemplate}
-  static PatternConstraint json() => PatternConstraint(
-        type: PatternType.format,
-        formatValidator: (value) {
-          try {
-            // Try to decode as JSON - if successful, it's valid JSON
-            jsonDecode(value);
-
-            return true;
-          } catch (e) {
-            return false;
-          }
-        },
-        constraintKey: 'string_json',
-        description: 'Must be valid JSON',
-        customMessageBuilder: (value) => 'Invalid JSON',
-      );
-
-  /// {@template time_validator}
-  /// Validates that the string is a valid time in HH:MM:SS format.
-  /// Supports optional milliseconds (HH:MM:SS.mmm).
-  /// Accepts times from 00:00:00 to 23:59:59.
-  /// Examples: 14:30:00, 09:15:30, 23:59:59.999.
-  /// {@endtemplate}
   static PatternConstraint time() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(r'^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d{1,3})?$'),
-        constraintKey: 'time',
-        description: 'Must be a valid time in HH:MM:SS format',
-        example: '14:30:00',
-        customMessageBuilder: (value) => 'Invalid time format. Ex: 14:30:00',
-      );
+    type: PatternType.format,
+    formatValidator: (value) {
+      final match = RegExp(r'^\d{2}:\d{2}:\d{2}$').firstMatch(value);
+      if (match == null) return false;
+      final parts = value.split(':').map(int.parse).toList();
+      if (parts.length != 3) return false;
+      final hours = parts[0];
+      final minutes = parts[1];
+      final seconds = parts[2];
+      return hours >= 0 &&
+          hours < 24 &&
+          minutes >= 0 &&
+          minutes < 60 &&
+          seconds >= 0 &&
+          seconds < 60;
+    },
+    constraintKey: 'string_format_time',
+    description: 'Must be a valid time in HH:MM:SS format.',
+    example: '23:59:59',
+    customMessageBuilder: (value) =>
+        'Invalid time format (HH:MM:SS), got "$value".',
+  );
 
-  /// {@template uri_validator}
-  /// Validates that the string is a valid URI according to RFC 3986.
-  /// Supports all standard URI schemes including http, https, ftp, mailto, file, etc.
-  /// Examples: https://example.com, mailto:user@example.com, file:///path/to/file.
-  /// {@endtemplate}
-  static PatternConstraint uri() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]*$'),
-        constraintKey: 'uri',
-        description: 'Must be a valid URI',
-        example: 'https://example.com/path',
-        customMessageBuilder: (value) =>
-            'Invalid URI format. Ex: https://example.com',
-      );
+  static PatternConstraint jsonString() => PatternConstraint(
+    type: PatternType.format,
+    formatValidator: (v) {
+      try {
+        jsonDecode(v);
 
-  /// {@template uuid_validator}
-  /// Validates that the string is a valid UUID according to RFC 4122.
-  /// Enforces proper version (1-5) and variant bits for strict UUID compliance.
-  /// Examples: 123e4567-e89b-12d3-a456-426614174000, 550e8400-e29b-41d4-a716-446655440000.
-  /// {@endtemplate}
-  static PatternConstraint uuid() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(
-          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
-        ),
-        constraintKey: 'uuid',
-        description: 'Must be a valid UUID (RFC 4122)',
-        example: '123e4567-e89b-12d3-a456-426614174000',
-        customMessageBuilder: (value) =>
-            'Invalid UUID format. Ex: 123e4567-e89b-12d3-a456-426614174000',
-      );
-
-  /// {@template ipv4_validator}
-  /// Validates that the string is a valid IPv4 address.
-  /// Supports standard dotted decimal notation with values from 0.0.0.0 to 255.255.255.255.
-  /// Examples: 192.168.1.1, 10.0.0.1, 255.255.255.255.
-  /// {@endtemplate}
-  static PatternConstraint ipv4() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(
-          r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
-        ),
-        constraintKey: 'ipv4',
-        description: 'Must be a valid IPv4 address',
-        example: '192.168.1.1',
-        customMessageBuilder: (value) =>
-            'Invalid IPv4 address. Ex: 192.168.1.1',
-      );
-
-  /// {@template ipv6_validator}
-  /// Validates that the string is a valid IPv6 address.
-  /// Supports full, compressed, and special IPv6 address formats.
-  /// Examples: 2001:0db8:85a3:0000:0000:8a2e:0370:7334, ::1, fe80::1.
-  /// {@endtemplate}
-  static PatternConstraint ipv6() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(
-          r'^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$|^([0-9a-fA-F]{1,4}:){1,6}::[0-9a-fA-F]{1,4}$|^[0-9a-fA-F]{1,4}::([0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{1,4}$|^fe80::[0-9a-fA-F]{1,4}$',
-        ),
-        constraintKey: 'ipv6',
-        description: 'Must be a valid IPv6 address',
-        example: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-        customMessageBuilder: (value) =>
-            'Invalid IPv6 address. Ex: 2001:0db8:85a3::8a2e:0370:7334',
-      );
-
-  /// {@template hostname_validator}
-  /// Validates that the string is a valid hostname according to RFC 1123.
-  /// Supports domain names, subdomains, and single hostnames.
-  /// Examples: example.com, sub.example.com, localhost, my-server.
-  /// {@endtemplate}
-  static PatternConstraint hostname() => PatternConstraint(
-        type: PatternType.regex,
-        pattern: RegExp(
-          r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$',
-        ),
-        constraintKey: 'hostname',
-        description: 'Must be a valid hostname (RFC 1123)',
-        example: 'example.com',
-        customMessageBuilder: (value) => 'Invalid hostname. Ex: example.com',
-      );
-
-  /// Maps constraint keys to JSON Schema format values using modern Dart pattern matching.
-  String? _getFormatFromConstraintKey(String key) => switch (key) {
-        'email' => 'email',
-        'datetime' => 'date-time',
-        'date' => 'date',
-        'time' => 'time',
-        'uri' => 'uri',
-        'uuid' => 'uuid',
-        'ipv4' => 'ipv4',
-        'ipv6' => 'ipv6',
-        'hostname' => 'hostname',
-        _ => null, // Not a standard JSON Schema format
-      };
-
-  /// Checks if a format is a standard JSON Schema format that should replace pattern.
-  bool _isStandardFormat(String format) {
-    // Only include formats actually used in this codebase
-    return const {
-      'email',
-      'date-time',
-      'date',
-      'time',
-      'uri',
-      'uuid',
-      'ipv4',
-      'ipv6',
-      'hostname'
-    }.contains(format);
-  }
-
-  /// Builds JSON Schema for regex-based constraints.
-  Map<String, Object?> _buildRegexSchema() {
-    final format = _getFormatFromConstraintKey(constraintKey);
-
-    // For standard formats, prefer format over pattern
-    if (format != null && _isStandardFormat(format)) {
-      return {'format': format};
-    }
-
-    // Include pattern and optional format
-    final schema = <String, Object?>{};
-    if (pattern != null) {
-      schema['pattern'] = pattern!.pattern;
-    }
-    if (format != null) {
-      schema['format'] = format;
-    }
-
-    return schema;
-  }
-
-  /// Builds JSON Schema for format-based constraints.
-  Map<String, Object?> _buildFormatSchema() {
-    final format = _getFormatFromConstraintKey(constraintKey);
-
-    return format != null ? {'format': format} : {};
-  }
+        return true;
+      } catch (_) {
+        return false;
+      }
+    },
+    constraintKey: 'string_format_json',
+    description: 'Must be a valid JSON formatted string.',
+    customMessageBuilder: (v) => 'Invalid JSON string format.',
+  );
 
   @override
-  bool isValid(String value) => switch (type) {
-        PatternType.regex => pattern!.hasMatch(value),
-        PatternType.enumValues => allowedValues!.contains(value),
-        PatternType.notEnumValues => !allowedValues!.contains(value),
-        PatternType.format => formatValidator!(value),
-      };
-
-  @override
-  Map<String, Object?> buildContext(String value) {
-    if (type == PatternType.enumValues && allowedValues != null) {
-      final closestMatch = findClosestStringMatch(value, allowedValues!);
-
-      return {'closestMatch': closestMatch, 'allowedValues': allowedValues};
+  bool isValid(String value) {
+    switch (type) {
+      case PatternType.regex:
+        return pattern!.hasMatch(value);
+      case PatternType.enumString:
+        return allowedValues!.contains(value);
+      case PatternType.notEnumString:
+        return !allowedValues!.contains(value);
+      case PatternType.format:
+        return formatValidator!(value);
     }
-
-    return super.buildContext(value);
   }
 
   @override
   String buildMessage(String value) {
+    final nonNullValue = value;
     if (customMessageBuilder != null) {
-      return customMessageBuilder!(value);
+      return customMessageBuilder!(nonNullValue);
     }
+    // Default messages
+    switch (type) {
+      case PatternType.regex:
+        return 'Value "$nonNullValue" does not match required pattern${example != null ? " (e.g., $example)" : ""}.';
+      case PatternType.enumString:
+        final closest = findClosestStringMatch(nonNullValue, allowedValues!);
+        final suggestion = closest != null && closest != nonNullValue
+            ? ' Did you mean "$closest"?'
+            : '';
 
-    return switch (type) {
-      PatternType.regex => example != null
-          ? 'Invalid format. Example: $example'
-          : 'Does not match required pattern',
-      PatternType.enumValues =>
-        'Must be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}',
-      PatternType.notEnumValues =>
-        'Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}',
-      PatternType.format => 'Invalid format',
-    };
+        return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
+      case PatternType.notEnumString:
+        return 'Value "$nonNullValue" is disallowed. Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}.';
+      case PatternType.format:
+        return 'Value "$nonNullValue" is not a valid ${constraintKey.replaceFirst("string_format_", "")}${example != null ? " (e.g., $example)" : ""}.';
+    }
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => switch (type) {
-        PatternType.regex => _buildRegexSchema(),
-        PatternType.enumValues => {'enum': allowedValues},
-        PatternType.notEnumValues => {
-            'not': {'enum': allowedValues},
-          },
-        PatternType.format => _buildFormatSchema(),
+  Map<String, Object?> buildContext(String value) {
+    final baseContext = super.buildContext(value);
+    if (type == PatternType.enumString && allowedValues != null) {
+      final closestMatch = findClosestStringMatch(value, allowedValues!);
+
+      return {
+        ...baseContext,
+        'allowedValues': allowedValues,
+        if (closestMatch != null) 'closestMatchSuggestion': closestMatch,
       };
+    }
+
+    return baseContext;
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    switch (type) {
+      case PatternType.regex:
+        final standardFormat = _keyToFormat[constraintKey];
+        if (standardFormat != null) {
+          // For email and uuid, include BOTH format and pattern (match Zod)
+          return {'format': standardFormat, 'pattern': pattern!.pattern};
+        }
+
+        return {'pattern': pattern!.pattern};
+      case PatternType.enumString:
+        return {'enum': allowedValues};
+      case PatternType.notEnumString:
+        return {
+          'not': {'enum': allowedValues},
+        };
+      case PatternType.format:
+        final standardFormat = _keyToFormat[constraintKey];
+        if (standardFormat != null) {
+          return {'format': standardFormat};
+        }
+
+        return {};
+    }
+  }
 }
