@@ -5,7 +5,6 @@ part 'test_extension_types.g.dart';
 
 /// Simple model to test basic extension type generation
 @AckModel()
-@AckType()
 class SimpleUser {
   final String name;
   final int age;
@@ -16,7 +15,6 @@ class SimpleUser {
 
 /// Model with nested types to test dependency ordering
 @AckModel()
-@AckType()
 class Address {
   final String street;
   final String city;
@@ -26,7 +24,6 @@ class Address {
 }
 
 @AckModel()
-@AckType()
 class UserWithAddress {
   final String name;
   final Address address;
@@ -41,7 +38,6 @@ class UserWithAddress {
 
 /// Model with collections to test list handling
 @AckModel()
-@AckType()
 class BlogPost {
   final String title;
   final String content;
