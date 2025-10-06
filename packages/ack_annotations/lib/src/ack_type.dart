@@ -2,8 +2,11 @@ import 'package:meta/meta_meta.dart';
 
 /// Annotation to generate extension types for validated data.
 ///
+/// **Note:** This annotation should only be used on schema variables and getters,
+/// not on classes. For classes, use [@AckModel] which automatically generates
+/// both schemas and extension types.
+///
 /// Can be applied to:
-/// - Classes annotated with [@AckModel] (extracts types from class fields)
 /// - Schema variable declarations (extracts types from schema AST)
 /// - Schema getters (extracts types from returned schema)
 ///
@@ -11,19 +14,7 @@ import 'package:meta/meta_meta.dart';
 /// schema validation, providing typed getters for each field without runtime
 /// overhead.
 ///
-/// ## Usage on Classes
-///
-/// ```dart
-/// @AckModel()
-/// @AckType()
-/// class User {
-///   final String name;
-///   final int age;
-///   final String? email;
-/// }
-/// ```
-///
-/// ## Usage on Schema Variables (Preferred)
+/// ## Usage on Schema Variables
 ///
 /// ### Object Schemas
 /// ```dart
@@ -140,33 +131,33 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Nested Types
 ///
-/// Extension types automatically wrap nested custom types:
+/// When using schema variables, nested schemas automatically generate nested types:
 /// ```dart
-/// @AckModel() @AckType()
-/// class Address {
-///   final String street;
-///   final String city;
-/// }
+/// @ackType
+/// final addressSchema = Ack.object({
+///   'street': Ack.string(),
+///   'city': Ack.string(),
+/// });
 ///
-/// @AckModel() @AckType()
-/// class User {
-///   final String name;
-///   final Address address;  // Returns AddressType
-/// }
+/// @ackType
+/// final userSchema = Ack.object({
+///   'name': Ack.string(),
+///   'address': addressSchema,  // Nested schema reference
+/// });
 ///
 /// final user = UserType.parse(data);
-/// print(user.address.city);  // Type-safe chaining
+/// print(user.address.city);  // Type-safe chaining with AddressType
 /// ```
 ///
 /// ## Collections
 ///
-/// Lists of primitives return `List<T>`, lists of objects return lazy `Iterable<TType>`:
+/// Lists of primitives return `List<T>`, lists of nested schemas return lazy `Iterable<TType>`:
 /// ```dart
-/// @AckModel() @AckType()
-/// class BlogPost {
-///   final List<String> tags;        // List<String>
-///   final List<Comment> comments;   // Iterable<CommentType>
-/// }
+/// @ackType
+/// final blogPostSchema = Ack.object({
+///   'tags': Ack.list(Ack.string()),      // List<String>
+///   'comments': Ack.list(commentSchema), // Iterable<CommentType>
+/// });
 /// ```
 ///
 /// ## Supported Schema Types
@@ -225,7 +216,7 @@ import 'package:meta/meta_meta.dart';
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
 /// See also: [AckModel], [AckField]
-@Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
+@Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
   /// Creates an annotation to generate extension types for validated data.
   const AckType();
