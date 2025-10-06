@@ -1,14 +1,27 @@
-name: Publish to pub.dev
+name: Publish
 
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+*'
+      - 'v*'
 
 jobs:
   publish:
+    runs-on: ubuntu-latest
     permissions:
-      id-token: write # Required for authentication using OIDC
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-    with:
-      working-directory: packages/ack
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+
+      - uses: bluefireteam/melos-action@v3
+        with:
+          run-bootstrap: true
+
+      - name: Publish workspace packages
+        run: melos publish --no-dry-run --yes
+        env:
+          PUB_DEV_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}
+          PUB_DEV_REFRESH_TOKEN: ${{ secrets.PUB_DEV_REFRESH_TOKEN }}
+          PUB_DEV_ID_TOKEN_AUDIENCE: ${{ secrets.PUB_DEV_ID_TOKEN_AUDIENCE }}

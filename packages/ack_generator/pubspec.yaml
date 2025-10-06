@@ -2,7 +2,6 @@ name: ack_generator
 description: Code generator for Ack schema validation models
 version: 0.3.0-alpha.0
 repository: https://github.com/btwld/ack
-publish_to: none
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -14,11 +13,9 @@ dependencies:
   source_gen: ^2.0.0
   code_builder: ^4.10.0
   
-  # Our packages
-  ack:
-    path: ../ack
-  ack_annotations:
-    path: ../ack_annotations
+  # Ack packages (versions are overridden locally by Melos)
+  ack: ^0.3.0-alpha.0
+  ack_annotations: ^0.3.0-alpha.0
   
   # Utilities
   collection: ^1.18.0

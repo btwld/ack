@@ -18,8 +18,8 @@ command:
     # Hooks for customizing the versioning process
     hooks:
       preCommit: |
-        # Update dependent package constraints here if needed
         echo "Running pre-commit hook for versioning"
+        dart scripts/update_release_changelog.dart
 
 scripts:
   analyze:
@@ -122,7 +122,7 @@ scripts:
       echo "🔧 Installing Node.js dependencies..."
       (cd tools && npm install)
       echo "🧪 Running JSON Schema Draft-7 validation tests..."
-      (cd packages/ack && dart test test/src/utils/jsonschema_compatibility_test.dart)
+      (cd packages/ack && dart test test/json_schema_conformance_test.dart)
     description: Validate JSON Schema Draft-7 specifications
 
   validate-jsonschema:batch:

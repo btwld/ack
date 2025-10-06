@@ -17,10 +17,11 @@ The Ack project uses GitHub Releases to manage versioning and publishing. This a
 
 Before creating a release:
 
-1. Ensure all changes are committed and pushed to the main branch
-2. Verify that all tests pass by running `melos test`
-3. Check that the documentation is up to date
-4. Decide on the new version number following [Semantic Versioning](https://semver.org/)
+1. Ensure all changes are committed and pushed to the `main` branch
+2. Verify that all tests pass by running `melos test` (include `melos run validate-jsonschema` and `melos run test:gen` for full coverage)
+3. Check that the documentation is up to date across the repo and docs site
+4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`)
+5. The version hook automatically rewrites the newest changelog entry to a single “See release notes” link. If you need to regenerate it manually, run `dart scripts/update_release_changelog.dart <version> <yyyy-mm-dd>` after `melos version`.
 
 ### 2. Create a GitHub Release
 
