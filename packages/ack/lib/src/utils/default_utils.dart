@@ -18,18 +18,29 @@ library;
 Object? cloneDefault(Object? value) {
   if (value == null) return null;
 
-  if (value is Map<String, Object?>) {
-    return Map<String, Object?>.unmodifiable(
-      value.map((key, val) => MapEntry(key, cloneDefault(val))),
-    );
+  // Handle any Map (not just Map<String, Object?>) so we don't skip cloned defaults
+  // for literals inferred as Map<String, int> or similar.
+  if (value is Map) {
+    // Preserve String-keyed maps to keep compatibility with MapValue casts.
+    if (value.keys.every((key) => key is String)) {
+      final cloned = <String, Object?>{};
+      value.forEach((key, entryValue) {
+        cloned[key as String] = cloneDefault(entryValue);
+      });
+      return Map<String, Object?>.unmodifiable(cloned);
+    }
+
+    final cloned = <Object?, Object?>{};
+    value.forEach((key, entryValue) {
+      cloned[key] = cloneDefault(entryValue);
+    });
+    return Map<Object?, Object?>.unmodifiable(cloned);
   }
 
-  if (value is List<Object?>) {
-    return List<Object?>.unmodifiable(
-      value.map((item) => cloneDefault(item)),
-    );
+  if (value is List) {
+    return List<Object?>.unmodifiable(value.map(cloneDefault));
   }
 
-  // Primitives are immutable (String, num, bool, DateTime, etc.)
+  // Primitives / value types are immutable enough for defaults (String, num, bool, etc.).
   return value;
 }
