@@ -201,7 +201,7 @@ class TypeBuilder {
   // --- Private Helper Methods ---
 
   String _getExtensionTypeName(ModelInfo model) {
-    return '${model.className}Type';
+    return model.className;
   }
 
   String _toCamelCase(String text) {
@@ -275,7 +275,7 @@ return result.match(
     for (final entry in subtypes.entries) {
       final discriminatorValue = entry.key;
       final subtypeElement = entry.value;
-      final subtypeTypeName = '${subtypeElement.name}Type';
+      final subtypeTypeName = subtypeElement.name;
 
       cases.add("      '$discriminatorValue' => $subtypeTypeName(validated)");
     }
@@ -436,7 +436,7 @@ ${cases.join(',\n')},
     // Check if element type is a custom type with @AckType
     if (_isCustomElementType(field, allModels)) {
       // Return lazy iterable for object lists (zero-cost until iteration)
-      return "(_data['$key'] as List).map((e) => ${elementType}Type(e as Map<String, Object?>))$suffix";
+      return "(_data['$key'] as List).map((e) => $elementType(e as Map<String, Object?>))$suffix";
     }
 
     // Primitive lists/sets - direct cast
@@ -466,7 +466,7 @@ ${cases.join(',\n')},
       final elementType = _getListElementType(field, allModels);
       // Use Iterable for object lists (lazy), List for primitive lists
       if (_isCustomElementType(field, allModels)) {
-        return 'Iterable<${elementType}Type>';
+        return 'Iterable<$elementType>';
       }
       return 'List<$elementType>';
     }
@@ -490,7 +490,7 @@ ${cases.join(',\n')},
     // Nested schema
     if (field.isNestedSchema && _hasAckType(field, allModels)) {
       final baseType = field.type.getDisplayString(withNullability: false);
-      return '${baseType}Type';
+      return baseType;
     }
 
     // Fallback to Object?
@@ -578,7 +578,7 @@ ${cases.join(',\n')},
 
   String _getTypeConstructor(FieldInfo field) {
     final baseType = field.type.getDisplayString(withNullability: false);
-    return '${baseType}Type';
+    return baseType;
   }
 
   Set<String> _extractDependencies(ModelInfo model, List<ModelInfo> allModels) {
