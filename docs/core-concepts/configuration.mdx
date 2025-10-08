@@ -31,19 +31,19 @@ Ack.object({
 Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object-schema).
 
 ```dart
-// Allow any extra properties (default behavior)
+// Disallow any extra properties (default behavior)
 Ack.object({
   'id': Ack.integer()
-}, additionalProperties: true);
+}, additionalProperties: false);
 // or simply:
 Ack.object({
   'id': Ack.integer()
 });
 
-// Disallow any extra properties
+// Allow any extra properties
 Ack.object({
   'id': Ack.integer()
-}, additionalProperties: false);
+}, additionalProperties: true);
 ```
 
 ### Custom Error Messages
