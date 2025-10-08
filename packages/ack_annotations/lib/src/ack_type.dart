@@ -218,6 +218,33 @@ import 'package:meta/meta_meta.dart';
 /// See also: [AckModel], [AckField]
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
+  /// Optional custom name for the generated extension type.
+  ///
+  /// If not provided, the type name is derived from the schema variable name:
+  /// - "userSchema" → "UserType"
+  /// - "passwordSchema" → "PasswordType"
+  ///
+  /// If provided, the custom name is used with "Type" suffix:
+  /// - @AckType(name: 'CustomUser') → "CustomUserType"
+  /// - @AckType(name: 'MyPassword') → "MyPasswordType"
+  final String? name;
+
   /// Creates an annotation to generate extension types for validated data.
-  const AckType();
+  ///
+  /// The [name] parameter allows you to customize the generated type name.
+  /// If omitted, the name is derived from the schema variable name.
+  ///
+  /// The value must be a valid Dart identifier (letters, numbers, underscores)
+  /// and should omit the trailing "Type" suffix.
+  ///
+  /// Examples:
+  /// ```dart
+  /// @AckType()
+  /// final passwordSchema = Ack.string().minLength(8);
+  ///
+  /// @AckType(name: 'CustomPassword')
+  /// final customPasswordSchema = Ack.string().minLength(8);
+  /// // Generates: extension type CustomPasswordType(String _value)
+  /// ```
+  const AckType({this.name});
 }
