@@ -97,7 +97,7 @@ final signUpSchema = Ack.object({
 
 The `ack_generator` package provides automatic schema generation from annotated classes. This feature is production-ready and available at version 1.0.0-beta.1 and later.
 
-To use code generation, annotate your classes with `@AckModel` and use `@AckField` for field-level configuration:
+To use code generation, annotate your classes with `@AckModel`. The generator creates both a validation schema and a type-safe extension type. Use `@AckField` for field-level constraints:
 
 ```dart
 import 'package:ack_annotations/ack_annotations.dart';
@@ -131,40 +131,45 @@ class User {
 }
 ```
 
-After running `dart run build_runner build`, the generator creates a schema variable you can use:
+After running `dart run build_runner build`, the generator creates in `user.g.dart`:
+
+1. **Schema constant**: `final userSchema = Ack.object({...});`
+2. **Extension type**: `extension type UserType(Map<String, Object?> _data) {...}`
 
 ```dart
-// Generated in user.g.dart
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50),
-  'email': Ack.string().email(),
-  'age': Ack.integer().min(18).optional().nullable(),
-}, additionalProperties: true);
+// Generated in user.g.dart:
+//
+// final userSchema = Ack.object({
+//   'name': Ack.string().minLength(2).maxLength(50),
+//   'email': Ack.string().email(),
+//   'age': Ack.integer().min(18).optional().nullable(),
+// }, additionalProperties: true);
+//
+// extension type UserType(Map<String, Object?> _data) {
+//   static UserType parse(Object? data) { ... }
+//   static SchemaResult<UserType> safeParse(Object? data) { ... }
+//   String get name => ...
+//   String get email => ...
+//   int? get age => ...
+//   Map<String, dynamic> get preferences => ...
+// }
 
-// Use the generated schema
+// Usage with the generated extension type:
 final userData = {
   'name': 'John Doe',
   'email': 'john@example.com',
   'age': 25,
-  // Additional properties are collected into 'preferences'
   'theme': 'dark',
   'language': 'en',
   'notifications': true,
 };
 
-final result = userSchema.safeParse(userData);
+final result = UserType.safeParse(userData);
 if (result.isOk) {
-  final validData = result.getOrThrow();
-  final preferences = validData['preferences'] as Map<String, dynamic>;
-  final user = User(
-    name: validData['name'] as String,
-    email: validData['email'] as String,
-    age: validData['age'] as int?,
-    preferences: preferences,
-  );
-  // Access additional properties from the map
-  print('Theme: ${preferences['theme']}'); // Outputs: dark
-  print('Language: ${preferences['language']}'); // Outputs: en
+  final user = result.getOrThrow();
+  print(user.name);  // Type-safe: John Doe
+  print(user.email); // Type-safe: john@example.com
+  print(user.preferences['theme']); // dark (additional properties)
 }
 ```
 
