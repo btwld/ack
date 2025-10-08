@@ -306,23 +306,23 @@ partialSchema.safeParse({'email': 'john@example.com', 'age': 30});
 Control handling of extra properties:
 
 ```dart
-// Allow additional properties (default)
+// Disallow additional properties (default)
+final strictSchema = Ack.object({
+  'id': Ack.string(),
+});
+
+strictSchema.safeParse({'id': '1', 'extra': 'value'}); // ❌
+
+// Allow additional properties
 final flexibleSchema = Ack.object({
   'id': Ack.string(),
 }, additionalProperties: true);
 
 flexibleSchema.safeParse({'id': '1', 'extra': 'allowed'}); // ✅
 
-// Disallow additional properties
-final strictSchema = Ack.object({
-  'id': Ack.string(),
-}, additionalProperties: false);
-
-strictSchema.safeParse({'id': '1', 'extra': 'value'}); // ❌
-
-// Or use methods
-final strict = baseSchema.strict(); // Reject extra properties
+// Or use methods (strict is already the default)
 final passthrough = baseSchema.passthrough(); // Allow extra properties
+final strict = baseSchema.strict(); // Reject extra properties (already default)
 ```
 
 ## Custom Validation
