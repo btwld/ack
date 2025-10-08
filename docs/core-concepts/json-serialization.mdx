@@ -139,6 +139,48 @@ if (result.isOk) {
 
 *See the [ack_generator README](../../packages/ack_generator/) for more details on code generation.*
 
+### Generating Extension Types from Standalone Schemas
+
+When you define schemas manually (without a backing class), annotate the
+variable or getter with `@AckType()` to have the generator build an extension
+type that wraps the validated value.
+
+```dart
+// user_schema.dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user_schema.g.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string().email().nullable(),
+});
+```
+
+Running `dart run build_runner build` produces two things inside
+`user_schema.g.dart`:
+
+- the original `userSchema` definition (so you can keep importing it from one
+  place), and
+- a `UserType` extension type with `parse`/`safeParse`, typed getters, and
+  `toJson()` helpers (removes "Schema" suffix, adds "Type").
+
+```dart
+final result = UserType.safeParse(jsonData);
+
+if (result.isOk) {
+  final user = result.getOrThrow();
+  print(user.name);   // -> String
+  print(user.email);  // -> String?
+}
+```
+
+Any nested schema annotated with `@AckType()` generates its own extension type,
+but nested object fields return `Map<String, Object?>` rather than the typed
+extension type.
+
 ## Key Considerations
 
 -   **`dart:convert`:** Use the standard `dart:convert` library (`jsonEncode`, `jsonDecode`) for JSON string conversion. Ack handles validation only.

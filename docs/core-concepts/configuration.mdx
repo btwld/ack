@@ -93,29 +93,82 @@ final signUpSchema = Ack.object({
 ```
 *See the [Custom Validation Guide](../guides/custom-validation.mdx) for additional patterns.*
 
-## Code Generation Configuration (Experimental)
+## Code Generation Configuration
 
-The `ack_generator` package provides experimental code generation functionality. However, it is currently incomplete and not recommended for production use.
+The `ack_generator` package provides automatic schema generation from annotated classes. This feature is production-ready and available at version 1.0.0-beta.1 and later.
 
-For production applications, use manual schema definition with the current Ack API:
+To use code generation, annotate your classes with `@AckModel` and use `@AckField` for field-level configuration:
 
 ```dart
-// Define schemas manually using the fluent API
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50),
-  'email': Ack.string().email(),
-  'metadata': Ack.any().optional(), // For flexible additional properties
-});
+import 'package:ack_annotations/ack_annotations.dart';
 
-// Validate data
-final result = userSchema.safeParse(userData);
-if (result.isOk) {
-  final validData = result.getOrThrow();
-  // Use validated data to create your models
+part 'user.g.dart';
+
+@AckModel(
+  description: 'User profile with flexible preferences',
+  additionalProperties: true,
+  additionalPropertiesField: 'preferences'
+)
+class User {
+  @AckField(constraints: ['minLength(2)', 'maxLength(50)'])
+  final String name;
+
+  @AckField(constraints: ['email'])
+  final String email;
+
+  @AckField(constraints: ['min(18)'])
+  final int? age; // Optional field
+
+  // Collects extra properties not defined in the schema
+  final Map<String, dynamic> preferences;
+
+  User({
+    required this.name,
+    required this.email,
+    this.age,
+    this.preferences = const {},
+  });
 }
 ```
 
-*See the [Schema Validation](../core-concepts/typesafe-schemas.mdx) guide for comprehensive examples of manual schema definition.*
+After running `dart run build_runner build`, the generator creates a schema variable you can use:
+
+```dart
+// Generated in user.g.dart
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(18).optional().nullable(),
+}, additionalProperties: true);
+
+// Use the generated schema
+final userData = {
+  'name': 'John Doe',
+  'email': 'john@example.com',
+  'age': 25,
+  // Additional properties are collected into 'preferences'
+  'theme': 'dark',
+  'language': 'en',
+  'notifications': true,
+};
+
+final result = userSchema.safeParse(userData);
+if (result.isOk) {
+  final validData = result.getOrThrow();
+  final preferences = validData['preferences'] as Map<String, dynamic>;
+  final user = User(
+    name: validData['name'] as String,
+    email: validData['email'] as String,
+    age: validData['age'] as int?,
+    preferences: preferences,
+  );
+  // Access additional properties from the map
+  print('Theme: ${preferences['theme']}'); // Outputs: dark
+  print('Language: ${preferences['language']}'); // Outputs: en
+}
+```
+
+*See the [Installation Guide](../getting-started/installation.mdx#code-generator-production-ready) for setup instructions and the generator README for advanced features.*
 
 ## Summary
 

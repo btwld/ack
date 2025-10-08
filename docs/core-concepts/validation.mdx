@@ -48,18 +48,18 @@ Ensures the string is not empty (`''`). Equivalent to `minLength(1)`.
 Ack.string().notEmpty()
 ```
 
-### `matches(String pattern, {String? example})`
-Ensures the string matches the given regular expression `pattern`. Add anchors (`^`, `$`) to the pattern when you want to match the entire string.
+### `matches(String pattern, {String? example, String? message})`
+Ensures the string matches the given regular expression `pattern`. Patterns are automatically anchored, so the entire string must match.
 ```dart
 // Simple alphanumeric pattern
-Ack.string().matches(r'^[a-zA-Z0-9]+$')
+Ack.string().matches(r'[a-zA-Z0-9]+')
 
 // UUID pattern
 Ack.string()
-    .matches(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$')
+    .matches(r'[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}')
 ```
 
-### `contains(String pattern, {String? example})`
+### `contains(String pattern, {String? example, String? message})`
 Ensures the string contains the given pattern anywhere within it.
 ```dart
 // Password must contain at least one uppercase letter
@@ -200,15 +200,99 @@ Ensures all items in the list are unique. Uses `Set` comparison.
 Ack.list(Ack.string()).unique()
 ```
 
+## Strict Parsing
+
+By default, Ack performs type coercion for primitive types. Use `.strictParsing()` to disable coercion and require exact type matches.
+
+### Default Behavior (Type Coercion Enabled)
+
+Without strict parsing, Ack accepts compatible types and converts them:
+
+```dart
+// String schema accepts numbers and converts them
+final stringSchema = Ack.string();
+stringSchema.safeParse(123);      // ✅ OK: converts to "123"
+stringSchema.safeParse(true);     // ✅ OK: converts to "true"
+stringSchema.safeParse('hello');  // ✅ OK: already a string
+
+// Integer schema accepts numeric strings and converts them
+final intSchema = Ack.integer();
+intSchema.safeParse('42');   // ✅ OK: converts to 42
+intSchema.safeParse(42);     // ✅ OK: already an integer
+intSchema.safeParse(42.0);   // ✅ OK: converts to 42
+```
+
+### Strict Parsing Behavior
+
+With strict parsing enabled, only exact type matches are accepted:
+
+```dart
+// String schema rejects non-strings
+final strictStringSchema = Ack.string().strictParsing();
+strictStringSchema.safeParse('hello');  // ✅ OK: exact match
+strictStringSchema.safeParse(123);      // ❌ FAIL: TypeMismatchError
+strictStringSchema.safeParse(true);     // ❌ FAIL: TypeMismatchError
+
+// Integer schema rejects strings and doubles
+final strictIntSchema = Ack.integer().strictParsing();
+strictIntSchema.safeParse(42);     // ✅ OK: exact match
+strictIntSchema.safeParse('42');   // ❌ FAIL: TypeMismatchError
+strictIntSchema.safeParse(42.0);   // ❌ FAIL: TypeMismatchError
+```
+
+### When to Use Strict Parsing
+
+Use strict parsing when you need to:
+
+- **Validate API requests** where types must match exactly
+- **Distinguish between types** in union schemas (e.g., string "123" vs integer 123)
+- **Enforce type discipline** in strongly typed contexts
+- **Prevent unexpected conversions** that might hide bugs
+
+```dart
+// Union type that distinguishes strings from numbers
+final stringOrNumber = Ack.anyOf([
+  Ack.string().strictParsing(),  // Only accepts actual strings
+  Ack.integer(),                  // Only accepts integers
+]);
+
+stringOrNumber.safeParse('42');  // ✅ Matches string schema
+stringOrNumber.safeParse(42);    // ✅ Matches integer schema
+```
+
+### Type Coercion Rules
+
+When strict parsing is disabled (default), Ack applies these coercion rules:
+
+**String Schema:**
+- Numbers → string representation (`123` → `"123"`)
+- Booleans → string representation (`true` → `"true"`)
+- Strings → no conversion
+
+**Integer Schema:**
+- Numeric strings → parsed integer (`"42"` → `42`)
+- Doubles without decimals → converted (`42.0` → `42`)
+- Integers → no conversion
+
+**Double Schema:**
+- Numeric strings → parsed double (`"3.14"` → `3.14`)
+- Integers → converted to double (`42` → `42.0`)
+- Doubles → no conversion
+
+**Boolean Schema:**
+- Strings "true"/"false" → corresponding boolean
+- Numbers 1/0 → true/false
+- Booleans → no conversion
+
 ## Combining Constraints
 
-You can chain multiple constraints together. They are evaluated in the order they are applied.
+You can chain multiple constraints together. Ack evaluates them in the order you apply them.
 
 ```dart
 final usernameSchema = Ack.string()
-  .minLength(3)        // First check min length
-  .maxLength(20)       // Then check max length
-  .matches(r'[a-z0-9_]+') // Then check pattern (lowercase alphanumeric/underscore)
+  .minLength(3)        // First: check min length
+  .maxLength(20)       // Second: check max length
+  .matches(r'[a-z0-9_]+') // Third: check pattern (lowercase alphanumeric/underscore)
   .notEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
 
 final quantitySchema = Ack.integer()
@@ -216,3 +300,13 @@ final quantitySchema = Ack.integer()
   .max(100)            // Must be at most 100
   .multipleOf(1);     // Must be an integer (redundant for Ack.integer)
 ```
+
+## Next Steps
+
+Now that you understand validation rules, explore these related topics:
+
+- **[Error Handling](/core-concepts/error-handling)**: Learn how to handle and display validation errors
+- **[Custom Validation](/guides/custom-validation)**: Create custom constraints and refinement logic
+- **[Schema Types](/core-concepts/schemas)**: Explore all available schema types and their operations
+- **[Common Recipes](/guides/common-recipes)**: See practical validation patterns and solutions
+- **[Flutter Forms](/guides/flutter-form-validation)**: Integrate validation with Flutter form widgets

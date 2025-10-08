@@ -24,14 +24,32 @@ Entry point for creating schemas. See [Schema Validation](../core-concepts/types
 
 Base class for all schema types.
 
-- `SchemaResult<T> validate(Object? data)`: Validates the input data against the schema.
-- `AckSchema<T> nullable()`: Returns a new schema that also accepts `null`.
-- `AckSchema<T> withDescription(String description)`: Adds a description for documentation.
-- `AckSchema<T> withDefault(T value)`: Sets a default value when input is null.
-- `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint.
-- `AckSchema<T> refine(bool Function(T) validate, {String message})`: Adds custom validation logic.
-- `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values.
-- `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema map.
+### Primary Validation Methods
+
+- `SchemaResult<T> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure.
+- `T? parse(Object? data, {String? debugName})`: Validates the input data and returns the value. Throws `AckException` if validation fails.
+- `T? tryParse(Object? data, {String? debugName})`: **Deprecated** - Use `safeParse(...).getOrNull()` instead.
+- `SchemaResult<T> validate(Object? data, {String? debugName})`: **Deprecated** - Use `safeParse(...)` instead.
+
+### Schema Modification Methods
+
+- `AckSchema<T> nullable()`: Returns a new schema that also accepts `null` values.
+- `AckSchema<T> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
+- `AckSchema<T> withDescription(String description)`: Adds a description for documentation and JSON Schema generation.
+- `AckSchema<T> withDefault(T value)`: Sets a default value when input is `null`.
+- `AckSchema<T> strictParsing()`: Enables strict type checking (disables type coercion).
+
+### Custom Validation Methods
+
+- `AckSchema<T> constrain(Constraint<T> constraint, {String? message})`: Applies a custom validation constraint.
+- `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint (alias for `constrain`).
+- `AckSchema<T> refine(bool Function(T) validate, {required String message})`: Adds custom validation logic with a custom error message.
+- `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values to a different type.
+
+### Utility Methods
+
+- `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema Draft-7 representation.
+- `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Validation](../core-concepts/typesafe-schemas.mdx) for detailed usage examples.
 
@@ -39,16 +57,46 @@ See also [Schema Validation](../core-concepts/typesafe-schemas.mdx) for detailed
 
 Schema for validating strings. See [String Validation](../core-concepts/validation.mdx#string-constraints).
 
+### Length Constraints
+
 - `minLength(int min)`: Minimum string length
 - `maxLength(int max)`: Maximum string length
 - `length(int exact)`: Exact string length
-- `matches(String pattern)`: Must match regex pattern
+- `notEmpty()`: String must not be empty (equivalent to `minLength(1)`)
+
+### Pattern Matching
+
+- `matches(String pattern, {String? example, String? message})`: Must match regex pattern (automatically anchored)
+- `contains(String pattern, {String? example, String? message})`: Must contain pattern anywhere in string
+- `startsWith(String value)`: Must start with specified value
+- `endsWith(String value)`: Must end with specified value
+
+### Format Validation
+
 - `email()`: Must be valid email format
-- `url()`: Must be valid URL format
+- `url()`: Must be valid URL format (alias for `uri()`)
+- `uri()`: Must be valid URI according to RFC 3986
 - `uuid()`: Must be valid UUID format
+- `ip({int? version})`: Must be valid IP address (version 4 or 6)
+- `ipv4()`: Must be valid IPv4 address
+- `ipv6()`: Must be valid IPv6 address
+
+### Date and Time
+
+- `date()`: Must be valid ISO 8601 date (YYYY-MM-DD)
 - `datetime()`: Must be valid ISO 8601 datetime
+- `time()`: Must be valid time format (HH:MM:SS)
+
+### Value Restrictions
+
 - `literal(String value)`: Must exactly match the given value
 - `enumString(List<String> values)`: Must be one of the specified values
+
+### Transformations
+
+- `trim()`: Removes leading and trailing whitespace
+- `toLowerCase()`: Converts to lowercase
+- `toUpperCase()`: Converts to uppercase
 
 ## `IntegerSchema` / `DoubleSchema` (Number Schemas)
 
@@ -117,6 +165,69 @@ Base class for creating custom validation rules. See [Custom Validation](../guid
 - `Map<String, Object?> toMap()`: Serializes the constraint for debugging
 
 ## Additional Schema Types
+
+Ack ships with a broad set of schema factories beyond what is listed here.
+See [Schema Types](../core-concepts/schemas.mdx) for the full catalogue,
+including helpers like `Ack.date()`, `Ack.literal()`, and rich list/object
+combinators.
+
+## Code Generation Annotations
+
+Use the [`ack_generator`](../../packages/ack_generator/README.md) builder to
+turn annotations into ready-to-use schemas and extension types. After adding
+the annotations below, run:
+
+```bash
+dart run build_runner build
+```
+
+### `@AckModel()`
+
+Annotate a Dart class to generate both a schema variable and a strongly typed
+extension type around the validated map.
+
+- Supports optional `schemaName`, `description`,
+  `additionalProperties`, `additionalPropertiesField`,
+  `discriminatedKey`, and `discriminatedValue` arguments.
+- Works with inheritance when you provide a `discriminatedKey` on the abstract
+  base class and `discriminatedValue` on each subtype.
+- Emits a `<ClassName>Schema` constant plus `<ClassName>Type` extension type so
+  you can write `final user = UserType.parse(jsonMap);`.
+
+```dart
+@AckModel(description: 'User profile')
+class User {
+  final String name;
+  final int age;
+
+  User({required this.name, required this.age});
+}
+```
+
+### `@AckType()`
+
+Annotate a schema variable or getter to generate an extension type directly
+from a hand-written schema definition. This is useful when you want typed
+wrappers but do not have a corresponding class.
+
+- Works with `Ack.object`, primitive schemas (`Ack.string`, `Ack.integer`,
+  etc.), and enums (`Ack.enumString`, `Ack.enumValues`).
+- Automatically generates nested extension types when your schema references
+  other annotated schemas.
+- Skips unsupported helpers like `Ack.any()`, `Ack.anyOf()`, or
+  `Ack.discriminated()` (for discriminated unions, prefer `@AckModel`).
+
+```dart
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string().email(),
+});
+
+// Generated by build_runner:
+// extension type UserType(Map<String, Object?> _data) { ... }
+// (removes "Schema" suffix from variable name, adds "Type")
+```
 
 ### `EnumSchema<T>`
 
