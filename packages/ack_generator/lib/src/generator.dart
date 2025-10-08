@@ -85,7 +85,22 @@ class AckSchemaGenerator extends Generator {
     // Also analyze schema variables annotated with @AckType
     for (final variable in annotatedVariables) {
       try {
-        final modelInfo = schemaAstAnalyzer.analyzeSchemaVariable(variable);
+        String? customTypeName;
+        final ackTypeAnnotation = TypeChecker.fromRuntime(
+          AckType,
+        ).firstAnnotationOfExact(variable);
+        if (ackTypeAnnotation != null) {
+          final annotationReader = ConstantReader(ackTypeAnnotation);
+          final nameField = annotationReader.peek('name');
+          if (nameField != null && !nameField.isNull) {
+            customTypeName = nameField.stringValue;
+          }
+        }
+
+        final modelInfo = schemaAstAnalyzer.analyzeSchemaVariable(
+          variable,
+          customTypeName: customTypeName,
+        );
         if (modelInfo != null) {
           modelInfos.add(modelInfo);
         }

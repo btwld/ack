@@ -82,7 +82,8 @@ import 'package:meta/meta_meta.dart';
 
 @Target({TargetKind.topLevelVariable, TargetKind.classType, TargetKind.getter})
 class AckType {
-  const AckType();
+  final String? name;
+  const AckType({this.name});
 }
 ''',
 };
@@ -98,20 +99,34 @@ export 'src/validation/ack_exception.dart';
 ''',
   'ack|lib/src/ack.dart': '''
 class Ack {
-  static const string = StringSchema();
-  static const int = IntegerSchema();
-  static const double = DoubleSchema();
-  static const number = NumberSchema();
-  static const boolean = BooleanSchema();
-  static const any = AnySchema();
-  
+  static StringSchema string() => const StringSchema();
+  static IntegerSchema integer() => const IntegerSchema();
+  static DoubleSchema double() => const DoubleSchema();
+  static NumberSchema number() => const NumberSchema();
+  static BooleanSchema boolean() => const BooleanSchema();
+  static AnySchema any() => const AnySchema();
+
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
-  static ObjectSchema object(Map<String, AckSchema> properties, {List<String>? required, bool additionalProperties = false}) =>
-    ObjectSchema(properties, required: required, additionalProperties: additionalProperties);
-  
-  static DiscriminatedSchema discriminated({required String discriminatorKey, required Map<String, AckSchema> schemas}) =>
-    DiscriminatedSchema(discriminatorKey: discriminatorKey, schemas: schemas);
+  static ObjectSchema object(
+    Map<String, AckSchema> properties, {
+    List<String>? required,
+    bool additionalProperties = false,
+  }) =>
+      ObjectSchema(
+        properties,
+        required: required,
+        additionalProperties: additionalProperties,
+      );
+
+  static DiscriminatedSchema discriminated({
+    required String discriminatorKey,
+    required Map<String, AckSchema> schemas,
+  }) =>
+      DiscriminatedSchema(
+        discriminatorKey: discriminatorKey,
+        schemas: schemas,
+      );
 }
 
 abstract class AckSchema<T> {
