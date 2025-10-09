@@ -1,15 +1,15 @@
 name: ack_example
 description: Example project for ACK schema generation.
-version: 1.0.0-beta.1
+version: 1.0.0-beta.2
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
-  ack: ^1.0.0-beta.1
+  ack: ^1.0.0-beta.2
   
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.1
+  ack_generator: ^1.0.0-beta.2
   build_runner: ^2.4.0
   dart_code_metrics_presets: ^2.22.0
   lints: ^5.0.0
