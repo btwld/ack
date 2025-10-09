@@ -32,8 +32,6 @@ extension type UserType(Map<String, Object?> _data)
 
   bool get active => _data['active'] as bool;
 
-  Map<String, Object?> toJson() => _data;
-
   UserType copyWith({String? name, int? age, bool? active}) {
     return UserType.parse({
       'name': name ?? this.name,

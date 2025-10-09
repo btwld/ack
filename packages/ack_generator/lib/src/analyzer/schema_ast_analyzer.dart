@@ -123,6 +123,7 @@ class SchemaAstAnalyzer {
         return _parseObjectSchema(
           variableName,
           baseInvocation,
+          invocation, // Pass original invocation to check for chained methods
           element,
           customTypeName: customTypeName,
         );
@@ -194,12 +195,13 @@ class SchemaAstAnalyzer {
   /// Parses Ack.object() schema
   ModelInfo _parseObjectSchema(
     String variableName,
-    MethodInvocation invocation,
+    MethodInvocation baseInvocation,
+    MethodInvocation fullInvocation,
     Element element, {
     String? customTypeName,
   }) {
     // Extract the properties map from the first argument
-    final args = invocation.argumentList.arguments;
+    final args = baseInvocation.argumentList.arguments;
     if (args.isEmpty) {
       throw InvalidGenerationSourceError(
         'Ack.object() requires a properties map argument',
@@ -218,6 +220,41 @@ class SchemaAstAnalyzer {
     // Extract fields from the map literal
     final fields = _extractFieldsFromMapLiteral(firstArg, element);
 
+    // Check if additionalProperties is enabled via passthrough() or parameter
+    bool hasAdditionalProperties = false;
+
+    // First check for named parameter in the base Ack.object() call
+    for (final arg in baseInvocation.argumentList.arguments) {
+      if (arg is NamedExpression &&
+          arg.name.label.name == 'additionalProperties') {
+        if (arg.expression is BooleanLiteral) {
+          hasAdditionalProperties = (arg.expression as BooleanLiteral).value;
+        }
+      }
+    }
+
+    // Then walk forward from fullInvocation to find passthrough() in the chain
+    // The chain looks like: Ack.object({...}).passthrough()
+    // fullInvocation is the outermost call (passthrough if present)
+    // We need to check if passthrough() was called
+    MethodInvocation? current = fullInvocation;
+    while (current != null && current != baseInvocation) {
+      final methodName = current.methodName.name;
+
+      if (methodName == 'passthrough') {
+        hasAdditionalProperties = true;
+        break;
+      }
+
+      // Move down the chain towards the base
+      final target = current.target;
+      if (target is MethodInvocation) {
+        current = target;
+      } else {
+        break;
+      }
+    }
+
     // Generate extension type name from variable name or custom override
     final typeName = _resolveModelClassName(
       variableName,
@@ -230,6 +267,7 @@ class SchemaAstAnalyzer {
       schemaClassName: variableName,
       fields: fields,
       isFromSchemaVariable: true,
+      additionalProperties: hasAdditionalProperties,
     );
   }
 
