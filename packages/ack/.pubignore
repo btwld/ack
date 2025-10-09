@@ -1,0 +1,10 @@
+# Development and IDE files
+melos_ack.iml
+.claude/
+
+# Build artifacts
+build/
+coverage/
+
+# Local example (if any development examples exist)
+example/

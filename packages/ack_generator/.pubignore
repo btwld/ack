@@ -1,0 +1,12 @@
+# Development and IDE files
+melos_ack_generator.iml
+pubspec_overrides.yaml
+
+# Development documentation
+docs/
+
+# Local example (if any development examples exist)
+example/
+
+# Tool scripts
+tool/
