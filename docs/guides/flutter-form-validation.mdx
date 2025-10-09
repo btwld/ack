@@ -4,6 +4,20 @@ title: Form Validation in Flutter with Ack
 
 This guide shows how to use Ack for validating forms in Flutter applications.
 
+## Prerequisites
+
+Before following this guide, you should be familiar with:
+
+- **Flutter basics**: Creating widgets, managing state, and using forms
+- **Ack fundamentals**: Creating schemas and validation (see [Quickstart Tutorial](/getting-started/quickstart-tutorial))
+- **Validation rules**: Built-in constraints (see [Validation Rules](/core-concepts/validation))
+
+You should have Ack installed in your Flutter project:
+
+```bash
+flutter pub add ack
+```
+
 ## Basic Form Validation with `TextFormField`
 
 Ack integrates seamlessly with Flutter's `Form` and `TextFormField` widgets. You can use [Ack schemas](../core-concepts/schemas.mdx) directly within the `validator` function of a `TextFormField`.
@@ -33,7 +47,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final _usernameSchema = Ack.string()
     .minLength(3)
     .maxLength(20)
-    .matches(r'^[a-zA-Z0-9_]+$')
+    .matches(r'[a-zA-Z0-9_]+')
     .notEmpty();
 
   final _emailSchema = Ack.string()

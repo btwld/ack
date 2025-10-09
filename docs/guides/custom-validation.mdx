@@ -4,6 +4,14 @@ title: Custom Validation Rules
 
 While Ack provides many [built-in validation rules](../core-concepts/validation.mdx), you can extend them with your own value-level constraints or object-level refinement logic.
 
+## Prerequisites
+
+Before creating custom validation, you should understand:
+
+- **[Validation Rules](/core-concepts/validation)**: Built-in constraints and how they work
+- **[Schema Types](/core-concepts/schemas)**: Different schema types and their behavior
+- **[Error Handling](/core-concepts/error-handling)**: How validation errors are structured
+
 ## Creating a Value Constraint
 
 To add reusable validation that only depends on the field value, implement a `Constraint<T>` that mixes in `Validator<T>`.

@@ -81,26 +81,131 @@ if (result.isFail) {
 
 ## Error Types
 
-Ack uses specific error types that inherit from `SchemaError`:
+Ack uses specific error types that inherit from `SchemaError`. Each error type provides detailed information about why validation failed.
 
-- **`SchemaConstraintsError`**: The data violates one or more constraints (e.g., `minLength`, `min`, `pattern`). Contains a list of `constraints`.
-- **`SchemaNestedError`**: An error occurred within a nested object or list. Contains a list of `errors`.
-- **`SchemaUnknownError`**: An unexpected error occurred during validation.
+### `TypeMismatchError`
+
+Occurs when the input value type doesn't match the expected schema type.
 
 ```dart
-final error = result.getError();
+final schema = Ack.string();
+final result = schema.safeParse(42); // Number instead of string
 
-if (error is SchemaConstraintsError) {
-  print('Constraint violation: $error');
-  // You can access individual failed constraints
-  for (final constraint in error.constraints) {
-    print('- Failed constraint: ${constraint.constraint}, Message: ${constraint.message}');
+if (result.isFail) {
+  final error = result.getError() as TypeMismatchError;
+  print('Expected: ${error.expectedType}'); // "string"
+  print('Actual: ${error.actualType}');     // "integer"
+  print('Error: ${error.message}');          // "Expected string, got integer"
+}
+```
+
+### `SchemaConstraintsError`
+
+Occurs when the value violates one or more validation constraints (e.g., `minLength`, `min`, `email`).
+
+```dart
+final schema = Ack.string().minLength(5).email();
+final result = schema.safeParse('abc');
+
+if (result.isFail) {
+  final error = result.getError() as SchemaConstraintsError;
+  print('Constraint violations: ${error.constraints.length}');
+
+  // Access individual failed constraints
+  for (final constraintError in error.constraints) {
+    print('- Constraint: ${constraintError.constraint}');
+    print('- Message: ${constraintError.message}');
   }
-} else if (error is SchemaNestedError) {
-  print('Nested error with ${error.errors.length} errors');
-  // Recursively inspect error.errors
+}
+```
+
+### `SchemaNestedError`
+
+Occurs when validation fails within nested objects or lists. Contains a list of child errors.
+
+```dart
+final schema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'age': Ack.integer().min(0),
+});
+
+final result = schema.safeParse({
+  'name': 'J',    // Too short
+  'age': -5,      // Negative
+});
+
+if (result.isFail) {
+  final error = result.getError() as SchemaNestedError;
+  print('Nested errors: ${error.errors.length}');
+
+  // Recursively inspect nested errors
   for (final nestedError in error.errors) {
-    print('- Nested: $nestedError');
+    print('- Field: ${nestedError.name}');
+    print('- Error: ${nestedError.message}');
+  }
+}
+```
+
+### `SchemaValidationError`
+
+Occurs when custom validation logic added via `.refine()` fails.
+
+```dart
+final schema = Ack.integer().refine(
+  (value) => value % 2 == 0,
+  message: 'Must be an even number',
+);
+
+final result = schema.safeParse(3);
+
+if (result.isFail) {
+  final error = result.getError() as SchemaValidationError;
+  print('Validation error: ${error.message}'); // "Must be an even number"
+}
+```
+
+### `SchemaTransformError`
+
+Occurs when a transformation function (from `.transform()`) throws an exception.
+
+```dart
+final schema = Ack.string().transform((value) {
+  if (value == null) throw Exception('Cannot transform null');
+  return value.toUpperCase();
+});
+
+final result = schema.safeParse(null);
+
+if (result.isFail) {
+  final error = result.getError() as SchemaTransformError;
+  print('Transform error: ${error.message}');
+  print('Cause: ${error.cause}'); // Original exception
+}
+```
+
+### Working with Error Types
+
+Use pattern matching or type checks to handle different error types:
+
+```dart
+final result = schema.safeParse(data);
+
+if (result.isFail) {
+  final error = result.getError();
+
+  switch (error) {
+    case TypeMismatchError():
+      print('Wrong type: expected ${error.expectedType}');
+    case SchemaConstraintsError():
+      print('Failed ${error.constraints.length} constraints');
+    case SchemaNestedError():
+      print('Nested validation failed at ${error.errors.length} locations');
+    case SchemaValidationError():
+      print('Custom validation failed: ${error.message}');
+    case SchemaTransformError():
+      print('Transformation failed: ${error.cause}');
+    default:
+      print('Validation failed: ${error.message}');
   }
 }
 ```
@@ -137,3 +242,13 @@ if (result.isFail) {
   print(error.toString()); // Output: validation error details
 }
 ```
+
+## Next Steps
+
+Learn more about related topics:
+
+- **[Custom Validation](/guides/custom-validation)**: Create custom constraints with tailored error messages
+- **[Flutter Forms](/guides/flutter-form-validation)**: Display validation errors in Flutter form widgets
+- **[Validation Rules](/core-concepts/validation)**: Explore all built-in validation constraints
+- **[Schema Types](/core-concepts/schemas)**: Learn about different schema types and their behavior
+- **[Common Recipes](/guides/common-recipes)**: See practical error handling patterns

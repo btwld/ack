@@ -1,0 +1,164 @@
+---
+title: TypeSafe Schemas
+---
+
+Ack generates **extension types** that wrap validated data so you can work with
+strongly typed objects instead of raw `Map<String, Object?>`. This guide shows
+how `@AckModel()` and `@AckType()` annotations interact with the generator to
+produce these typed views.
+
+## Overview
+
+- `@AckModel()` goes on a **Dart class** and produces **both** a schema constant (e.g., `userSchema`) **and** an extension type named `<ClassName>Type`.
+- `@AckType()` goes on a **schema variable/getter** and produces **only** an extension type (the schema already exists). The type name is derived from the variable name (e.g., `userSchema` → `UserType`).
+- Both annotations live in `package:ack_annotations` and are processed by the
+  `ack_generator` builder via `dart run build_runner build`.
+
+## Typed Schemas from Classes with `@AckModel()`
+
+Use `@AckModel()` when you have a Dart class that should drive schema generation. The generator creates both the validation schema and a typed wrapper.
+
+```dart
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.g.dart';
+
+@AckModel(description: 'Profile details')
+class User {
+  final String name;
+  final int age;
+
+  User({required this.name, required this.age});
+}
+```
+
+Running `dart run build_runner build` writes `user.g.dart` with:
+
+- **Schema constant**: `final userSchema = Ack.object({...});`
+- **Extension type**: `extension type UserType(Map<String, Object?> _data)` that exposes typed getters, `parse`, `safeParse`, `toJson`, `copyWith`, and equality.
+
+You can use either the schema directly or the generated extension type:
+
+```dart
+// Option 1: Use the schema directly (returns Map<String, Object?>)
+final result = userSchema.safeParse(json);
+if (result.isOk) {
+  final data = result.getOrThrow();
+  final user = User(
+    name: data['name'] as String,
+    age: data['age'] as int,
+  );
+}
+
+// Option 2: Use the extension type (returns UserType)
+final result = UserType.safeParse(json);
+if (result.isOk) {
+  final user = result.getOrThrow();
+  print(user.name); // -> String (type-safe!)
+  print(user.age);  // -> int (type-safe!)
+}
+```
+
+### Discriminated Hierarchies
+
+Annotate an abstract base with `discriminatedKey` and each subtype with a
+`discriminatedValue` to receive:
+
+- A generated discriminated schema that maps discriminator values to subtype
+  schemas.
+- A sealed class plus subtype extension types so you can switch exhaustively on
+  the parsed result.
+
+```dart
+@AckModel(discriminatedKey: 'type')
+abstract class Shape {
+  String get type;
+}
+
+@AckModel(discriminatedValue: 'circle')
+class Circle extends Shape {
+  @override
+  String get type => 'circle';
+  final double radius;
+  Circle(this.radius);
+}
+```
+
+## Typed Schemas from Hand-Written Definitions with `@AckType()`
+
+Use `@AckType()` when you write schemas manually but still want type-safe access via extension types. Unlike `@AckModel`, this annotation does **not** generate a schema—it only generates an extension type wrapper for an existing schema.
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user_schema.g.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'id': Ack.string(),
+  'email': Ack.string().email().nullable(),
+  'address': addressSchema,
+});
+
+@AckType()
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+});
+```
+
+After running `dart run build_runner build`, the part file contains:
+
+- **The original schema constants** remain unchanged (so existing imports keep working).
+- **Extension type** `UserType(Map<String, Object?> _data)` with typed getters (removes "Schema" suffix from variable name, adds "Type").
+- **Extension type** `AddressType(Map<String, Object?> _data)` for the nested schema.
+- **Static helpers** `parse`/`safeParse` so you can do `final user = UserType.parse(json);`.
+
+**Key difference from @AckModel**: The schemas (`userSchema`, `addressSchema`) already exist in your source code. The annotation only adds the extension type layer.
+
+### Supported Schema Shapes
+
+`@AckType()` works with:
+
+- `Ack.object(...)`
+- Primitive schemas (`Ack.string`, `Ack.integer`, `Ack.double`, `Ack.boolean`)
+- Lists of supported schemas (`Ack.list(...)`)
+- Literal/enum helpers (`Ack.literal`, `Ack.enumString`, `Ack.enumValues`)
+
+Unsupported helpers include `Ack.any`, `Ack.anyOf`, and `Ack.discriminated`.
+Use `@AckModel` for discriminated unions instead.
+
+## Working with Extension Types
+
+- `TypeName.parse(Object? data)` throws on invalid input.
+- `TypeName.safeParse(Object? data)` returns a `SchemaResult<TypeName>`.
+- `type.copyWith(...)` produces modified copies without mutating the backing
+  map.
+- `type.toJson()` returns the underlying map or scalar value.
+
+Extension types implement the underlying Dart type, so primitive wrappers still
+behave like `String`, `int`, etc., while object wrappers implement
+`Map<String, Object?>`.
+
+## Choosing Between `@AckModel` and `@AckType`
+
+| Annotation | Target | Generates Schema? | Generates Extension Type? | Use When |
+|------------|--------|-------------------|---------------------------|----------|
+| `@AckModel` | Dart class | ✅ Yes | ✅ Yes | You have a class definition and want both validation and typed access |
+| `@AckType` | Schema variable | ❌ No (uses existing) | ✅ Yes | You already wrote the schema manually and just want typed access |
+
+**Examples:**
+
+- Use **`@AckModel`** when you have a Dart class (or class hierarchy) that should drive schema generation. The generator creates both the schema and the extension type.
+
+- Use **`@AckType`** for hand-written schemas, shared schema fragments, or when you need typed access to a structure that doesn't have a corresponding Dart class.
+
+- **Mix both**: You can reference a `@AckType` schema inside an `@AckModel` class field, or use `@AckModel` classes within `@AckType` schema definitions.
+
+## Build Runner Checklist
+
+1. Add `ack_generator` and `ack_annotations` to `pubspec.yaml`.
+2. Include a `build.yaml` or rely on defaults.
+3. Ensure source files have a `part '<file>.g.dart';`.
+4. Run `dart run build_runner build` (or `watch`) after changing schemas.

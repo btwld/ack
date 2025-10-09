@@ -104,7 +104,10 @@ class User {
 }
 ```
 
-After running `dart run build_runner build`, the generator creates a `userSchema` variable in `user.g.dart`:
+After running `dart run build_runner build`, the generator creates in `user.g.dart`:
+
+1. **Schema constant**: `final userSchema = Ack.object({...});`
+2. **Extension type**: `extension type UserType(Map<String, Object?> _data) {...}`
 
 ```dart
 // user.g.dart (generated)
@@ -113,9 +116,18 @@ final userSchema = Ack.object({
   'email': Ack.string(),
   'age': Ack.integer(),
 });
+
+extension type UserType(Map<String, Object?> _data) {
+  static UserType parse(Object? data) { ... }
+  static SchemaResult<UserType> safeParse(Object? data) { ... }
+  String get name => _data['name'] as String;
+  String get email => _data['email'] as String;
+  int get age => _data['age'] as int;
+  // ... plus toJson(), copyWith(), equality, etc.
+}
 ```
 
-Use the generated schema for validation:
+You can use either the schema or the extension type:
 
 ```dart
 import 'user.dart';
@@ -124,20 +136,70 @@ import 'dart:convert';
 final jsonString = '{"name": "Alice", "email": "alice@example.com", "age": 30}';
 final jsonData = jsonDecode(jsonString);
 
+// Option 1: Use schema directly (returns Map)
 final result = userSchema.safeParse(jsonData);
-
 if (result.isOk) {
   final validData = result.getOrThrow();
-  // Work with the validated Map or convert to your model
   final user = User(
     name: validData['name'] as String,
     email: validData['email'] as String,
     age: validData['age'] as int,
   );
 }
+
+// Option 2: Use extension type (type-safe)
+final result = UserType.safeParse(jsonData);
+if (result.isOk) {
+  final user = result.getOrThrow();
+  print(user.name);  // Type-safe String access
+  print(user.email); // Type-safe String access
+  print(user.age);   // Type-safe int access
+}
 ```
 
 *See the [ack_generator README](../../packages/ack_generator/) for more details on code generation.*
+
+### Generating Extension Types from Standalone Schemas with `@AckType()`
+
+When you write schemas manually (without a backing class), annotate the variable or getter with `@AckType()` to generate an extension type wrapper. Unlike `@AckModel`, this **does not create the schema**—it only adds type-safe access to your hand-written schema.
+
+```dart
+// user_schema.dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user_schema.g.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string().email().nullable(),
+});
+```
+
+Running `dart run build_runner build` generates in `user_schema.g.dart`:
+
+- **The original schema constant** remains in the generated file (so imports keep working)
+- **Extension type** `UserType` with `parse`/`safeParse`, typed getters, and `toJson()` helpers
+
+The type name is derived from the variable name by removing "Schema" suffix and adding "Type" (e.g., `userSchema` → `UserType`).
+
+```dart
+import 'dart:convert';
+
+final jsonString = '{"name": "Alice", "email": "alice@example.com"}';
+final jsonData = jsonDecode(jsonString);
+
+final result = UserType.safeParse(jsonData);
+
+if (result.isOk) {
+  final user = result.getOrThrow();
+  print(user.name);   // Type-safe String access
+  print(user.email);  // Type-safe String? access
+}
+```
+
+**Note**: Nested schemas annotated with `@AckType()` generate their own extension types, but when referenced in object fields, getters return `Map<String, Object?>` rather than the typed extension type.
 
 ## Key Considerations
 

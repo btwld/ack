@@ -80,98 +80,12 @@ Ready to dive deeper? Start with the [Quickstart Tutorial](/getting-started/quic
 
 ## Advanced Features
 
-### Nested Objects and Lists
+Ack provides powerful features for complex validation scenarios:
 
-Validate complex nested data structures:
+- **[Nested validation](/core-concepts/schemas#object-schema)**: Validate deeply nested objects and lists
+- **[Custom validation](/guides/custom-validation)**: Add custom logic with `.refine()` and constraints
+- **[Union types](/core-concepts/schemas#union-types)**: Handle polymorphic data with `anyOf()` and discriminated unions
+- **[Data transformation](/core-concepts/schemas#transformation)**: Transform validated data with `.transform()`
+- **[JSON Schema generation](/guides/json-schema-integration)**: Generate JSON Schema specs for API documentation
 
-```dart
-// Nested object validation
-final orderSchema = Ack.object({
-  'id': Ack.string().uuid(),
-  'customer': Ack.object({
-    'name': Ack.string().minLength(2),
-    'email': Ack.string().email(),
-  }),
-  'items': Ack.list(Ack.object({
-    'product': Ack.string(),
-    'quantity': Ack.integer().positive(),
-    'price': Ack.double().positive(),
-  })).minLength(1),
-  'total': Ack.double().positive(),
-});
-```
-
-### Custom Validation with Refine
-
-Add custom validation logic beyond built-in constraints:
-
-```dart
-final validatedOrder = orderSchema.refine(
-  (order) {
-    // Custom validation: total should match sum of items
-    final items = order['items'] as List;
-    final calculatedTotal = items.fold<double>(0, (sum, item) {
-      final itemMap = item as Map<String, Object?>;
-      final quantity = itemMap['quantity'] as int;
-      final price = itemMap['price'] as double;
-      return sum + (quantity * price);
-    });
-    final total = order['total'] as double;
-    return (calculatedTotal - total).abs() < 0.01;
-  },
-  message: 'Total must match sum of item prices',
-);
-```
-
-### Union Types and Discriminated Unions
-
-Handle polymorphic data with union types:
-
-```dart
-// Simple union - value can be string or number
-final stringOrNumber = Ack.anyOf([
-  Ack.string().strictParsing(),
-  Ack.integer(),
-]);
-
-// Discriminated union for type-safe polymorphism
-final shapeSchema = Ack.discriminated(
-  discriminatorKey: 'type',
-  schemas: {
-    'circle': Ack.object({
-      'type': Ack.literal('circle'),
-      'radius': Ack.double().positive(),
-    }),
-    'rectangle': Ack.object({
-      'type': Ack.literal('rectangle'),
-      'width': Ack.double().positive(),
-      'height': Ack.double().positive(),
-    }),
-  },
-);
-```
-
-### Data Transformation
-
-Transform validated data into a different shape:
-
-```dart
-// Calculate age from birth year
-final personSchema = Ack.object({
-  'name': Ack.string(),
-  'birthYear': Ack.integer(),
-}).transform((data) {
-  final age = DateTime.now().year - (data!['birthYear'] as int);
-  return {...data, 'age': age};
-});
-```
-
-### JSON Schema Generation
-
-Generate JSON Schema specifications for API documentation:
-
-```dart
-// Generate JSON Schema for documentation
-final jsonSchema = orderSchema.toJsonSchema();
-print(jsonEncode(jsonSchema)); // Use in API docs, OpenAPI specs, etc.
-```
+For detailed examples and usage patterns, see the [Common Recipes guide](/guides/common-recipes).
