@@ -42,9 +42,9 @@ class TypeBuilder {
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
           ..._buildGetters(model, allModels),
-          // Only add toJson and copyWith for object schemas
+          // Only add args and copyWith for object schemas
           if (isObjectSchema) ...[
-            _buildToJson(),
+            if (model.additionalProperties) _buildArgsGetter(model),
             if (model.fields.isNotEmpty) _buildCopyWith(model),
           ],
         ]),
@@ -628,16 +628,6 @@ ${cases.join(',\n')},
     return dependencies;
   }
 
-  Method _buildToJson() {
-    return Method(
-      (m) => m
-        ..name = 'toJson'
-        ..returns = refer('Map<String, Object?>')
-        ..lambda = true
-        ..body = Code('_data'),
-    );
-  }
-
   Method _buildCopyWith(ModelInfo model) {
     final typeName = _getExtensionTypeName(model);
 
@@ -679,6 +669,29 @@ ${assignments.join(',\n')},
 });'''),
           ),
         ),
+    );
+  }
+
+  /// Builds the `args` getter that returns additional properties
+  ///
+  /// Returns a Map containing only properties that are not explicitly
+  /// defined in the schema. This is useful when additionalProperties: true.
+  Method _buildArgsGetter(ModelInfo model) {
+    final knownKeys = model.fields.map((f) => f.jsonKey).toSet();
+
+    // Generate filter condition inline for better performance
+    final conditions = knownKeys.map((k) => "e.key != '$k'").toList();
+    final filterExpr = conditions.isEmpty
+        ? '_data'
+        : 'Map.fromEntries(_data.entries.where((e) => ${conditions.join(' && ')}))';
+
+    return Method(
+      (m) => m
+        ..type = MethodType.getter
+        ..name = 'args'
+        ..returns = refer('Map<String, Object?>')
+        ..lambda = true
+        ..body = Code(filterExpr),
     );
   }
 }

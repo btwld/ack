@@ -35,12 +35,15 @@ void main() {
       expect(updated.active, true);
     });
 
-    test('UserType toJson works', () {
+    test('UserType can be used as Map (implements Map)', () {
       final user = UserType.parse({'name': 'Alice', 'age': 30, 'active': true});
 
-      final json = user.toJson();
+      // Extension type implements Map<String, Object?>, so it can be used directly as a map
+      final Map<String, Object?> json = user;
 
       expect(json, {'name': 'Alice', 'age': 30, 'active': true});
+      expect(json['name'], 'Alice');
+      expect(json['age'], 30);
     });
 
     test('UserType safeParse returns success for valid data', () {
