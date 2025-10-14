@@ -55,13 +55,6 @@ extension DateTimeSchemaExtensions on TransformedSchema<String, DateTime> {
   /// schema.parse("2000-01-01"); // ✓ Valid if more than 18 years ago
   /// schema.parse("2020-01-01"); // ✗ Fails if less than 18 years ago
   /// ```
-  ///
-  /// Example - future event validation:
-  /// ```dart
-  /// final schema = Ack.date().min(DateTime.now());
-  /// schema.parse("2026-01-01"); // ✓ Valid - future date
-  /// schema.parse("2020-01-01"); // ✗ Fails - past date
-  /// ```
   TransformedSchema<String, DateTime> max(DateTime maxDate) {
     return copyWith(
       constraints: [...constraints, DateTimeConstraint.max(maxDate)],

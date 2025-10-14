@@ -324,6 +324,34 @@ void main() {
 
         expect(jsonSchema['type'], 'string');
       });
+
+      test('includes formatMinimum when min constraint is applied', () {
+        final schema = Ack.date().min(DateTime(2025, 1, 1));
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema['formatMinimum'], isNotNull);
+        expect(jsonSchema['formatMinimum'], contains('2025-01-01'));
+      });
+
+      test('includes formatMaximum when max constraint is applied', () {
+        final schema = Ack.date().max(DateTime(2025, 12, 31));
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema['formatMaximum'], isNotNull);
+        expect(jsonSchema['formatMaximum'], contains('2025-12-31'));
+      });
+
+      test('includes both formatMinimum and formatMaximum for range', () {
+        final schema = Ack.date()
+            .min(DateTime(2025, 1, 1))
+            .max(DateTime(2025, 12, 31));
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema['formatMinimum'], isNotNull);
+        expect(jsonSchema['formatMaximum'], isNotNull);
+        expect(jsonSchema['formatMinimum'], contains('2025-01-01'));
+        expect(jsonSchema['formatMaximum'], contains('2025-12-31'));
+      });
     });
 
     group('Real-World Use Cases', () {
