@@ -99,6 +99,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
       originalJsonSchema['description'] = description;
     }
 
-    return originalJsonSchema;
+    // Merge constraints from the TransformedSchema (e.g., DateTimeConstraint)
+    return mergeConstraintSchemas(originalJsonSchema);
   }
 }

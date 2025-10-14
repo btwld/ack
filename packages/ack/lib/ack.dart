@@ -5,10 +5,12 @@ library;
 export 'src/ack.dart';
 // Constraints
 export 'src/constraints/constraint.dart';
+export 'src/constraints/core/datetime_constraint.dart';
 // Context
 export 'src/context.dart';
 // Extensions
 export 'src/schemas/extensions/ack_schema_extensions.dart';
+export 'src/schemas/extensions/datetime_schema_extensions.dart';
 export 'src/schemas/extensions/list_schema_extensions.dart';
 export 'src/schemas/extensions/numeric_extensions.dart';
 export 'src/schemas/extensions/object_schema_extensions.dart';

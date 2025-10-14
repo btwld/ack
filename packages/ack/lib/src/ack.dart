@@ -1,3 +1,4 @@
+import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
@@ -54,4 +55,45 @@ final class Ack {
   /// Creates a schema that accepts any value without type conversion or validation.
   /// Useful for dynamic content or when you need maximum flexibility.
   static AnySchema any() => const AnySchema();
+
+  /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
+  ///
+  /// The schema validates the string format before transformation, ensuring only valid
+  /// date strings are parsed. You can add range constraints using [.min()] and [.max()].
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.date();
+  /// final result = schema.parse("2025-06-15"); // Returns DateTime(2025, 6, 15)
+  ///
+  /// // With range validation
+  /// final futureDate = Ack.date().min(DateTime.now());
+  /// final year2025 = Ack.date()
+  ///   .min(DateTime(2025, 1, 1))
+  ///   .max(DateTime(2025, 12, 31));
+  /// ```
+  static TransformedSchema<String, DateTime> date() {
+    return string()
+        .date() // Validates ISO 8601 date format (YYYY-MM-DD) first
+        .transform<DateTime>((s) => DateTime.parse(s!));
+  }
+
+  /// Creates a datetime schema that parses ISO 8601 datetime strings into DateTime objects.
+  ///
+  /// The schema validates the string format (including timezone) before transformation.
+  /// You can add range constraints using [.min()] and [.max()].
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.datetime();
+  /// final result = schema.parse("2025-06-15T10:30:00Z"); // Returns DateTime
+  ///
+  /// // With range validation
+  /// final appointmentSchema = Ack.datetime().min(DateTime.now());
+  /// ```
+  static TransformedSchema<String, DateTime> datetime() {
+    return string()
+        .datetime() // Validates ISO 8601 datetime format with timezone first
+        .transform<DateTime>((s) => DateTime.parse(s!));
+  }
 }
