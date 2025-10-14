@@ -1,7 +1,7 @@
-import '../../constraints/core/comparison_constraint.dart';
-import '../../constraints/core/ip_constraint.dart';
-import '../../constraints/core/pattern_constraint.dart';
-import '../../constraints/string/literal_constraint.dart';
+import '../../constraints/comparison_constraint.dart';
+import '../../constraints/pattern_constraint.dart';
+import '../../constraints/string_ip_constraint.dart';
+import '../../constraints/string_literal_constraint.dart';
 import '../schema.dart';
 import 'ack_schema_extensions.dart';
 
@@ -115,7 +115,7 @@ extension StringSchemaExtensions on StringSchema {
   /// Adds a constraint that the string must be a valid IP address.
   /// If [version] is provided, it must be 4 or 6.
   StringSchema ip({int? version}) {
-    return withConstraint(IpConstraint(version: version));
+    return withConstraint(StringIpConstraint(version: version));
   }
 
   /// Adds a constraint that the string must be a valid IPv4 address.

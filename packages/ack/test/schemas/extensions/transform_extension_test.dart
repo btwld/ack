@@ -1,5 +1,5 @@
 import 'package:ack/ack.dart';
-import 'package:ack/src/constraints/core/comparison_constraint.dart';
+import 'package:ack/src/constraints/comparison_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {

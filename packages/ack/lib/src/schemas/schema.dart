@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
-import '../constraints/core/pattern_constraint.dart';
+import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';

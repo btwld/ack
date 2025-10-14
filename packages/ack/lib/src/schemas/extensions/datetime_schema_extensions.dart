@@ -1,4 +1,4 @@
-import '../../constraints/core/datetime_constraint.dart';
+import '../../constraints/datetime_constraint.dart';
 import '../schema.dart';
 
 /// Extensions for `TransformedSchema<String, DateTime>` to add date range validation.

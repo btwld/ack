@@ -1,4 +1,4 @@
-import '../constraint.dart';
+import 'constraint.dart';
 
 /// Type of comparison operation to perform.
 enum ComparisonType { gt, gte, lt, lte, eq, range }
