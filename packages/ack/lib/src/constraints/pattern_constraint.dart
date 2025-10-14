@@ -266,18 +266,12 @@ class PatternConstraint extends Constraint<String>
   );
 
   @override
-  bool isValid(String value) {
-    switch (type) {
-      case PatternType.regex:
-        return pattern!.hasMatch(value);
-      case PatternType.enumString:
-        return allowedValues!.contains(value);
-      case PatternType.notEnumString:
-        return !allowedValues!.contains(value);
-      case PatternType.format:
-        return formatValidator!(value);
-    }
-  }
+  bool isValid(String value) => switch (type) {
+        PatternType.regex => pattern!.hasMatch(value),
+        PatternType.enumString => allowedValues!.contains(value),
+        PatternType.notEnumString => !allowedValues!.contains(value),
+        PatternType.format => formatValidator!(value),
+      };
 
   @override
   String buildMessage(String value) {
@@ -286,21 +280,22 @@ class PatternConstraint extends Constraint<String>
       return customMessageBuilder!(nonNullValue);
     }
     // Default messages
-    switch (type) {
-      case PatternType.regex:
-        return 'Value "$nonNullValue" does not match required pattern${example != null ? " (e.g., $example)" : ""}.';
-      case PatternType.enumString:
-        final closest = findClosestStringMatch(nonNullValue, allowedValues!);
-        final suggestion = closest != null && closest != nonNullValue
-            ? ' Did you mean "$closest"?'
-            : '';
+    return switch (type) {
+      PatternType.regex =>
+        'Value "$nonNullValue" does not match required pattern${example != null ? " (e.g., $example)" : ""}.',
+      PatternType.enumString => () {
+          final closest = findClosestStringMatch(nonNullValue, allowedValues!);
+          final suggestion = closest != null && closest != nonNullValue
+              ? ' Did you mean "$closest"?'
+              : '';
 
-        return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
-      case PatternType.notEnumString:
-        return 'Value "$nonNullValue" is disallowed. Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}.';
-      case PatternType.format:
-        return 'Value "$nonNullValue" is not a valid ${constraintKey.replaceFirst("string_format_", "")}${example != null ? " (e.g., $example)" : ""}.';
-    }
+          return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
+        }(),
+      PatternType.notEnumString =>
+        'Value "$nonNullValue" is disallowed. Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}.',
+      PatternType.format =>
+        'Value "$nonNullValue" is not a valid ${constraintKey.replaceFirst("string_format_", "")}${example != null ? " (e.g., $example)" : ""}.',
+    };
   }
 
   @override
@@ -320,29 +315,27 @@ class PatternConstraint extends Constraint<String>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    switch (type) {
-      case PatternType.regex:
-        final standardFormat = _keyToFormat[constraintKey];
-        if (standardFormat != null) {
-          // For email and uuid, include BOTH format and pattern (match Zod)
-          return {'format': standardFormat, 'pattern': pattern!.pattern};
-        }
+  Map<String, Object?> toJsonSchema() => switch (type) {
+        PatternType.regex => () {
+            final standardFormat = _keyToFormat[constraintKey];
+            if (standardFormat != null) {
+              // For email and uuid, include BOTH format and pattern (match Zod)
+              return {'format': standardFormat, 'pattern': pattern!.pattern};
+            }
 
-        return {'pattern': pattern!.pattern};
-      case PatternType.enumString:
-        return {'enum': allowedValues};
-      case PatternType.notEnumString:
-        return {
-          'not': {'enum': allowedValues},
-        };
-      case PatternType.format:
-        final standardFormat = _keyToFormat[constraintKey];
-        if (standardFormat != null) {
-          return {'format': standardFormat};
-        }
+            return {'pattern': pattern!.pattern};
+          }(),
+        PatternType.enumString => {'enum': allowedValues},
+        PatternType.notEnumString => {
+            'not': {'enum': allowedValues},
+          },
+        PatternType.format => () {
+            final standardFormat = _keyToFormat[constraintKey];
+            if (standardFormat != null) {
+              return {'format': standardFormat};
+            }
 
-        return {};
-    }
-  }
+            return <String, Object?>{};
+          }(),
+      };
 }
