@@ -20,7 +20,10 @@ class SchemaAstAnalyzer {
   /// Analyzes a schema variable annotated with @AckType
   ///
   /// Walks the AST to extract type information from the schema definition.
-  ModelInfo? analyzeSchemaVariable(TopLevelVariableElement element) {
+  ModelInfo? analyzeSchemaVariable(
+    TopLevelVariableElement element, {
+    String? customTypeName,
+  }) {
     // Get the AST node for this variable
     final session = element.session;
     if (session == null) {
@@ -68,15 +71,21 @@ class SchemaAstAnalyzer {
       );
     }
 
-    return _parseSchemaFromAST(element.name, initializer, element);
+    return _parseSchemaFromAST(
+      element.name,
+      initializer,
+      element,
+      customTypeName: customTypeName,
+    );
   }
 
   /// Parses a schema from a MethodInvocation AST node
   ModelInfo? _parseSchemaFromAST(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
+    Element element, {
+    String? customTypeName,
+  }) {
     // Walk the method chain to find the base Ack.xxx() call
     // E.g., Ack.string().min(8) -> walk back to find Ack.string()
     MethodInvocation? current = invocation;
@@ -111,23 +120,69 @@ class SchemaAstAnalyzer {
     // Parse based on schema type
     switch (methodName) {
       case 'object':
-        return _parseObjectSchema(variableName, baseInvocation, element);
+        return _parseObjectSchema(
+          variableName,
+          baseInvocation,
+          invocation, // Pass original invocation to check for chained methods
+          element,
+          customTypeName: customTypeName,
+        );
       case 'string':
-        return _parseStringSchema(variableName, baseInvocation, element);
+        return _parseStringSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'integer':
-        return _parseIntegerSchema(variableName, baseInvocation, element);
+        return _parseIntegerSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'double':
-        return _parseDoubleSchema(variableName, baseInvocation, element);
+        return _parseDoubleSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'boolean':
-        return _parseBooleanSchema(variableName, baseInvocation, element);
+        return _parseBooleanSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'list':
-        return _parseListSchema(variableName, baseInvocation, element);
+        return _parseListSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'literal':
-        return _parseLiteralSchema(variableName, baseInvocation, element);
+        return _parseLiteralSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'enumString':
-        return _parseEnumStringSchema(variableName, baseInvocation, element);
+        return _parseEnumStringSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       case 'enumValues':
-        return _parseEnumValuesSchema(variableName, baseInvocation, element);
+        return _parseEnumValuesSchema(
+          variableName,
+          baseInvocation,
+          element,
+          customTypeName: customTypeName,
+        );
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema type for @AckType: Ack.$methodName(). '
@@ -140,11 +195,13 @@ class SchemaAstAnalyzer {
   /// Parses Ack.object() schema
   ModelInfo _parseObjectSchema(
     String variableName,
-    MethodInvocation invocation,
-    Element element,
-  ) {
+    MethodInvocation baseInvocation,
+    MethodInvocation fullInvocation,
+    Element element, {
+    String? customTypeName,
+  }) {
     // Extract the properties map from the first argument
-    final args = invocation.argumentList.arguments;
+    final args = baseInvocation.argumentList.arguments;
     if (args.isEmpty) {
       throw InvalidGenerationSourceError(
         'Ack.object() requires a properties map argument',
@@ -163,14 +220,54 @@ class SchemaAstAnalyzer {
     // Extract fields from the map literal
     final fields = _extractFieldsFromMapLiteral(firstArg, element);
 
-    // Generate extension type name from variable name
-    final typeName = _generateTypeNameFromVariable(variableName);
+    // Check if additionalProperties is enabled via passthrough() or parameter
+    bool hasAdditionalProperties = false;
+
+    // First check for named parameter in the base Ack.object() call
+    for (final arg in baseInvocation.argumentList.arguments) {
+      if (arg is NamedExpression &&
+          arg.name.label.name == 'additionalProperties') {
+        if (arg.expression is BooleanLiteral) {
+          hasAdditionalProperties = (arg.expression as BooleanLiteral).value;
+        }
+      }
+    }
+
+    // Then walk forward from fullInvocation to find passthrough() in the chain
+    // The chain looks like: Ack.object({...}).passthrough()
+    // fullInvocation is the outermost call (passthrough if present)
+    // We need to check if passthrough() was called
+    MethodInvocation? current = fullInvocation;
+    while (current != null && current != baseInvocation) {
+      final methodName = current.methodName.name;
+
+      if (methodName == 'passthrough') {
+        hasAdditionalProperties = true;
+        break;
+      }
+
+      // Move down the chain towards the base
+      final target = current.target;
+      if (target is MethodInvocation) {
+        current = target;
+      } else {
+        break;
+      }
+    }
+
+    // Generate extension type name from variable name or custom override
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
       schemaClassName: variableName,
       fields: fields,
       isFromSchemaVariable: true,
+      additionalProperties: hasAdditionalProperties,
     );
   }
 
@@ -377,6 +474,43 @@ class SchemaAstAnalyzer {
     return typeProvider.listType(typeProvider.dynamicType);
   }
 
+  /// Resolves the base class name for a schema variable, honoring custom overrides.
+  String _resolveModelClassName(
+    String variableName,
+    Element element, {
+    String? customTypeName,
+  }) {
+    if (customTypeName == null) {
+      return _generateTypeNameFromVariable(variableName);
+    }
+
+    final trimmed = customTypeName.trim();
+    if (trimmed.isEmpty) {
+      throw InvalidGenerationSourceError(
+        'Custom @AckType name cannot be empty',
+        element: element,
+        todo: 'Provide a non-empty type name in the @AckType annotation.',
+      );
+    }
+
+    const identifierPattern = r'^[A-Za-z_][A-Za-z0-9_]*$';
+    if (!RegExp(identifierPattern).hasMatch(trimmed)) {
+      throw InvalidGenerationSourceError(
+        'Invalid custom @AckType name "$customTypeName". '
+        'Type names must start with a letter or underscore and can only contain letters, numbers, and underscores.',
+        element: element,
+        todo: 'Update the @AckType annotation to use a valid Dart identifier.',
+      );
+    }
+
+    // Ensure leading character is uppercase for consistency.
+    if (trimmed.length == 1) {
+      return trimmed.toUpperCase();
+    }
+
+    return trimmed[0].toUpperCase() + trimmed.substring(1);
+  }
+
   /// Generates an extension type name from a schema variable name
   ///
   /// Examples:
@@ -399,9 +533,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseStringSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
@@ -416,9 +555,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseIntegerSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
@@ -433,9 +577,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseDoubleSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
@@ -450,9 +599,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseBooleanSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
@@ -475,9 +629,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseListSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     // Extract element type from first argument: Ack.list(elementSchema)
     final args = invocation.argumentList.arguments;
@@ -517,9 +676,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseLiteralSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
@@ -539,9 +703,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseEnumStringSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     return ModelInfo(
       className: typeName,
@@ -561,9 +730,14 @@ class SchemaAstAnalyzer {
   ModelInfo _parseEnumValuesSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element,
-  ) {
-    final typeName = _generateTypeNameFromVariable(variableName);
+    Element element, {
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
 
     // Strategy 1: Try to extract from type arguments: Ack.enumValues<UserRole>([...])
     final typeArgs = invocation.typeArguments?.arguments;

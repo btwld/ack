@@ -303,27 +303,49 @@ partialSchema.safeParse({'email': 'john@example.com', 'age': 30});
 
 ### Additional Properties
 
-Control handling of extra properties:
+Control handling of extra properties not defined in the schema. By default, objects are **strict** and reject additional properties.
+
+#### Using Constructor Parameter
 
 ```dart
-// Disallow additional properties (default)
+// Strict mode (default) - rejects additional properties
 final strictSchema = Ack.object({
   'id': Ack.string(),
-});
+  'name': Ack.string(),
+}); // additionalProperties: false is the default
 
-strictSchema.safeParse({'id': '1', 'extra': 'value'}); // ❌
+strictSchema.safeParse({'id': '1', 'name': 'John', 'extra': 'value'}); // ❌ Fails
 
-// Allow additional properties
+// Passthrough mode - allows additional properties
 final flexibleSchema = Ack.object({
   'id': Ack.string(),
+  'name': Ack.string(),
 }, additionalProperties: true);
 
-flexibleSchema.safeParse({'id': '1', 'extra': 'allowed'}); // ✅
-
-// Or use methods (strict is already the default)
-final passthrough = baseSchema.passthrough(); // Allow extra properties
-final strict = baseSchema.strict(); // Reject extra properties (already default)
+flexibleSchema.safeParse({'id': '1', 'name': 'John', 'extra': 'allowed'}); // ✅ Passes
 ```
+
+#### Using Extension Methods
+
+```dart
+final baseSchema = Ack.object({
+  'id': Ack.string(),
+  'name': Ack.string(),
+});
+
+// Make strict (reject extra properties)
+final strict = baseSchema.strict();
+strict.safeParse({'id': '1', 'name': 'John', 'role': 'admin'}); // ❌ Fails
+
+// Allow passthrough (accept extra properties)
+final passthrough = baseSchema.passthrough();
+passthrough.safeParse({'id': '1', 'name': 'John', 'role': 'admin'}); // ✅ Passes
+```
+
+**Common Use Cases:**
+
+- **Strict mode**: API request validation, form validation where only known fields are allowed
+- **Passthrough mode**: Working with dynamic data, gradual migration, or when extra metadata is acceptable
 
 ## Custom Validation
 

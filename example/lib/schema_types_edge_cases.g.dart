@@ -34,8 +34,6 @@ extension type ProductType(Map<String, Object?> _data)
 
   List<bool> get flags => (_data['flags'] as List).cast<bool>();
 
-  Map<String, Object?> toJson() => _data;
-
   ProductType copyWith({
     String? name,
     List<String>? tags,
@@ -72,8 +70,6 @@ extension type GridType(Map<String, Object?> _data)
 
   List<List<int>> get matrix => (_data['matrix'] as List).cast<List<int>>();
 
-  Map<String, Object?> toJson() => _data;
-
   GridType copyWith({String? name, List<List<int>>? matrix}) {
     return GridType.parse({
       'name': name ?? this.name,
@@ -106,8 +102,6 @@ extension type AddressType(Map<String, Object?> _data)
   String get zipCode => _data['zipCode'] as String;
 
   String get country => _data['country'] as String;
-
-  Map<String, Object?> toJson() => _data;
 
   AddressType copyWith({
     String? street,
@@ -148,8 +142,6 @@ extension type PersonType(Map<String, Object?> _data)
   Map<String, Object?> get address => _data['address'] as Map<String, Object?>;
 
   int get age => _data['age'] as int;
-
-  Map<String, Object?> toJson() => _data;
 
   PersonType copyWith({
     String? name,
@@ -193,8 +185,6 @@ extension type EmployeeType(Map<String, Object?> _data)
   Map<String, Object?> get workAddress =>
       _data['workAddress'] as Map<String, Object?>;
 
-  Map<String, Object?> toJson() => _data;
-
   EmployeeType copyWith({
     String? name,
     String? employeeId,
@@ -236,8 +226,6 @@ extension type ModifierType(Map<String, Object?> _data)
   String? get optionalNullable => _data['optionalNullable'] as String?;
 
   String? get nullableOptional => _data['nullableOptional'] as String?;
-
-  Map<String, Object?> toJson() => _data;
 
   ModifierType copyWith({
     String? requiredField,
@@ -288,8 +276,6 @@ extension type TaggedItemType(Map<String, Object?> _data)
       ? (_data['nullableTags'] as List).cast<String>()
       : null;
 
-  Map<String, Object?> toJson() => _data;
-
   TaggedItemType copyWith({
     String? name,
     List<String>? requiredTags,
@@ -325,8 +311,6 @@ extension type ContactListType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  Map<String, Object?> toJson() => _data;
-
   ContactListType copyWith({String? name}) {
     return ContactListType.parse({'name': name ?? this.name});
   }
@@ -348,8 +332,6 @@ extension type EmptyType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
-
-  Map<String, Object?> toJson() => _data;
 }
 
 /// Extension type for Minimal
@@ -370,8 +352,6 @@ extension type MinimalType(Map<String, Object?> _data)
   }
 
   String get id => _data['id'] as String;
-
-  Map<String, Object?> toJson() => _data;
 
   MinimalType copyWith({String? id}) {
     return MinimalType.parse({'id': id ?? this.id});
@@ -397,8 +377,6 @@ extension type NamedItemType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  Map<String, Object?> toJson() => _data;
-
   NamedItemType copyWith({String? name}) {
     return NamedItemType.parse({'name': name ?? this.name});
   }
@@ -422,8 +400,6 @@ extension type ItemType(Map<String, Object?> _data)
   }
 
   String get id => _data['id'] as String;
-
-  Map<String, Object?> toJson() => _data;
 
   ItemType copyWith({String? id}) {
     return ItemType.parse({'id': id ?? this.id});
@@ -449,8 +425,6 @@ extension type MyCustomSchema123Type(Map<String, Object?> _data)
   }
 
   String get value => _data['value'] as String;
-
-  Map<String, Object?> toJson() => _data;
 
   MyCustomSchema123Type copyWith({String? value}) {
     return MyCustomSchema123Type.parse({'value': value ?? this.value});

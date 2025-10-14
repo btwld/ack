@@ -80,9 +80,10 @@ class AckField {
   'ack_annotations|lib/src/ack_type.dart': '''
 import 'package:meta/meta_meta.dart';
 
-@Target({TargetKind.topLevelVariable, TargetKind.classType, TargetKind.getter})
+@Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
-  const AckType();
+  final String? name;
+  const AckType({this.name});
 }
 ''',
 };
@@ -95,23 +96,38 @@ export 'src/ack.dart';
 export 'src/schemas/schema_model.dart';
 export 'src/schemas/object_schema.dart';
 export 'src/validation/ack_exception.dart';
+export 'src/validation/schema_result.dart';
 ''',
   'ack|lib/src/ack.dart': '''
 class Ack {
-  static const string = StringSchema();
-  static const int = IntegerSchema();
-  static const double = DoubleSchema();
-  static const number = NumberSchema();
-  static const boolean = BooleanSchema();
-  static const any = AnySchema();
-  
+  static StringSchema string() => const StringSchema();
+  static IntegerSchema integer() => const IntegerSchema();
+  static DoubleSchema double() => const DoubleSchema();
+  static NumberSchema number() => const NumberSchema();
+  static BooleanSchema boolean() => const BooleanSchema();
+  static AnySchema any() => const AnySchema();
+
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
-  static ObjectSchema object(Map<String, AckSchema> properties, {List<String>? required, bool additionalProperties = false}) =>
-    ObjectSchema(properties, required: required, additionalProperties: additionalProperties);
-  
-  static DiscriminatedSchema discriminated({required String discriminatorKey, required Map<String, AckSchema> schemas}) =>
-    DiscriminatedSchema(discriminatorKey: discriminatorKey, schemas: schemas);
+  static ObjectSchema object(
+    Map<String, AckSchema> properties, {
+    List<String>? required,
+    bool additionalProperties = false,
+  }) =>
+      ObjectSchema(
+        properties,
+        required: required,
+        additionalProperties: additionalProperties,
+      );
+
+  static DiscriminatedSchema discriminated({
+    required String discriminatorKey,
+    required Map<String, AckSchema> schemas,
+  }) =>
+      DiscriminatedSchema(
+        discriminatorKey: discriminatorKey,
+        schemas: schemas,
+      );
 }
 
 abstract class AckSchema<T> {
@@ -211,7 +227,19 @@ class ObjectSchema extends AckSchema<Map<String, Object?>> {
   final List<String>? required;
   final bool additionalProperties;
   const ObjectSchema(this.properties, {this.required, this.additionalProperties = false});
-  
+
+  ObjectSchema copyWith({
+    Map<String, AckSchema>? properties,
+    List<String>? required,
+    bool? additionalProperties,
+  }) {
+    return ObjectSchema(
+      properties ?? this.properties,
+      required: required ?? this.required,
+      additionalProperties: additionalProperties ?? this.additionalProperties,
+    );
+  }
+
   Map<String, Object?> toJsonSchema() {
     return {
       'type': 'object',
@@ -220,6 +248,10 @@ class ObjectSchema extends AckSchema<Map<String, Object?>> {
       'additionalProperties': additionalProperties,
     };
   }
+}
+
+extension ObjectSchemaExtensions on ObjectSchema {
+  ObjectSchema passthrough() => copyWith(additionalProperties: true);
 }
 class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
   final String discriminatorKey;
@@ -289,6 +321,41 @@ abstract class SchemaModel<T> {
   Map<String, Object?> toJsonSchema() {
     return schema.toJsonSchema();
   }
+}
+''',
+  'ack|lib/src/validation/schema_result.dart': '''
+sealed class SchemaResult<T> {
+  const SchemaResult();
+
+  factory SchemaResult.ok(T value) = SchemaSuccess<T>;
+  factory SchemaResult.fail(String error) = SchemaFailure<T>;
+
+  R match<R>({
+    required R Function(T value) onOk,
+    required R Function(String error) onFail,
+  });
+}
+
+class SchemaSuccess<T> extends SchemaResult<T> {
+  final T value;
+  const SchemaSuccess(this.value);
+
+  @override
+  R match<R>({
+    required R Function(T value) onOk,
+    required R Function(String error) onFail,
+  }) => onOk(value);
+}
+
+class SchemaFailure<T> extends SchemaResult<T> {
+  final String error;
+  const SchemaFailure(this.error);
+
+  @override
+  R match<R>({
+    required R Function(T value) onOk,
+    required R Function(String error) onFail,
+  }) => onFail(error);
 }
 ''',
 };
