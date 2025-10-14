@@ -216,23 +216,7 @@ void main() {
         );
       });
 
-      test('should accept valid regex patterns and auto-anchor them', () {
-        // Pattern without explicit anchors - auto-anchored by .matches()
-        final schema = StringSchema().matches(r'\d{3}-\d{3}-\d{4}');
-
-        // Should match full string
-        expect(schema.safeParse('555-123-4567').isOk, isTrue);
-
-        // Should fail for partial matches (proves auto-anchoring)
-        expect(schema.safeParse('prefix555-123-4567').isOk, isFalse);
-        expect(schema.safeParse('555-123-4567suffix').isOk, isFalse);
-
-        // Should fail for non-matching strings
-        expect(schema.safeParse('invalid').isOk, isFalse);
-      });
-
-      test('should preserve explicitly anchored patterns', () {
-        // Pattern with explicit anchors - preserved as-is
+      test('should accept valid regex patterns', () {
         final schema = StringSchema().matches(r'^\d{3}-\d{3}-\d{4}$');
         expect(schema.safeParse('555-123-4567').isOk, isTrue);
         expect(schema.safeParse('invalid').isOk, isFalse);

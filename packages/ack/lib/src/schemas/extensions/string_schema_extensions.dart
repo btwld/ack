@@ -43,12 +43,32 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must match the given regex pattern.
-  /// Patterns are automatically anchored (^ and $) to match the entire string.
-  /// Use [contains] for partial matching anywhere in the string.
+  ///
+  /// **Important**: Patterns are NOT automatically anchored. The pattern will
+  /// match if it is found anywhere in the string (substring matching).
+  /// To require full-string matching, explicitly add anchors: `^...$`
+  ///
+  /// For partial matching with clear intent, use [contains] instead.
+  ///
+  /// Examples:
+  /// ```dart
+  /// // ⚠️ Without anchors - matches substrings:
+  /// Ack.string().matches(r'\d{5}')
+  ///   ..safeParse('12345')      // ✓ Valid
+  ///   ..safeParse('abc12345')   // ✓ Valid (matches substring!)
+  ///   ..safeParse('12345xyz')   // ✓ Valid (matches substring!)
+  ///
+  /// // ✅ With anchors - full string must match:
+  /// Ack.string().matches(r'^\d{5}$')
+  ///   ..safeParse('12345')      // ✓ Valid
+  ///   ..safeParse('abc12345')   // ✗ Invalid
+  ///   ..safeParse('12345xyz')   // ✗ Invalid
+  ///
+  /// // Alternative: Use .contains() for explicit partial matching
+  /// Ack.string().contains(r'\d{5}')
+  /// ```
   StringSchema matches(String pattern, {String? example, String? message}) {
-    // Auto-anchor the pattern for full-string matching
-    final anchoredPattern = _anchorPattern(pattern);
-    final constraint = PatternConstraint.regex(anchoredPattern, example: example);
+    final constraint = PatternConstraint.regex(pattern, example: example);
 
     return constrain(constraint, message: message) as StringSchema;
   }
@@ -131,89 +151,5 @@ extension StringSchemaExtensions on StringSchema {
   /// Returns a transformed schema that applies String.toUpperCase() to the input.
   TransformedSchema<String, String> toUpperCase() {
     return transform((s) => s?.toUpperCase() ?? '');
-  }
-
-  /// Helper method to intelligently anchor a regex pattern.
-  ///
-  /// - If pattern already has both ^ and $, returns as-is
-  /// - If partially anchored, completes the anchoring
-  /// - If unanchored, wraps in non-capturing group and adds anchors
-  String _anchorPattern(String pattern) {
-    if (pattern.isEmpty) {
-      return r'^$';
-    }
-
-    // Check if pattern has unescaped anchors
-    final hasStartAnchor = pattern.startsWith('^') && !_isEscapedAtStart(pattern);
-    final hasEndAnchor = pattern.endsWith(r'$') && !_isEscapedAtEnd(pattern);
-
-    // If both anchors exist, return as-is
-    if (hasStartAnchor && hasEndAnchor) {
-      return pattern;
-    }
-
-    // If partially anchored, complete the anchoring
-    if (hasStartAnchor && !hasEndAnchor) {
-      return '$pattern\$';
-    }
-    if (!hasStartAnchor && hasEndAnchor) {
-      return '^$pattern';
-    }
-
-    // No anchors - escape any unescaped ^ or $ in the pattern before wrapping
-    final escapedPattern = _escapeInternalAnchors(pattern);
-    return '^(?:$escapedPattern)\$';
-  }
-
-  /// Escapes any unescaped ^ or $ characters in the pattern
-  /// to prevent them from being interpreted as anchors when wrapped
-  String _escapeInternalAnchors(String pattern) {
-    final buffer = StringBuffer();
-    int backslashCount = 0;
-
-    for (int i = 0; i < pattern.length; i++) {
-      final char = pattern[i];
-
-      if (char == '\\') {
-        backslashCount++;
-        buffer.write(char);
-      } else if ((char == '^' || char == r'$') && backslashCount % 2 == 0) {
-        // This is an unescaped ^ or $, so escape it
-        buffer.write('\\');
-        buffer.write(char);
-        backslashCount = 0;
-      } else {
-        buffer.write(char);
-        backslashCount = 0;
-      }
-    }
-
-    return buffer.toString();
-  }
-
-  /// Checks if the ^ at the start of the pattern is escaped
-  bool _isEscapedAtStart(String pattern) {
-    if (!pattern.startsWith('^')) return false;
-    // ^ at position 0 cannot be escaped by a preceding backslash
-    return false;
-  }
-
-  /// Checks if the $ at the end of the pattern is escaped
-  bool _isEscapedAtEnd(String pattern) {
-    if (!pattern.endsWith(r'$')) return false;
-    if (pattern.length < 2) return false;
-
-    // Count preceding backslashes
-    int backslashCount = 0;
-    for (int i = pattern.length - 2; i >= 0; i--) {
-      if (pattern[i] == '\\') {
-        backslashCount++;
-      } else {
-        break;
-      }
-    }
-
-    // If odd number of backslashes, the $ is escaped
-    return backslashCount % 2 == 1;
   }
 }

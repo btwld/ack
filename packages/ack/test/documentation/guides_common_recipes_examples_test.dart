@@ -64,7 +64,7 @@ void main() {
       final addressSchema = Ack.object({
         'street': Ack.string().notEmpty(),
         'city': Ack.string().notEmpty(),
-        'zipCode': Ack.string().matches(r'\d{5}(-\d{4})?'),
+        'zipCode': Ack.string().matches(r'^\d{5}(-\d{4})?$'),
         'country': Ack.string().notEmpty(),
       });
 

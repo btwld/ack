@@ -9,7 +9,7 @@ void main() {
         'street': Ack.string(),
         'city': Ack.string(),
         'country': Ack.string(),
-        'postalCode': Ack.string().matches(r'\d{5}(-\d{4})?'),
+        'postalCode': Ack.string().matches(r'^\d{5}(-\d{4})?$'),
       });
 
       final productSchema =
@@ -31,7 +31,7 @@ void main() {
         schemas: {
           'card': Ack.object({
             'method': Ack.literal('card'),
-            'last4': Ack.string().matches(r'\d{4}'),
+            'last4': Ack.string().matches(r'^\d{4}$'),
             'brand': Ack.enumString(['visa', 'mastercard', 'amex']),
           }),
           'paypal': Ack.object({

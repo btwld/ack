@@ -29,7 +29,7 @@ void main() {
         final usernameSchema = Ack.string()
             .minLength(3)
             .maxLength(20)
-            .matches(r'[a-zA-Z0-9_]+');
+            .matches(r'^[a-zA-Z0-9_]+$');
         expect(usernameSchema.safeParse('user_123').isOk, isTrue);
         expect(usernameSchema.safeParse('u').isFail, isTrue);
 
@@ -108,7 +108,7 @@ void main() {
           'address': Ack.object({
             'street': Ack.string(),
             'city': Ack.string(),
-            'zipCode': Ack.string().matches(r'\d{5}'),
+            'zipCode': Ack.string().matches(r'^\d{5}$'),
           }),
         });
 
@@ -424,7 +424,7 @@ void main() {
         expect(transformed['age'], equals(30));
 
         final dateSchema = Ack.string()
-            .matches(r'\d{4}-\d{2}-\d{2}')
+            .matches(r'^\d{4}-\d{2}-\d{2}$')
             .transform<DateTime>((s) => DateTime.parse(s!));
         final parsedDate =
             dateSchema.safeParse('2024-01-01').getOrThrow() as DateTime;
