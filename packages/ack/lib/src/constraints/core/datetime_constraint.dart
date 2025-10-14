@@ -55,24 +55,20 @@ class DateTimeConstraint extends Constraint<DateTime>
       );
 
   @override
-  bool isValid(DateTime value) {
-    switch (type) {
-      case DateTimeComparisonType.min:
-        return !value.isBefore(reference); // >= (on or after)
-      case DateTimeComparisonType.max:
-        return !value.isAfter(reference); // <= (on or before)
-    }
-  }
+  bool isValid(DateTime value) => switch (type) {
+        DateTimeComparisonType.min =>
+          !value.isBefore(reference), // >= (on or after)
+        DateTimeComparisonType.max =>
+          !value.isAfter(reference), // <= (on or before)
+      };
 
   @override
-  String buildMessage(DateTime value) {
-    switch (type) {
-      case DateTimeComparisonType.min:
-        return 'Date must be on or after ${reference.toIso8601String()}, got ${value.toIso8601String()}';
-      case DateTimeComparisonType.max:
-        return 'Date must be on or before ${reference.toIso8601String()}, got ${value.toIso8601String()}';
-    }
-  }
+  String buildMessage(DateTime value) => switch (type) {
+        DateTimeComparisonType.min =>
+          'Date must be on or after ${reference.toIso8601String()}, got ${value.toIso8601String()}',
+        DateTimeComparisonType.max =>
+          'Date must be on or before ${reference.toIso8601String()}, got ${value.toIso8601String()}',
+      };
 
   @override
   Map<String, Object?> buildContext(DateTime value) {
@@ -84,15 +80,14 @@ class DateTimeConstraint extends Constraint<DateTime>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    // JSON Schema Draft 2019-09 and later support formatMinimum/formatMaximum
-    // for validating string formats like dates.
-    // See: https://json-schema.org/draft/2019-09/json-schema-validation.html#rfc.section.7.3
-    switch (type) {
-      case DateTimeComparisonType.min:
-        return {'formatMinimum': reference.toIso8601String()};
-      case DateTimeComparisonType.max:
-        return {'formatMaximum': reference.toIso8601String()};
-    }
-  }
+  Map<String, Object?> toJsonSchema() =>
+      // JSON Schema Draft 2019-09 and later support formatMinimum/formatMaximum
+      // for validating string formats like dates.
+      // See: https://json-schema.org/draft/2019-09/json-schema-validation.html#rfc.section.7.3
+      switch (type) {
+        DateTimeComparisonType.min =>
+          {'formatMinimum': reference.toIso8601String()},
+        DateTimeComparisonType.max =>
+          {'formatMaximum': reference.toIso8601String()},
+      };
 }
