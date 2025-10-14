@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../../helpers.dart';
-import '../constraint.dart';
+import '../helpers.dart';
+import 'constraint.dart';
 
 /// Type of pattern matching operation.
 enum PatternType { regex, enumString, notEnumString, format }

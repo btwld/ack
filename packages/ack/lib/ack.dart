@@ -5,7 +5,7 @@ library;
 export 'src/ack.dart';
 // Constraints
 export 'src/constraints/constraint.dart';
-export 'src/constraints/core/datetime_constraint.dart';
+export 'src/constraints/datetime_constraint.dart';
 // Context
 export 'src/context.dart';
 // Extensions

@@ -1,5 +1,5 @@
-import '../../constraints/core/comparison_constraint.dart';
-import '../../constraints/core/unique_items_constraint.dart';
+import '../../constraints/comparison_constraint.dart';
+import '../../constraints/list_unique_items_constraint.dart';
 import '../schema.dart';
 
 /// Adds fluent validation methods to [ListSchema].
@@ -39,6 +39,6 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
 
   /// Adds a constraint that all items in the list must be unique.
   ListSchema<T> unique() {
-    return withConstraint(UniqueItemsConstraint<T>());
+    return withConstraint(ListUniqueItemsConstraint<T>());
   }
 }

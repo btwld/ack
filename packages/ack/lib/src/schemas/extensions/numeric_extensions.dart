@@ -1,6 +1,6 @@
-import '../../constraints/core/comparison_constraint.dart';
-import '../../constraints/core/finite_constraint.dart';
-import '../../constraints/core/safe_constraint.dart';
+import '../../constraints/comparison_constraint.dart';
+import '../../constraints/number_finite_constraint.dart';
+import '../../constraints/number_safe_integer_constraint.dart';
 import '../schema.dart';
 
 /// Adds fluent validation methods to [IntegerSchema].
@@ -43,7 +43,7 @@ extension IntegerSchemaExtensions on IntegerSchema {
   /// Adds a constraint that the integer must be a "safe" integer
   /// for use in environments like JavaScript.
   IntegerSchema safe() {
-    return withConstraint(IsSafeIntegerConstraint());
+    return withConstraint(NumberSafeIntegerConstraint());
   }
 }
 
@@ -86,6 +86,6 @@ extension DoubleSchemaExtensions on DoubleSchema {
 
   /// Adds a constraint that the double must be a finite number.
   DoubleSchema finite() {
-    return withConstraint(IsFiniteConstraint());
+    return withConstraint(NumberFiniteConstraint());
   }
 }

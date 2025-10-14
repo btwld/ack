@@ -1,4 +1,4 @@
-import '../constraint.dart';
+import 'constraint.dart';
 
 /// Type of date/time comparison operation to perform.
 enum DateTimeComparisonType { min, max }

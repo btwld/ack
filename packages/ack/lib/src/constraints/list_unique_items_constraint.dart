@@ -1,12 +1,12 @@
-import '../constraint.dart';
+import 'constraint.dart';
 
 /// Validates that all items in a list are unique.
 ///
 /// It handles uniqueness for primitives directly. For complex objects,
 /// it relies on the object's `hashCode` and `==` implementation.
-class UniqueItemsConstraint<T> extends Constraint<List<T>>
+class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
     with Validator<List<T>>, JsonSchemaSpec<List<T>> {
-  const UniqueItemsConstraint()
+  const ListUniqueItemsConstraint()
     : super(
         constraintKey: 'list.unique',
         description: 'All items in the list must be unique.',

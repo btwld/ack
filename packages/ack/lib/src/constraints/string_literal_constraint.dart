@@ -1,4 +1,4 @@
-import '../constraint.dart';
+import 'constraint.dart';
 
 /// Validates that an input string is exactly equal to an `expectedValue`.
 ///
