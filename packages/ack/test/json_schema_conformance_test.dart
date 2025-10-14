@@ -83,7 +83,7 @@ void main() {
     });
 
     test('string-pattern', () {
-      final ackSchema = Ack.string().matches(r'^[A-Z][a-z]+');
+      final ackSchema = Ack.string().matches(r'[A-Z][a-z]+');
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('string-pattern');
       expect(ackOutput, equals(zodReference));

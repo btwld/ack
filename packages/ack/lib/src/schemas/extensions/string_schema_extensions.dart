@@ -43,9 +43,12 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must match the given regex pattern.
-  /// Patterns are automatically anchored so the entire value must match.
+  /// Patterns are automatically anchored (^ and $) to match the entire string.
+  /// Use [contains] for partial matching anywhere in the string.
   StringSchema matches(String pattern, {String? example, String? message}) {
-    final constraint = PatternConstraint.regex(pattern, example: example);
+    // Auto-anchor the pattern for full-string matching
+    final anchoredPattern = _anchorPattern(pattern);
+    final constraint = PatternConstraint.regex(anchoredPattern, example: example);
 
     return constrain(constraint, message: message) as StringSchema;
   }
@@ -128,5 +131,32 @@ extension StringSchemaExtensions on StringSchema {
   /// Returns a transformed schema that applies String.toUpperCase() to the input.
   TransformedSchema<String, String> toUpperCase() {
     return transform((s) => s?.toUpperCase() ?? '');
+  }
+
+  /// Helper method to intelligently anchor a regex pattern.
+  ///
+  /// - If pattern already has both ^ and $, returns as-is
+  /// - If partially anchored, completes the anchoring
+  /// - If unanchored, wraps in non-capturing group and adds anchors
+  String _anchorPattern(String pattern) {
+    // Check if pattern already has anchors
+    final hasStartAnchor = pattern.startsWith('^');
+    final hasEndAnchor = pattern.endsWith(r'$');
+
+    // If both anchors exist, return as-is
+    if (hasStartAnchor && hasEndAnchor) {
+      return pattern;
+    }
+
+    // If partially anchored, complete the anchoring
+    if (hasStartAnchor && !hasEndAnchor) {
+      return '$pattern\$';
+    }
+    if (!hasStartAnchor && hasEndAnchor) {
+      return '^$pattern';
+    }
+
+    // No anchors - wrap in non-capturing group and add anchors
+    return '^(?:$pattern)\$';
   }
 }

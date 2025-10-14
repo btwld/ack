@@ -66,10 +66,33 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Pattern Matching
 
-- `matches(String pattern, {String? example, String? message})`: Must match regex pattern (automatically anchored)
-- `contains(String pattern, {String? example, String? message})`: Must contain pattern anywhere in string
+- `matches(String pattern, {String? example, String? message})`: Validates that the **entire string** matches the regex pattern. Patterns are automatically anchored (wrapped with `^` and `$`), so you don't need to add anchors manually. Use this when you want full-string validation.
+  ```dart
+  // Validates a 5-digit ZIP code (full string must be digits)
+  Ack.string().matches(r'\d{5}')  // Automatically becomes: ^\d{5}$
+  ```
+
+- `contains(String pattern, {String? example, String? message})`: Validates that the pattern appears **anywhere** in the string. No anchoring is applied. Use this for partial matching.
+  ```dart
+  // Validates that the string contains at least one digit
+  Ack.string().contains(r'\d')
+  ```
+
+- `literal(String value)`: Validates that the string **exactly matches** the given value (no regex interpretation). Use this for exact string comparisons without regex overhead.
+  ```dart
+  // Validates that the string is exactly "hello"
+  Ack.string().literal('hello')
+  ```
+
 - `startsWith(String value)`: Must start with specified value
 - `endsWith(String value)`: Must end with specified value
+
+**Note for developers from Zod/Yup/Joi:** Unlike those libraries, Ack provides three distinct methods:
+- `.literal()` for exact strings (like Zod's `z.literal()`)
+- `.matches()` for full-string regex matching (auto-anchored for safety)
+- `.contains()` for partial regex matching
+
+This design prevents the common "forgot to anchor my regex" bug. If you're used to manually anchoring patterns (e.g., `z.string().regex(/^\d{5}$/)`), you can simply write `Ack.string().matches(r'\d{5}')` and anchoring is handled automatically.
 
 ### Format Validation
 
@@ -89,7 +112,7 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Value Restrictions
 
-- `literal(String value)`: Must exactly match the given value
+- `literal(String value)`: Must exactly match the given value (see [Pattern Matching](#pattern-matching) for details)
 - `enumString(List<String> values)`: Must be one of the specified values
 
 ### Transformations
