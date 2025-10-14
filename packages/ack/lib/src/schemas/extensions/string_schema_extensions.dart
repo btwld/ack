@@ -139,9 +139,13 @@ extension StringSchemaExtensions on StringSchema {
   /// - If partially anchored, completes the anchoring
   /// - If unanchored, wraps in non-capturing group and adds anchors
   String _anchorPattern(String pattern) {
-    // Check if pattern already has anchors
-    final hasStartAnchor = pattern.startsWith('^');
-    final hasEndAnchor = pattern.endsWith(r'$');
+    if (pattern.isEmpty) {
+      return r'^$';
+    }
+
+    // Check if pattern has unescaped anchors
+    final hasStartAnchor = pattern.startsWith('^') && !_isEscapedAtStart(pattern);
+    final hasEndAnchor = pattern.endsWith(r'$') && !_isEscapedAtEnd(pattern);
 
     // If both anchors exist, return as-is
     if (hasStartAnchor && hasEndAnchor) {
@@ -156,7 +160,60 @@ extension StringSchemaExtensions on StringSchema {
       return '^$pattern';
     }
 
-    // No anchors - wrap in non-capturing group and add anchors
-    return '^(?:$pattern)\$';
+    // No anchors - escape any unescaped ^ or $ in the pattern before wrapping
+    final escapedPattern = _escapeInternalAnchors(pattern);
+    return '^(?:$escapedPattern)\$';
+  }
+
+  /// Escapes any unescaped ^ or $ characters in the pattern
+  /// to prevent them from being interpreted as anchors when wrapped
+  String _escapeInternalAnchors(String pattern) {
+    final buffer = StringBuffer();
+    int backslashCount = 0;
+
+    for (int i = 0; i < pattern.length; i++) {
+      final char = pattern[i];
+
+      if (char == '\\') {
+        backslashCount++;
+        buffer.write(char);
+      } else if ((char == '^' || char == r'$') && backslashCount % 2 == 0) {
+        // This is an unescaped ^ or $, so escape it
+        buffer.write('\\');
+        buffer.write(char);
+        backslashCount = 0;
+      } else {
+        buffer.write(char);
+        backslashCount = 0;
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  /// Checks if the ^ at the start of the pattern is escaped
+  bool _isEscapedAtStart(String pattern) {
+    if (!pattern.startsWith('^')) return false;
+    // ^ at position 0 cannot be escaped by a preceding backslash
+    return false;
+  }
+
+  /// Checks if the $ at the end of the pattern is escaped
+  bool _isEscapedAtEnd(String pattern) {
+    if (!pattern.endsWith(r'$')) return false;
+    if (pattern.length < 2) return false;
+
+    // Count preceding backslashes
+    int backslashCount = 0;
+    for (int i = pattern.length - 2; i >= 0; i--) {
+      if (pattern[i] == '\\') {
+        backslashCount++;
+      } else {
+        break;
+      }
+    }
+
+    // If odd number of backslashes, the $ is escaped
+    return backslashCount % 2 == 1;
   }
 }
