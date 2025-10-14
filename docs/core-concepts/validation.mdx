@@ -49,14 +49,20 @@ Ack.string().notEmpty()
 ```
 
 ### `matches(String pattern, {String? example, String? message})`
-Ensures the string matches the given regular expression `pattern`. Patterns are automatically anchored, so the entire string must match.
-```dart
-// Simple alphanumeric pattern
-Ack.string().matches(r'[a-zA-Z0-9]+')
+Ensures the string matches the given regular expression `pattern`.
 
-// UUID pattern
+**Important**: Patterns are NOT automatically anchored. The pattern will match if found anywhere in the string (substring matching). To require full-string matching, explicitly add anchors: `^...$`
+
+```dart
+// Simple alphanumeric pattern (full-string match with anchors)
+Ack.string().matches(r'^[a-zA-Z0-9]+$')
+
+// UUID pattern (full-string match with anchors)
 Ack.string()
-    .matches(r'[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}')
+    .matches(r'^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$')
+
+// Without anchors - matches substring (usually not what you want!)
+Ack.string().matches(r'[0-9]+')  // Matches "abc123xyz" ⚠️
 ```
 
 ### `contains(String pattern, {String? example, String? message})`

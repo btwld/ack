@@ -66,8 +66,8 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Pattern Matching
 
-- `matches(String pattern, {String? example, String? message})`: Must match regex pattern (automatically anchored)
-- `contains(String pattern, {String? example, String? message})`: Must contain pattern anywhere in string
+- `matches(String pattern, {String? example, String? message})`: Must match regex pattern. **Note**: Patterns are NOT automatically anchored - use `^...$` for full-string matching. See [String Validation](../core-concepts/validation.mdx#string-validation) for details.
+- `contains(String pattern, {String? example, String? message})`: Must contain pattern anywhere in string (partial matching)
 - `startsWith(String value)`: Must start with specified value
 - `endsWith(String value)`: Must end with specified value
 
