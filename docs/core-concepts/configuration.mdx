@@ -31,19 +31,19 @@ Ack.object({
 Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object-schema).
 
 ```dart
-// Allow any extra properties (default behavior)
+// Disallow any extra properties (default behavior)
 Ack.object({
   'id': Ack.integer()
-}, additionalProperties: true);
+}, additionalProperties: false);
 // or simply:
 Ack.object({
   'id': Ack.integer()
 });
 
-// Disallow any extra properties
+// Allow any extra properties
 Ack.object({
   'id': Ack.integer()
-}, additionalProperties: false);
+}, additionalProperties: true);
 ```
 
 ### Custom Error Messages
@@ -93,29 +93,87 @@ final signUpSchema = Ack.object({
 ```
 *See the [Custom Validation Guide](../guides/custom-validation.mdx) for additional patterns.*
 
-## Code Generation Configuration (Experimental)
+## Code Generation Configuration
 
-The `ack_generator` package provides experimental code generation functionality. However, it is currently incomplete and not recommended for production use.
+The `ack_generator` package provides automatic schema generation from annotated classes. This feature is production-ready and available at version 1.0.0-beta.1 and later.
 
-For production applications, use manual schema definition with the current Ack API:
+To use code generation, annotate your classes with `@AckModel`. The generator creates both a validation schema and a type-safe extension type. Use `@AckField` for field-level constraints:
 
 ```dart
-// Define schemas manually using the fluent API
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50),
-  'email': Ack.string().email(),
-  'metadata': Ack.any().optional(), // For flexible additional properties
-});
+import 'package:ack_annotations/ack_annotations.dart';
 
-// Validate data
-final result = userSchema.safeParse(userData);
-if (result.isOk) {
-  final validData = result.getOrThrow();
-  // Use validated data to create your models
+part 'user.g.dart';
+
+@AckModel(
+  description: 'User profile with flexible preferences',
+  additionalProperties: true,
+  additionalPropertiesField: 'preferences'
+)
+class User {
+  @AckField(constraints: ['minLength(2)', 'maxLength(50)'])
+  final String name;
+
+  @AckField(constraints: ['email'])
+  final String email;
+
+  @AckField(constraints: ['min(18)'])
+  final int? age; // Optional field
+
+  // Collects extra properties not defined in the schema
+  final Map<String, dynamic> preferences;
+
+  User({
+    required this.name,
+    required this.email,
+    this.age,
+    this.preferences = const {},
+  });
 }
 ```
 
-*See the [Schema Validation](../core-concepts/typesafe-schemas.mdx) guide for comprehensive examples of manual schema definition.*
+After running `dart run build_runner build`, the generator creates in `user.g.dart`:
+
+1. **Schema constant**: `final userSchema = Ack.object({...});`
+2. **Extension type**: `extension type UserType(Map<String, Object?> _data) {...}`
+
+```dart
+// Generated in user.g.dart:
+//
+// final userSchema = Ack.object({
+//   'name': Ack.string().minLength(2).maxLength(50),
+//   'email': Ack.string().email(),
+//   'age': Ack.integer().min(18).optional().nullable(),
+// }, additionalProperties: true);
+//
+// extension type UserType(Map<String, Object?> _data) {
+//   static UserType parse(Object? data) { ... }
+//   static SchemaResult<UserType> safeParse(Object? data) { ... }
+//   String get name => ...
+//   String get email => ...
+//   int? get age => ...
+//   Map<String, dynamic> get preferences => ...
+// }
+
+// Usage with the generated extension type:
+final userData = {
+  'name': 'John Doe',
+  'email': 'john@example.com',
+  'age': 25,
+  'theme': 'dark',
+  'language': 'en',
+  'notifications': true,
+};
+
+final result = UserType.safeParse(userData);
+if (result.isOk) {
+  final user = result.getOrThrow();
+  print(user.name);  // Type-safe: John Doe
+  print(user.email); // Type-safe: john@example.com
+  print(user.preferences['theme']); // dark (additional properties)
+}
+```
+
+*See the [Installation Guide](../getting-started/installation.mdx#code-generator-production-ready) for setup instructions and the generator README for advanced features.*
 
 ## Summary
 

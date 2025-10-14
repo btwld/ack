@@ -48,7 +48,7 @@ final strictNameSchema = Ack.string().strictParsing();
 final usernameSchema = Ack.string()
   .minLength(3)
   .maxLength(20)
-  .matches(r'^[a-zA-Z0-9_]+$');
+  .matches(r'[a-zA-Z0-9_]+');
 
 // Email validation
 final emailSchema = Ack.string().email();
@@ -128,7 +128,7 @@ final userSchema = Ack.object({
   'address': Ack.object({
     'street': Ack.string(),
     'city': Ack.string(),
-    'zipCode': Ack.string().matches(r'^\d{5}$'),
+    'zipCode': Ack.string().matches(r'\d{5}'),
   }),
 });
 ```
@@ -406,7 +406,7 @@ final userWithAgeSchema = Ack.object({
 
 // Type transformation
 final dateSchema = Ack.string()
-  .matches(r'^\d{4}-\d{2}-\d{2}$')
+  .matches(r'\d{4}-\d{2}-\d{2}')
   .transform<DateTime>((s) => DateTime.parse(s!));
 ```
 
@@ -434,9 +434,12 @@ final data = result.getOrElse(() => defaultValue); // default if failed
 
 *See the [Error Handling](./error-handling.mdx) guide for details on working with errors.*
 
-## See Also
+## Next Steps
 
-- [Validation Rules](./validation.mdx) - Complete constraint reference
-- [Error Handling](./error-handling.mdx) - Handle validation errors
-- [Custom Validation](../guides/custom-validation.mdx) - Create custom constraints
-- [JSON Serialization](./json-serialization.mdx) - Validate JSON data
+Explore related topics to deepen your understanding:
+
+- **[Validation Rules](./validation.mdx)**: Master all built-in constraints and strict parsing
+- **[Error Handling](./error-handling.mdx)**: Handle validation errors effectively
+- **[Custom Validation](../guides/custom-validation.mdx)**: Create custom constraints and refinements
+- **[JSON Serialization](./json-serialization.mdx)**: Validate and transform JSON data
+- **[Common Recipes](../guides/common-recipes)**: See practical schema patterns

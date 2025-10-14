@@ -43,7 +43,30 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must match the given regex pattern.
-  /// Patterns are automatically anchored so the entire value must match.
+  ///
+  /// **Important**: Patterns are NOT automatically anchored. The pattern will
+  /// match if it is found anywhere in the string (substring matching).
+  /// To require full-string matching, explicitly add anchors: `^...$`
+  ///
+  /// For partial matching with clear intent, use [contains] instead.
+  ///
+  /// Examples:
+  /// ```dart
+  /// // ⚠️ Without anchors - matches substrings:
+  /// Ack.string().matches(r'\d{5}')
+  ///   ..safeParse('12345')      // ✓ Valid
+  ///   ..safeParse('abc12345')   // ✓ Valid (matches substring!)
+  ///   ..safeParse('12345xyz')   // ✓ Valid (matches substring!)
+  ///
+  /// // ✅ With anchors - full string must match:
+  /// Ack.string().matches(r'^\d{5}$')
+  ///   ..safeParse('12345')      // ✓ Valid
+  ///   ..safeParse('abc12345')   // ✗ Invalid
+  ///   ..safeParse('12345xyz')   // ✗ Invalid
+  ///
+  /// // Alternative: Use .contains() for explicit partial matching
+  /// Ack.string().contains(r'\d{5}')
+  /// ```
   StringSchema matches(String pattern, {String? example, String? message}) {
     final constraint = PatternConstraint.regex(pattern, example: example);
 

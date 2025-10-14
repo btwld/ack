@@ -106,34 +106,34 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | :----------------------- | :----------------------- | :------------------------------------- |
 | [`minLength(n)`](../core-concepts/validation.mdx#minlengthint-min)           | `minLength: n`           | String                                 |
 | [`maxLength(n)`](../core-concepts/validation.mdx#maxlengthint-max)           | `maxLength: n`           | String                                 |
-| [`pattern(p)`](../core-concepts/validation.mdx#patternstring-pattern--string-patternname-string-example)             | `pattern: p`             | String                                 |
+| [`matches(p)`](../core-concepts/validation.mdx#matchesstring-pattern-string-example)             | `pattern: p`             | String                                 |
 | [`email()`](../core-concepts/validation.mdx#email)              | `format: email`          | String                                 |
 | [`date()`](../core-concepts/validation.mdx#date)               | `format: date`           | String                                 |
-| [`dateTime()`](../core-concepts/validation.mdx#datetime)           | `format: date-time`      | String                                 |
+| [`datetime()`](../core-concepts/validation.mdx#datetime)           | `format: date-time`      | String                                 |
 | [`time()`](../core-concepts/validation.mdx#time)               | `format: time`           | String                                 |
 | [`uri()`](../core-concepts/validation.mdx#uri)                | `format: uri`            | String                                 |
 | [`uuid()`](../core-concepts/validation.mdx#uuid)               | `format: uuid`           | String                                 |
 | [`ipv4()`](../core-concepts/validation.mdx#ipv4)               | `format: ipv4`           | String                                 |
 | [`ipv6()`](../core-concepts/validation.mdx#ipv6)               | `format: ipv6`           | String                                 |
-| [`hostname()`](../core-concepts/validation.mdx#hostname)           | `format: hostname`       | String                                 |
-| [`enumValues([...])`](../core-concepts/validation.mdx#enumvalues)          | `enum: [...]`            | String                                 |
-| [`min(n)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false)                 | `minimum: n`             | Number (Int/Double)                    |
-| [`max(n)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false)                 | `maximum: n`             | Number (Int/Double)                    |
-| [`min(n, exclusive:true)`](../core-concepts/validation.mdx#minnum-limit--bool-exclusive--false) | `minimum: n`, `exclusiveMinimum: true` | Number |
-| [`max(n, exclusive:true)`](../core-concepts/validation.mdx#maxnum-limit--bool-exclusive--false) | `maximum: n`, `exclusiveMaximum: true` | Number |
+| `hostname()`           | `format: hostname`       | String (not currently implemented)                                 |
+| [`enumString([...])`](../core-concepts/validation.mdx#enumstringliststring-allowedvalues)          | `enum: [...]`            | String                                 |
+| [`min(n)`](../core-concepts/validation.mdx#minnum-limit)                 | `minimum: n`             | Number (Int/Double)                    |
+| [`max(n)`](../core-concepts/validation.mdx#maxnum-limit)                 | `maximum: n`             | Number (Int/Double)                    |
+| `min(n, exclusive:true)` | `minimum: n`, `exclusiveMinimum: true` | Number (exclusive not currently supported) |
+| `max(n, exclusive:true)` | `maximum: n`, `exclusiveMaximum: true` | Number (exclusive not currently supported) |
 | [`multipleOf(n)`](../core-concepts/validation.mdx#multipleofnum-factor)          | `multipleOf: n`          | Number (Int/Double)                    |
-| [`minItems(n)`](../core-concepts/validation.mdx#minitemsint-min)            | `minItems: n`            | List (Array)                           |
-| [`maxItems(n)`](../core-concepts/validation.mdx#maxitemsint-max)            | `maxItems: n`            | List (Array)                           |
-| [`uniqueItems()`](../core-concepts/validation.mdx#uniqueitems)          | `uniqueItems: true`      | List (Array)                           |
-| [`nullable()`](../core-concepts/schemas.mdx#making-schemas-nullable)             | `nullable: true`         | Any Type                               |
-| `defaultValue(v)`        | `default: v`             | Any Type (Note: Use `.defaultValue()` on schema) |
-| `description(d)`         | `description: d`         | Any Type (Note: Use `.description()` on schema) |
-| [`Ack.int`](../core-concepts/schemas.mdx#number-schemas)                | `type: integer`, `format: int64` | Type |
-| [`Ack.double`](../core-concepts/schemas.mdx#number-schemas)             | `type: number`, `format: double`  | Type |
-| [`Ack.string`](../core-concepts/schemas.mdx#string-schema)             | `type: string`           | Type |
-| [`Ack.boolean`](../core-concepts/schemas.mdx#boolean-schema)            | `type: boolean`          | Type |
-| [`Ack.list(...)`](../core-concepts/schemas.mdx#list-schema)          | `type: array`, `items: {...}` | Type |
-| [`Ack.object(...)`](../core-concepts/schemas.mdx#object-schema)        | `type: object`, `properties: {...}`, `required: [...]` | Type |
+| [`minLength(n)`](../core-concepts/validation.mdx#minlengthint-min)            | `minItems: n`            | List (Array)                           |
+| [`maxLength(n)`](../core-concepts/validation.mdx#maxlengthint-max)            | `maxItems: n`            | List (Array)                           |
+| [`unique()`](../core-concepts/validation.mdx#unique)          | `uniqueItems: true`      | List (Array)                           |
+| [`nullable()`](../core-concepts/validation.mdx#nullable)             | `nullable: true`         | Any Type                               |
+| `withDefault(v)`        | `default: v`             | Any Type (Note: Use `.withDefault()` on schema) |
+| `withDescription(d)`         | `description: d`         | Any Type (Note: Use `.withDescription()` on schema) |
+| [`Ack.integer`](../core-concepts/schemas.mdx#number)                | `type: integer`, `format: int64` | Type |
+| [`Ack.double`](../core-concepts/schemas.mdx#number)             | `type: number`, `format: double`  | Type |
+| [`Ack.string`](../core-concepts/schemas.mdx#string)             | `type: string`           | Type |
+| [`Ack.boolean`](../core-concepts/schemas.mdx#boolean)            | `type: boolean`          | Type |
+| [`Ack.list(...)`](../core-concepts/schemas.mdx#list)          | `type: array`, `items: {...}` | Type |
+| [`Ack.object(...)`](../core-concepts/schemas.mdx#object)        | `type: object`, `properties: {...}`, `required: [...]` | Type |
 
 **Limitations:**
 
