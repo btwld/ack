@@ -1,0 +1,22 @@
+name: ack_firebase_ai
+description: Firebase AI (Gemini) schema converter for ACK validation library
+version: 1.0.0-beta.2
+repository: https://github.com/btwld/ack
+issue_tracker: https://github.com/btwld/ack/issues
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ack: ^1.0.0-beta.2
+  firebase_ai: ^3.4.0
+  meta: ^1.15.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+  test: ^1.24.0
