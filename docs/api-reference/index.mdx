@@ -37,13 +37,16 @@ Base class for all schema types.
 - `AckSchema<T> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
 - `AckSchema<T> withDescription(String description)`: Adds a description for documentation and JSON Schema generation.
 - `AckSchema<T> withDefault(T value)`: Sets a default value when input is `null`.
-- `AckSchema<T> strictParsing()`: Enables strict type checking (disables type coercion).
+- `StringSchema strictParsing({bool value = true})`: Enables strict parsing for strings.
+- `IntegerSchema strictParsing({bool value = true})`: Enables strict parsing for integers.
+- `DoubleSchema strictParsing({bool value = true})`: Enables strict parsing for doubles.
+- `BooleanSchema strictParsing({bool value = true})`: Enables strict parsing for booleans.
 
 ### Custom Validation Methods
 
 - `AckSchema<T> constrain(Constraint<T> constraint, {String? message})`: Applies a custom validation constraint.
 - `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint (alias for `constrain`).
-- `AckSchema<T> refine(bool Function(T) validate, {required String message})`: Adds custom validation logic with a custom error message.
+- `AckSchema<T> refine(bool Function(T) validate, {String message})`: Adds custom validation logic with an optional custom error message.
 - `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values to a different type.
 
 ### Utility Methods

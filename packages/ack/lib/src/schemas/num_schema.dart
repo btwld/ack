@@ -73,6 +73,10 @@ final class IntegerSchema extends NumSchema<int>
   @override
   SchemaType get schemaType => SchemaType.integer;
 
+  /// Creates a new [IntegerSchema] that enforces strict parsing.
+  IntegerSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
+
   @override
   IntegerSchema copyWith({
     bool? isNullable,
@@ -138,6 +142,10 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   SchemaType get schemaType => SchemaType.number;
+
+  /// Creates a new [DoubleSchema] that enforces strict parsing.
+  DoubleSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
 
   @override
   DoubleSchema copyWith({
