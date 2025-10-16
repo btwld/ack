@@ -88,8 +88,87 @@ void main() {
     });
 
     group('unique', () {
-      test('unique should pass if all items are unique', () {
-        // ... existing code ...
+      test('should pass for empty list', () {
+        final schema = Ack.list(Ack.integer()).unique();
+        final result = schema.safeParse([]);
+        expect(result.isOk, isTrue);
+      });
+
+      test('should pass for single-item list', () {
+        final schema = Ack.list(Ack.string()).unique();
+        final result = schema.safeParse(['a']);
+        expect(result.isOk, isTrue);
+      });
+
+      test('should pass when all primitive items are unique', () {
+        final schema = Ack.list(Ack.integer()).unique();
+        final result = schema.safeParse([1, 2, 3, 4, 5]);
+        expect(result.isOk, isTrue);
+      });
+
+      test('should fail when primitive list has duplicates at start', () {
+        final schema = Ack.list(Ack.string()).unique();
+        final result = schema.safeParse(['a', 'a', 'b', 'c']);
+        expect(result.isOk, isFalse);
+      });
+
+      test('should fail when primitive list has duplicates in middle', () {
+        final schema = Ack.list(Ack.integer()).unique();
+        final result = schema.safeParse([1, 2, 3, 2, 4]);
+        expect(result.isOk, isFalse);
+      });
+
+      test('should fail when primitive list has duplicates at end', () {
+        final schema = Ack.list(Ack.string()).unique();
+        final result = schema.safeParse(['a', 'b', 'c', 'c']);
+        expect(result.isOk, isFalse);
+      });
+
+      test('should pass when object list items are unique', () {
+        final schema = Ack.list(
+          Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
+        ).unique();
+        final result = schema.safeParse([
+          {'id': 1, 'name': 'Alice'},
+          {'id': 2, 'name': 'Bob'},
+        ]);
+        expect(result.isOk, isTrue);
+      });
+
+      test('should fail when object list has duplicate objects', () {
+        final schema = Ack.list(Ack.object({'id': Ack.integer()})).unique();
+        final result = schema.safeParse([
+          {'id': 1},
+          {'id': 2},
+          {'id': 1},
+        ]);
+        expect(result.isOk, isFalse);
+      });
+
+      test('should handle nested structures', () {
+        final schema = Ack.list(
+          Ack.object({'items': Ack.list(Ack.integer())}),
+        ).unique();
+
+        final result = schema.safeParse([
+          {
+            'items': [1, 2, 3],
+          },
+          {
+            'items': [4, 5, 6],
+          },
+        ]);
+        expect(result.isOk, isTrue);
+
+        final duplicateResult = schema.safeParse([
+          {
+            'items': [1, 2, 3],
+          },
+          {
+            'items': [1, 2, 3],
+          },
+        ]);
+        expect(duplicateResult.isOk, isFalse);
       });
     });
   });

@@ -1,4 +1,7 @@
-/// ACK - A Comprehensive Kotlin-inspired validation library for Dart
+/// ACK - A comprehensive validation library for Dart
+///
+/// Inspired by Zod (TypeScript), provides type-safe schema validation
+/// with a fluent API for runtime data validation and transformation.
 library;
 
 // Main API

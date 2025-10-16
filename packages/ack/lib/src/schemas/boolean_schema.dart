@@ -1,6 +1,17 @@
 part of 'schema.dart';
 
-/// Schema for validating boolean (`bool`) values.
+/// Schema for validating boolean values.
+///
+/// In loose parsing mode (default), accepts boolean values and
+/// strings "true"/"false" (case-insensitive).
+/// In strict mode, only accepts actual boolean values.
+///
+/// Example:
+/// ```dart
+/// final isActiveSchema = Ack.boolean();
+/// isActiveSchema.safeParse(true);     // Ok
+/// isActiveSchema.safeParse('true');   // Ok (loose mode)
+/// ```
 @immutable
 final class BooleanSchema extends AckSchema<bool>
     with FluentSchema<bool, BooleanSchema> {

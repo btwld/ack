@@ -127,8 +127,12 @@ class SchemaNestedError extends SchemaError {
 
 @immutable
 class SchemaValidationError extends SchemaError {
-  SchemaValidationError({required String message, required super.context})
-    : super(message);
+  SchemaValidationError({
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  }) : super(message);
 }
 
 final class SchemaTransformError extends SchemaError {

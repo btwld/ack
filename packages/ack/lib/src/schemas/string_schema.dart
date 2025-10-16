@@ -1,5 +1,17 @@
 part of 'schema.dart';
 
+/// Schema for validating string values.
+///
+/// Provides fluent methods for common string validations like length constraints,
+/// format checks (email, URL, UUID), and pattern matching.
+///
+/// Example:
+/// ```dart
+/// final emailSchema = Ack.string().email().minLength(5);
+/// final result = emailSchema.safeParse('user@example.com'); // Ok
+/// ```
+///
+/// See also: [StringSchemaExtensions] for available validation methods.
 @immutable
 final class StringSchema extends AckSchema<String>
     with FluentSchema<String, StringSchema> {

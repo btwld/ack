@@ -20,7 +20,21 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
   }
 
   /// Makes the schema optional - the field can be omitted from an object.
-  /// This is different from nullable() which allows null values but requires the field to be present.
+  ///
+  /// This is different from `nullable()`:
+  /// - `optional()`: Field can be absent from object, but if present, must not be null
+  /// - `nullable()`: Field must be present in object, but can be null
+  /// - Both: Field can be absent OR present as null
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.object({
+  ///   'required': Ack.string(),           // Must be present and non-null
+  ///   'optional': Ack.string().optional(), // Can be absent, but if present must be non-null
+  ///   'nullable': Ack.string().nullable(), // Must be present, can be null
+  ///   'both': Ack.string().optional().nullable(), // Can be absent or null
+  /// });
+  /// ```
   ///
   /// This method is idempotent - calling it multiple times returns the same schema if already optional.
   AckSchema<T> optional({bool value = true}) {
