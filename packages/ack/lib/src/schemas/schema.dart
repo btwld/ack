@@ -254,18 +254,12 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Legacy alias for [safeParse].
-  @Deprecated(
-    'Deprecated in 1.0.0. Use safeParse(...) instead. '
-    'This method will be removed in version 2.0.0.',
-  )
+  @Deprecated('Use safeParse(...) instead.')
   SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
       safeParse(value, debugName: debugName);
 
   /// Legacy helper that returns the parsed value or `null` when validation fails.
-  @Deprecated(
-    'Deprecated in 1.0.0. Use safeParse(...).getOrNull() instead. '
-    'This method will be removed in version 2.0.0.',
-  )
+  @Deprecated('Use safeParse(...).getOrNull() instead.')
   DartType? tryParse(Object? value, {String? debugName}) {
     final result = safeParse(value, debugName: debugName);
     return result.getOrNull();
