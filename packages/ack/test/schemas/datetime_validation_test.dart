@@ -15,10 +15,7 @@ void main() {
 
       test('rejects invalid date format', () {
         final schema = Ack.date();
-        expect(
-          () => schema.parse('not-a-date'),
-          throwsA(isA<AckException>()),
-        );
+        expect(() => schema.parse('not-a-date'), throwsA(isA<AckException>()));
       });
 
       test('rejects datetime string (has time component)', () {
@@ -223,17 +220,13 @@ void main() {
 
     group('Composition with nullable/optional', () {
       test('works with optional() in object schema', () {
-        final objSchema = Ack.object({
-          'date': Ack.date().optional(),
-        });
+        final objSchema = Ack.object({'date': Ack.date().optional()});
         final result = objSchema.safeParse({});
         expect(result.isOk, isTrue);
       });
 
       test('optional date field can be provided', () {
-        final objSchema = Ack.object({
-          'date': Ack.date().optional(),
-        });
+        final objSchema = Ack.object({'date': Ack.date().optional()});
         final result = objSchema.safeParse({'date': '2025-06-15'});
         expect(result.isOk, isTrue);
         expect(result.getOrThrow()!['date'], isA<DateTime>());
@@ -260,14 +253,8 @@ void main() {
 
         expect(result.isFail, isTrue);
         final error = result.getError() as SchemaConstraintsError;
-        expect(
-          error.constraints.first.message,
-          contains('2025-01-01'),
-        );
-        expect(
-          error.constraints.first.message,
-          contains('2024-12-31'),
-        );
+        expect(error.constraints.first.message, contains('2025-01-01'));
+        expect(error.constraints.first.message, contains('2024-12-31'));
       });
 
       test('provides context with structured data', () {
@@ -286,10 +273,7 @@ void main() {
         final result = schema.safeParse('2026-01-01');
 
         final error = result.getError() as SchemaConstraintsError;
-        expect(
-          error.constraints.first.message,
-          contains('on or before'),
-        );
+        expect(error.constraints.first.message, contains('on or before'));
       });
 
       test('constraint key is correct', () {
@@ -357,11 +341,7 @@ void main() {
     group('Real-World Use Cases', () {
       test('18+ age validation', () {
         final now = DateTime(2025, 1, 1);
-        final eighteenYearsAgo = DateTime(
-          now.year - 18,
-          now.month,
-          now.day,
-        );
+        final eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
         final schema = Ack.date().max(eighteenYearsAgo);
 
         // Valid: 19 years old (born Dec 31, 2005)
@@ -452,36 +432,18 @@ void main() {
         final now = DateTime.utc(2025, 1, 1, 10, 30);
         final schema = Ack.datetime().min(now);
 
-        expect(
-          schema.safeParse('2025-01-01T10:30:00Z').isOk,
-          isTrue,
-        );
-        expect(
-          schema.safeParse('2025-01-01T11:00:00Z').isOk,
-          isTrue,
-        );
-        expect(
-          schema.safeParse('2025-01-01T10:00:00Z').isFail,
-          isTrue,
-        );
+        expect(schema.safeParse('2025-01-01T10:30:00Z').isOk, isTrue);
+        expect(schema.safeParse('2025-01-01T11:00:00Z').isOk, isTrue);
+        expect(schema.safeParse('2025-01-01T10:00:00Z').isFail, isTrue);
       });
 
       test('datetime max constraint works', () {
         final deadline = DateTime.utc(2025, 12, 31, 23, 59);
         final schema = Ack.datetime().max(deadline);
 
-        expect(
-          schema.safeParse('2025-12-31T23:59:00Z').isOk,
-          isTrue,
-        );
-        expect(
-          schema.safeParse('2025-12-31T23:58:00Z').isOk,
-          isTrue,
-        );
-        expect(
-          schema.safeParse('2025-12-31T23:59:01Z').isFail,
-          isTrue,
-        );
+        expect(schema.safeParse('2025-12-31T23:59:00Z').isOk, isTrue);
+        expect(schema.safeParse('2025-12-31T23:58:00Z').isOk, isTrue);
+        expect(schema.safeParse('2025-12-31T23:59:01Z').isFail, isTrue);
       });
 
       test('datetime range validation', () {

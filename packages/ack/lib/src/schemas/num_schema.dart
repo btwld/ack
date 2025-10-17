@@ -1,5 +1,9 @@
 part of 'schema.dart';
 
+/// Base schema for numeric types (integer and double).
+///
+/// Provides common numeric validation constraints. Use [IntegerSchema]
+/// or [DoubleSchema] for type-specific validation.
 @immutable
 sealed class NumSchema<T extends num> extends AckSchema<T> {
   @override
@@ -43,6 +47,16 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 }
 
 // --- IntegerSchema ---
+
+/// Schema for validating integer values.
+///
+/// Supports validation for whole numbers with constraints like min/max,
+/// positive/negative, and multipleOf.
+///
+/// Example:
+/// ```dart
+/// final ageSchema = Ack.integer().min(0).max(150);
+/// ```
 @immutable
 final class IntegerSchema extends NumSchema<int>
     with FluentSchema<int, IntegerSchema> {
@@ -58,6 +72,10 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   SchemaType get schemaType => SchemaType.integer;
+
+  /// Creates a new [IntegerSchema] that enforces strict parsing.
+  IntegerSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
 
   @override
   IntegerSchema copyWith({
@@ -99,6 +117,16 @@ final class IntegerSchema extends NumSchema<int>
 }
 
 // --- DoubleSchema ---
+
+/// Schema for validating double/floating-point values.
+///
+/// Supports validation for decimal numbers with constraints like min/max,
+/// finite checks, and precision requirements.
+///
+/// Example:
+/// ```dart
+/// final priceSchema = Ack.double().min(0.0).finite();
+/// ```
 @immutable
 final class DoubleSchema extends NumSchema<double>
     with FluentSchema<double, DoubleSchema> {
@@ -114,6 +142,10 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   SchemaType get schemaType => SchemaType.number;
+
+  /// Creates a new [DoubleSchema] that enforces strict parsing.
+  DoubleSchema strictParsing({bool value = true}) =>
+      copyWith(strictPrimitiveParsing: value);
 
   @override
   DoubleSchema copyWith({
