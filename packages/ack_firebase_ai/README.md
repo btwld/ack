@@ -21,8 +21,28 @@ Convert ACK validation schemas to Firebase AI Schema format for use with Gemini'
 ```yaml
 dependencies:
   ack: ^1.0.0-beta.2
-  ack_firebase_ai: ^1.0.0-beta.1
+  ack_firebase_ai: ^1.0.0-beta.2
+  firebase_ai: ^3.4.0  # Required - see compatibility table below
 ```
+
+### Firebase AI Version Compatibility
+
+This package is compatible with `firebase_ai` versions `>=3.4.0 <5.0.0`.
+
+**Important:** You must include `firebase_ai` in your own dependencies, as this package returns `Schema` objects from the firebase_ai package.
+
+The converter uses the `Schema` class from firebase_ai, which has remained stable across major versions. We actively monitor firebase_ai releases and will update this constraint if the Schema API changes significantly.
+
+#### Tested Versions
+
+| ack_firebase_ai | firebase_ai | Status |
+|----------------|-------------|--------|
+| 1.0.0-beta.2   | 3.4.0       | ✅ Fully tested |
+| 1.0.0-beta.2   | 3.5.0+      | ⚠️ Should work (uses stable Schema API) |
+| 1.0.0-beta.2   | 4.0.0+      | ⚠️ Expected to work when released |
+| 1.0.0-beta.2   | 5.0.0+      | ❌ Not supported - check for package updates |
+
+If you encounter compatibility issues with a specific firebase_ai version, please [open an issue](https://github.com/btwld/ack/issues).
 
 ## Usage
 
