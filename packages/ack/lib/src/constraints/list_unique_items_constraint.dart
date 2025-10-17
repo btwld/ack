@@ -37,27 +37,40 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
 
   @override
   String buildMessage(List<T> value) {
-    final seen = <T>[];
-    final dups = <T>[];
+    // Collect unique values that have duplicates
+    final uniqueDuplicates = <T>[];
 
-    for (final item in value) {
-      var isDuplicate = false;
-      for (final seenItem in seen) {
-        if (deepEquals(item, seenItem)) {
-          isDuplicate = true;
-          if (!dups.any((d) => deepEquals(d, item))) {
-            dups.add(item);
-          }
-          break;
+    // Use same double-loop structure as isValid
+    for (var i = 0; i < value.length; i++) {
+      // Check if value[i] appears later in the list
+      var hasDuplicate = false;
+      for (var j = i + 1; j < value.length; j++) {
+        if (deepEquals(value[i], value[j])) {
+          hasDuplicate = true;
+          break; // Found one duplicate, that's enough
         }
       }
-      if (!isDuplicate) {
-        seen.add(item);
+
+      // If it has a duplicate and not already tracked, add it
+      if (hasDuplicate) {
+        var alreadyAdded = false;
+        for (final dup in uniqueDuplicates) {
+          if (deepEquals(value[i], dup)) {
+            alreadyAdded = true;
+            break;
+          }
+        }
+        if (!alreadyAdded) {
+          uniqueDuplicates.add(value[i]);
+        }
       }
     }
 
-    if (dups.isEmpty) return 'List must contain unique items.';
-    final joined = dups.map((e) => '"$e"').join(', ');
+    if (uniqueDuplicates.isEmpty) {
+      return 'List must contain unique items.';
+    }
+
+    final joined = uniqueDuplicates.map((e) => '"$e"').join(', ');
     return 'List items must be unique. Duplicates found: $joined.';
   }
 
