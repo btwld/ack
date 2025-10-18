@@ -33,6 +33,7 @@ scripts:
       scope:
         - ack
         - ack_generator
+        - ack_firebase_ai
         - ack_example
 
   fix:
@@ -47,9 +48,21 @@ scripts:
         - "ack"  # This will ensure 'ack' is prioritized
 
   test:
-    run: melos exec -- "dart test"
-    description: Run tests for all packages
+    run: melos run test:dart --no-select && melos run test:flutter --no-select
+    description: Run all Dart & Flutter tests in this project
+
+  test:dart:
+    run: melos exec -c 1 --fail-fast -- "dart test"
+    description: Run Dart tests for pure Dart packages
     packageFilters:
+      flutter: false
+      dirExists: test
+
+  test:flutter:
+    run: melos exec -c 1 --fail-fast -- "flutter test"
+    description: Run Flutter tests for Flutter packages
+    packageFilters:
+      flutter: true
       dirExists: test
 
   format:
