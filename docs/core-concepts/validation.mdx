@@ -201,7 +201,7 @@ Ack.list(Ack.object({})).notEmpty()
 ```
 
 ### `unique()`
-Ensures all items in the list are unique. Uses `Set` comparison.
+Ensures all items in the list are unique. Uses deep structural equality, so nested maps/lists are compared by value.
 ```dart
 Ack.list(Ack.string()).unique()
 ```

@@ -30,17 +30,24 @@ sealed class AckSchema<DartType extends Object> {
   final bool isOptional;
   final String? description;
   final DartType? defaultValue;
-  final List<Constraint<DartType>> constraints;
-  final List<Refinement<DartType>> refinements;
+  final List<Constraint<DartType>> _constraints;
+  final List<Refinement<DartType>> _refinements;
+
+  /// Returns an unmodifiable view of the constraints for this schema.
+  List<Constraint<DartType>> get constraints => List.unmodifiable(_constraints);
+
+  /// Returns an unmodifiable view of the refinements for this schema.
+  List<Refinement<DartType>> get refinements => List.unmodifiable(_refinements);
 
   const AckSchema({
     this.isNullable = false,
     this.isOptional = false,
     this.description,
     this.defaultValue,
-    this.constraints = const [],
-    this.refinements = const [],
-  });
+    List<Constraint<DartType>> constraints = const [],
+    List<Refinement<DartType>> refinements = const [],
+  }) : _constraints = constraints,
+       _refinements = refinements;
 
   /// Utility method to get the schema type of any value.
   static SchemaType getSchemaType(Object? value) {
@@ -247,12 +254,12 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Legacy alias for [safeParse].
-  @Deprecated('Use safeParse(...) instead. Will be removed in 2.0.')
+  @Deprecated('Use safeParse(...) instead.')
   SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
       safeParse(value, debugName: debugName);
 
   /// Legacy helper that returns the parsed value or `null` when validation fails.
-  @Deprecated('Use safeParse(...).getOrNull() instead. Will be removed in 2.0.')
+  @Deprecated('Use safeParse(...).getOrNull() instead.')
   DartType? tryParse(Object? value, {String? debugName}) {
     final result = safeParse(value, debugName: debugName);
     return result.getOrNull();

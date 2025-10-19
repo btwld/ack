@@ -32,11 +32,11 @@ class DateTimeConstraint extends Constraint<DateTime>
   /// constraint.validate(DateTime(1999, 12, 31)); // ✗ Invalid
   /// ```
   factory DateTimeConstraint.min(DateTime date) => DateTimeConstraint._(
-        type: DateTimeComparisonType.min,
-        reference: date,
-        constraintKey: 'datetime_min',
-        description: 'Must be on or after ${date.toIso8601String()}',
-      );
+    type: DateTimeComparisonType.min,
+    reference: date,
+    constraintKey: 'datetime_min',
+    description: 'Must be on or after ${date.toIso8601String()}',
+  );
 
   /// Creates a constraint that validates the DateTime is on or before [date] (inclusive).
   ///
@@ -48,27 +48,29 @@ class DateTimeConstraint extends Constraint<DateTime>
   /// constraint.validate(DateTime(2026, 1, 1)); // ✗ Invalid
   /// ```
   factory DateTimeConstraint.max(DateTime date) => DateTimeConstraint._(
-        type: DateTimeComparisonType.max,
-        reference: date,
-        constraintKey: 'datetime_max',
-        description: 'Must be on or before ${date.toIso8601String()}',
-      );
+    type: DateTimeComparisonType.max,
+    reference: date,
+    constraintKey: 'datetime_max',
+    description: 'Must be on or before ${date.toIso8601String()}',
+  );
 
   @override
   bool isValid(DateTime value) => switch (type) {
-        DateTimeComparisonType.min =>
-          !value.isBefore(reference), // >= (on or after)
-        DateTimeComparisonType.max =>
-          !value.isAfter(reference), // <= (on or before)
-      };
+    DateTimeComparisonType.min => !value.isBefore(
+      reference,
+    ), // >= (on or after)
+    DateTimeComparisonType.max => !value.isAfter(
+      reference,
+    ), // <= (on or before)
+  };
 
   @override
   String buildMessage(DateTime value) => switch (type) {
-        DateTimeComparisonType.min =>
-          'Date must be on or after ${reference.toIso8601String()}, got ${value.toIso8601String()}',
-        DateTimeComparisonType.max =>
-          'Date must be on or before ${reference.toIso8601String()}, got ${value.toIso8601String()}',
-      };
+    DateTimeComparisonType.min =>
+      'Date must be on or after ${reference.toIso8601String()}, got ${value.toIso8601String()}',
+    DateTimeComparisonType.max =>
+      'Date must be on or before ${reference.toIso8601String()}, got ${value.toIso8601String()}',
+  };
 
   @override
   Map<String, Object?> buildContext(DateTime value) {
@@ -85,9 +87,11 @@ class DateTimeConstraint extends Constraint<DateTime>
       // for validating string formats like dates.
       // See: https://json-schema.org/draft/2019-09/json-schema-validation.html#rfc.section.7.3
       switch (type) {
-        DateTimeComparisonType.min =>
-          {'formatMinimum': reference.toIso8601String()},
-        DateTimeComparisonType.max =>
-          {'formatMaximum': reference.toIso8601String()},
+        DateTimeComparisonType.min => {
+          'formatMinimum': reference.toIso8601String(),
+        },
+        DateTimeComparisonType.max => {
+          'formatMaximum': reference.toIso8601String(),
+        },
       };
 }

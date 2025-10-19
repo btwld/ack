@@ -223,15 +223,16 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.lt => extracted < threshold,
       ComparisonType.lte => extracted <= threshold,
       ComparisonType.eq => () {
-          if (multipleValue != null && constraintKey == 'number_multiple_of') {
-            // extractor gives remainder; treat near-zero as zero for doubles
-            final rem = extracted.abs();
-            const eps = 1e-10;
-            return rem == 0 || rem < eps;
-          }
-          return extracted == threshold;
-        }(),
-      ComparisonType.range => extracted >= threshold && extracted <= maxThreshold!,
+        if (multipleValue != null && constraintKey == 'number_multiple_of') {
+          // extractor gives remainder; treat near-zero as zero for doubles
+          final rem = extracted.abs();
+          const eps = 1e-10;
+          return rem == 0 || rem < eps;
+        }
+        return extracted == threshold;
+      }(),
+      ComparisonType.range =>
+        extracted >= threshold && extracted <= maxThreshold!,
     };
   }
 
@@ -250,12 +251,12 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.lt => 'Must be less than $threshold, got $extracted.',
       ComparisonType.lte => 'Must be at most $threshold, got $extracted.',
       ComparisonType.eq => () {
-          if (multipleValue != null && constraintKey == 'number_multiple_of') {
-            return 'Must be a multiple of $multipleValue. $value is not.';
-          }
+        if (multipleValue != null && constraintKey == 'number_multiple_of') {
+          return 'Must be a multiple of $multipleValue. $value is not.';
+        }
 
-          return 'Must be equal to $threshold, got $extracted.';
-        }(),
+        return 'Must be equal to $threshold, got $extracted.';
+      }(),
       ComparisonType.range =>
         'Must be between $threshold and ${maxThreshold!}, got $extracted.',
     };
@@ -263,78 +264,75 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
   @override
   Map<String, Object?> toJsonSchema() => switch (type) {
-        ComparisonType.gt => {'exclusiveMinimum': threshold},
-        ComparisonType.gte => () {
-            final isStringLength = constraintKey.startsWith('string_') &&
-                (constraintKey.contains('length') ||
-                    constraintKey.contains('exact'));
-            final isListItems = constraintKey.startsWith('list_');
-            final isObjectProperties = constraintKey.startsWith('object_');
+    ComparisonType.gt => {'exclusiveMinimum': threshold},
+    ComparisonType.gte => () {
+      final isStringLength =
+          constraintKey.startsWith('string_') &&
+          (constraintKey.contains('length') || constraintKey.contains('exact'));
+      final isListItems = constraintKey.startsWith('list_');
+      final isObjectProperties = constraintKey.startsWith('object_');
 
-            if (isStringLength) return {'minLength': threshold.toInt()};
-            if (isListItems) return {'minItems': threshold.toInt()};
-            if (isObjectProperties) return {'minProperties': threshold.toInt()};
+      if (isStringLength) return {'minLength': threshold.toInt()};
+      if (isListItems) return {'minItems': threshold.toInt()};
+      if (isObjectProperties) return {'minProperties': threshold.toInt()};
 
-            return {'minimum': threshold};
-          }(),
-        ComparisonType.lt => {'exclusiveMaximum': threshold},
-        ComparisonType.lte => () {
-            final isStringLength = constraintKey.startsWith('string_') &&
-                (constraintKey.contains('length') ||
-                    constraintKey.contains('exact'));
-            final isListItems = constraintKey.startsWith('list_');
-            final isObjectProperties = constraintKey.startsWith('object_');
+      return {'minimum': threshold};
+    }(),
+    ComparisonType.lt => {'exclusiveMaximum': threshold},
+    ComparisonType.lte => () {
+      final isStringLength =
+          constraintKey.startsWith('string_') &&
+          (constraintKey.contains('length') || constraintKey.contains('exact'));
+      final isListItems = constraintKey.startsWith('list_');
+      final isObjectProperties = constraintKey.startsWith('object_');
 
-            if (isStringLength) return {'maxLength': threshold.toInt()};
-            if (isListItems) return {'maxItems': threshold.toInt()};
-            if (isObjectProperties) return {'maxProperties': threshold.toInt()};
+      if (isStringLength) return {'maxLength': threshold.toInt()};
+      if (isListItems) return {'maxItems': threshold.toInt()};
+      if (isObjectProperties) return {'maxProperties': threshold.toInt()};
 
-            return {'maximum': threshold};
-          }(),
-        ComparisonType.eq => () {
-            final isMultipleOf =
-                constraintKey == 'number_multiple_of' && multipleValue != null;
-            final isStringLength = constraintKey.startsWith('string_') &&
-                (constraintKey.contains('length') ||
-                    constraintKey.contains('exact'));
+      return {'maximum': threshold};
+    }(),
+    ComparisonType.eq => () {
+      final isMultipleOf =
+          constraintKey == 'number_multiple_of' && multipleValue != null;
+      final isStringLength =
+          constraintKey.startsWith('string_') &&
+          (constraintKey.contains('length') || constraintKey.contains('exact'));
 
-            if (isMultipleOf) return {'multipleOf': multipleValue};
-            if (isStringLength) {
-              return {
-                'minLength': threshold.toInt(),
-                'maxLength': threshold.toInt(),
-              };
-            }
+      if (isMultipleOf) return {'multipleOf': multipleValue};
+      if (isStringLength) {
+        return {'minLength': threshold.toInt(), 'maxLength': threshold.toInt()};
+      }
 
-            return {'const': threshold};
-          }(),
-        ComparisonType.range => () {
-            final isStringLength = constraintKey.startsWith('string_') &&
-                (constraintKey.contains('length') ||
-                    constraintKey.contains('exact'));
-            final isListItems = constraintKey.startsWith('list_');
-            final isObjectProperties = constraintKey.startsWith('object_');
+      return {'const': threshold};
+    }(),
+    ComparisonType.range => () {
+      final isStringLength =
+          constraintKey.startsWith('string_') &&
+          (constraintKey.contains('length') || constraintKey.contains('exact'));
+      final isListItems = constraintKey.startsWith('list_');
+      final isObjectProperties = constraintKey.startsWith('object_');
 
-            if (isStringLength) {
-              return {
-                'minLength': threshold.toInt(),
-                'maxLength': maxThreshold!.toInt(),
-              };
-            }
-            if (isListItems) {
-              return {
-                'minItems': threshold.toInt(),
-                'maxItems': maxThreshold!.toInt(),
-              };
-            }
-            if (isObjectProperties) {
-              return {
-                'minProperties': threshold.toInt(),
-                'maxProperties': maxThreshold!.toInt(),
-              };
-            }
+      if (isStringLength) {
+        return {
+          'minLength': threshold.toInt(),
+          'maxLength': maxThreshold!.toInt(),
+        };
+      }
+      if (isListItems) {
+        return {
+          'minItems': threshold.toInt(),
+          'maxItems': maxThreshold!.toInt(),
+        };
+      }
+      if (isObjectProperties) {
+        return {
+          'minProperties': threshold.toInt(),
+          'maxProperties': maxThreshold!.toInt(),
+        };
+      }
 
-            return {'minimum': threshold, 'maximum': maxThreshold};
-          }(),
-      };
+      return {'minimum': threshold, 'maximum': maxThreshold};
+    }(),
+  };
 }

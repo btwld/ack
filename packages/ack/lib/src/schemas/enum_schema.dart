@@ -46,8 +46,18 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     else if (inputValue is String) {
       try {
         parsed = values.firstWhere((e) => e.name == inputValue);
-      } catch (_) {
-        // Continue to integer check
+      } on StateError {
+        // Expected when no match found - continue to integer check
+      } catch (e, st) {
+        // Unexpected error indicates a serious problem
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message: 'Unexpected error matching enum value: ${e.toString()}',
+            context: context,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
       }
     }
     // Try to match by index if input is an int
