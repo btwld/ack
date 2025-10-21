@@ -8,14 +8,14 @@ Annotation package for the Ack validation ecosystem. Use these annotations on yo
 
 ```yaml
 dependencies:
-  ack_annotations: ^1.0.0-beta.1
+  ack_annotations: ^1.0.0-beta.2
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.1
+  ack_generator: ^1.0.0-beta.2
   build_runner: ^2.4.0
 ```
 
-> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.1`.
+> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.2`.
 
 ---
 
@@ -138,4 +138,4 @@ Mix and match annotation-based constraints with the string list syntax from `@Ac
 
 - Core concepts & runtime API: [`ack` README](../../README.md)
 - Generator workflows: [`ack_generator` README](../ack_generator/README.md)
-- Full 1.0 migration plan: [`MIGRATION.md`](../../MIGRATION.md)
+- Full 1.0 migration guide: [Migration to v1.0](../../docs/guides/migration-v1.mdx)
