@@ -20,7 +20,8 @@ This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with fluent schema building API
 - **[ack_generator](./packages/ack_generator)**: Code generator for creating schema classes from annotated Dart models
-- **[example](./example)**: Example projects demonstrating usage of both packages
+- **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured output generation
+- **[example](./example)**: Example projects demonstrating usage of all packages
 
 ## Quick Start
 

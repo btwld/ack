@@ -18,6 +18,8 @@ export 'src/schemas/extensions/list_schema_extensions.dart';
 export 'src/schemas/extensions/numeric_extensions.dart';
 export 'src/schemas/extensions/object_schema_extensions.dart';
 export 'src/schemas/extensions/string_schema_extensions.dart';
+// JSON Schema
+export 'src/json_schema.dart';
 // Core schemas
 export 'src/schemas/schema.dart';
 export 'src/validation/ack_exception.dart';
