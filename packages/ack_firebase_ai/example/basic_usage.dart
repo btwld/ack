@@ -91,6 +91,8 @@ void main() {
   final isValid = constrainedSchema.safeParse(validString).isOk;
   print('String "$validString" is valid: $isValid');
   final constrainedJson = geminiConstrainedSchema.toJson();
+  // Firebase AI Schema doesn't expose string length constraints in JSON.
+  // This means Gemini won't enforce minLength/maxLength - you must validate afterward.
   print('Gemini schema exposes minLength key: ${constrainedJson.containsKey("minLength")}');
   print('Gemini schema exposes maxLength key: ${constrainedJson.containsKey("maxLength")}');
 
