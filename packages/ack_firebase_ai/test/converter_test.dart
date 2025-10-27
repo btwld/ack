@@ -55,6 +55,22 @@ void main() {
       expect(result.format, 'email');
     });
 
+    test('converts string with url format', () {
+      final schema = Ack.string().url();
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.string);
+      expect(result.format, 'uri'); // url() uses PatternConstraint.uri()
+    });
+
+    test('converts string with uri format', () {
+      final schema = Ack.string().uri();
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.string);
+      expect(result.format, 'uri');
+    });
+
     test('converts integer schema', () {
       final schema = Ack.integer();
       final result = schema.toFirebaseAiSchema();
@@ -78,6 +94,14 @@ void main() {
       expect(result.maximum, 100);
     });
 
+    test('converts nullable integer', () {
+      final schema = Ack.integer().nullable();
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.integer);
+      expect(result.nullable, isTrue);
+    });
+
     test('converts double schema', () {
       final schema = Ack.double();
       final result = schema.toFirebaseAiSchema();
@@ -94,11 +118,27 @@ void main() {
       expect(result.maximum, closeTo(1.0, 1e-8));
     });
 
+    test('converts nullable double', () {
+      final schema = Ack.double().nullable();
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.number);
+      expect(result.nullable, isTrue);
+    });
+
     test('converts boolean schema', () {
       final schema = Ack.boolean();
       final result = schema.toFirebaseAiSchema();
 
       expect(result.type, firebase_ai.SchemaType.boolean);
+    });
+
+    test('converts nullable boolean', () {
+      final schema = Ack.boolean().nullable();
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.boolean);
+      expect(result.nullable, isTrue);
     });
   });
 
@@ -204,6 +244,62 @@ void main() {
     });
   });
 
+  group('FirebaseAiSchemaConverter - Discriminated Unions', () {
+    test('converts basic discriminated union to anyOf', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'circle': Ack.object({'radius': Ack.double()}),
+          'square': Ack.object({'side': Ack.double()}),
+        },
+      );
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.anyOf);
+      expect(result.anyOf, hasLength(2));
+
+      // Verify discriminator injection in first branch
+      final circleSchema = result.anyOf![0];
+      expect(circleSchema.type, firebase_ai.SchemaType.object);
+      expect(circleSchema.properties!.containsKey('type'), isTrue);
+      expect(circleSchema.properties!['type']!.enumValues, ['circle']);
+      expect(circleSchema.properties!.containsKey('radius'), isTrue);
+
+      // Verify discriminator injection in second branch
+      final squareSchema = result.anyOf![1];
+      expect(squareSchema.properties!['type']!.enumValues, ['square']);
+      expect(squareSchema.properties!.containsKey('side'), isTrue);
+    });
+
+    test('converts empty discriminated union to empty object', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'kind',
+        schemas: {},
+      );
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.object);
+      expect(result.properties, isEmpty);
+    });
+
+    test('converts discriminated union with nullable', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'shape',
+        schemas: {
+          'point': Ack.object({
+            'x': Ack.double(),
+            'y': Ack.double(),
+          }),
+        },
+      ).nullable();
+      final result = schema.toFirebaseAiSchema();
+
+      // Nullable discriminated unions wrapped in anyOf with null branch
+      expect(result.type, firebase_ai.SchemaType.anyOf);
+      expect(result.nullable, isTrue);
+    });
+  });
+
   group('FirebaseAiSchemaConverter - Complex Scenarios', () {
     test('converts complete user schema', () {
       final schema = Ack.object({
@@ -263,6 +359,43 @@ void main() {
 
       expect(result.type, firebase_ai.SchemaType.string);
       expect(result.enumValues, ['red', 'green', 'blue']);
+    });
+
+    test('converts nullable enum with string type', () {
+      final schema = Ack.enumString(['red', 'green', 'blue']).nullable();
+      final result = schema.toFirebaseAiSchema();
+
+      // Nullable enums still use string type with nullable flag
+      expect(result.type, firebase_ai.SchemaType.string);
+      expect(result.nullable, isTrue);
+      // Note: enum values may not be preserved in nullable enums due to anyOf wrapping in JSON schema
+    });
+
+    test('converts empty object schema', () {
+      final schema = Ack.object({});
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.object);
+      expect(result.properties, isEmpty);
+      final requiredFromJson = result.toJson()['required'] as List;
+      expect(requiredFromJson, isEmpty);
+    });
+
+    test('converts array of enums', () {
+      final schema = Ack.list(Ack.enumString(['A', 'B', 'C']));
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.array);
+      expect(result.items!.type, firebase_ai.SchemaType.string);
+      expect(result.items!.enumValues, ['A', 'B', 'C']);
+    });
+
+    test('converts nullable array', () {
+      final schema = Ack.list(Ack.string()).nullable();
+      final result = schema.toFirebaseAiSchema();
+
+      expect(result.type, firebase_ai.SchemaType.array);
+      expect(result.nullable, isTrue);
     });
 
     test('handles anyOf by converting to Schema.anyOf', () {
