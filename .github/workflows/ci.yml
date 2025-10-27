@@ -42,8 +42,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Setup Flutter SDK (required for Flutter packages like ack_firebase_ai)
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+          cache: true
+
       # Setup Melos using the dedicated action
-      - uses: dart-lang/setup-dart@v1
       - uses: bluefireteam/melos-action@v3
         with:
           run-bootstrap: true
