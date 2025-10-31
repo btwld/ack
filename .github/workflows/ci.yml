@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    uses: btwld/dart-actions/.github/workflows/run-tests.yml@main
+    uses: btwld/dart-actions/.github/workflows/melos/run-tests.yml@main
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
     with:
