@@ -3,12 +3,24 @@ name: Publish to pub.dev
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Package names to publish (leave empty for all)'
+        required: false
+        type: string
 
 jobs:
   publish:
     permissions:
-      id-token: write # Required for authentication using OIDC
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+      id-token: write
+      contents: read
+    uses: btwld/dart-actions/.github/workflows/publish.yml@main
     with:
-      working-directory: packages/ack
+      packages_folder_path: "packages"
+      packages: |
+        ack
+        ack_annotations
+        ack_generator
+        ack_firebase_ai
