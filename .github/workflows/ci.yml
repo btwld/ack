@@ -1,64 +1,16 @@
-name: CI/CD
+name: CI
 
 on:
   push:
-    branches: [ "main"]
-    tags: [ "v*" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      # Setup Flutter SDK (includes Dart 3.8+)
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.32.0'
-          channel: 'stable'
-          cache: true
-
-      # Setup Melos using the dedicated action
-      - uses: bluefireteam/melos-action@v3
-        with:
-          run-bootstrap: true
-
-      - name: Analyze project source
-        run: melos analyze
-        env:
-          DART_GENERATE_WARNINGS_IN_GENERATED_FILES: false
-
-      - name: Run tests
-        run: melos test
-
-  publish:
-    needs: test
-    runs-on: ubuntu-latest
-    # Run only on pushes to tags like v1.0.0
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-
-      # Setup Flutter SDK (required for Flutter packages like ack_firebase_ai)
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.32.0'
-          channel: 'stable'
-          cache: true
-
-      # Setup Melos and bootstrap
-      - uses: bluefireteam/melos-action@v3
-        with:
-          run-bootstrap: true
-
-      # Publish packages to pub.dev
-      - name: Publish to pub.dev
-        run: melos publish --no-dry-run --yes
-        env:
-          PUB_DEV_ACCESS_TOKEN: ${{ secrets.PUB_DEV_ACCESS_TOKEN }}
-          PUB_DEV_REFRESH_TOKEN: ${{ secrets.PUB_DEV_REFRESH_TOKEN }}
-          PUB_DEV_ID_TOKEN_AUDIENCE: ${{ secrets.PUB_DEV_ID_TOKEN_AUDIENCE }}
-
+    uses: btwld/dart-actions/.github/workflows/ci.yml@main
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      flutter-version: "stable"
+      run-dcm: true
