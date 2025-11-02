@@ -1,0 +1,14 @@
+# Development and IDE files
+.claude/
+.idea/
+.vscode/
+
+# Build artifacts
+build/
+.dart_tool/
+
+# Coverage files
+coverage/
+
+# Local example files
+example/local/
