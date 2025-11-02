@@ -76,6 +76,7 @@ typedef _JsonMap = Map<String, Object?>;
 
 jsb.Schema _convert(AckSchema schema) {
   final jsonSchema = JsonSchema.fromJson(schema.toJsonSchema());
+  final effectiveJsonSchema = _unwrapNullable(jsonSchema);
 
   // Handle TransformedSchema by converting underlying schema and applying overrides
   if (schema is TransformedSchema) {
@@ -89,15 +90,15 @@ jsb.Schema _convert(AckSchema schema) {
   }
 
   return switch (schema) {
-    StringSchema() => _convertString(schema, jsonSchema),
-    IntegerSchema() => _convertInteger(schema, jsonSchema),
-    DoubleSchema() => _convertDouble(schema, jsonSchema),
-    BooleanSchema() => _convertBoolean(schema, jsonSchema),
-    ObjectSchema() => _convertObject(schema, jsonSchema),
-    ListSchema() => _convertArray(schema, jsonSchema),
-    EnumSchema() => _convertEnum(schema, jsonSchema),
+    StringSchema() => _convertString(schema, effectiveJsonSchema),
+    IntegerSchema() => _convertInteger(schema, effectiveJsonSchema),
+    DoubleSchema() => _convertDouble(schema, effectiveJsonSchema),
+    BooleanSchema() => _convertBoolean(schema, effectiveJsonSchema),
+    ObjectSchema() => _convertObject(schema, effectiveJsonSchema),
+    ListSchema() => _convertArray(schema, effectiveJsonSchema),
+    EnumSchema() => _convertEnum(schema, effectiveJsonSchema),
     AnyOfSchema() => _convertAnyOf(schema),
-    AnySchema() => _convertAny(schema, jsonSchema),
+    AnySchema() => _convertAny(schema, effectiveJsonSchema),
     DiscriminatedObjectSchema() => _convertDiscriminated(schema),
     _ => throw UnsupportedError(
       'Schema type ${schema.runtimeType} is not supported for json_schema_builder conversion.',
@@ -106,47 +107,56 @@ jsb.Schema _convert(AckSchema schema) {
 }
 
 jsb.Schema _convertString(StringSchema schema, JsonSchema jsonSchema) {
+  jsb.Schema base;
   if (jsonSchema.isEnum) {
-    return jsb.Schema.string(
+    base = jsb.Schema.string(
       enumValues: jsonSchema.enum_!,
       description: jsonSchema.description,
       title: jsonSchema.title,
     );
+  } else {
+    base = jsb.Schema.string(
+      description: jsonSchema.description,
+      title: jsonSchema.title,
+      minLength: jsonSchema.minLength,
+      maxLength: jsonSchema.maxLength,
+      pattern: jsonSchema.pattern,
+      format: jsonSchema.format,
+    );
   }
 
-  return jsb.Schema.string(
-    description: jsonSchema.description,
-    title: jsonSchema.title,
-    minLength: jsonSchema.minLength,
-    maxLength: jsonSchema.maxLength,
-    pattern: jsonSchema.pattern,
-    format: jsonSchema.format,
-  );
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertInteger(IntegerSchema schema, JsonSchema jsonSchema) {
-  return jsb.Schema.integer(
+  final base = jsb.Schema.integer(
     description: jsonSchema.description,
     title: jsonSchema.title,
     minimum: jsonSchema.minimum?.toInt(),
     maximum: jsonSchema.maximum?.toInt(),
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertDouble(DoubleSchema schema, JsonSchema jsonSchema) {
-  return jsb.Schema.number(
+  final base = jsb.Schema.number(
     description: jsonSchema.description,
     title: jsonSchema.title,
     minimum: jsonSchema.minimum?.toDouble(),
     maximum: jsonSchema.maximum?.toDouble(),
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertBoolean(BooleanSchema schema, JsonSchema jsonSchema) {
-  return jsb.Schema.boolean(
+  final base = jsb.Schema.boolean(
     description: jsonSchema.description,
     title: jsonSchema.title,
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertObject(ObjectSchema schema, JsonSchema jsonSchema) {
@@ -161,19 +171,21 @@ jsb.Schema _convertObject(ObjectSchema schema, JsonSchema jsonSchema) {
       if (!entry.value.isOptional) entry.key,
   ];
 
-  return jsb.Schema.object(
+  final base = jsb.Schema.object(
     properties: properties,
     required: required.isEmpty ? null : required,
     description: jsonSchema.description,
     title: jsonSchema.title,
-    additionalProperties: false,
+    additionalProperties: jsonSchema.additionalProperties,
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertArray(ListSchema schema, JsonSchema jsonSchema) {
   final items = _convert(schema.itemSchema);
 
-  return jsb.Schema.list(
+  final base = jsb.Schema.list(
     items: items,
     description: jsonSchema.description,
     title: jsonSchema.title,
@@ -181,16 +193,20 @@ jsb.Schema _convertArray(ListSchema schema, JsonSchema jsonSchema) {
     maxItems: jsonSchema.maxItems,
     uniqueItems: jsonSchema.uniqueItems,
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertEnum(EnumSchema schema, JsonSchema jsonSchema) {
   final enumValues = [for (final value in schema.values) value.name];
 
-  return jsb.Schema.string(
+  final base = jsb.Schema.string(
     enumValues: enumValues,
     description: jsonSchema.description,
     title: jsonSchema.title,
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertAnyOf(AnyOfSchema schema) {
@@ -198,7 +214,10 @@ jsb.Schema _convertAnyOf(AnyOfSchema schema) {
     for (final childSchema in schema.schemas) _convert(childSchema),
   ];
 
-  return jsb.Schema.combined(anyOf: schemas, description: schema.description);
+  final base =
+      jsb.Schema.combined(anyOf: schemas, description: schema.description);
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertAny(AnySchema schema, JsonSchema jsonSchema) {
@@ -207,21 +226,25 @@ jsb.Schema _convertAny(AnySchema schema, JsonSchema jsonSchema) {
 
   final arrayItems = jsb.Schema.combined(anyOf: primitives);
 
-  return jsb.Schema.combined(
+  final base = jsb.Schema.combined(
     anyOf: [
       ...primitives,
       jsb.Schema.list(items: arrayItems, description: description),
     ],
     description: description,
   );
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 jsb.Schema _convertDiscriminated(DiscriminatedObjectSchema schema) {
   if (schema.schemas.isEmpty) {
-    return jsb.Schema.object(
+    final base = jsb.Schema.object(
       properties: const {},
       description: schema.description,
     );
+
+    return _maybeWrapNullable(base, schema.isNullable);
   }
 
   final entries = schema.schemas.entries.toList(growable: false);
@@ -246,7 +269,10 @@ jsb.Schema _convertDiscriminated(DiscriminatedObjectSchema schema) {
     return _convertObject(normalized, normalizedJsonSchema);
   });
 
-  return jsb.Schema.combined(anyOf: branches, description: schema.description);
+  final base =
+      jsb.Schema.combined(anyOf: branches, description: schema.description);
+
+  return _maybeWrapNullable(base, schema.isNullable);
 }
 
 List<jsb.Schema> _primitiveAnyBranches(String? description) {
@@ -269,4 +295,49 @@ void _applyOverrides({
   // This is a limitation compared to firebase_ai
   // For now, we'll skip override application
   // TransformedSchema metadata will be lost
+}
+
+jsb.Schema _maybeWrapNullable(jsb.Schema base, bool isNullable) {
+  if (!isNullable) return base;
+  return jsb.Schema.combined(anyOf: [base, jsb.Schema.nil()]);
+}
+
+JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
+  final anyOf = jsonSchema.anyOf;
+  if (anyOf == null || anyOf.isEmpty) {
+    return jsonSchema;
+  }
+
+  final nullBranches =
+      anyOf.where((candidate) => _isNullSchema(candidate)).toList();
+  if (nullBranches.isEmpty) {
+    return jsonSchema;
+  }
+
+  final nonNullBranches =
+      anyOf.where((candidate) => !_isNullSchema(candidate)).toList();
+
+  if (nonNullBranches.length == 1) {
+    return nonNullBranches.first;
+  }
+
+  return jsonSchema;
+}
+
+bool _isNullSchema(JsonSchema schema) {
+  if (schema.singleType == JsonSchemaType.null_) {
+    return true;
+  }
+
+  final types = schema.type;
+  if (types != null && types.contains(JsonSchemaType.null_)) {
+    return types.length == 1;
+  }
+
+  final nestedAnyOf = schema.anyOf;
+  if (nestedAnyOf == null || nestedAnyOf.isEmpty) {
+    return false;
+  }
+
+  return nestedAnyOf.every(_isNullSchema);
 }
