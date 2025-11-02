@@ -573,6 +573,73 @@ void main() {
         expect(listSchema.toFirebaseAiSchema().nullable, isTrue);
         expect(enumSchema.toFirebaseAiSchema().nullable, isTrue);
       });
+
+      group('metadata preservation', () {
+        test('nullable string keeps format metadata', () {
+          final schema = Ack.string().email().nullable();
+
+          final result = schema.toFirebaseAiSchema();
+          expect(result.format, 'email');
+          expect(result.nullable, isTrue);
+        });
+
+        test('nullable enum keeps enumValues', () {
+          final schema = Ack.string().enumString(['x', 'y']).nullable();
+
+          final result = schema.toFirebaseAiSchema();
+          expect(result.enumValues, ['x', 'y']);
+          expect(result.nullable, isTrue);
+        });
+
+        test('nullable integer keeps numeric bounds', () {
+          final schema = Ack.integer().min(1).max(7).nullable();
+
+          final result = schema.toFirebaseAiSchema();
+          expect(result.minimum, 1);
+          expect(result.maximum, 7);
+          expect(result.nullable, isTrue);
+        });
+
+        test('nullable number keeps floating bounds', () {
+          final schema = Ack.double().min(0.5).max(9.5).nullable();
+
+          final result = schema.toFirebaseAiSchema();
+          expect(result.minimum, closeTo(0.5, 1e-8));
+          expect(result.maximum, closeTo(9.5, 1e-8));
+          expect(result.nullable, isTrue);
+        });
+
+        test('nullable list preserves item metadata', () {
+          final schema = Ack.list(Ack.string().uuid()).nullable();
+
+          final result = schema.toFirebaseAiSchema();
+          final items = result.items;
+          expect(items, isNotNull);
+          expect(items!.type, firebase_ai.SchemaType.string);
+          expect(items.format, 'uuid');
+          expect(result.nullable, isTrue);
+        });
+
+        test('nullable object preserves property metadata', () {
+          final schema = Ack.object({
+            'id': Ack.string().uuid(),
+            'score': Ack.double().min(0).max(1),
+          }).nullable();
+
+          final result = schema.toFirebaseAiSchema();
+          final idProp = result.properties!['id'];
+          final scoreProp = result.properties!['score'];
+
+          expect(idProp, isNotNull);
+          expect(idProp!.format, 'uuid');
+
+          expect(scoreProp, isNotNull);
+          expect(scoreProp!.minimum, closeTo(0, 1e-8));
+          expect(scoreProp.maximum, closeTo(1, 1e-8));
+
+          expect(result.nullable, isTrue);
+        });
+      });
     });
 
     group('Optional vs Required fields', () {
