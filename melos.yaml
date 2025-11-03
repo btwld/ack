@@ -156,3 +156,7 @@ scripts:
   api-check:
     run: dart scripts/api_check.dart
     description: "Check API compatibility for packages against specified version (usage: melos api-check v0.2.0)"
+
+  ci:
+    run: melos run test:dart --no-select && melos run test:flutter --no-select
+    description: Run all Dart & Flutter tests in this project
