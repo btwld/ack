@@ -42,9 +42,10 @@ coverage/*
 packages/*/coverage/*
 !packages/*/coverage/lcov.info
 
-# Keep .claude directory
-.claude/
+# Claude Code
+.claude/settings.local.json
 CLAUDE.md
+CLAUDE.local.md
 .idea
 
 # Node.js dependencies for tools
