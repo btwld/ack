@@ -17,6 +17,12 @@ const String _kMapType = 'Map<String, Object?>';
 /// (like `Ack.object({...})`) to extract field type information without
 /// requiring const evaluation or string parsing.
 class SchemaAstAnalyzer {
+  // Cycle detection for nested schema references
+  final Set<String> _currentAnalysisPath = {};
+
+  // Maximum recursion depth for schema analysis
+  static const int _maxRecursionDepth = 20;
+
   /// Analyzes a schema variable annotated with @AckType
   ///
   /// Walks the AST to extract type information from the schema definition.
@@ -24,8 +30,31 @@ class SchemaAstAnalyzer {
     TopLevelVariableElement element, {
     String? customTypeName,
   }) {
-    // Get the AST node for this variable
-    final session = element.session;
+    // Cycle detection - check if we're already analyzing this schema
+    final schemaName = element.name;
+    if (_currentAnalysisPath.contains(schemaName)) {
+      throw InvalidGenerationSourceError(
+        'Circular schema reference detected in path: '
+        '${_currentAnalysisPath.join(' → ')} → $schemaName',
+        element: element,
+      );
+    }
+
+    // Check recursion depth
+    if (_currentAnalysisPath.length >= _maxRecursionDepth) {
+      throw InvalidGenerationSourceError(
+        'Maximum schema nesting depth exceeded (max: $_maxRecursionDepth). '
+        'Current path: ${_currentAnalysisPath.join(' → ')}',
+        element: element,
+      );
+    }
+
+    // Add current schema to path for cycle detection
+    _currentAnalysisPath.add(schemaName);
+
+    try {
+      // Get the AST node for this variable
+      final session = element.session;
     if (session == null) {
       throw InvalidGenerationSourceError(
         'Could not get analysis session for "${element.name}"',
@@ -71,12 +100,16 @@ class SchemaAstAnalyzer {
       );
     }
 
-    return _parseSchemaFromAST(
-      element.name,
-      initializer,
-      element,
-      customTypeName: customTypeName,
-    );
+      return _parseSchemaFromAST(
+        element.name,
+        initializer,
+        element,
+        customTypeName: customTypeName,
+      );
+    } finally {
+      // Always remove from path when done, even if an error occurs
+      _currentAnalysisPath.remove(schemaName);
+    }
   }
 
   /// Parses a schema from a MethodInvocation AST node
@@ -91,7 +124,19 @@ class SchemaAstAnalyzer {
     MethodInvocation? current = invocation;
     MethodInvocation? baseInvocation;
 
+    // Safety guard: prevent infinite loops in method chains
+    const maxWalkDepth = 50;
+    var walkDepth = 0;
+
     while (current != null) {
+      // Check depth limit
+      if (walkDepth++ > maxWalkDepth) {
+        throw InvalidGenerationSourceError(
+          'Method chain too deep (max: $maxWalkDepth) for schema "$variableName"',
+          element: element,
+        );
+      }
+
       final target = current.target;
 
       // Check if this is the Ack.xxx() base call
@@ -315,8 +360,6 @@ class SchemaAstAnalyzer {
 
     // Handle references to other schema variables (for nested objects)
     if (value is SimpleIdentifier) {
-      // Schema variable reference - treat as Map<String, dynamic>
-      // This allows nested schemas to work without complex resolution
       final library = element.library;
       if (library == null) {
         throw InvalidGenerationSourceError(
@@ -327,17 +370,22 @@ class SchemaAstAnalyzer {
 
       final typeProvider = library.typeProvider;
 
-      return FieldInfo(
-        name: fieldName,
-        jsonKey: fieldName,
-        type: typeProvider.mapType(
-          typeProvider.stringType,
-          typeProvider.dynamicType,
-        ),
-        isRequired: true,
-        isNullable: false,
-        constraints: [],
-      );
+      // Try to resolve the schema reference
+      final resolvedType = _resolveSchemaReference(value, element, typeProvider);
+
+      if (resolvedType != null) {
+        return FieldInfo(
+          name: fieldName,
+          jsonKey: fieldName,
+          type: resolvedType,
+          isRequired: true,
+          isNullable: false,
+          constraints: [],
+        );
+      }
+
+      // Fallback to Map<String, dynamic>
+      return _createFallbackFieldInfo(fieldName, typeProvider);
     }
 
     return null;
@@ -355,7 +403,19 @@ class SchemaAstAnalyzer {
     MethodInvocation? current = invocation;
     MethodInvocation? baseInvocation;
 
+    // Safety guard: prevent infinite loops in method chains
+    const maxWalkDepth = 50;
+    var walkDepth = 0;
+
     while (current != null) {
+      // Check depth limit
+      if (walkDepth++ > maxWalkDepth) {
+        throw InvalidGenerationSourceError(
+          'Method chain too deep (max: $maxWalkDepth) for field "$fieldName"',
+          element: element,
+        );
+      }
+
       final methodName = current.methodName.name;
 
       if (methodName == 'optional') {
@@ -470,7 +530,27 @@ class SchemaAstAnalyzer {
       }
     }
 
-    // For other cases (like schema variable references), return List<dynamic>
+    // Handle Ack.list(stringSchema) - schema variable reference
+    if (firstArg is SimpleIdentifier) {
+      final library = element.library;
+      if (library != null) {
+        final referencedElement = library.scope.lookup(firstArg.name).getter;
+
+        if (referencedElement is TopLevelVariableElement) {
+          // Try to resolve the schema variable's type
+          final resolvedType = _resolveSchemaVariableType(
+            referencedElement,
+            typeProvider,
+          );
+
+          if (resolvedType != null) {
+            return typeProvider.listType(resolvedType);
+          }
+        }
+      }
+    }
+
+    // For other cases, return List<dynamic>
     return typeProvider.listType(typeProvider.dynamicType);
   }
 
@@ -807,6 +887,138 @@ class SchemaAstAnalyzer {
         return 'List<dynamic>';
       default:
         return 'dynamic';
+    }
+  }
+
+  /// Resolves a schema variable reference to its actual type
+  ///
+  /// Handles SimpleIdentifier references like `addressSchema` in:
+  /// ```dart
+  /// final userSchema = Ack.object({
+  ///   'address': addressSchema,  // SimpleIdentifier reference
+  /// });
+  /// ```
+  DartType? _resolveSchemaReference(
+    SimpleIdentifier identifier,
+    Element element,
+    TypeProvider typeProvider,
+  ) {
+    // Look up the schema variable in the library scope
+    final library = element.library;
+    if (library == null) return null;
+
+    final referencedElement = library.scope.lookup(identifier.name).getter;
+
+    if (referencedElement is TopLevelVariableElement) {
+      // Try to resolve the referenced schema's type
+      final resolvedType =
+          _resolveSchemaVariableType(referencedElement, typeProvider);
+      return resolvedType ??
+          typeProvider.mapType(
+            typeProvider.stringType,
+            typeProvider.dynamicType,
+          );
+    }
+
+    // Default fallback
+    return typeProvider.mapType(
+      typeProvider.stringType,
+      typeProvider.dynamicType,
+    );
+  }
+
+  /// Creates a fallback FieldInfo when schema resolution fails
+  FieldInfo _createFallbackFieldInfo(
+    String fieldName,
+    TypeProvider typeProvider,
+  ) {
+    return FieldInfo(
+      name: fieldName,
+      jsonKey: fieldName,
+      type: typeProvider.mapType(
+        typeProvider.stringType,
+        typeProvider.dynamicType,
+      ),
+      isRequired: true,
+      isNullable: false,
+      constraints: [],
+    );
+  }
+
+  /// Resolves the representation type of a schema variable
+  ///
+  /// Used to determine the actual type of schema references in lists.
+  /// Returns null if the type cannot be resolved.
+  DartType? _resolveSchemaVariableType(
+    TopLevelVariableElement schemaElement,
+    TypeProvider typeProvider,
+  ) {
+    // Prevent infinite recursion - check if we're already analyzing this
+    if (_currentAnalysisPath.contains(schemaElement.name)) {
+      return null; // Circular reference detected
+    }
+
+    try {
+      // Try to analyze the referenced schema
+      final modelInfo = analyzeSchemaVariable(schemaElement);
+
+      if (modelInfo == null) return null;
+
+      // Map the representation type string back to a DartType
+      final repType = modelInfo.representationType;
+
+      if (repType == null || repType == _kMapType) {
+        return typeProvider.mapType(
+          typeProvider.stringType,
+          typeProvider.dynamicType,
+        );
+      }
+
+      // Handle primitive types
+      switch (repType) {
+        case 'String':
+          return typeProvider.stringType;
+        case 'int':
+          return typeProvider.intType;
+        case 'double':
+          return typeProvider.doubleType;
+        case 'bool':
+          return typeProvider.boolType;
+        default:
+          // For List<X> or other complex types, fall back to dynamic
+          if (repType.startsWith('List<')) {
+            // Parse the element type from "List<ElementType>"
+            final match = RegExp(r'List<(.+)>').firstMatch(repType);
+            if (match != null) {
+              final elementTypeStr = match.group(1)!;
+              DartType? elementType;
+
+              switch (elementTypeStr) {
+                case 'String':
+                  elementType = typeProvider.stringType;
+                  break;
+                case 'int':
+                  elementType = typeProvider.intType;
+                  break;
+                case 'double':
+                  elementType = typeProvider.doubleType;
+                  break;
+                case 'bool':
+                  elementType = typeProvider.boolType;
+                  break;
+                default:
+                  elementType = typeProvider.dynamicType;
+              }
+
+              return typeProvider.listType(elementType);
+            }
+          }
+
+          return null; // Custom types we can't resolve
+      }
+    } catch (e) {
+      // If we can't analyze it, return null
+      return null;
     }
   }
 }
