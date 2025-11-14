@@ -72,8 +72,9 @@ class InvalidTypeConstraint extends Constraint<Object?>
 // These classes are used to create typed `ConstraintError` instances inside
 // `ObjectSchema`'s validation logic. They do not need a `Validator` mixin.
 
-/// Placeholder: Constraint for when an object has properties not defined in its schema
+/// Constraint for when an object has properties not defined in its schema
 /// and `allowAdditionalProperties` is false.
+/// Note: Validation logic is implemented in ObjectSchema.
 class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
     with Validator<MapValue> {
   final String unexpectedPropertyKey;
@@ -97,8 +98,8 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
   }
 }
 
-/// Placeholder: Constraint for when an object is missing a required property.
-/// Logic is in ObjectSchema.
+/// Constraint for when an object is missing a required property.
+/// Note: Validation logic is implemented in ObjectSchema.
 class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
     with Validator<MapValue> {
   final String missingPropertyKey;

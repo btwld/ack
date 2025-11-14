@@ -9,9 +9,8 @@ cd packages/
 mkdir ack_<target> && cd ack_<target>
 
 # Create structure
-mkdir -p lib/src test example docs
+mkdir -p lib test example docs
 touch lib/ack_<target>.dart
-touch lib/src/{converter,extension}.dart
 touch test/to_<target>_schema_test.dart
 touch example/basic_usage.dart
 touch {README,CHANGELOG}.md
@@ -42,107 +41,127 @@ dev_dependencies:
   lints: ^5.0.0
 ```
 
-## 3️⃣ Main Library File (5 minutes)
+## 3️⃣ Single Library File (15 minutes)
 
-**`lib/ack_<target>.dart`**:
+**`lib/ack_<target>.dart`** - All code in one file:
 
 ```dart
 /// <Target> schema converter for ACK validation library.
+///
+/// Converts ACK validation schemas to <Target> format for [use case].
+///
+/// ## Usage
+///
+/// ```dart
+/// import 'package:ack/ack.dart';
+/// import 'package:ack_<target>/ack_<target>.dart';
+///
+/// final schema = Ack.object({
+///   'name': Ack.string().minLength(2),
+///   'age': Ack.integer().min(0).optional(),
+/// });
+///
+/// // Convert to <Target> format
+/// final targetSchema = schema.to<Target>Schema();
+/// ```
+///
+/// ## Limitations
+///
+/// Some ACK features cannot be converted to <Target> format:
+/// - Custom refinements (`.refine()`) - validate after
+/// - [Other limitations specific to target system...]
 library;
 
 import 'package:ack/ack.dart';
+// Import target SDK if needed
+// import 'package:<target_sdk>/<target_sdk>.dart' as target;
 
-export 'src/extension.dart';
-```
+// ============================================================================
+// Public Extension API
+// ============================================================================
 
-## 4️⃣ Extension Method (3 minutes)
-
-**`lib/src/extension.dart`**:
-
-```dart
-import 'package:ack/ack.dart';
-import 'converter.dart';
-
+/// Extension methods for converting ACK schemas to <Target> format.
 extension <Target>SchemaExtension on AckSchema {
   /// Converts this ACK schema to <Target> format.
+  ///
+  /// Returns a [<TargetType>] instance for use with [target system].
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// final schema = Ack.object({
+  ///   'name': Ack.string().minLength(2),
+  ///   'age': Ack.integer().min(0).optional(),
+  /// });
+  ///
+  /// final targetSchema = schema.to<Target>Schema();
+  /// ```
   <TargetType> to<Target>Schema() {
-    return <Target>SchemaConverter.convert(this);
+    return _convert(this);
   }
 }
-```
 
-## 5️⃣ Converter Skeleton (10 minutes)
+// ============================================================================
+// Converter Implementation
+// ============================================================================
 
-**`lib/src/converter.dart`**:
+<TargetType> _convert(AckSchema schema) {
+  final json = schema.toJsonSchema();
 
-```dart
-import 'package:ack/ack.dart';
-
-class <Target>SchemaConverter {
-  const <Target>SchemaConverter._();
-
-  static <TargetType> convert(AckSchema schema) {
-    return _convertSchema(schema);
-  }
-
-  static <TargetType> _convertSchema(AckSchema schema) {
-    final json = schema.toJsonSchema();
-
-    return switch (schema) {
-      StringSchema() => _convertString(schema, json),
-      IntegerSchema() => _convertInteger(schema, json),
-      DoubleSchema() => _convertDouble(schema, json),
-      BooleanSchema() => _convertBoolean(schema, json),
-      ObjectSchema() => _convertObject(schema, json),
-      ListSchema() => _convertArray(schema, json),
-      EnumSchema() => _convertEnum(schema, json),
-      AnyOfSchema() => _convertAnyOf(schema),
-      _ => throw UnsupportedError(
-          'Schema type ${schema.runtimeType} not supported',
-        ),
-    };
-  }
-
-  // TODO: Implement converters
-  static <TargetType> _convertString(StringSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertInteger(IntegerSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertDouble(DoubleSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertBoolean(BooleanSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertObject(ObjectSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertArray(ListSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertEnum(EnumSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
-  }
-
-  static <TargetType> _convertAnyOf(AnyOfSchema s) {
-    throw UnimplementedError();
-  }
-
-  // Helpers
-  static int? _asInt(Object? v) => v is int ? v : (v is double ? v.toInt() : null);
-  static double? _asDouble(Object? v) => v is double ? v : (v is int ? v.toDouble() : null);
+  return switch (schema) {
+    StringSchema() => _convertString(schema, json),
+    IntegerSchema() => _convertInteger(schema, json),
+    DoubleSchema() => _convertDouble(schema, json),
+    BooleanSchema() => _convertBoolean(schema, json),
+    ObjectSchema() => _convertObject(schema, json),
+    ListSchema() => _convertArray(schema, json),
+    EnumSchema() => _convertEnum(schema, json),
+    AnyOfSchema() => _convertAnyOf(schema),
+    _ => throw UnsupportedError(
+        'Schema type ${schema.runtimeType} not supported for <Target> conversion.',
+      ),
+  };
 }
+
+// TODO: Implement converters
+<TargetType> _convertString(StringSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertString');
+}
+
+<TargetType> _convertInteger(IntegerSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertInteger');
+}
+
+<TargetType> _convertDouble(DoubleSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertDouble');
+}
+
+<TargetType> _convertBoolean(BooleanSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertBoolean');
+}
+
+<TargetType> _convertObject(ObjectSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertObject');
+}
+
+<TargetType> _convertArray(ListSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertArray');
+}
+
+<TargetType> _convertEnum(EnumSchema s, Map<String, Object?> j) {
+  throw UnimplementedError('Implement _convertEnum');
+}
+
+<TargetType> _convertAnyOf(AnyOfSchema s) {
+  throw UnimplementedError('Implement _convertAnyOf');
+}
+
+// Helpers
+int? _asInt(Object? v) => v is int ? v : (v is double ? v.toInt() : null);
+double? _asDouble(Object? v) => v is double ? v : (v is int ? v.toDouble() : null);
 ```
 
-## 6️⃣ Basic Tests (15 minutes)
+## 4️⃣ Basic Tests (15 minutes)
 
 **`test/to_<target>_schema_test.dart`**:
 
@@ -188,7 +207,7 @@ void main() {
 }
 ```
 
-## 7️⃣ Example Usage (5 minutes)
+## 5️⃣ Example Usage (5 minutes)
 
 **`example/basic_usage.dart`**:
 
@@ -211,7 +230,7 @@ void main() {
 }
 ```
 
-## 8️⃣ README (10 minutes)
+## 6️⃣ README (10 minutes)
 
 **`README.md`**:
 
@@ -250,7 +269,7 @@ final targetSchema = schema.to<Target>Schema();
 Part of the [ACK](https://github.com/btwld/ack) monorepo.
 ```
 
-## 9️⃣ Verify Setup (2 minutes)
+## 7️⃣ Verify Setup (2 minutes)
 
 ```bash
 # Get dependencies
@@ -278,11 +297,11 @@ dart format .
 
 ## Total Time Estimate
 
-- **Setup**: 40 minutes
+- **Setup**: 35 minutes (simplified single-file structure)
 - **Implementation**: 2-4 hours
 - **Testing**: 2-3 hours
 - **Documentation**: 1-2 hours
-- **Total**: 6-10 hours for complete package
+- **Total**: 5-10 hours for complete package
 
 ## Reference
 

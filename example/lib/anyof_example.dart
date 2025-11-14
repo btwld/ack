@@ -2,7 +2,8 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 // This file demonstrates how AnyOf could work with sealed classes
-// Note: Code generation for AnyOf is not yet implemented
+// Note: Automatic code generation for AnyOf schemas is not currently supported.
+// AnyOf schemas can be created manually using the Ack.anyOf() API.
 part 'anyof_example.g.dart';
 
 /// Example 1: Simple AnyOf with sealed class
