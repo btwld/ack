@@ -34,6 +34,7 @@ scripts:
         - ack
         - ack_generator
         - ack_firebase_ai
+        - ack_json_schema_builder
         - ack_example
 
   fix:
@@ -43,6 +44,7 @@ scripts:
       scope:
         - ack
         - ack_generator
+        - ack_json_schema_builder
         - ack_example
       dependsOn:
         - "ack"  # This will ensure 'ack' is prioritized
@@ -156,3 +158,4 @@ scripts:
   api-check:
     run: dart scripts/api_check.dart
     description: "Check API compatibility for packages against specified version (usage: melos api-check v0.2.0)"
+sdkPath: .fvm/flutter_sdk
