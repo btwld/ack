@@ -86,6 +86,7 @@ typedef _JsonMap = Map<String, Object?>;
 
 firebase_ai.Schema _convert(AckSchema schema) {
   final jsonSchema = JsonSchema.fromJson(schema.toJsonSchema());
+  final effectiveJsonSchema = _unwrapNullable(jsonSchema);
 
   // Handle TransformedSchema by converting underlying schema and applying overrides
   if (schema is TransformedSchema) {
@@ -99,15 +100,15 @@ firebase_ai.Schema _convert(AckSchema schema) {
   }
 
   return switch (schema) {
-    StringSchema() => _convertString(schema, jsonSchema),
-    IntegerSchema() => _convertInteger(schema, jsonSchema),
-    DoubleSchema() => _convertDouble(schema, jsonSchema),
-    BooleanSchema() => _convertBoolean(schema, jsonSchema),
-    ObjectSchema() => _convertObject(schema, jsonSchema),
-    ListSchema() => _convertArray(schema, jsonSchema),
-    EnumSchema() => _convertEnum(schema, jsonSchema),
+    StringSchema() => _convertString(schema, effectiveJsonSchema),
+    IntegerSchema() => _convertInteger(schema, effectiveJsonSchema),
+    DoubleSchema() => _convertDouble(schema, effectiveJsonSchema),
+    BooleanSchema() => _convertBoolean(schema, effectiveJsonSchema),
+    ObjectSchema() => _convertObject(schema, effectiveJsonSchema),
+    ListSchema() => _convertArray(schema, effectiveJsonSchema),
+    EnumSchema() => _convertEnum(schema, effectiveJsonSchema),
     AnyOfSchema() => _convertAnyOf(schema),
-    AnySchema() => _convertAny(schema, jsonSchema),
+    AnySchema() => _convertAny(schema, effectiveJsonSchema),
     DiscriminatedObjectSchema() => _convertDiscriminated(schema),
     _ => throw UnsupportedError(
       'Schema type ${schema.runtimeType} is not supported for Firebase AI conversion.',
@@ -347,4 +348,44 @@ void _applyOverrides({
   if (forceNullable && target.nullable != true) {
     target.nullable = true;
   }
+}
+
+JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
+  final anyOf = jsonSchema.anyOf;
+  if (anyOf == null || anyOf.isEmpty) {
+    return jsonSchema;
+  }
+
+  final nullBranches =
+      anyOf.where((candidate) => _isNullSchema(candidate)).toList();
+  if (nullBranches.isEmpty) {
+    return jsonSchema;
+  }
+
+  final nonNullBranches =
+      anyOf.where((candidate) => !_isNullSchema(candidate)).toList();
+
+  if (nonNullBranches.length == 1) {
+    return nonNullBranches.first;
+  }
+
+  return jsonSchema;
+}
+
+bool _isNullSchema(JsonSchema schema) {
+  if (schema.singleType == JsonSchemaType.null_) {
+    return true;
+  }
+
+  final types = schema.type;
+  if (types != null && types.contains(JsonSchemaType.null_)) {
+    return types.length == 1;
+  }
+
+  final nestedAnyOf = schema.anyOf;
+  if (nestedAnyOf == null || nestedAnyOf.isEmpty) {
+    return false;
+  }
+
+  return nestedAnyOf.every(_isNullSchema);
 }
