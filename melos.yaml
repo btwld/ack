@@ -34,6 +34,7 @@ scripts:
         - ack
         - ack_generator
         - ack_firebase_ai
+        - ack_json_schema_builder
         - ack_example
 
   fix:
@@ -43,6 +44,7 @@ scripts:
       scope:
         - ack
         - ack_generator
+        - ack_json_schema_builder
         - ack_example
       dependsOn:
         - "ack"  # This will ensure 'ack' is prioritized
@@ -160,3 +162,5 @@ scripts:
   ci:
     run: melos run test:dart --no-select && melos run test:flutter --no-select
     description: Run all Dart & Flutter tests in this project
+
+sdkPath: .fvm/flutter_sdk
