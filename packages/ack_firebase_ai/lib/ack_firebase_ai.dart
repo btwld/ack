@@ -4,7 +4,7 @@
 /// output generation with Gemini models.
 library;
 
-import 'package:ack/ack.dart' hide JsonMap;
+import 'package:ack/ack.dart';
 import 'package:ack/schema_converter_base.dart';
 import 'package:firebase_ai/firebase_ai.dart' as firebase_ai;
 

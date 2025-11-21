@@ -1,18 +1,17 @@
 library;
 
-import 'package:ack/ack.dart' hide JsonMap;
+import 'package:ack/ack.dart';
 
-/// Converts ACK schemas to the OpenAPI-leaning [OpenApiSchema] model.
-extension AckToOpenApiSchema on AckSchema {
-  OpenApiSchema toOpenApiSchema() => _convert(this);
+/// Converts ACK schemas to the new JsonSchema (formerly OpenAPI-style) model.
+extension AckToJsonSchemaModel on AckSchema {
+  JsonSchema toJsonSchemaModel() => _convert(this);
 }
 
-OpenApiSchema _convert(AckSchema schema) {
+JsonSchema _convert(AckSchema schema) {
+  // If schema already has a toJsonSchema map, parse it for metadata when useful
   final jsonSchema = JsonSchema.fromJson(schema.toJsonSchema());
-  final effectiveJson = _unwrapNullable(jsonSchema);
 
   if (schema is TransformedSchema) {
-    // Convert underlying, then apply description/nullable on top.
     final base = _convert(schema.schema);
     return base.copyWith(
       description: schema.description ?? base.description,
@@ -21,94 +20,94 @@ OpenApiSchema _convert(AckSchema schema) {
   }
 
   return switch (schema) {
-    StringSchema() => _string(schema, effectiveJson),
-    IntegerSchema() => _integer(schema, effectiveJson),
-    DoubleSchema() => _number(schema, effectiveJson),
-    BooleanSchema() => _boolean(schema, effectiveJson),
-    EnumSchema() => _enum(schema, effectiveJson),
-    ListSchema() => _array(schema, effectiveJson),
-    ObjectSchema() => _object(schema, effectiveJson),
+    StringSchema() => _string(schema, jsonSchema),
+    IntegerSchema() => _integer(schema, jsonSchema),
+    DoubleSchema() => _number(schema, jsonSchema),
+    BooleanSchema() => _boolean(schema, jsonSchema),
+    EnumSchema() => _enum(schema, jsonSchema),
+    ListSchema() => _array(schema, jsonSchema),
+    ObjectSchema() => _object(schema, jsonSchema),
     AnyOfSchema() => _anyOf(schema),
-    AnySchema() => _any(schema, effectiveJson),
-    DiscriminatedObjectSchema() => _discriminated(schema, effectiveJson),
+    AnySchema() => _any(schema, jsonSchema),
+    DiscriminatedObjectSchema() => _discriminated(schema, jsonSchema),
     _ => throw UnsupportedError(
-        'Schema type ${schema.runtimeType} not supported for OpenApiSchema conversion.',
+        'Schema type ${schema.runtimeType} not supported for JsonSchema conversion.',
       ),
   };
 }
 
-OpenApiSchema _string(StringSchema _, JsonSchema json) {
-  final isEnum = json.enum_ != null && json.enum_!.isNotEmpty;
-  return OpenApiSchema(
-    type: OpenApiSchemaType.string,
+JsonSchema _string(StringSchema _, JsonSchema json) {
+  final isEnum = json.enumValues != null && json.enumValues!.isNotEmpty;
+  return JsonSchema(
+    type: JsonSchemaType.string,
     format: json.format,
     description: json.description,
     title: json.title,
-    enumValues: isEnum ? json.enum_ : null,
+    enumValues: isEnum ? json.enumValues : null,
     minLength: json.minLength,
     maxLength: json.maxLength,
     pattern: json.pattern,
-    nullable: _acceptsNull(json),
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _integer(IntegerSchema _, JsonSchema json) {
-  return OpenApiSchema(
-    type: OpenApiSchemaType.integer,
+JsonSchema _integer(IntegerSchema _, JsonSchema json) {
+  return JsonSchema(
+    type: JsonSchemaType.integer,
     description: json.description,
     title: json.title,
     minimum: json.minimum?.toInt(),
     maximum: json.maximum?.toInt(),
-    nullable: _acceptsNull(json),
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _number(DoubleSchema _, JsonSchema json) {
-  return OpenApiSchema(
-    type: OpenApiSchemaType.number,
+JsonSchema _number(DoubleSchema _, JsonSchema json) {
+  return JsonSchema(
+    type: JsonSchemaType.number,
     description: json.description,
     title: json.title,
     minimum: json.minimum?.toDouble(),
     maximum: json.maximum?.toDouble(),
-    nullable: _acceptsNull(json),
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _boolean(BooleanSchema _, JsonSchema json) {
-  return OpenApiSchema(
-    type: OpenApiSchemaType.boolean,
+JsonSchema _boolean(BooleanSchema _, JsonSchema json) {
+  return JsonSchema(
+    type: JsonSchemaType.boolean,
     description: json.description,
     title: json.title,
-    nullable: _acceptsNull(json),
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _enum(EnumSchema schema, JsonSchema json) {
+JsonSchema _enum(EnumSchema schema, JsonSchema json) {
   final values = [for (final v in schema.values) v.name];
-  return OpenApiSchema(
-    type: OpenApiSchemaType.string,
+  return JsonSchema(
+    type: JsonSchemaType.string,
     description: json.description,
     title: json.title,
     enumValues: values,
-    nullable: _acceptsNull(json),
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _array(ListSchema schema, JsonSchema json) {
+JsonSchema _array(ListSchema schema, JsonSchema json) {
   final items = _convert(schema.itemSchema);
-  return OpenApiSchema(
-    type: OpenApiSchemaType.array,
+  return JsonSchema(
+    type: JsonSchemaType.array,
     items: items,
     description: json.description,
     title: json.title,
     minItems: json.minItems,
     maxItems: json.maxItems,
-    nullable: _acceptsNull(json),
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _object(ObjectSchema schema, JsonSchema json) {
-  final props = <String, OpenApiSchema>{};
+JsonSchema _object(ObjectSchema schema, JsonSchema json) {
+  final props = <String, JsonSchema>{};
   final required = <String>[];
   final ordering = <String>[];
 
@@ -120,59 +119,56 @@ OpenApiSchema _object(ObjectSchema schema, JsonSchema json) {
     }
   }
 
-  return OpenApiSchema(
-    type: OpenApiSchemaType.object,
+  return JsonSchema(
+    type: JsonSchemaType.object,
     properties: props.isEmpty ? null : props,
     required: required.isEmpty ? null : required,
     propertyOrdering: ordering.isEmpty ? null : ordering,
     description: json.description,
     title: json.title,
-    additionalPropertiesSchema: json.additionalProperties == false
-        ? null
-        : null, // schema-valued addlProps not emitted by Ack JSON today
-    additionalPropertiesAllowed: json.additionalProperties,
-    nullable: _acceptsNull(json),
+    additionalPropertiesSchema: json.additionalPropertiesSchema,
+    additionalPropertiesAllowed: json.additionalPropertiesAllowed,
+    nullable: json.nullable,
   );
 }
 
-OpenApiSchema _anyOf(AnyOfSchema schema) {
+JsonSchema _anyOf(AnyOfSchema schema) {
   final branches = schema.schemas.map(_convert).toList(growable: false);
-  return OpenApiSchema(
+  return JsonSchema(
     anyOf: branches,
     nullable: schema.isNullable,
   );
 }
 
-OpenApiSchema _any(AnySchema schema, JsonSchema json) {
-  // Represent "any" as a composition of primitives + object + array(any).
+JsonSchema _any(AnySchema schema, JsonSchema json) {
   final primitives = [
-    OpenApiSchema(type: OpenApiSchemaType.string, description: json.description),
-    OpenApiSchema(type: OpenApiSchemaType.number, description: json.description),
-    OpenApiSchema(type: OpenApiSchemaType.integer, description: json.description),
-    OpenApiSchema(type: OpenApiSchemaType.boolean, description: json.description),
-    OpenApiSchema(type: OpenApiSchemaType.object, description: json.description),
+    JsonSchema(type: JsonSchemaType.string, description: json.description),
+    JsonSchema(type: JsonSchemaType.number, description: json.description),
+    JsonSchema(type: JsonSchemaType.integer, description: json.description),
+    JsonSchema(type: JsonSchemaType.boolean, description: json.description),
+    JsonSchema(type: JsonSchemaType.object, description: json.description),
   ];
 
-  final arrayBranch = OpenApiSchema(
-    type: OpenApiSchemaType.array,
-    items: OpenApiSchema(anyOf: primitives),
+  final arrayBranch = JsonSchema(
+    type: JsonSchemaType.array,
+    items: JsonSchema(anyOf: primitives),
     description: json.description,
   );
 
-  return OpenApiSchema(
+  return JsonSchema(
     anyOf: [...primitives, arrayBranch],
     nullable: schema.isNullable,
     description: json.description,
   );
 }
 
-OpenApiSchema _discriminated(
+JsonSchema _discriminated(
   DiscriminatedObjectSchema schema,
   JsonSchema json,
   ) {
   if (schema.schemas.isEmpty) {
-    return OpenApiSchema(
-      type: OpenApiSchemaType.object,
+    return JsonSchema(
+      type: JsonSchemaType.object,
       properties: const {},
       required: const [],
       nullable: schema.isNullable,
@@ -181,7 +177,7 @@ OpenApiSchema _discriminated(
   }
 
   final discriminatorKey = schema.discriminatorKey;
-  final branches = <OpenApiSchema>[];
+  final branches = <JsonSchema>[];
 
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
@@ -204,79 +200,13 @@ OpenApiSchema _discriminated(
       },
     );
 
-    final branchJson = JsonSchema.fromJson(normalized.toJsonSchema());
-    branches.add(_object(normalized, branchJson));
-  }
-
-  return OpenApiSchema(
+     branches.add(_convert(normalized));
+   }
+ 
+  return JsonSchema(
     oneOf: branches,
-    discriminator: OpenApiDiscriminator(propertyName: discriminatorKey),
+    discriminator: JsonSchemaDiscriminator(propertyName: discriminatorKey),
     description: schema.description ?? json.description,
     nullable: schema.isNullable,
   );
-}
-
-// Helpers
-
-JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
-  final anyOf = jsonSchema.anyOf;
-  if (anyOf == null || anyOf.isEmpty) return jsonSchema;
-
-  final nonNull =
-      anyOf.where((candidate) => !_isNullSchema(candidate)).toList(growable: false);
-  if (nonNull.length == 1) return nonNull.first;
-  return jsonSchema;
-}
-
-bool _acceptsNull(JsonSchema schema) {
-  if (schema.acceptsNull) return true;
-  final anyOf = schema.anyOf;
-  if (anyOf == null) return false;
-  return anyOf.any(_isNullSchema);
-}
-
-bool _isNullSchema(JsonSchema schema) {
-  if (schema.singleType == JsonSchemaType.null_) return true;
-  final types = schema.type;
-  if (types != null && types.contains(JsonSchemaType.null_)) {
-    return types.length == 1;
-  }
-  final nested = schema.anyOf;
-  if (nested == null || nested.isEmpty) return false;
-  return nested.every(_isNullSchema);
-}
-
-extension on OpenApiSchema {
-  OpenApiSchema copyWith({
-    String? title,
-    String? description,
-    bool? nullable,
-  }) {
-    return OpenApiSchema(
-      type: type,
-      format: format,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      nullable: nullable ?? this.nullable,
-      enumValues: enumValues,
-      items: items,
-      properties: properties,
-      required: required,
-      propertyOrdering: propertyOrdering,
-      anyOf: anyOf,
-      oneOf: oneOf,
-      minItems: minItems,
-      maxItems: maxItems,
-      minProperties: minProperties,
-      maxProperties: maxProperties,
-      minLength: minLength,
-      maxLength: maxLength,
-      pattern: pattern,
-      minimum: minimum,
-      maximum: maximum,
-      discriminator: discriminator,
-      additionalPropertiesSchema: additionalPropertiesSchema,
-      additionalPropertiesAllowed: additionalPropertiesAllowed,
-    );
-  }
 }

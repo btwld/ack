@@ -266,11 +266,6 @@ abstract class AckSchemaConverter<TSchema> {
       return true;
     }
 
-    final types = schema.type;
-    if (types != null && types.contains(JsonSchemaType.null_)) {
-      return types.length == 1;
-    }
-
     final nestedAnyOf = schema.anyOf;
     if (nestedAnyOf == null || nestedAnyOf.isEmpty) {
       return false;

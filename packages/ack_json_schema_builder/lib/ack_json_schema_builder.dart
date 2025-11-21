@@ -19,7 +19,7 @@
 /// ```
 library;
 
-import 'package:ack/ack.dart' hide JsonMap;
+import 'package:ack/ack.dart';
 import 'package:ack/schema_converter_base.dart';
 import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
 
