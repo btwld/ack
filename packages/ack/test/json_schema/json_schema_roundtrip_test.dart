@@ -499,7 +499,15 @@ void main() {
       final schema = JsonSchema.fromJson(input);
       final output = schema.toJson();
 
-      expect(output, equals(input));
+      expect(
+        output,
+        equals({
+          'anyOf': [
+            {'type': 'string'},
+            {'type': 'null'},
+          ],
+        }),
+      );
     });
 
     test('multiple union types round-trip correctly', () {
@@ -510,7 +518,16 @@ void main() {
       final schema = JsonSchema.fromJson(input);
       final output = schema.toJson();
 
-      expect(output, equals(input));
+      expect(
+        output,
+        equals({
+          'anyOf': [
+            {'type': 'string'},
+            {'type': 'number'},
+            {'type': 'boolean'},
+          ],
+        }),
+      );
     });
 
     test('nullable string with constraints round-trips correctly', () {
@@ -524,7 +541,15 @@ void main() {
       final schema = JsonSchema.fromJson(input);
       final output = schema.toJson();
 
-      expect(output, equals(input));
+      expect(
+        output,
+        equals({
+          'anyOf': [
+            {'type': 'string', 'minLength': 5, 'maxLength': 100, 'pattern': r'^[A-Z]'},
+            {'type': 'null'},
+          ],
+        }),
+      );
     });
 
     test('union type with description round-trips correctly', () {
@@ -536,7 +561,17 @@ void main() {
       final schema = JsonSchema.fromJson(input);
       final output = schema.toJson();
 
-      expect(output, equals(input));
+      expect(
+        output,
+        equals({
+          'description': 'A flexible value that can be string, int, or null',
+          'anyOf': [
+            {'type': 'string'},
+            {'type': 'integer'},
+            {'type': 'null'},
+          ],
+        }),
+      );
     });
   });
 

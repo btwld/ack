@@ -312,7 +312,7 @@ void main() {
             isA<UnsupportedError>().having(
               (e) => e.message,
               'message',
-              contains('property \"bad\"'),
+              contains('property "bad"'),
             ),
           ),
         );

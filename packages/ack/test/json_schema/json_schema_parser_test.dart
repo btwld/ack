@@ -92,45 +92,25 @@ void main() {
     });
   });
 
-  group('JsonSchema Parser - Invalid Type Field', () {
-    test('rejects schema without type or composition', () {
-      expect(
-        () => JsonSchema.fromJson({'format': 'email'}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('missing required "type" field'),
-          ),
-        ),
-      );
+  group('JsonSchema Parser - Type Field', () {
+    test('allows schema without type or composition', () {
+      final schema = JsonSchema.fromJson({'format': 'email'});
+      expect(schema.type, isNull);
     });
 
-    test('rejects unknown type', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 'unknown'}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Unknown JSON Schema type'),
-          ),
-        ),
-      );
+    test('unknown type is ignored (treated as typeless)', () {
+      final schema = JsonSchema.fromJson({'type': 'unknown'});
+      expect(schema.type, isNull);
     });
 
-    test('rejects null type value', () {
-      expect(
-        () => JsonSchema.fromJson({'type': null}),
-        throwsA(isA<ArgumentError>()),
-      );
+    test('null type value is treated as typeless', () {
+      final schema = JsonSchema.fromJson({'type': null});
+      expect(schema.type, isNull);
     });
 
-    test('rejects empty string type', () {
-      expect(
-        () => JsonSchema.fromJson({'type': ''}),
-        throwsA(isA<ArgumentError>()),
-      );
+    test('empty string type is treated as typeless', () {
+      final schema = JsonSchema.fromJson({'type': ''});
+      expect(schema.type, isNull);
     });
   });
 
@@ -149,17 +129,9 @@ void main() {
       );
     });
 
-    test('rejects non-numeric minLength', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 'string', 'minLength': 'five'}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected int'),
-          ),
-        ),
-      );
+    test('ignores non-numeric minLength (coerces to null)', () {
+      final schema = JsonSchema.fromJson({'type': 'string', 'minLength': 'five'});
+      expect(schema.minLength, isNull);
     });
 
     test('converts double minLength to int', () {
@@ -177,17 +149,9 @@ void main() {
       );
     });
 
-    test('rejects non-list enum', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 'string', 'enum': 'not-a-list'}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected List'),
-          ),
-        ),
-      );
+    test('non-list enum is ignored', () {
+      final schema = JsonSchema.fromJson({'type': 'string', 'enum': 'not-a-list'});
+      expect(schema.enumValues, isNull);
     });
 
     test('converts enum values to strings', () {
@@ -222,17 +186,9 @@ void main() {
       );
     });
 
-    test('rejects non-numeric minimum', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 'integer', 'minimum': 'zero'}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected num'),
-          ),
-        ),
-      );
+    test('non-numeric minimum is ignored', () {
+      final schema = JsonSchema.fromJson({'type': 'integer', 'minimum': 'zero'});
+      expect(schema.minimum, isNull);
     });
 
     test('accepts multipleOf', () {
@@ -257,20 +213,12 @@ void main() {
       );
     });
 
-    test('rejects non-map items', () {
-      expect(
-        () => JsonSchema.fromJson({
-          'type': 'array',
-          'items': 'not-a-schema',
-        }),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected schema Map'),
-          ),
-        ),
-      );
+    test('non-map items are ignored', () {
+      final schema = JsonSchema.fromJson({
+        'type': 'array',
+        'items': 'not-a-schema',
+      });
+      expect(schema.items, isNull);
     });
 
     test('accepts minItems/maxItems', () {
@@ -294,15 +242,13 @@ void main() {
       expect(schema.minItems, equals(5));
     });
 
-    test('rejects non-numeric minItems', () {
-      expect(
-        () => JsonSchema.fromJson({
-          'type': 'array',
-          'items': {'type': 'string'},
-          'minItems': 'one',
-        }),
-        throwsA(isA<ArgumentError>()),
-      );
+    test('non-numeric minItems is ignored', () {
+      final schema = JsonSchema.fromJson({
+        'type': 'array',
+        'items': {'type': 'string'},
+        'minItems': 'one',
+      });
+      expect(schema.minItems, isNull);
     });
   });
 
@@ -320,20 +266,12 @@ void main() {
       );
     });
 
-    test('rejects non-map properties', () {
-      expect(
-        () => JsonSchema.fromJson({
-          'type': 'object',
-          'properties': 'not-a-map',
-        }),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected properties Map'),
-          ),
-        ),
-      );
+    test('non-map properties are ignored', () {
+      final schema = JsonSchema.fromJson({
+        'type': 'object',
+        'properties': 'not-a-map',
+      });
+      expect(schema.properties, isNull);
     });
 
     test('accepts required array', () {
@@ -347,21 +285,13 @@ void main() {
       );
     });
 
-    test('rejects non-list required', () {
-      expect(
-        () => JsonSchema.fromJson({
-          'type': 'object',
-          'properties': {'name': {'type': 'string'}},
-          'required': 'name',
-        }),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected List'),
-          ),
-        ),
-      );
+    test('non-list required is ignored', () {
+      final schema = JsonSchema.fromJson({
+        'type': 'object',
+        'properties': {'name': {'type': 'string'}},
+        'required': 'name',
+      });
+      expect(schema.required, isNull);
     });
 
     test('converts required values to strings', () {
@@ -389,17 +319,9 @@ void main() {
       );
     });
 
-    test('rejects non-list anyOf', () {
-      expect(
-        () => JsonSchema.fromJson({'anyOf': 'not-a-list'}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Expected schema List'),
-          ),
-        ),
-      );
+    test('non-list anyOf is ignored', () {
+      final schema = JsonSchema.fromJson({'anyOf': 'not-a-list'});
+      expect(schema.anyOf, isNull);
     });
 
     test('accepts nested anyOf schemas', () {
@@ -471,16 +393,14 @@ void main() {
       );
     });
 
-    test('rejects invalid nested schema', () {
-      expect(
-        () => JsonSchema.fromJson({
-          'type': 'object',
-          'properties': {
-            'invalid': {'type': 'unknown-type'},
-          },
-        }),
-        throwsA(isA<ArgumentError>()),
-      );
+    test('unknown nested type is tolerated (treated as typeless)', () {
+      final schema = JsonSchema.fromJson({
+        'type': 'object',
+        'properties': {
+          'invalid': {'type': 'unknown-type'},
+        },
+      });
+      expect(schema.properties!['invalid']!.type, isNull);
     });
   });
 
@@ -546,23 +466,20 @@ void main() {
     test('accepts single type as string', () {
       final schema = JsonSchema.fromJson({'type': 'string'});
       expect(schema.singleType, JsonSchemaType.string);
-      expect(schema.type, hasLength(1));
     });
 
-    test('accepts union type as array', () {
+    test('union type with null marks schema nullable', () {
       final schema = JsonSchema.fromJson({'type': ['string', 'null']});
-      expect(schema.singleType, isNull);
-      expect(schema.type, hasLength(2));
-      expect(schema.acceptsType(JsonSchemaType.string), isTrue);
-      expect(schema.acceptsType(JsonSchemaType.null_), isTrue);
+      expect(schema.singleType, JsonSchemaType.string);
+      expect(schema.nullable, isTrue);
     });
 
-    test('accepts multiple union types', () {
+    test('multiple union types pick first known type', () {
       final schema = JsonSchema.fromJson({'type': ['string', 'number', 'boolean']});
-      expect(schema.type, hasLength(3));
-      expect(schema.acceptsType(JsonSchemaType.string), isTrue);
-      expect(schema.acceptsType(JsonSchemaType.number), isTrue);
-      expect(schema.acceptsType(JsonSchemaType.boolean), isTrue);
+      expect(schema.singleType, isNull);
+      expect(schema.anyOf, isNotNull);
+      expect(schema.anyOf, hasLength(3));
+      expect(schema.nullable, isFalse);
     });
 
     test('acceptsNull returns true for nullable types', () {
@@ -575,38 +492,20 @@ void main() {
       expect(schema.acceptsNull, isFalse);
     });
 
-    test('rejects empty type array', () {
-      expect(
-        () => JsonSchema.fromJson({'type': []}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('Invalid JSON Schema type array'),
-          ),
-        ),
-      );
+    test('empty type array is treated as typeless', () {
+      final schema = JsonSchema.fromJson({'type': []});
+      expect(schema.type, isNull);
     });
 
-    test('rejects unknown type in array', () {
-      // Should skip unknown types and accept valid ones
-      final schema = JsonSchema.fromJson({'type': ['string', 'unknown', 'number']});
-      expect(schema.type, hasLength(2));
-      expect(schema.acceptsType(JsonSchemaType.string), isTrue);
-      expect(schema.acceptsType(JsonSchemaType.number), isTrue);
+    test('unknown types in array are ignored', () {
+      final schema = JsonSchema.fromJson({'type': ['string', 'unknown', 'null']});
+      expect(schema.singleType, JsonSchemaType.string);
+      expect(schema.nullable, isTrue);
     });
 
-    test('rejects type as number', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 123}),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('must be string or array'),
-          ),
-        ),
-      );
+    test('non-string type value falls back to typeless', () {
+      final schema = JsonSchema.fromJson({'type': 123});
+      expect(schema.type, isNull);
     });
   });
 

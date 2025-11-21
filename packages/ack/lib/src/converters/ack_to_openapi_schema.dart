@@ -2,41 +2,43 @@ library;
 
 import 'package:ack/ack.dart';
 
-/// Converts ACK schemas to the new JsonSchema (formerly OpenAPI-style) model.
+/// Converts ACK schemas to the new JsonSchema (canonical) model.
 extension AckToJsonSchemaModel on AckSchema {
   JsonSchema toJsonSchemaModel() => _convert(this);
 }
 
 JsonSchema _convert(AckSchema schema) {
-  // If schema already has a toJsonSchema map, parse it for metadata when useful
-  final jsonSchema = JsonSchema.fromJson(schema.toJsonSchema());
+  // Parse existing JSON Schema map for metadata
+  final parsed = JsonSchema.fromJson(schema.toJsonSchema());
+  final effective = _unwrapNullable(parsed);
+  final nullableFlag = parsed.nullable == true || schema.isNullable;
 
   if (schema is TransformedSchema) {
     final base = _convert(schema.schema);
     return base.copyWith(
       description: schema.description ?? base.description,
-      nullable: schema.isNullable || base.nullable == true,
+      nullable: nullableFlag || base.nullable == true,
     );
   }
 
   return switch (schema) {
-    StringSchema() => _string(schema, jsonSchema),
-    IntegerSchema() => _integer(schema, jsonSchema),
-    DoubleSchema() => _number(schema, jsonSchema),
-    BooleanSchema() => _boolean(schema, jsonSchema),
-    EnumSchema() => _enum(schema, jsonSchema),
-    ListSchema() => _array(schema, jsonSchema),
-    ObjectSchema() => _object(schema, jsonSchema),
+    StringSchema() => _string(effective, nullableFlag),
+    IntegerSchema() => _integer(effective, nullableFlag),
+    DoubleSchema() => _number(effective, nullableFlag),
+    BooleanSchema() => _boolean(effective, nullableFlag),
+    EnumSchema() => _enum(schema, effective, nullableFlag),
+    ListSchema() => _array(schema, effective, nullableFlag),
+    ObjectSchema() => _object(schema, effective, nullableFlag),
     AnyOfSchema() => _anyOf(schema),
-    AnySchema() => _any(schema, jsonSchema),
-    DiscriminatedObjectSchema() => _discriminated(schema, jsonSchema),
+    AnySchema() => _any(schema, effective, nullableFlag),
+    DiscriminatedObjectSchema() => _discriminated(schema, effective, nullableFlag),
     _ => throw UnsupportedError(
         'Schema type ${schema.runtimeType} not supported for JsonSchema conversion.',
       ),
   };
 }
 
-JsonSchema _string(StringSchema _, JsonSchema json) {
+JsonSchema _string(JsonSchema json, bool nullableFlag) {
   final isEnum = json.enumValues != null && json.enumValues!.isNotEmpty;
   return JsonSchema(
     type: JsonSchemaType.string,
@@ -47,53 +49,55 @@ JsonSchema _string(StringSchema _, JsonSchema json) {
     minLength: json.minLength,
     maxLength: json.maxLength,
     pattern: json.pattern,
-    nullable: json.nullable,
+    nullable: nullableFlag,
   );
 }
 
-JsonSchema _integer(IntegerSchema _, JsonSchema json) {
+JsonSchema _integer(JsonSchema json, bool nullableFlag) {
   return JsonSchema(
     type: JsonSchemaType.integer,
     description: json.description,
     title: json.title,
     minimum: json.minimum?.toInt(),
     maximum: json.maximum?.toInt(),
-    nullable: json.nullable,
+    multipleOf: json.multipleOf?.toInt(),
+    nullable: nullableFlag,
   );
 }
 
-JsonSchema _number(DoubleSchema _, JsonSchema json) {
+JsonSchema _number(JsonSchema json, bool nullableFlag) {
   return JsonSchema(
     type: JsonSchemaType.number,
     description: json.description,
     title: json.title,
     minimum: json.minimum?.toDouble(),
     maximum: json.maximum?.toDouble(),
-    nullable: json.nullable,
+    multipleOf: json.multipleOf,
+    nullable: nullableFlag,
   );
 }
 
-JsonSchema _boolean(BooleanSchema _, JsonSchema json) {
+JsonSchema _boolean(JsonSchema json, bool nullableFlag) {
   return JsonSchema(
     type: JsonSchemaType.boolean,
     description: json.description,
     title: json.title,
-    nullable: json.nullable,
+    nullable: nullableFlag,
   );
 }
 
-JsonSchema _enum(EnumSchema schema, JsonSchema json) {
+JsonSchema _enum(EnumSchema schema, JsonSchema json, bool nullableFlag) {
   final values = [for (final v in schema.values) v.name];
   return JsonSchema(
     type: JsonSchemaType.string,
     description: json.description,
     title: json.title,
     enumValues: values,
-    nullable: json.nullable,
+    nullable: nullableFlag,
   );
 }
 
-JsonSchema _array(ListSchema schema, JsonSchema json) {
+JsonSchema _array(ListSchema schema, JsonSchema json, bool nullableFlag) {
   final items = _convert(schema.itemSchema);
   return JsonSchema(
     type: JsonSchemaType.array,
@@ -102,18 +106,18 @@ JsonSchema _array(ListSchema schema, JsonSchema json) {
     title: json.title,
     minItems: json.minItems,
     maxItems: json.maxItems,
-    nullable: json.nullable,
+    nullable: nullableFlag,
   );
 }
 
-JsonSchema _object(ObjectSchema schema, JsonSchema json) {
+JsonSchema _object(ObjectSchema schema, JsonSchema json, bool nullableFlag) {
   final props = <String, JsonSchema>{};
   final required = <String>[];
   final ordering = <String>[];
 
   for (final entry in schema.properties.entries) {
     ordering.add(entry.key);
-    props[entry.key] = _convert(entry.value);
+    props[entry.key] = _wrapProperty(entry.key, () => _convert(entry.value));
     if (!entry.value.isOptional) {
       required.add(entry.key);
     }
@@ -128,7 +132,7 @@ JsonSchema _object(ObjectSchema schema, JsonSchema json) {
     title: json.title,
     additionalPropertiesSchema: json.additionalPropertiesSchema,
     additionalPropertiesAllowed: json.additionalPropertiesAllowed,
-    nullable: json.nullable,
+    nullable: nullableFlag,
   );
 }
 
@@ -140,38 +144,40 @@ JsonSchema _anyOf(AnyOfSchema schema) {
   );
 }
 
-JsonSchema _any(AnySchema schema, JsonSchema json) {
+JsonSchema _any(AnySchema schema, JsonSchema json, bool nullableFlag) {
+  final description = json.description ?? schema.description;
   final primitives = [
-    JsonSchema(type: JsonSchemaType.string, description: json.description),
-    JsonSchema(type: JsonSchemaType.number, description: json.description),
-    JsonSchema(type: JsonSchemaType.integer, description: json.description),
-    JsonSchema(type: JsonSchemaType.boolean, description: json.description),
-    JsonSchema(type: JsonSchemaType.object, description: json.description),
+    JsonSchema(type: JsonSchemaType.string, description: description),
+    JsonSchema(type: JsonSchemaType.number, description: description),
+    JsonSchema(type: JsonSchemaType.integer, description: description),
+    JsonSchema(type: JsonSchemaType.boolean, description: description),
+    JsonSchema(type: JsonSchemaType.object, description: description),
   ];
 
   final arrayBranch = JsonSchema(
     type: JsonSchemaType.array,
     items: JsonSchema(anyOf: primitives),
-    description: json.description,
+    description: description,
   );
 
   return JsonSchema(
     anyOf: [...primitives, arrayBranch],
-    nullable: schema.isNullable,
-    description: json.description,
+    nullable: nullableFlag,
+    description: description,
   );
 }
 
 JsonSchema _discriminated(
   DiscriminatedObjectSchema schema,
   JsonSchema json,
+  bool nullableFlag,
   ) {
   if (schema.schemas.isEmpty) {
     return JsonSchema(
       type: JsonSchemaType.object,
       properties: const {},
       required: const [],
-      nullable: schema.isNullable,
+      nullable: nullableFlag,
       description: schema.description ?? json.description,
     );
   }
@@ -200,13 +206,39 @@ JsonSchema _discriminated(
       },
     );
 
-     branches.add(_convert(normalized));
-   }
- 
+    branches.add(_convert(normalized));
+  }
+
   return JsonSchema(
     oneOf: branches,
     discriminator: JsonSchemaDiscriminator(propertyName: discriminatorKey),
     description: schema.description ?? json.description,
-    nullable: schema.isNullable,
+    nullable: nullableFlag,
   );
+}
+
+JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
+  final anyOf = jsonSchema.anyOf;
+  if (anyOf == null || anyOf.isEmpty) return jsonSchema;
+  final nonNull = anyOf.where((c) => c.type != JsonSchemaType.null_).toList();
+  if (nonNull.length == 1) {
+    return nonNull.first.copyWith(nullable: jsonSchema.nullable ?? true);
+  }
+  return jsonSchema;
+}
+
+T _wrapProperty<T>(String key, T Function() fn) {
+  try {
+    return fn();
+  } catch (e, st) {
+    final msg = 'Error converting property "$key": ${e is Error ? e.toString() : e}';
+    if (e is UnsupportedError) {
+      Error.throwWithStackTrace(UnsupportedError(msg), st);
+    } else if (e is ArgumentError) {
+      Error.throwWithStackTrace(ArgumentError(msg), st);
+    } else if (e is StateError) {
+      Error.throwWithStackTrace(StateError(msg), st);
+    }
+    rethrow;
+  }
 }

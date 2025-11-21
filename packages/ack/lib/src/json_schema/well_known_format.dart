@@ -1,23 +1,22 @@
 library;
 
 enum WellKnownFormat {
-  email,
-  uri,
-  uuid,
-  date,
-  dateTime,
-  ipv4,
-  ipv6,
-}
+  email('email'),
+  uri('uri'),
+  uuid('uuid'),
+  date('date'),
+  dateTime('date-time'),
+  ipv4('ipv4'),
+  ipv6('ipv6');
 
-extension WellKnownFormatExt on WellKnownFormat {
-  String toJson() => switch (this) {
-        WellKnownFormat.email => 'email',
-        WellKnownFormat.uri => 'uri',
-        WellKnownFormat.uuid => 'uuid',
-        WellKnownFormat.date => 'date',
-        WellKnownFormat.dateTime => 'date-time',
-        WellKnownFormat.ipv4 => 'ipv4',
-        WellKnownFormat.ipv6 => 'ipv6',
-      };
+  const WellKnownFormat(this.value);
+  final String value;
+
+  static WellKnownFormat? fromValue(String? raw) {
+    if (raw == null) return null;
+    for (final candidate in WellKnownFormat.values) {
+      if (candidate.value == raw) return candidate;
+    }
+    return null;
+  }
 }

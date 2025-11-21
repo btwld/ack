@@ -334,7 +334,7 @@ void main() {
       final jsonSchema = JsonSchema.fromJson(jsonMap);
 
       expect(jsonSchema.singleType, JsonSchemaType.object);
-      expect(jsonSchema.additionalProperties, isTrue);
+      expect(jsonSchema.additionalPropertiesSchema, isNotNull);
     });
 
     test('parses nullable object', () {
