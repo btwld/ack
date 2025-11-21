@@ -254,6 +254,69 @@ void main() {
         expect(innerAnyOf, hasLength(2));
         expect(outerAnyOf.last.value['type'], 'null');
       });
+
+      test('TransformedSchema overrides are applied (description + nullable)', () {
+        final schema = Ack.date().copyWith(
+          description: 'Birth date',
+          isNullable: true,
+        );
+
+        final result = schema.toJsonSchemaBuilder();
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
+
+        // First branch should carry description override and date format
+        final dateBranch = anyOf.first;
+        expect(dateBranch.value['description'], 'Birth date');
+        expect(dateBranch.value['format'], 'date');
+
+        // Second branch represents nullability
+        final nullBranch = anyOf.last;
+        expect(nullBranch.value['type'], 'null');
+      });
+    });
+
+    group('Discriminated + error wrapping', () {
+      test('throws on discriminator/property conflict', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'circle': Ack.object({
+              'type': Ack.string(), // conflict
+              'radius': Ack.double(),
+            }),
+          },
+        );
+
+        expect(
+          () => schema.toJsonSchemaBuilder(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('type'),
+            ),
+          ),
+        );
+      });
+
+      test('wraps property conversion errors with path', () {
+        final schema = Ack.object({
+          'bad': const TestUnsupportedAckSchema(),
+        });
+
+        expect(
+          () => schema.toJsonSchemaBuilder(),
+          throwsA(
+            isA<UnsupportedError>().having(
+              (e) => e.message,
+              'message',
+              contains('property \"bad\"'),
+            ),
+          ),
+        );
+      });
     });
   });
 }

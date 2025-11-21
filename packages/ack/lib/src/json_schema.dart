@@ -8,3 +8,4 @@ library;
 export 'json_schema/json_schema.dart';
 export 'json_schema/json_schema_type.dart';
 export 'json_schema/well_known_format.dart';
+export 'json_schema/openapi_schema.dart';

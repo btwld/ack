@@ -752,6 +752,29 @@ void main() {
     });
 
     group('DiscriminatedObjectSchema conversion', () {
+      test('throws when branch property conflicts with discriminator key', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'circle': Ack.object({
+              'type': Ack.string(), // conflict
+              'radius': Ack.double(),
+            }),
+          },
+        );
+
+        expect(
+          () => schema.toFirebaseAiSchema(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('type'),
+            ),
+          ),
+        );
+      });
+
       test('converts basic discriminated schema with object branches', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
@@ -930,6 +953,25 @@ void main() {
 
         final colorProp = result.properties!['color']!;
         expect(colorProp.enumValues, ['red', 'blue']);
+      });
+    });
+
+    group('Error wrapping', () {
+      test('includes property path when child conversion fails', () {
+        final schema = Ack.object({
+          'bad': const TestUnsupportedAckSchema(),
+        });
+
+        expect(
+          () => schema.toFirebaseAiSchema(),
+          throwsA(
+            isA<UnsupportedError>().having(
+              (e) => e.message,
+              'message',
+              contains('property \"bad\"'),
+            ),
+          ),
+        );
       });
     });
 
