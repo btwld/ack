@@ -1,9 +1,29 @@
 library;
 
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'well_known_format.dart';
 
-enum JsonSchemaType { string, number, integer, boolean, array, object, null_ }
+enum JsonSchemaType {
+  string('string'),
+  number('number'),
+  integer('integer'),
+  boolean('boolean'),
+  array('array'),
+  object('object'),
+  null_('null');
+
+  const JsonSchemaType(this.value);
+  final String value;
+
+  static JsonSchemaType? fromValue(String? raw) {
+    if (raw == null) return null;
+    for (final t in JsonSchemaType.values) {
+      if (t.value == raw) return t;
+    }
+    return null;
+  }
+}
 
 @immutable
 class JsonSchemaDiscriminator {
@@ -30,6 +50,17 @@ class JsonSchemaDiscriminator {
           : null,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! JsonSchemaDiscriminator) return false;
+    return propertyName == other.propertyName &&
+        const MapEquality().equals(mapping, other.mapping);
+  }
+
+  @override
+  int get hashCode => Object.hash(propertyName, const MapEquality().hash(mapping));
 }
 
 @immutable
@@ -106,46 +137,45 @@ class JsonSchema {
   Map<String, Object?> toJson() {
     final map = <String, Object?>{};
 
-    // base structural keywords
-    if (type != null && type != JsonSchemaType.null_) {
-      map['type'] = typeString(type!);
-    } else if (type == JsonSchemaType.null_) {
-      map['type'] = 'null';
+    void addIfNotNull(String key, Object? value) {
+      if (value != null) map[key] = value;
     }
 
-    if (format != null) map['format'] = format;
-    if (title != null) map['title'] = title;
-    if (description != null) map['description'] = description;
-    if (enumValues != null) map['enum'] = enumValues;
-    if (items != null) map['items'] = items!.toJson();
+    if (type != null) {
+      map['type'] = type!.value;
+    }
+
+    addIfNotNull('format', format);
+    addIfNotNull('title', title);
+    addIfNotNull('description', description);
+    addIfNotNull('enum', enumValues);
+    addIfNotNull('items', items?.toJson());
 
     if (properties != null) {
-      map['properties'] = {
-        for (final e in properties!.entries) e.key: e.value.toJson(),
-      };
+      map['properties'] = properties!.map((k, v) => MapEntry(k, v.toJson()));
     }
 
-    if (required != null) map['required'] = required;
-    if (propertyOrdering != null) map['propertyOrdering'] = propertyOrdering;
+    addIfNotNull('required', required);
+    addIfNotNull('propertyOrdering', propertyOrdering);
 
     if (allOf != null) map['allOf'] = allOf!.map((s) => s.toJson()).toList();
     if (anyOf != null) map['anyOf'] = anyOf!.map((s) => s.toJson()).toList();
     if (oneOf != null) map['oneOf'] = oneOf!.map((s) => s.toJson()).toList();
 
-    if (minItems != null) map['minItems'] = minItems;
-    if (maxItems != null) map['maxItems'] = maxItems;
-    if (minProperties != null) map['minProperties'] = minProperties;
-    if (maxProperties != null) map['maxProperties'] = maxProperties;
-    if (minLength != null) map['minLength'] = minLength;
-    if (maxLength != null) map['maxLength'] = maxLength;
-    if (pattern != null) map['pattern'] = pattern;
-    if (minimum != null) map['minimum'] = minimum;
-    if (maximum != null) map['maximum'] = maximum;
-    if (exclusiveMinimum != null) map['exclusiveMinimum'] = exclusiveMinimum;
-    if (exclusiveMaximum != null) map['exclusiveMaximum'] = exclusiveMaximum;
-    if (multipleOf != null) map['multipleOf'] = multipleOf;
-    if (uniqueItems != null) map['uniqueItems'] = uniqueItems;
-    if (discriminator != null) map['discriminator'] = discriminator!.toJson();
+    addIfNotNull('minItems', minItems);
+    addIfNotNull('maxItems', maxItems);
+    addIfNotNull('minProperties', minProperties);
+    addIfNotNull('maxProperties', maxProperties);
+    addIfNotNull('minLength', minLength);
+    addIfNotNull('maxLength', maxLength);
+    addIfNotNull('pattern', pattern);
+    addIfNotNull('minimum', minimum);
+    addIfNotNull('maximum', maximum);
+    addIfNotNull('exclusiveMinimum', exclusiveMinimum);
+    addIfNotNull('exclusiveMaximum', exclusiveMaximum);
+    addIfNotNull('multipleOf', multipleOf);
+    addIfNotNull('uniqueItems', uniqueItems);
+    addIfNotNull('discriminator', discriminator?.toJson());
 
     if (additionalPropertiesSchema != null) {
       map['additionalProperties'] = additionalPropertiesSchema!.toJson();
@@ -153,23 +183,24 @@ class JsonSchema {
       map['additionalProperties'] = additionalPropertiesAllowed;
     }
 
-    // nullable handling: emit draft-style anyOf with null when appropriate
     if (nullable == true && type != null && map['anyOf'] == null && map['oneOf'] == null) {
       final base = Map<String, Object?>.from(map);
-      base.remove('nullable');
       return {
-        'anyOf': [base, {'type': 'null'}],
+        'anyOf': [
+          base,
+          {'type': JsonSchemaType.null_.value},
+        ],
       };
     }
 
-    if (nullable == true && map['anyOf'] != null) {
-      final list = List<Object?>.from(map['anyOf'] as List);
-      final hasNullBranch = list.any((e) => e is Map && e['type'] == 'null');
-      if (!hasNullBranch) list.add({'type': 'null'});
-      map['anyOf'] = list;
-    }
+    bool compositionHasNull(List<JsonSchema>? schemas) =>
+        schemas?.any((s) => s.type == JsonSchemaType.null_) ?? false;
 
-    map.removeWhere((_, v) => v == null);
+    final hasNullInComposition =
+        compositionHasNull(anyOf) || compositionHasNull(oneOf);
+
+    if (nullable == true && !hasNullInComposition) map['nullable'] = true;
+
     return map;
   }
 
@@ -177,10 +208,16 @@ class JsonSchema {
     int? parseInt(Object? v) {
       if (v is int) return v;
       if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v);
       return null;
     }
 
-    num? parseNum(Object? v) => v is num ? v : null;
+    num? parseNum(Object? v) {
+      if (v is num) return v;
+      if (v is String) return num.tryParse(v);
+      return null;
+    }
+
     bool? parseBool(Object? v) => v is bool ? v : null;
     List<Object?>? parseList(Object? raw) => raw is List ? List<Object?>.from(raw) : null;
     List<JsonSchema>? parseSchemaList(Object? raw) {
@@ -203,29 +240,36 @@ class JsonSchema {
     final rawType = json['type'];
     JsonSchemaType? type;
     List<JsonSchema>? unionTypes;
-    bool nullableFlag = json['nullable'] as bool? ?? _inferNullable(rawType, json['anyOf']);
+    bool? nullableFlag = parseBool(json['nullable']);
+
     if (rawType is String) {
-      type = _typeFromString(rawType);
+      type = JsonSchemaType.fromValue(rawType);
     } else if (rawType is List) {
-      final parsed = rawType
-          .map((e) => _typeFromString(e?.toString()))
+      final parsedTypes = rawType.map((e) => e.toString()).toList();
+      final hasNull = parsedTypes.contains('null');
+      final nonNullTypes = parsedTypes
+          .where((t) => t != 'null')
+          .map(JsonSchemaType.fromValue)
           .whereType<JsonSchemaType>()
           .toList();
 
-      final containsNull = parsed.contains(JsonSchemaType.null_);
-      final nonNullTypes = parsed.where((t) => t != JsonSchemaType.null_).toList();
-
-      if (nonNullTypes.isNotEmpty) {
+      if (nonNullTypes.length == 1 && hasNull) {
         type = nonNullTypes.first;
+        nullableFlag ??= true;
+      } else if (nonNullTypes.length == 1 && !hasNull) {
+        type = nonNullTypes.first;
+      } else {
+        unionTypes = [
+          ...nonNullTypes.map((t) => JsonSchema(type: t)),
+          if (hasNull) const JsonSchema(type: JsonSchemaType.null_),
+        ];
+        if (hasNull) nullableFlag ??= true;
       }
+    }
 
-      if (nonNullTypes.length > 1) {
-        unionTypes = nonNullTypes.map((t) => JsonSchema(type: t)).toList();
-        type = null;
-      }
-
-      // If the union was only a single non-null type plus null, treat as nullable
-      nullableFlag = nullableFlag || containsNull;
+    if (nullableFlag != true && json['anyOf'] is List) {
+      final list = json['anyOf'] as List;
+      nullableFlag = list.any((e) => e is Map && e['type'] == 'null');
     }
 
     final propsRaw = json['properties'];
@@ -245,7 +289,6 @@ class JsonSchema {
       format: json['format'] as String?,
       title: json['title'] as String?,
       description: json['description'] as String?,
-      nullable: nullableFlag,
       enumValues: parseList(json['enum']),
       items: parseSchema(json['items']),
       properties: properties,
@@ -274,12 +317,17 @@ class JsonSchema {
           : null,
       additionalPropertiesSchema: parseSchema(rawAddProps),
       additionalPropertiesAllowed: rawAddProps is bool ? rawAddProps : null,
+      nullable: nullableFlag ?? false,
     );
   }
 
   // Compatibility helpers
   List<String>? get enum_ => enumValues?.map((e) => e?.toString() ?? '').toList();
-  bool get acceptsNull => nullable == true || (type == JsonSchemaType.null_);
+  bool get acceptsNull =>
+      nullable == true ||
+      type == JsonSchemaType.null_ ||
+      (anyOf?.any((s) => s.type == JsonSchemaType.null_) ?? false) ||
+      (oneOf?.any((s) => s.type == JsonSchemaType.null_) ?? false);
   JsonSchemaType? get singleType => type;
   bool get isEnum => enumValues != null && enumValues!.isNotEmpty;
   bool? get additionalProperties => additionalPropertiesAllowed;
@@ -291,73 +339,143 @@ class JsonSchema {
   }
 
   JsonSchema copyWith({
+    JsonSchemaType? type,
+    String? format,
     String? title,
     String? description,
     bool? nullable,
+    List<Object?>? enumValues,
+    JsonSchema? items,
+    Map<String, JsonSchema>? properties,
+    List<String>? required,
+    List<String>? propertyOrdering,
+    List<JsonSchema>? allOf,
+    List<JsonSchema>? anyOf,
+    List<JsonSchema>? oneOf,
+    int? minItems,
+    int? maxItems,
+    int? minProperties,
+    int? maxProperties,
+    int? minLength,
+    int? maxLength,
+    String? pattern,
+    num? minimum,
+    num? maximum,
+    num? exclusiveMinimum,
+    num? exclusiveMaximum,
+    num? multipleOf,
+    JsonSchemaDiscriminator? discriminator,
+    bool? uniqueItems,
+    JsonSchema? additionalPropertiesSchema,
+    bool? additionalPropertiesAllowed,
   }) {
     return JsonSchema(
-      type: type,
-      format: format,
+      type: type ?? this.type,
+      format: format ?? this.format,
       title: title ?? this.title,
       description: description ?? this.description,
       nullable: nullable ?? this.nullable,
-      enumValues: enumValues,
-      items: items,
-      properties: properties,
-      required: required,
-      propertyOrdering: propertyOrdering,
-      allOf: allOf,
-      anyOf: anyOf,
-      oneOf: oneOf,
-      minItems: minItems,
-      maxItems: maxItems,
-      minProperties: minProperties,
-      maxProperties: maxProperties,
-      minLength: minLength,
-      maxLength: maxLength,
-      pattern: pattern,
-      minimum: minimum,
-      maximum: maximum,
-      multipleOf: multipleOf,
-      discriminator: discriminator,
-      additionalPropertiesSchema: additionalPropertiesSchema,
-      additionalPropertiesAllowed: additionalPropertiesAllowed,
+      enumValues: enumValues ?? this.enumValues,
+      items: items ?? this.items,
+      properties: properties ?? this.properties,
+      required: required ?? this.required,
+      propertyOrdering: propertyOrdering ?? this.propertyOrdering,
+      allOf: allOf ?? this.allOf,
+      anyOf: anyOf ?? this.anyOf,
+      oneOf: oneOf ?? this.oneOf,
+      minItems: minItems ?? this.minItems,
+      maxItems: maxItems ?? this.maxItems,
+      minProperties: minProperties ?? this.minProperties,
+      maxProperties: maxProperties ?? this.maxProperties,
+      minLength: minLength ?? this.minLength,
+      maxLength: maxLength ?? this.maxLength,
+      pattern: pattern ?? this.pattern,
+      minimum: minimum ?? this.minimum,
+      maximum: maximum ?? this.maximum,
+      exclusiveMinimum: exclusiveMinimum ?? this.exclusiveMinimum,
+      exclusiveMaximum: exclusiveMaximum ?? this.exclusiveMaximum,
+      multipleOf: multipleOf ?? this.multipleOf,
+      discriminator: discriminator ?? this.discriminator,
+      uniqueItems: uniqueItems ?? this.uniqueItems,
+      additionalPropertiesSchema:
+          additionalPropertiesSchema ?? this.additionalPropertiesSchema,
+      additionalPropertiesAllowed:
+          additionalPropertiesAllowed ?? this.additionalPropertiesAllowed,
     );
   }
-}
 
-String typeString(JsonSchemaType type) => switch (type) {
-      JsonSchemaType.string => 'string',
-      JsonSchemaType.number => 'number',
-      JsonSchemaType.integer => 'integer',
-      JsonSchemaType.boolean => 'boolean',
-      JsonSchemaType.array => 'array',
-      JsonSchemaType.object => 'object',
-      JsonSchemaType.null_ => 'null',
-    };
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! JsonSchema) return false;
 
-JsonSchemaType? _typeFromString(String? raw) {
-  if (raw == null) return null;
-  return switch (raw) {
-    'string' => JsonSchemaType.string,
-    'number' => JsonSchemaType.number,
-    'integer' => JsonSchemaType.integer,
-    'boolean' => JsonSchemaType.boolean,
-    'array' => JsonSchemaType.array,
-    'object' => JsonSchemaType.object,
-    'null' => JsonSchemaType.null_,
-    _ => null,
-  };
-}
-
-bool _inferNullable(Object? rawType, Object? anyOfRaw) {
-  if (rawType is List && rawType.map((e) => e.toString()).contains('null')) {
-    return true;
+    const deepEq = DeepCollectionEquality();
+    return type == other.type &&
+        format == other.format &&
+        title == other.title &&
+        description == other.description &&
+        nullable == other.nullable &&
+        deepEq.equals(enumValues, other.enumValues) &&
+        items == other.items &&
+        deepEq.equals(properties, other.properties) &&
+        deepEq.equals(required, other.required) &&
+        deepEq.equals(propertyOrdering, other.propertyOrdering) &&
+        deepEq.equals(allOf, other.allOf) &&
+        deepEq.equals(anyOf, other.anyOf) &&
+        deepEq.equals(oneOf, other.oneOf) &&
+        minItems == other.minItems &&
+        maxItems == other.maxItems &&
+        minProperties == other.minProperties &&
+        maxProperties == other.maxProperties &&
+        minLength == other.minLength &&
+        maxLength == other.maxLength &&
+        pattern == other.pattern &&
+        minimum == other.minimum &&
+        maximum == other.maximum &&
+        exclusiveMinimum == other.exclusiveMinimum &&
+        exclusiveMaximum == other.exclusiveMaximum &&
+        multipleOf == other.multipleOf &&
+        discriminator == other.discriminator &&
+        uniqueItems == other.uniqueItems &&
+        additionalPropertiesSchema == other.additionalPropertiesSchema &&
+        additionalPropertiesAllowed == other.additionalPropertiesAllowed;
   }
-  if (anyOfRaw is List) {
-    for (final branch in anyOfRaw) {
-      if (branch is Map && branch['type'] == 'null') return true;
-    }
+
+  @override
+  int get hashCode {
+    const deepEq = DeepCollectionEquality();
+    return Object.hashAll([
+      type,
+      format,
+      title,
+      description,
+      nullable,
+      deepEq.hash(enumValues),
+      items,
+      deepEq.hash(properties),
+      deepEq.hash(required),
+      deepEq.hash(propertyOrdering),
+      deepEq.hash(allOf),
+      deepEq.hash(anyOf),
+      deepEq.hash(oneOf),
+      minItems,
+      maxItems,
+      minProperties,
+      maxProperties,
+      minLength,
+      maxLength,
+      pattern,
+      minimum,
+      maximum,
+      exclusiveMinimum,
+      exclusiveMaximum,
+      multipleOf,
+      discriminator,
+      uniqueItems,
+      additionalPropertiesSchema,
+      additionalPropertiesAllowed,
+    ]);
   }
-  return false;
 }
+
+// Deprecated helpers removed: value-based enum covers string mapping.
