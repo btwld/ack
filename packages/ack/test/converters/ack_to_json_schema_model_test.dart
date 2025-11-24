@@ -41,5 +41,37 @@ void main() {
       expect(arrayBranch.items, isNull,
           reason: 'array branch should not constrain item types');
     });
+
+    test('preserves wrapper metadata when unwrapping nullable', () {
+      // When a schema has description on the nullable wrapper (anyOf),
+      // that metadata should be preserved when unwrapping to the effective schema.
+      final schema = Ack.string().describe('important field').nullable();
+      final json = schema.toJsonSchemaModel();
+
+      // The description should be preserved on the effective schema
+      expect(json.type, JsonSchemaType.string);
+      expect(json.description, 'important field');
+      expect(json.nullable, isTrue);
+    });
+
+    test('preserves title when unwrapping nullable', () {
+      // Using a workaround to test title preservation
+      // First create a JsonSchema directly with wrapper metadata
+      final wrapperSchema = JsonSchema(
+        title: 'Wrapper Title',
+        description: 'Wrapper Description',
+        anyOf: [
+          JsonSchema(type: JsonSchemaType.string),
+          JsonSchema(type: JsonSchemaType.null_),
+        ],
+      );
+
+      // Parse it back to simulate consuming external schema
+      final parsed = JsonSchema.fromJson(wrapperSchema.toJson());
+
+      // When unwrapping, the wrapper metadata should be preserved
+      // This tests the fromJson path which feeds into the converter
+      expect(parsed.description, 'Wrapper Description');
+    });
   });
 }

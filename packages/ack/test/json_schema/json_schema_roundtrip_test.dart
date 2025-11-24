@@ -575,6 +575,71 @@ void main() {
     });
   });
 
+  group('JsonSchema Round-Trip - Nullable Composition', () {
+    test('anyOf + nullable without null branch adds null schema', () {
+      // When anyOf exists AND nullable=true AND no null branch present,
+      // toJson should add a null branch (valid JSON Schema), NOT emit
+      // "nullable: true" (OpenAPI style, invalid JSON Schema).
+      final schema = JsonSchema(
+        anyOf: [JsonSchema(type: JsonSchemaType.string)],
+        nullable: true,
+      );
+      final json = schema.toJson();
+
+      // Verify null branch was added to anyOf
+      final anyOf = json['anyOf'] as List;
+      expect(anyOf, hasLength(2));
+      expect(anyOf[1], equals({'type': 'null'}));
+      // Verify nullable property is NOT emitted (that's OpenAPI, not JSON Schema)
+      expect(json.containsKey('nullable'), isFalse);
+    });
+
+    test('oneOf + nullable without null branch adds null schema', () {
+      final schema = JsonSchema(
+        oneOf: [JsonSchema(type: JsonSchemaType.string)],
+        nullable: true,
+      );
+      final json = schema.toJson();
+
+      // Verify null branch was added to oneOf
+      final oneOf = json['oneOf'] as List;
+      expect(oneOf, hasLength(2));
+      expect(oneOf[1], equals({'type': 'null'}));
+      // Verify nullable property is NOT emitted
+      expect(json.containsKey('nullable'), isFalse);
+    });
+
+    test('anyOf with existing null branch does not duplicate', () {
+      final schema = JsonSchema(
+        anyOf: [
+          JsonSchema(type: JsonSchemaType.string),
+          JsonSchema(type: JsonSchemaType.null_),
+        ],
+        nullable: true,
+      );
+      final json = schema.toJson();
+
+      // Should not add another null branch
+      final anyOf = json['anyOf'] as List;
+      expect(anyOf, hasLength(2));
+      expect(json.containsKey('nullable'), isFalse);
+    });
+
+    test('simple type + nullable wraps in anyOf with null', () {
+      // Existing behavior: type + nullable wraps in anyOf
+      final schema = JsonSchema(
+        type: JsonSchemaType.string,
+        nullable: true,
+      );
+      final json = schema.toJson();
+
+      final anyOf = json['anyOf'] as List;
+      expect(anyOf, hasLength(2));
+      expect(anyOf[0], equals({'type': 'string'}));
+      expect(anyOf[1], equals({'type': 'null'}));
+    });
+  });
+
   group('JsonSchema Round-Trip - Typeless Schemas', () {
     test('enum without type round-trips correctly', () {
       final input = <String, Object?>{

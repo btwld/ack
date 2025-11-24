@@ -159,8 +159,30 @@ class JsonSchema {
     addIfNotNull('propertyOrdering', propertyOrdering);
 
     if (allOf != null) map['allOf'] = allOf!.map((s) => s.toJson()).toList();
-    if (anyOf != null) map['anyOf'] = anyOf!.map((s) => s.toJson()).toList();
-    if (oneOf != null) map['oneOf'] = oneOf!.map((s) => s.toJson()).toList();
+
+    // Helper to check if a composition already contains a null type
+    bool compositionHasNull(List<JsonSchema>? schemas) =>
+        schemas?.any((s) => s.type == JsonSchemaType.null_) ?? false;
+
+    final nullSchema = {'type': JsonSchemaType.null_.value};
+
+    // Handle anyOf with nullable - add null branch if needed (JSON Schema style)
+    if (anyOf != null) {
+      final anyOfList = anyOf!.map((s) => s.toJson()).toList();
+      if (nullable == true && !compositionHasNull(anyOf)) {
+        anyOfList.add(nullSchema);
+      }
+      map['anyOf'] = anyOfList;
+    }
+
+    // Handle oneOf with nullable - add null branch if needed (JSON Schema style)
+    if (oneOf != null) {
+      final oneOfList = oneOf!.map((s) => s.toJson()).toList();
+      if (nullable == true && !compositionHasNull(oneOf)) {
+        oneOfList.add(nullSchema);
+      }
+      map['oneOf'] = oneOfList;
+    }
 
     addIfNotNull('minItems', minItems);
     addIfNotNull('maxItems', maxItems);
@@ -183,23 +205,16 @@ class JsonSchema {
       map['additionalProperties'] = additionalPropertiesAllowed;
     }
 
+    // Handle simple type + nullable: wrap in anyOf with null branch
     if (nullable == true && type != null && map['anyOf'] == null && map['oneOf'] == null) {
       final base = Map<String, Object?>.from(map);
       return {
         'anyOf': [
           base,
-          {'type': JsonSchemaType.null_.value},
+          nullSchema,
         ],
       };
     }
-
-    bool compositionHasNull(List<JsonSchema>? schemas) =>
-        schemas?.any((s) => s.type == JsonSchemaType.null_) ?? false;
-
-    final hasNullInComposition =
-        compositionHasNull(anyOf) || compositionHasNull(oneOf);
-
-    if (nullable == true && !hasNullInComposition) map['nullable'] = true;
 
     return map;
   }

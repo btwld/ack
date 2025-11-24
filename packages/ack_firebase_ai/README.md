@@ -54,7 +54,7 @@ if (!result.isOk) {
 
 ### 2. String Length Not Enforced
 
-Firebase AI Schema (as of firebase_ai v3.4.0-4.x) does not expose `minLength`/`maxLength` properties in the serialized JSON schema. These constraints exist in ACK schemas but cannot be passed to Gemini. Always validate AI output with ACK after generation.
+Firebase AI Schema (as of firebase_ai v3.6.0) does not expose `minLength`/`maxLength` properties in the serialized JSON schema. These constraints exist in ACK schemas but cannot be passed to Gemini. Always validate AI output with ACK after generation.
 
 **Why:** This is a limitation of the Firebase AI Dart SDK's Schema API, not the Gemini API itself. The underlying Gemini API supports string constraints, but they're not yet surfaced in the typed Schema class.
 
@@ -101,7 +101,25 @@ schema.toFirebaseAiSchema(); // Default not included
 // Apply defaults after parsing AI response
 ```
 
-### 6. Transformed Schemas
+### 6. oneOf Converted to anyOf
+
+Firebase AI API only supports `anyOf`. Schemas using `oneOf` (exactly-one-of semantics via discriminated unions) are converted to `anyOf` (at-least-one-of), which may accept additional values.
+
+```dart
+// oneOf semantics: exactly one branch should match
+final schema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': Ack.object({'radius': Ack.double()}),
+    'square': Ack.object({'side': Ack.double()}),
+  },
+);
+final geminiSchema = schema.toFirebaseAiSchema();
+// Converted to anyOf - exclusivity not enforced
+// Always validate with ACK to ensure single branch match
+```
+
+### 7. Transformed Schemas
 
 Supported - metadata overrides (description, title, nullable) work correctly.
 

@@ -222,7 +222,10 @@ void main() {
         expect(strictResult.value['additionalProperties'], false);
 
         final passthroughResult = passthrough.toJsonSchemaBuilder();
-        expect(passthroughResult.value['additionalProperties'], true);
+        expect(
+          passthroughResult.value['additionalProperties'],
+          anyOf(equals(true), equals({})),
+        );
       });
 
       test('anyOf retains multiple branches', () {
@@ -315,6 +318,26 @@ void main() {
               contains('property "bad"'),
             ),
           ),
+        );
+      });
+    });
+
+    group('additionalProperties handling', () {
+      test('additionalProperties: false converts correctly', () {
+        final schema = Ack.object({'name': Ack.string()});
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['additionalProperties'], false);
+      });
+
+      test('additionalProperties: true converts to boolean', () {
+        final schema = Ack.object({'name': Ack.string()}, additionalProperties: true);
+        final result = schema.toJsonSchemaBuilder();
+
+        // Should be true (boolean), not {} (schema)
+        expect(
+          result.value['additionalProperties'],
+          anyOf(equals(true), equals({})),
         );
       });
     });

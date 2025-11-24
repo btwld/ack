@@ -137,12 +137,17 @@ jsb.Schema _convertObject(JsonSchema schema, bool? nullableFlag) {
 
   final required = schema.required ?? const [];
 
+  final additional = schema.additionalPropertiesAllowed ??
+      (schema.additionalPropertiesSchema != null
+          ? _convert(schema.additionalPropertiesSchema!)
+          : true);
+
   final base = jsb.Schema.object(
     properties: props,
     required: required.isEmpty ? null : required,
     description: schema.description,
     title: schema.title,
-    additionalProperties: schema.additionalPropertiesAllowed ?? true,
+    additionalProperties: additional,
   );
   return _wrapNullable(base, nullableFlag);
 }

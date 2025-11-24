@@ -229,7 +229,14 @@ JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
   if (anyOf == null || anyOf.isEmpty) return jsonSchema;
   final nonNull = anyOf.where((c) => c.type != JsonSchemaType.null_).toList();
   if (nonNull.length == 1) {
-    return nonNull.first.copyWith(nullable: jsonSchema.nullable ?? true);
+    final base = nonNull.first;
+    return base.copyWith(
+      nullable: jsonSchema.nullable ?? true,
+      // Preserve wrapper metadata if the inner schema didn’t set it.
+      description: base.description ?? jsonSchema.description,
+      title: base.title ?? jsonSchema.title,
+      format: base.format ?? jsonSchema.format,
+    );
   }
   return jsonSchema;
 }
