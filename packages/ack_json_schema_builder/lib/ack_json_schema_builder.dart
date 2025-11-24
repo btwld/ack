@@ -71,7 +71,8 @@ jsb.Schema _convert(JsonSchema schema) {
   }
 
   // Fallback: typeless -> allow anything
-  return jsb.Schema.combined(anyOf: [jsb.Schema.nil(), jsb.Schema.string()]);
+  final base = jsb.Schema.any();
+  return _wrapNullable(base, nullableFlag);
 }
 
 jsb.Schema _convertString(JsonSchema schema, bool? nullableFlag) {

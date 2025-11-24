@@ -60,6 +60,8 @@ JsonSchema _integer(JsonSchema json, bool nullableFlag) {
     title: json.title,
     minimum: json.minimum?.toInt(),
     maximum: json.maximum?.toInt(),
+    exclusiveMinimum: json.exclusiveMinimum?.toInt(),
+    exclusiveMaximum: json.exclusiveMaximum?.toInt(),
     multipleOf: json.multipleOf?.toInt(),
     nullable: nullableFlag,
   );
@@ -72,6 +74,8 @@ JsonSchema _number(JsonSchema json, bool nullableFlag) {
     title: json.title,
     minimum: json.minimum?.toDouble(),
     maximum: json.maximum?.toDouble(),
+    exclusiveMinimum: json.exclusiveMinimum,
+    exclusiveMaximum: json.exclusiveMaximum,
     multipleOf: json.multipleOf,
     nullable: nullableFlag,
   );
@@ -106,6 +110,7 @@ JsonSchema _array(ListSchema schema, JsonSchema json, bool nullableFlag) {
     title: json.title,
     minItems: json.minItems,
     maxItems: json.maxItems,
+    uniqueItems: json.uniqueItems,
     nullable: nullableFlag,
   );
 }
@@ -130,6 +135,8 @@ JsonSchema _object(ObjectSchema schema, JsonSchema json, bool nullableFlag) {
     propertyOrdering: ordering.isEmpty ? null : ordering,
     description: json.description,
     title: json.title,
+    minProperties: json.minProperties,
+    maxProperties: json.maxProperties,
     additionalPropertiesSchema: json.additionalPropertiesSchema,
     additionalPropertiesAllowed: json.additionalPropertiesAllowed,
     nullable: nullableFlag,
@@ -141,6 +148,7 @@ JsonSchema _anyOf(AnyOfSchema schema) {
   return JsonSchema(
     anyOf: branches,
     nullable: schema.isNullable,
+    description: schema.description,
   );
 }
 
@@ -156,7 +164,6 @@ JsonSchema _any(AnySchema schema, JsonSchema json, bool nullableFlag) {
 
   final arrayBranch = JsonSchema(
     type: JsonSchemaType.array,
-    items: JsonSchema(anyOf: primitives),
     description: description,
   );
 
