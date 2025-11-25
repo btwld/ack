@@ -132,7 +132,7 @@ jsb.Schema _convertArray(JsonSchema schema, bool? nullableFlag) {
 jsb.Schema _convertObject(JsonSchema schema, bool? nullableFlag) {
   final props = <String, jsb.Schema>{};
   for (final entry in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
-    props[entry.key] = _wrapProperty(entry.key, () => _convert(entry.value));
+    props[entry.key] = wrapPropertyConversion(entry.key, () => _convert(entry.value));
   }
 
   final required = schema.required ?? const [];
@@ -165,20 +165,4 @@ JsonSchema _effective(JsonSchema schema) {
     return nonNull.first.copyWith(nullable: schema.nullable ?? true);
   }
   return schema;
-}
-
-T _wrapProperty<T>(String key, T Function() fn) {
-  try {
-    return fn();
-  } catch (e, st) {
-    final msg = 'Error converting property "$key": ${e is Error ? e.toString() : e}';
-    if (e is UnsupportedError) {
-      Error.throwWithStackTrace(UnsupportedError(msg), st);
-    } else if (e is ArgumentError) {
-      Error.throwWithStackTrace(ArgumentError(msg), st);
-    } else if (e is StateError) {
-      Error.throwWithStackTrace(StateError(msg), st);
-    }
-    rethrow;
-  }
 }

@@ -123,7 +123,7 @@ JsonSchema _object(ObjectSchema schema, JsonSchema json, bool nullableFlag) {
 
   for (final entry in schema.properties.entries) {
     ordering.add(entry.key);
-    props[entry.key] = _wrapProperty(entry.key, () => _convert(entry.value));
+    props[entry.key] = wrapPropertyConversion(entry.key, () => _convert(entry.value));
     if (!entry.value.isOptional) {
       required.add(entry.key);
     }
@@ -240,20 +240,4 @@ JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
     );
   }
   return jsonSchema;
-}
-
-T _wrapProperty<T>(String key, T Function() fn) {
-  try {
-    return fn();
-  } catch (e, st) {
-    final msg = 'Error converting property "$key": ${e is Error ? e.toString() : e}';
-    if (e is UnsupportedError) {
-      Error.throwWithStackTrace(UnsupportedError(msg), st);
-    } else if (e is ArgumentError) {
-      Error.throwWithStackTrace(ArgumentError(msg), st);
-    } else if (e is StateError) {
-      Error.throwWithStackTrace(StateError(msg), st);
-    }
-    rethrow;
-  }
 }

@@ -65,6 +65,21 @@ class JsonSchemaDiscriminator {
 
 @immutable
 class JsonSchema {
+  static const _nullSchema = <String, Object?>{'type': 'null'};
+
+  /// Serializes a composition (anyOf/oneOf) to JSON, adding null branch if needed.
+  static List<Map<String, Object?>>? _serializeComposition(
+    List<JsonSchema>? schemas,
+    bool addNullBranch,
+  ) {
+    if (schemas == null) return null;
+    final list = schemas.map((s) => s.toJson()).toList();
+    if (addNullBranch && !schemas.any((s) => s.type == JsonSchemaType.null_)) {
+      list.add(_nullSchema);
+    }
+    return list;
+  }
+
   const JsonSchema({
     this.type,
     this.format,
@@ -160,29 +175,12 @@ class JsonSchema {
 
     if (allOf != null) map['allOf'] = allOf!.map((s) => s.toJson()).toList();
 
-    // Helper to check if a composition already contains a null type
-    bool compositionHasNull(List<JsonSchema>? schemas) =>
-        schemas?.any((s) => s.type == JsonSchemaType.null_) ?? false;
+    // Handle anyOf/oneOf with nullable - add null branch if needed (JSON Schema style)
+    final anyOfJson = _serializeComposition(anyOf, nullable == true);
+    if (anyOfJson != null) map['anyOf'] = anyOfJson;
 
-    final nullSchema = {'type': JsonSchemaType.null_.value};
-
-    // Handle anyOf with nullable - add null branch if needed (JSON Schema style)
-    if (anyOf != null) {
-      final anyOfList = anyOf!.map((s) => s.toJson()).toList();
-      if (nullable == true && !compositionHasNull(anyOf)) {
-        anyOfList.add(nullSchema);
-      }
-      map['anyOf'] = anyOfList;
-    }
-
-    // Handle oneOf with nullable - add null branch if needed (JSON Schema style)
-    if (oneOf != null) {
-      final oneOfList = oneOf!.map((s) => s.toJson()).toList();
-      if (nullable == true && !compositionHasNull(oneOf)) {
-        oneOfList.add(nullSchema);
-      }
-      map['oneOf'] = oneOfList;
-    }
+    final oneOfJson = _serializeComposition(oneOf, nullable == true);
+    if (oneOfJson != null) map['oneOf'] = oneOfJson;
 
     addIfNotNull('minItems', minItems);
     addIfNotNull('maxItems', maxItems);
@@ -211,7 +209,7 @@ class JsonSchema {
       return {
         'anyOf': [
           base,
-          nullSchema,
+          _nullSchema,
         ],
       };
     }
