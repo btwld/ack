@@ -1,726 +1,494 @@
-import 'package:meta/meta.dart';
+library;
 
-import 'json_schema_type.dart';
+import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'well_known_format.dart';
 
-typedef JsonMap = Map<String, Object?>;
+enum JsonSchemaType {
+  string('string'),
+  number('number'),
+  integer('integer'),
+  boolean('boolean'),
+  array('array'),
+  object('object'),
+  null_('null');
 
-/// Typed representation of a JSON Schema Draft-7 document.
-///
-/// This implementation covers the most commonly used JSON Schema features
-/// with strong typing and pattern matching support. It is designed to work
-/// seamlessly with ACK-generated schemas and provides good coverage of
-/// Draft-7 features.
-///
-/// ## Supported Features
-///
-/// - ✅ All primitive types (string, number, integer, boolean, null, array, object)
-/// - ✅ Union types (`{"type": ["string", "null"]}`)
-/// - ✅ Typeless schemas with constraining keywords (enum without type)
-/// - ✅ All string constraints (minLength, maxLength, pattern, format)
-/// - ✅ All numeric constraints (minimum, maximum, multipleOf, exclusive bounds)
-/// - ✅ Array constraints (minItems, maxItems, uniqueItems, items schema)
-/// - ✅ Object constraints (properties, required, additionalProperties as boolean)
-/// - ✅ Composition keywords (anyOf, allOf, oneOf)
-/// - ✅ Metadata (title, description)
-/// - ✅ Well-known formats with enum support
-///
-/// ## Known Limitations
-///
-/// The following Draft-07 features are not yet supported:
-///
-/// - ❌ **Non-string enum values**: `enum_` is modeled as `List<String>`, so
-///   numeric/boolean/object enums are stringified and cannot round-trip.
-///   Example: `{"enum": [1, 2, true]}` becomes `["1", "2", "true"]`
-///
-/// - ❌ **Schema-valued `additionalProperties`**: Only boolean values are
-///   supported. Schema objects are ignored during parsing.
-///   Example: `{"additionalProperties": {"type": "string"}}` → `null`
-///
-/// - ❌ **Tuple validation**: `items` only supports single schema (list validation).
-///   Tuple form with array of schemas is not supported.
-///   Example: `{"items": [{"type": "string"}, {"type": "number"}]}` → fails
-///
-/// These limitations don't affect ACK-generated schemas. If you need full
-/// Draft-07 support for these features, they can be added in future updates.
-///
-/// ## Example Usage
-///
-/// ```dart
-/// // Parse from JSON
-/// final schema = JsonSchema.fromJson({
-///   'type': ['string', 'null'],  // Union type
-///   'minLength': 5,
-///   'format': 'email'
-/// });
-///
-/// // Type-safe access
-/// print(schema.acceptsNull);        // true
-/// print(schema.singleType);         // null (multiple types)
-/// print(schema.minLength);          // 5
-/// print(schema.wellKnownFormat);    // WellKnownFormat.email
-///
-/// // Serialize back to JSON
-/// final json = schema.toJson();
-/// // {'type': ['string', 'null'], 'minLength': 5, 'format': 'email'}
-/// ```
-///
-/// ## Typeless Schemas
-///
-/// Schemas with constraining keywords don't require a `type` field:
-///
-/// ```dart
-/// // Enum without type (valid Draft-07)
-/// final colorSchema = JsonSchema.fromJson({
-///   'enum': ['red', 'green', 'blue']
-/// });
-///
-/// // Properties without type (valid Draft-07)
-/// final userSchema = JsonSchema.fromJson({
-///   'properties': {
-///     'name': {'type': 'string'}
-///   },
-///   'required': ['name']
-/// });
-/// ```
-///
-/// See: https://json-schema.org/draft-07/json-schema-core.html
+  const JsonSchemaType(this.value);
+  final String value;
+
+  static JsonSchemaType? fromValue(String? raw) {
+    if (raw == null) return null;
+    for (final t in JsonSchemaType.values) {
+      if (t.value == raw) return t;
+    }
+    return null;
+  }
+}
+
+@immutable
+class JsonSchemaDiscriminator {
+  const JsonSchemaDiscriminator({required this.propertyName, this.mapping});
+
+  final String propertyName;
+  final Map<String, String>? mapping;
+
+  Map<String, Object?> toJson() => {
+        'propertyName': propertyName,
+        if (mapping case final m?) 'mapping': m,
+      };
+
+  factory JsonSchemaDiscriminator.fromJson(Map<String, Object?> json) {
+    final mapping = json['mapping'];
+    return JsonSchemaDiscriminator(
+      propertyName: json['propertyName'] as String,
+      mapping: mapping is Map
+          ? Map<String, String>.fromEntries(
+              mapping.entries.map(
+                (e) => MapEntry(e.key.toString(), e.value.toString()),
+              ),
+            )
+          : null,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! JsonSchemaDiscriminator) return false;
+    return propertyName == other.propertyName &&
+        const MapEquality().equals(mapping, other.mapping);
+  }
+
+  @override
+  int get hashCode => Object.hash(propertyName, const MapEquality().hash(mapping));
+}
+
 @immutable
 class JsonSchema {
-  // ==========================================================================
-  // Core Fields
-  // ==========================================================================
+  static const _nullSchema = <String, Object?>{'type': 'null'};
 
-  /// The type(s) of this schema.
-  ///
-  /// Can be a single type or multiple types (union type).
-  /// Optional for composition schemas (anyOf/allOf/oneOf) or empty schemas.
-  ///
-  /// Examples:
-  /// - `[JsonSchemaType.string]` → `{"type": "string"}`
-  /// - `[JsonSchemaType.string, JsonSchemaType.null_]` → `{"type": ["string", "null"]}`
-  /// - `null` → no type constraint (composition/empty schema)
-  final List<JsonSchemaType>? type;
+  /// Serializes a composition (anyOf/oneOf) to JSON, adding null branch if needed.
+  static List<Map<String, Object?>>? _serializeComposition(
+    List<JsonSchema>? schemas,
+    bool addNullBranch,
+  ) {
+    if (schemas == null) return null;
+    final list = schemas.map((s) => s.toJson()).toList();
+    if (addNullBranch && !schemas.any((s) => s.type == JsonSchemaType.null_)) {
+      list.add(_nullSchema);
+    }
+    return list;
+  }
 
-  /// The format of the data (semantic hint).
-  ///
-  /// For string types: email, uri, uuid, date, date-time, etc.
-  /// For numeric types: int32, int64, float, double.
-  ///
-  /// See [WellKnownFormat] for standard format values.
-  final String? format;
-
-  /// A human-readable title for the schema.
-  ///
-  /// Used for documentation and UI generation.
-  final String? title;
-
-  /// A description of the schema's purpose.
-  ///
-  /// Can be used for documentation, error messages, or UI hints.
-  final String? description;
-
-  // ==========================================================================
-  // String Constraints
-  // ==========================================================================
-
-  /// Minimum length for string values.
-  ///
-  /// Only applicable when `type` is `string`.
-  final int? minLength;
-
-  /// Maximum length for string values.
-  ///
-  /// Only applicable when `type` is `string`.
-  final int? maxLength;
-
-  /// Regular expression pattern for string values.
-  ///
-  /// Only applicable when `type` is `string`.
-  /// Pattern follows ECMA 262 regular expression dialect.
-  final String? pattern;
-
-  /// Enumerated string values.
-  ///
-  /// When present, the value must be one of these strings.
-  /// Only applicable when `type` is `string`.
-  final List<String>? enum_;
-
-  // ==========================================================================
-  // Numeric Constraints
-  // ==========================================================================
-
-  /// Minimum value for numeric types (inclusive).
-  ///
-  /// Only applicable when `type` is `number` or `integer`.
-  final num? minimum;
-
-  /// Maximum value for numeric types (inclusive).
-  ///
-  /// Only applicable when `type` is `number` or `integer`.
-  final num? maximum;
-
-  /// Minimum value for numeric types (exclusive).
-  ///
-  /// Only applicable when `type` is `number` or `integer`.
-  final num? exclusiveMinimum;
-
-  /// Maximum value for numeric types (exclusive).
-  ///
-  /// Only applicable when `type` is `number` or `integer`.
-  final num? exclusiveMaximum;
-
-  /// The value must be a multiple of this number.
-  ///
-  /// Only applicable when `type` is `number` or `integer`.
-  final num? multipleOf;
-
-  // ==========================================================================
-  // Array Constraints
-  // ==========================================================================
-
-  /// Schema for array items.
-  ///
-  /// Only applicable when `type` is `array`.
-  /// All items in the array must conform to this schema.
-  final JsonSchema? items;
-
-  /// Minimum number of items in an array.
-  ///
-  /// Only applicable when `type` is `array`.
-  final int? minItems;
-
-  /// Maximum number of items in an array.
-  ///
-  /// Only applicable when `type` is `array`.
-  final int? maxItems;
-
-  /// Whether all items in an array must be unique.
-  ///
-  /// Only applicable when `type` is `array`.
-  final bool? uniqueItems;
-
-  // ==========================================================================
-  // Object Constraints
-  // ==========================================================================
-
-  /// Schema definitions for object properties.
-  ///
-  /// Only applicable when `type` is `object`.
-  /// Maps property names to their schemas.
-  final Map<String, JsonSchema>? properties;
-
-  /// List of required property names.
-  ///
-  /// Only applicable when `type` is `object`.
-  /// Properties in this list must be present in valid objects.
-  final List<String>? required;
-
-  /// Whether additional properties are allowed in objects.
-  ///
-  /// Only applicable when `type` is `object`.
-  /// - `true`: Additional properties allowed
-  /// - `false`: Additional properties forbidden
-  /// - `null`: Not specified (typically allows additional properties)
-  final bool? additionalProperties;
-
-  // ==========================================================================
-  // Composition Keywords
-  // ==========================================================================
-
-  /// The value must validate against ANY of these schemas.
-  ///
-  /// Used for union types or alternatives.
-  final List<JsonSchema>? anyOf;
-
-  /// The value must validate against ALL of these schemas.
-  ///
-  /// Used for combining multiple constraints.
-  final List<JsonSchema>? allOf;
-
-  /// The value must validate against EXACTLY ONE of these schemas.
-  ///
-  /// Used for mutually exclusive alternatives.
-  final List<JsonSchema>? oneOf;
-
-  // ==========================================================================
-  // Constructor
-  // ==========================================================================
-
-  /// Creates a new JSON Schema with the specified constraints.
-  ///
-  /// The [type] field is optional for composition schemas or empty schemas.
-  /// All other fields are optional and should only be used when applicable
-  /// to the schema type.
   const JsonSchema({
     this.type,
     this.format,
     this.title,
     this.description,
+    this.nullable,
+    this.enumValues,
+    this.items,
+    this.properties,
+    this.required,
+    this.propertyOrdering,
+    this.allOf,
+    this.anyOf,
+    this.oneOf,
+    this.minItems,
+    this.maxItems,
+    this.minProperties,
+    this.maxProperties,
     this.minLength,
     this.maxLength,
     this.pattern,
-    this.enum_,
     this.minimum,
     this.maximum,
     this.exclusiveMinimum,
     this.exclusiveMaximum,
     this.multipleOf,
-    this.items,
-    this.minItems,
-    this.maxItems,
+    this.discriminator,
     this.uniqueItems,
-    this.properties,
-    this.required,
-    this.additionalProperties,
-    this.anyOf,
-    this.allOf,
-    this.oneOf,
-  });
+    this.additionalPropertiesSchema,
+    this.additionalPropertiesAllowed,
+  })  : assert(
+          additionalPropertiesSchema == null || additionalPropertiesAllowed == null,
+          'Cannot set both schema and boolean for additionalProperties',
+        ),
+        assert(
+          anyOf == null || oneOf == null,
+          'Cannot set both anyOf and oneOf. Choose one composition strategy to avoid ambiguity.',
+        );
 
-  // ==========================================================================
-  // Convenience Getters
-  // ==========================================================================
+  final JsonSchemaType? type;
+  final String? format;
+  final String? title;
+  final String? description;
+  final bool? nullable;
+  final List<Object?>? enumValues;
+  final JsonSchema? items;
+  final Map<String, JsonSchema>? properties;
+  final List<String>? required;
+  final List<String>? propertyOrdering;
+  final List<JsonSchema>? allOf;
+  final List<JsonSchema>? anyOf;
+  final List<JsonSchema>? oneOf;
+  final int? minItems;
+  final int? maxItems;
+  final int? minProperties;
+  final int? maxProperties;
+  final int? minLength;
+  final int? maxLength;
+  final String? pattern;
+  final num? minimum;
+  final num? maximum;
+  final num? exclusiveMinimum;
+  final num? exclusiveMaximum;
+  final num? multipleOf;
+  final JsonSchemaDiscriminator? discriminator;
+  final bool? uniqueItems;
+  final JsonSchema? additionalPropertiesSchema;
+  final bool? additionalPropertiesAllowed;
 
-  /// Returns the well-known format if [format] is recognized.
-  ///
-  /// Returns `null` if the format is custom/unknown.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = JsonSchema.fromJson({'type': 'string', 'format': 'email'});
-  /// print(schema.wellKnownFormat); // WellKnownFormat.email
-  /// ```
-  WellKnownFormat? get wellKnownFormat => WellKnownFormat.parse(format);
+  Map<String, Object?> toJson() {
+    final map = <String, Object?>{};
 
-  /// Returns `true` if this is an enum schema (has enumerated values).
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = JsonSchema.fromJson({
-  ///   'type': 'string',
-  ///   'enum': ['red', 'green', 'blue'],
-  /// });
-  /// print(schema.isEnum); // true
-  /// ```
-  bool get isEnum => enum_ != null && enum_!.isNotEmpty;
-
-  /// Returns `true` if the format is custom (not a well-known format).
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = JsonSchema.fromJson({
-  ///   'type': 'string',
-  ///   'format': 'my-custom-format',
-  /// });
-  /// print(schema.isCustomFormat); // true
-  /// ```
-  bool get isCustomFormat => format != null && wellKnownFormat == null;
-
-  /// Returns the single type if there's only one type, null otherwise.
-  ///
-  /// Useful for backward compatibility when checking a single type.
-  ///
-  /// Example:
-  /// ```dart
-  /// final stringSchema = JsonSchema.fromJson({'type': 'string'});
-  /// print(stringSchema.singleType); // JsonSchemaType.string
-  ///
-  /// final unionSchema = JsonSchema.fromJson({'type': ['string', 'null']});
-  /// print(unionSchema.singleType); // null (multiple types)
-  /// ```
-  JsonSchemaType? get singleType {
-    return type?.length == 1 ? type!.first : null;
-  }
-
-  /// Returns `true` if this schema accepts values of the specified type.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = JsonSchema.fromJson({'type': ['string', 'null']});
-  /// print(schema.acceptsType(JsonSchemaType.string)); // true
-  /// print(schema.acceptsType(JsonSchemaType.null_)); // true
-  /// print(schema.acceptsType(JsonSchemaType.number)); // false
-  /// ```
-  bool acceptsType(JsonSchemaType checkType) {
-    return type?.contains(checkType) ?? false;
-  }
-
-  /// Returns `true` if this schema accepts null values.
-  ///
-  /// Convenient shorthand for checking if null is in the union of types.
-  ///
-  /// Example:
-  /// ```dart
-  /// final nullable = JsonSchema.fromJson({'type': ['string', 'null']});
-  /// print(nullable.acceptsNull); // true
-  ///
-  /// final notNullable = JsonSchema.fromJson({'type': 'string'});
-  /// print(notNullable.acceptsNull); // false
-  /// ```
-  bool get acceptsNull {
-    return acceptsType(JsonSchemaType.null_);
-  }
-
-  // ==========================================================================
-  // Parsing (fromJson)
-  // ==========================================================================
-
-  /// Parses a JSON Schema from a JSON map.
-  ///
-  /// Throws [ArgumentError] if the schema is malformed (e.g., missing type).
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = JsonSchema.fromJson({
-  ///   'type': 'object',
-  ///   'properties': {
-  ///     'name': {'type': 'string'},
-  ///   },
-  /// });
-  /// ```
-  factory JsonSchema.fromJson(JsonMap json) {
-    return _JsonSchemaParser().parse(json);
-  }
-
-  // ==========================================================================
-  // Serialization (toJson)
-  // ==========================================================================
-
-  /// Converts this schema to a JSON map.
-  ///
-  /// Omits null fields to produce clean, minimal JSON.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = JsonSchema.string(minLength: 5);
-  /// final json = schema.toJson();
-  /// // {'type': 'string', 'minLength': 5}
-  /// ```
-  JsonMap toJson() {
-    return {
-      if (type != null)
-        'type': type!.length == 1
-            ? type!.first.toJson()
-            : type!.map((t) => t.toJson()).toList(),
-      if (format != null) 'format': format,
-      if (title != null) 'title': title,
-      if (description != null) 'description': description,
-      if (minLength != null) 'minLength': minLength,
-      if (maxLength != null) 'maxLength': maxLength,
-      if (pattern != null) 'pattern': pattern,
-      if (enum_ != null) 'enum': enum_,
-      if (minimum != null) 'minimum': minimum,
-      if (maximum != null) 'maximum': maximum,
-      if (exclusiveMinimum != null) 'exclusiveMinimum': exclusiveMinimum,
-      if (exclusiveMaximum != null) 'exclusiveMaximum': exclusiveMaximum,
-      if (multipleOf != null) 'multipleOf': multipleOf,
-      if (items != null) 'items': items!.toJson(),
-      if (minItems != null) 'minItems': minItems,
-      if (maxItems != null) 'maxItems': maxItems,
-      if (uniqueItems != null) 'uniqueItems': uniqueItems,
-      if (properties != null)
-        'properties': {
-          for (final entry in properties!.entries)
-            entry.key: entry.value.toJson(),
-        },
-      if (required != null) 'required': required,
-      if (additionalProperties != null)
-        'additionalProperties': additionalProperties,
-      if (anyOf != null) 'anyOf': anyOf!.map((s) => s.toJson()).toList(),
-      if (allOf != null) 'allOf': allOf!.map((s) => s.toJson()).toList(),
-      if (oneOf != null) 'oneOf': oneOf!.map((s) => s.toJson()).toList(),
-    };
-  }
-
-  // ==========================================================================
-  // Factory Constructors (Convenience)
-  // ==========================================================================
-
-  /// Creates a string schema.
-  factory JsonSchema.string({
-    String? format,
-    String? title,
-    String? description,
-    int? minLength,
-    int? maxLength,
-    String? pattern,
-    List<String>? enum_,
-  }) {
-    return JsonSchema(
-      type: [JsonSchemaType.string],
-      format: format,
-      title: title,
-      description: description,
-      minLength: minLength,
-      maxLength: maxLength,
-      pattern: pattern,
-      enum_: enum_,
-    );
-  }
-
-  /// Creates an integer schema.
-  factory JsonSchema.integer({
-    String? format,
-    String? title,
-    String? description,
-    num? minimum,
-    num? maximum,
-    num? exclusiveMinimum,
-    num? exclusiveMaximum,
-    num? multipleOf,
-  }) {
-    return JsonSchema(
-      type: [JsonSchemaType.integer],
-      format: format,
-      title: title,
-      description: description,
-      minimum: minimum,
-      maximum: maximum,
-      exclusiveMinimum: exclusiveMinimum,
-      exclusiveMaximum: exclusiveMaximum,
-      multipleOf: multipleOf,
-    );
-  }
-
-  /// Creates a number schema (floating-point).
-  factory JsonSchema.number({
-    String? format,
-    String? title,
-    String? description,
-    num? minimum,
-    num? maximum,
-    num? exclusiveMinimum,
-    num? exclusiveMaximum,
-    num? multipleOf,
-  }) {
-    return JsonSchema(
-      type: [JsonSchemaType.number],
-      format: format,
-      title: title,
-      description: description,
-      minimum: minimum,
-      maximum: maximum,
-      exclusiveMinimum: exclusiveMinimum,
-      exclusiveMaximum: exclusiveMaximum,
-      multipleOf: multipleOf,
-    );
-  }
-
-  /// Creates a boolean schema.
-  factory JsonSchema.boolean({
-    String? title,
-    String? description,
-  }) {
-    return JsonSchema(
-      type: [JsonSchemaType.boolean],
-      title: title,
-      description: description,
-    );
-  }
-
-  /// Creates an array schema.
-  factory JsonSchema.array({
-    required JsonSchema items,
-    String? title,
-    String? description,
-    int? minItems,
-    int? maxItems,
-    bool? uniqueItems,
-  }) {
-    return JsonSchema(
-      type: [JsonSchemaType.array],
-      title: title,
-      description: description,
-      items: items,
-      minItems: minItems,
-      maxItems: maxItems,
-      uniqueItems: uniqueItems,
-    );
-  }
-
-  /// Creates an object schema.
-  factory JsonSchema.object({
-    required Map<String, JsonSchema> properties,
-    List<String>? required,
-    String? title,
-    String? description,
-    bool? additionalProperties,
-  }) {
-    return JsonSchema(
-      type: [JsonSchemaType.object],
-      title: title,
-      description: description,
-      properties: properties,
-      required: required,
-      additionalProperties: additionalProperties,
-    );
-  }
-}
-
-// ============================================================================
-// Parser Implementation
-// ============================================================================
-
-/// Internal parser for JSON Schema documents.
-class _JsonSchemaParser {
-  JsonSchema parse(JsonMap json) {
-    // Type is required, unless this schema has other defining characteristics:
-    // - Composition keywords (anyOf/allOf/oneOf)
-    // - Empty schema (accepts anything)
-    // - Constraining keywords (enum, properties, items, etc.)
-    final typeValue = json['type'];
-    final hasComposition = json.containsKey('anyOf') ||
-        json.containsKey('allOf') ||
-        json.containsKey('oneOf');
-
-    // An empty schema {} or a schema with only metadata fields is valid
-    final isEmptySchema = json.isEmpty ||
-        json.keys.every((k) => k == 'description' || k == 'title' || k == 'default');
-
-    // Schemas with constraining keywords don't require type
-    final hasConstrainingKeywords = json.containsKey('enum') ||
-        json.containsKey('const') ||
-        json.containsKey('properties') ||
-        json.containsKey('required') ||
-        json.containsKey('additionalProperties') ||
-        json.containsKey('items') ||
-        json.containsKey('minItems') ||
-        json.containsKey('maxItems') ||
-        json.containsKey('uniqueItems') ||
-        json.containsKey('minLength') ||
-        json.containsKey('maxLength') ||
-        json.containsKey('pattern') ||
-        json.containsKey('minimum') ||
-        json.containsKey('maximum') ||
-        json.containsKey('exclusiveMinimum') ||
-        json.containsKey('exclusiveMaximum') ||
-        json.containsKey('multipleOf');
-
-    if (typeValue == null && !hasComposition && !isEmptySchema && !hasConstrainingKeywords) {
-      throw ArgumentError('JSON Schema is missing required "type" field');
+    void addIfNotNull(String key, Object? value) {
+      if (value != null) map[key] = value;
     }
 
-    // Parse type if present (can be string or array of strings)
-    List<JsonSchemaType>? type;
-    if (typeValue != null) {
-      if (typeValue is String) {
-        // Single type: "string"
-        final parsed = JsonSchemaType.parse(typeValue);
-        if (parsed == null) {
-          throw ArgumentError('Unknown JSON Schema type: "$typeValue"');
-        }
-        type = [parsed];
-      } else if (typeValue is List) {
-        // Array of types: ["string", "null"]
-        final parsed = <JsonSchemaType>[];
-        for (final item in typeValue) {
-          final parsedType = JsonSchemaType.parse(item.toString());
-          if (parsedType != null) {
-            parsed.add(parsedType);
-          }
-        }
-        if (parsed.isEmpty) {
-          throw ArgumentError('Invalid JSON Schema type array: $typeValue');
-        }
-        type = parsed;
-      } else {
-        throw ArgumentError('Invalid JSON Schema type: "$typeValue" (must be string or array)');
+    if (type != null) {
+      map['type'] = type!.value;
+    }
+
+    addIfNotNull('format', format);
+    addIfNotNull('title', title);
+    addIfNotNull('description', description);
+    addIfNotNull('enum', enumValues);
+    addIfNotNull('items', items?.toJson());
+
+    if (properties != null) {
+      map['properties'] = properties!.map((k, v) => MapEntry(k, v.toJson()));
+    }
+
+    addIfNotNull('required', required);
+    addIfNotNull('propertyOrdering', propertyOrdering);
+
+    if (allOf != null) map['allOf'] = allOf!.map((s) => s.toJson()).toList();
+
+    // Handle anyOf/oneOf with nullable - add null branch if needed (JSON Schema style)
+    final anyOfJson = _serializeComposition(anyOf, nullable == true);
+    if (anyOfJson != null) map['anyOf'] = anyOfJson;
+
+    final oneOfJson = _serializeComposition(oneOf, nullable == true);
+    if (oneOfJson != null) map['oneOf'] = oneOfJson;
+
+    addIfNotNull('minItems', minItems);
+    addIfNotNull('maxItems', maxItems);
+    addIfNotNull('minProperties', minProperties);
+    addIfNotNull('maxProperties', maxProperties);
+    addIfNotNull('minLength', minLength);
+    addIfNotNull('maxLength', maxLength);
+    addIfNotNull('pattern', pattern);
+    addIfNotNull('minimum', minimum);
+    addIfNotNull('maximum', maximum);
+    addIfNotNull('exclusiveMinimum', exclusiveMinimum);
+    addIfNotNull('exclusiveMaximum', exclusiveMaximum);
+    addIfNotNull('multipleOf', multipleOf);
+    addIfNotNull('uniqueItems', uniqueItems);
+    addIfNotNull('discriminator', discriminator?.toJson());
+
+    if (additionalPropertiesSchema != null) {
+      map['additionalProperties'] = additionalPropertiesSchema!.toJson();
+    } else if (additionalPropertiesAllowed != null) {
+      map['additionalProperties'] = additionalPropertiesAllowed;
+    }
+
+    // Handle simple type + nullable: wrap in anyOf with null branch
+    if (nullable == true && type != null && map['anyOf'] == null && map['oneOf'] == null) {
+      final base = Map<String, Object?>.from(map);
+      return {
+        'anyOf': [
+          base,
+          _nullSchema,
+        ],
+      };
+    }
+
+    return map;
+  }
+
+  factory JsonSchema.fromJson(Map<String, Object?> json) {
+    int? parseInt(Object? v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v);
+      return null;
+    }
+
+    num? parseNum(Object? v) {
+      if (v is num) return v;
+      if (v is String) return num.tryParse(v);
+      return null;
+    }
+
+    bool? parseBool(Object? v) => v is bool ? v : null;
+    List<Object?>? parseList(Object? raw) => raw is List ? List<Object?>.from(raw) : null;
+    List<JsonSchema>? parseSchemaList(Object? raw) {
+      if (raw is List) {
+        return raw
+            .whereType<Map>()
+            .map((m) => JsonSchema.fromJson(Map<String, Object?>.from(m)))
+            .toList();
       }
-    } else {
-      // No type field - valid for composition schemas or empty schemas
-      type = null;
+      return null;
     }
+    List<String>? parseStringList(Object? raw) =>
+        raw is List ? raw.map((e) => e.toString()).toList() : null;
+
+    JsonSchema? parseSchema(Object? raw) {
+      if (raw is Map) return JsonSchema.fromJson(Map<String, Object?>.from(raw));
+      return null;
+    }
+
+    final rawType = json['type'];
+    JsonSchemaType? type;
+    List<JsonSchema>? unionTypes;
+    bool? nullableFlag = parseBool(json['nullable']);
+
+    if (rawType is String) {
+      type = JsonSchemaType.fromValue(rawType);
+    } else if (rawType is List) {
+      final parsedTypes = rawType.map((e) => e.toString()).toList();
+      final hasNull = parsedTypes.contains('null');
+      final nonNullTypes = parsedTypes
+          .where((t) => t != 'null')
+          .map(JsonSchemaType.fromValue)
+          .whereType<JsonSchemaType>()
+          .toList();
+
+      if (nonNullTypes.length == 1 && hasNull) {
+        type = nonNullTypes.first;
+        nullableFlag ??= true;
+      } else if (nonNullTypes.length == 1 && !hasNull) {
+        type = nonNullTypes.first;
+      } else {
+        unionTypes = [
+          ...nonNullTypes.map((t) => JsonSchema(type: t)),
+          if (hasNull) const JsonSchema(type: JsonSchemaType.null_),
+        ];
+        if (hasNull) nullableFlag ??= true;
+      }
+    }
+
+    if (nullableFlag != true && json['anyOf'] is List) {
+      final list = json['anyOf'] as List;
+      nullableFlag = list.any((e) => e is Map && e['type'] == 'null');
+    }
+
+    final propsRaw = json['properties'];
+    final properties = propsRaw is Map
+        ? propsRaw.map(
+            (k, v) => MapEntry(
+              k.toString(),
+              JsonSchema.fromJson(Map<String, Object?>.from(v as Map)),
+            ),
+          )
+        : null;
+
+    final rawAddProps = json['additionalProperties'];
 
     return JsonSchema(
       type: type,
       format: json['format'] as String?,
       title: json['title'] as String?,
       description: json['description'] as String?,
-      minLength: _asInt(json['minLength']),
-      maxLength: _asInt(json['maxLength']),
+      enumValues: parseList(json['enum']),
+      items: parseSchema(json['items']),
+      properties: properties,
+      required: parseStringList(json['required']),
+      propertyOrdering: parseStringList(json['propertyOrdering']),
+      allOf: parseSchemaList(json['allOf']),
+      anyOf: parseSchemaList(json['anyOf']) ?? unionTypes,
+      oneOf: parseSchemaList(json['oneOf']),
+      minItems: parseInt(json['minItems']),
+      maxItems: parseInt(json['maxItems']),
+      minProperties: parseInt(json['minProperties']),
+      maxProperties: parseInt(json['maxProperties']),
+      minLength: parseInt(json['minLength']),
+      maxLength: parseInt(json['maxLength']),
       pattern: json['pattern'] as String?,
-      enum_: _stringList(json['enum']),
-      minimum: _asNum(json['minimum']),
-      maximum: _asNum(json['maximum']),
-      exclusiveMinimum: _asNum(json['exclusiveMinimum']),
-      exclusiveMaximum: _asNum(json['exclusiveMaximum']),
-      multipleOf: _asNum(json['multipleOf']),
-      items: _parseSchema(json['items']),
-      minItems: _asInt(json['minItems']),
-      maxItems: _asInt(json['maxItems']),
-      uniqueItems: json['uniqueItems'] as bool?,
-      properties: _parseProperties(json['properties']),
-      required: _stringList(json['required']),
-      additionalProperties: json['additionalProperties'] is bool
-          ? json['additionalProperties'] as bool
-          : json['additionalProperties'] is Map &&
-                  (json['additionalProperties'] as Map).isEmpty
-              ? true
-              : null,
-      anyOf: _parseSchemaList(json['anyOf']),
-      allOf: _parseSchemaList(json['allOf']),
-      oneOf: _parseSchemaList(json['oneOf']),
+      minimum: parseNum(json['minimum']),
+      maximum: parseNum(json['maximum']),
+      exclusiveMinimum: parseNum(json['exclusiveMinimum']),
+      exclusiveMaximum: parseNum(json['exclusiveMaximum']),
+      multipleOf: parseNum(json['multipleOf']),
+      uniqueItems: parseBool(json['uniqueItems']),
+      discriminator: json['discriminator'] is Map
+          ? JsonSchemaDiscriminator.fromJson(
+              Map<String, Object?>.from(json['discriminator'] as Map),
+            )
+          : null,
+      additionalPropertiesSchema: parseSchema(rawAddProps),
+      additionalPropertiesAllowed: rawAddProps is bool ? rawAddProps : null,
+      nullable: nullableFlag ?? false,
     );
   }
 
-  int? _asInt(Object? value) {
-    return switch (value) {
-      null => null,
-      int i => i,
-      num n => n.toInt(),
-      _ => throw ArgumentError('Expected int, got ${value.runtimeType}: $value'),
-    };
+  // Compatibility helpers
+  List<String>? get enum_ => enumValues?.map((e) => e?.toString() ?? '').toList();
+  bool get acceptsNull =>
+      nullable == true ||
+      type == JsonSchemaType.null_ ||
+      (anyOf?.any((s) => s.type == JsonSchemaType.null_) ?? false) ||
+      (oneOf?.any((s) => s.type == JsonSchemaType.null_) ?? false);
+  JsonSchemaType? get singleType => type;
+  bool get isEnum => enumValues != null && enumValues!.isNotEmpty;
+  bool? get additionalProperties => additionalPropertiesAllowed;
+  WellKnownFormat? get wellKnownFormat => WellKnownFormat.fromValue(format);
+
+  bool acceptsType(JsonSchemaType checkType) {
+    if (type == null) return false;
+    return type == checkType;
   }
 
-  num? _asNum(Object? value) {
-    return switch (value) {
-      null => null,
-      num n => n,
-      _ => throw ArgumentError('Expected num, got ${value.runtimeType}: $value'),
-    };
+  JsonSchema copyWith({
+    JsonSchemaType? type,
+    String? format,
+    String? title,
+    String? description,
+    bool? nullable,
+    List<Object?>? enumValues,
+    JsonSchema? items,
+    Map<String, JsonSchema>? properties,
+    List<String>? required,
+    List<String>? propertyOrdering,
+    List<JsonSchema>? allOf,
+    List<JsonSchema>? anyOf,
+    List<JsonSchema>? oneOf,
+    int? minItems,
+    int? maxItems,
+    int? minProperties,
+    int? maxProperties,
+    int? minLength,
+    int? maxLength,
+    String? pattern,
+    num? minimum,
+    num? maximum,
+    num? exclusiveMinimum,
+    num? exclusiveMaximum,
+    num? multipleOf,
+    JsonSchemaDiscriminator? discriminator,
+    bool? uniqueItems,
+    JsonSchema? additionalPropertiesSchema,
+    bool? additionalPropertiesAllowed,
+  }) {
+    return JsonSchema(
+      type: type ?? this.type,
+      format: format ?? this.format,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      nullable: nullable ?? this.nullable,
+      enumValues: enumValues ?? this.enumValues,
+      items: items ?? this.items,
+      properties: properties ?? this.properties,
+      required: required ?? this.required,
+      propertyOrdering: propertyOrdering ?? this.propertyOrdering,
+      allOf: allOf ?? this.allOf,
+      anyOf: anyOf ?? this.anyOf,
+      oneOf: oneOf ?? this.oneOf,
+      minItems: minItems ?? this.minItems,
+      maxItems: maxItems ?? this.maxItems,
+      minProperties: minProperties ?? this.minProperties,
+      maxProperties: maxProperties ?? this.maxProperties,
+      minLength: minLength ?? this.minLength,
+      maxLength: maxLength ?? this.maxLength,
+      pattern: pattern ?? this.pattern,
+      minimum: minimum ?? this.minimum,
+      maximum: maximum ?? this.maximum,
+      exclusiveMinimum: exclusiveMinimum ?? this.exclusiveMinimum,
+      exclusiveMaximum: exclusiveMaximum ?? this.exclusiveMaximum,
+      multipleOf: multipleOf ?? this.multipleOf,
+      discriminator: discriminator ?? this.discriminator,
+      uniqueItems: uniqueItems ?? this.uniqueItems,
+      additionalPropertiesSchema:
+          additionalPropertiesSchema ?? this.additionalPropertiesSchema,
+      additionalPropertiesAllowed:
+          additionalPropertiesAllowed ?? this.additionalPropertiesAllowed,
+    );
   }
 
-  List<String>? _stringList(Object? value) {
-    return switch (value) {
-      null => null,
-      List<dynamic> list => list.map((e) => e.toString()).toList(),
-      _ => throw ArgumentError('Expected List, got ${value.runtimeType}: $value'),
-    };
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! JsonSchema) return false;
+
+    const deepEq = DeepCollectionEquality();
+    return type == other.type &&
+        format == other.format &&
+        title == other.title &&
+        description == other.description &&
+        nullable == other.nullable &&
+        deepEq.equals(enumValues, other.enumValues) &&
+        items == other.items &&
+        deepEq.equals(properties, other.properties) &&
+        deepEq.equals(required, other.required) &&
+        deepEq.equals(propertyOrdering, other.propertyOrdering) &&
+        deepEq.equals(allOf, other.allOf) &&
+        deepEq.equals(anyOf, other.anyOf) &&
+        deepEq.equals(oneOf, other.oneOf) &&
+        minItems == other.minItems &&
+        maxItems == other.maxItems &&
+        minProperties == other.minProperties &&
+        maxProperties == other.maxProperties &&
+        minLength == other.minLength &&
+        maxLength == other.maxLength &&
+        pattern == other.pattern &&
+        minimum == other.minimum &&
+        maximum == other.maximum &&
+        exclusiveMinimum == other.exclusiveMinimum &&
+        exclusiveMaximum == other.exclusiveMaximum &&
+        multipleOf == other.multipleOf &&
+        discriminator == other.discriminator &&
+        uniqueItems == other.uniqueItems &&
+        additionalPropertiesSchema == other.additionalPropertiesSchema &&
+        additionalPropertiesAllowed == other.additionalPropertiesAllowed;
   }
 
-  JsonSchema? _parseSchema(Object? value) {
-    return switch (value) {
-      null => null,
-      Map<dynamic, dynamic> map => parse(map.cast<String, Object?>()),
-      _ => throw ArgumentError(
-          'Expected schema Map, got ${value.runtimeType}: $value',
-        ),
-    };
-  }
-
-  Map<String, JsonSchema>? _parseProperties(Object? value) {
-    return switch (value) {
-      null => null,
-      Map<dynamic, dynamic> map => {
-          for (final entry in map.entries)
-            entry.key.toString(): parse((entry.value as Map).cast<String, Object?>()),
-        },
-      _ => throw ArgumentError(
-          'Expected properties Map, got ${value.runtimeType}: $value',
-        ),
-    };
-  }
-
-  List<JsonSchema>? _parseSchemaList(Object? value) {
-    return switch (value) {
-      null => null,
-      List<dynamic> list => list
-          .map((item) => parse((item as Map).cast<String, Object?>()))
-          .toList(),
-      _ => throw ArgumentError(
-          'Expected schema List, got ${value.runtimeType}: $value',
-        ),
-    };
+  @override
+  int get hashCode {
+    const deepEq = DeepCollectionEquality();
+    return Object.hashAll([
+      type,
+      format,
+      title,
+      description,
+      nullable,
+      deepEq.hash(enumValues),
+      items,
+      deepEq.hash(properties),
+      deepEq.hash(required),
+      deepEq.hash(propertyOrdering),
+      deepEq.hash(allOf),
+      deepEq.hash(anyOf),
+      deepEq.hash(oneOf),
+      minItems,
+      maxItems,
+      minProperties,
+      maxProperties,
+      minLength,
+      maxLength,
+      pattern,
+      minimum,
+      maximum,
+      exclusiveMinimum,
+      exclusiveMaximum,
+      multipleOf,
+      discriminator,
+      uniqueItems,
+      additionalPropertiesSchema,
+      additionalPropertiesAllowed,
+    ]);
   }
 }
+
+// Deprecated helpers removed: value-based enum covers string mapping.

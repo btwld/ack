@@ -55,6 +55,9 @@ tools/package-lock.json
 temp/
 *.tmp
 
+# Logs
+*.log
+
 # AI Agent workspace
 .augment/
 
