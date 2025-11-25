@@ -6,7 +6,7 @@
 
 ### Bug Fixes
 
-* **JsonSchema.toJson**: Now correctly adds null branch to `anyOf`/`oneOf` compositions when `nullable: true`, instead of emitting OpenAPI-style `nullable` property (which is not valid JSON Schema).
+* **JsonSchema.toJson**: Now correctly adds null branch to `anyOf`/`oneOf` compositions when `nullable: true`, producing valid JSON Schema Draft-07 format.
 
 ## 1.0.0-beta.3 (2025-10-27)
 

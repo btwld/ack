@@ -8,10 +8,11 @@ extension AckToJsonSchemaModel on AckSchema {
 }
 
 JsonSchema _convert(AckSchema schema) {
-  // Parse existing JSON Schema map for metadata
+  // Parse JSON Schema for constraint metadata (minLength, format, etc.)
   final parsed = JsonSchema.fromJson(schema.toJsonSchema());
   final effective = _unwrapNullable(parsed);
-  final nullableFlag = parsed.nullable == true || schema.isNullable;
+  // Use schema.isNullable directly - canonical source of truth
+  final nullableFlag = schema.isNullable;
 
   if (schema is TransformedSchema) {
     final base = _convert(schema.schema);
