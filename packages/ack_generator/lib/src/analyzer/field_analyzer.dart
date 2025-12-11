@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:source_gen/source_gen.dart';
@@ -9,9 +9,9 @@ import '../models/constraint_info.dart';
 
 /// Analyzes individual fields in a model
 class FieldAnalyzer {
-  FieldInfo analyze(FieldElement field) {
+  FieldInfo analyze(FieldElement2 field) {
     // Check for @AckField annotation
-    final ackFieldAnnotation = TypeChecker.fromRuntime(
+    final ackFieldAnnotation = TypeChecker.typeNamed(
       AckField,
     ).firstAnnotationOf(field);
 
@@ -28,7 +28,7 @@ class FieldAnalyzer {
     final description = _getDescription(field, ackFieldAnnotation);
 
     return FieldInfo(
-      name: field.name,
+      name: field.name3!,
       jsonKey: jsonKey,
       type: field.type,
       isRequired: isRequired,
@@ -38,17 +38,17 @@ class FieldAnalyzer {
     );
   }
 
-  String _getJsonKey(FieldElement field, DartObject? annotation) {
+  String _getJsonKey(FieldElement2 field, DartObject? annotation) {
     if (annotation != null) {
       final jsonKeyField = annotation.getField('jsonKey');
       if (jsonKeyField != null && !jsonKeyField.isNull) {
         return jsonKeyField.toStringValue()!;
       }
     }
-    return field.name;
+    return field.name3!;
   }
 
-  String? _getDescription(FieldElement field, DartObject? annotation) {
+  String? _getDescription(FieldElement2 field, DartObject? annotation) {
     if (annotation != null) {
       final descriptionField = annotation.getField('description');
       if (descriptionField != null && !descriptionField.isNull) {
@@ -58,11 +58,11 @@ class FieldAnalyzer {
     return null;
   }
 
-  bool _isRequired(FieldElement field, DartObject? annotation) {
+  bool _isRequired(FieldElement2 field, DartObject? annotation) {
     // If no annotation, use automatic detection
     if (annotation == null) {
       return field.type.nullabilitySuffix == NullabilitySuffix.none &&
-          !field.hasInitializer;
+          !field.firstFragment.hasInitializer;
     }
 
     // Check if the annotation explicitly sets required
@@ -80,7 +80,7 @@ class FieldAnalyzer {
 
     // Fall back to automatic detection
     return field.type.nullabilitySuffix == NullabilitySuffix.none &&
-        !field.hasInitializer;
+        !field.firstFragment.hasInitializer;
   }
 
   bool _hasExplicitRequiredValue(DartObject annotation) {
@@ -108,7 +108,7 @@ class FieldAnalyzer {
   }
 
   List<ConstraintInfo> _extractConstraints(
-    FieldElement field,
+    FieldElement2 field,
     DartObject? annotation,
   ) {
     final constraints = <ConstraintInfo>[];
@@ -156,11 +156,11 @@ class FieldAnalyzer {
     return ConstraintInfo(name: constraint, arguments: []);
   }
 
-  List<ConstraintInfo> _extractDecoratorConstraints(FieldElement field) {
+  List<ConstraintInfo> _extractDecoratorConstraints(FieldElement2 field) {
     final constraints = <ConstraintInfo>[];
 
     // STRING LENGTH CONSTRAINTS
-    final minLengthAnnotation = TypeChecker.fromRuntime(
+    final minLengthAnnotation = TypeChecker.typeNamed(
       MinLength,
     ).firstAnnotationOf(field);
     if (minLengthAnnotation != null) {
@@ -172,7 +172,7 @@ class FieldAnalyzer {
       }
     }
 
-    final maxLengthAnnotation = TypeChecker.fromRuntime(
+    final maxLengthAnnotation = TypeChecker.typeNamed(
       MaxLength,
     ).firstAnnotationOf(field);
     if (maxLengthAnnotation != null) {
@@ -185,16 +185,16 @@ class FieldAnalyzer {
     }
 
     // STRING FORMAT CONSTRAINTS
-    if (TypeChecker.fromRuntime(Email).hasAnnotationOfExact(field)) {
+    if (TypeChecker.typeNamed(Email).hasAnnotationOfExact(field)) {
       constraints.add(ConstraintInfo(name: 'email', arguments: []));
     }
 
-    if (TypeChecker.fromRuntime(Url).hasAnnotationOfExact(field)) {
+    if (TypeChecker.typeNamed(Url).hasAnnotationOfExact(field)) {
       constraints.add(ConstraintInfo(name: 'url', arguments: []));
     }
 
     // STRING PATTERN CONSTRAINTS
-    final patternAnnotation = TypeChecker.fromRuntime(
+    final patternAnnotation = TypeChecker.typeNamed(
       Pattern,
     ).firstAnnotationOf(field);
     if (patternAnnotation != null) {
@@ -205,7 +205,7 @@ class FieldAnalyzer {
     }
 
     // NUMERIC CONSTRAINTS
-    final minAnnotation = TypeChecker.fromRuntime(Min).firstAnnotationOf(field);
+    final minAnnotation = TypeChecker.typeNamed(Min).firstAnnotationOf(field);
     if (minAnnotation != null) {
       final value = minAnnotation.getField('value')?.toDoubleValue();
       if (value != null) {
@@ -215,7 +215,7 @@ class FieldAnalyzer {
       }
     }
 
-    final maxAnnotation = TypeChecker.fromRuntime(Max).firstAnnotationOf(field);
+    final maxAnnotation = TypeChecker.typeNamed(Max).firstAnnotationOf(field);
     if (maxAnnotation != null) {
       final value = maxAnnotation.getField('value')?.toDoubleValue();
       if (value != null) {
@@ -225,11 +225,11 @@ class FieldAnalyzer {
       }
     }
 
-    if (TypeChecker.fromRuntime(Positive).hasAnnotationOfExact(field)) {
+    if (TypeChecker.typeNamed(Positive).hasAnnotationOfExact(field)) {
       constraints.add(ConstraintInfo(name: 'positive', arguments: []));
     }
 
-    final multipleOfAnnotation = TypeChecker.fromRuntime(
+    final multipleOfAnnotation = TypeChecker.typeNamed(
       MultipleOf,
     ).firstAnnotationOf(field);
     if (multipleOfAnnotation != null) {
@@ -242,7 +242,7 @@ class FieldAnalyzer {
     }
 
     // LIST CONSTRAINTS
-    final minItemsAnnotation = TypeChecker.fromRuntime(
+    final minItemsAnnotation = TypeChecker.typeNamed(
       MinItems,
     ).firstAnnotationOf(field);
     if (minItemsAnnotation != null) {
@@ -254,7 +254,7 @@ class FieldAnalyzer {
       }
     }
 
-    final maxItemsAnnotation = TypeChecker.fromRuntime(
+    final maxItemsAnnotation = TypeChecker.typeNamed(
       MaxItems,
     ).firstAnnotationOf(field);
     if (maxItemsAnnotation != null) {
@@ -267,7 +267,7 @@ class FieldAnalyzer {
     }
 
     // ENUM CONSTRAINTS
-    final enumStringAnnotation = TypeChecker.fromRuntime(
+    final enumStringAnnotation = TypeChecker.typeNamed(
       EnumString,
     ).firstAnnotationOf(field);
     if (enumStringAnnotation != null) {

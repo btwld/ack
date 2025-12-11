@@ -82,7 +82,7 @@ class SchemaBuilder {
     for (final entry in subtypes.entries) {
       final discriminatorValue = entry.key;
       final subtypeElement = entry.value;
-      final subtypeSchemaName = _toCamelCase('${subtypeElement.name}Schema');
+      final subtypeSchemaName = _toCamelCase('${subtypeElement.name3}Schema');
 
       schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
     }

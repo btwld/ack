@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../models/field_info.dart';
@@ -9,13 +9,13 @@ import 'field_analyzer.dart';
 class ModelAnalyzer {
   final _fieldAnalyzer = FieldAnalyzer();
 
-  ModelInfo analyze(ClassElement element, ConstantReader annotation) {
+  ModelInfo analyze(ClassElement2 element, ConstantReader annotation) {
     // Extract schema name from annotation or generate it
     final schemaName = annotation.read('schemaName').isNull
         ? null
         : annotation.read('schemaName').stringValue;
 
-    final schemaClassName = schemaName ?? '${element.name}Schema';
+    final schemaClassName = schemaName ?? '${element.name3}Schema';
 
     // Extract description if provided
     final description = annotation.read('description').isNull
@@ -53,10 +53,8 @@ class ModelAnalyzer {
 
     // Get all fields including inherited ones
     final allFields = [
-      ...element.fields,
-      // Suppress deprecation warning for analyzer API
-      // ignore: deprecated_member_use
-      ...element.allSupertypes.expand((type) => type.element.fields),
+      ...element.fields2,
+      ...element.allSupertypes.expand((type) => type.element3.fields2),
     ].where((field) => !field.isStatic && !field.isSynthetic);
 
     for (final field in allFields) {
@@ -81,7 +79,7 @@ class ModelAnalyzer {
     }
 
     return ModelInfo(
-      className: element.name,
+      className: element.name3!,
       schemaClassName: schemaClassName,
       description: description,
       fields: fields,
@@ -96,16 +94,15 @@ class ModelAnalyzer {
   }
 
   void _validateAdditionalPropertiesField(
-    // ignore: deprecated_member_use
-    ClassElement element,
+    ClassElement2 element,
     String fieldName,
     bool additionalProperties,
   ) {
     // Find the field in the class
-    final field = element.fields.firstWhere(
-      (f) => f.name == fieldName,
+    final field = element.fields2.firstWhere(
+      (f) => f.name3 == fieldName,
       orElse: () => throw ArgumentError(
-        'additionalPropertiesField "$fieldName" not found in class ${element.name}',
+        'additionalPropertiesField "$fieldName" not found in class ${element.name3}',
       ),
     );
 
@@ -134,14 +131,14 @@ class ModelAnalyzer {
 
   /// Validates discriminated type usage rules
   void _validateDiscriminatedTypeUsage(
-    ClassElement element,
+    ClassElement2 element,
     String? discriminatedKey,
     String? discriminatedValue,
   ) {
     // Rule 1: discriminatedKey and discriminatedValue are mutually exclusive
     if (discriminatedKey != null && discriminatedValue != null) {
       throw ArgumentError(
-        'Class ${element.name} cannot have both discriminatedKey and discriminatedValue. '
+        'Class ${element.name3} cannot have both discriminatedKey and discriminatedValue. '
         'Use discriminatedKey on base classes and discriminatedValue on concrete implementations.',
       );
     }
@@ -150,7 +147,7 @@ class ModelAnalyzer {
     if (discriminatedKey != null && !element.isAbstract) {
       throw ArgumentError(
         'discriminatedKey can only be used on abstract classes. '
-        'Class ${element.name} should be declared as abstract.',
+        'Class ${element.name3} should be declared as abstract.',
       );
     }
 
@@ -158,7 +155,7 @@ class ModelAnalyzer {
     if (discriminatedValue != null && element.isAbstract) {
       throw ArgumentError(
         'discriminatedValue can only be used on concrete classes. '
-        'Class ${element.name} is abstract and should use discriminatedKey instead.',
+        'Class ${element.name3} is abstract and should use discriminatedKey instead.',
       );
     }
 
@@ -170,25 +167,23 @@ class ModelAnalyzer {
 
   /// Validates that the discriminator field exists and is properly typed
   void _validateDiscriminatorField(
-    ClassElement element,
+    ClassElement2 element,
     String discriminatorKey,
   ) {
     // Check if the field exists (including inherited fields)
     final allFields = [
-      ...element.fields,
-      // Suppress deprecation warning for analyzer API
-      // ignore: deprecated_member_use
-      ...element.allSupertypes.expand((type) => type.element.fields),
+      ...element.fields2,
+      ...element.allSupertypes.expand((type) => type.element3.fields2),
     ];
 
-    final discriminatorField = allFields.cast<FieldElement?>().firstWhere(
-      (field) => field?.name == discriminatorKey,
+    final discriminatorField = allFields.cast<FieldElement2?>().firstWhere(
+      (field) => field?.name3 == discriminatorKey,
       orElse: () => null,
     );
 
     if (discriminatorField == null) {
       throw ArgumentError(
-        'Discriminator field "$discriminatorKey" not found in class ${element.name} or its supertypes.',
+        'Discriminator field "$discriminatorKey" not found in class ${element.name3} or its supertypes.',
       );
     }
 
@@ -205,7 +200,7 @@ class ModelAnalyzer {
   /// This is a second pass that connects base classes with their subtypes
   List<ModelInfo> buildDiscriminatorRelationships(
     List<ModelInfo> modelInfos,
-    List<ClassElement> elements,
+    List<ClassElement2> elements,
   ) {
     final updatedModelInfos = <ModelInfo>[];
 
@@ -227,7 +222,7 @@ class ModelAnalyzer {
     // For each base class, find and validate its subtypes
     for (final baseClass in baseClasses) {
       final discriminatorKey = baseClass.discriminatorKey!;
-      final matchingSubtypes = <String, ClassElement>{};
+      final matchingSubtypes = <String, ClassElement2>{};
 
       // Find subtypes that belong to this base class
       for (int i = 0; i < subtypes.length; i++) {
@@ -242,7 +237,7 @@ class ModelAnalyzer {
           if (matchingSubtypes.containsKey(discriminatorValue)) {
             throw ArgumentError(
               'Duplicate discriminator value "$discriminatorValue" found in '
-              '${subtype.className} and ${matchingSubtypes[discriminatorValue]!.name}. '
+              '${subtype.className} and ${matchingSubtypes[discriminatorValue]!.name3}. '
               'Each discriminator value must be unique within the hierarchy.',
             );
           }
@@ -309,16 +304,16 @@ class ModelAnalyzer {
   }
 
   /// Checks if a class extends another class (direct or indirect inheritance)
-  bool _isSubtypeOf(ClassElement element, String baseClassName) {
+  bool _isSubtypeOf(ClassElement2 element, String baseClassName) {
     // Check direct superclass
     final supertype = element.supertype;
-    if (supertype?.element.name == baseClassName) {
+    if (supertype?.element3.name3 == baseClassName) {
       return true;
     }
 
     // Check indirect inheritance through supertypes
     for (final supertype in element.allSupertypes) {
-      if (supertype.element.name == baseClassName) {
+      if (supertype.element3.name3 == baseClassName) {
         return true;
       }
     }
@@ -328,15 +323,15 @@ class ModelAnalyzer {
 
   /// Validates that the discriminator field is properly overridden in subtype
   void _validateDiscriminatorOverride(
-    ClassElement element,
+    ClassElement2 element,
     String discriminatorKey,
     String expectedValue,
   ) {
     // Find the discriminator field override
-    final discriminatorField = element.fields.firstWhere(
-      (field) => field.name == discriminatorKey,
+    final discriminatorField = element.fields2.firstWhere(
+      (field) => field.name3 == discriminatorKey,
       orElse: () => throw ArgumentError(
-        'Subtype ${element.name} must override discriminator field "$discriminatorKey"',
+        'Subtype ${element.name3} must override discriminator field "$discriminatorKey"',
       ),
     );
 
@@ -346,7 +341,7 @@ class ModelAnalyzer {
     final fieldType = discriminatorField.type.getDisplayString();
     if (!fieldType.startsWith('String')) {
       throw ArgumentError(
-        'Discriminator field "$discriminatorKey" override in ${element.name} '
+        'Discriminator field "$discriminatorKey" override in ${element.name3} '
         'must be of type String, got $fieldType',
       );
     }

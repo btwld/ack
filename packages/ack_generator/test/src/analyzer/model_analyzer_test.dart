@@ -1,12 +1,14 @@
 import 'package:test/test.dart';
 import 'package:build_test/build_test.dart';
 import 'package:build/build.dart';
-import 'package:analyzer/dart/element/element.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:ack_generator/src/analyzer/model_analyzer.dart';
 
 import '../../test_utils/test_assets.dart';
+
+const _ackModelChecker = TypeChecker.fromUrl(
+  'package:ack_annotations/ack_annotations.dart#AckModel',
+);
 
 void main() {
   group('ModelAnalyzer', () {
@@ -34,13 +36,13 @@ class TestModel {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'TestModel');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'TestModel',
+        );
 
-        final annotation = TypeChecker.fromRuntime(
-          AckModel,
-        ).firstAnnotationOfExact(classElement)!;
+        final annotation = _ackModelChecker.firstAnnotationOfExact(
+          classElement,
+        )!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -67,13 +69,13 @@ class UserProfile {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'UserProfile');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'UserProfile',
+        );
 
-        final annotation = TypeChecker.fromRuntime(
-          AckModel,
-        ).firstAnnotationOfExact(classElement)!;
+        final annotation = _ackModelChecker.firstAnnotationOfExact(
+          classElement,
+        )!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -100,13 +102,13 @@ class User {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'User');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'User',
+        );
 
-        final annotation = TypeChecker.fromRuntime(
-          AckModel,
-        ).firstAnnotationOfExact(classElement)!;
+        final annotation = _ackModelChecker.firstAnnotationOfExact(
+          classElement,
+        )!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -140,13 +142,13 @@ class ExtendedModel extends BaseModel {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'ExtendedModel');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'ExtendedModel',
+        );
 
-        final annotation = TypeChecker.fromRuntime(
-          AckModel,
-        ).firstAnnotationOfExact(classElement)!;
+        final annotation = _ackModelChecker.firstAnnotationOfExact(
+          classElement,
+        )!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -180,13 +182,13 @@ class Product {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'Product');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'Product',
+        );
 
-        final annotation = TypeChecker.fromRuntime(
-          AckModel,
-        ).firstAnnotationOfExact(classElement)!;
+        final annotation = _ackModelChecker.firstAnnotationOfExact(
+          classElement,
+        )!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);

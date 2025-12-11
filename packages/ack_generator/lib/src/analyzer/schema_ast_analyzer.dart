@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_provider.dart';
 import 'package:source_gen/source_gen.dart';
@@ -21,33 +21,29 @@ class SchemaAstAnalyzer {
   ///
   /// Walks the AST to extract type information from the schema definition.
   ModelInfo? analyzeSchemaVariable(
-    TopLevelVariableElement element, {
+    TopLevelVariableElement2 element, {
     String? customTypeName,
   }) {
-    // Get the AST node for this variable
-    final session = element.session;
-    if (session == null) {
-      throw InvalidGenerationSourceError(
-        'Could not get analysis session for "${element.name}"',
-        element: element,
-      );
-    }
+    // Get the AST node for this variable using the fragment
+    final fragment = element.firstFragment;
+    final session = fragment.libraryFragment.element.session;
+    final library = element.library2;
 
-    final parsedLibResult = session.getParsedLibraryByElement(element.library);
+    final parsedLibResult = session.getParsedLibraryByElement2(library);
 
     // getParsedLibraryByElement returns a SomeParsedLibraryResult which might not have getElementDeclaration
     // We need to check if it's actually a ParsedLibraryResult
     if (parsedLibResult is! ParsedLibraryResult) {
       throw InvalidGenerationSourceError(
-        'Could not get parsed library for "${element.name}"',
+        'Could not get parsed library for "${element.name3}"',
         element: element,
       );
     }
 
-    final declaration = parsedLibResult.getElementDeclaration(element);
+    final declaration = parsedLibResult.getFragmentDeclaration(fragment);
     if (declaration == null || declaration.node is! VariableDeclaration) {
       throw InvalidGenerationSourceError(
-        'Could not find variable declaration for "${element.name}"',
+        'Could not find variable declaration for "${element.name3}"',
         element: element,
       );
     }
@@ -57,7 +53,7 @@ class SchemaAstAnalyzer {
 
     if (initializer == null) {
       throw InvalidGenerationSourceError(
-        'Schema variable "${element.name}" must have an initializer',
+        'Schema variable "${element.name3}" must have an initializer',
         element: element,
       );
     }
@@ -65,14 +61,14 @@ class SchemaAstAnalyzer {
     // Check if the initializer is Ack.object({...})
     if (initializer is! MethodInvocation) {
       throw InvalidGenerationSourceError(
-        'Schema variable "${element.name}" must be initialized with a schema '
+        'Schema variable "${element.name3}" must be initialized with a schema '
         '(e.g., Ack.object({...}))',
         element: element,
       );
     }
 
     return _parseSchemaFromAST(
-      element.name,
+      element.name3!,
       initializer,
       element,
       customTypeName: customTypeName,
@@ -83,7 +79,7 @@ class SchemaAstAnalyzer {
   ModelInfo? _parseSchemaFromAST(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     // Walk the method chain to find the base Ack.xxx() call
@@ -197,7 +193,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation baseInvocation,
     MethodInvocation fullInvocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     // Extract the properties map from the first argument
@@ -274,7 +270,7 @@ class SchemaAstAnalyzer {
   /// Extracts field information from a map literal
   List<FieldInfo> _extractFieldsFromMapLiteral(
     SetOrMapLiteral mapLiteral,
-    Element element,
+    Element2 element,
   ) {
     final fields = <FieldInfo>[];
 
@@ -306,7 +302,7 @@ class SchemaAstAnalyzer {
   FieldInfo? _parseFieldValue(
     String fieldName,
     Expression value,
-    Element element,
+    Element2 element,
   ) {
     // Handle Ack.xxx() method calls
     if (value is MethodInvocation) {
@@ -317,15 +313,15 @@ class SchemaAstAnalyzer {
     if (value is SimpleIdentifier) {
       // Schema variable reference - treat as Map<String, dynamic>
       // This allows nested schemas to work without complex resolution
-      final library = element.library;
-      if (library == null) {
+      final library = element.library2;
+
+      final typeProvider = library?.typeProvider;
+      if (typeProvider == null) {
         throw InvalidGenerationSourceError(
-          'Could not get library for element',
+          'Could not get type provider for library',
           element: element,
         );
       }
-
-      final typeProvider = library.typeProvider;
 
       return FieldInfo(
         name: fieldName,
@@ -347,7 +343,7 @@ class SchemaAstAnalyzer {
   FieldInfo _parseSchemaMethod(
     String fieldName,
     MethodInvocation invocation,
-    Element element,
+    Element2 element,
   ) {
     // Walk the method chain to find modifiers and base type
     var isOptional = false;
@@ -403,18 +399,12 @@ class SchemaAstAnalyzer {
   /// Maps a schema method invocation to a Dart type
   DartType _mapSchemaTypeToDartType(
     MethodInvocation invocation,
-    Element element,
+    Element2 element,
   ) {
     final schemaMethod = invocation.methodName.name;
 
     // We need to get the type provider from the element's library
-    final library = element.library;
-    if (library == null) {
-      throw InvalidGenerationSourceError(
-        'Could not get library for element',
-        element: element,
-      );
-    }
+    final library = element.library2!;
 
     final typeProvider = library.typeProvider;
 
@@ -447,7 +437,7 @@ class SchemaAstAnalyzer {
   /// Extracts the element type from Ack.list(elementSchema) calls
   DartType _extractListType(
     MethodInvocation listInvocation,
-    Element element,
+    Element2 element,
     TypeProvider typeProvider,
   ) {
     final args = listInvocation.argumentList.arguments;
@@ -477,7 +467,7 @@ class SchemaAstAnalyzer {
   /// Resolves the base class name for a schema variable, honoring custom overrides.
   String _resolveModelClassName(
     String variableName,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     if (customTypeName == null) {
@@ -533,7 +523,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseStringSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -555,7 +545,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseIntegerSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -577,7 +567,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseDoubleSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -599,7 +589,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseBooleanSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -629,7 +619,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseListSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -676,7 +666,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseLiteralSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -703,7 +693,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseEnumStringSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -730,7 +720,7 @@ class SchemaAstAnalyzer {
   ModelInfo _parseEnumValuesSchema(
     String variableName,
     MethodInvocation invocation,
-    Element element, {
+    Element2 element, {
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
