@@ -1,5 +1,5 @@
 import 'package:analyzer/dart/element/type.dart';
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'constraint_info.dart';
 
 /// Information about a field in the model
@@ -47,32 +47,27 @@ class FieldInfo {
 
   /// Whether this field is an enum type
   bool get isEnum {
-    final element = type.element;
+    final element = type.element3;
     if (element == null) return false;
 
-    // Check if this is an enum by looking at the element kind
-    return element.kind == ElementKind.ENUM;
+    // Check if this is an enum by looking at the element type
+    return element is EnumElement2;
   }
 
   /// Get enum values if this is an enum type
   List<String> get enumValues {
     if (!isEnum) return [];
-    final element = type.element;
+    final element = type.element3;
     if (element == null) return [];
 
     // For enums, get the enum constants using the analyzer API
-    if (element.kind == ElementKind.ENUM) {
+    if (element is EnumElement2) {
       try {
-        // Use dynamic access to get fields (handles analyzer API variations)
-        final fields = (element as dynamic).fields;
-        if (fields != null) {
-          final enumConstants = (fields as List)
-              .where((field) => field.isEnumConstant == true)
-              .map((field) => field.name as String)
-              .toList();
+        final enumConstants = element.constants2
+            .map((field) => field.name3!)
+            .toList();
 
-          return enumConstants;
-        }
+        return enumConstants;
       } catch (e) {
         // If there's any issue with the analyzer API, fall back to empty list
         // This maintains backward compatibility with manual @EnumString annotations

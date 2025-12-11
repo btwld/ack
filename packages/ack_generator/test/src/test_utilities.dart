@@ -1,6 +1,6 @@
 import 'package:ack_generator/src/models/constraint_info.dart';
 import 'package:ack_generator/src/models/field_info.dart';
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 
 // Mock implementation of FieldInfo for testing
@@ -119,7 +119,7 @@ class MockDartType implements DartType {
   bool get isDartCoreSet => typeName.startsWith('Set<');
 
   @override
-  Element? get element => null; // Return null for mock types
+  Element2? get element3 => null; // Return null for mock types
 
   List<DartType> get typeArguments {
     // For Map types, return [keyType, valueType]
