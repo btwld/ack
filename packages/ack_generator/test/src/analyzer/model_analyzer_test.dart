@@ -1,3 +1,4 @@
+import 'package:ack_annotations/ack_annotations.dart';
 import 'package:test/test.dart';
 import 'package:build_test/build_test.dart';
 import 'package:build/build.dart';
@@ -5,10 +6,6 @@ import 'package:source_gen/source_gen.dart';
 import 'package:ack_generator/src/analyzer/model_analyzer.dart';
 
 import '../../test_utils/test_assets.dart';
-
-const _ackModelChecker = TypeChecker.fromUrl(
-  'package:ack_annotations/ack_annotations.dart#AckModel',
-);
 
 void main() {
   group('ModelAnalyzer', () {
@@ -40,9 +37,9 @@ class TestModel {
           (e) => e.name3 == 'TestModel',
         );
 
-        final annotation = _ackModelChecker.firstAnnotationOfExact(
-          classElement,
-        )!;
+        final annotation = TypeChecker.typeNamed(
+          AckModel,
+        ).firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -73,9 +70,9 @@ class UserProfile {
           (e) => e.name3 == 'UserProfile',
         );
 
-        final annotation = _ackModelChecker.firstAnnotationOfExact(
-          classElement,
-        )!;
+        final annotation = TypeChecker.typeNamed(
+          AckModel,
+        ).firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -106,9 +103,9 @@ class User {
           (e) => e.name3 == 'User',
         );
 
-        final annotation = _ackModelChecker.firstAnnotationOfExact(
-          classElement,
-        )!;
+        final annotation = TypeChecker.typeNamed(
+          AckModel,
+        ).firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -146,9 +143,9 @@ class ExtendedModel extends BaseModel {
           (e) => e.name3 == 'ExtendedModel',
         );
 
-        final annotation = _ackModelChecker.firstAnnotationOfExact(
-          classElement,
-        )!;
+        final annotation = TypeChecker.typeNamed(
+          AckModel,
+        ).firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
@@ -186,9 +183,9 @@ class Product {
           (e) => e.name3 == 'Product',
         );
 
-        final annotation = _ackModelChecker.firstAnnotationOfExact(
-          classElement,
-        )!;
+        final annotation = TypeChecker.typeNamed(
+          AckModel,
+        ).firstAnnotationOfExact(classElement)!;
         final reader = ConstantReader(annotation);
 
         final modelInfo = analyzer.analyze(classElement, reader);
