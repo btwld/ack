@@ -121,14 +121,7 @@ class SchemaBuilder {
           ? _fieldBuilder.buildFieldSchema(field, model)
           : _fieldBuilder.buildFieldSchema(field);
 
-      // Add description comment if available
-      if (field.description != null && field.description!.isNotEmpty) {
-        fieldDefs.add(
-          '// ${field.description}\n  \'${field.jsonKey}\': $fieldSchema',
-        );
-      } else {
-        fieldDefs.add("'${field.jsonKey}': $fieldSchema");
-      }
+      fieldDefs.add("'${field.jsonKey}': $fieldSchema");
     }
 
     buffer.write('Ack.object({');
