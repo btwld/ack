@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'field_info.dart';
 
 /// Default representation type for object schemas
@@ -25,7 +25,7 @@ class ModelInfo {
   final String? discriminatorValue;
 
   /// Map of discriminator values to class elements (only for base classes)
-  final Map<String, ClassElement>? subtypes;
+  final Map<String, ClassElement2>? subtypes;
 
   /// Computed property: Whether this class is a discriminated base class (has discriminatedKey)
   bool get isDiscriminatedBase => discriminatorKey != null;

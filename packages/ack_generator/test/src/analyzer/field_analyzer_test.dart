@@ -1,7 +1,6 @@
 import 'package:test/test.dart';
 import 'package:build_test/build_test.dart';
 import 'package:build/build.dart';
-import 'package:analyzer/dart/element/element.dart';
 import 'package:ack_generator/src/analyzer/field_analyzer.dart';
 
 import '../../test_utils/test_assets.dart';
@@ -34,10 +33,10 @@ class User {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'User');
-        final field = classElement.fields.firstWhere((f) => f.name == 'name');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'User',
+        );
+        final field = classElement.fields2.firstWhere((f) => f.name3 == 'name');
 
         final fieldInfo = analyzer.analyze(field);
 
@@ -66,11 +65,11 @@ class User {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'User');
-        final field = classElement.fields.firstWhere(
-          (f) => f.name == 'firstName',
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'User',
+        );
+        final field = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'firstName',
         );
 
         final fieldInfo = analyzer.analyze(field);
@@ -100,17 +99,19 @@ class User {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'User');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'User',
+        );
 
-        final nameField = classElement.fields.firstWhere(
-          (f) => f.name == 'name',
+        final nameField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'name',
         );
-        final emailField = classElement.fields.firstWhere(
-          (f) => f.name == 'email',
+        final emailField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'email',
         );
-        final ageField = classElement.fields.firstWhere((f) => f.name == 'age');
+        final ageField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'age',
+        );
 
         expect(analyzer.analyze(nameField).isNullable, isFalse);
         expect(analyzer.analyze(emailField).isNullable, isTrue);
@@ -141,12 +142,12 @@ class User {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'User');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'User',
+        );
 
-        final emailField = classElement.fields.firstWhere(
-          (f) => f.name == 'email',
+        final emailField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'email',
         );
         final emailInfo = analyzer.analyze(emailField);
 
@@ -158,7 +159,9 @@ class User {
         expect(emailInfo.constraints[2].name, equals('maxLength'));
         expect(emailInfo.constraints[2].arguments, equals(['100']));
 
-        final ageField = classElement.fields.firstWhere((f) => f.name == 'age');
+        final ageField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'age',
+        );
         final ageInfo = analyzer.analyze(ageField);
 
         expect(ageInfo.constraints.length, equals(2));
@@ -190,18 +193,18 @@ class Settings {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'Settings');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'Settings',
+        );
 
-        final enabledField = classElement.fields.firstWhere(
-          (f) => f.name == 'enabled',
+        final enabledField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'enabled',
         );
-        final retryField = classElement.fields.firstWhere(
-          (f) => f.name == 'retryCount',
+        final retryField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'retryCount',
         );
-        final themeField = classElement.fields.firstWhere(
-          (f) => f.name == 'theme',
+        final themeField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'theme',
         );
 
         // Note: In actual implementation, extracting default values from AST
@@ -243,11 +246,11 @@ class TypeTest {
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/model.dart'),
         );
-        final classElement = library.topLevelElements
-            .whereType<ClassElement>()
-            .firstWhere((e) => e.name == 'TypeTest');
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'TypeTest',
+        );
 
-        final fields = classElement.fields.where((f) => !f.isSynthetic);
+        final fields = classElement.fields2.where((f) => !f.isSynthetic);
 
         for (final field in fields) {
           final fieldInfo = analyzer.analyze(field);
