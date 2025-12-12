@@ -89,6 +89,10 @@ class FieldBuilder {
       schema = '$schema.nullable()';
     }
 
+    if (field.description != null) {
+      schema = '$schema.withDescription(\'${field.description!}\')';
+    }
+
     return schema;
   }
 

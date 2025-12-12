@@ -8,7 +8,7 @@ class UserProfile {
   @AckField(description: 'Unique identifier for the user')
   final String id;
 
-  @AckField(description: 'User\'s full display name')
+  @AckField(description: 'User full display name')
   @MinLength(2)
   final String name;
 
