@@ -18,7 +18,7 @@ final userProfileSchema = Ack.object({
   'name': Ack.string()
       .minLength(2)
       .optional()
-      .withDescription('User full display name'),
+      .withDescription('User\'s full display name'),
   'email': Ack.string().email().optional().withDescription(
     'Primary email address for communication',
   ),

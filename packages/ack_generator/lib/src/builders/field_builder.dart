@@ -90,7 +90,8 @@ class FieldBuilder {
     }
 
     if (field.description != null) {
-      schema = '$schema.withDescription(\'${field.description!}\')';
+      final escapedDescription = field.description!.replaceAll("'", r"\'");
+      schema = '$schema.withDescription(\'$escapedDescription\')';
     }
 
     return schema;
