@@ -33,6 +33,13 @@ extension JsonSchemaBuilderExtension on AckSchema {
   }
 }
 
+/// Converts a [JsonSchema] model directly to json_schema_builder [Schema] format.
+///
+/// This is useful for testing or when you have a pre-built JsonSchema model.
+jsb.Schema convertJsonSchemaToBuilder(JsonSchema schema) {
+  return _convert(schema);
+}
+
 // Standalone converter from JsonSchema model to json_schema_builder Schema.
 jsb.Schema _convert(JsonSchema schema) {
   final effective = _effective(schema);
@@ -65,7 +72,14 @@ jsb.Schema _convert(JsonSchema schema) {
 
   if (schema.oneOf != null) {
     return _wrapNullable(
-      jsb.Schema.combined(anyOf: schema.oneOf!.map(_convert).toList()),
+      jsb.Schema.combined(oneOf: schema.oneOf!.map(_convert).toList()),
+      nullableFlag,
+    );
+  }
+
+  if (schema.allOf != null) {
+    return _wrapNullable(
+      jsb.Schema.combined(allOf: schema.allOf!.map(_convert).toList()),
       nullableFlag,
     );
   }
@@ -94,6 +108,9 @@ jsb.Schema _convertInteger(JsonSchema schema, bool? nullableFlag) {
     title: schema.title,
     minimum: schema.minimum?.toInt(),
     maximum: schema.maximum?.toInt(),
+    exclusiveMinimum: schema.exclusiveMinimum?.toInt(),
+    exclusiveMaximum: schema.exclusiveMaximum?.toInt(),
+    multipleOf: schema.multipleOf?.toInt(),
   );
   return _wrapNullable(base, nullableFlag);
 }
@@ -104,6 +121,9 @@ jsb.Schema _convertNumber(JsonSchema schema, bool? nullableFlag) {
     title: schema.title,
     minimum: schema.minimum?.toDouble(),
     maximum: schema.maximum?.toDouble(),
+    exclusiveMinimum: schema.exclusiveMinimum?.toDouble(),
+    exclusiveMaximum: schema.exclusiveMaximum?.toDouble(),
+    multipleOf: schema.multipleOf?.toDouble(),
   );
   return _wrapNullable(base, nullableFlag);
 }
@@ -148,6 +168,8 @@ jsb.Schema _convertObject(JsonSchema schema, bool? nullableFlag) {
     description: schema.description,
     title: schema.title,
     additionalProperties: additional,
+    minProperties: schema.minProperties,
+    maxProperties: schema.maxProperties,
   );
   return _wrapNullable(base, nullableFlag);
 }
