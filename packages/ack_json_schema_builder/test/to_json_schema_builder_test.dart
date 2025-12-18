@@ -280,6 +280,106 @@ void main() {
       });
     });
 
+    group('oneOf composition', () {
+      test('oneOf converts to oneOf (not anyOf)', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'circle': Ack.object({'radius': Ack.double()}),
+            'square': Ack.object({'side': Ack.double()}),
+          },
+        );
+        final result = schema.toJsonSchemaBuilder();
+
+        // MUST have oneOf, NOT anyOf - discriminated unions require exactly-one semantics
+        expect(result.value.containsKey('oneOf'), isTrue,
+            reason: 'Discriminated schema should use oneOf for exactly-one semantics');
+        expect(result.value.containsKey('anyOf'), isFalse,
+            reason: 'oneOf should not be converted to anyOf');
+      });
+
+      test('oneOf preserves branch schemas', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'kind',
+          schemas: {
+            'a': Ack.object({'val': Ack.string()}),
+            'b': Ack.object({'num': Ack.integer()}),
+          },
+        );
+        final result = schema.toJsonSchemaBuilder();
+
+        final oneOf = result.value['oneOf'] as List?;
+        expect(oneOf, isNotNull);
+        expect(oneOf, hasLength(2));
+      });
+    });
+
+    group('Numeric constraints - exclusive bounds and multipleOf', () {
+      test('integer preserves exclusiveMinimum', () {
+        final schema = Ack.integer().greaterThan(5);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['exclusiveMinimum'], 5);
+      });
+
+      test('integer preserves exclusiveMaximum', () {
+        final schema = Ack.integer().lessThan(100);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['exclusiveMaximum'], 100);
+      });
+
+      test('integer preserves multipleOf', () {
+        final schema = Ack.integer().multipleOf(5);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['multipleOf'], 5);
+      });
+
+      test('integer preserves all numeric constraints together', () {
+        final schema = Ack.integer().min(0).max(100).greaterThan(-1).lessThan(101).multipleOf(5);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['minimum'], 0);
+        expect(result.value['maximum'], 100);
+        expect(result.value['exclusiveMinimum'], -1);
+        expect(result.value['exclusiveMaximum'], 101);
+        expect(result.value['multipleOf'], 5);
+      });
+
+      test('double preserves exclusiveMinimum', () {
+        final schema = Ack.double().greaterThan(0.5);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['exclusiveMinimum'], closeTo(0.5, 1e-9));
+      });
+
+      test('double preserves exclusiveMaximum', () {
+        final schema = Ack.double().lessThan(99.5);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['exclusiveMaximum'], closeTo(99.5, 1e-9));
+      });
+
+      test('double preserves multipleOf', () {
+        final schema = Ack.double().multipleOf(0.25);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['multipleOf'], closeTo(0.25, 1e-9));
+      });
+
+      test('double preserves all numeric constraints together', () {
+        final schema = Ack.double().min(0).max(100).greaterThan(-0.5).lessThan(100.5).multipleOf(0.1);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['minimum'], closeTo(0, 1e-9));
+        expect(result.value['maximum'], closeTo(100, 1e-9));
+        expect(result.value['exclusiveMinimum'], closeTo(-0.5, 1e-9));
+        expect(result.value['exclusiveMaximum'], closeTo(100.5, 1e-9));
+        expect(result.value['multipleOf'], closeTo(0.1, 1e-9));
+      });
+    });
+
     group('Discriminated + error wrapping', () {
       test('throws on discriminator/property conflict', () {
         final schema = Ack.discriminated(
@@ -339,6 +439,87 @@ void main() {
           result.value['additionalProperties'],
           anyOf(equals(true), equals({})),
         );
+      });
+    });
+
+    group('allOf composition', () {
+      test('allOf converts to allOf in json_schema_builder', () {
+        // Create a JsonSchema with allOf directly (ACK doesn't have Ack.allOf() yet)
+        final jsonSchema = JsonSchema.fromJson({
+          'allOf': [
+            {'type': 'object', 'properties': {'name': {'type': 'string'}}},
+            {'type': 'object', 'properties': {'age': {'type': 'integer'}}},
+          ],
+        });
+
+        // Convert using the public helper
+        final result = convertJsonSchemaToBuilder(jsonSchema);
+
+        // Verify allOf is in the output
+        expect(result.value.containsKey('allOf'), isTrue,
+            reason: 'allOf should be converted to allOf');
+        expect(result.value.containsKey('anyOf'), isFalse,
+            reason: 'allOf should not become anyOf');
+
+        final allOf = result.value['allOf'] as List;
+        expect(allOf, hasLength(2));
+      });
+
+      test('allOf preserves branch schemas', () {
+        final jsonSchema = JsonSchema.fromJson({
+          'allOf': [
+            {'type': 'string', 'minLength': 5},
+            {'type': 'string', 'maxLength': 10},
+          ],
+        });
+
+        final result = convertJsonSchemaToBuilder(jsonSchema);
+        final allOf = (result.value['allOf'] as List).map(_schemaFrom).toList();
+
+        expect(allOf, hasLength(2));
+        expect(allOf[0].value['type'], 'string');
+        expect(allOf[0].value['minLength'], 5);
+        expect(allOf[1].value['maxLength'], 10);
+      });
+    });
+
+    group('Object property count constraints', () {
+      test('minProperties is preserved in conversion', () {
+        final jsonSchema = JsonSchema.fromJson({
+          'type': 'object',
+          'properties': {'name': {'type': 'string'}},
+          'minProperties': 2,
+        });
+
+        final result = convertJsonSchemaToBuilder(jsonSchema);
+
+        expect(result.value['minProperties'], 2);
+      });
+
+      test('maxProperties is preserved in conversion', () {
+        final jsonSchema = JsonSchema.fromJson({
+          'type': 'object',
+          'properties': {'name': {'type': 'string'}},
+          'maxProperties': 5,
+        });
+
+        final result = convertJsonSchemaToBuilder(jsonSchema);
+
+        expect(result.value['maxProperties'], 5);
+      });
+
+      test('both minProperties and maxProperties together', () {
+        final jsonSchema = JsonSchema.fromJson({
+          'type': 'object',
+          'properties': {'name': {'type': 'string'}},
+          'minProperties': 1,
+          'maxProperties': 10,
+        });
+
+        final result = convertJsonSchemaToBuilder(jsonSchema);
+
+        expect(result.value['minProperties'], 1);
+        expect(result.value['maxProperties'], 10);
       });
     });
   });
