@@ -8,25 +8,25 @@ void main() {
   group('Docs /guides/json-schema-integration.mdx', () {
     AckSchema<Map<String, Object?>> buildUserSchema() {
       return Ack.object({
-        'id': Ack.integer().positive().withDescription(
+        'id': Ack.integer().positive().describe(
           'Unique user identifier',
         ),
         'name': Ack.string()
             .minLength(2)
             .maxLength(50)
-            .withDescription("User's full name"),
-        'email': Ack.string().email().withDescription("User's email address"),
+            .describe("User's full name"),
+        'email': Ack.string().email().describe("User's email address"),
         'role': Ack.enumString(['admin', 'user', 'guest']).withDefault('user'),
         'isActive': Ack.boolean().withDefault(true),
         'tags': Ack.list(
           Ack.string(),
-        ).unique().withDescription('List of user tags').nullable(),
+        ).unique().describe('List of user tags').nullable(),
         'age': Ack.integer()
             .min(0)
             .max(120)
             .nullable()
-            .withDescription("User's age"),
-      }).withDescription('Represents a user in the system');
+            .describe("User's age"),
+      }).describe('Represents a user in the system');
     }
 
     test('toJsonSchema produces expected metadata', () {

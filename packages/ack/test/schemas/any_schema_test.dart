@@ -53,7 +53,7 @@ void main() {
 
     test('should generate correct JSON schema', () {
       final schema = Ack.any()
-          .withDescription("Accepts any value")
+          .describe("Accepts any value")
           .withDefault("fallback");
 
       final jsonSchema = schema.toJsonSchema();
@@ -69,7 +69,7 @@ void main() {
     test('should support fluent API', () {
       final schema = Ack.any()
           .nullable()
-          .withDescription("Any value or null")
+          .describe("Any value or null")
           .withDefault("default");
 
       expect(schema.isNullable, isTrue);
@@ -78,7 +78,7 @@ void main() {
     });
 
     test('should work with copyWith', () {
-      final original = Ack.any().withDescription("Original");
+      final original = Ack.any().describe("Original");
       final copied = original.copyWith(description: "Modified");
 
       expect(original.description, equals("Original"));

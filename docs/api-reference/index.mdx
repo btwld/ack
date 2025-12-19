@@ -35,7 +35,7 @@ Base class for all schema types.
 
 - `AckSchema<T> nullable()`: Returns a new schema that also accepts `null` values.
 - `AckSchema<T> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
-- `AckSchema<T> withDescription(String description)`: Adds a description for documentation and JSON Schema generation.
+- `AckSchema<T> describe(String description)`: Adds a description for documentation and JSON Schema generation.
 - `AckSchema<T> withDefault(T value)`: Sets a default value when input is `null`.
 - `StringSchema strictParsing({bool value = true})`: Enables strict parsing for strings.
 - `IntegerSchema strictParsing({bool value = true})`: Enables strict parsing for integers.

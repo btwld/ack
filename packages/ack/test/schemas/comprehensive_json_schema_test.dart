@@ -829,7 +829,7 @@ void main() {
             .maxLength(50)
             .email()
             .nullable()
-            .withDescription('User email address');
+            .describe('User email address');
 
         expect(schema.safeParse('user@example.com').isOk, isTrue);
         expect(schema.safeParse(null).isOk, isTrue);
@@ -842,7 +842,7 @@ void main() {
             .min(0)
             .max(100)
             .positive()
-            .withDescription('Percentage value');
+            .describe('Percentage value');
 
         expect(schema.safeParse(50).isOk, isTrue);
         expect(schema.safeParse(0).isOk, isFalse); // not positive
@@ -855,7 +855,7 @@ void main() {
             .minItems(1)
             .maxItems(10)
             .unique()
-            .withDescription('List of unique non-empty strings');
+            .describe('List of unique non-empty strings');
 
         expect(schema.safeParse(['a', 'b', 'c']).isOk, isTrue);
         expect(schema.safeParse([]).isOk, isFalse); // too short
