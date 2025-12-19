@@ -70,7 +70,7 @@ class User {
               contains('final userSchema = Ack.object({'),
               // Verify withDescription() is generated for fields with descriptions
               // Note: Generated code may be multi-line formatted, so check parts separately
-              contains(".withDescription("),
+              contains('.withDescription('),
               contains("The user\\'s full name"),
               contains("User\\'s primary email address"),
               // Verify fields without description don't have withDescription
@@ -123,10 +123,10 @@ class Product {
               contains('final productSchema = Ack.object({'),
               // Verify withDescription() is generated for fields with descriptions
               // Note: Generated code may be multi-line formatted, so check parts separately
-              contains(".withDescription("),
-              contains("Unique product identifier"),
-              contains("Product display name"),
-              contains("Current product price in USD"),
+              contains('.withDescription('),
+              contains('Unique product identifier'),
+              contains('Product display name'),
+              contains('Current product price in USD'),
               // Verify field without description doesn't have withDescription
               isNot(contains("'description': Ack.string().withDescription(")),
             ]),
