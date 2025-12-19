@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:code_builder/code_builder.dart';
 
@@ -266,7 +266,7 @@ return result.match(
   Method _buildDiscriminatedFactory(
     ModelInfo model,
     String schemaVarName,
-    Map<String, ClassElement> subtypes,
+    Map<String, ClassElement2> subtypes,
   ) {
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
@@ -275,7 +275,7 @@ return result.match(
     for (final entry in subtypes.entries) {
       final discriminatorValue = entry.key;
       final subtypeElement = entry.value;
-      final subtypeTypeName = '${subtypeElement.name}Type';
+      final subtypeTypeName = '${subtypeElement.name3}Type';
 
       cases.add("      '$discriminatorValue' => $subtypeTypeName(validated)");
     }
@@ -529,8 +529,8 @@ ${cases.join(',\n')},
     if (_isSpecialType(type)) return baseType;
 
     // Check if this is a custom type with @AckType
-    final element = type.element;
-    if (element is ClassElement) {
+    final element = type.element3;
+    if (element is InterfaceElement2) {
       if (_hasAckTypeForElement(element, allModels)) {
         return baseType;
       }
@@ -540,11 +540,11 @@ ${cases.join(',\n')},
   }
 
   bool _isSpecialType(DartType type) {
-    final element = type.element;
+    final element = type.element3;
     if (element == null) return false;
 
-    final name = element.name;
-    final library = element.library?.name;
+    final name = element.name3;
+    final library = element.library2?.name3;
 
     return (name == 'DateTime' && library == 'dart.core') ||
         (name == 'Uri' && library == 'dart.core') ||
@@ -552,14 +552,17 @@ ${cases.join(',\n')},
   }
 
   bool _hasAckType(FieldInfo field, List<ModelInfo> allModels) {
-    final element = field.type.element;
-    if (element is! ClassElement) return false;
+    final element = field.type.element3;
+    if (element is! InterfaceElement2) return false;
 
     return _hasAckTypeForElement(element, allModels);
   }
 
-  bool _hasAckTypeForElement(ClassElement element, List<ModelInfo> allModels) {
-    return allModels.any((m) => m.className == element.name);
+  bool _hasAckTypeForElement(
+    InterfaceElement2 element,
+    List<ModelInfo> allModels,
+  ) {
+    return allModels.any((m) => m.className == element.name3);
   }
 
   bool _isCustomElementType(FieldInfo field, List<ModelInfo> allModels) {
@@ -569,9 +572,9 @@ ${cases.join(',\n')},
     if (paramType.typeArguments.isEmpty) return false;
 
     final elementType = paramType.typeArguments[0];
-    final element = elementType.element;
+    final element = elementType.element3;
 
-    if (element is! ClassElement) return false;
+    if (element is! InterfaceElement2) return false;
 
     return _hasAckTypeForElement(element, allModels);
   }
@@ -613,11 +616,11 @@ ${cases.join(',\n')},
           final paramType = field.type as ParameterizedType;
           if (paramType.typeArguments.isNotEmpty) {
             final elementType = paramType.typeArguments[0];
-            final element = elementType.element;
+            final element = elementType.element3;
 
-            if (element is ClassElement) {
-              if (allModels.any((m) => m.className == element.name)) {
-                dependencies.add(element.name);
+            if (element is InterfaceElement2) {
+              if (allModels.any((m) => m.className == element.name3)) {
+                dependencies.add(element.name3!);
               }
             }
           }

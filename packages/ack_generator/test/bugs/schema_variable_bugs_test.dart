@@ -9,7 +9,7 @@
 library;
 
 import 'package:ack_generator/src/analyzer/schema_ast_analyzer.dart';
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
@@ -37,9 +37,9 @@ final listSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'listSchema');
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'listSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -103,9 +103,9 @@ final listSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'listSchema');
+        final schemaVar = library.topLevelVariables.firstWhere(
+          (e) => e.name3 == 'listSchema',
+        );
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -146,9 +146,9 @@ final nestedListSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'nestedListSchema');
+        final schemaVar = library.topLevelVariables.firstWhere(
+          (e) => e.name3 == 'nestedListSchema',
+        );
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -210,9 +210,9 @@ final userSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'userSchema');
+        final schemaVar = library.topLevelVariables.firstWhere(
+          (e) => e.name3 == 'userSchema',
+        );
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -265,9 +265,9 @@ final contactSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'contactSchema');
+        final schemaVar = library.topLevelVariables.firstWhere(
+          (e) => e.name3 == 'contactSchema',
+        );
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -306,9 +306,9 @@ final chainedSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'chainedSchema');
+        final schemaVar = library.topLevelVariables.firstWhere(
+          (e) => e.name3 == 'chainedSchema',
+        );
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -363,9 +363,9 @@ final deepSchema = Ack.object({
         final library = await resolver.libraryFor(
           AssetId('test_pkg', 'lib/schema.dart'),
         );
-        final schemaVar = library.topLevelElements
-            .whereType<TopLevelVariableElement>()
-            .firstWhere((e) => e.name == 'deepSchema');
+        final schemaVar = library.topLevelVariables.firstWhere(
+          (e) => e.name3 == 'deepSchema',
+        );
 
         final analyzer = SchemaAstAnalyzer();
 

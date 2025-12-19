@@ -187,8 +187,9 @@ class FieldBuilder {
 
   /// Checks if a type is a specific dart:core type by name
   bool _isDartCoreType(DartType type, String typeName) {
-    final element = type.element;
-    return element?.name == typeName && element?.library?.name == 'dart.core';
+    final element = type.element3;
+    return element?.name3 == typeName &&
+        element?.library2?.name3 == 'dart.core';
   }
 
   String _buildEnumSchema(FieldInfo field) {
