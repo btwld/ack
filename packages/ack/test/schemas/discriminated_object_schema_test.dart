@@ -52,9 +52,9 @@ void main() {
         expect(nullResult.isOk, isTrue);
       });
 
-      test('withDescription() adds description', () {
+      test('describe() adds description', () {
         const description = 'An animal discriminated by type';
-        final describedSchema = animalSchema.withDescription(description);
+        final describedSchema = animalSchema.describe(description);
 
         expect(describedSchema.description, equals(description));
         expect(animalSchema.description, isNull); // Original unchanged
@@ -63,7 +63,7 @@ void main() {
       test('fluent methods can be chained (excluding default)', () {
         const description = 'Nullable animal schema';
 
-        final fullyConfiguredSchema = animalSchema.nullable().withDescription(
+        final fullyConfiguredSchema = animalSchema.nullable().describe(
           description,
         );
 

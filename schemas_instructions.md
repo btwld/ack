@@ -28,7 +28,7 @@ All schemas expose `validate`, `safeParse`, `tryParse`, and `parseOrThrow`. Flue
 final displayNameSchema = Ack.string()
     .minLength(2)
     .maxLength(50)
-    .withDescription('User display name')
+    .describe('User display name')
     .refine((value) => value.trim() == value,
         message: 'Leading and trailing whitespace is not allowed.');
 
@@ -80,7 +80,7 @@ Ack.boolean().strictParsing().safeParse('true'); // Fails
 `Ack.any()` accepts every non-null value and still participates in fluent operations.
 
 ```dart
-final passthroughSchema = Ack.any().withDescription('Unstructured payload');
+final passthroughSchema = Ack.any().describe('Unstructured payload');
 
 passthroughSchema.safeParse({'anything': 'goes'});
 ```

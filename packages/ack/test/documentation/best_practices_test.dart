@@ -214,22 +214,22 @@ void main() {
     group('Schema Documentation Pattern', () {
       test('should document schemas with descriptions', () {
         final userSchema = Ack.object({
-          'id': Ack.string().uuid().withDescription('Unique user identifier'),
-          'email': Ack.string().email().withDescription('User email address'),
+          'id': Ack.string().uuid().describe('Unique user identifier'),
+          'email': Ack.string().email().describe('User email address'),
           'age': Ack.integer()
               .min(13)
               .max(120)
-              .withDescription('User age in years'),
+              .describe('User age in years'),
           'preferences': Ack.object({
             'theme': Ack.enumString([
               'light',
               'dark',
-            ]).withDescription('UI theme preference'),
-            'notifications': Ack.boolean().withDescription(
+            ]).describe('UI theme preference'),
+            'notifications': Ack.boolean().describe(
               'Email notifications enabled',
             ),
-          }).withDescription('User preferences'),
-        }).withDescription('User profile data');
+          }).describe('User preferences'),
+        }).describe('User profile data');
 
         final userData = {
           'id': '550e8400-e29b-41d4-a716-446655440000',

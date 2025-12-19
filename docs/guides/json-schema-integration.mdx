@@ -15,14 +15,14 @@ import 'dart:convert';
 
 // Example User Schema
 final userSchema = Ack.object({
-  'id': Ack.integer().positive().withDescription('Unique user identifier'),
-  'name': Ack.string().minLength(2).maxLength(50).withDescription('User\'s full name'),
-  'email': Ack.string().email().withDescription('User\'s email address'),
+  'id': Ack.integer().positive().describe('Unique user identifier'),
+  'name': Ack.string().minLength(2).maxLength(50).describe('User\'s full name'),
+  'email': Ack.string().email().describe('User\'s email address'),
   'role': Ack.enumString(['admin', 'user', 'guest']).withDefault('user'),
   'isActive': Ack.boolean().withDefault(true),
-  'tags': Ack.list(Ack.string()).unique().withDescription('List of user tags').nullable(),
-  'age': Ack.integer().min(0).max(120).nullable().withDescription('User\'s age'),
-}).withDescription('Represents a user in the system');
+  'tags': Ack.list(Ack.string()).unique().describe('List of user tags').nullable(),
+  'age': Ack.integer().min(0).max(120).nullable().describe('User\'s age'),
+}).describe('Represents a user in the system');
 
 void main() {
   // Convert the AckSchema to a JSON Schema Object Map
@@ -127,7 +127,7 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`unique()`](../core-concepts/validation.mdx#unique)          | `uniqueItems: true`      | List (Array)                           |
 | [`nullable()`](../core-concepts/validation.mdx#nullable)             | `nullable: true`         | Any Type                               |
 | `withDefault(v)`        | `default: v`             | Any Type (Note: Use `.withDefault()` on schema) |
-| `withDescription(d)`         | `description: d`         | Any Type (Note: Use `.withDescription()` on schema) |
+| `describe(d)`         | `description: d`         | Any Type (Note: Use `.describe()` on schema) |
 | [`Ack.integer`](../core-concepts/schemas.mdx#number)                | `type: integer`, `format: int64` | Type |
 | [`Ack.double`](../core-concepts/schemas.mdx#number)             | `type: number`, `format: double`  | Type |
 | [`Ack.string`](../core-concepts/schemas.mdx#string)             | `type: string`           | Type |
@@ -189,11 +189,11 @@ Add descriptions and metadata to your schemas for better documentation:
 
 ```dart
 final userSchema = Ack.object({
-  'id': Ack.string().uuid().withDescription('Unique user identifier'),
-  'name': Ack.string().minLength(1).withDescription('User\'s full name'),
-  'email': Ack.string().email().withDescription('User\'s email address'),
-  'age': Ack.integer().min(0).max(150).withDescription('User\'s age in years').optional(),
-}).withDescription('Represents a user in the system');
+  'id': Ack.string().uuid().describe('Unique user identifier'),
+  'name': Ack.string().minLength(1).describe('User\'s full name'),
+  'email': Ack.string().email().describe('User\'s email address'),
+  'age': Ack.integer().min(0).max(150).describe('User\'s age in years').optional(),
+}).describe('Represents a user in the system');
 
 final jsonSchema = userSchema.toJsonSchema();
 // Generated schema will include description fields

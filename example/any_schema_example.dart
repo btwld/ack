@@ -57,7 +57,7 @@ void main() {
   // JSON Schema generation
   print('\nJSON Schema generation:');
   final describedSchema = Ack.any()
-      .withDescription("Accepts any value")
+      .describe("Accepts any value")
       .withDefault("fallback");
 
   print('  JSON Schema: ${describedSchema.toJsonSchema()}');
