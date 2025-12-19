@@ -68,8 +68,13 @@ class User {
               contains('Generated schema for User'),
               contains('User model with documented fields'),
               contains('final userSchema = Ack.object({'),
-              // Note: Field descriptions would need to be added to schema generation
-              // This test documents current behavior and future enhancement
+              // Verify withDescription() is generated for fields with descriptions
+              // Note: Generated code may be multi-line formatted, so check parts separately
+              contains(".withDescription("),
+              contains("The user\\'s full name"),
+              contains("User\\'s primary email address"),
+              // Verify fields without description don't have withDescription
+              isNot(contains("'age': Ack.integer().withDescription(")),
             ]),
           ),
         },
@@ -116,6 +121,14 @@ class Product {
               contains('Generated schema for Product'),
               contains('Product model for e-commerce platform'),
               contains('final productSchema = Ack.object({'),
+              // Verify withDescription() is generated for fields with descriptions
+              // Note: Generated code may be multi-line formatted, so check parts separately
+              contains(".withDescription("),
+              contains("Unique product identifier"),
+              contains("Product display name"),
+              contains("Current product price in USD"),
+              // Verify field without description doesn't have withDescription
+              isNot(contains("'description': Ack.string().withDescription(")),
             ]),
           ),
         },
@@ -152,6 +165,8 @@ class SimpleModel {
                 contains('/// This'),
               ), // No additional description starting with "/// This"
               contains('final simpleModelSchema = Ack.object({'),
+              // Verify no withDescription() is generated when no field descriptions
+              isNot(contains('.withDescription(')),
             ]),
           ),
         },
