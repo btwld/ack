@@ -13,9 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install FVM (using PR branch)
+      - name: Install FVM
         run: |
-          curl -fsSL https://raw.githubusercontent.com/leoafarias/fvm/leoafarias/install-sh-path-fix/scripts/install.sh | bash
+          curl -fsSL https://fvm.app/install.sh | bash
           echo "$HOME/fvm/bin" >> $GITHUB_PATH
 
       - name: Setup Flutter via FVM
