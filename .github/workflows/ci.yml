@@ -8,9 +8,33 @@ on:
 
 jobs:
   test:
-    uses: btwld/dart-actions/.github/workflows/ci.yml@main
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      flutter-version: "stable"
-      run-dcm: true
+    name: Run tests for all packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install FVM
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
+
+      - name: Setup Flutter via FVM
+        run: fvm use stable --force
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install Melos
+        uses: bluefireteam/melos-action@v3
+
+      - name: Bootstrap packages
+        run: melos bootstrap
+
+      - name: Analyze
+        run: melos analyze
+
+      - name: Run tests
+        run: melos test
