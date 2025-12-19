@@ -129,7 +129,7 @@ class BaseModel {
 class ExtendedModel extends BaseModel {
   final String name;
   final int age;
-  
+
   ExtendedModel(String id, this.name, this.age) : super(id);
 }
 ''',
@@ -169,7 +169,7 @@ class Product {
   final String name;
   final double price;
   final String? description;
-  
+
   Product({required this.name, required this.price, this.description});
 }
 ''',
