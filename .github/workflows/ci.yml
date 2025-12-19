@@ -8,35 +8,9 @@ on:
 
 jobs:
   test:
-    name: Run tests for all packages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install FVM
-        run: |
-          curl -fsSL https://fvm.app/install.sh | bash
-          echo "$HOME/fvm/bin" >> $GITHUB_PATH
-
-      - name: Setup Flutter via FVM
-        run: |
-          fvm use stable --force
-          echo "$HOME/fvm/versions/stable/bin" >> $GITHUB_PATH
-
-      - name: Verify Flutter
-        run: flutter --version
-
-      - name: Install Melos
-        run: dart pub global activate melos
-
-      - name: Add pub cache to PATH
-        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
-
-      - name: Bootstrap packages
-        run: melos bootstrap
-
-      - name: Analyze
-        run: melos analyze
-
-      - name: Run tests
-        run: melos test
+    uses: btwld/dart-actions/.github/workflows/ci.yml@fix/fvm-github-path
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      flutter-version: "stable"
+      run-dcm: true
