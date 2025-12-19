@@ -19,16 +19,18 @@ jobs:
           echo "$HOME/fvm/bin" >> $GITHUB_PATH
 
       - name: Setup Flutter via FVM
-        run: fvm use stable --force
+        run: |
+          fvm use stable --force
+          echo "$HOME/fvm/versions/stable/bin" >> $GITHUB_PATH
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version-file: .fvmrc
-          cache: true
+      - name: Verify Flutter
+        run: flutter --version
 
       - name: Install Melos
-        uses: bluefireteam/melos-action@v3
+        run: dart pub global activate melos
+
+      - name: Add pub cache to PATH
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Bootstrap packages
         run: melos bootstrap
