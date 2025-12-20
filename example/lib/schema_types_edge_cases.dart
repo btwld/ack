@@ -118,18 +118,14 @@ final taggedItemSchema = Ack.object({
   'nullableTags': Ack.list(Ack.string()).nullable(),
 });
 
-/// Schema with list of nested objects (when we support it)
+/// Schema with list of nested objects
 ///
-/// NOTE: This might not work initially if nested object refs in lists
-/// aren't supported. It's documented here as a future enhancement.
-///
-/// EXPECTED BEHAVIOR (future):
-/// - addresses: List<AddressType> or List<Map<String, dynamic>>
+/// EXPECTED BEHAVIOR:
+/// - addresses: List<AddressType> (eager list with typed elements)
 @AckType()
 final contactListSchema = Ack.object({
   'name': Ack.string(),
-  // Future: List of nested schema references
-  // 'addresses': Ack.list(addressSchema),
+  'addresses': Ack.list(addressSchema),
 });
 
 // ============================================================================

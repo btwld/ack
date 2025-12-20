@@ -12,6 +12,11 @@ class FieldInfo {
   final List<ConstraintInfo> constraints;
   final String? description;
 
+  /// For list/set fields containing schema variable references (e.g., `Ack.list(addressSchema)`),
+  /// this stores the schema variable name so the type builder can generate
+  /// properly typed getters like `List<AddressType>`.
+  final String? listElementSchemaRef;
+
   const FieldInfo({
     required this.name,
     required this.jsonKey,
@@ -20,6 +25,7 @@ class FieldInfo {
     required this.isNullable,
     required this.constraints,
     this.description,
+    this.listElementSchemaRef,
   });
 
   /// Whether this field references another schema model
