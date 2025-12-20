@@ -12,14 +12,21 @@ import '../models/model_info.dart';
 class TypeBuilder {
   /// Builds an extension type for the given model
   ///
-  /// Returns null if the model should not generate an extension type
-  /// (e.g., discriminated base classes which use sealed classes instead)
+  /// Returns null if the model should not generate an extension type:
+  /// - Discriminated base classes (use sealed classes instead)
+  /// - Primitive schemas (String, int, double, bool) - users can use safeParse() directly
   ExtensionType? buildExtensionType(
     ModelInfo model,
     List<ModelInfo> allModels,
   ) {
     // Discriminated base classes get sealed classes, not extension types
     if (model.isDiscriminatedBase) {
+      return null;
+    }
+
+    // Skip extension type generation for primitives (String, int, double, bool, List, etc.)
+    // Only generate extension types for object schemas (Map<String, Object?>)
+    if (!model.shouldGenerateExtensionType) {
       return null;
     }
 
@@ -151,11 +158,14 @@ class TypeBuilder {
 
   /// Sorts models in topological order (dependencies before dependents)
   ///
-  /// Throws [CircularDependencyError] if circular dependencies are detected
+  /// If circular dependencies are detected, falls back to the original
+  /// input order instead of throwing. Extension types based on Map<String, Object?>
+  /// work correctly with cycles since they all wrap the same underlying type.
   List<ModelInfo> topologicalSort(List<ModelInfo> models) {
     final sorted = <ModelInfo>[];
     final visiting = <String>{};
     final visited = <String>{};
+    var hasCycle = false;
 
     // Build dependency map
     final dependencies = <String, Set<String>>{};
@@ -167,9 +177,10 @@ class TypeBuilder {
       if (visited.contains(className)) return;
 
       if (visiting.contains(className)) {
-        throw CircularDependencyError(
-          'Circular dependency detected involving: $className',
-        );
+        // Cycle detected - mark flag but continue
+        // Extension types with Map representation work fine with cycles
+        hasCycle = true;
+        return;
       }
 
       visiting.add(className);
@@ -193,6 +204,13 @@ class TypeBuilder {
     // Visit all models
     for (final model in models) {
       visit(model.className);
+    }
+
+    // If cycle detected, fall back to original order
+    // This is safe because extension types wrap Map<String, Object?> which doesn't
+    // require declaration order
+    if (hasCycle) {
+      return models;
     }
 
     return sorted;
@@ -333,14 +351,23 @@ ${cases.join(',\n')},
 
   Reference _buildReturnType(FieldInfo field, List<ModelInfo> allModels) {
     final baseType = _resolveFieldType(field, allModels);
-    final typeString = field.isNullable ? '$baseType?' : baseType;
+    // A getter should be nullable if:
+    // 1. The field is explicitly nullable (isNullable), OR
+    // 2. The field is optional (!isRequired) - it may not be present in the data
+    final shouldBeNullable = field.isNullable || !field.isRequired;
+    final typeString = shouldBeNullable ? '$baseType?' : baseType;
     return refer(typeString);
   }
 
   String _buildGetterBody(FieldInfo field, List<ModelInfo> allModels) {
     final key = field.jsonKey;
 
-    if (field.isNullable) {
+    // A getter needs nullable handling if:
+    // 1. The field is explicitly nullable (isNullable), OR
+    // 2. The field is optional (!isRequired) - it may not be present in the data
+    final needsNullableHandling = field.isNullable || !field.isRequired;
+
+    if (needsNullableHandling) {
       return _buildNullableGetter(field, allModels, key);
     } else {
       return _buildNonNullableGetter(field, allModels, key);
@@ -357,15 +384,17 @@ ${cases.join(',\n')},
       return "_data['$key'] as ${_resolveFieldType(field, allModels)}";
     }
 
-    // Enums (already converted by schema)
+    // Enums (validated by schema, returns the enum value)
     if (field.isEnum) {
       return "_data['$key'] as ${field.type.getDisplayString(withNullability: false)}";
     }
 
-    // Special types (DateTime, Uri, Duration - already converted by schema)
+    // Special types need conversion from raw data
+    // - DateTime: stored as ISO 8601 string, needs DateTime.parse()
+    // - Uri: stored as string, needs Uri.parse()
+    // - Duration: stored as int (milliseconds), needs Duration(milliseconds:)
     if (_isSpecialType(field.type)) {
-      final typeName = field.type.getDisplayString(withNullability: false);
-      return "_data['$key'] as $typeName";
+      return _buildSpecialTypeGetter(field, key, nullable: false);
     }
 
     // Lists
@@ -399,13 +428,59 @@ ${cases.join(',\n')},
     String key,
   ) {
     // For primitives and enums, nullable cast works
-    if (field.isPrimitive || field.isEnum || _isSpecialType(field.type)) {
+    if (field.isPrimitive || field.isEnum) {
       return "_data['$key'] as ${_resolveFieldType(field, allModels)}?";
+    }
+
+    // Special types need conversion with null check
+    if (_isSpecialType(field.type)) {
+      return _buildSpecialTypeGetter(field, key, nullable: true);
     }
 
     // For complex types, check null first
     final nonNullPart = _buildNonNullableGetter(field, allModels, key);
     return "_data['$key'] != null ? $nonNullPart : null";
+  }
+
+  /// Builds getter code for special types (DateTime, Uri, Duration)
+  ///
+  /// These types require conversion from their JSON representation:
+  /// - DateTime: ISO 8601 string -> DateTime.parse()
+  /// - Uri: string -> Uri.parse()
+  /// - Duration: int (milliseconds) -> Duration(milliseconds:)
+  String _buildSpecialTypeGetter(
+    FieldInfo field,
+    String key, {
+    required bool nullable,
+  }) {
+    final element = field.type.element3;
+    final typeName = element?.name3;
+
+    if (nullable) {
+      // Nullable version: check if value exists before converting
+      switch (typeName) {
+        case 'DateTime':
+          return "_data['$key'] != null ? DateTime.parse(_data['$key'] as String) : null";
+        case 'Uri':
+          return "_data['$key'] != null ? Uri.parse(_data['$key'] as String) : null";
+        case 'Duration':
+          return "_data['$key'] != null ? Duration(milliseconds: _data['$key'] as int) : null";
+        default:
+          return "_data['$key']";
+      }
+    } else {
+      // Non-nullable version: direct conversion
+      switch (typeName) {
+        case 'DateTime':
+          return "DateTime.parse(_data['$key'] as String)";
+        case 'Uri':
+          return "Uri.parse(_data['$key'] as String)";
+        case 'Duration':
+          return "Duration(milliseconds: _data['$key'] as int)";
+        default:
+          return "_data['$key']";
+      }
+    }
   }
 
   String _buildListGetter(

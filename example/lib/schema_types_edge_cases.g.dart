@@ -219,7 +219,7 @@ extension type ModifierType(Map<String, Object?> _data)
 
   String get requiredField => _data['requiredField'] as String;
 
-  String get optionalField => _data['optionalField'] as String;
+  String? get optionalField => _data['optionalField'] as String?;
 
   String? get nullableField => _data['nullableField'] as String?;
 
@@ -269,8 +269,9 @@ extension type TaggedItemType(Map<String, Object?> _data)
   List<String> get requiredTags =>
       (_data['requiredTags'] as List).cast<String>();
 
-  List<String> get optionalTags =>
-      (_data['optionalTags'] as List).cast<String>();
+  List<String>? get optionalTags => _data['optionalTags'] != null
+      ? (_data['optionalTags'] as List).cast<String>()
+      : null;
 
   List<String>? get nullableTags => _data['nullableTags'] != null
       ? (_data['nullableTags'] as List).cast<String>()

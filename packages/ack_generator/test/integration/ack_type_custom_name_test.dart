@@ -7,7 +7,7 @@ import '../test_utils/test_assets.dart';
 
 void main() {
   group('@AckType custom names', () {
-    test('generates default and custom extension type names', () async {
+    test('generates extension types only for object schemas', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -18,6 +18,7 @@ void main() {
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
+// Primitive schemas - NO extension types generated
 @AckType()
 final passwordSchema = Ack.string();
 
@@ -26,14 +27,35 @@ final customPasswordSchema = Ack.string();
 
 @AckType(name: 'Order2')
 final orderSchema = Ack.integer();
+
+// Object schema - extension type IS generated
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+});
+
+@AckType(name: 'CustomUser')
+final customUserSchema = Ack.object({
+  'id': Ack.string(),
+});
 ''',
         },
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains('extension type PasswordType(String _value)'),
-              contains('extension type CustomPasswordType(String _value)'),
-              contains('extension type Order2Type(int _value)'),
+              // Primitive types should NOT have extension types
+              isNot(contains('extension type PasswordType(String _value)')),
+              isNot(
+                contains('extension type CustomPasswordType(String _value)'),
+              ),
+              isNot(contains('extension type Order2Type(int _value)')),
+              // Object types SHOULD have extension types
+              contains(
+                'extension type UserType(Map<String, Object?> _data)',
+              ),
+              contains(
+                'extension type CustomUserType(Map<String, Object?> _data)',
+              ),
             ]),
           ),
         },
