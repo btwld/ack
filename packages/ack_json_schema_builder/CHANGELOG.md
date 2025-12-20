@@ -1,35 +1,15 @@
-# Changelog
+## Unreleased
 
-All notable changes to this project will be documented in this file.
+### Improvements
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+* Complete JSON schema conversion coverage
+* Consolidate JSON schema utilities and reduce duplication
 
-## [1.0.0-beta.1] - 2025-11-01
+## 1.0.0-beta.3 (2025-10-27)
 
-### Added
-- Initial release of ack_json_schema_builder package
-- Extension method `.toJsonSchemaBuilder()` for converting ACK schemas
-- Support for all basic schema types (string, integer, double, boolean, object, array)
-- Support for enum schemas
-- Constraint mapping (minLength, maxLength, minimum, maximum, uniqueItems)
-- Optional field support
-- Comprehensive test suite with 17+ tests
-- Full documentation and examples
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.3) for details.
 
-### Supported
-- String constraints (minLength, maxLength, pattern, format)
-- Numeric constraints (minimum, maximum)
-- Object schemas with required/optional fields
-- Array schemas with minItems, maxItems, uniqueItems
-- Enum value validation
-- AnyOf union types
-- Discriminated object schemas
-- Nested schemas
+## 1.0.0-beta.1 (2025-11-01)
 
-### Limitations
-- Custom refinements (`.refine()`) not supported
-- Default values not included in JSON Schema
-- TransformedSchema metadata overrides limited due to immutable Schema objects
-
-[1.0.0-beta.1]: https://github.com/btwld/ack/releases/tag/ack_json_schema_builder-v1.0.0-beta.1
+* Initial release of ack_json_schema_builder package
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.1) for details.
