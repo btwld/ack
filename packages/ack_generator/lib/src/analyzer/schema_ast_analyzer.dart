@@ -795,6 +795,7 @@ class SchemaAstAnalyzer {
   /// - `Ack.list(Ack.string())` → `List<String>`
   /// - `Ack.list(Ack.integer())` → `List<int>`
   /// - `Ack.list(Ack.list(Ack.double()))` → `List<List<double>>` (nested)
+  /// - `Ack.list(addressSchema)` → `List<Map<String, Object?>>` (schema reference)
   ModelInfo _parseListSchema(
     String variableName,
     MethodInvocation invocation,
@@ -808,24 +809,7 @@ class SchemaAstAnalyzer {
     );
 
     // Extract element type from first argument: Ack.list(elementSchema)
-    final args = invocation.argumentList.arguments;
-    String elementType = 'dynamic';
-
-    if (args.isNotEmpty) {
-      final firstArg = args.first;
-
-      // Check if the element is an Ack.xxx() schema call
-      // This handles: Ack.list(Ack.string()), Ack.list(Ack.list(Ack.integer())), etc.
-      if (firstArg is MethodInvocation &&
-          firstArg.target is SimpleIdentifier &&
-          (firstArg.target as SimpleIdentifier).name == 'Ack') {
-        final elementSchemaType = firstArg.methodName.name;
-        // Recursively resolve element type (handles nested lists)
-        elementType = _mapSchemaMethodToType(elementSchemaType);
-      }
-      // Note: Schema variable references (e.g., Ack.list(addressSchema))
-      // fall through to 'dynamic' - this is a known limitation
-    }
+    final elementType = _extractListElementTypeString(invocation, element);
 
     return ModelInfo(
       className: typeName,
@@ -834,6 +818,49 @@ class SchemaAstAnalyzer {
       isFromSchemaVariable: true,
       representationType: 'List<$elementType>',
     );
+  }
+
+  /// Extracts the element type as a string representation for top-level list schemas.
+  ///
+  /// This handles:
+  /// - Primitive schemas: `Ack.list(Ack.string())` → 'String'
+  /// - Nested lists: `Ack.list(Ack.list(Ack.int()))` → 'List<int>'
+  /// - Schema references: `Ack.list(addressSchema)` → 'Map<String, Object?>'
+  String _extractListElementTypeString(
+    MethodInvocation listInvocation,
+    Element2 element,
+  ) {
+    final args = listInvocation.argumentList.arguments;
+
+    if (args.isEmpty) {
+      return 'dynamic';
+    }
+
+    final firstArg = args.first;
+
+    // Handle Ack.list(Ack.xxx()) - nested method invocation
+    if (firstArg is MethodInvocation &&
+        firstArg.target is SimpleIdentifier &&
+        (firstArg.target as SimpleIdentifier).name == 'Ack') {
+      final methodName = firstArg.methodName.name;
+
+      // Handle nested lists recursively
+      if (methodName == 'list') {
+        final nestedType = _extractListElementTypeString(firstArg, element);
+        return 'List<$nestedType>';
+      }
+
+      // Map primitive schema types
+      return _mapSchemaMethodToType(methodName);
+    }
+
+    // Handle Ack.list(schemaVariableName) - schema variable reference
+    if (firstArg is SimpleIdentifier) {
+      // Schema variable references result in Map<String, Object?> at the element level
+      return 'Map<String, Object?>';
+    }
+
+    return 'dynamic';
   }
 
   /// Parses Ack.literal() schema

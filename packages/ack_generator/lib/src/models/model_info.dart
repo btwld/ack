@@ -36,8 +36,18 @@ class ModelInfo {
   /// Whether this ModelInfo was created from a schema variable (not a class)
   final bool isFromSchemaVariable;
 
-  /// Representation type for extension type (e.g., 'String', 'int', 'Map&lt;String, Object?&gt;')
+  /// Representation type for extension type (e.g., 'String', 'int', 'Map<String, Object?>')
   final String representationType;
+
+  /// Whether an extension type should be generated for this model.
+  ///
+  /// Extension types are only generated for object schemas (`Map<String, Object?>`).
+  /// Primitive schemas (String, int, double, bool) do not get extension types
+  /// because:
+  /// 1. They provide minimal value (no getters to generate)
+  /// 2. Users can use `schema.safeParse()` directly
+  /// 3. Reduces generated code bloat
+  bool get shouldGenerateExtensionType => representationType == kMapType;
 
   const ModelInfo({
     required this.className,

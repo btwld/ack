@@ -45,69 +45,58 @@ import 'package:meta/meta_meta.dart';
 /// print(user.age);   // Type-safe int access
 /// ```
 ///
-/// ### Primitive Schemas
+/// ### Primitive Schemas (No Extension Type Generated)
+///
+/// For primitive schemas (String, int, double, bool), extension types are
+/// **not generated**. This is a design decision because:
+/// 1. They provide minimal value (no getters to generate)
+/// 2. Users can use `schema.safeParse()` directly
+/// 3. Reduces generated code bloat
+///
 /// ```dart
 /// @AckType()
 /// final passwordSchema = Ack.string().minLength(8);
 ///
-/// // Generated extension type:
-/// extension type PasswordType(String _value) implements String {
-///   static PasswordType parse(Object? data) { ... }
-///   static SchemaResult<PasswordType> safeParse(Object? data) { ... }
+/// // NO extension type is generated for primitive schemas.
+/// // Use the schema directly:
+/// final result = passwordSchema.safeParse('mySecurePassword123');
+/// if (result.isOk) {
+///   print(result.value.length);  // 19
 /// }
-///
-/// // Usage - String methods work via implements:
-/// final password = PasswordType.parse('mySecurePassword123');
-/// print(password.length);        // 19
-/// print(password.toUpperCase()); // 'MYSECUREPASSWORD123'
 /// ```
 ///
-/// ### Literal Schemas
+/// ### Literal Schemas (No Extension Type Generated)
 /// ```dart
 /// @AckType()
 /// final statusSchema = Ack.literal('active');
 ///
-/// // Generated:
-/// extension type StatusType(String _value) implements String {
-///   static StatusType parse(Object? data) { ... }
-/// }
-///
-/// // Usage:
-/// final status = StatusType.parse('active');  // ✅ Valid
-/// print(status.toUpperCase());                // 'ACTIVE'
-/// StatusType.parse('inactive');               // ❌ Throws AckException
+/// // NO extension type is generated.
+/// // Use the schema directly for validation:
+/// final result = statusSchema.safeParse('active');  // ✅ Valid
+/// statusSchema.parse('inactive');                   // ❌ Throws AckException
 /// ```
 ///
-/// ### EnumString Schemas
+/// ### EnumString Schemas (No Extension Type Generated)
 /// ```dart
 /// @AckType()
 /// final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 ///
-/// // Usage:
-/// final role = RoleType.parse('admin');
-/// print(role.contains('adm'));  // true - String methods work!
+/// // NO extension type is generated.
+/// // Use the schema directly:
+/// final role = roleSchema.parse('admin');
 /// ```
 ///
-/// ### EnumValues Schemas
+/// ### EnumValues Schemas (No Extension Type Generated)
 /// ```dart
 /// enum UserRole { admin, user, guest }
 ///
 /// @AckType()
 /// final roleSchema = Ack.enumValues(UserRole.values);
 ///
-/// // Generated:
-/// extension type RoleType(UserRole _value) implements UserRole {
-///   static RoleType parse(Object? data) { ... }
-/// }
-///
-/// // Usage:
-/// final role = RoleType.parse(UserRole.admin);
-/// print(role.name);   // 'admin' - Enum methods work!
-/// print(role.index);  // 0
-///
-/// // Can parse from string or index too:
-/// RoleType.parse('admin');  // ✅ Works
-/// RoleType.parse(0);        // ✅ Works (index)
+/// // NO extension type is generated.
+/// // Use the schema directly:
+/// final role = roleSchema.parse(UserRole.admin);
+/// print(role.name);   // 'admin'
 /// ```
 ///
 /// ## Benefits
@@ -162,16 +151,19 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Supported Schema Types
 ///
-/// The following Ack schema types are currently supported:
+/// Extension types are **only generated for object schemas**:
 /// - **Object schemas**: `Ack.object({...})` → `extension type XType(Map<String, Object?>)`
-/// - **String schemas**: `Ack.string()` → `extension type XType(String)`
-/// - **Integer schemas**: `Ack.integer()` → `extension type XType(int)`
-/// - **Double schemas**: `Ack.double()` → `extension type XType(double)`
-/// - **Boolean schemas**: `Ack.boolean()` → `extension type XType(bool)`
-/// - **List schemas**: `Ack.list(T)` → `extension type XType(List<T>)`
-/// - **Literal schemas**: `Ack.literal('value')` → `extension type XType(String)`
-/// - **EnumString schemas**: `Ack.enumString([...])` → `extension type XType(String)`
-/// - **EnumValues schemas**: `Ack.enumValues<T>([...])` → `extension type XType(T)`
+///
+/// The following schema types are supported but **do not generate extension types**
+/// (use the schema directly via `safeParse()`):
+/// - **String schemas**: `Ack.string()`
+/// - **Integer schemas**: `Ack.integer()`
+/// - **Double schemas**: `Ack.double()`
+/// - **Boolean schemas**: `Ack.boolean()`
+/// - **List schemas**: `Ack.list(T)`
+/// - **Literal schemas**: `Ack.literal('value')`
+/// - **EnumString schemas**: `Ack.enumString([...])`
+/// - **EnumValues schemas**: `Ack.enumValues<T>([...])`
 ///
 /// ## Unsupported Schema Types
 ///

@@ -120,6 +120,9 @@ class AckSchemaGenerator extends Generator {
       annotatedElements,
     );
 
+    // Set all models on schema builder for cross-referencing (e.g., custom schemaNames in discriminated types)
+    schemaBuilder.setAllModels(finalModelInfos);
+
     // Third pass: Generate code for all models
     for (final modelInfo in finalModelInfos) {
       // Skip schema generation for schema variables (they already exist)
@@ -200,14 +203,20 @@ class AckSchemaGenerator extends Generator {
     // Validate formatted code to ensure what we write is syntactically correct
     final validation = CodeValidator.validate(formattedCode);
     if (validation.isFailure) {
-      // Write to file for debugging
-      final outputPath = buildStep.inputId.changeExtension('.g.dart.debug');
-      final file = File(outputPath.path);
-      file.writeAsStringSync(formattedCode);
+      String debugInfo = '';
+
+      // Only write debug file if ACK_GENERATOR_DEBUG=true environment variable is set
+      final debugEnabled =
+          Platform.environment['ACK_GENERATOR_DEBUG']?.toLowerCase() == 'true';
+      if (debugEnabled) {
+        final outputPath = buildStep.inputId.changeExtension('.g.dart.debug');
+        final file = File(outputPath.path);
+        file.writeAsStringSync(formattedCode);
+        debugInfo = '\nDebug output written to: ${outputPath.path}';
+      }
 
       throw InvalidGenerationSourceError(
-        'Generated code validation failed: ${validation.errorMessage}\n'
-        'Debug output written to: ${outputPath.path}',
+        'Generated code validation failed: ${validation.errorMessage}$debugInfo',
         todo: 'Fix the code generation logic to produce valid Dart syntax',
       );
     }

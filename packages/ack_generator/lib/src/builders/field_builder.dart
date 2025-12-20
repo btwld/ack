@@ -1,3 +1,5 @@
+import 'dart:convert' show jsonEncode;
+
 import 'package:analyzer/dart/element/type.dart';
 
 import '../models/constraint_info.dart';
@@ -90,8 +92,8 @@ class FieldBuilder {
     }
 
     if (field.description != null && field.description!.isNotEmpty) {
-      final escapedDescription = field.description!.replaceAll("'", r"\'");
-      schema = '$schema.describe(\'$escapedDescription\')';
+      final escapedDescription = _escapeForSingleQuotedString(field.description!);
+      schema = "$schema.describe('$escapedDescription')";
     }
 
     return schema;
@@ -143,7 +145,8 @@ class FieldBuilder {
   }
 
   String _buildSchemaForType(DartType type) {
-    final typeName = type.getDisplayString().replaceAll('?', '');
+    // Use withNullability: false to get type name without '?' suffix
+    final typeName = type.getDisplayString(withNullability: false);
 
     // Check primitives via registry (use simple string matching)
     if (_primitiveSchemas.containsKey(typeName)) {
@@ -198,17 +201,12 @@ class FieldBuilder {
   }
 
   String _buildEnumSchema(FieldInfo field) {
-    final enumValues = field.enumValues;
-    if (enumValues.isEmpty) {
-      throw UnsupportedError(
-        'Enum ${field.type.getDisplayString()} has no values',
-      );
-    }
+    // Use withNullability: false to get the enum type name without '?' suffix
+    final enumTypeName = field.type.getDisplayString(withNullability: false);
 
-    // Generate enum schema with string values
-    final valueList = enumValues.map((value) => "'$value'").join(', ');
-
-    return 'Ack.string().enumString([$valueList])';
+    // Generate Ack.enumValues<EnumType>(EnumType.values)
+    // This preserves the actual enum type through validation
+    return 'Ack.enumValues<$enumTypeName>($enumTypeName.values)';
   }
 
   String _buildGenericSchema(FieldInfo field) {
@@ -225,5 +223,21 @@ class FieldBuilder {
     // Unknown constraint - silently ignore (allows custom extensions)
     // The Dart compiler will catch method-not-found errors if constraint is a typo
     return schema;
+  }
+
+  /// Escapes a string for use in a single-quoted Dart string literal.
+  ///
+  /// Uses jsonEncode to properly handle all special characters (backslashes,
+  /// newlines, unicode, etc.) then converts to single-quote format.
+  String _escapeForSingleQuotedString(String value) {
+    // Use jsonEncode to get proper escaping for special chars
+    final jsonStr = jsonEncode(value);
+    // Remove outer double quotes: "content" -> content
+    var escaped = jsonStr.substring(1, jsonStr.length - 1);
+    // Unescape double quotes: \" -> "
+    escaped = escaped.replaceAll(r'\"', '"');
+    // Escape single quotes: ' -> \'
+    escaped = escaped.replaceAll("'", r"\'");
+    return escaped;
   }
 }
