@@ -155,11 +155,8 @@ void main() {
       expect(result.getOrNull(), 'active');
     });
 
-    test('optionalStatusSchema accepts null for optional', () {
-      // Optional schemas accept null/missing values
-      final result = optionalStatusSchema.safeParse(null);
-      expect(result.isOk, true);
-    });
+    // Note: .optional() is for object field contexts (field can be omitted).
+    // It does NOT make standalone schemas accept null - use .nullable() for that.
 
     test('nullableRoleSchema accepts valid values', () {
       final result = nullableRoleSchema.safeParse('admin');

@@ -235,6 +235,57 @@ class Circle extends Shape {
         },
       );
     });
+
+    test('discriminated base uses custom schemaName from subtypes', () async {
+      final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel(discriminatedKey: 'kind')
+abstract class Animal {
+  String get kind;
+}
+
+@AckModel(discriminatedValue: 'cat', schemaName: 'CatDataSchema')
+@AckType()
+class Cat extends Animal {
+  @override
+  String get kind => 'cat';
+  final String name;
+  Cat(this.name);
+}
+
+@AckModel(discriminatedValue: 'dog', schemaName: 'DogInfoSchema')
+@AckType()
+class Dog extends Animal {
+  @override
+  String get kind => 'dog';
+  final String breed;
+  Dog(this.breed);
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.ack.g.part': decodedMatches(
+            allOf([
+              // Base class discriminated schema should use custom names
+              contains('animalSchema = Ack.discriminated('),
+              // Should reference custom schema names, not default names
+              contains("'cat': catDataSchema"),
+              contains("'dog': dogInfoSchema"),
+              // Should NOT use default names
+              isNot(contains("'cat': catSchema")),
+              isNot(contains("'dog': dogSchema")),
+            ]),
+          ),
+        },
+      );
+    });
   });
 
   group('Phase 3: String escaping', () {
@@ -266,9 +317,16 @@ class Quoted {
         outputs: {
           'test_pkg|lib/schema.ack.g.part': decodedMatches(
             allOf([
-              // All strings should be valid Dart syntax
-              isNot(contains("'''")), // No raw strings needed with proper escaping
-              contains('quotedSchema'), // Schema should be generated
+              // Schema should be generated
+              contains('quotedSchema'),
+              // Single quotes should be escaped with backslash
+              contains(r"Contains \'single quotes\'"),
+              // Double quotes don't need escaping in single-quoted strings
+              contains('Contains "double quotes"'),
+              // Backslashes should be escaped
+              contains(r'Contains \\ backslash'),
+              // No raw strings needed with proper escaping
+              isNot(contains("'''")),
             ]),
           ),
         },
