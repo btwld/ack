@@ -180,5 +180,48 @@ class Company {
         },
       );
     });
+
+    test('Issue #43: @AckType with Ack.list(schemaRef) generates List<ExtensionType> getter', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/contact_list.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+});
+
+@AckType()
+final contactListSchema = Ack.object({
+  'name': Ack.string(),
+  'addresses': Ack.list(addressSchema),
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/contact_list.g.dart': decodedMatches(
+            allOf([
+              // Extension type for Address
+              contains('extension type AddressType'),
+
+              // Extension type for ContactList
+              contains('extension type ContactListType'),
+
+              // KEY: List<AddressType> getter with .map() and .toList()
+              contains('List<AddressType> get addresses'),
+              contains('.map((e) => AddressType(e as Map<String, Object?>))'),
+              contains('.toList()'),
+            ]),
+          ),
+        },
+      );
+    });
   });
 }

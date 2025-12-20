@@ -384,7 +384,9 @@ class SchemaAstAnalyzer {
     }
 
     // Map schema type to Dart type (passing full invocation for context)
-    final dartType = _mapSchemaTypeToDartType(baseInvocation, element);
+    // Also captures schema variable reference for list fields with nested schemas
+    final (dartType, listElementSchemaRef) =
+        _mapSchemaTypeToDartType(baseInvocation, element);
 
     return FieldInfo(
       name: fieldName,
@@ -393,11 +395,15 @@ class SchemaAstAnalyzer {
       isRequired: !isOptional,
       isNullable: isNullable,
       constraints: [],
+      listElementSchemaRef: listElementSchemaRef,
     );
   }
 
-  /// Maps a schema method invocation to a Dart type
-  DartType _mapSchemaTypeToDartType(
+  /// Maps a schema method invocation to a Dart type and optional schema reference
+  ///
+  /// Returns a record of (DartType, schemaVariableName?) where the second
+  /// element is the schema variable name for list fields with nested schema refs.
+  (DartType, String?) _mapSchemaTypeToDartType(
     MethodInvocation invocation,
     Element2 element,
   ) {
@@ -410,21 +416,25 @@ class SchemaAstAnalyzer {
 
     switch (schemaMethod) {
       case 'string':
-        return typeProvider.stringType;
+        return (typeProvider.stringType, null);
       case 'integer':
-        return typeProvider.intType;
+        return (typeProvider.intType, null);
       case 'double':
-        return typeProvider.doubleType;
+        return (typeProvider.doubleType, null);
       case 'boolean':
-        return typeProvider.boolType;
+        return (typeProvider.boolType, null);
       case 'list':
         // Extract element type from Ack.list(elementSchema) argument
+        // This may return a schema variable reference for nested schemas
         return _extractListType(invocation, element, typeProvider);
       case 'object':
         // Nested objects represented as Map<String, dynamic>
-        return typeProvider.mapType(
-          typeProvider.stringType,
-          typeProvider.dynamicType,
+        return (
+          typeProvider.mapType(
+            typeProvider.stringType,
+            typeProvider.dynamicType,
+          ),
+          null,
         );
       default:
         throw InvalidGenerationSourceError(
@@ -435,7 +445,14 @@ class SchemaAstAnalyzer {
   }
 
   /// Extracts the element type from Ack.list(elementSchema) calls
-  DartType _extractListType(
+  ///
+  /// Handles both:
+  /// - Method invocations: `Ack.list(Ack.string())` → `List<String>`
+  /// - Schema references: `Ack.list(addressSchema)` → `List<Map<String, dynamic>>`
+  ///
+  /// Returns a record of (DartType, schemaVariableName?) where the second
+  /// element is the schema variable name for nested schema references.
+  (DartType, String?) _extractListType(
     MethodInvocation listInvocation,
     Element2 element,
     TypeProvider typeProvider,
@@ -444,7 +461,7 @@ class SchemaAstAnalyzer {
 
     // If no arguments or empty, fall back to List<dynamic>
     if (args.isEmpty) {
-      return typeProvider.listType(typeProvider.dynamicType);
+      return (typeProvider.listType(typeProvider.dynamicType), null);
     }
 
     final firstArg = args.first;
@@ -454,14 +471,55 @@ class SchemaAstAnalyzer {
       // Check if this is an Ack.xxx() call
       if (firstArg.target is SimpleIdentifier &&
           (firstArg.target as SimpleIdentifier).name == 'Ack') {
-        // Recursively extract the element type
-        final elementType = _mapSchemaTypeToDartType(firstArg, element);
-        return typeProvider.listType(elementType);
+        // Recursively extract the element type (no schema ref for primitives)
+        final (elementType, _) = _mapSchemaTypeToDartType(firstArg, element);
+        return (typeProvider.listType(elementType), null);
       }
     }
 
-    // For other cases (like schema variable references), return List<dynamic>
-    return typeProvider.listType(typeProvider.dynamicType);
+    // Handle Ack.list(addressSchema) - schema variable reference
+    if (firstArg is SimpleIdentifier) {
+      final schemaVarName = firstArg.name;
+      final baseTypeName = _generateTypeNameFromVariable(schemaVarName);
+
+      final library = element.library2;
+      if (library != null) {
+        // Try @AckModel class lookup
+        final classElement = library.classes.cast<ClassElement2?>().firstWhere(
+              (c) => c?.name3 == baseTypeName,
+              orElse: () => null,
+            );
+
+        if (classElement != null) {
+          // For @AckModel classes, use the class type (no schema ref needed)
+          return (typeProvider.listType(classElement.thisType), null);
+        }
+
+        // Try @AckType schema variable lookup
+        final schemaVar =
+            library.topLevelVariables.cast<TopLevelVariableElement2?>().firstWhere(
+                  (v) => v?.name3 == schemaVarName,
+                  orElse: () => null,
+                );
+
+        if (schemaVar != null) {
+          // Schema variable exists - return List<Map<String, dynamic>>
+          // AND preserve the schema variable name for type builder
+          return (
+            typeProvider.listType(
+              typeProvider.mapType(
+                typeProvider.stringType,
+                typeProvider.dynamicType,
+              ),
+            ),
+            schemaVarName,
+          );
+        }
+      }
+    }
+
+    // Fallback for unknown argument types
+    return (typeProvider.listType(typeProvider.dynamicType), null);
   }
 
   /// Resolves the base class name for a schema variable, honoring custom overrides.

@@ -311,8 +311,18 @@ extension type ContactListType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  ContactListType copyWith({String? name}) {
-    return ContactListType.parse({'name': name ?? this.name});
+  List<AddressType> get addresses => (_data['addresses'] as List)
+      .map((e) => AddressType(e as Map<String, Object?>))
+      .toList();
+
+  ContactListType copyWith({
+    String? name,
+    List<Map<String, dynamic>>? addresses,
+  }) {
+    return ContactListType.parse({
+      'name': name ?? this.name,
+      'addresses': addresses ?? this.addresses,
+    });
   }
 }
 

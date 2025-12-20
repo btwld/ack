@@ -435,8 +435,9 @@ ${cases.join(',\n')},
 
     // Check if element type is a custom type with @AckType
     if (_isCustomElementType(field, allModels)) {
-      // Return lazy iterable for object lists (zero-cost until iteration)
-      return "(_data['$key'] as List).map((e) => ${elementType}Type(e as Map<String, Object?>))$suffix";
+      // Return eager List for object lists (per requirements: List<T>, not Iterable<T>)
+      final listSuffix = isSet ? '' : '.toList()';
+      return "(_data['$key'] as List).map((e) => ${elementType}Type(e as Map<String, Object?>))$listSuffix$suffix";
     }
 
     // Primitive lists/sets - direct cast
@@ -464,9 +465,9 @@ ${cases.join(',\n')},
     // Lists
     if (field.isList) {
       final elementType = _getListElementType(field, allModels);
-      // Use Iterable for object lists (lazy), List for primitive lists
+      // Use List for all list types (eager evaluation per requirements)
       if (_isCustomElementType(field, allModels)) {
-        return 'Iterable<${elementType}Type>';
+        return 'List<${elementType}Type>';
       }
       return 'List<$elementType>';
     }
@@ -498,6 +499,11 @@ ${cases.join(',\n')},
   }
 
   String _getListElementType(FieldInfo field, List<ModelInfo> allModels) {
+    // Check for schema variable reference first (e.g., Ack.list(addressSchema))
+    if (field.listElementSchemaRef != null) {
+      return _generateTypeNameFromVariable(field.listElementSchemaRef!);
+    }
+
     if (field.type is! ParameterizedType) return 'dynamic';
 
     final listType = field.type as ParameterizedType;
@@ -566,6 +572,12 @@ ${cases.join(',\n')},
   }
 
   bool _isCustomElementType(FieldInfo field, List<ModelInfo> allModels) {
+    // Check for schema variable reference first (e.g., Ack.list(addressSchema))
+    if (field.listElementSchemaRef != null) {
+      final typeName = _generateTypeNameFromVariable(field.listElementSchemaRef!);
+      return allModels.any((m) => m.className == typeName);
+    }
+
     if (field.type is! ParameterizedType) return false;
 
     final paramType = field.type as ParameterizedType;
@@ -577,6 +589,20 @@ ${cases.join(',\n')},
     if (element is! InterfaceElement2) return false;
 
     return _hasAckTypeForElement(element, allModels);
+  }
+
+  /// Converts a schema variable name to a type name.
+  /// e.g., "addressSchema" → "Address", "userSchema" → "User"
+  String _generateTypeNameFromVariable(String variableName) {
+    // Remove "Schema" suffix if present
+    var name = variableName;
+    if (name.endsWith('Schema')) {
+      name = name.substring(0, name.length - 'Schema'.length);
+    }
+
+    // Capitalize first letter
+    if (name.isEmpty) return 'Type';
+    return name[0].toUpperCase() + name.substring(1);
   }
 
   String _getTypeConstructor(FieldInfo field) {
