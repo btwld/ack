@@ -1,8 +1,10 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-// Note: No 'part' directive - primitive schemas do not generate extension types.
-// Use the schema directly via parse() or safeParse().
+part 'schema_types_primitives.g.dart';
+
+// Note: Primitive schemas generate extension types, but you can still use
+// the schema directly via parse() or safeParse().
 
 /// Test primitive schema types with @AckType
 
