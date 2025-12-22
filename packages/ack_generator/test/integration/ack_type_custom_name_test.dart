@@ -7,7 +7,7 @@ import '../test_utils/test_assets.dart';
 
 void main() {
   group('@AckType custom names', () {
-    test('generates extension types for primitive and object schemas', () async {
+    test('generates extension types for non-nullable schemas', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -23,7 +23,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 final passwordSchema = Ack.string();
 
 @AckType(name: 'CustomPassword')
-final customPasswordSchema = Ack.string();
+final customPasswordSchema = Ack.string().nullable();
 
 @AckType(name: 'Order2')
 final orderSchema = Ack.integer();
@@ -43,10 +43,11 @@ final customUserSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              // Primitive types SHOULD have extension types
+              // Non-nullable primitives SHOULD have extension types
               contains('extension type PasswordType(String _value)'),
-              contains('extension type CustomPasswordType(String _value)'),
               contains('extension type Order2Type(int _value)'),
+              // Nullable schema should NOT generate extension type
+              isNot(contains('extension type CustomPasswordType(String _value)')),
               // Object types SHOULD have extension types
               contains(
                 'extension type UserType(Map<String, Object?> _data)',

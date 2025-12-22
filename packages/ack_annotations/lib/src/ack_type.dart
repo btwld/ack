@@ -196,8 +196,9 @@ import 'package:meta/meta_meta.dart';
 /// - **Cross-file schema references**: Schema references must be in the same file
 ///   - ✅ Same file: `'address': addressSchema` → getter returns `AddressType`
 ///   - ❌ Cross-file: `'address': addressSchema` → getter returns `Map<String, Object?>`
-/// - **Nullable primitives**: Extension types wrap non-nullable values even when schema is `.nullable()`
-///   - The `.nullable()` modifier affects validation, not the extension type's representation
+/// - **Nullable schema variables**: Extension types are not generated for schemas
+///   marked with `.nullable()` because the representation is non-nullable.
+///   - Use the schema directly for nullable validation.
 /// - **Transform modifier**: Not supported (changes output type)
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///

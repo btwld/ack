@@ -186,23 +186,6 @@ extension type OptionalStatusType(String _value) implements String {
   }
 }
 
-/// Extension type for NullableRole
-extension type NullableRoleType(String _value) implements String {
-  static NullableRoleType parse(Object? data) {
-    final validated = nullableRoleSchema.parse(data);
-    return NullableRoleType(validated as String);
-  }
-
-  static SchemaResult<NullableRoleType> safeParse(Object? data) {
-    final result = nullableRoleSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(NullableRoleType(validated as String)),
-      onFail: (error) => SchemaResult.fail(error),
-    );
-  }
-}
-
 /// Extension type for DefaultedEnum
 extension type DefaultedEnumType(UserRole _value) implements UserRole {
   static DefaultedEnumType parse(Object? data) {
@@ -215,23 +198,6 @@ extension type DefaultedEnumType(UserRole _value) implements UserRole {
     return result.match(
       onOk: (validated) =>
           SchemaResult.ok(DefaultedEnumType(validated as UserRole)),
-      onFail: (error) => SchemaResult.fail(error),
-    );
-  }
-}
-
-/// Extension type for OptionalNullableLiteral
-extension type OptionalNullableLiteralType(String _value) implements String {
-  static OptionalNullableLiteralType parse(Object? data) {
-    final validated = optionalNullableLiteralSchema.parse(data);
-    return OptionalNullableLiteralType(validated as String);
-  }
-
-  static SchemaResult<OptionalNullableLiteralType> safeParse(Object? data) {
-    final result = optionalNullableLiteralSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(OptionalNullableLiteralType(validated as String)),
       onFail: (error) => SchemaResult.fail(error),
     );
   }
