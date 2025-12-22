@@ -4,12 +4,10 @@ import 'package:test/test.dart';
 
 /// Tests for primitive schemas.
 ///
-/// Note: Extension types are NOT generated for primitive schemas (String, int,
-/// double, bool, List, etc.). Instead, use the schema directly via `safeParse()`.
-/// This is a design decision to reduce generated code - primitive schemas don't
-/// need type wrappers since they just validate and return the same type.
+/// Extension types are generated for primitive schemas, but the schema can
+/// still be used directly via `safeParse()` or `parse()`.
 void main() {
-  group('Primitive Schemas (no extension types)', () {
+  group('Primitive Schemas', () {
     test('passwordSchema validates and returns String', () {
       final result = passwordSchema.safeParse('mySecurePassword123');
 

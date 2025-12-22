@@ -25,8 +25,8 @@ class TypeBuilder {
       return null;
     }
 
-    // Skip extension type generation for primitives (String, int, double, bool, List, etc.)
-    // Only generate extension types for object schemas (Map<String, Object?>)
+    // Generate extension types for all @AckType models. Non-object schemas
+    // are represented with `_value` and only include parse/safeParse.
     if (!model.shouldGenerateExtensionType) {
       return null;
     }

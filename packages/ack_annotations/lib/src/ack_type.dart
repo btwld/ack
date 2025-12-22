@@ -45,58 +45,52 @@ import 'package:meta/meta_meta.dart';
 /// print(user.age);   // Type-safe int access
 /// ```
 ///
-/// ### Primitive Schemas (No Extension Type Generated)
+/// ### Primitive Schemas
 ///
-/// For primitive schemas (String, int, double, bool), extension types are
-/// **not generated**. This is a design decision because:
-/// 1. They provide minimal value (no getters to generate)
-/// 2. Users can use `schema.safeParse()` directly
-/// 3. Reduces generated code bloat
+/// Primitive schemas (String, int, double, bool) generate extension types that
+/// implement the underlying primitive type. These are thin wrappers that add
+/// `parse()`/`safeParse()` factories while keeping the primitive API available.
 ///
 /// ```dart
 /// @AckType()
 /// final passwordSchema = Ack.string().minLength(8);
 ///
-/// // NO extension type is generated for primitive schemas.
-/// // Use the schema directly:
-/// final result = passwordSchema.safeParse('mySecurePassword123');
-/// if (result.isOk) {
-///   print(result.value.length);  // 19
-/// }
+/// // Generated extension type:
+/// // extension type PasswordType(String _value) implements String { ... }
+///
+/// final password = PasswordType.parse('mySecurePassword123');
+/// print(password.length);  // 19
 /// ```
 ///
-/// ### Literal Schemas (No Extension Type Generated)
+/// ### Literal Schemas
 /// ```dart
 /// @AckType()
 /// final statusSchema = Ack.literal('active');
 ///
-/// // NO extension type is generated.
-/// // Use the schema directly for validation:
-/// final result = statusSchema.safeParse('active');  // ✅ Valid
-/// statusSchema.parse('inactive');                   // ❌ Throws AckException
+/// // Extension type is generated, wrapping the validated literal value:
+/// final status = StatusType.parse('active'); // ✅ Valid
+/// statusSchema.parse('inactive');            // ❌ Throws AckException
 /// ```
 ///
-/// ### EnumString Schemas (No Extension Type Generated)
+/// ### EnumString Schemas
 /// ```dart
 /// @AckType()
 /// final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 ///
-/// // NO extension type is generated.
-/// // Use the schema directly:
-/// final role = roleSchema.parse('admin');
+/// // Extension type is generated:
+/// final role = RoleType.parse('admin');
 /// ```
 ///
-/// ### EnumValues Schemas (No Extension Type Generated)
+/// ### EnumValues Schemas
 /// ```dart
 /// enum UserRole { admin, user, guest }
 ///
 /// @AckType()
 /// final roleSchema = Ack.enumValues(UserRole.values);
 ///
-/// // NO extension type is generated.
-/// // Use the schema directly:
-/// final role = roleSchema.parse(UserRole.admin);
-/// print(role.name);   // 'admin'
+/// // Extension type is generated:
+/// final role = RoleType.parse(UserRole.admin);
+/// print(role.name); // 'admin'
 /// ```
 ///
 /// ## Benefits

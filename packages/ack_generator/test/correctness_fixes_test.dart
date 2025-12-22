@@ -10,7 +10,7 @@ import 'test_utils/test_assets.dart';
 /// Comprehensive tests for the generator fixes implemented in the plan.
 void main() {
   group('Phase 1: Extension type redesign', () {
-    test('primitive schemas do NOT generate extension types, object schemas DO', () async {
+    test('primitive schemas generate extension types alongside object schemas', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -21,7 +21,7 @@ void main() {
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-// Primitive schemas - should NOT generate extension types
+// Primitive schemas - should generate extension types
 @AckType()
 final stringSchema = Ack.string().minLength(5);
 
@@ -39,9 +39,9 @@ final userSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              // Primitives should NOT have extension types
-              isNot(contains('extension type StringType')),
-              isNot(contains('extension type IntType')),
+              // Primitives SHOULD have extension types
+              contains('extension type StringType(String _value)'),
+              contains('extension type IntType(int _value)'),
               // Object types SHOULD have extension types
               contains('extension type UserType(Map<String, Object?> _data)'),
               contains('String get name'),

@@ -41,13 +41,11 @@ class ModelInfo {
 
   /// Whether an extension type should be generated for this model.
   ///
-  /// Extension types are only generated for object schemas (`Map<String, Object?>`).
-  /// Primitive schemas (String, int, double, bool) do not get extension types
-  /// because:
-  /// 1. They provide minimal value (no getters to generate)
-  /// 2. Users can use `schema.safeParse()` directly
-  /// 3. Reduces generated code bloat
-  bool get shouldGenerateExtensionType => representationType == kMapType;
+  /// Extension types are generated for all @AckType schemas.
+  /// Object schemas get field getters and copyWith; non-object schemas
+  /// still benefit from typed parse/safeParse wrappers and implement
+  /// their underlying representation type.
+  bool get shouldGenerateExtensionType => true;
 
   const ModelInfo({
     required this.className,
