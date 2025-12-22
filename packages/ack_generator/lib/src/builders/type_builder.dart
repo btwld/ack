@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:build/build.dart' show log;
 import 'package:code_builder/code_builder.dart';
 
 import '../models/field_info.dart';
@@ -210,6 +211,10 @@ class TypeBuilder {
     // This is safe because extension types wrap Map<String, Object?> which doesn't
     // require declaration order
     if (hasCycle) {
+      log.info(
+        'Circular dependency detected in extension types. '
+        'Using original declaration order (safe for Map-based types).',
+      );
       return models;
     }
 

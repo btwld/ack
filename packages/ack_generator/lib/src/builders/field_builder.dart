@@ -1,6 +1,7 @@
 import 'dart:convert' show jsonEncode;
 
 import 'package:analyzer/dart/element/type.dart';
+import 'package:build/build.dart' show log;
 
 import '../models/constraint_info.dart';
 import '../models/field_info.dart';
@@ -220,8 +221,11 @@ class FieldBuilder {
       return generator(schema, constraint.arguments);
     }
 
-    // Unknown constraint - silently ignore (allows custom extensions)
-    // The Dart compiler will catch method-not-found errors if constraint is a typo
+    // Unknown constraint - log warning for potential typos
+    log.warning(
+      'Unknown constraint "${constraint.name}" ignored. '
+      'Check spelling or ensure constraint is registered.',
+    );
     return schema;
   }
 

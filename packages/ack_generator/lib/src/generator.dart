@@ -194,8 +194,8 @@ class AckSchemaGenerator extends Generator {
     String formattedCode;
     try {
       formattedCode = _formatter.format(generatedCode);
-    } catch (_) {
-      // If formatting fails, use unformatted code but still validate
+    } catch (e) {
+      log.warning('Code formatting failed, using unformatted output: $e');
       formattedCode = generatedCode;
     }
 

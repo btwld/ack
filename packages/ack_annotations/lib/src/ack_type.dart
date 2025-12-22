@@ -208,7 +208,7 @@ import 'package:meta/meta_meta.dart';
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
 /// See also: [AckModel], [AckField]
-@Target({TargetKind.topLevelVariable, TargetKind.getter})
+@Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
   /// Optional custom name for the generated extension type.
   ///
