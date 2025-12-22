@@ -382,37 +382,4 @@ final deepSchema = Ack.object({
       });
     });
   });
-
-  group('Documentation: Expected Behavior', () {
-    test('documents what list extraction SHOULD do', () {
-      // This test documents the expected implementation
-      // After fix, Ack.list(Ack.string()) should:
-      // 1. Detect 'list' as baseType in _parseSchemaMethod
-      // 2. Extract the argument: Ack.string()
-      // 3. Recursively parse that argument to get String type
-      // 4. Create List<String> using typeProvider.listType(stringType)
-
-      expect(true, isTrue, reason: 'Documentation test');
-    });
-
-    test('documents what nested ref resolution SHOULD do', () {
-      // After fix, 'address': addressSchema should:
-      // 1. Detect SimpleIdentifier in _parseFieldValue
-      // 2. Look up 'addressSchema' in current library
-      // 3. Generate proper type (Map<String, dynamic> or AddressType)
-      // 4. Return FieldInfo instead of null
-
-      expect(true, isTrue, reason: 'Documentation test');
-    });
-
-    test('documents what walker safety SHOULD do', () {
-      // After fix, method chain walker should:
-      // 1. Add iteration counter (starting at 0)
-      // 2. Check counter against MAX_DEPTH (suggest 20)
-      // 3. Throw clear error if exceeded
-      // 4. Optionally: Add cycle detection with visited Set
-
-      expect(true, isTrue, reason: 'Documentation test');
-    });
-  });
 }
