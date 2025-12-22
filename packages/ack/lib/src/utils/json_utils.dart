@@ -5,7 +5,8 @@ String prettyJson(Object? json) {
     const encoder = JsonEncoder.withIndent('  ');
 
     return encoder.convert(json);
-  } catch (e) {
+  } on JsonUnsupportedObjectError {
+    // Non-encodable object - fall back to toString representation
     return json?.toString() ?? 'null';
   }
 }

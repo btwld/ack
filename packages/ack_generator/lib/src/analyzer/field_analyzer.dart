@@ -10,21 +10,13 @@ import '../models/constraint_info.dart';
 /// Analyzes individual fields in a model
 class FieldAnalyzer {
   FieldInfo analyze(FieldElement2 field) {
-    // Check for @AckField annotation
     final ackFieldAnnotation = TypeChecker.typeNamed(
       AckField,
     ).firstAnnotationOf(field);
 
-    // Determine JSON key (from annotation or field name)
     final jsonKey = _getJsonKey(field, ackFieldAnnotation);
-
-    // Determine if field is required
     final isRequired = _isRequired(field, ackFieldAnnotation);
-
-    // Extract constraints
     final constraints = _extractConstraints(field, ackFieldAnnotation);
-
-    // Extract description from annotation
     final description = _getDescription(field, ackFieldAnnotation);
 
     return FieldInfo(

@@ -10,19 +10,16 @@ class ModelAnalyzer {
   final _fieldAnalyzer = FieldAnalyzer();
 
   ModelInfo analyze(ClassElement2 element, ConstantReader annotation) {
-    // Extract schema name from annotation or generate it
     final schemaName = annotation.read('schemaName').isNull
         ? null
         : annotation.read('schemaName').stringValue;
 
     final schemaClassName = schemaName ?? '${element.name3}Schema';
 
-    // Extract description if provided
     final description = annotation.read('description').isNull
         ? null
         : annotation.read('description').stringValue;
 
-    // Extract additionalProperties settings
     final additionalProperties = annotation.read('additionalProperties').isNull
         ? false
         : annotation.read('additionalProperties').boolValue;
@@ -32,7 +29,6 @@ class ModelAnalyzer {
         ? null
         : annotation.read('additionalPropertiesField').stringValue;
 
-    // Extract discriminated type parameters
     final discriminatedKey = annotation.read('discriminatedKey').isNull
         ? null
         : annotation.read('discriminatedKey').stringValue;
@@ -41,17 +37,15 @@ class ModelAnalyzer {
         ? null
         : annotation.read('discriminatedValue').stringValue;
 
-    // Validate discriminated type usage
     _validateDiscriminatedTypeUsage(
       element,
       discriminatedKey,
       discriminatedValue,
     );
 
-    // Analyze all fields
     final fields = <FieldInfo>[];
 
-    // Get all fields including inherited ones
+    // Include inherited fields in analysis
     final allFields = [
       ...element.fields2,
       ...element.allSupertypes.expand((type) => type.element3.fields2),
