@@ -223,13 +223,19 @@ class Circle extends Shape {
               // The discriminator key should only appear once in the schema
               // Count occurrences of 'type' as a key
               predicate<String>((content) {
-                // Schema should have exactly one 'type' key definition in the circleSchema
-                // (The shapeSchema uses discriminated() which has schemas: {})
-                final circleMatches = RegExp(r"circleSchema.*'type'\s*:")
-                    .allMatches(content);
-                // Should find the schema with one type key
-                return circleMatches.isNotEmpty || content.contains("'type': Ack.literal");
-              }, 'has discriminator key in schema'),
+                // Extract the circleSchema definition
+                final schemaMatch = RegExp(
+                  r"final circleSchema = Ack\.object\(\{([^}]+)\}\)",
+                  dotAll: true,
+                ).firstMatch(content);
+                if (schemaMatch == null) return false;
+
+                final schemaBody = schemaMatch.group(1)!;
+                // Count 'type' key occurrences - should be exactly 1
+                final typeKeyCount =
+                    RegExp(r"'type'\s*:").allMatches(schemaBody).length;
+                return typeKeyCount == 1;
+              }, 'discriminator key appears exactly once in schema'),
             ]),
           ),
         },
