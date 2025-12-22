@@ -39,6 +39,11 @@ class ModelInfo {
   /// Representation type for extension type (e.g., 'String', 'int', 'Map<String, Object?>')
   final String representationType;
 
+  /// Whether the schema variable is nullable via `.nullable()`.
+  ///
+  /// This only applies to @AckType schema variables (not @AckModel classes).
+  final bool isNullableSchema;
+
   /// Whether an extension type should be generated for this model.
   ///
   /// Extension types are generated for all @AckType schemas.
@@ -60,5 +65,6 @@ class ModelInfo {
     this.subtypes,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
+    this.isNullableSchema = false,
   });
 }

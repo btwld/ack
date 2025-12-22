@@ -25,6 +25,11 @@ class TypeBuilder {
       return null;
     }
 
+    // Nullable schema variables can't be safely wrapped (representation is non-nullable).
+    if (model.isFromSchemaVariable && model.isNullableSchema) {
+      return null;
+    }
+
     // Generate extension types for all @AckType models. Non-object schemas
     // are represented with `_value` and only include parse/safeParse.
     if (!model.shouldGenerateExtensionType) {

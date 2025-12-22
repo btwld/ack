@@ -112,6 +112,7 @@ class SchemaAstAnalyzer {
     }
 
     final methodName = baseInvocation.methodName.name;
+    final isNullable = _hasModifier(invocation, 'nullable');
 
     // Parse based on schema type
     switch (methodName) {
@@ -121,6 +122,7 @@ class SchemaAstAnalyzer {
           baseInvocation,
           invocation, // Pass original invocation to check for chained methods
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'string':
@@ -128,6 +130,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'integer':
@@ -135,6 +138,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'double':
@@ -142,6 +146,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'boolean':
@@ -149,6 +154,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'list':
@@ -156,6 +162,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'literal':
@@ -163,6 +170,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'enumString':
@@ -170,6 +178,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'enumValues':
@@ -177,6 +186,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       default:
@@ -194,6 +204,7 @@ class SchemaAstAnalyzer {
     MethodInvocation baseInvocation,
     MethodInvocation fullInvocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     // Extract the properties map from the first argument
@@ -264,6 +275,7 @@ class SchemaAstAnalyzer {
       fields: fields,
       isFromSchemaVariable: true,
       additionalProperties: hasAdditionalProperties,
+      isNullableSchema: isNullable,
     );
   }
 
@@ -582,6 +594,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -596,6 +609,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'String',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -604,6 +618,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -618,6 +633,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'int',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -626,6 +642,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -640,6 +657,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'double',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -648,6 +666,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -662,6 +681,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'bool',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -679,6 +699,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -696,6 +717,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'List<$elementType>',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -752,6 +774,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -766,6 +789,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'String',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -779,6 +803,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -793,6 +818,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'String',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -806,6 +832,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -857,7 +884,26 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: enumTypeName,
+      isNullableSchema: isNullable,
     );
+  }
+
+  bool _hasModifier(MethodInvocation invocation, String modifierName) {
+    MethodInvocation? current = invocation;
+    while (current != null) {
+      if (current.methodName.name == modifierName) {
+        return true;
+      }
+
+      final target = current.target;
+      if (target is MethodInvocation) {
+        current = target;
+      } else {
+        break;
+      }
+    }
+
+    return false;
   }
 
   /// Maps Ack schema method names to Dart type strings
