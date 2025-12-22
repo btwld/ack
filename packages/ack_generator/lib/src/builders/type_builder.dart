@@ -4,6 +4,7 @@ import 'package:code_builder/code_builder.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
+import '../utils/naming_utils.dart' as naming;
 
 /// Builds Dart 3 extension types for models annotated with `@AckType`
 ///
@@ -24,7 +25,7 @@ class TypeBuilder {
     }
 
     final typeName = _getExtensionTypeName(model);
-    final schemaVarName = _toCamelCase(model.schemaClassName);
+    final schemaVarName = naming.toCamelCase(model.schemaClassName);
 
     final isObjectSchema = model.representationType == kMapType;
     final valueVarName = isObjectSchema ? '_data' : '_value';
@@ -58,7 +59,7 @@ class TypeBuilder {
     }
 
     final typeName = _getExtensionTypeName(model);
-    final schemaVarName = _toCamelCase(model.schemaClassName);
+    final schemaVarName = naming.toCamelCase(model.schemaClassName);
     final subtypes = model.subtypes;
 
     if (subtypes == null || subtypes.isEmpty) {
@@ -202,11 +203,6 @@ class TypeBuilder {
 
   String _getExtensionTypeName(ModelInfo model) {
     return '${model.className}Type';
-  }
-
-  String _toCamelCase(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toLowerCase() + text.substring(1);
   }
 
   List<String> _buildDocs(ModelInfo model) {
@@ -501,7 +497,7 @@ ${cases.join(',\n')},
   String _getListElementType(FieldInfo field, List<ModelInfo> allModels) {
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (field.listElementSchemaRef != null) {
-      return _generateTypeNameFromVariable(field.listElementSchemaRef!);
+      return naming.generateTypeNameFromVariable(field.listElementSchemaRef!);
     }
 
     if (field.type is! ParameterizedType) return 'dynamic';
@@ -574,7 +570,7 @@ ${cases.join(',\n')},
   bool _isCustomElementType(FieldInfo field, List<ModelInfo> allModels) {
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (field.listElementSchemaRef != null) {
-      final typeName = _generateTypeNameFromVariable(field.listElementSchemaRef!);
+      final typeName = naming.generateTypeNameFromVariable(field.listElementSchemaRef!);
       return allModels.any((m) => m.className == typeName);
     }
 
@@ -589,20 +585,6 @@ ${cases.join(',\n')},
     if (element is! InterfaceElement2) return false;
 
     return _hasAckTypeForElement(element, allModels);
-  }
-
-  /// Converts a schema variable name to a type name.
-  /// e.g., "addressSchema" → "Address", "userSchema" → "User"
-  String _generateTypeNameFromVariable(String variableName) {
-    // Remove "Schema" suffix if present
-    var name = variableName;
-    if (name.endsWith('Schema')) {
-      name = name.substring(0, name.length - 'Schema'.length);
-    }
-
-    // Capitalize first letter
-    if (name.isEmpty) return 'Type';
-    return name[0].toUpperCase() + name.substring(1);
   }
 
   String _getTypeConstructor(FieldInfo field) {

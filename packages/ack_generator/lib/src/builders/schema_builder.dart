@@ -2,6 +2,7 @@ import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
 
 import '../models/model_info.dart';
+import '../utils/naming_utils.dart' as naming;
 import 'field_builder.dart' as fb;
 
 /// Builds schema functions using code_builder
@@ -31,9 +32,7 @@ class SchemaBuilder {
   }
 
   Field buildSchemaField(ModelInfo model) {
-    // Convert schema class name to camelCase variable name
-    // e.g., "UserSchema" -> "userSchema", "CustomUserSchema" -> "customUserSchema"
-    final variableName = _toCamelCase(model.schemaClassName);
+    final variableName = naming.toCamelCase(model.schemaClassName);
 
     return Field(
       (b) => b
@@ -45,11 +44,6 @@ class SchemaBuilder {
           if (model.description != null) '/// ${model.description}',
         ]),
     );
-  }
-
-  String _toCamelCase(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toLowerCase() + text.substring(1);
   }
 
   String _buildSchemaDefinition(ModelInfo model) {
@@ -82,7 +76,7 @@ class SchemaBuilder {
     for (final entry in subtypes.entries) {
       final discriminatorValue = entry.key;
       final subtypeElement = entry.value;
-      final subtypeSchemaName = _toCamelCase('${subtypeElement.name3}Schema');
+      final subtypeSchemaName = naming.toCamelCase('${subtypeElement.name3}Schema');
 
       schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
     }

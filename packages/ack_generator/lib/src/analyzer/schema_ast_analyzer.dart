@@ -7,6 +7,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
+import '../utils/naming_utils.dart' as naming;
 
 /// Default representation type for object schemas
 const String _kMapType = 'Map<String, Object?>';
@@ -480,7 +481,7 @@ class SchemaAstAnalyzer {
     // Handle Ack.list(addressSchema) - schema variable reference
     if (firstArg is SimpleIdentifier) {
       final schemaVarName = firstArg.name;
-      final baseTypeName = _generateTypeNameFromVariable(schemaVarName);
+      final baseTypeName = naming.generateTypeNameFromVariable(schemaVarName);
 
       final library = element.library2;
       if (library != null) {
@@ -529,7 +530,7 @@ class SchemaAstAnalyzer {
     String? customTypeName,
   }) {
     if (customTypeName == null) {
-      return _generateTypeNameFromVariable(variableName);
+      return naming.generateTypeNameFromVariable(variableName);
     }
 
     final trimmed = customTypeName.trim();
@@ -557,24 +558,6 @@ class SchemaAstAnalyzer {
     }
 
     return trimmed[0].toUpperCase() + trimmed.substring(1);
-  }
-
-  /// Generates an extension type name from a schema variable name
-  ///
-  /// Examples:
-  /// - "userSchema" → "User"
-  /// - "addressSchema" → "Address"
-  /// - "myDataSchema" → "MyData"
-  String _generateTypeNameFromVariable(String variableName) {
-    // Remove "Schema" suffix if present
-    var name = variableName;
-    if (name.endsWith('Schema')) {
-      name = name.substring(0, name.length - 'Schema'.length);
-    }
-
-    // Capitalize first letter
-    if (name.isEmpty) return 'Type';
-    return name[0].toUpperCase() + name.substring(1);
   }
 
   /// Parses Ack.string() schema
