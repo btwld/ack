@@ -125,31 +125,31 @@ class SchemaAstAnalyzer {
           customTypeName: customTypeName,
         );
       case 'string':
-        return _parseStringSchema(
+        return _parsePrimitiveSchema(
           variableName,
-          baseInvocation,
           element,
+          representationType: 'String',
           customTypeName: customTypeName,
         );
       case 'integer':
-        return _parseIntegerSchema(
+        return _parsePrimitiveSchema(
           variableName,
-          baseInvocation,
           element,
+          representationType: 'int',
           customTypeName: customTypeName,
         );
       case 'double':
-        return _parseDoubleSchema(
+        return _parsePrimitiveSchema(
           variableName,
-          baseInvocation,
           element,
+          representationType: 'double',
           customTypeName: customTypeName,
         );
       case 'boolean':
-        return _parseBooleanSchema(
+        return _parsePrimitiveSchema(
           variableName,
-          baseInvocation,
           element,
+          representationType: 'bool',
           customTypeName: customTypeName,
         );
       case 'list':
@@ -560,11 +560,11 @@ class SchemaAstAnalyzer {
     return trimmed[0].toUpperCase() + trimmed.substring(1);
   }
 
-  /// Parses Ack.string() schema
-  ModelInfo _parseStringSchema(
+  /// Parses primitive schemas: Ack.string(), Ack.integer(), Ack.double(), Ack.boolean()
+  ModelInfo _parsePrimitiveSchema(
     String variableName,
-    MethodInvocation invocation,
     Element2 element, {
+    required String representationType,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -578,73 +578,7 @@ class SchemaAstAnalyzer {
       schemaClassName: variableName,
       fields: [],
       isFromSchemaVariable: true,
-      representationType: 'String',
-    );
-  }
-
-  /// Parses Ack.integer() schema
-  ModelInfo _parseIntegerSchema(
-    String variableName,
-    MethodInvocation invocation,
-    Element2 element, {
-    String? customTypeName,
-  }) {
-    final typeName = _resolveModelClassName(
-      variableName,
-      element,
-      customTypeName: customTypeName,
-    );
-
-    return ModelInfo(
-      className: typeName,
-      schemaClassName: variableName,
-      fields: [],
-      isFromSchemaVariable: true,
-      representationType: 'int',
-    );
-  }
-
-  /// Parses Ack.double() schema
-  ModelInfo _parseDoubleSchema(
-    String variableName,
-    MethodInvocation invocation,
-    Element2 element, {
-    String? customTypeName,
-  }) {
-    final typeName = _resolveModelClassName(
-      variableName,
-      element,
-      customTypeName: customTypeName,
-    );
-
-    return ModelInfo(
-      className: typeName,
-      schemaClassName: variableName,
-      fields: [],
-      isFromSchemaVariable: true,
-      representationType: 'double',
-    );
-  }
-
-  /// Parses Ack.boolean() schema
-  ModelInfo _parseBooleanSchema(
-    String variableName,
-    MethodInvocation invocation,
-    Element2 element, {
-    String? customTypeName,
-  }) {
-    final typeName = _resolveModelClassName(
-      variableName,
-      element,
-      customTypeName: customTypeName,
-    );
-
-    return ModelInfo(
-      className: typeName,
-      schemaClassName: variableName,
-      fields: [],
-      isFromSchemaVariable: true,
-      representationType: 'bool',
+      representationType: representationType,
     );
   }
 
