@@ -297,7 +297,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 final chainedSchema = Ack.object({
   'optionalNullable': Ack.string().optional().nullable(),
   'nullableOptional': Ack.string().nullable().optional(),
-  'required': Ack.string(),
+  'basicField': Ack.string(),
 });
 ''',
       };
