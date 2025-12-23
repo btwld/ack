@@ -156,11 +156,11 @@ class TypeBuilder {
     );
   }
 
-  /// Sorts models in topological order (dependencies before dependents)
+  /// Sorts models in topological order (dependencies before dependents).
   ///
-  /// If circular dependencies are detected, falls back to the original
-  /// input order instead of throwing. Extension types based on Map<String, Object?>
-  /// work correctly with cycles since they all wrap the same underlying type.
+  /// If circular dependencies are detected, logs a warning and falls back to the
+  /// original input order. Extension types based on `Map<String, Object?>` work
+  /// correctly with cycles since they all wrap the same underlying type.
   List<ModelInfo> topologicalSort(List<ModelInfo> models) {
     final sorted = <ModelInfo>[];
     final visiting = <String>{};
@@ -210,7 +210,7 @@ class TypeBuilder {
     // This is safe because extension types wrap Map<String, Object?> which doesn't
     // require declaration order
     if (hasCycle) {
-      log.info(
+      log.warning(
         'Circular dependency detected in extension types. '
         'Using original declaration order (safe for Map-based types).',
       );
@@ -453,7 +453,7 @@ ${cases.join(',\n')},
     return "_data['$key'] != null ? $nonNullPart : null";
   }
 
-  /// Builds getter code for special types (DateTime, Uri, Duration)
+  /// Builds getter code for special types (DateTime, Uri, Duration).
   ///
   /// These types require conversion from their JSON representation:
   /// - DateTime: ISO 8601 string -> DateTime.parse()
@@ -464,34 +464,20 @@ ${cases.join(',\n')},
     String key, {
     required bool nullable,
   }) {
-    final element = field.type.element3;
-    final typeName = element?.name3;
+    final typeName = field.type.element3?.name3;
 
-    if (nullable) {
-      // Nullable version: check if value exists before converting
-      switch (typeName) {
-        case 'DateTime':
-          return "_data['$key'] != null ? DateTime.parse(_data['$key'] as String) : null";
-        case 'Uri':
-          return "_data['$key'] != null ? Uri.parse(_data['$key'] as String) : null";
-        case 'Duration':
-          return "_data['$key'] != null ? Duration(milliseconds: _data['$key'] as int) : null";
-        default:
-          return "_data['$key']";
-      }
-    } else {
-      // Non-nullable version: direct conversion
-      switch (typeName) {
-        case 'DateTime':
-          return "DateTime.parse(_data['$key'] as String)";
-        case 'Uri':
-          return "Uri.parse(_data['$key'] as String)";
-        case 'Duration':
-          return "Duration(milliseconds: _data['$key'] as int)";
-        default:
-          return "_data['$key']";
-      }
-    }
+    final conversion = switch (typeName) {
+      'DateTime' => "DateTime.parse(_data['$key'] as String)",
+      'Uri' => "Uri.parse(_data['$key'] as String)",
+      'Duration' => "Duration(milliseconds: _data['$key'] as int)",
+      _ => null,
+    };
+
+    if (conversion == null) return "_data['$key']";
+
+    return nullable
+        ? "_data['$key'] != null ? $conversion : null"
+        : conversion;
   }
 
   String _buildListGetter(
@@ -834,14 +820,4 @@ ${assignments.join(',\n')},
         ..body = Code(filterExpr),
     );
   }
-}
-
-/// Error thrown when circular dependencies are detected
-class CircularDependencyError extends Error {
-  final String message;
-
-  CircularDependencyError(this.message);
-
-  @override
-  String toString() => 'CircularDependencyError: $message';
 }
