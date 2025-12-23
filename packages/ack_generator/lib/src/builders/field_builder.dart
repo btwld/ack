@@ -9,6 +9,15 @@ import '../models/model_info.dart';
 
 /// Builds field schema expressions
 class FieldBuilder {
+  /// All models in the current compilation unit, used to look up
+  /// custom schemaClassNames for nested type references
+  List<ModelInfo> _allModels = [];
+
+  /// Sets the list of all models for cross-referencing nested schemas
+  void setAllModels(List<ModelInfo> models) {
+    _allModels = models;
+  }
+
   // Centralized type-to-schema mapping
   static const _primitiveSchemas = {
     'String': 'Ack.string()',
@@ -190,7 +199,19 @@ class FieldBuilder {
       return 'Ack.list(Ack.any()).unique()';
     }
 
-    // Custom schema reference
+    // Custom schema reference - look up by class name to honor custom schemaName
+    final modelInfo = _allModels.cast<ModelInfo?>().firstWhere(
+          (m) => m?.className == typeName,
+          orElse: () => null,
+        );
+
+    if (modelInfo != null) {
+      // Use the model's schema class name (handles @AckModel(schemaName: ...))
+      final schemaClassName = modelInfo.schemaClassName;
+      return '${schemaClassName[0].toLowerCase()}${schemaClassName.substring(1)}';
+    }
+
+    // Fallback to convention if model not found
     return '${typeName[0].toLowerCase()}${typeName.substring(1)}Schema';
   }
 

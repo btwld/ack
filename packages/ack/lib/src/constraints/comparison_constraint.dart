@@ -298,10 +298,14 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       final isStringLength =
           constraintKey.startsWith('string_') &&
           (constraintKey.contains('length') || constraintKey.contains('exact'));
+      final isListExactItems = constraintKey == 'list_exact_items';
 
       if (isMultipleOf) return {'multipleOf': multipleValue};
       if (isStringLength) {
         return {'minLength': threshold.toInt(), 'maxLength': threshold.toInt()};
+      }
+      if (isListExactItems) {
+        return {'minItems': threshold.toInt(), 'maxItems': threshold.toInt()};
       }
 
       return {'const': threshold};
