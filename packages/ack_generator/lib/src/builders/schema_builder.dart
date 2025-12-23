@@ -18,6 +18,7 @@ class SchemaBuilder {
   /// Sets the list of all models for cross-referencing subtype schemas
   void setAllModels(List<ModelInfo> models) {
     _allModels = models;
+    _fieldBuilder.setAllModels(models);
   }
 
   String build(ModelInfo model, [String? sourceFileName]) {

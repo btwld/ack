@@ -209,22 +209,34 @@ class FieldAnalyzer {
     }
 
     // NUMERIC CONSTRAINTS
+    // Note: We try toIntValue() first, then toDoubleValue(), because
+    // int literals like @Min(5) have toDoubleValue() return null
     final minAnnotation = TypeChecker.typeNamed(Min).firstAnnotationOf(field);
     if (minAnnotation != null) {
-      final value = minAnnotation.getField('value')?.toDoubleValue();
-      if (value != null) {
+      final valueField = minAnnotation.getField('value');
+      final intValue = valueField?.toIntValue();
+      final doubleValue = valueField?.toDoubleValue();
+      final valueStr = intValue != null
+          ? intValue.toString()
+          : doubleValue?.toString();
+      if (valueStr != null) {
         constraints.add(
-          ConstraintInfo(name: 'min', arguments: [value.toString()]),
+          ConstraintInfo(name: 'min', arguments: [valueStr]),
         );
       }
     }
 
     final maxAnnotation = TypeChecker.typeNamed(Max).firstAnnotationOf(field);
     if (maxAnnotation != null) {
-      final value = maxAnnotation.getField('value')?.toDoubleValue();
-      if (value != null) {
+      final valueField = maxAnnotation.getField('value');
+      final intValue = valueField?.toIntValue();
+      final doubleValue = valueField?.toDoubleValue();
+      final valueStr = intValue != null
+          ? intValue.toString()
+          : doubleValue?.toString();
+      if (valueStr != null) {
         constraints.add(
-          ConstraintInfo(name: 'max', arguments: [value.toString()]),
+          ConstraintInfo(name: 'max', arguments: [valueStr]),
         );
       }
     }
@@ -237,10 +249,15 @@ class FieldAnalyzer {
       MultipleOf,
     ).firstAnnotationOf(field);
     if (multipleOfAnnotation != null) {
-      final value = multipleOfAnnotation.getField('value')?.toDoubleValue();
-      if (value != null) {
+      final valueField = multipleOfAnnotation.getField('value');
+      final intValue = valueField?.toIntValue();
+      final doubleValue = valueField?.toDoubleValue();
+      final valueStr = intValue != null
+          ? intValue.toString()
+          : doubleValue?.toString();
+      if (valueStr != null) {
         constraints.add(
-          ConstraintInfo(name: 'multipleOf', arguments: [value.toString()]),
+          ConstraintInfo(name: 'multipleOf', arguments: [valueStr]),
         );
       }
     }

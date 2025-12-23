@@ -20,9 +20,10 @@ final userProfileSchema = Ack.object({
   'email': Ack.string().email().optional().describe(
     'Primary email address for communication',
   ),
-  'age': Ack.integer().optional().describe(
-    'User age in years (must be 13 or older)',
-  ),
+  'age': Ack.integer()
+      .min(13)
+      .optional()
+      .describe('User age in years (must be 13 or older)'),
   'avatarUrl': Ack.string().url().optional().nullable().describe(
     'Optional profile picture URL',
   ),

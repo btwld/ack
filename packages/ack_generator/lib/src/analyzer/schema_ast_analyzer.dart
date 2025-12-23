@@ -15,6 +15,76 @@ final _log = Logger('SchemaAstAnalyzer');
 /// Default representation type for object schemas
 const String _kMapType = 'Map<String, Object?>';
 
+/// Dart reserved keywords that cannot be used as identifiers
+const _dartKeywords = {
+  'abstract',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'base',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'covariant',
+  'default',
+  'deferred',
+  'do',
+  'dynamic',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'extension',
+  'external',
+  'factory',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'Function',
+  'get',
+  'hide',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'interface',
+  'is',
+  'late',
+  'library',
+  'mixin',
+  'new',
+  'null',
+  'on',
+  'operator',
+  'part',
+  'required',
+  'rethrow',
+  'return',
+  'sealed',
+  'set',
+  'show',
+  'static',
+  'super',
+  'switch',
+  'sync',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typedef',
+  'var',
+  'void',
+  'when',
+  'while',
+  'with',
+  'yield',
+};
+
 /// Analyzes schema variables by walking the AST
 ///
 /// This analyzer inspects the AST structure of schema definitions
@@ -305,6 +375,10 @@ class SchemaAstAnalyzer {
       }
 
       final fieldName = key.value;
+
+      // Validate that the field name is a valid Dart identifier
+      _validateFieldName(fieldName, element);
+
       final fieldInfo = _parseFieldValue(fieldName, value, element);
       if (fieldInfo != null) {
         fields.add(fieldInfo);
@@ -1049,6 +1123,38 @@ class SchemaAstAnalyzer {
         return 'List<dynamic>';
       default:
         return 'dynamic';
+    }
+  }
+
+  /// Validates that a field name is a valid Dart identifier
+  ///
+  /// Throws [InvalidGenerationSourceError] if the field name:
+  /// - Contains invalid characters (must match [a-zA-Z_$][a-zA-Z0-9_$]*)
+  /// - Is a Dart reserved keyword
+  void _validateFieldName(String fieldName, Element2 element) {
+    // Check if key is a valid Dart identifier
+    final identifierRegex = RegExp(r'^[a-zA-Z_$][a-zA-Z0-9_$]*$');
+    if (!identifierRegex.hasMatch(fieldName)) {
+      throw InvalidGenerationSourceError(
+        'JSON key "$fieldName" is not a valid Dart identifier. '
+        'Keys must start with a letter, underscore, or dollar sign, and can only '
+        'contain letters, numbers, underscores, and dollar signs.',
+        element: element,
+        todo:
+            'Use a valid Dart identifier as the key, or consider transforming '
+            'the key to a valid identifier (e.g., "user-id" → "userId").',
+      );
+    }
+
+    // Check for reserved keywords
+    if (_dartKeywords.contains(fieldName)) {
+      throw InvalidGenerationSourceError(
+        'JSON key "$fieldName" is a Dart reserved keyword and cannot be used as a field name.',
+        element: element,
+        todo:
+            'Use a different key that is not a Dart reserved keyword, or prefix it '
+            '(e.g., "class" → "classValue" or "klass").',
+      );
     }
   }
 }
