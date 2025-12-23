@@ -15,7 +15,7 @@ class TypeBuilder {
   ///
   /// Returns null if the model should not generate an extension type:
   /// - Discriminated base classes (use sealed classes instead)
-  /// - Primitive schemas (String, int, double, bool) - users can use safeParse() directly
+  /// - Nullable schema variables (representation is non-nullable)
   ExtensionType? buildExtensionType(
     ModelInfo model,
     List<ModelInfo> allModels,
@@ -27,12 +27,6 @@ class TypeBuilder {
 
     // Nullable schema variables can't be safely wrapped (representation is non-nullable).
     if (model.isFromSchemaVariable && model.isNullableSchema) {
-      return null;
-    }
-
-    // Generate extension types for all @AckType models. Non-object schemas
-    // are represented with `_value` and only include parse/safeParse.
-    if (!model.shouldGenerateExtensionType) {
       return null;
     }
 

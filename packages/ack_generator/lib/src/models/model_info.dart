@@ -44,14 +44,6 @@ class ModelInfo {
   /// This only applies to @AckType schema variables (not @AckModel classes).
   final bool isNullableSchema;
 
-  /// Whether an extension type should be generated for this model.
-  ///
-  /// Extension types are generated for all @AckType schemas.
-  /// Object schemas get field getters and copyWith; non-object schemas
-  /// still benefit from typed parse/safeParse wrappers and implement
-  /// their underlying representation type.
-  bool get shouldGenerateExtensionType => true;
-
   const ModelInfo({
     required this.className,
     required this.schemaClassName,
