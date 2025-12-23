@@ -145,19 +145,21 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Supported Schema Types
 ///
-/// Extension types are **only generated for object schemas**:
-/// - **Object schemas**: `Ack.object({...})` → `extension type XType(Map<String, Object?>)`
+/// Extension types are generated for all supported schema types:
 ///
-/// The following schema types are supported but **do not generate extension types**
-/// (use the schema directly via `safeParse()`):
-/// - **String schemas**: `Ack.string()`
-/// - **Integer schemas**: `Ack.integer()`
-/// - **Double schemas**: `Ack.double()`
-/// - **Boolean schemas**: `Ack.boolean()`
-/// - **List schemas**: `Ack.list(T)`
-/// - **Literal schemas**: `Ack.literal('value')`
-/// - **EnumString schemas**: `Ack.enumString([...])`
-/// - **EnumValues schemas**: `Ack.enumValues<T>([...])`
+/// | Schema Type | Generated Extension Type |
+/// |-------------|--------------------------|
+/// | `Ack.object({...})` | `XType(Map<String, Object?>)` with field getters, copyWith, toJson |
+/// | `Ack.string()` | `XType(String)` implements String |
+/// | `Ack.integer()` | `XType(int)` implements int |
+/// | `Ack.double()` | `XType(double)` implements double |
+/// | `Ack.boolean()` | `XType(bool)` implements bool |
+/// | `Ack.list(T)` | `XType(List<T>)` implements List<T> |
+/// | `Ack.literal('value')` | `XType(String)` implements String |
+/// | `Ack.enumString([...])` | `XType(String)` implements String |
+/// | `Ack.enumValues<T>([...])` | `XType(T)` implements T |
+///
+/// All extension types include `parse()` and `safeParse()` factory methods.
 ///
 /// ## Unsupported Schema Types
 ///
@@ -170,7 +172,7 @@ import 'package:meta/meta_meta.dart';
 ///
 /// Extension types work with most schema modifiers:
 /// - ✅ **`.optional()`** - Supported, affects validation
-/// - ✅ **`.nullable()`** - Supported, affects validation (extension type still wraps non-nullable value)
+/// - ⚠️ **`.nullable()`** - Extension type is NOT generated (see Limitations)
 /// - ✅ **`.withDefault()`** - Supported, provides fallback value
 /// - ✅ **`.refine()`** - Supported, adds custom validation
 /// - ⚠️ **`.transform()`** - NOT recommended (changes output type, breaks extension type contract)
@@ -199,6 +201,10 @@ import 'package:meta/meta_meta.dart';
 /// - **Nullable schema variables**: Extension types are not generated for schemas
 ///   marked with `.nullable()` because the representation is non-nullable.
 ///   - Use the schema directly for nullable validation.
+/// - **List element modifiers**: List element types with chained modifiers may not
+///   be fully inferred:
+///   - ✅ `Ack.list(Ack.string())` → `List<String>`
+///   - ⚠️ `Ack.list(Ack.string().nullable())` → `List<dynamic>` (element nullability lost)
 /// - **Transform modifier**: Not supported (changes output type)
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///

@@ -143,5 +143,42 @@ final invalidSchema = Ack.string();
         },
       );
     });
+
+    test('nullable object schemas do not generate extension types', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+// Non-nullable object schema - extension type IS generated
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+});
+
+// Nullable object schema - extension type should NOT be generated
+@AckType()
+final nullableUserSchema = Ack.object({
+  'name': Ack.string(),
+}).nullable();
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              // Non-nullable object SHOULD have extension type
+              contains('extension type UserType(Map<String, Object?> _data)'),
+              // Nullable object should NOT have extension type
+              isNot(contains('extension type NullableUserType')),
+            ]),
+          ),
+        },
+      );
+    });
   });
 }
