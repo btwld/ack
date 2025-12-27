@@ -11,6 +11,16 @@ class SchemaBuilder {
     languageVersion: DartFormatter.latestLanguageVersion,
   );
 
+  /// All models in the current compilation unit, used to look up
+  /// custom schemaClassNames for discriminated subtypes
+  List<ModelInfo> _allModels = [];
+
+  /// Sets the list of all models for cross-referencing subtype schemas
+  void setAllModels(List<ModelInfo> models) {
+    _allModels = models;
+    _fieldBuilder.setAllModels(models);
+  }
+
   String build(ModelInfo model, [String? sourceFileName]) {
     final schemaField = buildSchemaField(model);
 
@@ -82,7 +92,18 @@ class SchemaBuilder {
     for (final entry in subtypes.entries) {
       final discriminatorValue = entry.key;
       final subtypeElement = entry.value;
-      final subtypeSchemaName = _toCamelCase('${subtypeElement.name3}Schema');
+
+      // Look up the subtype's ModelInfo to get its custom schemaClassName
+      // This handles cases where the subtype has a custom schemaName annotation
+      final subtypeModelInfo = _allModels.cast<ModelInfo?>().firstWhere(
+            (m) => m?.className == subtypeElement.name3,
+            orElse: () => null,
+          );
+
+      // Use the subtype's schemaClassName if found, otherwise fall back to default
+      final subtypeSchemaName = subtypeModelInfo != null
+          ? _toCamelCase(subtypeModelInfo.schemaClassName)
+          : _toCamelCase('${subtypeElement.name3}Schema');
 
       schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
     }
@@ -117,6 +138,14 @@ class SchemaBuilder {
     }
 
     for (final field in model.fields) {
+      // Skip the discriminator field for subtypes - it was already added above
+      // This prevents duplicate keys in the generated schema
+      if (model.isDiscriminatedSubtype &&
+          model.discriminatorKey != null &&
+          field.jsonKey == model.discriminatorKey) {
+        continue;
+      }
+
       final fieldSchema = passModelToFieldBuilder
           ? _fieldBuilder.buildFieldSchema(field, model)
           : _fieldBuilder.buildFieldSchema(field);

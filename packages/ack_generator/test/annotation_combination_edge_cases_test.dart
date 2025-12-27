@@ -401,12 +401,11 @@ class ApiUser {
                 contains('.optional()'),
                 contains('.nullable()'),
                 contains(
-                  "'user_role': Ack.string().enumString(['admin', 'user', 'guest'])",
+                  "'user_role': Ack.enumValues<UserRole>(UserRole.values)",
                 ),
-                contains("'subscription_status': Ack.string()"),
-                contains(
-                  ".enumString(['active', 'inactive', 'pending', 'cancelled'])",
-                ),
+                // subscription_status is formatted across lines, check each part
+                contains("'subscription_status': Ack.enumValues<SubscriptionStatus>"),
+                contains('SubscriptionStatus.values'),
                 contains('.optional()'),
                 contains('.nullable()'),
                 contains("'profile_tags': Ack.list(Ack.string())"),
