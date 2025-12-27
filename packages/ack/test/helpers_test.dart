@@ -82,6 +82,25 @@ void main() {
     });
   });
 
+  group('buildDidYouMeanSuggestion', () {
+    final allowed = ['active', 'inactive'];
+
+    test('should return a suggestion with a leading space', () {
+      expect(
+        buildDidYouMeanSuggestion('actve', allowed),
+        ' Did you mean "active"?',
+      );
+    });
+
+    test('should return empty string when no close match is found', () {
+      expect(buildDidYouMeanSuggestion('unknown', allowed), '');
+    });
+
+    test('should return empty string when closest match equals input', () {
+      expect(buildDidYouMeanSuggestion('active', allowed), '');
+    });
+  });
+
   group('deepMerge', () {
     test('should merge maps with no overlapping keys', () {
       final map1 = {'a': 1};

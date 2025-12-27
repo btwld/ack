@@ -129,6 +129,49 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
+  /// Builds a JSON Schema with proper nullable handling.
+  ///
+  /// This helper centralizes the nullable/non-nullable pattern used by most
+  /// schema types. It handles:
+  /// - Adding description to the base schema
+  /// - Wrapping in anyOf with null type when nullable
+  /// - Placing default value at the correct level
+  /// - Merging constraint schemas
+  ///
+  /// [typeSchema] contains type-specific fields (e.g., `{'type': 'string'}`
+  /// or `{'type': 'array', 'items': ...}`).
+  ///
+  /// [serializedDefault] is the already-serialized default value (e.g.,
+  /// enum values should pass `defaultValue?.name`).
+  @protected
+  Map<String, Object?> buildJsonSchemaWithNullable({
+    required Map<String, Object?> typeSchema,
+    Object? serializedDefault,
+  }) {
+    if (isNullable) {
+      final baseSchema = {
+        ...typeSchema,
+        if (description != null) 'description': description,
+      };
+      final mergedSchema = mergeConstraintSchemas(baseSchema);
+      return {
+        if (serializedDefault != null) 'default': serializedDefault,
+        'anyOf': [
+          mergedSchema,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    final schema = {
+      ...typeSchema,
+      if (description != null) 'description': description,
+      if (serializedDefault != null) 'default': serializedDefault,
+    };
+
+    return mergeConstraintSchemas(schema);
+  }
+
   /// Creates a non-nullable constraint error result.
   @protected
   SchemaResult<DartType> failNonNullable(SchemaContext context) {

@@ -113,32 +113,13 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    if (isNullable) {
-      final baseSchema = {
-        'type': 'array',
-        'items': itemSchema.toJsonSchema(),
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (defaultValue != null) 'default': defaultValue,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      'type': 'array',
-      'items': itemSchema.toJsonSchema(),
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
-    };
-
-    return mergeConstraintSchemas(schema);
-  }
+  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
+        typeSchema: {
+          'type': 'array',
+          'items': itemSchema.toJsonSchema(),
+        },
+        serializedDefault: defaultValue,
+      );
 
   @override
   Map<String, Object?> toMap() {

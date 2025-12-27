@@ -64,32 +64,9 @@ final class AnySchema extends AckSchema<Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    // AnySchema accepts anything - use empty schema per JSON Schema standard
-    if (isNullable) {
-      // Nullable any: anyOf with empty schema and null
-      final baseSchema = {
-        if (description != null) 'description': description,
-        // Don't include default in baseSchema - it goes at anyOf level
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (defaultValue != null) 'default': defaultValue,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    // Non-nullable any: empty schema {} means "accepts any value" (but not null)
-    // Metadata fields like description and default are allowed in empty schemas
-    final schema = {
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
-    };
-
-    // Merge constraints into the JSON Schema
-    return mergeConstraintSchemas(schema);
-  }
+  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
+        // Empty typeSchema means "accepts any value" per JSON Schema standard
+        typeSchema: {},
+        serializedDefault: defaultValue,
+      );
 }
