@@ -133,11 +133,7 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_enum',
     description: 'Must be one of: ${values.join(", ")}.',
     customMessageBuilder: (v) {
-      final closest = findClosestStringMatch(v, values);
-      final suggestion = closest != null && closest != v
-          ? ' Did you mean "$closest"?'
-          : '';
-
+      final suggestion = buildDidYouMeanSuggestion(v, values);
       return 'Value "$v" is not one of the allowed values: ${values.map((e) => '"$e"').join(', ')}.$suggestion';
     },
   );
@@ -281,11 +277,7 @@ class PatternConstraint extends Constraint<String>
       PatternType.regex =>
         'Value "$nonNullValue" does not match required pattern${example != null ? " (e.g., $example)" : ""}.',
       PatternType.enumString => () {
-        final closest = findClosestStringMatch(nonNullValue, allowedValues!);
-        final suggestion = closest != null && closest != nonNullValue
-            ? ' Did you mean "$closest"?'
-            : '';
-
+        final suggestion = buildDidYouMeanSuggestion(nonNullValue, allowedValues!);
         return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
       }(),
       PatternType.notEnumString =>

@@ -71,6 +71,27 @@ String? findClosestStringMatch(
   return null; // No sufficiently close match found
 }
 
+/// Builds a "Did you mean...?" suggestion string.
+///
+/// Uses [findClosestStringMatch] to find a similar value, then formats
+/// it as a suggestion with a leading space for appending to error messages.
+///
+/// Returns an empty string if no close match is found, or if the closest
+/// match is identical to the input value.
+///
+/// Example:
+/// ```dart
+/// final suggestion = buildDidYouMeanSuggestion('actve', ['active', 'inactive']);
+/// // Returns: ' Did you mean "active"?'
+/// ```
+String buildDidYouMeanSuggestion(String value, List<String> allowedValues) {
+  final closest = findClosestStringMatch(value, allowedValues);
+  if (closest != null && closest != value) {
+    return ' Did you mean "$closest"?';
+  }
+  return '';
+}
+
 double _calculateStringSimilarity(String a, String b) {
   if (a.isEmpty && b.isEmpty) return 1.0;
   if (a.isEmpty || b.isEmpty) return 0.0;

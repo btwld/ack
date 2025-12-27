@@ -191,8 +191,8 @@ final class ObjectSchema extends AckSchema<MapValue>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final Map<String, Object?> propsJsonSchema = {};
-    final List<String> requiredFields = [];
+    final propsJsonSchema = <String, Object?>{};
+    final requiredFields = <String>[];
 
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
@@ -202,38 +202,18 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    // Convert additionalProperties to match Zod format
     // Zod uses {} (empty schema) for true, false for false
-    final additionalPropertiesValue = additionalProperties ? {} : false;
+    final additionalPropertiesValue = additionalProperties ? <String, Object?>{} : false;
 
-    if (isNullable) {
-      final baseSchema = {
+    return buildJsonSchemaWithNullable(
+      typeSchema: {
         'type': 'object',
         'properties': propsJsonSchema,
         if (requiredFields.isNotEmpty) 'required': requiredFields,
         'additionalProperties': additionalPropertiesValue,
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (defaultValue != null) 'default': defaultValue,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      'type': 'object',
-      'properties': propsJsonSchema,
-      if (requiredFields.isNotEmpty) 'required': requiredFields,
-      'additionalProperties': additionalPropertiesValue,
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
-    };
-
-    return mergeConstraintSchemas(schema);
+      },
+      serializedDefault: defaultValue,
+    );
   }
 
   @override
