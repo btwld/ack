@@ -20,30 +20,10 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
   });
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    if (isNullable) {
-      final baseSchema = {
-        'type': 'number',
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (defaultValue != null) 'default': defaultValue,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      'type': 'number',
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
-    };
-
-    return mergeConstraintSchemas(schema);
-  }
+  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
+        typeSchema: {'type': 'number'},
+        serializedDefault: defaultValue,
+      );
 }
 
 // --- IntegerSchema ---
@@ -100,20 +80,10 @@ final class IntegerSchema extends NumSchema<int>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    final schema = super.toJsonSchema();
-    // Override the type to be 'integer' instead of 'number'
-    // Handle both direct type and anyOf nullable pattern
-    if (schema.containsKey('anyOf')) {
-      final anyOf = schema['anyOf'] as List;
-      final firstOption = anyOf[0] as Map<String, Object?>;
-      firstOption['type'] = 'integer';
-    } else {
-      schema['type'] = 'integer';
-    }
-
-    return schema;
-  }
+  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
+        typeSchema: {'type': 'integer'},
+        serializedDefault: defaultValue,
+      );
 }
 
 // --- DoubleSchema ---
@@ -169,13 +139,6 @@ final class DoubleSchema extends NumSchema<double>
     );
   }
 
-  @override
-  Map<String, Object?> toJsonSchema() {
-    final schema = super.toJsonSchema();
-    // Note: 'double' is not a standard JSON Schema format keyword.
-    // JSON Schema uses 'number' type for all floating point values.
-    // If OpenAPI-specific double precision is needed, use x-openapi-format extension.
-
-    return schema;
-  }
+  // Note: DoubleSchema inherits toJsonSchema() from NumSchema.
+  // JSON Schema uses 'number' type for all floating point values.
 }

@@ -121,30 +121,14 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   Map<String, Object?> toJsonSchema() {
     final enumNames = values.map((e) => e.name).toList();
 
-    if (isNullable) {
-      final baseSchema = {
+    return buildJsonSchemaWithNullable(
+      typeSchema: {
         'type': 'string',
         'enum': enumNames,
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (defaultValue != null) 'default': (defaultValue as T).name,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      'type': 'string',
-      'enum': enumNames,
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': (defaultValue as T).name,
-    };
-
-    return mergeConstraintSchemas(schema);
+      },
+      // Serialize enum default to its name
+      serializedDefault: defaultValue?.name,
+    );
   }
 }
 

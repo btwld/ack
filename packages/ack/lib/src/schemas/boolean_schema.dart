@@ -58,28 +58,8 @@ final class BooleanSchema extends AckSchema<bool>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    if (isNullable) {
-      final baseSchema = {
-        'type': 'boolean',
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (defaultValue != null) 'default': defaultValue,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      'type': 'boolean',
-      if (description != null) 'description': description,
-      if (defaultValue != null) 'default': defaultValue,
-    };
-
-    return mergeConstraintSchemas(schema);
-  }
+  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
+        typeSchema: {'type': 'boolean'},
+        serializedDefault: defaultValue,
+      );
 }
