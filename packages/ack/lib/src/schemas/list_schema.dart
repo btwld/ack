@@ -40,7 +40,19 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
     // Type guard
     if (inputValue is! List) {
-      final actualType = AckSchema.getSchemaType(inputValue);
+      SchemaType actualType;
+      try {
+        actualType = AckSchema.getSchemaType(inputValue);
+      } catch (e, st) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message: 'Unsupported value type: ${inputValue.runtimeType}',
+            context: context,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+      }
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,

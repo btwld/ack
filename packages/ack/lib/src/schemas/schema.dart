@@ -181,7 +181,19 @@ sealed class AckSchema<DartType extends Object> {
     }
 
     final targetType = schemaType;
-    final actualType = AckSchema.getSchemaType(inputValue);
+    SchemaType actualType;
+    try {
+      actualType = AckSchema.getSchemaType(inputValue);
+    } catch (e, st) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Unsupported value type: ${inputValue.runtimeType}',
+          context: context,
+          cause: e,
+          stackTrace: st,
+        ),
+      );
+    }
 
     // Type compatibility check
     if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {

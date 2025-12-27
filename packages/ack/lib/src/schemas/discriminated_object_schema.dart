@@ -45,7 +45,19 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
     // Type guard
     if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
+      SchemaType actualType;
+      try {
+        actualType = AckSchema.getSchemaType(inputValue);
+      } catch (e, st) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message: 'Unsupported value type: ${inputValue.runtimeType}',
+            context: context,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+      }
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
@@ -54,9 +66,26 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         ),
       );
     }
-    final mapValue = inputValue is MapValue
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+    final Map<String, Object?> mapValue;
+    if (inputValue is MapValue) {
+      mapValue = inputValue;
+    } else {
+      final converted = <String, Object?>{};
+      for (final entry in (inputValue as Map).entries) {
+        final key = entry.key;
+        if (key is! String) {
+          return SchemaResult.fail(
+            SchemaValidationError(
+              message:
+                  'Object keys must be strings. Found key of type ${key.runtimeType}.',
+              context: context,
+            ),
+          );
+        }
+        converted[key] = entry.value;
+      }
+      mapValue = converted;
+    }
 
     final Object? discValueRaw = mapValue[discriminatorKey];
 
