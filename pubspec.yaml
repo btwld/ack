@@ -3,6 +3,7 @@ description: ACK workspace root package
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
+  flutter: '>=3.16.0'
 
 workspace:
   - packages/ack
@@ -18,13 +19,10 @@ dev_dependencies:
   very_good_analysis: ^9.0.0
 
 melos:
-
   command:
     version:
       # Generate changelogs for the workspace
       workspaceChangelog: true
-      # Link to GitHub release in changelog
-      linkToCommits: true
       # Message for version commits
       message: "chore(release): publish packages\n\n{new_package_versions}"
       # Exclude example from versioning
@@ -91,11 +89,6 @@ melos:
     ensure_analysis_options:
       run: .scripts/ensure_analysis_options.sh
       description: Ensures each package has DCM configuration in analysis_options.yaml
-
-    # Additional standard Melos commands
-    bs:
-      run: melos bootstrap
-      description: Initialize the workspace with dependencies.
 
     clean:
       run: melos clean
