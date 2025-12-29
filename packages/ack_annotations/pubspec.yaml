@@ -1,6 +1,6 @@
 name: ack_annotations
 description: Annotations for Ack schema code generation
-version: 1.0.0-beta.3
+version: 1.0.0-beta.4
 repository: https://github.com/btwld/ack
 
 environment:

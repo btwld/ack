@@ -1,16 +1,14 @@
 name: ack_json_schema_builder
 description: JSON Schema Builder converter for ACK validation library
-version: 1.0.0-beta.1
+version: 1.0.0-beta.4
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
-publish_to: none
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
-  ack:
-    path: ../ack
+  ack: ^1.0.0-beta.4
   json_schema_builder: ^0.1.3
   meta: ^1.15.0
 
