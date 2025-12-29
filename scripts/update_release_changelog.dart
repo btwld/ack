@@ -34,6 +34,8 @@ void main(List<String> args) {
     'packages/ack/CHANGELOG.md',
     'packages/ack_annotations/CHANGELOG.md',
     'packages/ack_generator/CHANGELOG.md',
+    'packages/ack_firebase_ai/CHANGELOG.md',
+    'packages/ack_json_schema_builder/CHANGELOG.md',
   ];
 
   for (final path in changelogPaths) {
