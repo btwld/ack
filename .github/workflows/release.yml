@@ -8,6 +8,8 @@ on:
 jobs:
   publish:
     uses: btwld/dart-actions/.github/workflows/publish.yml@main
+    permissions:
+      id-token: write
     with:
       packages_folder_path: "packages"
       packages: |
