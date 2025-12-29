@@ -40,7 +40,8 @@ class ModelValidator {
     // Look for self-referential fields that could cause cycles
     for (final field in modelInfo.fields) {
       if (field.isNestedSchema) {
-        final fieldTypeName = field.type.getDisplayString().replaceAll('?', '');
+        // Use withNullability: false to get type name without '?' suffix
+        final fieldTypeName = field.type.getDisplayString(withNullability: false);
         if (fieldTypeName == modelInfo.className) {
           // Direct self-reference is okay if it's nullable
           if (!field.isNullable) {

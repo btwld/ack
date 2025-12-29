@@ -457,7 +457,7 @@ class VariousTypesModel {
                 contains("'decimal_field': Ack.double()"),
                 contains("'boolean_field': Ack.boolean()"),
                 contains(
-                  "'enum_field': Ack.string().enumString(['active', 'inactive'])",
+                  "'enum_field': Ack.enumValues<Status>(Status.values)",
                 ),
                 contains("'list_field': Ack.list(Ack.string())"),
                 contains(
