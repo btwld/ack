@@ -12,6 +12,9 @@ workspace:
   - packages/ack_firebase_ai
   - packages/ack_json_schema_builder
   - example
+  
+dependencies:
+  meta: ^1.15.0
 
 dev_dependencies:
   melos: ^7.3.0
@@ -19,6 +22,13 @@ dev_dependencies:
   very_good_analysis: ^9.0.0
 
 melos:
+  bootstrap:
+    dependencies:
+      meta: ^1.15.0
+    dev_dependencies:
+      lints: ^5.0.0
+      test: ^1.25.15
+
   command:
     version:
       # Generate changelogs for the workspace

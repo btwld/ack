@@ -14,6 +14,7 @@ dependencies:
   collection: ^1.18.0
 
 dev_dependencies:
+  test: ^1.25.15
   coverage: ^1.11.1
   dart_code_metrics_presets: ^2.22.0
   lints: ^5.0.0

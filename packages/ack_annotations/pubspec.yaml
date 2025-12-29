@@ -8,6 +8,6 @@ environment:
   sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
-  meta: ^1.11.0
+  meta: ^1.15.0
 
 dev_dependencies:
