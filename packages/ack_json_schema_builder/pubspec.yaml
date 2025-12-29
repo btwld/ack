@@ -3,6 +3,7 @@ description: JSON Schema Builder converter for ACK validation library
 version: 1.0.0-beta.4
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
+resolution: workspace
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -13,5 +14,5 @@ dependencies:
   meta: ^1.15.0
 
 dev_dependencies:
-  test: ^1.24.0
   lints: ^5.0.0
+

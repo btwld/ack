@@ -1,8 +1,8 @@
-# melos_managed_dependency_overrides: ack,ack_annotations,ack_generator
-dependency_overrides:
-  ack:
-    path: ../packages/ack
-  ack_annotations:
-    path: ../packages/ack_annotations
-  ack_generator:
-    path: ../packages/ack_generator
+# # melos_managed_dependency_overrides: ack,ack_annotations,ack_generator
+# dependency_overrides:
+#   ack:
+#     path: ../packages/ack
+#   ack_annotations:
+#     path: ../packages/ack_annotations
+#   ack_generator:
+#     path: ../packages/ack_generator
