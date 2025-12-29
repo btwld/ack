@@ -14,7 +14,8 @@ void main() {
     setUpAll(() {
       // Find project root (go up from test directory)
       var current = Directory.current;
-      while (!File(p.join(current.path, 'melos.yaml')).existsSync()) {
+
+      while (current.path.contains('packages')) {
         current = current.parent;
       }
       projectRoot = current;

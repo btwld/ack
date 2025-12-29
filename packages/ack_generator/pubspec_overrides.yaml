@@ -1,6 +1,6 @@
 # melos_managed_dependency_overrides: ack,ack_annotations
-dependency_overrides:
-  ack:
-    path: ../ack
-  ack_annotations:
-    path: ../ack_annotations
+# dependency_overrides:
+#   ack:
+#     path: ../ack
+#   ack_annotations:
+#     path: ../ack_annotations
