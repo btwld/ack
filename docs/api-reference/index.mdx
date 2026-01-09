@@ -6,7 +6,7 @@ This page provides a quick reference for the core Ack classes, methods, and anno
 
 ## Core `Ack` Class
 
-Entry point for creating schemas. See [Schema Validation](../core-concepts/typesafe-schemas.mdx).
+Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.mdx).
 
 - `Ack.string()`: Creates a `StringSchema` for validating strings.
 - `Ack.integer()`: Creates an `IntegerSchema` for validating integers.
@@ -54,7 +54,7 @@ Base class for all schema types.
 - `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema Draft-7 representation.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
-See also [Schema Validation](../core-concepts/typesafe-schemas.mdx) for detailed usage examples.
+See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
 
 ## `StringSchema`
 
@@ -107,6 +107,8 @@ Schemas for validating numbers. See [Number Validation](../core-concepts/validat
 
 - `min(num limit)`: Minimum value (inclusive)
 - `max(num limit)`: Maximum value (inclusive)
+- `greaterThan(num limit)`: Must be greater than limit (exclusive)
+- `lessThan(num limit)`: Must be less than limit (exclusive)
 - `positive()`: Must be greater than 0
 - `negative()`: Must be less than 0
 - `multipleOf(num factor)`: Must be a multiple of the factor
@@ -121,9 +123,10 @@ Schema for validating booleans. Validates `true` and `false` values, with option
 
 Schema for validating arrays. See [List Validation](../core-concepts/validation.mdx#list-constraints).
 
-- `minLength(int min)`: Minimum number of items
-- `maxLength(int max)`: Maximum number of items
-- `length(int exact)`: Exact number of items
+- `minItems(int min)`: Minimum number of items (alias: `minLength`)
+- `maxItems(int max)`: Maximum number of items (alias: `maxLength`)
+- `exactLength(int exact)`: Exact number of items (alias: `length`)
+- `nonEmpty()`: List must have at least one item (alias: `notEmpty`)
 - `unique()`: All items must be unique
 
 ## `ObjectSchema`
@@ -137,6 +140,7 @@ Schema for validating objects (maps). See [Object Validation](../core-concepts/s
 - Use `.partial()` to make all properties optional.
 - Use `.strict()` to disallow additional properties.
 - Use `.passthrough()` to allow additional properties not defined in the schema.
+- Use `.merge(ObjectSchema other)` to combine with another object schema.
 
 ## `SchemaResult<T>`
 
@@ -177,7 +181,7 @@ combinators.
 
 ## Code Generation Annotations
 
-Use the [`ack_generator`](../../packages/ack_generator/README.md) builder to
+Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to
 turn annotations into ready-to-use schemas and extension types. After adding
 the annotations below, run:
 
@@ -295,4 +299,4 @@ Every schema can be marked optional through the `optional({bool value = true})` 
 - Use `schema.optional(value: false)` to clear the optional flag.
 - Optional affects object-field presence only; combine with `.nullable()` to also allow explicit `null`.
 
-*Refer to the [Schema Validation](../core-concepts/typesafe-schemas.mdx) guide for detailed usage and examples.*
+*Refer to the [Schema Types](../core-concepts/schemas.mdx) guide for detailed usage and examples.*

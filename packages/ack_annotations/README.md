@@ -8,14 +8,14 @@ Annotation package for the Ack validation ecosystem. Use these annotations on yo
 
 ```yaml
 dependencies:
-  ack_annotations: ^1.0.0-beta.1
+  ack_annotations: ^1.0.0-beta.4
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.1
+  ack_generator: ^1.0.0-beta.4
   build_runner: ^2.4.0
 ```
 
-> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.1`.
+> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.4`.
 
 ---
 

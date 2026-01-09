@@ -133,6 +133,63 @@ Ensures the string is one of the `allowedValues`.
 Ack.enumString(['active', 'inactive', 'pending'])
 ```
 
+### `literal(String value)`
+Ensures the string exactly matches the specified value.
+```dart
+Ack.string().literal('admin')
+```
+
+### `startsWith(String prefix)`
+Ensures the string starts with the given prefix.
+```dart
+Ack.string().startsWith('https://')
+```
+
+### `endsWith(String suffix)`
+Ensures the string ends with the given suffix.
+```dart
+Ack.string().endsWith('.dart')
+```
+
+### `url()`
+Alias for `uri()`. Ensures the string is a valid URL.
+```dart
+Ack.string().url()
+```
+
+### `ip({int? version})`
+Ensures the string is a valid IP address. Optionally specify version 4 or 6.
+```dart
+Ack.string().ip()          // Any IP (v4 or v6)
+Ack.string().ip(version: 4) // IPv4 only
+Ack.string().ip(version: 6) // IPv6 only
+```
+
+## String Transformations
+
+These methods transform the string value during parsing. They don't add validation constraints but modify the output value.
+
+### `trim()`
+Removes leading and trailing whitespace from the string.
+```dart
+Ack.string().trim()
+// "  hello  " → "hello"
+```
+
+### `toLowerCase()`
+Converts the string to lowercase.
+```dart
+Ack.string().toLowerCase()
+// "HELLO" → "hello"
+```
+
+### `toUpperCase()`
+Converts the string to uppercase.
+```dart
+Ack.string().toUpperCase()
+// "hello" → "HELLO"
+```
+
 ## Number Constraints (Int and Double)
 
 Apply these to [`Ack.integer()`](./schemas.mdx#number-schemas) and [`Ack.double()`](./schemas.mdx#number-schemas) schemas.
@@ -170,6 +227,18 @@ Ensures the number is negative (less than 0).
 ```dart
 Ack.integer().negative() // < 0
 Ack.double().negative() // < 0.0
+```
+
+### `safe()` (Integer only)
+Ensures the integer is within the safe integer range for JavaScript interoperability (-2^53+1 to 2^53-1).
+```dart
+Ack.integer().safe()
+```
+
+### `finite()` (Double only)
+Ensures the double is a finite number (not `infinity` or `NaN`).
+```dart
+Ack.double().finite()
 ```
 
 ## List Constraints

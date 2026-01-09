@@ -19,15 +19,15 @@ Add the following dependencies to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.0.0-beta.1
-  ack_annotations: ^1.0.0-beta.1
+  ack: ^1.0.0-beta.4
+  ack_annotations: ^1.0.0-beta.4
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.1
+  ack_generator: ^1.0.0-beta.4
   build_runner: ^2.4.0
 ```
 
-> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.1`.
+> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.4`.
 
 Run `dart pub get` to install the packages.
 

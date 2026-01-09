@@ -1125,7 +1125,7 @@ dart test  # or flutter test if using Flutter
 
 ## Contributing
 
-For contribution guidelines, see [CONTRIBUTING.md](../../CONTRIBUTING.md) in the root repository.
+For contribution guidelines, see the [CONTRIBUTING.md](https://github.com/btwld/ack/blob/main/CONTRIBUTING.md) in the root repository.
 
 ## License
 
