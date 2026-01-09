@@ -1,0 +1,896 @@
+# Ack - Schema Validation Library for Dart
+
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.4.
+
+## Overview
+
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.4 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
+
+**Repository**: https://github.com/btwld/ack
+**Documentation**: https://docs.page/btwld/ack
+**Dart SDK**: >=3.8.0 <4.0.0
+
+## Core Concepts
+
+### What Ack Solves
+
+- Simplifies complex data validation logic
+- Ensures data integrity from external sources (APIs, JSON, user input)
+- Provides a single source of truth for data structures and validation rules
+- Reduces boilerplate code for validation and JSON conversion
+- Offers runtime type safety through generated schemas and extension types
+
+### Package Architecture
+
+**Core Packages:**
+1. **`ack`**: Runtime validation library with fluent schema building and validation APIs
+2. **`ack_annotations`**: Provides `@AckModel`, `@AckType`, and constraint annotations for code generation
+3. **`ack_generator`**: Analyzes annotated elements and generates `.g.dart` files with schemas and extension types
+
+**Adapter Packages (optional):**
+4. **`ack_firebase_ai`**: Converts schemas to Firebase AI (Gemini) format for structured LLM output
+5. **`ack_json_schema_builder`**: Converts schemas to JSON Schema Draft 2020-12 format
+
+---
+
+## Schema Definition
+
+### Entry Point: The `Ack` Class
+
+All schemas are created through the `Ack` entry point class with static factory methods:
+
+```dart
+import 'package:ack/ack.dart';
+
+// Primitive schemas
+Ack.string()      // StringSchema
+Ack.integer()     // IntegerSchema
+Ack.double()      // DoubleSchema
+Ack.boolean()     // BooleanSchema
+Ack.any()         // AnySchema (accepts any non-null value)
+
+// Composite schemas
+Ack.object({...})                              // ObjectSchema
+Ack.list(itemSchema)                           // ListSchema<T>
+Ack.discriminated(discriminatorKey: ..., schemas: {...})  // DiscriminatedObjectSchema
+Ack.anyOf([schema1, schema2])                  // AnyOfSchema
+
+// Enum schemas
+Ack.enumString(['val1', 'val2'])               // StringSchema with enum constraint
+Ack.enumValues(MyEnum.values)                  // EnumSchema<T>
+Ack.literal('exactValue')                      // StringSchema matching exact value
+
+// Date/Time schemas (with transformation)
+Ack.date()                                     // Parses ISO 8601 date (YYYY-MM-DD) → DateTime
+Ack.datetime()                                 // Parses ISO 8601 datetime → DateTime
+```
+
+### Object Schema Example
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).max(120).optional(),
+  'role': Ack.enumString(['admin', 'user', 'guest']),
+  'active': Ack.boolean(),
+});
+```
+
+---
+
+## Schema Modifiers and Constraints
+
+### Optionality and Nullability
+
+```dart
+// Required field (default) - must be present and non-null
+'name': Ack.string(),
+
+// Optional field - can be omitted entirely from input
+'nickname': Ack.string().optional(),
+
+// Nullable field - must be present but can be null
+'middleName': Ack.string().nullable(),
+
+// Optional AND nullable - can be omitted or present as null
+'suffix': Ack.string().optional().nullable(),
+```
+
+### String Constraints
+
+```dart
+Ack.string()
+  .minLength(3)             // Minimum length
+  .maxLength(50)            // Maximum length
+  .email()                  // Email format validation
+  .url()                    // URL format validation
+  .matches(r'^[A-Z]+$')     // Custom regex pattern
+  .enumString(['a', 'b'])   // Allowed values
+  .literal('exact')         // Exact value match
+```
+
+### Numeric Constraints
+
+```dart
+Ack.integer()
+  .min(0)                   // Minimum value (inclusive)
+  .max(100)                 // Maximum value (inclusive)
+  .positive()               // Greater than 0
+  .multipleOf(5)            // Must be divisible by value
+
+Ack.double()
+  .min(0.01)                // Works with decimals
+  .max(999.99)
+  .positive()
+```
+
+### List Constraints
+
+```dart
+Ack.list(Ack.string())
+  .minLength(1)             // Minimum items
+  .maxLength(10)            // Maximum items
+```
+
+### Default Values
+
+```dart
+'status': Ack.enumString(['draft', 'published']).withDefault('draft'),
+'count': Ack.integer().withDefault(0),
+```
+
+### Custom Validation with Refinements
+
+```dart
+final passwordSchema = Ack.string()
+  .minLength(8)
+  .refine(
+    (value) => RegExp(r'[A-Z]').hasMatch(value),
+    message: 'Password must contain at least one uppercase letter',
+  );
+
+final ageSchema = Ack.integer()
+  .min(0)
+  .refine(
+    (age) => age < 150,
+    message: 'Age must be realistic',
+  );
+```
+
+### Transformations
+
+```dart
+// Transform validated value to different type
+final dateSchema = Ack.string()
+  .minLength(10)
+  .transform<DateTime>((value) => DateTime.parse(value!));
+```
+
+---
+
+## Three Approaches to Schema Definition
+
+### Approach 1: Inline Fluent Schemas (Simple Cases)
+
+Best for simple, single-use validation scenarios:
+
+```dart
+final loginSchema = Ack.object({
+  'username': Ack.string().minLength(3),
+  'password': Ack.string().minLength(8),
+});
+
+// Usage
+final result = loginSchema.safeParse(data);
+```
+
+### Approach 2: @AckModel on Classes (Structured Models)
+
+Best for complex models with multiple fields. Generates **schema variables only** (not extension types) from class definitions:
+
+**Important**: `@AckModel` generates schemas, not extension types. To get type-safe extension types for a class-defined schema, you must use `@AckType` on a schema variable instead (see Approach 3).
+
+```dart
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.g.dart';
+
+@AckModel(description: 'User account model')
+class User {
+  @MinLength(3)
+  @MaxLength(50)
+  final String username;
+
+  @Email()
+  final String email;
+
+  @Min(0)
+  @Max(150)
+  final int? age;
+
+  @EnumString(['admin', 'user', 'guest'])
+  final String role;
+
+  @Pattern(r'^[A-Z]{2}-\d{4}$')
+  final String code;
+
+  User({...});
+}
+
+// Generated in user.g.dart:
+// final userSchema = Ack.object({
+//   'username': Ack.string().minLength(3).maxLength(50),
+//   'email': Ack.string().email(),
+//   'age': Ack.integer().min(0).max(150).optional().nullable(),
+//   'role': Ack.string().enumString(['admin', 'user', 'guest']),
+//   'code': Ack.string().matches(r'^[A-Z]{2}-\d{4}$'),
+// });
+```
+
+### Approach 3: @AckType on Schema Variables (Extension Types)
+
+Best for when you want type-safe extension types generated for your schemas:
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'schemas.g.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'age': Ack.integer(),
+  'active': Ack.boolean(),
+});
+
+// Generated in schemas.g.dart:
+// extension type UserType(Map<String, Object?> _data)
+//     implements Map<String, Object?> {
+//   static UserType parse(Object? data) { ... }
+//   static SchemaResult<UserType> safeParse(Object? data) { ... }
+//
+//   String get name => _data['name'] as String;
+//   int get age => _data['age'] as int;
+//   bool get active => _data['active'] as bool;
+//
+//   UserType copyWith({String? name, int? age, bool? active}) { ... }
+// }
+```
+
+---
+
+## Best Practices: Schema Composition
+
+Extract nested schemas into variables. This makes schemas readable, editable, and reusable.
+
+**❌ Avoid deeply nested inline schemas:**
+
+```dart
+final personSchema = Ack.object({
+  'name': Ack.string(),
+  'address': Ack.object({  // Inline - hard to edit, can't reuse
+    'street': Ack.string(),
+    'city': Ack.string(),
+  }),
+});
+```
+
+**✅ Compose from separate schema variables:**
+
+```dart
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+});
+
+final personSchema = Ack.object({
+  'name': Ack.string(),
+  'address': addressSchema,  // Reference - clean, reusable
+});
+```
+
+### Lists with Object Items
+
+```dart
+final itemSchema = Ack.object({
+  'id': Ack.string(),
+  'qty': Ack.integer().min(1),
+});
+
+final cartSchema = Ack.object({
+  'items': Ack.list(itemSchema),  // Not Ack.list(Ack.object({...}))
+});
+```
+
+### Reusable Primitives
+
+```dart
+final emailSchema = Ack.string().email();
+final priceSchema = Ack.double().min(0);
+
+final userSchema = Ack.object({
+  'email': emailSchema,
+});
+
+final productSchema = Ack.object({
+  'price': priceSchema,
+});
+```
+
+---
+
+## Extension Types (Map Extension Types)
+
+### What Are Extension Types?
+
+Extension types are Dart 3 zero-cost type-safe wrappers over validated data. They provide:
+
+- **Type Safety**: No runtime casts needed, compile-time type checking
+- **Zero Cost**: Extension types have no runtime overhead
+- **Ergonomics**: IDE autocomplete and type inference
+- **Map Interface**: Implements `Map<String, Object?>` for direct access to underlying data
+
+**Note**: Extension types wrap mutable maps. The underlying data can be mutated through the Map interface. For true immutability, create a copy of the data before modifications.
+
+### Generated Structure for Object Schemas
+
+```dart
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'age': Ack.integer(),
+  'active': Ack.boolean(),
+});
+
+// Generates:
+extension type UserType(Map<String, Object?> _data)
+    implements Map<String, Object?> {
+  // Factory methods
+  static UserType parse(Object? data) {
+    final validated = userSchema.parse(data);
+    return UserType(validated as Map<String, Object?>);
+  }
+
+  static SchemaResult<UserType> safeParse(Object? data) {
+    final result = userSchema.safeParse(data);
+    return result.match(
+      onOk: (validated) =>
+          SchemaResult.ok(UserType(validated as Map<String, Object?>)),
+      onFail: (error) => SchemaResult.fail(error),
+    );
+  }
+
+  // Type-safe getters
+  String get name => _data['name'] as String;
+  int get age => _data['age'] as int;
+  bool get active => _data['active'] as bool;
+
+  // Utility methods
+  UserType copyWith({String? name, int? age, bool? active}) {
+    return UserType.parse({
+      'name': name ?? this.name,
+      'age': age ?? this.age,
+      'active': active ?? this.active,
+    });
+  }
+}
+```
+
+### Generated Structure for Primitive Schemas
+
+```dart
+@AckType()
+final passwordSchema = Ack.string().minLength(8);
+
+// Generates:
+extension type PasswordType(String _value) implements String {
+  static PasswordType parse(Object? data) {
+    final validated = passwordSchema.parse(data);
+    return PasswordType(validated as String);
+  }
+
+  static SchemaResult<PasswordType> safeParse(Object? data) {
+    final result = passwordSchema.safeParse(data);
+    return result.match(
+      onOk: (validated) => SchemaResult.ok(PasswordType(validated as String)),
+      onFail: (error) => SchemaResult.fail(error),
+    );
+  }
+}
+```
+
+### Generated Structure for List Schemas
+
+```dart
+@AckType()
+final tagsSchema = Ack.list(Ack.string());
+
+// Generates:
+extension type TagsType(List<String> _value) implements List<String> {
+  static TagsType parse(Object? data) { ... }
+  static SchemaResult<TagsType> safeParse(Object? data) { ... }
+}
+```
+
+### Generated Structure for Enum Schemas
+
+```dart
+enum UserRole { admin, user, guest }
+
+@AckType()
+final userRoleSchema = Ack.enumValues(UserRole.values);
+
+// Generates:
+extension type UserRoleType(UserRole _value) implements UserRole {
+  static UserRoleType parse(Object? data) { ... }
+  static SchemaResult<UserRoleType> safeParse(Object? data) { ... }
+}
+```
+
+### Using Extension Types
+
+```dart
+// Parse with throwing API
+final user = UserType.parse({'name': 'Alice', 'age': 30, 'active': true});
+print(user.name);    // Type-safe: String
+print(user.age);     // Type-safe: int
+print(user.active);  // Type-safe: bool
+
+// Parse with safe API (Result type)
+final result = UserType.safeParse(data);
+result.match(
+  onOk: (user) => print('Valid: ${user.name}'),
+  onFail: (error) => print('Error: $error'),
+);
+
+// Immutable updates via copyWith (re-validates through parse)
+final updated = user.copyWith(age: 31);
+
+// Serialization - extension type IS the Map (implements Map<String, Object?>)
+final json = user;  // Use directly, no conversion needed
+// Or cast if explicit Map type is needed:
+final Map<String, Object?> jsonMap = user;
+```
+
+---
+
+## Discriminated Unions (Polymorphic Types)
+
+For polymorphic data validation based on a discriminator field:
+
+```dart
+// Base class with discriminator key
+@AckModel(discriminatedKey: 'type')
+abstract class Animal {
+  String get type;
+}
+
+// Concrete implementations with discriminator values
+@AckModel(discriminatedValue: 'cat')
+class Cat extends Animal {
+  @override
+  String get type => 'cat';
+  final bool meow;
+  final int lives;
+  Cat({required this.meow, this.lives = 9});
+}
+
+@AckModel(discriminatedValue: 'dog')
+class Dog extends Animal {
+  @override
+  String get type => 'dog';
+  final bool bark;
+  final String breed;
+  Dog({required this.bark, required this.breed});
+}
+
+// Generated:
+// final animalSchema = Ack.discriminated(
+//   discriminatorKey: 'type',
+//   schemas: {
+//     'cat': catSchema,
+//     'dog': dogSchema,
+//   },
+// );
+//
+// final catSchema = Ack.object({
+//   'type': Ack.literal('cat'),
+//   'meow': Ack.boolean(),
+//   'lives': Ack.integer(),
+// });
+//
+// final dogSchema = Ack.object({
+//   'type': Ack.literal('dog'),
+//   'bark': Ack.boolean(),
+//   'breed': Ack.string(),
+// });
+```
+
+### Usage
+
+```dart
+// Validates based on discriminator
+final catData = {'type': 'cat', 'meow': true, 'lives': 9};
+final dogData = {'type': 'dog', 'bark': true, 'breed': 'Labrador'};
+
+animalSchema.parse(catData);  // Validates against catSchema
+animalSchema.parse(dogData);  // Validates against dogSchema
+```
+
+---
+
+## Additional Properties
+
+Allow extra fields not defined in the schema to pass validation:
+
+```dart
+@AckModel(
+  additionalProperties: true,
+  additionalPropertiesField: 'metadata',
+)
+class Product {
+  final String id;
+  final String name;
+  final Map<String, dynamic> metadata;  // Excluded from schema generation
+
+  Product({required this.id, required this.name, this.metadata = const {}});
+}
+```
+
+**Important**: The `additionalPropertiesField` parameter specifies a field to **exclude from schema generation**, not a field that automatically receives extra properties. When `additionalProperties: true` is set:
+- The generated schema will allow any additional properties beyond `id` and `name`
+- The `metadata` field is simply skipped during schema generation
+- Extra properties in the validated data remain in the underlying Map
+
+To access additional properties from a validated extension type, use the `args` getter (generated when `additionalProperties: true`):
+
+```dart
+@AckType()
+final productSchema = Ack.object(
+  {
+    'id': Ack.string(),
+    'name': Ack.string(),
+  },
+  additionalProperties: true,
+);
+
+// Usage
+final product = ProductType.parse({
+  'id': '123',
+  'name': 'Widget',
+  'brand': 'Acme',  // Additional property
+});
+
+print(product.id);       // '123'
+print(product.args);     // {'brand': 'Acme'} - additional properties only
+```
+
+---
+
+## Validation and Error Handling
+
+### Parsing Methods
+
+```dart
+// Throwing API - throws AckException on failure
+try {
+  final result = schema.parse(data);
+} catch (e) {
+  print('Validation failed: $e');
+}
+
+// Result API (recommended) - explicit error handling
+final result = schema.safeParse(data);
+if (result.isOk) {
+  final value = result.getOrNull();
+} else {
+  final error = result.getError();
+}
+
+// Pattern matching
+result.match(
+  onOk: (value) => print('Valid: $value'),
+  onFail: (error) => print('Error: $error'),
+);
+```
+
+### SchemaResult Type
+
+```dart
+sealed class SchemaResult<T extends Object> {
+  bool get isOk;
+  bool get isFail;
+
+  // Value access
+  T? getOrNull();                              // Returns value or null if failed
+  T? getOrThrow();                             // Returns value or throws AckException
+  T? getOrElse(T? Function() orElse);          // Returns value or result of orElse()
+  SchemaError getError();                      // Returns error (throws if Ok)
+
+  // Pattern matching
+  R match<R>({
+    required R Function(T? value) onOk,
+    required R Function(SchemaError error) onFail,
+  });
+
+  // Side effects
+  void ifOk(void Function(T? value) action);   // Execute action if successful
+  void ifFail(void Function(SchemaError error) action);  // Execute action if failed
+}
+```
+
+---
+
+## Code Generation Setup
+
+### Dependencies
+
+```yaml
+# pubspec.yaml
+dependencies:
+  ack: ^1.0.0-beta.4
+  ack_annotations: ^1.0.0-beta.4
+
+dev_dependencies:
+  ack_generator: ^1.0.0-beta.4
+  build_runner: ^2.4.0
+```
+
+### Build Configuration
+
+```yaml
+# build.yaml (optional - for customization)
+targets:
+  $default:
+    builders:
+      ack_generator:
+        enabled: true
+```
+
+### Running Code Generation
+
+```bash
+# One-time generation
+dart run build_runner build
+
+# Watch mode (continuous regeneration)
+dart run build_runner watch
+
+# Clean and rebuild
+dart run build_runner build --delete-conflicting-outputs
+```
+
+---
+
+## Available Constraint Annotations
+
+### String Constraints
+
+| Annotation | Description | Example |
+|------------|-------------|---------|
+| `@MinLength(n)` | Minimum string length | `@MinLength(3)` |
+| `@MaxLength(n)` | Maximum string length | `@MaxLength(50)` |
+| `@Email()` | Email format validation | `@Email()` |
+| `@Url()` | URL format validation | `@Url()` |
+| `@Pattern(regex)` | Custom regex pattern | `@Pattern(r'^[A-Z]+$')` |
+| `@EnumString([...])` | Allowed string values | `@EnumString(['a', 'b'])` |
+
+### Numeric Constraints
+
+| Annotation | Description | Example |
+|------------|-------------|---------|
+| `@Min(n)` | Minimum value (inclusive) | `@Min(0)` |
+| `@Max(n)` | Maximum value (inclusive) | `@Max(100)` |
+| `@Positive()` | Must be greater than 0 | `@Positive()` |
+| `@MultipleOf(n)` | Must be divisible by n | `@MultipleOf(5)` |
+
+### List Constraints
+
+| Annotation | Description | Example |
+|------------|-------------|---------|
+| `@MinItems(n)` | Minimum number of items | `@MinItems(1)` |
+| `@MaxItems(n)` | Maximum number of items | `@MaxItems(10)` |
+
+---
+
+## JSON Schema Export
+
+Every schema can be exported to JSON Schema Draft-7:
+
+```dart
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(0).optional(),
+});
+
+final jsonSchema = userSchema.toJsonSchema();
+// {
+//   "type": "object",
+//   "properties": {
+//     "name": {"type": "string", "minLength": 2},
+//     "email": {"type": "string", "format": "email"},
+//     "age": {"type": "integer", "minimum": 0}
+//   },
+//   "required": ["name", "email"]
+// }
+```
+
+---
+
+## Adapter Packages (Schema Converters)
+
+Ack provides adapter packages to convert schemas to formats required by other libraries and services.
+
+### Firebase AI (Gemini) - `ack_firebase_ai`
+
+Converts Ack schemas to Firebase AI Schema format for structured output generation with Gemini models.
+
+```yaml
+# pubspec.yaml
+dependencies:
+  ack_firebase_ai: ^1.0.0-beta.4
+```
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_firebase_ai/ack_firebase_ai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'age': Ack.integer().min(0),
+});
+
+// Convert to Firebase AI Schema for Gemini structured output
+final firebaseSchema = userSchema.toFirebaseAiSchema();
+
+// Use with Gemini model for structured responses
+final model = FirebaseVertexAI.instance.generativeModel(
+  model: 'gemini-1.5-flash',
+  generationConfig: GenerationConfig(
+    responseMimeType: 'application/json',
+    responseSchema: firebaseSchema,
+  ),
+);
+```
+
+### JSON Schema Builder - `ack_json_schema_builder`
+
+Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12 validation and documentation.
+
+```yaml
+# pubspec.yaml
+dependencies:
+  ack_json_schema_builder: ^1.0.0-beta.4
+```
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_json_schema_builder/ack_json_schema_builder.dart';
+
+final schema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'age': Ack.integer().min(0).optional(),
+});
+
+// Convert to json_schema_builder Schema (Draft 2020-12)
+final jsbSchema = schema.toJsonSchemaBuilder();
+```
+
+### Package Summary
+
+| Package | Purpose | Extension Method |
+|---------|---------|------------------|
+| `ack` | Core validation | `.toJsonSchema()` (Draft-7) |
+| `ack_firebase_ai` | Gemini structured output | `.toFirebaseAiSchema()` |
+| `ack_json_schema_builder` | JSON Schema 2020-12 | `.toJsonSchemaBuilder()` |
+
+### Creating Custom Schema Converters
+
+Ack supports creating custom adapter packages for other schema systems (OpenAPI, GraphQL, Protobuf, TypeBox, etc.).
+
+**Package naming convention**: `ack_<target_system>`
+
+**Architecture pattern**:
+1. Create extension method on `AckSchema` (e.g., `.toOpenApiSchema()`)
+2. Use `schema.toJsonSchemaModel()` to get canonical intermediate representation
+3. Convert `JsonSchema` model to target format
+
+```dart
+// Example: Custom adapter structure
+import 'package:ack/ack.dart';
+
+extension OpenApiSchemaExtension on AckSchema {
+  Map<String, Object?> toOpenApiSchema() {
+    final jsonSchema = toJsonSchemaModel();  // Get canonical model
+    return _convertToOpenApi(jsonSchema);    // Convert to target
+  }
+}
+```
+
+**Potential target systems** (create your own adapter):
+- OpenAPI 3.0/3.1 schemas
+- GraphQL SDL types
+- Protocol Buffer definitions
+- TypeBox schemas (JavaScript interop)
+- Zod schemas (JavaScript interop)
+- AJV JSON Schema validators
+
+See `docs/guides/creating-schema-converter-packages.md` for complete implementation guide with templates, testing patterns, and best practices.
+
+---
+
+## Migration from 0.3 Alpha
+
+### Breaking Changes in 1.0.0
+
+**Removed**: `model: bool` parameter from `@AckModel` annotation
+**Removed**: `SchemaModel` base class and automatic model class generation
+**Impact**: Code now focuses exclusively on schema generation and validation
+
+### Before (0.3 alpha)
+
+```dart
+@AckModel(model: true)
+class User { ... }
+
+final result = userSchemaModel.parse(data);
+if (result.isOk) {
+  final user = userSchemaModel.value!;  // Type: User
+}
+```
+
+### After (1.0 beta)
+
+```dart
+@AckModel()
+class User { ... }
+
+// Direct schema usage (only option with @AckModel - no extension type generated)
+final result = userSchema.parse(data) as Map<String, dynamic>;
+
+// To get extension types, define schema with @AckType instead:
+@AckType()
+final userSchema = Ack.object({...});
+
+// Then use the generated extension type
+final user = UserType.parse(data);  // Zero-cost type-safe wrapper
+print(user.name);  // Direct typed access
+```
+
+---
+
+## Quick Reference
+
+### When to Use Each Approach
+
+| Scenario | Approach | Annotation |
+|----------|----------|------------|
+| Simple one-off validation | Inline schema | None |
+| Class with constraints | `@AckModel` | Class annotation |
+| Reusable schema variable | `@AckType` | Variable annotation |
+| Type-safe validated data | `@AckType` | Generates extension type |
+| Polymorphic/discriminated | `@AckModel` | With `discriminatedKey`/`discriminatedValue` |
+
+### Naming Conventions
+
+| Source | Annotation | Generated Schema | Generated Type |
+|--------|------------|------------------|----------------|
+| `class User` | `@AckModel` | `userSchema` | None |
+| `final userSchema` | `@AckType` | (as-is) | `UserType` |
+| `final passwordSchema` | `@AckType` | (as-is) | `PasswordType` |
+
+**Note**: `@AckModel` on classes generates schemas only. `@AckType` on schema variables generates extension types.
+
+### Method Chaining Support with @AckType
+
+| Modifier | Supported | Notes |
+|----------|-----------|-------|
+| `.optional()` | Yes | Affects validation |
+| `.nullable()` | Yes | Affects validation |
+| `.withDefault()` | Yes | Provides fallback |
+| `.refine()` | Yes | Custom validation |
+| `.transform()` | No | Changes output type |
