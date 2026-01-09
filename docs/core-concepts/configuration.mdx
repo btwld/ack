@@ -97,7 +97,7 @@ final signUpSchema = Ack.object({
 
 The `ack_generator` package provides automatic schema generation from annotated classes. This feature is production-ready and available at version 1.0.0-beta.1 and later.
 
-To use code generation, annotate your classes with `@AckModel`. The generator creates both a validation schema and a type-safe extension type. Use `@AckField` for field-level constraints:
+To use code generation, annotate your classes with `@AckModel`. The generator creates a validation schema from your class structure. Use `@AckField` for field-level constraints:
 
 ```dart
 import 'package:ack_annotations/ack_annotations.dart';
