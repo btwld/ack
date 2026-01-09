@@ -193,11 +193,9 @@ dart run build_runner build
 
 **Target**: Dart classes
 
-**Generates**: Both a schema constant AND an extension type
+**Generates**: A schema constant only
 
-Annotate a Dart class to automatically generate a validation schema and a strongly typed extension type. The generator analyzes your class fields and creates:
-- A schema constant named `<className>Schema` (e.g., `userSchema`)
-- An extension type named `<ClassName>Type` (e.g., `UserType`)
+Annotate a Dart class to automatically generate a validation schema. The generator analyzes your class fields and creates a schema constant named `<className>Schema` (e.g., `userSchema`).
 
 **Parameters:**
 - `schemaName`: Custom name for the generated schema constant
@@ -219,11 +217,13 @@ class User {
 
 // Generated:
 // - final userSchema = Ack.object({...});
-// - extension type UserType(Map<String, Object?> _data) { ... }
 
 // Usage:
-final user = UserType.parse({'name': 'Alice', 'age': 30});
-print(user.name); // Type-safe String access
+final result = userSchema.safeParse({'name': 'Alice', 'age': 30});
+if (result.isOk) {
+  final data = result.getOrThrow();
+  print(data['name']); // 'Alice'
+}
 ```
 
 ### `@AckType()`

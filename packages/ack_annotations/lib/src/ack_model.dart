@@ -1,14 +1,14 @@
 import 'package:meta/meta_meta.dart';
 
-/// Annotation to mark a class for schema and extension type generation.
+/// Annotation to mark a class for schema generation.
 ///
-/// Generates both a schema for validation and an extension type for type-safe access.
-/// For schema variables, use [@AckType] instead.
+/// Generates a schema constant for validating data against your class structure.
+/// For type-safe access to validated data, use [@AckType] on schema variables.
 ///
 /// This annotation can be used in two main ways:
 ///
 /// ## Regular Models
-/// Generate schema validation and extension type for a class:
+/// Generate schema validation for a class:
 /// ```dart
 /// @AckModel()
 /// class User {
