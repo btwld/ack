@@ -3,8 +3,8 @@ import 'package:meta/meta_meta.dart';
 /// Annotation to generate extension types for validated data.
 ///
 /// **Note:** This annotation should only be used on schema variables and getters,
-/// not on classes. For classes, use [@AckModel] which automatically generates
-/// both schemas and extension types.
+/// not on classes. For classes, use [@AckModel] to generate the schema, then
+/// use [@AckType] on the generated schema variable for extension types.
 ///
 /// Can be applied to:
 /// - Schema variable declarations (extracts types from schema AST)
