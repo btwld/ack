@@ -15,19 +15,24 @@ The generator handles:
 
 ## Installation
 
-Add the following dependencies to your `pubspec.yaml`:
+Add the following dependencies to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for the latest versions):
 
 ```yaml
 dependencies:
-  ack: ^1.0.0-beta.4
-  ack_annotations: ^1.0.0-beta.4
+  ack: ^1.0.0
+  ack_annotations: ^1.0.0
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.4
+  ack_generator: ^1.0.0
   build_runner: ^2.4.0
 ```
 
-> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.4`.
+Or use the Dart CLI:
+
+```bash
+dart pub add ack ack_annotations
+dart pub add --dev ack_generator build_runner
+```
 
 Run `dart pub get` to install the packages.
 

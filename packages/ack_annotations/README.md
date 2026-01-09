@@ -6,16 +6,23 @@ Annotation package for the Ack validation ecosystem. Use these annotations on yo
 
 ## Installation
 
+Add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack_annotations) for the latest versions):
+
 ```yaml
 dependencies:
-  ack_annotations: ^1.0.0-beta.4
+  ack_annotations: ^1.0.0
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.4
+  ack_generator: ^1.0.0
   build_runner: ^2.4.0
 ```
 
-> Still on the 0.3 alpha line? Use `^0.3.0-alpha.0` for all Ack packages until you migrate to `1.0.0-beta.4`.
+Or use the Dart CLI:
+
+```bash
+dart pub add ack_annotations
+dart pub add --dev ack_generator build_runner
+```
 
 ---
 
@@ -128,7 +135,7 @@ Mix and match annotation-based constraints with the string list syntax from `@Ac
 
 ## Working With build_runner
 
-1. Make sure all Ack packages are on matching versions (either the 0.3 alpha train or the 1.0.0 release).
+1. Make sure all Ack packages are on matching versions.
 2. Run `dart run build_runner build --delete-conflicting-outputs` after changing annotated classes.
 3. For continuous development, `dart run build_runner watch` keeps schemas in sync.
 

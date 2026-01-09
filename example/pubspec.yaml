@@ -9,10 +9,10 @@ environment:
   sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
-  ack: ^1.0.0-beta.4
+  ack: any
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.4
+  ack_generator: any
   build_runner: ^2.4.0
   dart_code_metrics_presets: ^2.22.0
   lints: ^5.0.0
