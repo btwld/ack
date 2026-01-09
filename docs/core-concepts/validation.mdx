@@ -195,17 +195,31 @@ Ack.string().toUpperCase()
 Apply these to [`Ack.integer()`](./schemas.mdx#number-schemas) and [`Ack.double()`](./schemas.mdx#number-schemas) schemas.
 
 ### `min(num limit)`
-Ensures the number is greater than or equal to the `limit`.
+Ensures the number is greater than or equal to the `limit` (inclusive).
 ```dart
 Ack.integer().min(0) // >= 0
 Ack.double().min(0.0) // >= 0.0
 ```
 
 ### `max(num limit)`
-Ensures the number is less than or equal to the `limit`.
+Ensures the number is less than or equal to the `limit` (inclusive).
 ```dart
 Ack.integer().max(100) // <= 100
 Ack.double().max(100.0) // <= 100.0
+```
+
+### `greaterThan(num limit)`
+Ensures the number is strictly greater than the `limit` (exclusive).
+```dart
+Ack.integer().greaterThan(0) // > 0
+Ack.double().greaterThan(0.0) // > 0.0
+```
+
+### `lessThan(num limit)`
+Ensures the number is strictly less than the `limit` (exclusive).
+```dart
+Ack.integer().lessThan(100) // < 100
+Ack.double().lessThan(100.0) // < 100.0
 ```
 
 ### `multipleOf(num factor)`
