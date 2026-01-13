@@ -139,7 +139,8 @@ extension type PersonType(Map<String, Object?> _data)
 
   String get email => _data['email'] as String;
 
-  Map<String, Object?> get address => _data['address'] as Map<String, Object?>;
+  AddressType get address =>
+      AddressType(_data['address'] as Map<String, Object?>);
 
   int get age => _data['age'] as int;
 
@@ -179,11 +180,11 @@ extension type EmployeeType(Map<String, Object?> _data)
 
   String get employeeId => _data['employeeId'] as String;
 
-  Map<String, Object?> get homeAddress =>
-      _data['homeAddress'] as Map<String, Object?>;
+  AddressType get homeAddress =>
+      AddressType(_data['homeAddress'] as Map<String, Object?>);
 
-  Map<String, Object?> get workAddress =>
-      _data['workAddress'] as Map<String, Object?>;
+  AddressType get workAddress =>
+      AddressType(_data['workAddress'] as Map<String, Object?>);
 
   EmployeeType copyWith({
     String? name,
@@ -219,7 +220,7 @@ extension type ModifierType(Map<String, Object?> _data)
 
   String get requiredField => _data['requiredField'] as String;
 
-  String get optionalField => _data['optionalField'] as String;
+  String? get optionalField => _data['optionalField'] as String?;
 
   String? get nullableField => _data['nullableField'] as String?;
 
@@ -269,8 +270,9 @@ extension type TaggedItemType(Map<String, Object?> _data)
   List<String> get requiredTags =>
       (_data['requiredTags'] as List).cast<String>();
 
-  List<String> get optionalTags =>
-      (_data['optionalTags'] as List).cast<String>();
+  List<String>? get optionalTags => _data['optionalTags'] != null
+      ? (_data['optionalTags'] as List).cast<String>()
+      : null;
 
   List<String>? get nullableTags => _data['nullableTags'] != null
       ? (_data['nullableTags'] as List).cast<String>()

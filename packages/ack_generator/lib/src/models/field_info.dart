@@ -17,6 +17,11 @@ class FieldInfo {
   /// properly typed getters like `List<AddressType>`.
   final String? listElementSchemaRef;
 
+  /// For nested object fields that reference another schema variable (e.g., `'address': addressSchema`),
+  /// this stores the schema variable name so the type builder can generate
+  /// properly typed getters like `AddressType get address`.
+  final String? nestedSchemaRef;
+
   const FieldInfo({
     required this.name,
     required this.jsonKey,
@@ -26,6 +31,7 @@ class FieldInfo {
     required this.constraints,
     this.description,
     this.listElementSchemaRef,
+    this.nestedSchemaRef,
   });
 
   /// Whether this field references another schema model

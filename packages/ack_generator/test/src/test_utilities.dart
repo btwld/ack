@@ -47,6 +47,9 @@ class MockFieldInfo implements FieldInfo {
   @override
   final String? listElementSchemaRef;
 
+  @override
+  final String? nestedSchemaRef;
+
   final String typeName;
   final String? listItemTypeName;
   final String? mapKeyTypeName;
@@ -70,6 +73,7 @@ class MockFieldInfo implements FieldInfo {
     this.mapKeyTypeName,
     this.mapValueTypeName,
     this.listElementSchemaRef,
+    this.nestedSchemaRef,
   }) : jsonKey = name;
 
   @override
