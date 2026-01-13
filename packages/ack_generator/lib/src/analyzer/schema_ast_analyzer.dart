@@ -3,10 +3,14 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_provider.dart';
+import 'package:logging/logging.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
+
+/// Logger for schema AST analysis warnings and diagnostics.
+final _log = Logger('SchemaAstAnalyzer');
 
 /// Default representation type for object schemas
 const String _kMapType = 'Map<String, Object?>';
@@ -429,7 +433,8 @@ class SchemaAstAnalyzer {
         // This may return a schema variable reference for nested schemas
         return _extractListType(invocation, element, typeProvider);
       case 'object':
-        // Nested objects represented as Map<String, dynamic>
+        // Nested objects represented as Map<String, Object?>
+        // Note: Using dynamicType for analyzer; generated code uses Object?
         return (
           typeProvider.mapType(
             typeProvider.stringType,
@@ -447,9 +452,11 @@ class SchemaAstAnalyzer {
 
   /// Extracts the element type from Ack.list(elementSchema) calls
   ///
-  /// Handles both:
+  /// Handles:
   /// - Method invocations: `Ack.list(Ack.string())` → `List<String>`
-  /// - Schema references: `Ack.list(addressSchema)` → `List<Map<String, dynamic>>`
+  /// - Method chains: `Ack.list(Ack.string().describe(...))` → `List<String>`
+  /// - Schema references: `Ack.list(addressSchema)` → `List<Map<String, Object?>>`
+  /// - Schema ref chains: `Ack.list(addressSchema.optional())` → `List<Map<String, Object?>>`
   ///
   /// Returns a record of (DartType, schemaVariableName?) where the second
   /// element is the schema variable name for nested schema references.
@@ -467,60 +474,173 @@ class SchemaAstAnalyzer {
 
     final firstArg = args.first;
 
-    // Handle Ack.list(Ack.string()) - nested method invocation
+    // Handle Ack.list(Ack.string()) or Ack.list(Ack.string().describe('...'))
     if (firstArg is MethodInvocation) {
-      // Check if this is an Ack.xxx() call
-      if (firstArg.target is SimpleIdentifier &&
-          (firstArg.target as SimpleIdentifier).name == 'Ack') {
-        // Recursively extract the element type (no schema ref for primitives)
-        final (elementType, _) = _mapSchemaTypeToDartType(firstArg, element);
+      // First try: Walk the method chain to find the base Ack.xxx() call
+      final baseInvocation = _findBaseAckInvocation(firstArg);
+      if (baseInvocation != null) {
+        final (elementType, _) = _mapSchemaTypeToDartType(baseInvocation, element);
         return (typeProvider.listType(elementType), null);
+      }
+
+      // Second try: Check for schema variable with method chain
+      // e.g., Ack.list(itemSchema.optional())
+      final schemaVarName = _findSchemaVariableBase(firstArg);
+      if (schemaVarName != null) {
+        return _resolveSchemaVariableType(
+          schemaVarName,
+          element,
+          typeProvider,
+        );
       }
     }
 
-    // Handle Ack.list(addressSchema) - schema variable reference
+    // Handle Ack.list(addressSchema) - direct schema variable reference
     if (firstArg is SimpleIdentifier) {
-      final schemaVarName = firstArg.name;
-      final baseTypeName = _generateTypeNameFromVariable(schemaVarName);
-
-      final library = element.library2;
-      if (library != null) {
-        // Try @AckModel class lookup
-        final classElement = library.classes.cast<ClassElement2?>().firstWhere(
-              (c) => c?.name3 == baseTypeName,
-              orElse: () => null,
-            );
-
-        if (classElement != null) {
-          // For @AckModel classes, use the class type (no schema ref needed)
-          return (typeProvider.listType(classElement.thisType), null);
-        }
-
-        // Try @AckType schema variable lookup
-        final schemaVar =
-            library.topLevelVariables.cast<TopLevelVariableElement2?>().firstWhere(
-                  (v) => v?.name3 == schemaVarName,
-                  orElse: () => null,
-                );
-
-        if (schemaVar != null) {
-          // Schema variable exists - return List<Map<String, dynamic>>
-          // AND preserve the schema variable name for type builder
-          return (
-            typeProvider.listType(
-              typeProvider.mapType(
-                typeProvider.stringType,
-                typeProvider.dynamicType,
-              ),
-            ),
-            schemaVarName,
-          );
-        }
-      }
+      return _resolveSchemaVariableType(
+        firstArg.name,
+        element,
+        typeProvider,
+      );
     }
 
     // Fallback for unknown argument types
     return (typeProvider.listType(typeProvider.dynamicType), null);
+  }
+
+  /// Resolves a schema variable name to its list element type.
+  ///
+  /// Looks up the schema variable in the library and returns the appropriate
+  /// list type with the schema variable name for code generation.
+  (DartType, String?) _resolveSchemaVariableType(
+    String schemaVarName,
+    Element2 element,
+    TypeProvider typeProvider,
+  ) {
+    final baseTypeName = _generateTypeNameFromVariable(schemaVarName);
+    final library = element.library2;
+
+    if (library != null) {
+      // Try @AckModel class lookup
+      final classElement = library.classes.cast<ClassElement2?>().firstWhere(
+            (c) => c?.name3 == baseTypeName,
+            orElse: () => null,
+          );
+
+      if (classElement != null) {
+        // For @AckModel classes, use the class type (no schema ref needed)
+        return (typeProvider.listType(classElement.thisType), null);
+      }
+
+      // Try @AckType schema variable lookup
+      final schemaVar =
+          library.topLevelVariables.cast<TopLevelVariableElement2?>().firstWhere(
+                (v) => v?.name3 == schemaVarName,
+                orElse: () => null,
+              );
+
+      if (schemaVar != null) {
+        // Schema variable exists - return List<Map<String, Object?>>
+        // Note: Using dynamicType here for analyzer compatibility,
+        // but generated code will use Map<String, Object?>
+        return (
+          typeProvider.listType(
+            typeProvider.mapType(
+              typeProvider.stringType,
+              typeProvider.dynamicType,
+            ),
+          ),
+          schemaVarName,
+        );
+      }
+    }
+
+    // Not found - fall back to List<dynamic>
+    return (typeProvider.listType(typeProvider.dynamicType), null);
+  }
+
+  /// Walks a method chain to find the base Ack.xxx() invocation.
+  ///
+  /// For `Ack.string().describe('...').optional()`, returns `Ack.string()`.
+  /// For `Ack.integer().min(0).max(100)`, returns `Ack.integer()`.
+  ///
+  /// Returns `null` if no Ack.xxx() base is found.
+  ///
+  /// **Limitation:** Prefixed imports like `ack.Ack.string()` are not supported.
+  /// The target would be a `PrefixedIdentifier` rather than `SimpleIdentifier`.
+  MethodInvocation? _findBaseAckInvocation(MethodInvocation invocation) {
+    MethodInvocation current = invocation;
+
+    // Safety limit to prevent infinite loops on malformed AST
+    const maxDepth = 20;
+    var depth = 0;
+
+    while (depth < maxDepth) {
+      final target = current.target;
+
+      // Found base: target is 'Ack' identifier
+      if (target is SimpleIdentifier && target.name == 'Ack') {
+        return current;
+      }
+
+      // Continue walking the chain
+      if (target is MethodInvocation) {
+        current = target;
+        depth++;
+      } else {
+        // Unknown target type (could be prefixed import, etc.)
+        return null;
+      }
+    }
+
+    // Exceeded depth limit - likely malformed AST
+    _log.warning('Method chain exceeded max depth of $maxDepth. '
+        'List element type will fall back to dynamic.');
+    return null;
+  }
+
+  /// Walks a method chain to find a schema variable base identifier.
+  ///
+  /// For `itemSchema.optional().nullable()`, returns `'itemSchema'`.
+  /// For `addressSchema.describe('...')`, returns `'addressSchema'`.
+  ///
+  /// Returns `null` if the chain doesn't end with a schema variable identifier
+  /// (e.g., if it's an Ack.xxx() chain or unknown structure).
+  ///
+  /// **Limitation:** Prefixed imports are not supported. A schema variable
+  /// accessed via prefix (e.g., `schemas.itemSchema`) would not be recognized.
+  String? _findSchemaVariableBase(MethodInvocation invocation) {
+    MethodInvocation current = invocation;
+
+    const maxDepth = 20;
+    var depth = 0;
+
+    while (depth < maxDepth) {
+      final target = current.target;
+
+      // Found a SimpleIdentifier that's not 'Ack' - this is likely a schema variable
+      if (target is SimpleIdentifier && target.name != 'Ack') {
+        return target.name;
+      }
+
+      // If target is 'Ack', this is an Ack.xxx() chain, not a schema variable
+      if (target is SimpleIdentifier && target.name == 'Ack') {
+        return null;
+      }
+
+      // Continue walking the chain
+      if (target is MethodInvocation) {
+        current = target;
+        depth++;
+      } else {
+        return null;
+      }
+    }
+
+    // Exceeded depth limit - likely malformed AST
+    _log.warning('Schema variable method chain exceeded max depth of $maxDepth. '
+        'List element type will fall back to dynamic.');
+    return null;
   }
 
   /// Resolves the base class name for a schema variable, honoring custom overrides.

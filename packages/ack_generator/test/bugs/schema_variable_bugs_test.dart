@@ -1,11 +1,12 @@
-/// Tests for critical bugs in schema variable type extraction.
+/// Regression tests for schema variable type extraction.
 ///
-/// This file contains reproduction tests for 3 critical issues:
-/// 1. List type extraction returns `List<dynamic>` instead of proper types
-/// 2. Nested schema references are silently ignored (return null)
-/// 3. Method chain walker has no safety guards (could infinite loop)
-///
-/// These tests DOCUMENT THE BUGS and will FAIL until the bugs are fixed.
+/// These tests verify correct behavior for previously reported issues:
+/// - Issue #1: List type extraction (simple primitives)
+/// - Issue #2: Nested schema references
+/// - Issue #3: Method chain walker safety
+/// - Issue #4: List elements with method chain modifiers
+/// - Issue #5: Nested object lists with method chain modifiers
+/// - Issue #6: Schema variable references with method chain modifiers
 library;
 
 import 'package:ack_generator/src/analyzer/schema_ast_analyzer.dart';
@@ -18,8 +19,8 @@ import 'package:test/test.dart';
 import '../test_utils/test_assets.dart';
 
 void main() {
-  group('[BUG] Issue #1: List Type Extraction', () {
-    test('should extract String type from Ack.list(Ack.string())', () async {
+  group('List type extraction', () {
+    test('extracts String from Ack.list(Ack.string())', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -44,48 +45,29 @@ final listSchema = Ack.object({
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
 
-        expect(
-          modelInfo,
-          isNotNull,
-          reason: 'Should analyze schema successfully',
-        );
+        expect(modelInfo, isNotNull);
 
-        // Find 'tags' field
         final tagsField = modelInfo!.fields.firstWhere(
           (f) => f.name == 'tags',
           orElse: () => throw StateError('tags field not found'),
         );
 
-        // CRITICAL: Should be List<String>, not List<dynamic>
-        expect(
-          tagsField.type.isDartCoreList,
-          isTrue,
-          reason: 'tags field should be a List type',
-        );
+        expect(tagsField.type.isDartCoreList, isTrue);
 
         final listType = tagsField.type as InterfaceType;
-        expect(
-          listType.typeArguments.length,
-          1,
-          reason: 'List should have one type argument',
-        );
+        expect(listType.typeArguments.length, 1);
 
         final elementType = listType.typeArguments.first;
-
-        // 🐛 BUG: This will FAIL because it returns List<dynamic>
         expect(
           elementType.isDartCoreString,
           isTrue,
-          reason:
-              '🐛 BUG: List element should be String, not dynamic\n'
-              'Current: $elementType\n'
-              'Expected: String\n'
-              'Location: schema_ast_analyzer.dart:259',
+          reason: 'Expected String, got '
+              '${elementType.getDisplayString(withNullability: false)}',
         );
       });
     });
 
-    test('should extract int type from Ack.list(Ack.integer())', () async {
+    test('extracts int from Ack.list(Ack.integer())', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -117,18 +99,16 @@ final listSchema = Ack.object({
         final listType = numbersField.type as InterfaceType;
         final elementType = listType.typeArguments.first;
 
-        // 🐛 BUG: This will FAIL
         expect(
           elementType.isDartCoreInt,
           isTrue,
-          reason:
-              '🐛 BUG: List element should be int, not dynamic\n'
-              'Current: $elementType',
+          reason: 'Expected int, got '
+              '${elementType.getDisplayString(withNullability: false)}',
         );
       });
     });
 
-    test('should handle nested lists (List<List<T>>)', () async {
+    test('handles nested lists (List<List<int>>)', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -157,19 +137,15 @@ final nestedListSchema = Ack.object({
           (f) => f.name == 'matrix',
         );
 
-        // Should be List<List<int>>
         final outerListType = matrixField.type as InterfaceType;
         expect(outerListType.isDartCoreList, isTrue);
 
         final innerType = outerListType.typeArguments.first;
-
-        // 🐛 BUG: This will FAIL - inner type is dynamic, not List<int>
         expect(
           innerType.isDartCoreList,
           isTrue,
-          reason:
-              '🐛 BUG: Inner type should be List<int>, not dynamic\n'
-              'Current: $innerType',
+          reason: 'Expected List<int>, got '
+              '${innerType.getDisplayString(withNullability: false)}',
         );
 
         if (innerType is InterfaceType && innerType.isDartCoreList) {
@@ -177,15 +153,16 @@ final nestedListSchema = Ack.object({
           expect(
             innerElementType.isDartCoreInt,
             isTrue,
-            reason: 'Innermost element should be int',
+            reason: 'Expected int, got '
+                '${innerElementType.getDisplayString(withNullability: false)}',
           );
         }
       });
     });
   });
 
-  group('[BUG] Issue #2: Nested Schema References', () {
-    test('should resolve schema variable reference', () async {
+  group('Nested schema references', () {
+    test('resolves schema variable reference', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -201,7 +178,7 @@ final addressSchema = Ack.object({
 @AckType()
 final userSchema = Ack.object({
   'name': Ack.string(),
-  'address': addressSchema,  // Reference to another schema
+  'address': addressSchema,
 });
 ''',
       };
@@ -219,27 +196,20 @@ final userSchema = Ack.object({
 
         expect(modelInfo, isNotNull);
 
-        // 🐛 BUG: This will FAIL because nested refs return null (line 170-174)
         final addressField = modelInfo!.fields.firstWhere(
           (f) => f.name == 'address',
-          orElse: () => throw StateError(
-            '🐛 BUG: address field not found!\n'
-            'Nested schema reference was silently ignored.\n'
-            'Location: schema_ast_analyzer.dart:169-177\n'
-            'The _parseFieldValue() method returns null for SimpleIdentifier',
-          ),
+          orElse: () => throw StateError('address field not found'),
         );
 
-        // If we get here, the field exists
         expect(
           addressField.type.isDartCoreMap,
           isTrue,
-          reason: 'address field should have a Map type',
+          reason: 'Expected Map type for nested schema reference',
         );
       });
     });
 
-    test('should handle multiple schema references', () async {
+    test('handles multiple schema references', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -272,21 +242,18 @@ final contactSchema = Ack.object({
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
 
-        // 🐛 BUG: This will FAIL - only 'name' field will be present
         expect(
           modelInfo!.fields.length,
           3,
-          reason:
-              '🐛 BUG: Should have 3 fields (name, address, phone)\n'
-              'Current field count: ${modelInfo.fields.length}\n'
-              'Fields found: ${modelInfo.fields.map((f) => f.name).join(", ")}',
+          reason: 'Expected 3 fields (name, address, phone), '
+              'got ${modelInfo.fields.map((f) => f.name).join(", ")}',
         );
       });
     });
   });
 
-  group('[BUG] Issue #3: Method Chain Walker Safety', () {
-    test('should handle normal method chains correctly', () async {
+  group('Method chain walker', () {
+    test('handles normal method chains correctly', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -319,36 +286,25 @@ final chainedSchema = Ack.object({
         final optNullField = modelInfo!.fields.firstWhere(
           (f) => f.name == 'optionalNullable',
         );
-        expect(
-          optNullField.isRequired,
-          isFalse,
-          reason: '.optional() should set isRequired=false',
-        );
-        expect(
-          optNullField.isNullable,
-          isTrue,
-          reason: '.nullable() should set isNullable=true',
-        );
+        expect(optNullField.isRequired, isFalse);
+        expect(optNullField.isNullable, isTrue);
 
-        // Verify nullable().optional() (different order)
+        // Verify nullable().optional() (different order, same result)
         final nullOptField = modelInfo.fields.firstWhere(
           (f) => f.name == 'nullableOptional',
         );
         expect(nullOptField.isRequired, isFalse);
         expect(nullOptField.isNullable, isTrue);
-
-        // This should PASS - basic chains work fine
       });
     });
 
-    test('should prevent infinite loops with deeply nested chains', () async {
-      // Create a chain with 25 .optional() calls (should exceed limit of 20)
+    test('handles deeply nested chains without hanging', () async {
+      // Create a chain with 25 .optional() calls to test depth limits
       final deepChain = List.generate(25, (_) => 'optional()').join('.');
 
       final assets = {
         ...allAssets,
-        'test_pkg|lib/schema.dart':
-            '''
+        'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -369,50 +325,306 @@ final deepSchema = Ack.object({
 
         final analyzer = SchemaAstAnalyzer();
 
-        // 🐛 BUG: This will HANG or FAIL without proper safety guards
-        // Currently, there's no iteration limit in the while loop (line 191-214)
-        // TODO(ack): Reinstate defensive depth limits once walker guards are implemented.
+        // Should complete without hanging
         expect(
           () => analyzer.analyzeSchemaVariable(schemaVar),
           returnsNormally,
-          reason:
-              'Current implementation allows deep chains without throwing; '
-              'update this expectation when max-depth guards land.',
         );
       });
     });
   });
 
-  group('Documentation: Expected Behavior', () {
-    test('documents what list extraction SHOULD do', () {
-      // This test documents the expected implementation
-      // After fix, Ack.list(Ack.string()) should:
-      // 1. Detect 'list' as baseType in _parseSchemaMethod
-      // 2. Extract the argument: Ack.string()
-      // 3. Recursively parse that argument to get String type
-      // 4. Create List<String> using typeProvider.listType(stringType)
+  group('List elements with method chain modifiers', () {
+    test('extracts String from Ack.list(Ack.string().describe(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
-      expect(true, isTrue, reason: 'Documentation test');
+@AckType()
+final testSchema = Ack.object({
+  'colors': Ack.list(Ack.string().describe('A hex color value')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final colorsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'colors');
+        final listType = colorsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason: 'Expected String, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
     });
 
-    test('documents what nested ref resolution SHOULD do', () {
-      // After fix, 'address': addressSchema should:
-      // 1. Detect SimpleIdentifier in _parseFieldValue
-      // 2. Look up 'addressSchema' in current library
-      // 3. Generate proper type (Map<String, dynamic> or AddressType)
-      // 4. Return FieldInfo instead of null
+    test('extracts String from Ack.list(Ack.string().enumString(...))',
+        () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
-      expect(true, isTrue, reason: 'Documentation test');
+@AckType()
+final testSchema = Ack.object({
+  'styles': Ack.list(Ack.string().enumString(['bold', 'italic', 'underline'])),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final stylesField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'styles');
+        final listType = stylesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason: 'Expected String, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
     });
 
-    test('documents what walker safety SHOULD do', () {
-      // After fix, method chain walker should:
-      // 1. Add iteration counter (starting at 0)
-      // 2. Check counter against MAX_DEPTH (suggest 20)
-      // 3. Throw clear error if exceeded
-      // 4. Optionally: Add cycle detection with visited Set
+    test('extracts int from Ack.list(Ack.integer().min(0).max(100))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
-      expect(true, isTrue, reason: 'Documentation test');
+@AckType()
+final testSchema = Ack.object({
+  'scores': Ack.list(Ack.integer().min(0).max(100)),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final scoresField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'scores');
+        final listType = scoresField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreInt,
+          isTrue,
+          reason: 'Expected int, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+  });
+
+  group('Nested object lists with method chain modifiers', () {
+    test('extracts Map from Ack.list(Ack.object({...}).describe(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'items': Ack.list(Ack.object({
+    'name': Ack.string(),
+  }).describe('An item')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final itemsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'items');
+        final listType = itemsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('extracts Map from Ack.list(Ack.object({...}).optional())', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'records': Ack.list(Ack.object({
+    'id': Ack.integer(),
+  }).optional()),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final recordsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'records');
+        final listType = recordsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+  });
+
+  group('Schema variable references with method chain modifiers', () {
+    test('extracts Map from Ack.list(schemaRef.optional())', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final itemSchema = Ack.object({
+  'name': Ack.string(),
+});
+
+@AckType()
+final containerSchema = Ack.object({
+  'items': Ack.list(itemSchema.optional()),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'containerSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final itemsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'items');
+        final listType = itemsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('extracts Map from Ack.list(schemaRef.describe(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+});
+
+@AckType()
+final userSchema = Ack.object({
+  'addresses': Ack.list(addressSchema.describe('User address')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'userSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final addressesField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'addresses');
+        final listType = addressesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
     });
   });
 }
