@@ -5,6 +5,8 @@
 /// - Issue #2: Nested schema references
 /// - Issue #3: Method chain walker safety
 /// - Issue #4: List elements with method chain modifiers
+/// - Issue #5: Nested object lists with method chain modifiers
+/// - Issue #6: Schema variable references with method chain modifiers
 library;
 
 import 'package:ack_generator/src/analyzer/schema_ast_analyzer.dart';
@@ -446,6 +448,180 @@ final testSchema = Ack.object({
           elementType.isDartCoreInt,
           isTrue,
           reason: 'Expected int, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+  });
+
+  group('Nested object lists with method chain modifiers', () {
+    test('extracts Map from Ack.list(Ack.object({...}).describe(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'items': Ack.list(Ack.object({
+    'name': Ack.string(),
+  }).describe('An item')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final itemsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'items');
+        final listType = itemsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('extracts Map from Ack.list(Ack.object({...}).optional())', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'records': Ack.list(Ack.object({
+    'id': Ack.integer(),
+  }).optional()),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final recordsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'records');
+        final listType = recordsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+  });
+
+  group('Schema variable references with method chain modifiers', () {
+    test('extracts Map from Ack.list(schemaRef.optional())', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final itemSchema = Ack.object({
+  'name': Ack.string(),
+});
+
+@AckType()
+final containerSchema = Ack.object({
+  'items': Ack.list(itemSchema.optional()),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'containerSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final itemsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'items');
+        final listType = itemsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('extracts Map from Ack.list(schemaRef.describe(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+});
+
+@AckType()
+final userSchema = Ack.object({
+  'addresses': Ack.list(addressSchema.describe('User address')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'userSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final addressesField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'addresses');
+        final listType = addressesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreMap,
+          isTrue,
+          reason: 'Expected Map<String, Object?>, got '
               '${elementType.getDisplayString(withNullability: false)}',
         );
       });
