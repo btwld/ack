@@ -415,4 +415,126 @@ final deepSchema = Ack.object({
       expect(true, isTrue, reason: 'Documentation test');
     });
   });
+
+  group('[BUG] Issue #4: List with Method Chain Modifiers', () {
+    test('should extract String from Ack.list(Ack.string().describe(...))',
+        () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'colors': Ack.list(Ack.string().describe('A hex color value')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final colorsField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'colors');
+        final listType = colorsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason:
+              'List element should be String, got ${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('should extract String from Ack.list(Ack.string().enumString(...))',
+        () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'styles': Ack.list(Ack.string().enumString(['bold', 'italic', 'underline'])),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final stylesField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'styles');
+        final listType = stylesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason:
+              'List element should be String, got ${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('should extract int from Ack.list(Ack.integer().min(0).max(100))',
+        () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'scores': Ack.list(Ack.integer().min(0).max(100)),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        final scoresField =
+            modelInfo!.fields.firstWhere((f) => f.name == 'scores');
+        final listType = scoresField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+
+        expect(
+          elementType.isDartCoreInt,
+          isTrue,
+          reason:
+              'List element should be int, got ${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+  });
 }

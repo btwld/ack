@@ -467,13 +467,13 @@ class SchemaAstAnalyzer {
 
     final firstArg = args.first;
 
-    // Handle Ack.list(Ack.string()) - nested method invocation
+    // Handle Ack.list(Ack.string()) or Ack.list(Ack.string().describe('...'))
     if (firstArg is MethodInvocation) {
-      // Check if this is an Ack.xxx() call
-      if (firstArg.target is SimpleIdentifier &&
-          (firstArg.target as SimpleIdentifier).name == 'Ack') {
-        // Recursively extract the element type (no schema ref for primitives)
-        final (elementType, _) = _mapSchemaTypeToDartType(firstArg, element);
+      // Walk the method chain to find the base Ack.xxx() call
+      // This handles both simple cases and chained modifiers
+      final baseInvocation = _findBaseAckInvocation(firstArg);
+      if (baseInvocation != null) {
+        final (elementType, _) = _mapSchemaTypeToDartType(baseInvocation, element);
         return (typeProvider.listType(elementType), null);
       }
     }
@@ -521,6 +521,41 @@ class SchemaAstAnalyzer {
 
     // Fallback for unknown argument types
     return (typeProvider.listType(typeProvider.dynamicType), null);
+  }
+
+  /// Walks a method chain to find the base Ack.xxx() invocation.
+  ///
+  /// For `Ack.string().describe('...').optional()`, returns `Ack.string()`.
+  /// For `Ack.integer().min(0).max(100)`, returns `Ack.integer()`.
+  ///
+  /// Returns `null` if no Ack.xxx() base is found.
+  MethodInvocation? _findBaseAckInvocation(MethodInvocation invocation) {
+    MethodInvocation current = invocation;
+
+    // Safety limit to prevent infinite loops on malformed AST
+    const maxDepth = 20;
+    var depth = 0;
+
+    while (depth < maxDepth) {
+      final target = current.target;
+
+      // Found base: target is 'Ack' identifier
+      if (target is SimpleIdentifier && target.name == 'Ack') {
+        return current;
+      }
+
+      // Continue walking the chain
+      if (target is MethodInvocation) {
+        current = target;
+        depth++;
+      } else {
+        // Unknown target type (could be prefixed import, etc.)
+        return null;
+      }
+    }
+
+    // Exceeded depth limit - likely malformed AST
+    return null;
   }
 
   /// Resolves the base class name for a schema variable, honoring custom overrides.
