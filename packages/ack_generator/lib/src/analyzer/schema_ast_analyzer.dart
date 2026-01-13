@@ -3,10 +3,14 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_provider.dart';
+import 'package:logging/logging.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
+
+/// Logger for schema AST analysis warnings and diagnostics.
+final _log = Logger('SchemaAstAnalyzer');
 
 /// Default representation type for object schemas
 const String _kMapType = 'Map<String, Object?>';
@@ -590,7 +594,7 @@ class SchemaAstAnalyzer {
     }
 
     // Exceeded depth limit - likely malformed AST
-    print('Warning: Method chain exceeded max depth of $maxDepth. '
+    _log.warning('Method chain exceeded max depth of $maxDepth. '
         'List element type will fall back to dynamic.');
     return null;
   }
@@ -634,7 +638,7 @@ class SchemaAstAnalyzer {
     }
 
     // Exceeded depth limit - likely malformed AST
-    print('Warning: Schema variable method chain exceeded max depth of $maxDepth. '
+    _log.warning('Schema variable method chain exceeded max depth of $maxDepth. '
         'List element type will fall back to dynamic.');
     return null;
   }
