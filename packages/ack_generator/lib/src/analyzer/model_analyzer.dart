@@ -17,9 +17,9 @@ class ModelAnalyzer {
 
     final schemaClassName = schemaName ?? '${element.name3}Schema';
 
-    // Extract description if provided
+    // Extract description - annotation takes precedence, then doc comment
     final description = annotation.read('description').isNull
-        ? null
+        ? _parseDocComment(element.documentationComment)
         : annotation.read('description').stringValue;
 
     // Extract additionalProperties settings
@@ -345,5 +345,45 @@ class ModelAnalyzer {
         'must be of type String, got $fieldType',
       );
     }
+  }
+
+  /// Parses a Dart documentation comment into a clean description string.
+  ///
+  /// Handles:
+  /// - Single-line doc comments (/// ...)
+  /// - Multi-line doc comments joined with spaces
+  /// - Block doc comments (/** ... */)
+  String? _parseDocComment(String? docComment) {
+    if (docComment == null || docComment.isEmpty) {
+      return null;
+    }
+
+    // Handle /// style comments
+    if (docComment.contains('///')) {
+      final lines = docComment
+          .split('\n')
+          .map((line) => line.replaceFirst(RegExp(r'^\s*///\s?'), ''))
+          .where((line) => line.isNotEmpty)
+          .toList();
+
+      if (lines.isEmpty) return null;
+      return lines.join(' ').trim();
+    }
+
+    // Handle /** */ style comments
+    if (docComment.startsWith('/**')) {
+      final content = docComment
+          .replaceFirst(RegExp(r'^/\*\*\s*'), '')
+          .replaceFirst(RegExp(r'\s*\*/$'), '')
+          .split('\n')
+          .map((line) => line.replaceFirst(RegExp(r'^\s*\*\s?'), ''))
+          .where((line) => line.isNotEmpty)
+          .join(' ')
+          .trim();
+
+      return content.isEmpty ? null : content;
+    }
+
+    return null;
   }
 }
