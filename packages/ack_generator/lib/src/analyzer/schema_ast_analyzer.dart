@@ -561,6 +561,9 @@ class SchemaAstAnalyzer {
   /// For `Ack.integer().min(0).max(100)`, returns `Ack.integer()`.
   ///
   /// Returns `null` if no Ack.xxx() base is found.
+  ///
+  /// **Limitation:** Prefixed imports like `ack.Ack.string()` are not supported.
+  /// The target would be a `PrefixedIdentifier` rather than `SimpleIdentifier`.
   MethodInvocation? _findBaseAckInvocation(MethodInvocation invocation) {
     MethodInvocation current = invocation;
 
@@ -587,6 +590,8 @@ class SchemaAstAnalyzer {
     }
 
     // Exceeded depth limit - likely malformed AST
+    print('Warning: Method chain exceeded max depth of $maxDepth. '
+        'List element type will fall back to dynamic.');
     return null;
   }
 
@@ -597,6 +602,9 @@ class SchemaAstAnalyzer {
   ///
   /// Returns `null` if the chain doesn't end with a schema variable identifier
   /// (e.g., if it's an Ack.xxx() chain or unknown structure).
+  ///
+  /// **Limitation:** Prefixed imports are not supported. A schema variable
+  /// accessed via prefix (e.g., `schemas.itemSchema`) would not be recognized.
   String? _findSchemaVariableBase(MethodInvocation invocation) {
     MethodInvocation current = invocation;
 
@@ -625,6 +633,9 @@ class SchemaAstAnalyzer {
       }
     }
 
+    // Exceeded depth limit - likely malformed AST
+    print('Warning: Schema variable method chain exceeded max depth of $maxDepth. '
+        'List element type will fall back to dynamic.');
     return null;
   }
 
