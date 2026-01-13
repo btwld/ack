@@ -49,12 +49,60 @@ class FieldAnalyzer {
   }
 
   String? _getDescription(FieldElement2 field, DartObject? annotation) {
+    // Priority 1: Check annotation (explicit override takes precedence)
     if (annotation != null) {
       final descriptionField = annotation.getField('description');
       if (descriptionField != null && !descriptionField.isNull) {
         return descriptionField.toStringValue();
       }
     }
+
+    // Priority 2: Fallback to doc comment
+    final docComment = field.documentationComment;
+    if (docComment != null && docComment.isNotEmpty) {
+      return _parseDocComment(docComment);
+    }
+
+    return null;
+  }
+
+  /// Parses a Dart documentation comment into a clean description string.
+  ///
+  /// Handles:
+  /// - Single-line doc comments (/// ...)
+  /// - Multi-line doc comments joined with spaces
+  /// - Block doc comments (/** ... */)
+  String? _parseDocComment(String? docComment) {
+    if (docComment == null || docComment.isEmpty) {
+      return null;
+    }
+
+    // Handle /// style comments
+    if (docComment.contains('///')) {
+      final lines = docComment
+          .split('\n')
+          .map((line) => line.replaceFirst(RegExp(r'^\s*///\s?'), ''))
+          .where((line) => line.isNotEmpty)
+          .toList();
+
+      if (lines.isEmpty) return null;
+      return lines.join(' ').trim();
+    }
+
+    // Handle /** */ style comments
+    if (docComment.startsWith('/**')) {
+      final content = docComment
+          .replaceFirst(RegExp(r'^/\*\*\s*'), '')
+          .replaceFirst(RegExp(r'\s*\*/$'), '')
+          .split('\n')
+          .map((line) => line.replaceFirst(RegExp(r'^\s*\*\s?'), ''))
+          .where((line) => line.isNotEmpty)
+          .join(' ')
+          .trim();
+
+      return content.isEmpty ? null : content;
+    }
+
     return null;
   }
 
