@@ -311,8 +311,8 @@ class SchemaAstAnalyzer {
 
     // Handle references to other schema variables (for nested objects)
     if (value is SimpleIdentifier) {
-      // Schema variable reference - treat as Map<String, dynamic>
-      // This allows nested schemas to work without complex resolution
+      // Schema variable reference - store the variable name for type resolution
+      final schemaVarName = value.name;
       final library = element.library2;
 
       final typeProvider = library?.typeProvider;
@@ -333,6 +333,7 @@ class SchemaAstAnalyzer {
         isRequired: true,
         isNullable: false,
         constraints: [],
+        nestedSchemaRef: schemaVarName,
       );
     }
 

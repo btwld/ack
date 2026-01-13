@@ -333,14 +333,18 @@ ${cases.join(',\n')},
 
   Reference _buildReturnType(FieldInfo field, List<ModelInfo> allModels) {
     final baseType = _resolveFieldType(field, allModels);
-    final typeString = field.isNullable ? '$baseType?' : baseType;
+    // Optional fields need nullable return types because the key might be missing
+    final shouldBeNullable = field.isNullable || !field.isRequired;
+    final typeString = shouldBeNullable ? '$baseType?' : baseType;
     return refer(typeString);
   }
 
   String _buildGetterBody(FieldInfo field, List<ModelInfo> allModels) {
     final key = field.jsonKey;
+    // Both nullable AND optional fields need null-safe access
+    final needsNullHandling = field.isNullable || !field.isRequired;
 
-    if (field.isNullable) {
+    if (needsNullHandling) {
       return _buildNullableGetter(field, allModels, key);
     } else {
       return _buildNonNullableGetter(field, allModels, key);
@@ -371,6 +375,18 @@ ${cases.join(',\n')},
     // Lists
     if (field.isList) {
       return _buildListGetter(field, allModels, key);
+    }
+
+    // Nested schema variable reference (e.g., 'address': addressSchema)
+    if (field.nestedSchemaRef != null) {
+      final referencedModel =
+          _findSchemaModel(field.nestedSchemaRef!, allModels);
+      if (referencedModel != null) {
+        final typeName = '${referencedModel.className}Type';
+        final castType = referencedModel.representationType;
+        return "$typeName(_data['$key'] as $castType)";
+      }
+      return "_data['$key'] as Map<String, Object?>";
     }
 
     // Maps
@@ -437,7 +453,8 @@ ${cases.join(',\n')},
     if (_isCustomElementType(field, allModels)) {
       // Return eager List for object lists (per requirements: List<T>, not Iterable<T>)
       final listSuffix = isSet ? '' : '.toList()';
-      return "(_data['$key'] as List).map((e) => ${elementType}Type(e as Map<String, Object?>))$listSuffix$suffix";
+      final castType = _getCustomElementCastType(field, elementType, allModels);
+      return "(_data['$key'] as List).map((e) => ${elementType}Type(e as $castType))$listSuffix$suffix";
     }
 
     // Primitive lists/sets - direct cast
@@ -472,6 +489,16 @@ ${cases.join(',\n')},
       return 'List<$elementType>';
     }
 
+    // Nested schema variable reference (e.g., 'address': addressSchema)
+    if (field.nestedSchemaRef != null) {
+      final referencedModel =
+          _findSchemaModel(field.nestedSchemaRef!, allModels);
+      if (referencedModel != null) {
+        return '${referencedModel.className}Type';
+      }
+      return kMapType;
+    }
+
     // Maps
     if (field.isMap) {
       return 'Map<String, Object?>';
@@ -501,7 +528,12 @@ ${cases.join(',\n')},
   String _getListElementType(FieldInfo field, List<ModelInfo> allModels) {
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (field.listElementSchemaRef != null) {
-      return _generateTypeNameFromVariable(field.listElementSchemaRef!);
+      final referencedModel =
+          _findSchemaModel(field.listElementSchemaRef!, allModels);
+      if (referencedModel != null) {
+        return referencedModel.className;
+      }
+      return kMapType;
     }
 
     if (field.type is! ParameterizedType) return 'dynamic';
@@ -574,8 +606,7 @@ ${cases.join(',\n')},
   bool _isCustomElementType(FieldInfo field, List<ModelInfo> allModels) {
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (field.listElementSchemaRef != null) {
-      final typeName = _generateTypeNameFromVariable(field.listElementSchemaRef!);
-      return allModels.any((m) => m.className == typeName);
+      return _findSchemaModel(field.listElementSchemaRef!, allModels) != null;
     }
 
     if (field.type is! ParameterizedType) return false;
@@ -591,23 +622,33 @@ ${cases.join(',\n')},
     return _hasAckTypeForElement(element, allModels);
   }
 
-  /// Converts a schema variable name to a type name.
-  /// e.g., "addressSchema" → "Address", "userSchema" → "User"
-  String _generateTypeNameFromVariable(String variableName) {
-    // Remove "Schema" suffix if present
-    var name = variableName;
-    if (name.endsWith('Schema')) {
-      name = name.substring(0, name.length - 'Schema'.length);
-    }
-
-    // Capitalize first letter
-    if (name.isEmpty) return 'Type';
-    return name[0].toUpperCase() + name.substring(1);
-  }
-
   String _getTypeConstructor(FieldInfo field) {
     final baseType = field.type.getDisplayString(withNullability: false);
     return '${baseType}Type';
+  }
+
+  ModelInfo? _findSchemaModel(String schemaVarName, List<ModelInfo> allModels) {
+    return allModels
+        .where((m) => m.schemaClassName == schemaVarName)
+        .firstOrNull;
+  }
+
+  String _getCustomElementCastType(
+    FieldInfo field,
+    String elementType,
+    List<ModelInfo> allModels,
+  ) {
+    if (field.listElementSchemaRef != null) {
+      final referencedModel =
+          _findSchemaModel(field.listElementSchemaRef!, allModels);
+      if (referencedModel != null) {
+        return referencedModel.representationType;
+      }
+    }
+
+    final elementModel =
+        allModels.where((m) => m.className == elementType).firstOrNull;
+    return elementModel?.representationType ?? kMapType;
   }
 
   Set<String> _extractDependencies(ModelInfo model, List<ModelInfo> allModels) {
