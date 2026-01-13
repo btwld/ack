@@ -311,7 +311,7 @@ class SchemaAstAnalyzer {
 
     // Handle references to other schema variables (for nested objects)
     if (value is SimpleIdentifier) {
-      // Schema variable reference - store the variable name for type resolution
+      // Schema variable reference: store the variable name for type resolution.
       final schemaVarName = value.name;
       final library = element.library2;
 

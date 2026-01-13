@@ -333,7 +333,7 @@ ${cases.join(',\n')},
 
   Reference _buildReturnType(FieldInfo field, List<ModelInfo> allModels) {
     final baseType = _resolveFieldType(field, allModels);
-    // Optional fields need nullable return types because the key might be missing
+    // Optional fields need nullable return types because the key might be missing.
     final shouldBeNullable = field.isNullable || !field.isRequired;
     final typeString = shouldBeNullable ? '$baseType?' : baseType;
     return refer(typeString);
@@ -341,7 +341,7 @@ ${cases.join(',\n')},
 
   String _buildGetterBody(FieldInfo field, List<ModelInfo> allModels) {
     final key = field.jsonKey;
-    // Both nullable AND optional fields need null-safe access
+    // Both nullable and optional fields need null-safe access.
     final needsNullHandling = field.isNullable || !field.isRequired;
 
     if (needsNullHandling) {
@@ -377,7 +377,7 @@ ${cases.join(',\n')},
       return _buildListGetter(field, allModels, key);
     }
 
-    // Nested schema variable reference (e.g., 'address': addressSchema)
+    // Nested schema variable reference (e.g., 'address': addressSchema).
     if (field.nestedSchemaRef != null) {
       final referencedModel =
           _findSchemaModel(field.nestedSchemaRef!, allModels);
@@ -489,7 +489,7 @@ ${cases.join(',\n')},
       return 'List<$elementType>';
     }
 
-    // Nested schema variable reference (e.g., 'address': addressSchema)
+    // Nested schema variable reference (e.g., 'address': addressSchema).
     if (field.nestedSchemaRef != null) {
       final referencedModel =
           _findSchemaModel(field.nestedSchemaRef!, allModels);
