@@ -15,6 +15,76 @@ final _log = Logger('SchemaAstAnalyzer');
 /// Default representation type for object schemas
 const String _kMapType = 'Map<String, Object?>';
 
+/// Dart reserved keywords that cannot be used as identifiers
+const _dartKeywords = {
+  'abstract',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'base',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'covariant',
+  'default',
+  'deferred',
+  'do',
+  'dynamic',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'extension',
+  'external',
+  'factory',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'Function',
+  'get',
+  'hide',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'interface',
+  'is',
+  'late',
+  'library',
+  'mixin',
+  'new',
+  'null',
+  'on',
+  'operator',
+  'part',
+  'required',
+  'rethrow',
+  'return',
+  'sealed',
+  'set',
+  'show',
+  'static',
+  'super',
+  'switch',
+  'sync',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typedef',
+  'var',
+  'void',
+  'when',
+  'while',
+  'with',
+  'yield',
+};
+
 /// Analyzes schema variables by walking the AST
 ///
 /// This analyzer inspects the AST structure of schema definitions
@@ -116,6 +186,7 @@ class SchemaAstAnalyzer {
     }
 
     final methodName = baseInvocation.methodName.name;
+    final isNullable = _hasModifier(invocation, 'nullable');
 
     // Parse based on schema type
     switch (methodName) {
@@ -125,6 +196,7 @@ class SchemaAstAnalyzer {
           baseInvocation,
           invocation, // Pass original invocation to check for chained methods
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'string':
@@ -132,6 +204,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'integer':
@@ -139,6 +212,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'double':
@@ -146,6 +220,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'boolean':
@@ -153,6 +228,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'list':
@@ -160,6 +236,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'literal':
@@ -167,6 +244,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'enumString':
@@ -174,6 +252,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       case 'enumValues':
@@ -181,6 +260,7 @@ class SchemaAstAnalyzer {
           variableName,
           baseInvocation,
           element,
+          isNullable: isNullable,
           customTypeName: customTypeName,
         );
       default:
@@ -198,6 +278,7 @@ class SchemaAstAnalyzer {
     MethodInvocation baseInvocation,
     MethodInvocation fullInvocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     // Extract the properties map from the first argument
@@ -268,6 +349,7 @@ class SchemaAstAnalyzer {
       fields: fields,
       isFromSchemaVariable: true,
       additionalProperties: hasAdditionalProperties,
+      isNullableSchema: isNullable,
     );
   }
 
@@ -293,6 +375,10 @@ class SchemaAstAnalyzer {
       }
 
       final fieldName = key.value;
+
+      // Validate that the field name is a valid Dart identifier
+      _validateFieldName(fieldName, element);
+
       final fieldInfo = _parseFieldValue(fieldName, value, element);
       if (fieldInfo != null) {
         fields.add(fieldInfo);
@@ -703,6 +789,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -717,6 +804,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'String',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -725,6 +813,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -739,6 +828,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'int',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -747,6 +837,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -761,6 +852,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'double',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -769,6 +861,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -783,6 +876,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'bool',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -795,10 +889,12 @@ class SchemaAstAnalyzer {
   /// - `Ack.list(Ack.string())` → `List<String>`
   /// - `Ack.list(Ack.integer())` → `List<int>`
   /// - `Ack.list(Ack.list(Ack.double()))` → `List<List<double>>` (nested)
+  /// - `Ack.list(addressSchema)` → `List<Map<String, Object?>>` (schema reference)
   ModelInfo _parseListSchema(
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -808,24 +904,7 @@ class SchemaAstAnalyzer {
     );
 
     // Extract element type from first argument: Ack.list(elementSchema)
-    final args = invocation.argumentList.arguments;
-    String elementType = 'dynamic';
-
-    if (args.isNotEmpty) {
-      final firstArg = args.first;
-
-      // Check if the element is an Ack.xxx() schema call
-      // This handles: Ack.list(Ack.string()), Ack.list(Ack.list(Ack.integer())), etc.
-      if (firstArg is MethodInvocation &&
-          firstArg.target is SimpleIdentifier &&
-          (firstArg.target as SimpleIdentifier).name == 'Ack') {
-        final elementSchemaType = firstArg.methodName.name;
-        // Recursively resolve element type (handles nested lists)
-        elementType = _mapSchemaMethodToType(elementSchemaType);
-      }
-      // Note: Schema variable references (e.g., Ack.list(addressSchema))
-      // fall through to 'dynamic' - this is a known limitation
-    }
+    final elementType = _extractListElementTypeString(invocation, element);
 
     return ModelInfo(
       className: typeName,
@@ -833,7 +912,51 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'List<$elementType>',
+      isNullableSchema: isNullable,
     );
+  }
+
+  /// Extracts the element type as a string representation for top-level list schemas.
+  ///
+  /// This handles:
+  /// - Primitive schemas: `Ack.list(Ack.string())` → 'String'
+  /// - Nested lists: `Ack.list(Ack.list(Ack.int()))` → 'List<int>'
+  /// - Schema references: `Ack.list(addressSchema)` → 'Map<String, Object?>'
+  String _extractListElementTypeString(
+    MethodInvocation listInvocation,
+    Element2 element,
+  ) {
+    final args = listInvocation.argumentList.arguments;
+
+    if (args.isEmpty) {
+      return 'dynamic';
+    }
+
+    final firstArg = args.first;
+
+    // Handle Ack.list(Ack.xxx()) - nested method invocation
+    if (firstArg is MethodInvocation &&
+        firstArg.target is SimpleIdentifier &&
+        (firstArg.target as SimpleIdentifier).name == 'Ack') {
+      final methodName = firstArg.methodName.name;
+
+      // Handle nested lists recursively
+      if (methodName == 'list') {
+        final nestedType = _extractListElementTypeString(firstArg, element);
+        return 'List<$nestedType>';
+      }
+
+      // Map primitive schema types
+      return _mapSchemaMethodToType(methodName);
+    }
+
+    // Handle Ack.list(schemaVariableName) - schema variable reference
+    if (firstArg is SimpleIdentifier) {
+      // Schema variable references result in Map<String, Object?> at the element level
+      return 'Map<String, Object?>';
+    }
+
+    return 'dynamic';
   }
 
   /// Parses Ack.literal() schema
@@ -846,6 +969,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -860,6 +984,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'String',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -873,6 +998,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -887,6 +1013,7 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: 'String',
+      isNullableSchema: isNullable,
     );
   }
 
@@ -900,6 +1027,7 @@ class SchemaAstAnalyzer {
     String variableName,
     MethodInvocation invocation,
     Element2 element, {
+    required bool isNullable,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -951,7 +1079,26 @@ class SchemaAstAnalyzer {
       fields: [],
       isFromSchemaVariable: true,
       representationType: enumTypeName,
+      isNullableSchema: isNullable,
     );
+  }
+
+  bool _hasModifier(MethodInvocation invocation, String modifierName) {
+    MethodInvocation? current = invocation;
+    while (current != null) {
+      if (current.methodName.name == modifierName) {
+        return true;
+      }
+
+      final target = current.target;
+      if (target is MethodInvocation) {
+        current = target;
+      } else {
+        break;
+      }
+    }
+
+    return false;
   }
 
   /// Maps Ack schema method names to Dart type strings
@@ -976,6 +1123,38 @@ class SchemaAstAnalyzer {
         return 'List<dynamic>';
       default:
         return 'dynamic';
+    }
+  }
+
+  /// Validates that a field name is a valid Dart identifier
+  ///
+  /// Throws [InvalidGenerationSourceError] if the field name:
+  /// - Contains invalid characters (must match [a-zA-Z_$][a-zA-Z0-9_$]*)
+  /// - Is a Dart reserved keyword
+  void _validateFieldName(String fieldName, Element2 element) {
+    // Check if key is a valid Dart identifier
+    final identifierRegex = RegExp(r'^[a-zA-Z_$][a-zA-Z0-9_$]*$');
+    if (!identifierRegex.hasMatch(fieldName)) {
+      throw InvalidGenerationSourceError(
+        'JSON key "$fieldName" is not a valid Dart identifier. '
+        'Keys must start with a letter, underscore, or dollar sign, and can only '
+        'contain letters, numbers, underscores, and dollar signs.',
+        element: element,
+        todo:
+            'Use a valid Dart identifier as the key, or consider transforming '
+            'the key to a valid identifier (e.g., "user-id" → "userId").',
+      );
+    }
+
+    // Check for reserved keywords
+    if (_dartKeywords.contains(fieldName)) {
+      throw InvalidGenerationSourceError(
+        'JSON key "$fieldName" is a Dart reserved keyword and cannot be used as a field name.',
+        element: element,
+        todo:
+            'Use a different key that is not a Dart reserved keyword, or prefix it '
+            '(e.g., "class" → "classValue" or "klass").',
+      );
     }
   }
 }
