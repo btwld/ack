@@ -144,4 +144,18 @@ final class AnyOfSchema extends AckSchema<Object>
       'schemas': schemas.length,
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AnyOfSchema) return false;
+    const listEq = ListEquality<AckSchema>();
+    return baseFieldsEqual(other) && listEq.equals(schemas, other.schemas);
+  }
+
+  @override
+  int get hashCode {
+    const listEq = ListEquality<AckSchema>();
+    return Object.hash(baseFieldsHashCode, listEq.hash(schemas));
+  }
 }

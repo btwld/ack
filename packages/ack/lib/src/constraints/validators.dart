@@ -16,6 +16,8 @@ class NonNullableConstraint extends Constraint<Object?>
 
   @override
   String buildMessage(Object? value) => 'Value is required and cannot be null.';
+
+  // No additional fields - base class equality is sufficient.
 }
 
 /// Constraint for validating that a value is of an expected Dart type.
@@ -66,6 +68,26 @@ class InvalidTypeConstraint extends Constraint<Object?>
     'expectedType': expectedType,
     'actualType': actualType,
   };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! InvalidTypeConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        expectedType == other.expectedType &&
+        actualType == other.actualType;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        expectedType,
+        actualType,
+      );
 }
 
 // --- Object Specific Constraints ---
@@ -95,6 +117,24 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
   String buildMessage(MapValue value) {
     return 'Unexpected property found: "$unexpectedPropertyKey".';
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ObjectNoAdditionalPropertiesConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        unexpectedPropertyKey == other.unexpectedPropertyKey;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        unexpectedPropertyKey,
+      );
 }
 
 /// Placeholder: Constraint for when an object is missing a required property.
@@ -117,4 +157,22 @@ class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
   String buildMessage(MapValue value) {
     return 'Required property "$missingPropertyKey" is missing.';
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ObjectRequiredPropertiesConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        missingPropertyKey == other.missingPropertyKey;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        missingPropertyKey,
+      );
 }

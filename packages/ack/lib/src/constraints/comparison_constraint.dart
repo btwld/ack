@@ -325,4 +325,28 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       },
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ComparisonConstraint<T>) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        type == other.type &&
+        threshold == other.threshold &&
+        maxThreshold == other.maxThreshold &&
+        multipleValue == other.multipleValue;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        type,
+        threshold,
+        maxThreshold,
+        multipleValue,
+      );
 }

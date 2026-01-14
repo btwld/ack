@@ -84,6 +84,17 @@ final class IntegerSchema extends NumSchema<int>
         typeSchema: {'type': 'integer'},
         serializedDefault: defaultValue,
       );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! IntegerSchema) return false;
+    return baseFieldsEqual(other) &&
+        strictPrimitiveParsing == other.strictPrimitiveParsing;
+  }
+
+  @override
+  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
 }
 
 // --- DoubleSchema ---
@@ -141,4 +152,15 @@ final class DoubleSchema extends NumSchema<double>
 
   // Note: DoubleSchema inherits toJsonSchema() from NumSchema.
   // JSON Schema uses 'number' type for all floating point values.
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! DoubleSchema) return false;
+    return baseFieldsEqual(other) &&
+        strictPrimitiveParsing == other.strictPrimitiveParsing;
+  }
+
+  @override
+  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
 }

@@ -62,4 +62,15 @@ final class BooleanSchema extends AckSchema<bool>
         typeSchema: {'type': 'boolean'},
         serializedDefault: defaultValue,
       );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! BooleanSchema) return false;
+    return baseFieldsEqual(other) &&
+        strictPrimitiveParsing == other.strictPrimitiveParsing;
+  }
+
+  @override
+  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
 }

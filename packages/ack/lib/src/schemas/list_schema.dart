@@ -132,4 +132,14 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'itemSchema': itemSchema.schemaType.typeName,
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ListSchema<V>) return false;
+    return baseFieldsEqual(other) && itemSchema == other.itemSchema;
+  }
+
+  @override
+  int get hashCode => Object.hash(baseFieldsHashCode, itemSchema);
 }

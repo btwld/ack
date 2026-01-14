@@ -69,4 +69,14 @@ final class AnySchema extends AckSchema<Object>
         typeSchema: {},
         serializedDefault: defaultValue,
       );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AnySchema) return false;
+    return baseFieldsEqual(other);
+  }
+
+  @override
+  int get hashCode => baseFieldsHashCode;
 }

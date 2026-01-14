@@ -130,6 +130,20 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       serializedDefault: defaultValue?.name,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! EnumSchema<T>) return false;
+    final listEq = ListEquality<T>();
+    return baseFieldsEqual(other) && listEq.equals(values, other.values);
+  }
+
+  @override
+  int get hashCode {
+    final listEq = ListEquality<T>();
+    return Object.hash(baseFieldsHashCode, listEq.hash(values));
+  }
 }
 
 /// Internal constraint used for better error reporting in EnumSchema.
@@ -141,4 +155,26 @@ class _EnumValuesConstraint extends Constraint<Object?> {
         constraintKey: 'enum_value',
         description: 'Value must be one of: ${allowed.join(", ")}',
       );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! _EnumValuesConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    const listEq = ListEquality<String>();
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        listEq.equals(allowed, other.allowed);
+  }
+
+  @override
+  int get hashCode {
+    const listEq = ListEquality<String>();
+    return Object.hash(
+      runtimeType,
+      constraintKey,
+      description,
+      listEq.hash(allowed),
+    );
+  }
 }
