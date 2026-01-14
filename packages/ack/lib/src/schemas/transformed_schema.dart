@@ -102,4 +102,20 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     // Merge constraints from the TransformedSchema (e.g., DateTimeConstraint)
     return mergeConstraintSchemas(originalJsonSchema);
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! TransformedSchema<InputType, OutputType>) return false;
+    return baseFieldsEqual(other) &&
+        schema == other.schema &&
+        identical(transformer, other.transformer);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        baseFieldsHashCode,
+        schema,
+        transformer.hashCode,
+      );
 }

@@ -221,4 +221,24 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       'schemas': schemas.length,
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! DiscriminatedObjectSchema) return false;
+    const mapEq = MapEquality<String, AckSchema>();
+    return baseFieldsEqual(other) &&
+        discriminatorKey == other.discriminatorKey &&
+        mapEq.equals(schemas, other.schemas);
+  }
+
+  @override
+  int get hashCode {
+    const mapEq = MapEquality<String, AckSchema>();
+    return Object.hash(
+      baseFieldsHashCode,
+      discriminatorKey,
+      mapEq.hash(schemas),
+    );
+  }
 }

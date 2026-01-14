@@ -13,4 +13,6 @@ class NumberFiniteConstraint extends Constraint<double> with Validator<double> {
 
   @override
   String buildMessage(double value) => 'Value must be finite, but was not.';
+
+  // No additional fields - base class equality is sufficient.
 }

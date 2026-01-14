@@ -19,6 +19,18 @@ abstract class Constraint<T> {
   @override
   String toString() =>
       '$runtimeType(constraintKey: $constraintKey, description: "$description")';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Constraint<T>) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, constraintKey, description);
 }
 
 /// Represents an error that occurred due to a violated constraint.

@@ -62,4 +62,15 @@ final class StringSchema extends AckSchema<String>
         typeSchema: {'type': 'string'},
         serializedDefault: defaultValue,
       );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! StringSchema) return false;
+    return baseFieldsEqual(other) &&
+        strictPrimitiveParsing == other.strictPrimitiveParsing;
+  }
+
+  @override
+  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
 }

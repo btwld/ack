@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import '../common_types.dart';
@@ -335,5 +336,36 @@ sealed class AckSchema<DartType extends Object> {
       'defaultValue': defaultValue?.toString(),
       'constraints': constraints.map((c) => c.toMap()).toList(),
     };
+  }
+
+  /// Compares base schema fields for equality.
+  ///
+  /// Subclasses should call this as part of their == implementation
+  /// after the identical() and type checks.
+  @protected
+  bool baseFieldsEqual(AckSchema<DartType> other) {
+    const listEq = ListEquality<Object?>();
+    return isNullable == other.isNullable &&
+        isOptional == other.isOptional &&
+        description == other.description &&
+        defaultValue == other.defaultValue &&
+        listEq.equals(_constraints, other._constraints) &&
+        listEq.equals(_refinements, other._refinements);
+  }
+
+  /// Computes hash code for base schema fields.
+  ///
+  /// Subclasses should include this in their hashCode computation.
+  @protected
+  int get baseFieldsHashCode {
+    const listEq = ListEquality<Object?>();
+    return Object.hash(
+      isNullable,
+      isOptional,
+      description,
+      defaultValue,
+      listEq.hash(_constraints),
+      listEq.hash(_refinements),
+    );
   }
 }

@@ -45,4 +45,22 @@ class StringIpConstraint extends Constraint<String>
       ],
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! StringIpConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        version == other.version;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        version,
+      );
 }

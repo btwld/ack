@@ -228,4 +228,24 @@ final class ObjectSchema extends AckSchema<MapValue>
       'additionalProperties': additionalProperties,
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ObjectSchema) return false;
+    const mapEq = MapEquality<String, AckSchema>();
+    return baseFieldsEqual(other) &&
+        additionalProperties == other.additionalProperties &&
+        mapEq.equals(properties, other.properties);
+  }
+
+  @override
+  int get hashCode {
+    const mapEq = MapEquality<String, AckSchema>();
+    return Object.hash(
+      baseFieldsHashCode,
+      additionalProperties,
+      mapEq.hash(properties),
+    );
+  }
 }

@@ -94,4 +94,24 @@ class DateTimeConstraint extends Constraint<DateTime>
           'formatMaximum': reference.toIso8601String(),
         },
       };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! DateTimeConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        type == other.type &&
+        reference == other.reference;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        type,
+        reference,
+      );
 }

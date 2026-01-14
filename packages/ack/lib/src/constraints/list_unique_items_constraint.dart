@@ -76,4 +76,8 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
 
   @override
   Map<String, Object?> toJsonSchema() => {'uniqueItems': true};
+
+  // No additional fields - base class equality is sufficient.
+  // Explicitly not overriding == and hashCode as ListUniqueItemsConstraint
+  // has no type-specific fields beyond constraintKey and description.
 }

@@ -28,4 +28,22 @@ class StringLiteralConstraint extends Constraint<String>
     // 'const' is the most direct JSON Schema keyword for this.
     'const': expectedValue,
   };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! StringLiteralConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        expectedValue == other.expectedValue;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        runtimeType,
+        constraintKey,
+        description,
+        expectedValue,
+      );
 }

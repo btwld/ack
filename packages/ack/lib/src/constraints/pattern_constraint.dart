@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
+
 import '../helpers.dart';
 import 'constraint.dart';
 
@@ -327,4 +329,32 @@ class PatternConstraint extends Constraint<String>
       return <String, Object?>{};
     }(),
   };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! PatternConstraint) return false;
+    if (runtimeType != other.runtimeType) return false;
+    const listEq = ListEquality<String>();
+    return constraintKey == other.constraintKey &&
+        description == other.description &&
+        type == other.type &&
+        pattern?.pattern == other.pattern?.pattern &&
+        listEq.equals(allowedValues, other.allowedValues) &&
+        example == other.example;
+  }
+
+  @override
+  int get hashCode {
+    const listEq = ListEquality<String>();
+    return Object.hash(
+      runtimeType,
+      constraintKey,
+      description,
+      type,
+      pattern?.pattern,
+      listEq.hash(allowedValues),
+      example,
+    );
+  }
 }

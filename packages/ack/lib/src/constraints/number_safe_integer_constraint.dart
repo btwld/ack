@@ -19,4 +19,6 @@ class NumberSafeIntegerConstraint extends Constraint<int> with Validator<int> {
   @override
   String buildMessage(int value) =>
       'Value must be between -$maxSafeInteger and $maxSafeInteger, but was $value.';
+
+  // No additional fields - base class equality is sufficient.
 }
