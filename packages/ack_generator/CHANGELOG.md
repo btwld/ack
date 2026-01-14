@@ -1,3 +1,18 @@
+## 1.0.0-beta.5 (2026-01-14)
+
+### Features
+
+* **Doc comments**: Support doc comments for schema descriptions (#61). Field and class doc comments are now used to populate schema descriptions.
+
+### Bug Fixes
+
+* **List types**: Resolve list element types with method chain modifiers (#60). Fixed type resolution for complex list schemas with chained method calls.
+* **AckType casts**: Fix @AckType schema ref casts and improve nested schema handling (#59).
+
+### Improvements
+
+* **Dependencies**: Updated `ack`, `ack_annotations`, `meta` and `test` dependencies to latest versions (#56).
+
 ## 1.0.0-beta.4 (2025-12-29)
 
 ### Bug Fixes
