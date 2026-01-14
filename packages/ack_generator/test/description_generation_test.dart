@@ -444,4 +444,102 @@ class Product {
       );
     });
   });
+
+  group('Block Comment Description Tests', () {
+    test('generates field descriptions from block comments', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/test.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+class User {
+  /** The unique user identifier */
+  final String id;
+
+  User({required this.id});
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('final userSchema = Ack.object({'),
+              contains('.describe('),
+              contains('The unique user identifier'),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test('generates class description from block comment', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/test.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+/** A user account in the system */
+@AckModel()
+class User {
+  final String name;
+
+  User({required this.name});
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('Generated schema for User'),
+              contains('A user account in the system'),
+              contains('final userSchema = Ack.object({'),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test('handles multi-line block comments', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/test.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+class User {
+  /**
+   * The unique identifier
+   * for this user account
+   */
+  final String id;
+
+  User({required this.id});
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/test.g.dart': decodedMatches(
+            allOf([
+              contains('final userSchema = Ack.object({'),
+              contains('.describe('),
+              contains('The unique identifier for this user account'),
+            ]),
+          ),
+        },
+      );
+    });
+  });
 }
