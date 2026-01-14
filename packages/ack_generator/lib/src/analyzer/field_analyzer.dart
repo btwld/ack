@@ -60,7 +60,7 @@ class FieldAnalyzer {
     // Priority 2: Fallback to doc comment
     final docComment = field.documentationComment;
     if (docComment != null && docComment.isNotEmpty) {
-      return _parseDocComment(docComment);
+      return parseDocComment(docComment);
     }
 
     return null;
@@ -72,13 +72,15 @@ class FieldAnalyzer {
   /// - Single-line doc comments (/// ...)
   /// - Multi-line doc comments joined with spaces
   /// - Block doc comments (/** ... */)
-  String? _parseDocComment(String? docComment) {
+  ///
+  /// This is exposed as a static method for reuse by other analyzers.
+  static String? parseDocComment(String? docComment) {
     if (docComment == null || docComment.isEmpty) {
       return null;
     }
 
-    // Handle /// style comments
-    if (docComment.contains('///')) {
+    // Handle /// style comments (check startsWith to avoid false matches)
+    if (docComment.startsWith('///')) {
       final lines = docComment
           .split('\n')
           .map((line) => line.replaceFirst(RegExp(r'^\s*///\s?'), ''))
