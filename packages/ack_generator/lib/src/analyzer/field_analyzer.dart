@@ -59,12 +59,7 @@ class FieldAnalyzer {
     }
 
     // Priority 2: Fallback to doc comment
-    final docComment = field.documentationComment;
-    if (docComment != null && docComment.isNotEmpty) {
-      return parseDocComment(docComment);
-    }
-
-    return null;
+    return parseDocComment(field.documentationComment);
   }
 
   bool _isRequired(FieldElement2 field, DartObject? annotation) {
