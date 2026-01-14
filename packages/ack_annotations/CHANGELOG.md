@@ -1,3 +1,10 @@
+## 1.0.0-beta.5 (2026-01-14)
+
+### Improvements
+
+* **Documentation**: Fixed broken links and added missing API documentation (#57).
+* **Dependencies**: Updated `meta` dependency to latest version (#56).
+
 ## 1.0.0-beta.4 (2025-12-29)
 
 * Dependency version bump to align with ack v1.0.0-beta.4.

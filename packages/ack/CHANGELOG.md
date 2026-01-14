@@ -1,3 +1,13 @@
+## 1.0.0-beta.5 (2026-01-14)
+
+### Features
+
+* **Equality**: Implement value-based equality for schemas and constraints (#63). All schema and constraint classes now properly implement `==` and `hashCode` for structural comparison.
+
+### Improvements
+
+* **Dependencies**: Updated `meta` and `test` dependencies to latest versions (#56).
+
 ## 1.0.0-beta.4 (2025-12-29)
 
 ### Breaking Changes
