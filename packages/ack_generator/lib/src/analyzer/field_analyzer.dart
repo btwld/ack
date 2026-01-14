@@ -6,6 +6,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 import '../models/field_info.dart';
 import '../models/constraint_info.dart';
+import '../utils/doc_comment_utils.dart';
 
 /// Analyzes individual fields in a model
 class FieldAnalyzer {
@@ -49,13 +50,16 @@ class FieldAnalyzer {
   }
 
   String? _getDescription(FieldElement2 field, DartObject? annotation) {
+    // Priority 1: Check annotation (explicit override takes precedence)
     if (annotation != null) {
       final descriptionField = annotation.getField('description');
       if (descriptionField != null && !descriptionField.isNull) {
         return descriptionField.toStringValue();
       }
     }
-    return null;
+
+    // Priority 2: Fallback to doc comment
+    return parseDocComment(field.documentationComment);
   }
 
   bool _isRequired(FieldElement2 field, DartObject? annotation) {

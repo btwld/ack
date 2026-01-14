@@ -3,6 +3,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
+import '../utils/doc_comment_utils.dart';
 import 'field_analyzer.dart';
 
 /// Analyzes classes annotated with @AckModel
@@ -17,9 +18,9 @@ class ModelAnalyzer {
 
     final schemaClassName = schemaName ?? '${element.name3}Schema';
 
-    // Extract description if provided
+    // Extract description - annotation takes precedence, then doc comment
     final description = annotation.read('description').isNull
-        ? null
+        ? parseDocComment(element.documentationComment)
         : annotation.read('description').stringValue;
 
     // Extract additionalProperties settings

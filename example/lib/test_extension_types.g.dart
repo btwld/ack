@@ -10,6 +10,7 @@
 part of 'test_extension_types.dart';
 
 /// Generated schema for SimpleUser
+/// Simple model to test basic extension type generation
 final simpleUserSchema = Ack.object({
   'name': Ack.string(),
   'age': Ack.integer(),
@@ -17,6 +18,7 @@ final simpleUserSchema = Ack.object({
 });
 
 /// Generated schema for Address
+/// Model with nested types to test dependency ordering
 final addressSchema = Ack.object({
   'street': Ack.string(),
   'city': Ack.string(),
@@ -31,6 +33,7 @@ final userWithAddressSchema = Ack.object({
 });
 
 /// Generated schema for BlogPost
+/// Model with collections to test list handling
 final blogPostSchema = Ack.object({
   'title': Ack.string(),
   'content': Ack.string(),
