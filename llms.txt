@@ -184,11 +184,6 @@ final dateSchema = Ack.string()
   .minLength(10)
   .transform<DateTime>((value) => DateTime.parse(value!));
 
-// Transform with nullable handling
-final normalizedName = Ack.string()
-  .nullable()
-  .transform<String>((value) => value?.trim().toUpperCase() ?? 'UNKNOWN');
-
 // Add computed fields to objects
 final userWithAge = Ack.object({
   'name': Ack.string(),
