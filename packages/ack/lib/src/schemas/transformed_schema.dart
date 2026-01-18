@@ -33,9 +33,16 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     // Clone the default to prevent mutation of shared state.
     // This must happen BEFORE delegating to wrapped schema, because the wrapped
     // schema might not accept null (e.g., non-nullable StringSchema).
+    //
+    // NOTE: cloneDefault() returns List<Object?> or Map<Object?, Object?> for
+    // collections, which cannot be safely cast to parameterized OutputType like
+    // List<MyClass>. We use runtime type checking: if the clone is type-compatible,
+    // use it; otherwise fall back to the original (accepts mutation risk for
+    // parameterized collection defaults, but avoids runtime TypeError).
     if (inputValue == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!) as OutputType;
-      return applyConstraintsAndRefinements(clonedDefault, context);
+      final cloned = cloneDefault(defaultValue!);
+      final safeDefault = (cloned is OutputType) ? cloned : defaultValue!;
+      return applyConstraintsAndRefinements(safeDefault, context);
     }
 
     // For non-null input OR null input without default:

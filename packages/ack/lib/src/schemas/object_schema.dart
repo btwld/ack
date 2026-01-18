@@ -116,15 +116,16 @@ final class ObjectSchema extends AckSchema<MapValue>
     List<SchemaError> errors,
   ) {
     if (schema.isOptional) {
-      // Optional field with default - validate it
+      // Optional field with default - pass null to let child schema's handleNullInput
+      // clone the default and validate it (prevents mutation of shared defaults)
       if (schema.defaultValue != null) {
         final propertyContext = context.createChild(
           name: key,
           schema: schema,
-          value: schema.defaultValue,
+          value: null,
           pathSegment: key,
         );
-        final result = schema.parseAndValidate(schema.defaultValue, propertyContext);
+        final result = schema.parseAndValidate(null, propertyContext);
         result.match(
           onOk: (validatedValue) {
             if (validatedValue != null) {

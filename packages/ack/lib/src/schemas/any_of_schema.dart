@@ -42,9 +42,16 @@ final class AnyOfSchema extends AckSchema<Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Handle defaults with cloning
+    // NOTE: AnyOfSchema intentionally does NOT use handleNullInput because
+    // null handling has special semantics for union types:
+    //
+    // 1. If a DEFAULT exists: apply it first (consistent with other schemas)
+    // 2. If NO default: try member schemas first - a nullable member can accept null
+    // 3. AnyOfSchema's own isNullable is only checked AFTER all members fail
+    //
+    // This differs from handleNullInput which checks isNullable before trying validation.
     if (inputValue == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!) as Object;
+      final clonedDefault = cloneDefault(defaultValue!);
       return parseAndValidate(clonedDefault, context);
     }
 
