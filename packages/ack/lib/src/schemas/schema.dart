@@ -204,7 +204,8 @@ sealed class AckSchema<DartType extends Object> {
     if (inputValue != null) return null;
 
     if (defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!) as DartType;
+      // Clone without casting - processClonedDefault handles validation/typing
+      final clonedDefault = cloneDefault(defaultValue!);
       return processClonedDefault(clonedDefault, context);
     }
 
@@ -215,19 +216,19 @@ sealed class AckSchema<DartType extends Object> {
     return failNonNullable(context);
   }
 
-  /// Processes a cloned default value.
+  /// Processes a cloned default value through validation.
   ///
-  /// Override in composite schemas (Object, List, Discriminated) to call
-  /// [parseAndValidate] for recursive validation of nested structures.
+  /// Routes the cloned default through [parseAndValidate] to ensure proper
+  /// type conversion and validation for all schema types, including collections.
   ///
-  /// The default implementation applies constraints and refinements directly,
-  /// which is appropriate for scalar schemas (String, Int, Boolean, etc.).
+  /// Override in schemas where the default value type differs from input type
+  /// (e.g., TransformedSchema where default is OutputType, not InputType).
   @protected
   SchemaResult<DartType> processClonedDefault(
-    DartType clonedDefault,
+    Object? clonedDefault,
     SchemaContext context,
   ) {
-    return applyConstraintsAndRefinements(clonedDefault, context);
+    return parseAndValidate(clonedDefault, context);
   }
 
   /// The schema type category for this schema.

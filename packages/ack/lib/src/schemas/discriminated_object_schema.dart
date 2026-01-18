@@ -24,16 +24,6 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   @override
   SchemaType get schemaType => SchemaType.discriminated;
 
-  /// Override to recursively validate default values through parseAndValidate.
-  @override
-  @protected
-  SchemaResult<MapValue> processClonedDefault(
-    MapValue clonedDefault,
-    SchemaContext context,
-  ) {
-    return parseAndValidate(clonedDefault, context);
-  }
-
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(

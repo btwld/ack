@@ -19,40 +19,13 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   SchemaType get schemaType => SchemaType.array;
 
-  /// Override to handle `List<Object?>` from cloneDefault and validate through parseAndValidate.
-  ///
-  /// The base handleNullInput casts clonedDefault as DartType, but cloneDefault
-  /// returns `List<Object?>` which can't be cast to `List<V>`. We override to pass
-  /// the cloned list directly to parseAndValidate which handles item validation.
-  @override
-  @protected
-  SchemaResult<List<V>>? handleNullInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    if (inputValue != null) return null;
-
-    if (defaultValue != null) {
-      // cloneDefault returns List<Object?>, pass directly to parseAndValidate
-      // which will validate and convert each item through itemSchema
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
-    }
-
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
-    return failNonNullable(context);
-  }
-
   @override
   @protected
   SchemaResult<List<V>> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use overridden handleNullInput for null/default handling
+    // Use centralized null handling
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 

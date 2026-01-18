@@ -23,29 +23,29 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Handle TransformedSchema's own defaultValue for null input
+    // Handle TransformedSchema's own defaultValue for null input.
+    // Clone the default to prevent mutation of shared state.
     // This must happen BEFORE delegating to wrapped schema, because the wrapped
-    // schema might not accept null (e.g., non-nullable StringSchema)
-    if (inputValue == null) {
-      if (defaultValue case final dv?) {
-        // Use centralized constraints and refinements check
-        return applyConstraintsAndRefinements(dv, context);
-      }
+    // schema might not accept null (e.g., non-nullable StringSchema).
+    if (inputValue == null && defaultValue != null) {
+      final clonedDefault = cloneDefault(defaultValue!) as OutputType;
+      return applyConstraintsAndRefinements(clonedDefault, context);
     }
 
     // For non-null input OR null input without default:
-    // 1. Validate through underlying schema (handles type conversion, constraints, refinements)
+    // Delegate to underlying schema (handles type conversion, null validation, constraints)
+    // The inner schema determines if null is valid based on its own isNullable setting.
     final originalResult = schema.parseAndValidate(inputValue, context);
     if (originalResult.isFail) {
       return SchemaResult.fail(originalResult.getError());
     }
 
-    // 2. Transform the validated value (may be null if underlying schema is nullable)
+    // Transform the validated value (may be null if underlying schema is nullable)
     final validatedValue = originalResult.getOrNull();
     try {
       final transformedValue = transformer(validatedValue);
 
-      // 3. Use centralized constraints and refinements check
+      // Apply TransformedSchema's own constraints and refinements
       return applyConstraintsAndRefinements(transformedValue, context);
     } catch (e, st) {
       return SchemaResult.fail(

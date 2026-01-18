@@ -21,16 +21,6 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   SchemaType get schemaType => SchemaType.object;
 
-  /// Override to recursively validate default values through parseAndValidate.
-  @override
-  @protected
-  SchemaResult<MapValue> processClonedDefault(
-    MapValue clonedDefault,
-    SchemaContext context,
-  ) {
-    return parseAndValidate(clonedDefault, context);
-  }
-
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(
