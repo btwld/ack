@@ -188,8 +188,13 @@ sealed class AckSchema<DartType extends Object> {
   /// Handles null input according to schema's nullability and default value.
   ///
   /// This is the centralized null-handling logic that all schema types should use.
-  /// For composite schemas (Object, List, Discriminated), override [processClonedDefault]
-  /// to recursively validate the default structure instead of just applying constraints.
+  /// The base implementation of [processClonedDefault] calls [parseAndValidate],
+  /// ensuring composite schemas (Object, List, Discriminated) recursively validate
+  /// their structure without needing to override.
+  ///
+  /// Override [processClonedDefault] only in schemas where the default value type
+  /// differs from the input type (e.g., TransformedSchema where default is
+  /// OutputType, not InputType).
   ///
   /// Returns `null` if [inputValue] is not null (caller should continue with validation).
   /// Otherwise returns the appropriate [SchemaResult]:

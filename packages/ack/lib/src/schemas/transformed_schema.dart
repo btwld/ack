@@ -17,6 +17,12 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     super.refinements,
   });
 
+  // NOTE: TransformedSchema intentionally does NOT use the centralized
+  // handleNullInput/processClonedDefault pattern. This is because:
+  // 1. defaultValue is of type OutputType (post-transformation), not InputType
+  // 2. Using handleNullInput would route the default through parseAndValidate,
+  //    which would try to validate OutputType through the InputType inner schema
+  // 3. Instead, we handle null/default inline and clone the default manually
   @override
   @protected
   SchemaResult<OutputType> parseAndValidate(
