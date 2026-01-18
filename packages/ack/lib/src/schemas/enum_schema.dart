@@ -24,16 +24,9 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   @override
   @protected
   SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Inline null handling for scalar schema
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        return applyConstraintsAndRefinements(defaultValue!, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Use centralized null handling
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
 
     // Custom enum parsing logic
     T? parsed;

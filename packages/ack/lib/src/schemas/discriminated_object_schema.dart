@@ -24,24 +24,25 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   @override
   SchemaType get schemaType => SchemaType.discriminated;
 
+  /// Override to recursively validate default values through parseAndValidate.
+  @override
+  @protected
+  SchemaResult<MapValue> processClonedDefault(
+    MapValue clonedDefault,
+    SchemaContext context,
+  ) {
+    return parseAndValidate(clonedDefault, context);
+  }
+
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Null handling with default cloning
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
-        // Recursively validate (routes by discriminator)
-        return parseAndValidate(clonedDefault, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Use centralized null handling (delegates to processClonedDefault for defaults)
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
 
     // Type guard
     if (inputValue is! Map) {
