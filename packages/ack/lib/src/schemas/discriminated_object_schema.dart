@@ -4,6 +4,25 @@ part of 'schema.dart';
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
 /// `schemas` to validate the object.
+///
+/// **Important:** Child schemas must return `Map<String, Object?>`. If you need
+/// to transform the result into a custom type, apply `.transform()` to the
+/// discriminated schema itself, not to individual child schemas:
+///
+/// ```dart
+/// // Correct: transform the discriminated union
+/// final schema = Ack.discriminated(
+///   discriminatorKey: 'type',
+///   schemas: {
+///     'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
+///     'dog': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+///   },
+/// ).transform<Animal>((map) => switch (map['type']) {
+///   'cat' => Cat(map['name'] as String),
+///   'dog' => Dog(map['name'] as String),
+///   _ => throw StateError('Unknown type'),
+/// });
+/// ```
 @immutable
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, DiscriminatedObjectSchema> {
@@ -139,7 +158,24 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final validatedValue = result.getOrThrow() as MapValue;
+    final rawValue = result.getOrThrow();
+
+    // Child schemas must return Map types. If a transform was applied to a
+    // child schema that returns a non-Map type, this will fail. To transform
+    // discriminated union results, apply .transform() to the discriminated
+    // schema itself, not to individual child schemas.
+    if (rawValue is! Map) {
+      throw StateError(
+        'Discriminated union child schema for "$discValueRaw" returned '
+        '${rawValue.runtimeType} instead of Map. Child schemas in '
+        'Ack.discriminated() must return Map types. To transform the result, '
+        'use .transform() on the discriminated schema itself:\n\n'
+        '  Ack.discriminated(...).transform<YourType>((map) => ...)\n',
+      );
+    }
+
+    final validatedValue =
+        rawValue is MapValue ? rawValue : rawValue.cast<String, Object?>();
 
     return applyConstraintsAndRefinements(validatedValue, context);
   }
