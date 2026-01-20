@@ -210,7 +210,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         if (description != null) 'description': description,
         if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
-          baseSchema,
+          mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
         ],
       };

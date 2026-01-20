@@ -131,7 +131,7 @@ final class AnyOfSchema extends AckSchema<Object>
         if (description != null) 'description': description,
         if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
-          baseSchema,
+          mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
         ],
       };
