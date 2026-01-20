@@ -1,10 +1,10 @@
 # Ack - Schema Validation Library for Dart
 
-> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.4.
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.5.
 
 ## Overview
 
-Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.4 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.5 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
 
 **Repository**: https://github.com/btwld/ack
 **Documentation**: https://docs.page/btwld/ack
@@ -77,6 +77,16 @@ final userSchema = Ack.object({
 });
 ```
 
+**Note**: Object schemas are **strict by default** - extra fields not defined in the schema cause validation errors. Use `.passthrough()` to allow additional properties:
+
+```dart
+// Strict (default) - extra fields cause errors
+final strictSchema = Ack.object({'name': Ack.string()});
+
+// Permissive - allows extra fields
+final permissiveSchema = Ack.object({'name': Ack.string()}).passthrough();
+```
+
 ---
 
 ## Schema Modifiers and Constraints
@@ -142,7 +152,10 @@ Ack.list(Ack.string())
 
 ### Custom Validation with Refinements
 
+Refinements run **after** all constraints pass, receiving the validated (non-null) value:
+
 ```dart
+// Single-field refinement
 final passwordSchema = Ack.string()
   .minLength(8)
   .refine(
@@ -150,21 +163,35 @@ final passwordSchema = Ack.string()
     message: 'Password must contain at least one uppercase letter',
   );
 
-final ageSchema = Ack.integer()
-  .min(0)
-  .refine(
-    (age) => age < 150,
-    message: 'Age must be realistic',
-  );
+// Cross-field validation on objects (common pattern: password confirmation)
+final signupSchema = Ack.object({
+  'email': Ack.string().email(),
+  'password': Ack.string().minLength(8),
+  'confirmPassword': Ack.string().minLength(8),
+}).refine(
+  (data) => data['password'] == data['confirmPassword'],
+  message: 'Passwords do not match',
+);
 ```
 
 ### Transformations
 
+Transform converts validated data to a different type. The transformer receives a **nullable** value (`T?`) because the underlying schema might be nullable:
+
 ```dart
-// Transform validated value to different type
+// Transform string to DateTime (value is non-null after validation, so use !)
 final dateSchema = Ack.string()
   .minLength(10)
   .transform<DateTime>((value) => DateTime.parse(value!));
+
+// Add computed fields to objects
+final userWithAge = Ack.object({
+  'name': Ack.string(),
+  'birthYear': Ack.integer(),
+}).transform<Map<String, Object?>>((data) {
+  final birthYear = data!['birthYear'] as int;
+  return {...data, 'age': DateTime.now().year - birthYear};
+});
 ```
 
 ---
@@ -630,11 +657,11 @@ sealed class SchemaResult<T extends Object> {
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack: ^1.0.0-beta.4
-  ack_annotations: ^1.0.0-beta.4
+  ack: ^1.0.0-beta.5
+  ack_annotations: ^1.0.0-beta.5
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.4
+  ack_generator: ^1.0.0-beta.5
   build_runner: ^2.4.0
 ```
 
@@ -731,7 +758,7 @@ Converts Ack schemas to Firebase AI Schema format for structured output generati
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_firebase_ai: ^1.0.0-beta.4
+  ack_firebase_ai: ^1.0.0-beta.5
 ```
 
 ```dart
@@ -764,7 +791,7 @@ Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_json_schema_builder: ^1.0.0-beta.4
+  ack_json_schema_builder: ^1.0.0-beta.5
 ```
 
 ```dart

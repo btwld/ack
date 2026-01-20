@@ -49,18 +49,9 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Null handling with default cloning
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
-        // Recursively validate (routes by discriminator)
-        return parseAndValidate(clonedDefault, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Use centralized null handling (delegates to processClonedDefault for defaults)
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
 
     // Type guard
     if (inputValue is! Map) {
@@ -219,7 +210,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         if (description != null) 'description': description,
         if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
-          baseSchema,
+          mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
         ],
       };

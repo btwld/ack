@@ -27,21 +27,13 @@ final class AnySchema extends AckSchema<Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Inline null handling for scalar schema
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        // Clone the default to prevent mutation
-        final clonedDefault = cloneDefault(defaultValue!) as Object;
-        return applyConstraintsAndRefinements(clonedDefault, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Use centralized null handling
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
 
+    // After null check, inputValue is guaranteed non-null
     // Accept any non-null value as-is, then use centralized constraints and refinements check
-    return applyConstraintsAndRefinements(inputValue, context);
+    return applyConstraintsAndRefinements(inputValue!, context);
   }
 
   @override
