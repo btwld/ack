@@ -44,7 +44,10 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   /// Tolerance for floating-point multipleOf comparisons.
   ///
   /// Accounts for IEEE 754 floating-point representation errors when
-  /// checking if a number is a multiple of another.
+  /// checking if a number is a multiple of another. The value 1e-10 was chosen
+  /// to handle typical double precision errors (around 1e-15 to 1e-16) while
+  /// providing a safe margin for accumulated rounding in common use cases
+  /// like currency (0.01 multiples) and percentages (0.1 multiples).
   static const _multipleOfEpsilon = 1e-10;
 
   const ComparisonConstraint({
