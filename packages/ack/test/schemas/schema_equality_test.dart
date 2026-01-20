@@ -116,9 +116,12 @@ void main() {
       });
 
       test('different additionalProperties are not equal', () {
-        final a = Ack.object({'name': Ack.string()}, additionalProperties: true);
-        final b =
-            Ack.object({'name': Ack.string()}, additionalProperties: false);
+        final a = Ack.object({
+          'name': Ack.string(),
+        }, additionalProperties: true);
+        final b = Ack.object({
+          'name': Ack.string(),
+        }, additionalProperties: false);
         expect(a, isNot(equals(b)));
       });
 
@@ -178,11 +181,15 @@ void main() {
       test('different discriminator keys are not equal', () {
         final a = Ack.discriminated(
           discriminatorKey: 'type',
-          schemas: {'user': Ack.object({'name': Ack.string()})},
+          schemas: {
+            'user': Ack.object({'name': Ack.string()}),
+          },
         );
         final b = Ack.discriminated(
           discriminatorKey: 'kind',
-          schemas: {'user': Ack.object({'name': Ack.string()})},
+          schemas: {
+            'user': Ack.object({'name': Ack.string()}),
+          },
         );
         expect(a, isNot(equals(b)));
       });
@@ -273,8 +280,14 @@ void main() {
       });
 
       test('different refinement functions are not equal', () {
-        final a = Ack.string().refine((v) => v.isNotEmpty, message: 'not empty');
-        final b = Ack.string().refine((v) => v.length > 1, message: 'not empty');
+        final a = Ack.string().refine(
+          (v) => v.isNotEmpty,
+          message: 'not empty',
+        );
+        final b = Ack.string().refine(
+          (v) => v.length > 1,
+          message: 'not empty',
+        );
         expect(a, isNot(equals(b)));
       });
     });

@@ -216,10 +216,7 @@ void main() {
         final userSchema = Ack.object({
           'id': Ack.string().uuid().describe('Unique user identifier'),
           'email': Ack.string().email().describe('User email address'),
-          'age': Ack.integer()
-              .min(13)
-              .max(120)
-              .describe('User age in years'),
+          'age': Ack.integer().min(13).max(120).describe('User age in years'),
           'preferences': Ack.object({
             'theme': Ack.enumString([
               'light',

@@ -59,9 +59,9 @@ final class BooleanSchema extends AckSchema<bool>
 
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-        typeSchema: {'type': 'boolean'},
-        serializedDefault: defaultValue,
-      );
+    typeSchema: {'type': 'boolean'},
+    serializedDefault: defaultValue,
+  );
 
   @override
   bool operator ==(Object other) {

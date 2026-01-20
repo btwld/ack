@@ -4,11 +4,30 @@ part of 'schema.dart';
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
 /// `schemas` to validate the object.
+///
+/// **Important:** Child schemas must return `Map<String, Object?>`. If you need
+/// to transform the result into a custom type, apply `.transform()` to the
+/// discriminated schema itself, not to individual child schemas:
+///
+/// ```dart
+/// // Correct: transform the discriminated union
+/// final schema = Ack.discriminated(
+///   discriminatorKey: 'type',
+///   schemas: {
+///     'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
+///     'dog': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+///   },
+/// ).transform<Animal>((map) => switch (map['type']) {
+///   'cat' => Cat(map['name'] as String),
+///   'dog' => Dog(map['name'] as String),
+///   _ => throw StateError('Unknown type'),
+/// });
+/// ```
 @immutable
 final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     with FluentSchema<MapValue, DiscriminatedObjectSchema> {
   final String discriminatorKey;
-  final Map<String, AckSchema> schemas;
+  final Map<String, AckSchema<MapValue>> schemas;
 
   const DiscriminatedObjectSchema({
     required this.discriminatorKey,
@@ -96,7 +115,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final AckSchema? selectedSubSchema = schemas[discValueRaw];
+    final AckSchema<MapValue>? selectedSubSchema = schemas[discValueRaw];
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
@@ -139,7 +158,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final validatedValue = result.getOrThrow() as MapValue;
+    final validatedValue = result.getOrThrow()!;
 
     return applyConstraintsAndRefinements(validatedValue, context);
   }
@@ -147,7 +166,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   @override
   DiscriminatedObjectSchema copyWith({
     String? discriminatorKey,
-    Map<String, AckSchema>? schemas,
+    Map<String, AckSchema<MapValue>>? schemas,
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -226,7 +245,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DiscriminatedObjectSchema) return false;
-    const mapEq = MapEquality<String, AckSchema>();
+    const mapEq = MapEquality<String, AckSchema<MapValue>>();
     return baseFieldsEqual(other) &&
         discriminatorKey == other.discriminatorKey &&
         mapEq.equals(schemas, other.schemas);
@@ -234,7 +253,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
   @override
   int get hashCode {
-    const mapEq = MapEquality<String, AckSchema>();
+    const mapEq = MapEquality<String, AckSchema<MapValue>>();
     return Object.hash(
       baseFieldsHashCode,
       discriminatorKey,

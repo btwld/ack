@@ -203,7 +203,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     // Zod uses {} (empty schema) for true, false for false
-    final additionalPropertiesValue = additionalProperties ? <String, Object?>{} : false;
+    final additionalPropertiesValue = additionalProperties
+        ? <String, Object?>{}
+        : false;
 
     return buildJsonSchemaWithNullable(
       typeSchema: {

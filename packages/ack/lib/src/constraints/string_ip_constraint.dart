@@ -57,10 +57,6 @@ class StringIpConstraint extends Constraint<String>
   }
 
   @override
-  int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        version,
-      );
+  int get hashCode =>
+      Object.hash(runtimeType, constraintKey, description, version);
 }

@@ -59,9 +59,9 @@ final class StringSchema extends AckSchema<String>
 
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-        typeSchema: {'type': 'string'},
-        serializedDefault: defaultValue,
-      );
+    typeSchema: {'type': 'string'},
+    serializedDefault: defaultValue,
+  );
 
   @override
   bool operator ==(Object other) {

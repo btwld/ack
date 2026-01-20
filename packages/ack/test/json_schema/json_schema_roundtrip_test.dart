@@ -284,8 +284,18 @@ void main() {
     test('allOf schema round-trips correctly', () {
       final input = <String, Object?>{
         'allOf': [
-          {'type': 'object', 'properties': {'id': {'type': 'integer'}}},
-          {'type': 'object', 'properties': {'name': {'type': 'string'}}},
+          {
+            'type': 'object',
+            'properties': {
+              'id': {'type': 'integer'},
+            },
+          },
+          {
+            'type': 'object',
+            'properties': {
+              'name': {'type': 'string'},
+            },
+          },
         ],
       };
 
@@ -357,8 +367,18 @@ void main() {
     test('anyOf without top-level type round-trips correctly', () {
       final input = <String, Object?>{
         'anyOf': [
-          {'type': 'object', 'properties': {'type': {'type': 'string'}}},
-          {'type': 'object', 'properties': {'kind': {'type': 'string'}}},
+          {
+            'type': 'object',
+            'properties': {
+              'type': {'type': 'string'},
+            },
+          },
+          {
+            'type': 'object',
+            'properties': {
+              'kind': {'type': 'string'},
+            },
+          },
         ],
       };
 
@@ -430,7 +450,10 @@ void main() {
           },
           'tags': {
             'anyOf': [
-              {'type': 'array', 'items': {'type': 'string'}},
+              {
+                'type': 'array',
+                'items': {'type': 'string'},
+              },
               {'type': 'null'},
             ],
           },
@@ -455,7 +478,10 @@ void main() {
           {
             'type': 'object',
             'properties': {
-              'type': {'type': 'string', 'enum': ['card']},
+              'type': {
+                'type': 'string',
+                'enum': ['card'],
+              },
               'cardNumber': {'type': 'string'},
               'cvv': {'type': 'string'},
             },
@@ -464,7 +490,10 @@ void main() {
           {
             'type': 'object',
             'properties': {
-              'type': {'type': 'string', 'enum': ['bank']},
+              'type': {
+                'type': 'string',
+                'enum': ['bank'],
+              },
               'accountNumber': {'type': 'string'},
               'routingNumber': {'type': 'string'},
             },
@@ -545,7 +574,12 @@ void main() {
         output,
         equals({
           'anyOf': [
-            {'type': 'string', 'minLength': 5, 'maxLength': 100, 'pattern': r'^[A-Z]'},
+            {
+              'type': 'string',
+              'minLength': 5,
+              'maxLength': 100,
+              'pattern': r'^[A-Z]',
+            },
             {'type': 'null'},
           ],
         }),
@@ -627,10 +661,7 @@ void main() {
 
     test('simple type + nullable wraps in anyOf with null', () {
       // Existing behavior: type + nullable wraps in anyOf
-      final schema = JsonSchema(
-        type: JsonSchemaType.string,
-        nullable: true,
-      );
+      final schema = JsonSchema(type: JsonSchemaType.string, nullable: true);
       final json = schema.toJson();
 
       final anyOf = json['anyOf'] as List;
