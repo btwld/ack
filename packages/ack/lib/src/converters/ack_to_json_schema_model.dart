@@ -32,10 +32,14 @@ JsonSchema _convert(AckSchema schema) {
     ObjectSchema() => _object(schema, effective, nullableFlag),
     AnyOfSchema() => _anyOf(schema),
     AnySchema() => _any(schema, effective, nullableFlag),
-    DiscriminatedObjectSchema() => _discriminated(schema, effective, nullableFlag),
+    DiscriminatedObjectSchema() => _discriminated(
+      schema,
+      effective,
+      nullableFlag,
+    ),
     _ => throw UnsupportedError(
-        'Schema type ${schema.runtimeType} not supported for JsonSchema conversion.',
-      ),
+      'Schema type ${schema.runtimeType} not supported for JsonSchema conversion.',
+    ),
   };
 }
 
@@ -123,7 +127,10 @@ JsonSchema _object(ObjectSchema schema, JsonSchema json, bool nullableFlag) {
 
   for (final entry in schema.properties.entries) {
     ordering.add(entry.key);
-    props[entry.key] = wrapPropertyConversion(entry.key, () => _convert(entry.value));
+    props[entry.key] = wrapPropertyConversion(
+      entry.key,
+      () => _convert(entry.value),
+    );
     if (!entry.value.isOptional) {
       required.add(entry.key);
     }
@@ -179,7 +186,7 @@ JsonSchema _discriminated(
   DiscriminatedObjectSchema schema,
   JsonSchema json,
   bool nullableFlag,
-  ) {
+) {
   if (schema.schemas.isEmpty) {
     return JsonSchema(
       type: JsonSchemaType.object,

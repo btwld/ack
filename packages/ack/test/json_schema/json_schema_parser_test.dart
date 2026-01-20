@@ -8,10 +8,7 @@ import 'package:test/test.dart';
 void main() {
   group('JsonSchema Parser - Valid Inputs', () {
     test('accepts schema with type field', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 'string'}),
-        returnsNormally,
-      );
+      expect(() => JsonSchema.fromJson({'type': 'string'}), returnsNormally);
     });
 
     test('accepts schema with anyOf (no type field)', () {
@@ -50,10 +47,7 @@ void main() {
     });
 
     test('accepts empty schema', () {
-      expect(
-        () => JsonSchema.fromJson({}),
-        returnsNormally,
-      );
+      expect(() => JsonSchema.fromJson({}), returnsNormally);
     });
 
     test('accepts schema with only metadata', () {
@@ -67,7 +61,15 @@ void main() {
     });
 
     test('accepts all primitive types', () {
-      for (final type in ['string', 'number', 'integer', 'boolean', 'null', 'array', 'object']) {
+      for (final type in [
+        'string',
+        'number',
+        'integer',
+        'boolean',
+        'null',
+        'array',
+        'object',
+      ]) {
         expect(
           () => JsonSchema.fromJson({'type': type}),
           returnsNormally,
@@ -77,18 +79,9 @@ void main() {
     });
 
     test('accepts type field with different casings', () {
-      expect(
-        () => JsonSchema.fromJson({'type': 'String'}),
-        returnsNormally,
-      );
-      expect(
-        () => JsonSchema.fromJson({'type': 'STRING'}),
-        returnsNormally,
-      );
-      expect(
-        () => JsonSchema.fromJson({'type': 'StRiNg'}),
-        returnsNormally,
-      );
+      expect(() => JsonSchema.fromJson({'type': 'String'}), returnsNormally);
+      expect(() => JsonSchema.fromJson({'type': 'STRING'}), returnsNormally);
+      expect(() => JsonSchema.fromJson({'type': 'StRiNg'}), returnsNormally);
     });
   });
 
@@ -130,7 +123,10 @@ void main() {
     });
 
     test('ignores non-numeric minLength (coerces to null)', () {
-      final schema = JsonSchema.fromJson({'type': 'string', 'minLength': 'five'});
+      final schema = JsonSchema.fromJson({
+        'type': 'string',
+        'minLength': 'five',
+      });
       expect(schema.minLength, isNull);
     });
 
@@ -150,7 +146,10 @@ void main() {
     });
 
     test('non-list enum is ignored', () {
-      final schema = JsonSchema.fromJson({'type': 'string', 'enum': 'not-a-list'});
+      final schema = JsonSchema.fromJson({
+        'type': 'string',
+        'enum': 'not-a-list',
+      });
       expect(schema.enumValues, isNull);
     });
 
@@ -187,16 +186,16 @@ void main() {
     });
 
     test('non-numeric minimum is ignored', () {
-      final schema = JsonSchema.fromJson({'type': 'integer', 'minimum': 'zero'});
+      final schema = JsonSchema.fromJson({
+        'type': 'integer',
+        'minimum': 'zero',
+      });
       expect(schema.minimum, isNull);
     });
 
     test('accepts multipleOf', () {
       expect(
-        () => JsonSchema.fromJson({
-          'type': 'number',
-          'multipleOf': 0.01,
-        }),
+        () => JsonSchema.fromJson({'type': 'number', 'multipleOf': 0.01}),
         returnsNormally,
       );
     });
@@ -278,7 +277,9 @@ void main() {
       expect(
         () => JsonSchema.fromJson({
           'type': 'object',
-          'properties': {'name': {'type': 'string'}},
+          'properties': {
+            'name': {'type': 'string'},
+          },
           'required': ['name'],
         }),
         returnsNormally,
@@ -288,7 +289,9 @@ void main() {
     test('non-list required is ignored', () {
       final schema = JsonSchema.fromJson({
         'type': 'object',
-        'properties': {'name': {'type': 'string'}},
+        'properties': {
+          'name': {'type': 'string'},
+        },
         'required': 'name',
       });
       expect(schema.required, isNull);
@@ -330,11 +333,15 @@ void main() {
           'anyOf': [
             {
               'type': 'object',
-              'properties': {'name': {'type': 'string'}},
+              'properties': {
+                'name': {'type': 'string'},
+              },
             },
             {
               'type': 'object',
-              'properties': {'id': {'type': 'integer'}},
+              'properties': {
+                'id': {'type': 'integer'},
+              },
             },
           ],
         }),
@@ -469,13 +476,17 @@ void main() {
     });
 
     test('union type with null marks schema nullable', () {
-      final schema = JsonSchema.fromJson({'type': ['string', 'null']});
+      final schema = JsonSchema.fromJson({
+        'type': ['string', 'null'],
+      });
       expect(schema.singleType, JsonSchemaType.string);
       expect(schema.nullable, isTrue);
     });
 
     test('multiple union types pick first known type', () {
-      final schema = JsonSchema.fromJson({'type': ['string', 'number', 'boolean']});
+      final schema = JsonSchema.fromJson({
+        'type': ['string', 'number', 'boolean'],
+      });
       expect(schema.singleType, isNull);
       expect(schema.anyOf, isNotNull);
       expect(schema.anyOf, hasLength(3));
@@ -483,7 +494,9 @@ void main() {
     });
 
     test('acceptsNull returns true for nullable types', () {
-      final schema = JsonSchema.fromJson({'type': ['string', 'null']});
+      final schema = JsonSchema.fromJson({
+        'type': ['string', 'null'],
+      });
       expect(schema.acceptsNull, isTrue);
     });
 
@@ -498,7 +511,9 @@ void main() {
     });
 
     test('unknown types in array are ignored', () {
-      final schema = JsonSchema.fromJson({'type': ['string', 'unknown', 'null']});
+      final schema = JsonSchema.fromJson({
+        'type': ['string', 'unknown', 'null'],
+      });
       expect(schema.singleType, JsonSchemaType.string);
       expect(schema.nullable, isTrue);
     });
@@ -512,7 +527,9 @@ void main() {
   group('JsonSchema Parser - Typeless Schemas', () {
     test('accepts enum without type', () {
       expect(
-        () => JsonSchema.fromJson({'enum': ['red', 'green', 'blue']}),
+        () => JsonSchema.fromJson({
+          'enum': ['red', 'green', 'blue'],
+        }),
         returnsNormally,
       );
     });
@@ -530,34 +547,34 @@ void main() {
 
     test('accepts items without type', () {
       expect(
-        () => JsonSchema.fromJson({'items': {'type': 'string'}}),
+        () => JsonSchema.fromJson({
+          'items': {'type': 'string'},
+        }),
         returnsNormally,
       );
     });
 
     test('accepts minLength without type', () {
-      expect(
-        () => JsonSchema.fromJson({'minLength': 5}),
-        returnsNormally,
-      );
+      expect(() => JsonSchema.fromJson({'minLength': 5}), returnsNormally);
     });
 
     test('accepts minimum without type', () {
-      expect(
-        () => JsonSchema.fromJson({'minimum': 0}),
-        returnsNormally,
-      );
+      expect(() => JsonSchema.fromJson({'minimum': 0}), returnsNormally);
     });
 
     test('accepts required without type', () {
       expect(
-        () => JsonSchema.fromJson({'required': ['name', 'email']}),
+        () => JsonSchema.fromJson({
+          'required': ['name', 'email'],
+        }),
         returnsNormally,
       );
     });
 
     test('enum without type can be parsed and serialized', () {
-      final input = {'enum': ['a', 'b', 'c']};
+      final input = {
+        'enum': ['a', 'b', 'c'],
+      };
       final schema = JsonSchema.fromJson(input);
       expect(schema.type, isNull);
       expect(schema.isEnum, isTrue);

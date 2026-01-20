@@ -272,7 +272,12 @@ void main() {
       expect(schema.singleType, JsonSchemaType.object);
       expect(schema.properties, isNotNull);
       // Should have nested object properties
-      expect(schema.properties!.values.any((s) => s.singleType == JsonSchemaType.object), isTrue);
+      expect(
+        schema.properties!.values.any(
+          (s) => s.singleType == JsonSchemaType.object,
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -291,7 +296,10 @@ void main() {
 
       expect(schema.anyOf, isNotNull);
       // Should have null option
-      expect(schema.anyOf!.any((s) => s.singleType == JsonSchemaType.null_), isTrue);
+      expect(
+        schema.anyOf!.any((s) => s.singleType == JsonSchemaType.null_),
+        isTrue,
+      );
     });
 
     test('parses Zod anyof-multiple-types fixture', () {
@@ -324,7 +332,10 @@ void main() {
 
       expect(schema.anyOf, isNotNull);
       // Should have null option
-      expect(schema.anyOf!.any((s) => s.singleType == JsonSchemaType.null_), isTrue);
+      expect(
+        schema.anyOf!.any((s) => s.singleType == JsonSchemaType.null_),
+        isTrue,
+      );
     });
   });
 

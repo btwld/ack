@@ -289,14 +289,18 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.gte => switch (category) {
         _ConstraintCategory.stringLength => {'minLength': threshold.toInt()},
         _ConstraintCategory.listItems => {'minItems': threshold.toInt()},
-        _ConstraintCategory.objectProperties => {'minProperties': threshold.toInt()},
+        _ConstraintCategory.objectProperties => {
+          'minProperties': threshold.toInt(),
+        },
         _ConstraintCategory.numeric => {'minimum': threshold},
       },
       ComparisonType.lt => {'exclusiveMaximum': threshold},
       ComparisonType.lte => switch (category) {
         _ConstraintCategory.stringLength => {'maxLength': threshold.toInt()},
         _ConstraintCategory.listItems => {'maxItems': threshold.toInt()},
-        _ConstraintCategory.objectProperties => {'maxProperties': threshold.toInt()},
+        _ConstraintCategory.objectProperties => {
+          'maxProperties': threshold.toInt(),
+        },
         _ConstraintCategory.numeric => {'maximum': threshold},
       },
       ComparisonType.eq => () {
@@ -304,7 +308,10 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
           return {'multipleOf': multipleValue};
         }
         if (category == _ConstraintCategory.stringLength) {
-          return {'minLength': threshold.toInt(), 'maxLength': threshold.toInt()};
+          return {
+            'minLength': threshold.toInt(),
+            'maxLength': threshold.toInt(),
+          };
         }
         return {'const': threshold};
       }(),
@@ -321,7 +328,10 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
           'minProperties': threshold.toInt(),
           'maxProperties': maxThreshold!.toInt(),
         },
-        _ConstraintCategory.numeric => {'minimum': threshold, 'maximum': maxThreshold},
+        _ConstraintCategory.numeric => {
+          'minimum': threshold,
+          'maximum': maxThreshold,
+        },
       },
     };
   }
@@ -341,12 +351,12 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
 
   @override
   int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        type,
-        threshold,
-        maxThreshold,
-        multipleValue,
-      );
+    runtimeType,
+    constraintKey,
+    description,
+    type,
+    threshold,
+    maxThreshold,
+    multipleValue,
+  );
 }

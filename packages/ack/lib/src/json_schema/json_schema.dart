@@ -33,9 +33,9 @@ class JsonSchemaDiscriminator {
   final Map<String, String>? mapping;
 
   Map<String, Object?> toJson() => {
-        'propertyName': propertyName,
-        if (mapping case final m?) 'mapping': m,
-      };
+    'propertyName': propertyName,
+    if (mapping case final m?) 'mapping': m,
+  };
 
   factory JsonSchemaDiscriminator.fromJson(Map<String, Object?> json) {
     final mapping = json['mapping'];
@@ -60,7 +60,8 @@ class JsonSchemaDiscriminator {
   }
 
   @override
-  int get hashCode => Object.hash(propertyName, const MapEquality().hash(mapping));
+  int get hashCode =>
+      Object.hash(propertyName, const MapEquality().hash(mapping));
 }
 
 @immutable
@@ -110,14 +111,15 @@ class JsonSchema {
     this.uniqueItems,
     this.additionalPropertiesSchema,
     this.additionalPropertiesAllowed,
-  })  : assert(
-          additionalPropertiesSchema == null || additionalPropertiesAllowed == null,
-          'Cannot set both schema and boolean for additionalProperties',
-        ),
-        assert(
-          anyOf == null || oneOf == null,
-          'Cannot set both anyOf and oneOf. Choose one composition strategy to avoid ambiguity.',
-        );
+  }) : assert(
+         additionalPropertiesSchema == null ||
+             additionalPropertiesAllowed == null,
+         'Cannot set both schema and boolean for additionalProperties',
+       ),
+       assert(
+         anyOf == null || oneOf == null,
+         'Cannot set both anyOf and oneOf. Choose one composition strategy to avoid ambiguity.',
+       );
 
   final JsonSchemaType? type;
   final String? format;
@@ -204,13 +206,13 @@ class JsonSchema {
     }
 
     // Handle simple type + nullable: wrap in anyOf with null branch
-    if (nullable == true && type != null && map['anyOf'] == null && map['oneOf'] == null) {
+    if (nullable == true &&
+        type != null &&
+        map['anyOf'] == null &&
+        map['oneOf'] == null) {
       final base = Map<String, Object?>.from(map);
       return {
-        'anyOf': [
-          base,
-          _nullSchema,
-        ],
+        'anyOf': [base, _nullSchema],
       };
     }
 
@@ -232,7 +234,8 @@ class JsonSchema {
     }
 
     bool? parseBool(Object? v) => v is bool ? v : null;
-    List<Object?>? parseList(Object? raw) => raw is List ? List<Object?>.from(raw) : null;
+    List<Object?>? parseList(Object? raw) =>
+        raw is List ? List<Object?>.from(raw) : null;
     List<JsonSchema>? parseSchemaList(Object? raw) {
       if (raw is List) {
         return raw
@@ -242,11 +245,13 @@ class JsonSchema {
       }
       return null;
     }
+
     List<String>? parseStringList(Object? raw) =>
         raw is List ? raw.map((e) => e.toString()).toList() : null;
 
     JsonSchema? parseSchema(Object? raw) {
-      if (raw is Map) return JsonSchema.fromJson(Map<String, Object?>.from(raw));
+      if (raw is Map)
+        return JsonSchema.fromJson(Map<String, Object?>.from(raw));
       return null;
     }
 
@@ -335,7 +340,8 @@ class JsonSchema {
   }
 
   // Compatibility helpers
-  List<String>? get enum_ => enumValues?.map((e) => e?.toString() ?? '').toList();
+  List<String>? get enum_ =>
+      enumValues?.map((e) => e?.toString() ?? '').toList();
   bool get acceptsNull =>
       nullable == true ||
       type == JsonSchemaType.null_ ||

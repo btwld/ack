@@ -8,9 +8,7 @@ void main() {
   group('Docs /guides/json-schema-integration.mdx', () {
     AckSchema<Map<String, Object?>> buildUserSchema() {
       return Ack.object({
-        'id': Ack.integer().positive().describe(
-          'Unique user identifier',
-        ),
+        'id': Ack.integer().positive().describe('Unique user identifier'),
         'name': Ack.string()
             .minLength(2)
             .maxLength(50)
@@ -21,11 +19,7 @@ void main() {
         'tags': Ack.list(
           Ack.string(),
         ).unique().describe('List of user tags').nullable(),
-        'age': Ack.integer()
-            .min(0)
-            .max(120)
-            .nullable()
-            .describe("User's age"),
+        'age': Ack.integer().min(0).max(120).nullable().describe("User's age"),
       }).describe('Represents a user in the system');
     }
 

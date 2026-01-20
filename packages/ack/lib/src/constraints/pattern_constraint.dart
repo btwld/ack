@@ -279,7 +279,10 @@ class PatternConstraint extends Constraint<String>
       PatternType.regex =>
         'Value "$nonNullValue" does not match required pattern${example != null ? " (e.g., $example)" : ""}.',
       PatternType.enumString => () {
-        final suggestion = buildDidYouMeanSuggestion(nonNullValue, allowedValues!);
+        final suggestion = buildDidYouMeanSuggestion(
+          nonNullValue,
+          allowedValues!,
+        );
         return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
       }(),
       PatternType.notEnumString =>
