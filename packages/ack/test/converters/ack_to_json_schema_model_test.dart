@@ -25,7 +25,10 @@ void main() {
     });
 
     test('keeps description on anyOf unions', () {
-      final schema = Ack.anyOf([Ack.string(), Ack.integer()]).describe('choice');
+      final schema = Ack.anyOf([
+        Ack.string(),
+        Ack.integer(),
+      ]).describe('choice');
 
       final json = schema.toJsonSchemaModel();
 
@@ -36,10 +39,14 @@ void main() {
     test('any() allows arrays of arrays (items left unconstrained)', () {
       final json = Ack.any().toJsonSchemaModel();
 
-      final arrayBranch =
-          json.anyOf!.firstWhere((s) => s.type == JsonSchemaType.array);
-      expect(arrayBranch.items, isNull,
-          reason: 'array branch should not constrain item types');
+      final arrayBranch = json.anyOf!.firstWhere(
+        (s) => s.type == JsonSchemaType.array,
+      );
+      expect(
+        arrayBranch.items,
+        isNull,
+        reason: 'array branch should not constrain item types',
+      );
     });
 
     test('preserves wrapper metadata when unwrapping nullable', () {

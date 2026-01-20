@@ -21,9 +21,9 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-        typeSchema: {'type': 'number'},
-        serializedDefault: defaultValue,
-      );
+    typeSchema: {'type': 'number'},
+    serializedDefault: defaultValue,
+  );
 }
 
 // --- IntegerSchema ---
@@ -81,9 +81,9 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-        typeSchema: {'type': 'integer'},
-        serializedDefault: defaultValue,
-      );
+    typeSchema: {'type': 'integer'},
+    serializedDefault: defaultValue,
+  );
 
   @override
   bool operator ==(Object other) {

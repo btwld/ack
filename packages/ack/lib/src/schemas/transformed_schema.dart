@@ -126,9 +126,6 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }
 
   @override
-  int get hashCode => Object.hash(
-        baseFieldsHashCode,
-        schema,
-        transformer.hashCode,
-      );
+  int get hashCode =>
+      Object.hash(baseFieldsHashCode, schema, transformer.hashCode);
 }

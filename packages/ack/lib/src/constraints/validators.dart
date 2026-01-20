@@ -82,12 +82,12 @@ class InvalidTypeConstraint extends Constraint<Object?>
 
   @override
   int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        expectedType,
-        actualType,
-      );
+    runtimeType,
+    constraintKey,
+    description,
+    expectedType,
+    actualType,
+  );
 }
 
 // --- Object Specific Constraints ---
@@ -130,11 +130,11 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
 
   @override
   int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        unexpectedPropertyKey,
-      );
+    runtimeType,
+    constraintKey,
+    description,
+    unexpectedPropertyKey,
+  );
 }
 
 /// Placeholder: Constraint for when an object is missing a required property.
@@ -169,10 +169,6 @@ class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
   }
 
   @override
-  int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        missingPropertyKey,
-      );
+  int get hashCode =>
+      Object.hash(runtimeType, constraintKey, description, missingPropertyKey);
 }

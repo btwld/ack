@@ -107,11 +107,6 @@ class DateTimeConstraint extends Constraint<DateTime>
   }
 
   @override
-  int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        type,
-        reference,
-      );
+  int get hashCode =>
+      Object.hash(runtimeType, constraintKey, description, type, reference);
 }

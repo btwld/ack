@@ -115,10 +115,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     final enumNames = values.map((e) => e.name).toList();
 
     return buildJsonSchemaWithNullable(
-      typeSchema: {
-        'type': 'string',
-        'enum': enumNames,
-      },
+      typeSchema: {'type': 'string', 'enum': enumNames},
       // Serialize enum default to its name
       serializedDefault: defaultValue?.name,
     );

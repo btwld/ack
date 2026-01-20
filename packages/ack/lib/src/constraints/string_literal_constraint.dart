@@ -40,10 +40,6 @@ class StringLiteralConstraint extends Constraint<String>
   }
 
   @override
-  int get hashCode => Object.hash(
-        runtimeType,
-        constraintKey,
-        description,
-        expectedValue,
-      );
+  int get hashCode =>
+      Object.hash(runtimeType, constraintKey, description, expectedValue);
 }
