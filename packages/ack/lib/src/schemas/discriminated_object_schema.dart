@@ -17,7 +17,7 @@ part of 'schema.dart';
 ///     'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
 ///     'dog': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
 ///   },
-/// ).transform<Animal>((map) => switch (map['type']) {
+/// ).transform<Animal>((map) => switch (map!['type']) {
 ///   'cat' => Cat(map['name'] as String),
 ///   'dog' => Dog(map['name'] as String),
 ///   _ => throw StateError('Unknown type'),
