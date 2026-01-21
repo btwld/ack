@@ -227,6 +227,10 @@ class ModelAnalyzer {
     List<ClassElement2> elements,
   ) {
     final updatedModelInfos = <ModelInfo>[];
+    final elementsByName = <String, ClassElement2>{
+      for (final element in elements)
+        if (element.name3 != null) element.name3!: element,
+    };
 
     // Group models by their discriminated state
     final baseClasses = <ModelInfo>[];
@@ -249,9 +253,13 @@ class ModelAnalyzer {
       final matchingSubtypes = <String, ClassElement2>{};
 
       // Find subtypes that belong to this base class
-      for (int i = 0; i < subtypes.length; i++) {
-        final subtype = subtypes[i];
-        final subtypeElement = elements[modelInfos.indexOf(subtype)];
+      for (final subtype in subtypes) {
+        final subtypeElement = elementsByName[subtype.className];
+        if (subtypeElement == null) {
+          throw ArgumentError(
+            'Subtype class ${subtype.className} not found in annotated elements.',
+          );
+        }
 
         // Check if this subtype extends the base class
         if (_isSubtypeOf(subtypeElement, baseClass.className)) {
@@ -298,10 +306,13 @@ class ModelAnalyzer {
       // Find the parent discriminator key for this subtype
       String? parentDiscriminatorKey;
       for (final baseClass in baseClasses) {
-        if (_isSubtypeOf(
-          elements[modelInfos.indexOf(subtype)],
-          baseClass.className,
-        )) {
+        final subtypeElement = elementsByName[subtype.className];
+        if (subtypeElement == null) {
+          throw ArgumentError(
+            'Subtype class ${subtype.className} not found in annotated elements.',
+          );
+        }
+        if (_isSubtypeOf(subtypeElement, baseClass.className)) {
           parentDiscriminatorKey = baseClass.discriminatorKey;
           break;
         }

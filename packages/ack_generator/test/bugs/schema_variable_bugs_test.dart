@@ -161,6 +161,70 @@ final nestedListSchema = Ack.object({
     });
   });
 
+  group('Top-level list schema variables', () {
+    test('resolves element type from schema variable reference', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final statusSchema = Ack.string().minLength(1);
+
+@AckType()
+final statusesSchema = Ack.list(statusSchema);
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'statusesSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+        expect(modelInfo!.representationType, equals('List<String>'));
+      });
+    });
+
+    test('supports prefixed Ack invocations in list schemas', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart' as ack;
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final statusSchema = ack.Ack.string();
+
+@AckType()
+final statusesSchema = ack.Ack.list(ack.Ack.string().minLength(2));
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'statusesSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+        expect(modelInfo!.representationType, equals('List<String>'));
+      });
+    });
+  });
+
   group('Nested schema references', () {
     test('resolves schema variable reference', () async {
       final assets = {

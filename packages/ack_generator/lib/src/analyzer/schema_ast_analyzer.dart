@@ -91,6 +91,9 @@ const _dartKeywords = {
 /// (like `Ack.object({...})`) to extract field type information without
 /// requiring const evaluation or string parsing.
 class SchemaAstAnalyzer {
+  final Map<String, String> _schemaVariableTypeCache = {};
+  final Set<String> _schemaVariableTypeStack = {};
+
   /// Analyzes a schema variable annotated with @AckType
   ///
   /// Walks the AST to extract type information from the schema definition.
@@ -158,25 +161,7 @@ class SchemaAstAnalyzer {
   }) {
     // Walk the method chain to find the base Ack.xxx() call
     // E.g., Ack.string().min(8) -> walk back to find Ack.string()
-    MethodInvocation? current = invocation;
-    MethodInvocation? baseInvocation;
-
-    while (current != null) {
-      final target = current.target;
-
-      // Check if this is the Ack.xxx() base call
-      if (target is SimpleIdentifier && target.name == 'Ack') {
-        baseInvocation = current;
-        break;
-      }
-
-      // Move to the next method in the chain
-      if (target is MethodInvocation) {
-        current = target;
-      } else {
-        break;
-      }
-    }
+    final baseInvocation = _findBaseAckInvocation(invocation);
 
     if (baseInvocation == null) {
       throw InvalidGenerationSourceError(
@@ -645,15 +630,105 @@ class SchemaAstAnalyzer {
     return (typeProvider.listType(typeProvider.dynamicType), null);
   }
 
+  /// Resolves a schema variable name to its representation type string.
+  ///
+  /// This is used for top-level list schemas so we can cast to the correct
+  /// element type (e.g., `String` for `Ack.string()` schema variables).
+  /// Falls back to `dynamic` if the schema variable cannot be resolved.
+  String _resolveSchemaVariableElementTypeString(
+    String schemaVarName,
+    Element2 element,
+  ) {
+    final cached = _schemaVariableTypeCache[schemaVarName];
+    if (cached != null) {
+      return cached;
+    }
+
+    if (_schemaVariableTypeStack.contains(schemaVarName)) {
+      _log.warning(
+        'Detected circular schema variable reference for "$schemaVarName". '
+        'Falling back to dynamic.',
+      );
+      return 'dynamic';
+    }
+
+    _schemaVariableTypeStack.add(schemaVarName);
+
+    String resolvedType = 'dynamic';
+    try {
+      final library = element.library2;
+      if (library == null) {
+        return resolvedType;
+      }
+
+      final schemaVar =
+          library.topLevelVariables.cast<TopLevelVariableElement2?>().firstWhere(
+                (v) => v?.name3 == schemaVarName,
+                orElse: () => null,
+              );
+
+      if (schemaVar == null) {
+        return resolvedType;
+      }
+
+      final modelInfo = analyzeSchemaVariable(schemaVar);
+      if (modelInfo == null) {
+        return resolvedType;
+      }
+
+      resolvedType = modelInfo.representationType;
+      return resolvedType;
+    } catch (e) {
+      _log.warning(
+        'Failed to resolve schema variable "$schemaVarName" for list element type: $e',
+      );
+      return resolvedType;
+    } finally {
+      _schemaVariableTypeStack.remove(schemaVarName);
+      _schemaVariableTypeCache[schemaVarName] = resolvedType;
+    }
+  }
+
+  /// Extracts the identifier name from different expression forms.
+  ///
+  /// Supports simple identifiers, prefixed identifiers (`prefix.name`),
+  /// and property accesses (`expr.name`).
+  String? _identifierName(Expression? expression) {
+    if (expression == null) return null;
+
+    if (expression is SimpleIdentifier) {
+      return expression.name;
+    }
+
+    if (expression is PrefixedIdentifier) {
+      return expression.identifier.name;
+    }
+
+    if (expression is PropertyAccess) {
+      return expression.propertyName.name;
+    }
+
+    return null;
+  }
+
+  bool _isAckTarget(Expression? target) {
+    return _identifierName(target) == 'Ack';
+  }
+
+  String? _extractSchemaVariableName(Expression? target) {
+    final name = _identifierName(target);
+    if (name == null || name == 'Ack') {
+      return null;
+    }
+    return name;
+  }
+
   /// Walks a method chain to find the base Ack.xxx() invocation.
   ///
   /// For `Ack.string().describe('...').optional()`, returns `Ack.string()`.
   /// For `Ack.integer().min(0).max(100)`, returns `Ack.integer()`.
   ///
   /// Returns `null` if no Ack.xxx() base is found.
-  ///
-  /// **Limitation:** Prefixed imports like `ack.Ack.string()` are not supported.
-  /// The target would be a `PrefixedIdentifier` rather than `SimpleIdentifier`.
   MethodInvocation? _findBaseAckInvocation(MethodInvocation invocation) {
     MethodInvocation current = invocation;
 
@@ -664,8 +739,8 @@ class SchemaAstAnalyzer {
     while (depth < maxDepth) {
       final target = current.target;
 
-      // Found base: target is 'Ack' identifier
-      if (target is SimpleIdentifier && target.name == 'Ack') {
+      // Found base: target is 'Ack' identifier (supports prefixed Ack)
+      if (_isAckTarget(target)) {
         return current;
       }
 
@@ -674,7 +749,7 @@ class SchemaAstAnalyzer {
         current = target;
         depth++;
       } else {
-        // Unknown target type (could be prefixed import, etc.)
+        // Unknown target type
         return null;
       }
     }
@@ -693,8 +768,6 @@ class SchemaAstAnalyzer {
   /// Returns `null` if the chain doesn't end with a schema variable identifier
   /// (e.g., if it's an Ack.xxx() chain or unknown structure).
   ///
-  /// **Limitation:** Prefixed imports are not supported. A schema variable
-  /// accessed via prefix (e.g., `schemas.itemSchema`) would not be recognized.
   String? _findSchemaVariableBase(MethodInvocation invocation) {
     MethodInvocation current = invocation;
 
@@ -704,13 +777,13 @@ class SchemaAstAnalyzer {
     while (depth < maxDepth) {
       final target = current.target;
 
-      // Found a SimpleIdentifier that's not 'Ack' - this is likely a schema variable
-      if (target is SimpleIdentifier && target.name != 'Ack') {
-        return target.name;
+      final schemaVarName = _extractSchemaVariableName(target);
+      if (schemaVarName != null) {
+        return schemaVarName;
       }
 
-      // If target is 'Ack', this is an Ack.xxx() chain, not a schema variable
-      if (target is SimpleIdentifier && target.name == 'Ack') {
+      // If target resolves to Ack, this is an Ack.xxx() chain
+      if (_isAckTarget(target)) {
         return null;
       }
 
@@ -921,7 +994,7 @@ class SchemaAstAnalyzer {
   /// This handles:
   /// - Primitive schemas: `Ack.list(Ack.string())` → 'String'
   /// - Nested lists: `Ack.list(Ack.list(Ack.int()))` → 'List<int>'
-  /// - Schema references: `Ack.list(addressSchema)` → 'Map<String, Object?>'
+  /// - Schema references: `Ack.list(addressSchema)` → resolves to the referenced schema's representation type
   String _extractListElementTypeString(
     MethodInvocation listInvocation,
     Element2 element,
@@ -934,26 +1007,34 @@ class SchemaAstAnalyzer {
 
     final firstArg = args.first;
 
-    // Handle Ack.list(Ack.xxx()) - nested method invocation
-    if (firstArg is MethodInvocation &&
-        firstArg.target is SimpleIdentifier &&
-        (firstArg.target as SimpleIdentifier).name == 'Ack') {
-      final methodName = firstArg.methodName.name;
+    // Handle Ack.list(Ack.xxx().chain()) - nested method invocation
+    if (firstArg is MethodInvocation) {
+      final baseInvocation = _findBaseAckInvocation(firstArg);
+      if (baseInvocation != null) {
+        final methodName = baseInvocation.methodName.name;
 
-      // Handle nested lists recursively
-      if (methodName == 'list') {
-        final nestedType = _extractListElementTypeString(firstArg, element);
-        return 'List<$nestedType>';
+        // Handle nested lists recursively
+        if (methodName == 'list') {
+          final nestedType =
+              _extractListElementTypeString(baseInvocation, element);
+          return 'List<$nestedType>';
+        }
+
+        // Map primitive schema types
+        return _mapSchemaMethodToType(methodName);
       }
 
-      // Map primitive schema types
-      return _mapSchemaMethodToType(methodName);
+      // Handle schema variable reference with method chain (e.g., schema.optional())
+      final schemaVarName = _findSchemaVariableBase(firstArg);
+      if (schemaVarName != null) {
+        return _resolveSchemaVariableElementTypeString(schemaVarName, element);
+      }
     }
 
-    // Handle Ack.list(schemaVariableName) - schema variable reference
-    if (firstArg is SimpleIdentifier) {
-      // Schema variable references result in Map<String, Object?> at the element level
-      return 'Map<String, Object?>';
+    // Handle Ack.list(schemaVariableName) - schema variable reference (simple or prefixed)
+    final schemaVarName = _extractSchemaVariableName(firstArg);
+    if (schemaVarName != null) {
+      return _resolveSchemaVariableElementTypeString(schemaVarName, element);
     }
 
     return 'dynamic';

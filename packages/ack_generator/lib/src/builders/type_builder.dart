@@ -48,6 +48,7 @@ class TypeBuilder {
         ..implements.add(refer(model.representationType))
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
+          _buildToJson(model),
           ..._buildGetters(model, allModels),
           // Only add args and copyWith for object schemas
           if (isObjectSchema) ...[
@@ -108,6 +109,7 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['${model.discriminatorKey}'] as String"),
           ),
+          _buildToJson(model),
           // Add factory constructor for parsing
           _buildDiscriminatedFactory(model, schemaVarName, subtypes),
           // Add safeParse static method
@@ -150,6 +152,7 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("'${model.discriminatorValue}'"),
           ),
+          _buildToJson(model),
           // Add regular field getters
           ..._buildGetters(model, allModels),
         ]),
@@ -239,6 +242,19 @@ class TypeBuilder {
     return docs;
   }
 
+  Method _buildToJson(ModelInfo model) {
+    final isObjectSchema = model.representationType == kMapType;
+    final valueVarName = isObjectSchema ? '_data' : '_value';
+
+    return Method(
+      (m) => m
+        ..name = 'toJson'
+        ..returns = refer(model.representationType)
+        ..lambda = true
+        ..body = Code(valueVarName),
+    );
+  }
+
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
@@ -292,15 +308,11 @@ return result.match(
   ) {
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
-
-    final cases = <String>[];
-    for (final entry in subtypes.entries) {
-      final discriminatorValue = entry.key;
-      final subtypeElement = entry.value;
-      final subtypeTypeName = '${subtypeElement.name3}Type';
-
-      cases.add("      '$discriminatorValue' => $subtypeTypeName(validated)");
-    }
+    final switchExpression = _buildDiscriminatorSwitchExpression(
+      'validated',
+      discriminatorKey,
+      subtypes,
+    );
 
     return Method(
       (m) => m
@@ -316,14 +328,23 @@ return result.match(
         ..returns = refer(typeName)
         ..body = Code('''
 final validated = $schemaVarName.parse(data) as Map<String, Object?>;
-return switch (validated['$discriminatorKey']) {
-${cases.join(',\n')},
-  _ => throw StateError('Unknown $discriminatorKey: \${validated["$discriminatorKey"]}'),
-};'''),
+return $switchExpression;'''),
     );
   }
 
-  Method _buildDiscriminatedSafeParse(ModelInfo model, String schemaVarName) {
+  Method _buildDiscriminatedSafeParse(
+    ModelInfo model,
+    String schemaVarName,
+  ) {
+    final typeName = _getExtensionTypeName(model);
+    final discriminatorKey = model.discriminatorKey!;
+    final subtypes = model.subtypes!;
+    final switchExpression = _buildDiscriminatorSwitchExpression(
+      'map',
+      discriminatorKey,
+      subtypes,
+    );
+
     return Method(
       (m) => m
         ..name = 'safeParse'
@@ -335,9 +356,39 @@ ${cases.join(',\n')},
               ..type = refer('Object?'),
           ),
         )
-        ..returns = refer('SchemaResult<Map<String, dynamic>>')
-        ..body = Code('return $schemaVarName.safeParse(data);'),
+        ..returns = refer('SchemaResult<$typeName>')
+        ..body = Code('''
+final result = $schemaVarName.safeParse(data);
+return result.match(
+  onOk: (validated) {
+    final map = validated as Map<String, Object?>;
+    final parsed = $switchExpression;
+    return SchemaResult.ok(parsed);
+  },
+  onFail: (error) => SchemaResult.fail(error),
+);'''),
     );
+  }
+
+  String _buildDiscriminatorSwitchExpression(
+    String mapVarName,
+    String discriminatorKey,
+    Map<String, ClassElement2> subtypes,
+  ) {
+    final cases = <String>[];
+    for (final entry in subtypes.entries) {
+      final discriminatorValue = entry.key;
+      final subtypeElement = entry.value;
+      final subtypeTypeName = '${subtypeElement.name3}Type';
+
+      cases.add("  '$discriminatorValue' => $subtypeTypeName($mapVarName)");
+    }
+
+    return '''
+switch ($mapVarName['$discriminatorKey']) {
+${cases.join(',\n')},
+  _ => throw StateError('Unknown $discriminatorKey: \${$mapVarName[\"$discriminatorKey\"]}'),
+}''';
   }
 
   List<Method> _buildGetters(ModelInfo model, List<ModelInfo> allModels) {
@@ -563,6 +614,9 @@ ${cases.join(',\n')},
     // Sets
     if (field.isSet) {
       final elementType = _getSetElementType(field, allModels);
+      if (_isCustomElementType(field, allModels)) {
+        return 'Set<${elementType}Type>';
+      }
       return 'Set<$elementType>';
     }
 

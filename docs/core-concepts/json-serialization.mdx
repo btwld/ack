@@ -199,7 +199,7 @@ if (result.isOk) {
 }
 ```
 
-**Note**: Nested schemas annotated with `@AckType()` generate their own extension types, but when referenced in object fields, getters return `Map<String, Object?>` rather than the typed extension type.
+**Note**: Nested schemas annotated with `@AckType()` generate their own extension types. When referenced in object fields or list elements, getters return the typed extension type (e.g., `AddressType`) when the reference can be resolved in the same library; unresolved references fall back to `Map<String, Object?>`.
 
 ## Key Considerations
 
