@@ -200,28 +200,36 @@ void main() {
       });
 
       test('InvalidTypeConstraint equal', () {
-        final a =
-            InvalidTypeConstraint.withTypes(expectedType: String, actualType: int);
-        final b =
-            InvalidTypeConstraint.withTypes(expectedType: String, actualType: int);
+        final a = InvalidTypeConstraint.withTypes(
+          expectedType: String,
+          actualType: int,
+        );
+        final b = InvalidTypeConstraint.withTypes(
+          expectedType: String,
+          actualType: int,
+        );
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
 
       test('ObjectNoAdditionalPropertiesConstraint equal', () {
-        final a =
-            ObjectNoAdditionalPropertiesConstraint(unexpectedPropertyKey: 'foo');
-        final b =
-            ObjectNoAdditionalPropertiesConstraint(unexpectedPropertyKey: 'foo');
+        final a = ObjectNoAdditionalPropertiesConstraint(
+          unexpectedPropertyKey: 'foo',
+        );
+        final b = ObjectNoAdditionalPropertiesConstraint(
+          unexpectedPropertyKey: 'foo',
+        );
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
 
       test('ObjectRequiredPropertiesConstraint equal', () {
-        final a =
-            ObjectRequiredPropertiesConstraint(missingPropertyKey: 'name');
-        final b =
-            ObjectRequiredPropertiesConstraint(missingPropertyKey: 'name');
+        final a = ObjectRequiredPropertiesConstraint(
+          missingPropertyKey: 'name',
+        );
+        final b = ObjectRequiredPropertiesConstraint(
+          missingPropertyKey: 'name',
+        );
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });

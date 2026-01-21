@@ -251,10 +251,7 @@ void main() {
 
     test('parses list of objects', () {
       final ackSchema = Ack.list(
-        Ack.object({
-          'id': Ack.integer(),
-          'name': Ack.string(),
-        }),
+        Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
       );
       final jsonMap = ackSchema.toJsonSchema();
       final jsonSchema = JsonSchema.fromJson(jsonMap);
@@ -263,8 +260,14 @@ void main() {
       expect(jsonSchema.items, isNotNull);
       expect(jsonSchema.items!.singleType, JsonSchemaType.object);
       expect(jsonSchema.items!.properties, isNotNull);
-      expect(jsonSchema.items!.properties!['id']!.singleType, JsonSchemaType.integer);
-      expect(jsonSchema.items!.properties!['name']!.singleType, JsonSchemaType.string);
+      expect(
+        jsonSchema.items!.properties!['id']!.singleType,
+        JsonSchemaType.integer,
+      );
+      expect(
+        jsonSchema.items!.properties!['name']!.singleType,
+        JsonSchemaType.string,
+      );
     });
 
     test('parses nullable list', () {
@@ -326,10 +329,9 @@ void main() {
     });
 
     test('parses object with additionalProperties', () {
-      final ackSchema = Ack.object(
-        {'name': Ack.string()},
-        additionalProperties: true,
-      );
+      final ackSchema = Ack.object({
+        'name': Ack.string(),
+      }, additionalProperties: true);
       final jsonMap = ackSchema.toJsonSchema();
       final jsonSchema = JsonSchema.fromJson(jsonMap);
 
@@ -349,11 +351,7 @@ void main() {
 
   group('JsonSchema ACK Integration - AnyOf Schemas', () {
     test('parses anyOf with primitives', () {
-      final ackSchema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-        Ack.boolean(),
-      ]);
+      final ackSchema = Ack.anyOf([Ack.string(), Ack.integer(), Ack.boolean()]);
       final jsonMap = ackSchema.toJsonSchema();
       final jsonSchema = JsonSchema.fromJson(jsonMap);
 
@@ -379,10 +377,7 @@ void main() {
     });
 
     test('parses nullable anyOf', () {
-      final ackSchema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]).nullable();
+      final ackSchema = Ack.anyOf([Ack.string(), Ack.integer()]).nullable();
       final jsonMap = ackSchema.toJsonSchema();
       final jsonSchema = JsonSchema.fromJson(jsonMap);
 
@@ -430,14 +425,8 @@ void main() {
       final ackSchema = Ack.discriminated(
         discriminatorKey: 'type',
         schemas: {
-          'user': Ack.object({
-            'name': Ack.string(),
-            'email': Ack.string(),
-          }),
-          'admin': Ack.object({
-            'name': Ack.string(),
-            'role': Ack.string(),
-          }),
+          'user': Ack.object({'name': Ack.string(), 'email': Ack.string()}),
+          'admin': Ack.object({'name': Ack.string(), 'role': Ack.string()}),
         },
       );
       final jsonMap = ackSchema.toJsonSchema();
@@ -502,7 +491,10 @@ void main() {
       expect(jsonSchema.properties!['id']!.exclusiveMinimum, 0);
 
       // Verify email field
-      expect(jsonSchema.properties!['email']!.singleType, JsonSchemaType.string);
+      expect(
+        jsonSchema.properties!['email']!.singleType,
+        JsonSchemaType.string,
+      );
       expect(jsonSchema.properties!['email']!.format, 'email');
       expect(jsonSchema.properties!['email']!.minLength, 5);
       expect(jsonSchema.properties!['email']!.maxLength, 100);

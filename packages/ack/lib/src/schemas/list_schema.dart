@@ -25,18 +25,9 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Null handling with default cloning to prevent mutation
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        final clonedDefault = cloneDefault(defaultValue!);
-        // Recursively validate the cloned default
-        return parseAndValidate(clonedDefault, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Use centralized null handling
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
 
     // Type guard
     if (inputValue is! List) {
@@ -114,12 +105,9 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-        typeSchema: {
-          'type': 'array',
-          'items': itemSchema.toJsonSchema(),
-        },
-        serializedDefault: defaultValue,
-      );
+    typeSchema: {'type': 'array', 'items': itemSchema.toJsonSchema()},
+    serializedDefault: defaultValue,
+  );
 
   @override
   Map<String, Object?> toMap() {

@@ -1,3 +1,4 @@
+import 'common_types.dart';
 import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
@@ -32,7 +33,7 @@ final class Ack {
   /// Creates a discriminated object schema for polymorphic validation.
   static DiscriminatedObjectSchema discriminated({
     required String discriminatorKey,
-    required Map<String, AckSchema> schemas,
+    required Map<String, AckSchema<MapValue>> schemas,
   }) => DiscriminatedObjectSchema(
     discriminatorKey: discriminatorKey,
     schemas: schemas,

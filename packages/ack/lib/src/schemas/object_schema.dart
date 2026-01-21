@@ -27,18 +27,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Null handling with default cloning to prevent mutation
-    if (inputValue == null) {
-      if (defaultValue != null) {
-        final clonedDefault = cloneDefault(defaultValue!) as MapValue;
-        // Recursively validate the cloned default
-        return parseAndValidate(clonedDefault, context);
-      }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return failNonNullable(context);
-    }
+    // Use centralized null handling (delegates to processClonedDefault for defaults)
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
 
     // Type guard
     if (inputValue is! Map) {
@@ -59,83 +50,128 @@ final class ObjectSchema extends AckSchema<MapValue>
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
-    // Validate all properties defined in the schema
+    // Validate defined properties and handle additional properties
+    _validateDefinedProperties(mapValue, context, validatedMap, validationErrors);
+    _handleAdditionalProperties(mapValue, context, validatedMap, validationErrors);
+
+    if (validationErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: validationErrors, context: context),
+      );
+    }
+
+    return applyConstraintsAndRefinements(validatedMap, context);
+  }
+
+  /// Validates all properties defined in the schema.
+  void _validateDefinedProperties(
+    Map<String, Object?> mapValue,
+    SchemaContext context,
+    Map<String, Object?> validatedMap,
+    List<SchemaError> errors,
+  ) {
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
-      final hasValue = mapValue.containsKey(key);
 
-      if (!hasValue) {
-        // Property missing from input
-        if (schema.isOptional) {
-          // Optional field with default - validate it
-          if (schema.defaultValue != null) {
-            final propertyContext = context.createChild(
-              name: key,
-              schema: schema,
-              value: schema.defaultValue,
-              pathSegment: key,
-            );
-            final result = schema.parseAndValidate(
-              schema.defaultValue,
-              propertyContext,
-            );
-            result.match(
-              onOk: (validatedValue) {
-                if (validatedValue != null) {
-                  validatedMap[key] = validatedValue;
-                }
-              },
-              onFail: validationErrors.add,
-            );
-          }
-          // Optional field without default - omit from output
-        } else {
-          // Required field missing
-          final ce = ObjectRequiredPropertiesConstraint(
-            missingPropertyKey: key,
-          ).validate(mapValue);
-          if (ce != null) {
-            validationErrors.add(
-              SchemaConstraintsError(
-                constraints: [ce],
-                context: context.createChild(
-                  name: key,
-                  schema: schema,
-                  value: null,
-                  pathSegment: key,
-                ),
-              ),
-            );
-          }
-        }
+      if (mapValue.containsKey(key)) {
+        _validateExistingProperty(key, schema, mapValue[key], context, validatedMap, errors);
       } else {
-        // Property exists - validate it
-        final propertyValue = mapValue[key];
+        _handleMissingProperty(key, schema, mapValue, context, validatedMap, errors);
+      }
+    }
+  }
+
+  /// Validates a property that exists in the input map.
+  void _validateExistingProperty(
+    String key,
+    AckSchema schema,
+    Object? propertyValue,
+    SchemaContext context,
+    Map<String, Object?> validatedMap,
+    List<SchemaError> errors,
+  ) {
+    final propertyContext = context.createChild(
+      name: key,
+      schema: schema,
+      value: propertyValue,
+      pathSegment: key,
+    );
+    final result = schema.parseAndValidate(propertyValue, propertyContext);
+    result.match(
+      onOk: (validatedValue) {
+        validatedMap[key] = validatedValue;
+      },
+      onFail: errors.add,
+    );
+  }
+
+  /// Handles a property that is missing from the input map.
+  void _handleMissingProperty(
+    String key,
+    AckSchema schema,
+    Map<String, Object?> mapValue,
+    SchemaContext context,
+    Map<String, Object?> validatedMap,
+    List<SchemaError> errors,
+  ) {
+    if (schema.isOptional) {
+      // Optional field with default - pass null to let child schema's handleNullInput
+      // clone the default and validate it (prevents mutation of shared defaults)
+      if (schema.defaultValue != null) {
+        final defaultForContext = cloneDefault(schema.defaultValue);
         final propertyContext = context.createChild(
           name: key,
           schema: schema,
-          value: propertyValue,
+          value: defaultForContext,
           pathSegment: key,
         );
-        final result = schema.parseAndValidate(propertyValue, propertyContext);
+        final result = schema.parseAndValidate(null, propertyContext);
         result.match(
           onOk: (validatedValue) {
-            validatedMap[key] = validatedValue;
+            if (validatedValue != null) {
+              validatedMap[key] = validatedValue;
+            }
           },
-          onFail: validationErrors.add,
+          onFail: errors.add,
+        );
+      }
+      // Optional field without default - omit from output
+    } else {
+      // Required field missing
+      final ce = ObjectRequiredPropertiesConstraint(
+        missingPropertyKey: key,
+      ).validate(mapValue);
+      if (ce != null) {
+        errors.add(
+          SchemaConstraintsError(
+            constraints: [ce],
+            context: context.createChild(
+              name: key,
+              schema: schema,
+              value: null,
+              pathSegment: key,
+            ),
+          ),
         );
       }
     }
+  }
 
-    // Handle additional properties
+  /// Handles properties in the input that are not defined in the schema.
+  void _handleAdditionalProperties(
+    Map<String, Object?> mapValue,
+    SchemaContext context,
+    Map<String, Object?> validatedMap,
+    List<SchemaError> errors,
+  ) {
     final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
       if (!knownKeys.contains(key)) {
         if (additionalProperties) {
           validatedMap[key] = mapValue[key];
         } else {
-          validationErrors.add(
+          errors.add(
             SchemaConstraintsError(
               constraints: [
                 ConstraintError(
@@ -156,14 +192,6 @@ final class ObjectSchema extends AckSchema<MapValue>
         }
       }
     }
-
-    if (validationErrors.isNotEmpty) {
-      return SchemaResult.fail(
-        SchemaNestedError(errors: validationErrors, context: context),
-      );
-    }
-
-    return applyConstraintsAndRefinements(validatedMap, context);
   }
 
   @override
@@ -203,7 +231,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     // Zod uses {} (empty schema) for true, false for false
-    final additionalPropertiesValue = additionalProperties ? <String, Object?>{} : false;
+    final additionalPropertiesValue = additionalProperties
+        ? <String, Object?>{}
+        : false;
 
     return buildJsonSchemaWithNullable(
       typeSchema: {

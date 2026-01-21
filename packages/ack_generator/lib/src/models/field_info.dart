@@ -1,8 +1,11 @@
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
-import 'package:build/build.dart' show log;
+import 'package:logging/logging.dart';
 
 import 'constraint_info.dart';
+
+/// Logger for field info extraction warnings and diagnostics.
+final _log = Logger('FieldInfo');
 
 /// Information about a field in the model
 class FieldInfo {
@@ -83,7 +86,11 @@ class FieldInfo {
 
         return enumConstants;
       } catch (e) {
-        log.warning('Could not extract enum values for ${element.name3}: $e');
+// If there's any issue with the analyzer API, fall back to empty list
+        // This maintains backward compatibility with manual @EnumString annotations
+        _log.warning(
+          'Could not extract enum values for ${element.name3}: $e',
+        );
         return [];
       }
     }

@@ -5,6 +5,7 @@ import 'package:analyzer/dart/element/element2.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
+import 'package:logging/logging.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'analyzer/model_analyzer.dart';
@@ -14,6 +15,9 @@ import 'builders/type_builder.dart';
 import 'models/model_info.dart';
 import 'validation/code_validator.dart';
 import 'validation/model_validator.dart';
+
+/// Logger for schema generation warnings and diagnostics.
+final _log = Logger('AckSchemaGenerator');
 
 /// Generates schemas for classes annotated with @AckModel
 ///
@@ -195,7 +199,8 @@ class AckSchemaGenerator extends Generator {
     try {
       formattedCode = _formatter.format(generatedCode);
     } catch (e) {
-      log.warning('Code formatting failed, using unformatted output: $e');
+// If formatting fails, use unformatted code but still validate
+      _log.warning('Code formatting failed, using unformatted output: $e');
       formattedCode = generatedCode;
     }
 
