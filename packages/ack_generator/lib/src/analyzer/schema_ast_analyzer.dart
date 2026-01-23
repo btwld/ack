@@ -436,8 +436,9 @@ class SchemaAstAnalyzer {
         isNullable = true;
       } else {
         // This might be the base schema type (Ack.string(), etc.)
+        // Supports prefixed Ack (e.g., ack.Ack.string()) via _isAckTarget
         final target = current.target;
-        if (target is SimpleIdentifier && target.name == 'Ack') {
+        if (_isAckTarget(target)) {
           baseInvocation = current;
           break;
         }
@@ -639,12 +640,16 @@ class SchemaAstAnalyzer {
     String schemaVarName,
     Element2 element,
   ) {
-    final cached = _schemaVariableTypeCache[schemaVarName];
+    final library = element.library2;
+    // Use library-scoped cache key to prevent collisions across libraries
+    final cacheKey = '${library?.uri ?? 'unknown'}::$schemaVarName';
+
+    final cached = _schemaVariableTypeCache[cacheKey];
     if (cached != null) {
       return cached;
     }
 
-    if (_schemaVariableTypeStack.contains(schemaVarName)) {
+    if (_schemaVariableTypeStack.contains(cacheKey)) {
       _log.warning(
         'Detected circular schema variable reference for "$schemaVarName". '
         'Falling back to dynamic.',
@@ -652,11 +657,10 @@ class SchemaAstAnalyzer {
       return 'dynamic';
     }
 
-    _schemaVariableTypeStack.add(schemaVarName);
+    _schemaVariableTypeStack.add(cacheKey);
 
     String resolvedType = 'dynamic';
     try {
-      final library = element.library2;
       if (library == null) {
         return resolvedType;
       }
@@ -684,8 +688,8 @@ class SchemaAstAnalyzer {
       );
       return resolvedType;
     } finally {
-      _schemaVariableTypeStack.remove(schemaVarName);
-      _schemaVariableTypeCache[schemaVarName] = resolvedType;
+      _schemaVariableTypeStack.remove(cacheKey);
+      _schemaVariableTypeCache[cacheKey] = resolvedType;
     }
   }
 

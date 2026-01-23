@@ -26,6 +26,8 @@ extension type UserConfigType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get username => _data['username'] as String;
 
   String get email => _data['email'] as String;
@@ -58,6 +60,8 @@ extension type ApiRequestType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get method => _data['method'] as String;
 
@@ -92,6 +96,8 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get appVersion => _data['appVersion'] as String;
 
   String get environment => _data['environment'] as String;
@@ -124,6 +130,8 @@ extension type DynamicDataType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   Map<String, Object?> get args => _data;
 }

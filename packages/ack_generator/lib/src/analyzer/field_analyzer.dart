@@ -88,27 +88,46 @@ class FieldAnalyzer {
   }
 
   bool _hasExplicitRequiredValue(DartObject annotation) {
-    // This is a workaround: we check if only jsonKey or constraints are set
-    // If so, we assume required was not explicitly set
-    // This isn't perfect but works for the common cases
-
-    // Check the source to see if 'required' was explicitly mentioned
-    // For now, we'll assume that if required=false and there's a jsonKey,
-    // then required was not explicitly set (using the default)
+    // Check if `required` was explicitly provided in the annotation.
+    //
+    // The AckField annotation has `required` with a default value of `false`.
+    // We can detect explicit usage by checking if the value differs from default,
+    // OR if the annotation ONLY contains `required` (meaning the user wrote it).
+    //
+    // Heuristic: If required=true, it was definitely explicitly set (differs from default).
+    // If required=false and NO other fields are set, it was explicitly set.
+    // If required=false and other fields ARE set (jsonKey, constraints, description),
+    // we need to check if description is set (which has no default) - if it is,
+    // we can't tell. For simplicity, we'll treat required=true as explicit,
+    // and required=false as "use automatic detection" to avoid breaking changes.
+    //
+    // This is imperfect - ideally we'd inspect the annotation AST directly.
+    // But it preserves backward compatibility: existing code using
+    // @AckField(jsonKey: 'x') will continue to use auto-detection.
 
     final requiredValue = annotation.getField('required')?.toBoolValue();
+
+    // If required is true, it was explicitly set (differs from default of false)
+    if (requiredValue == true) {
+      return true;
+    }
+
+    // If required is false (the default), check if it's the only field set.
+    // If the annotation has no jsonKey, constraints, or description,
+    // then the user wrote @AckField(required: false) explicitly.
     final hasJsonKey = annotation.getField('jsonKey')?.toStringValue() != null;
     final hasConstraints =
         annotation.getField('constraints')?.toListValue()?.isNotEmpty ?? false;
+    final hasDescription =
+        annotation.getField('description')?.toStringValue() != null;
 
-    // If required is false and we have jsonKey or constraints,
-    // assume required was not explicitly set
-    if (requiredValue == false && (hasJsonKey || hasConstraints)) {
-      return false;
+    // If no other fields are set, required: false was explicit
+    if (!hasJsonKey && !hasConstraints && !hasDescription) {
+      return true;
     }
 
-    // Otherwise, assume it was explicitly set
-    return true;
+    // Otherwise, we can't tell - fall back to automatic detection
+    return false;
   }
 
   List<ConstraintInfo> _extractConstraints(

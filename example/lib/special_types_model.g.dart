@@ -37,6 +37,8 @@ extension type EventType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   DateTime get timestamp => DateTime.parse(_data['timestamp'] as String);

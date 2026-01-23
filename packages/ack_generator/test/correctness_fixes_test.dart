@@ -411,4 +411,114 @@ class Node {
       );
     });
   });
+
+  group('Code review fixes', () {
+    test('descriptions with dollar signs are properly escaped', () async {
+      final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          // Dollar sign in description - tests escaping
+          // Using explicit string concatenation to avoid Dart interpreting the $
+          'test_pkg|lib/schema.dart': "import 'package:ack_annotations/ack_annotations.dart';\n"
+              '\n'
+              '@AckModel()\n'
+              'class Price {\n'
+              "  @AckField(description: 'Price is \\\$100 USD')\n"
+              '  final int amount;\n'
+              '\n'
+              '  Price(this.amount);\n'
+              '}\n',
+        },
+        outputs: {
+          'test_pkg|lib/schema.ack.g.part': decodedMatches(
+            allOf([
+              // Dollar signs should be escaped to prevent interpolation
+              contains(r'Price is \$100 USD'),
+              // Schema should be generated successfully
+              contains('priceSchema'),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test('regex patterns with single quotes are handled', () async {
+      final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
+
+      // Pattern containing single quotes - tests the safe quoting mechanism
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+class Document {
+  @AckField(constraints: ["matches(test'pattern)"])
+  final String content;
+
+  Document(this.content);
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.ack.g.part': decodedMatches(
+            allOf([
+              // Schema should be generated
+              contains('documentSchema'),
+              // Pattern should use safe quoting
+              contains('.matches('),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test('discriminated subtype getter reads from _data', () async {
+      // Use ackGenerator which generates both schemas and extension types
+      // Both base class and subtype need @AckType() to be in sortedModels
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel(discriminatedKey: 'kind')
+@AckType()
+abstract class Animal {
+  String get kind;
+}
+
+@AckModel(discriminatedValue: 'dog')
+@AckType()
+class Dog extends Animal {
+  @override
+  String get kind => 'dog';
+  final String breed;
+  Dog(this.breed);
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              // Subtype getter should read from _data, not return hardcoded literal
+              contains("_data['kind'] as String"),
+              // Should have the discriminator value in schema
+              contains("'dog'"),
+              // Extension type should be generated for the subtype
+              contains('extension type DogType'),
+            ]),
+          ),
+        },
+      );
+    });
+  });
 }

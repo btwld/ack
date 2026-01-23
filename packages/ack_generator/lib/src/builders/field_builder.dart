@@ -40,8 +40,8 @@ class FieldBuilder {
     'notEmpty': (schema, args) => '$schema.notEmpty()',
     'email': (schema, args) => '$schema.email()',
     'url': (schema, args) => '$schema.url()',
-    // Use triple quotes to handle all regex edge cases (including single quotes)
-    'matches': (schema, args) => "$schema.matches(r'''${args[0]}''')",
+    // Use _buildRegexLiteral to safely handle all regex patterns including '''
+    'matches': (schema, args) => '$schema.matches(${_buildRegexLiteral(args[0])})',
     'min': (schema, args) => '$schema.min(${args[0]})',
     'max': (schema, args) => '$schema.max(${args[0]})',
     'positive': (schema, args) => '$schema.positive()',
@@ -52,9 +52,8 @@ class FieldBuilder {
       final values = args.map((v) => "'$v'").join(', ');
       return '$schema.enumString([$values])';
     },
-    // Use triple quotes for pattern as well
-    'pattern': (schema, args) => "$schema.matches(r'''${args[0]}''')",
-    'enumFromType': (schema, args) => schema,
+    // Use _buildRegexLiteral for pattern as well
+    'pattern': (schema, args) => '$schema.matches(${_buildRegexLiteral(args[0])})',
   };
 
   String buildFieldSchema(FieldInfo field, [ModelInfo? model]) {
@@ -263,6 +262,24 @@ class FieldBuilder {
     escaped = escaped.replaceAll(r'\"', '"');
     // Escape single quotes: ' -> \'
     escaped = escaped.replaceAll("'", r"\'");
+    // Escape dollar signs to prevent string interpolation: $ -> \$
+    escaped = escaped.replaceAll(r'$', r'\$');
     return escaped;
+  }
+
+  /// Builds a safe regex literal string for code generation.
+  ///
+  /// Chooses the appropriate quoting strategy based on content:
+  /// - Raw triple-quoted string if pattern doesn't contain `'''`
+  /// - Double-quoted string with escaping otherwise
+  static String _buildRegexLiteral(String pattern) {
+    // If pattern doesn't contain triple quotes, use raw triple-quoted string
+    if (!pattern.contains("'''")) {
+      return "r'''$pattern'''";
+    }
+
+    // Otherwise, use jsonEncode to get a safely escaped double-quoted string
+    // jsonEncode handles all special characters including backslashes
+    return jsonEncode(pattern);
   }
 }

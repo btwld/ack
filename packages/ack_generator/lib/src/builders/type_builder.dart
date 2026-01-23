@@ -142,7 +142,8 @@ class TypeBuilder {
         )
         ..implements.add(refer(baseTypeName)) // Implement sealed base class
         ..methods.addAll([
-          // Override discriminator to return literal value
+          // Override discriminator to read from _data for consistency with toJson()
+          // Factory constructors already validate the discriminator value matches
           Method(
             (m) => m
               ..type = MethodType.getter
@@ -150,7 +151,7 @@ class TypeBuilder {
               ..returns = refer('String')
               ..annotations.add(refer('override'))
               ..lambda = true
-              ..body = Code("'${model.discriminatorValue}'"),
+              ..body = Code("_data['${baseModel.discriminatorKey}'] as String"),
           ),
           _buildToJson(model),
           // Add regular field getters
