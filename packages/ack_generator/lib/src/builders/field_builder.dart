@@ -271,15 +271,18 @@ class FieldBuilder {
   ///
   /// Chooses the appropriate quoting strategy based on content:
   /// - Raw triple-quoted string if pattern doesn't contain `'''`
-  /// - Double-quoted string with escaping otherwise
+  /// - Double-quoted string with escaping otherwise (including `$` escaping)
   static String _buildRegexLiteral(String pattern) {
     // If pattern doesn't contain triple quotes, use raw triple-quoted string
     if (!pattern.contains("'''")) {
       return "r'''$pattern'''";
     }
 
-    // Otherwise, use jsonEncode to get a safely escaped double-quoted string
-    // jsonEncode handles all special characters including backslashes
-    return jsonEncode(pattern);
+    // Otherwise, use jsonEncode to get a safely escaped double-quoted string.
+    // jsonEncode handles special characters but NOT `$`, which would trigger
+    // Dart string interpolation in generated code. We must escape it manually.
+    final encoded = jsonEncode(pattern);
+    // Escape $ as \$ to prevent string interpolation in generated Dart code
+    return encoded.replaceAll(r'$', r'\$');
   }
 }
