@@ -1,5 +1,36 @@
 part of 'schema.dart';
 
+/// Schema that transforms validated data from one type to another.
+///
+/// Created using the [transform] extension method on any schema. First validates
+/// the input against the base schema, then applies the transformation function.
+///
+/// ```dart
+/// // Parse ISO date strings into DateTime objects
+/// final dateSchema = Ack.string()
+///   .datetime()
+///   .transform<DateTime>((s) => DateTime.parse(s!));
+/// ```
+///
+/// ## Default Values
+///
+/// Default values for TransformedSchema are of type `OutputType` (post-transformation),
+/// not `InputType`. When providing collection defaults with parameterized types
+/// (e.g., `List<MyClass>`), be aware that cloning may not preserve the exact type:
+///
+/// ```dart
+/// // This works - primitive defaults are safely cloned
+/// final schema = Ack.string()
+///     .transform((v) => v ?? 'fallback')
+///     .copyWith(defaultValue: 'hello');
+///
+/// // Limitation: List<String> defaults may not be cloned (mutation risk)
+/// // The implementation falls back to using the original default if cloning
+/// // produces an incompatible type. For immutable defaults, this is safe.
+/// ```
+///
+/// For complex collection defaults, consider using immutable collections or
+/// accepting that the default may be shared across parse calls.
 @immutable
 class TransformedSchema<InputType extends Object, OutputType extends Object>
     extends AckSchema<OutputType> {

@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:build/build.dart' show log;
 import 'package:code_builder/code_builder.dart';
 
 import '../models/field_info.dart';
@@ -12,14 +13,20 @@ import '../models/model_info.dart';
 class TypeBuilder {
   /// Builds an extension type for the given model
   ///
-  /// Returns null if the model should not generate an extension type
-  /// (e.g., discriminated base classes which use sealed classes instead)
+  /// Returns null if the model should not generate an extension type:
+  /// - Discriminated base classes (use sealed classes instead)
+  /// - Nullable schema variables (representation is non-nullable)
   ExtensionType? buildExtensionType(
     ModelInfo model,
     List<ModelInfo> allModels,
   ) {
     // Discriminated base classes get sealed classes, not extension types
     if (model.isDiscriminatedBase) {
+      return null;
+    }
+
+    // Nullable schema variables can't be safely wrapped (representation is non-nullable).
+    if (model.isFromSchemaVariable && model.isNullableSchema) {
       return null;
     }
 
@@ -41,6 +48,7 @@ class TypeBuilder {
         ..implements.add(refer(model.representationType))
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
+          _buildToJson(model),
           ..._buildGetters(model, allModels),
           // Only add args and copyWith for object schemas
           if (isObjectSchema) ...[
@@ -101,6 +109,7 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['${model.discriminatorKey}'] as String"),
           ),
+          _buildToJson(model),
           // Add factory constructor for parsing
           _buildDiscriminatedFactory(model, schemaVarName, subtypes),
           // Add safeParse static method
@@ -133,7 +142,8 @@ class TypeBuilder {
         )
         ..implements.add(refer(baseTypeName)) // Implement sealed base class
         ..methods.addAll([
-          // Override discriminator to return literal value
+          // Override discriminator to read from _data for consistency with toJson()
+          // Factory constructors already validate the discriminator value matches
           Method(
             (m) => m
               ..type = MethodType.getter
@@ -141,21 +151,25 @@ class TypeBuilder {
               ..returns = refer('String')
               ..annotations.add(refer('override'))
               ..lambda = true
-              ..body = Code("'${model.discriminatorValue}'"),
+              ..body = Code("_data['${baseModel.discriminatorKey}'] as String"),
           ),
+          _buildToJson(model),
           // Add regular field getters
           ..._buildGetters(model, allModels),
         ]),
     );
   }
 
-  /// Sorts models in topological order (dependencies before dependents)
+  /// Sorts models in topological order (dependencies before dependents).
   ///
-  /// Throws [CircularDependencyError] if circular dependencies are detected
+  /// If circular dependencies are detected, logs a warning and falls back to the
+  /// original input order. Extension types based on `Map<String, Object?>` work
+  /// correctly with cycles since they all wrap the same underlying type.
   List<ModelInfo> topologicalSort(List<ModelInfo> models) {
     final sorted = <ModelInfo>[];
     final visiting = <String>{};
     final visited = <String>{};
+    var hasCycle = false;
 
     // Build dependency map
     final dependencies = <String, Set<String>>{};
@@ -167,9 +181,10 @@ class TypeBuilder {
       if (visited.contains(className)) return;
 
       if (visiting.contains(className)) {
-        throw CircularDependencyError(
-          'Circular dependency detected involving: $className',
-        );
+        // Cycle detected - mark flag but continue
+        // Extension types with Map representation work fine with cycles
+        hasCycle = true;
+        return;
       }
 
       visiting.add(className);
@@ -195,6 +210,17 @@ class TypeBuilder {
       visit(model.className);
     }
 
+    // If cycle detected, fall back to original order
+    // This is safe because extension types wrap Map<String, Object?> which doesn't
+    // require declaration order
+    if (hasCycle) {
+      log.warning(
+        'Circular dependency detected in extension types. '
+        'Using original declaration order (safe for Map-based types).',
+      );
+      return models;
+    }
+
     return sorted;
   }
 
@@ -215,6 +241,19 @@ class TypeBuilder {
       docs.add('/// ${model.description}');
     }
     return docs;
+  }
+
+  Method _buildToJson(ModelInfo model) {
+    final isObjectSchema = model.representationType == kMapType;
+    final valueVarName = isObjectSchema ? '_data' : '_value';
+
+    return Method(
+      (m) => m
+        ..name = 'toJson'
+        ..returns = refer(model.representationType)
+        ..lambda = true
+        ..body = Code(valueVarName),
+    );
   }
 
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
@@ -270,15 +309,11 @@ return result.match(
   ) {
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
-
-    final cases = <String>[];
-    for (final entry in subtypes.entries) {
-      final discriminatorValue = entry.key;
-      final subtypeElement = entry.value;
-      final subtypeTypeName = '${subtypeElement.name3}Type';
-
-      cases.add("      '$discriminatorValue' => $subtypeTypeName(validated)");
-    }
+    final switchExpression = _buildDiscriminatorSwitchExpression(
+      'validated',
+      discriminatorKey,
+      subtypes,
+    );
 
     return Method(
       (m) => m
@@ -294,14 +329,23 @@ return result.match(
         ..returns = refer(typeName)
         ..body = Code('''
 final validated = $schemaVarName.parse(data) as Map<String, Object?>;
-return switch (validated['$discriminatorKey']) {
-${cases.join(',\n')},
-  _ => throw StateError('Unknown $discriminatorKey: \${validated["$discriminatorKey"]}'),
-};'''),
+return $switchExpression;'''),
     );
   }
 
-  Method _buildDiscriminatedSafeParse(ModelInfo model, String schemaVarName) {
+  Method _buildDiscriminatedSafeParse(
+    ModelInfo model,
+    String schemaVarName,
+  ) {
+    final typeName = _getExtensionTypeName(model);
+    final discriminatorKey = model.discriminatorKey!;
+    final subtypes = model.subtypes!;
+    final switchExpression = _buildDiscriminatorSwitchExpression(
+      'map',
+      discriminatorKey,
+      subtypes,
+    );
+
     return Method(
       (m) => m
         ..name = 'safeParse'
@@ -313,9 +357,39 @@ ${cases.join(',\n')},
               ..type = refer('Object?'),
           ),
         )
-        ..returns = refer('SchemaResult<Map<String, dynamic>>')
-        ..body = Code('return $schemaVarName.safeParse(data);'),
+        ..returns = refer('SchemaResult<$typeName>')
+        ..body = Code('''
+final result = $schemaVarName.safeParse(data);
+return result.match(
+  onOk: (validated) {
+    final map = validated as Map<String, Object?>;
+    final parsed = $switchExpression;
+    return SchemaResult.ok(parsed);
+  },
+  onFail: (error) => SchemaResult.fail(error),
+);'''),
     );
+  }
+
+  String _buildDiscriminatorSwitchExpression(
+    String mapVarName,
+    String discriminatorKey,
+    Map<String, ClassElement2> subtypes,
+  ) {
+    final cases = <String>[];
+    for (final entry in subtypes.entries) {
+      final discriminatorValue = entry.key;
+      final subtypeElement = entry.value;
+      final subtypeTypeName = '${subtypeElement.name3}Type';
+
+      cases.add("  '$discriminatorValue' => $subtypeTypeName($mapVarName)");
+    }
+
+    return '''
+switch ($mapVarName['$discriminatorKey']) {
+${cases.join(',\n')},
+  _ => throw StateError('Unknown $discriminatorKey: \${$mapVarName[\"$discriminatorKey\"]}'),
+}''';
   }
 
   List<Method> _buildGetters(ModelInfo model, List<ModelInfo> allModels) {
@@ -361,15 +435,17 @@ ${cases.join(',\n')},
       return "_data['$key'] as ${_resolveFieldType(field, allModels)}";
     }
 
-    // Enums (already converted by schema)
+    // Enums (validated by schema, returns the enum value)
     if (field.isEnum) {
       return "_data['$key'] as ${field.type.getDisplayString(withNullability: false)}";
     }
 
-    // Special types (DateTime, Uri, Duration - already converted by schema)
+    // Special types need conversion from raw data
+    // - DateTime: stored as ISO 8601 string, needs DateTime.parse()
+    // - Uri: stored as string, needs Uri.parse()
+    // - Duration: stored as int (milliseconds), needs Duration(milliseconds:)
     if (_isSpecialType(field.type)) {
-      final typeName = field.type.getDisplayString(withNullability: false);
-      return "_data['$key'] as $typeName";
+      return _buildSpecialTypeGetter(field, key, nullable: false);
     }
 
     // Lists
@@ -415,13 +491,45 @@ ${cases.join(',\n')},
     String key,
   ) {
     // For primitives and enums, nullable cast works
-    if (field.isPrimitive || field.isEnum || _isSpecialType(field.type)) {
+    if (field.isPrimitive || field.isEnum) {
       return "_data['$key'] as ${_resolveFieldType(field, allModels)}?";
+    }
+
+    // Special types need conversion with null check
+    if (_isSpecialType(field.type)) {
+      return _buildSpecialTypeGetter(field, key, nullable: true);
     }
 
     // For complex types, check null first
     final nonNullPart = _buildNonNullableGetter(field, allModels, key);
     return "_data['$key'] != null ? $nonNullPart : null";
+  }
+
+  /// Builds getter code for special types (DateTime, Uri, Duration).
+  ///
+  /// These types require conversion from their JSON representation:
+  /// - DateTime: ISO 8601 string -> DateTime.parse()
+  /// - Uri: string -> Uri.parse()
+  /// - Duration: int (milliseconds) -> Duration(milliseconds:)
+  String _buildSpecialTypeGetter(
+    FieldInfo field,
+    String key, {
+    required bool nullable,
+  }) {
+    final typeName = field.type.element3?.name3;
+
+    final conversion = switch (typeName) {
+      'DateTime' => "DateTime.parse(_data['$key'] as String)",
+      'Uri' => "Uri.parse(_data['$key'] as String)",
+      'Duration' => "Duration(milliseconds: _data['$key'] as int)",
+      _ => null,
+    };
+
+    if (conversion == null) return "_data['$key']";
+
+    return nullable
+        ? "_data['$key'] != null ? $conversion : null"
+        : conversion;
   }
 
   String _buildListGetter(
@@ -507,6 +615,9 @@ ${cases.join(',\n')},
     // Sets
     if (field.isSet) {
       final elementType = _getSetElementType(field, allModels);
+      if (_isCustomElementType(field, allModels)) {
+        return 'Set<${elementType}Type>';
+      }
       return 'Set<$elementType>';
     }
 
@@ -764,14 +875,4 @@ ${assignments.join(',\n')},
         ..body = Code(filterExpr),
     );
   }
-}
-
-/// Error thrown when circular dependencies are detected
-class CircularDependencyError extends Error {
-  final String message;
-
-  CircularDependencyError(this.message);
-
-  @override
-  String toString() => 'CircularDependencyError: $message';
 }

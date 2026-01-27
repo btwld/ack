@@ -26,6 +26,8 @@ extension type UserType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   int get age => _data['age'] as int;

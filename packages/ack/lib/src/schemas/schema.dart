@@ -275,7 +275,20 @@ sealed class AckSchema<DartType extends Object> {
     // After null check, inputValue is guaranteed non-null
     final nonNullInput = inputValue!;
     final targetType = schemaType;
-    final actualType = AckSchema.getSchemaType(nonNullInput);
+
+    // Get the actual type of the input, catching any errors to maintain
+    // the "never throws" guarantee of safeParse()
+    SchemaType actualType;
+    try {
+      actualType = AckSchema.getSchemaType(nonNullInput);
+    } catch (e) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Unsupported input type: ${nonNullInput.runtimeType}',
+          context: context,
+        ),
+      );
+    }
 
     // Type compatibility check
     if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {

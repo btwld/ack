@@ -166,7 +166,7 @@ class ModelAnalyzer {
     }
   }
 
-  /// Validates that the discriminator field exists and is properly typed
+  /// Validates that the discriminator field or getter exists and is properly typed
   void _validateDiscriminatorField(
     ClassElement2 element,
     String discriminatorKey,
@@ -182,19 +182,42 @@ class ModelAnalyzer {
       orElse: () => null,
     );
 
-    if (discriminatorField == null) {
-      throw ArgumentError(
-        'Discriminator field "$discriminatorKey" not found in class ${element.name3} or its supertypes.',
-      );
+    if (discriminatorField != null) {
+      // Found as a field, validate type
+      final fieldType = discriminatorField.type.getDisplayString();
+      if (!fieldType.startsWith('String')) {
+        throw ArgumentError(
+          'Discriminator field "$discriminatorKey" must be of type String, got $fieldType',
+        );
+      }
+      return;
     }
 
-    // Validate field type is String (or String getter)
-    final fieldType = discriminatorField.type.getDisplayString();
-    if (!fieldType.startsWith('String')) {
-      throw ArgumentError(
-        'Discriminator field "$discriminatorKey" must be of type String, got $fieldType',
-      );
+    // Check for getter (including inherited getters)
+    final allGetters = [
+      ...element.getters2,
+      ...element.allSupertypes.expand((type) => type.element3.getters2),
+    ];
+
+    final discriminatorGetter = allGetters.cast<GetterElement?>().firstWhere(
+      (getter) => getter?.name3 == discriminatorKey,
+      orElse: () => null,
+    );
+
+    if (discriminatorGetter != null) {
+      // Found as a getter, validate return type
+      final returnType = discriminatorGetter.returnType.getDisplayString();
+      if (!returnType.startsWith('String')) {
+        throw ArgumentError(
+          'Discriminator getter "$discriminatorKey" must return String, got $returnType',
+        );
+      }
+      return;
     }
+
+    throw ArgumentError(
+      'Discriminator field or getter "$discriminatorKey" not found in class ${element.name3} or its supertypes.',
+    );
   }
 
   /// Builds discriminator relationships after all models have been analyzed
@@ -204,6 +227,10 @@ class ModelAnalyzer {
     List<ClassElement2> elements,
   ) {
     final updatedModelInfos = <ModelInfo>[];
+    final elementsByName = <String, ClassElement2>{
+      for (final element in elements)
+        if (element.name3 != null) element.name3!: element,
+    };
 
     // Group models by their discriminated state
     final baseClasses = <ModelInfo>[];
@@ -226,9 +253,13 @@ class ModelAnalyzer {
       final matchingSubtypes = <String, ClassElement2>{};
 
       // Find subtypes that belong to this base class
-      for (int i = 0; i < subtypes.length; i++) {
-        final subtype = subtypes[i];
-        final subtypeElement = elements[modelInfos.indexOf(subtype)];
+      for (final subtype in subtypes) {
+        final subtypeElement = elementsByName[subtype.className];
+        if (subtypeElement == null) {
+          throw ArgumentError(
+            'Subtype class ${subtype.className} not found in annotated elements.',
+          );
+        }
 
         // Check if this subtype extends the base class
         if (_isSubtypeOf(subtypeElement, baseClass.className)) {
@@ -275,10 +306,13 @@ class ModelAnalyzer {
       // Find the parent discriminator key for this subtype
       String? parentDiscriminatorKey;
       for (final baseClass in baseClasses) {
-        if (_isSubtypeOf(
-          elements[modelInfos.indexOf(subtype)],
-          baseClass.className,
-        )) {
+        final subtypeElement = elementsByName[subtype.className];
+        if (subtypeElement == null) {
+          throw ArgumentError(
+            'Subtype class ${subtype.className} not found in annotated elements.',
+          );
+        }
+        if (_isSubtypeOf(subtypeElement, baseClass.className)) {
           parentDiscriminatorKey = baseClass.discriminatorKey;
           break;
         }
@@ -322,29 +356,52 @@ class ModelAnalyzer {
     return false;
   }
 
-  /// Validates that the discriminator field is properly overridden in subtype
+  /// Validates that the discriminator field or getter is properly overridden in subtype
   void _validateDiscriminatorOverride(
     ClassElement2 element,
     String discriminatorKey,
     String expectedValue,
   ) {
-    // Find the discriminator field override
-    final discriminatorField = element.fields2.firstWhere(
-      (field) => field.name3 == discriminatorKey,
-      orElse: () => throw ArgumentError(
-        'Subtype ${element.name3} must override discriminator field "$discriminatorKey"',
-      ),
+    // First check for field override
+    final discriminatorField = element.fields2.cast<FieldElement2?>().firstWhere(
+      (field) => field?.name3 == discriminatorKey,
+      orElse: () => null,
     );
 
-    // For getters, we can't easily validate the returned value at compile time
-    // The validation will happen at runtime through the schema validation
-    // We just ensure the field exists and has the correct type
-    final fieldType = discriminatorField.type.getDisplayString();
-    if (!fieldType.startsWith('String')) {
-      throw ArgumentError(
-        'Discriminator field "$discriminatorKey" override in ${element.name3} '
-        'must be of type String, got $fieldType',
-      );
+    if (discriminatorField != null) {
+      // For fields, we can't easily validate the returned value at compile time
+      // The validation will happen at runtime through the schema validation
+      // We just ensure the field exists and has the correct type
+      final fieldType = discriminatorField.type.getDisplayString();
+      if (!fieldType.startsWith('String')) {
+        throw ArgumentError(
+          'Discriminator field "$discriminatorKey" override in ${element.name3} '
+          'must be of type String, got $fieldType',
+        );
+      }
+      return;
     }
+
+    // Check for getter override
+    final discriminatorGetter = element.getters2.cast<GetterElement?>().firstWhere(
+      (getter) => getter?.name3 == discriminatorKey,
+      orElse: () => null,
+    );
+
+    if (discriminatorGetter != null) {
+      // For getters, validate return type
+      final returnType = discriminatorGetter.returnType.getDisplayString();
+      if (!returnType.startsWith('String')) {
+        throw ArgumentError(
+          'Discriminator getter "$discriminatorKey" override in ${element.name3} '
+          'must return String, got $returnType',
+        );
+      }
+      return;
+    }
+
+    throw ArgumentError(
+      'Subtype ${element.name3} must override discriminator field or getter "$discriminatorKey"',
+    );
   }
 }

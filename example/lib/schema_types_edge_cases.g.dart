@@ -26,6 +26,8 @@ extension type ProductType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   List<String> get tags => (_data['tags'] as List).cast<String>();
@@ -66,6 +68,8 @@ extension type GridType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   List<List<int>> get matrix => (_data['matrix'] as List).cast<List<int>>();
@@ -94,6 +98,8 @@ extension type AddressType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get street => _data['street'] as String;
 
@@ -134,6 +140,8 @@ extension type PersonType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get name => _data['name'] as String;
 
@@ -176,6 +184,8 @@ extension type EmployeeType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   String get employeeId => _data['employeeId'] as String;
@@ -217,6 +227,8 @@ extension type ModifierType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get requiredField => _data['requiredField'] as String;
 
@@ -265,6 +277,8 @@ extension type TaggedItemType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   List<String> get requiredTags =>
@@ -311,6 +325,8 @@ extension type ContactListType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   List<AddressType> get addresses => (_data['addresses'] as List)
@@ -344,6 +360,8 @@ extension type EmptyType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 }
 
 /// Extension type for Minimal
@@ -362,6 +380,8 @@ extension type MinimalType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get id => _data['id'] as String;
 
@@ -387,6 +407,8 @@ extension type NamedItemType(Map<String, Object?> _data)
     );
   }
 
+  Map<String, Object?> toJson() => _data;
+
   String get name => _data['name'] as String;
 
   NamedItemType copyWith({String? name}) {
@@ -410,6 +432,8 @@ extension type ItemType(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get id => _data['id'] as String;
 
@@ -435,6 +459,8 @@ extension type MyCustomSchema123Type(Map<String, Object?> _data)
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Map<String, Object?> toJson() => _data;
 
   String get value => _data['value'] as String;
 

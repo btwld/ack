@@ -86,10 +86,10 @@ class FieldInfo {
 
         return enumConstants;
       } catch (e) {
-        // If there's any issue with the analyzer API, fall back to empty list
+// If there's any issue with the analyzer API, fall back to empty list
         // This maintains backward compatibility with manual @EnumString annotations
         _log.warning(
-          'Could not extract enum values for ${element.displayName}: $e',
+          'Could not extract enum values for ${element.name3}: $e',
         );
         return [];
       }
