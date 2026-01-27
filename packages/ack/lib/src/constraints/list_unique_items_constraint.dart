@@ -37,6 +37,13 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
   // has no type-specific fields beyond constraintKey and description.
 }
 
+/// Finds duplicate items in [value] using deep equality.
+///
+/// Returns a list of unique values that appear more than once (in order of
+/// first occurrence), or `null` if no duplicates exist.
+///
+/// **Note**: This function assumes acyclic inputs (e.g., JSON-derived data).
+/// Cyclic structures will cause stack overflow.
 List<T>? _findDuplicates<T>(List<T> value) {
   if (value.isEmpty) return null;
 
@@ -74,6 +81,10 @@ List<T>? _findDuplicates<T>(List<T> value) {
   return duplicates.isEmpty ? null : duplicates;
 }
 
+/// Computes a hash code for [value] that is consistent with [deepEquals].
+///
+/// **Note**: This function assumes acyclic inputs (e.g., JSON-derived data).
+/// Cyclic structures will cause stack overflow.
 int _deepHashCode(Object? value) {
   if (value == null) return Object.hash(null, null);
 
@@ -90,22 +101,26 @@ int _deepHashCode(Object? value) {
   }
 
   if (value is Set) {
-    var sum = 0;
+    // Use XOR with bit mixing for order-independent hashing with better
+    // collision resistance than simple sum.
+    var combined = 0;
     for (final item in value) {
-      sum += _deepHashCode(item);
+      final h = _deepHashCode(item);
+      combined ^= h ^ (h >>> 16);
     }
-    return Object.hash(value.runtimeType, value.length, sum);
+    return Object.hash(value.runtimeType, value.length, combined);
   }
 
   if (value is Map) {
-    var sum = 0;
+    // Use XOR with bit mixing for order-independent hashing.
+    var combined = 0;
     for (final entry in value.entries) {
-      // Use deep hashing for both keys and values to align with deepEquals
       final keyHash = _deepHashCode(entry.key);
       final valueHash = _deepHashCode(entry.value);
-      sum += Object.hash(keyHash, valueHash);
+      final entryHash = Object.hash(keyHash, valueHash);
+      combined ^= entryHash ^ (entryHash >>> 16);
     }
-    return Object.hash(value.runtimeType, value.length, sum);
+    return Object.hash(value.runtimeType, value.length, combined);
   }
 
   if (value is Iterable) {
