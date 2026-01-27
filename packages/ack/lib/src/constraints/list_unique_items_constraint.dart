@@ -15,58 +15,13 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
 
   @override
   bool isValid(List<T> value) {
-    // For primitive types, use Set for efficiency
-    if (value.isEmpty) return true;
-    final first = value.first;
-    final isPrimitive = first is num || first is String || first is bool;
-
-    if (isPrimitive) {
-      return value.toSet().length == value.length;
-    }
-
-    // For complex types, use deep equality
-    for (var i = 0; i < value.length; i++) {
-      for (var j = i + 1; j < value.length; j++) {
-        if (deepEquals(value[i], value[j])) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return _findDuplicates(value) == null;
   }
 
   @override
   String buildMessage(List<T> value) {
-    // Collect unique values that have duplicates
-    final uniqueDuplicates = <T>[];
-
-    // Use same double-loop structure as isValid
-    for (var i = 0; i < value.length; i++) {
-      // Check if value[i] appears later in the list
-      var hasDuplicate = false;
-      for (var j = i + 1; j < value.length; j++) {
-        if (deepEquals(value[i], value[j])) {
-          hasDuplicate = true;
-          break; // Found one duplicate, that's enough
-        }
-      }
-
-      // If it has a duplicate and not already tracked, add it
-      if (hasDuplicate) {
-        var alreadyAdded = false;
-        for (final dup in uniqueDuplicates) {
-          if (deepEquals(value[i], dup)) {
-            alreadyAdded = true;
-            break;
-          }
-        }
-        if (!alreadyAdded) {
-          uniqueDuplicates.add(value[i]);
-        }
-      }
-    }
-
-    if (uniqueDuplicates.isEmpty) {
+    final uniqueDuplicates = _findDuplicates(value);
+    if (uniqueDuplicates == null || uniqueDuplicates.isEmpty) {
       return 'List must contain unique items.';
     }
 
@@ -80,4 +35,93 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
   // No additional fields - base class equality is sufficient.
   // Explicitly not overriding == and hashCode as ListUniqueItemsConstraint
   // has no type-specific fields beyond constraintKey and description.
+}
+
+List<T>? _findDuplicates<T>(List<T> value) {
+  if (value.isEmpty) return null;
+
+  // Always use hash-based deep equality for consistency with deepEquals.
+  // The primitive path was removed because it used == (which treats 1 == 1.0
+  // as true) while deepEquals treats different runtimeTypes as not equal.
+  final groupsByHash = <int, List<_DuplicateGroup<T>>>{};
+  final groupsInOrder = <_DuplicateGroup<T>>[];
+
+  for (final item in value) {
+    final hash = _deepHashCode(item);
+    final bucket = groupsByHash.putIfAbsent(hash, () => <_DuplicateGroup<T>>[]);
+    var matched = false;
+    for (final group in bucket) {
+      if (deepEquals(group.value, item)) {
+        group.count++;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      final group = _DuplicateGroup<T>(item);
+      bucket.add(group);
+      groupsInOrder.add(group);
+    }
+  }
+
+  final duplicates = <T>[];
+  for (final group in groupsInOrder) {
+    if (group.count > 1) {
+      duplicates.add(group.value);
+    }
+  }
+
+  return duplicates.isEmpty ? null : duplicates;
+}
+
+int _deepHashCode(Object? value) {
+  if (value == null) return Object.hash(null, null);
+
+  if (value is! Iterable && value is! Map) {
+    return Object.hash(value.runtimeType, value);
+  }
+
+  if (value is List) {
+    var hash = Object.hash(value.runtimeType, value.length);
+    for (final item in value) {
+      hash = Object.hash(hash, _deepHashCode(item));
+    }
+    return hash;
+  }
+
+  if (value is Set) {
+    var sum = 0;
+    for (final item in value) {
+      sum += _deepHashCode(item);
+    }
+    return Object.hash(value.runtimeType, value.length, sum);
+  }
+
+  if (value is Map) {
+    var sum = 0;
+    for (final entry in value.entries) {
+      // Use deep hashing for both keys and values to align with deepEquals
+      final keyHash = _deepHashCode(entry.key);
+      final valueHash = _deepHashCode(entry.value);
+      sum += Object.hash(keyHash, valueHash);
+    }
+    return Object.hash(value.runtimeType, value.length, sum);
+  }
+
+  if (value is Iterable) {
+    var hash = Object.hash(value.runtimeType, 0);
+    for (final item in value) {
+      hash = Object.hash(hash, _deepHashCode(item));
+    }
+    return hash;
+  }
+
+  return Object.hash(value.runtimeType, value.hashCode);
+}
+
+class _DuplicateGroup<T> {
+  _DuplicateGroup(this.value);
+
+  final T value;
+  int count = 1;
 }

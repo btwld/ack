@@ -287,6 +287,32 @@ class SchemaAstAnalyzer {
     final fields = _extractFieldsFromMapLiteral(firstArg, element);
 
     // Check if additionalProperties is enabled via passthrough() or parameter
+    final hasAdditionalProperties = _hasAdditionalPropertiesFromInvocation(
+      baseInvocation,
+      fullInvocation,
+    );
+
+    // Generate extension type name from variable name or custom override
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: fields,
+      isFromSchemaVariable: true,
+      additionalProperties: hasAdditionalProperties,
+      isNullableSchema: isNullable,
+    );
+  }
+
+  bool _hasAdditionalPropertiesFromInvocation(
+    MethodInvocation baseInvocation,
+    MethodInvocation fullInvocation,
+  ) {
     bool hasAdditionalProperties = false;
 
     // First check for named parameter in the base Ack.object() call
@@ -321,21 +347,7 @@ class SchemaAstAnalyzer {
       }
     }
 
-    // Generate extension type name from variable name or custom override
-    final typeName = _resolveModelClassName(
-      variableName,
-      element,
-      customTypeName: customTypeName,
-    );
-
-    return ModelInfo(
-      className: typeName,
-      schemaClassName: variableName,
-      fields: fields,
-      isFromSchemaVariable: true,
-      additionalProperties: hasAdditionalProperties,
-      isNullableSchema: isNullable,
-    );
+    return hasAdditionalProperties;
   }
 
   /// Extracts field information from a map literal
