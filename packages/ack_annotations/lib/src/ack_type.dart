@@ -3,8 +3,8 @@ import 'package:meta/meta_meta.dart';
 /// Annotation to generate extension types for validated data.
 ///
 /// **Note:** This annotation should only be used on schema variables and getters,
-/// not on classes. For classes, use [@AckModel] to generate the schema, then
-/// use [@AckType] on the generated schema variable for extension types.
+/// not on classes. Use [@AckModel] to generate schemas from classes; if you need
+/// extension types, define the schema in source and annotate it with [@AckType].
 ///
 /// Can be applied to:
 /// - Schema variable declarations (extracts types from schema AST)
@@ -193,8 +193,7 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Limitations
 ///
-/// - **Generic classes**: Cannot be used on generic classes
-/// - **Discriminated base types**: Cannot be used on discriminated base types (use on subtypes instead)
+/// - **Class annotations**: `@AckType` is not supported on classes.
 /// - **Cross-file schema references**: Schema references must be in the same file
 ///   - ✅ Same file: `'address': addressSchema` → getter returns `AddressType`
 ///   - ❌ Cross-file: `'address': addressSchema` → getter returns `Map<String, Object?>`
@@ -209,7 +208,7 @@ import 'package:meta/meta_meta.dart';
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
 /// See also: [AckModel], [AckField]
-@Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
+@Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
   /// Optional custom name for the generated extension type.
   ///

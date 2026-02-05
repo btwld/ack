@@ -32,10 +32,19 @@ class AckSchemaGenerator extends Generator {
   String generate(LibraryReader library, BuildStep buildStep) {
     final annotatedElements = <ClassElement2>[];
     final annotatedVariables = <TopLevelVariableElement2>[];
+    final annotatedGetters = <GetterElement>[];
 
     // Find all classes annotated with @AckModel and variables annotated with @AckType
     for (final element in library.allElements) {
       if (element is ClassElement2) {
+        if (_hasAckTypeAnnotation(element)) {
+          throw InvalidGenerationSourceError(
+            '@AckType can only be applied to top-level schema variables or getters, not classes.',
+            element: element,
+            todo:
+                'Remove @AckType from the class and annotate a schema variable instead.',
+          );
+        }
         final annotation = TypeChecker.typeNamed(
           AckModel,
         ).firstAnnotationOf(element);
@@ -46,10 +55,19 @@ class AckSchemaGenerator extends Generator {
         if (_hasAckTypeAnnotation(element)) {
           annotatedVariables.add(element);
         }
+      } else if (element is GetterElement) {
+        final isTopLevel = element.enclosingElement2 is LibraryElement2;
+        if (isTopLevel &&
+            !element.isSynthetic &&
+            _hasAckTypeAnnotation(element)) {
+          annotatedGetters.add(element);
+        }
       }
     }
 
-    if (annotatedElements.isEmpty && annotatedVariables.isEmpty) {
+    if (annotatedElements.isEmpty &&
+        annotatedVariables.isEmpty &&
+        annotatedGetters.isEmpty) {
       return '';
     }
 
@@ -118,6 +136,38 @@ class AckSchemaGenerator extends Generator {
       }
     }
 
+    // Also analyze schema getters annotated with @AckType
+    for (final getter in annotatedGetters) {
+      try {
+        String? customTypeName;
+        final ackTypeAnnotation = TypeChecker.typeNamed(
+          AckType,
+        ).firstAnnotationOfExact(getter);
+        if (ackTypeAnnotation != null) {
+          final annotationReader = ConstantReader(ackTypeAnnotation);
+          final nameField = annotationReader.peek('name');
+          if (nameField != null && !nameField.isNull) {
+            customTypeName = nameField.stringValue;
+          }
+        }
+
+        final modelInfo = schemaAstAnalyzer.analyzeSchemaGetter(
+          getter,
+          customTypeName: customTypeName,
+        );
+        if (modelInfo != null) {
+          modelInfos.add(modelInfo);
+        }
+      } catch (e) {
+        throw InvalidGenerationSourceError(
+          'Failed to analyze schema getter "${getter.name3}": $e',
+          element: getter,
+          todo:
+              'Ensure the getter returns Ack schema syntax (e.g., Ack.object(), Ack.string()).',
+        );
+      }
+    }
+
     // Second pass: Build discriminator relationships
     final finalModelInfos = analyzer.buildDiscriminatorRelationships(
       modelInfos,
@@ -167,6 +217,7 @@ class AckSchemaGenerator extends Generator {
     _generateExtensionTypes(
       annotatedElements,
       annotatedVariables,
+      annotatedGetters,
       finalModelInfos,
       typeBuilder,
       extensionTypes,
@@ -199,7 +250,7 @@ class AckSchemaGenerator extends Generator {
     try {
       formattedCode = _formatter.format(generatedCode);
     } catch (e) {
-// If formatting fails, use unformatted code but still validate
+      // If formatting fails, use unformatted code but still validate
       _log.warning('Code formatting failed, using unformatted output: $e');
       formattedCode = generatedCode;
     }
@@ -254,41 +305,35 @@ class AckSchemaGenerator extends Generator {
   void _generateExtensionTypes(
     List<ClassElement2> annotatedElements,
     List<TopLevelVariableElement2> annotatedVariables,
+    List<GetterElement> annotatedGetters,
     List<ModelInfo> finalModelInfos,
     TypeBuilder typeBuilder,
     List<Spec> extensionTypes,
   ) {
-    // Collect models that have @AckType annotation
+    // Collect models that have @AckType annotation (schema variables only)
     final typedModels = <ModelInfo>[];
     final typedElements = <Element2>[];
 
     for (final modelInfo in finalModelInfos) {
-      Element2? element;
+      if (!modelInfo.isFromSchemaVariable) {
+        continue;
+      }
 
-      // Find the corresponding element (class or variable)
-      if (modelInfo.isFromSchemaVariable) {
-        element = annotatedVariables.firstWhere(
-          (e) => e.name3 == modelInfo.schemaClassName,
-          orElse: () => throw InvalidGenerationSourceError(
-            'Could not find schema variable "${modelInfo.schemaClassName}"',
-            todo:
-                'Ensure the schema variable exists and is annotated with @AckType',
-          ),
-        );
-      } else {
-        element = annotatedElements.firstWhere(
-          (e) => e.name3 == modelInfo.className,
-          orElse: () => throw InvalidGenerationSourceError(
-            'Could not find class "${modelInfo.className}"',
-            todo: 'Ensure the class exists and is annotated with @AckModel',
-          ),
+      final element = _findAnnotatedSchemaElement(
+        modelInfo.schemaClassName,
+        annotatedVariables,
+        annotatedGetters,
+      );
+      if (element == null) {
+        throw InvalidGenerationSourceError(
+          'Could not find schema declaration "${modelInfo.schemaClassName}"',
+          todo:
+              'Ensure the schema variable/getter exists and is annotated with @AckType',
         );
       }
 
-      if (_hasAckTypeAnnotation(element)) {
-        typedModels.add(modelInfo);
-        typedElements.add(element);
-      }
+      typedModels.add(modelInfo);
+      typedElements.add(element);
     }
 
     if (typedModels.isEmpty) {
@@ -315,9 +360,19 @@ class AckSchemaGenerator extends Generator {
       // Find the corresponding element (class or variable)
       Element2 element;
       if (model.isFromSchemaVariable) {
-        element = annotatedVariables.firstWhere(
-          (e) => e.name3 == model.schemaClassName,
+        final schemaElement = _findAnnotatedSchemaElement(
+          model.schemaClassName,
+          annotatedVariables,
+          annotatedGetters,
         );
+        if (schemaElement == null) {
+          throw InvalidGenerationSourceError(
+            'Could not find schema declaration "${model.schemaClassName}"',
+            todo:
+                'Ensure the schema variable/getter exists and is annotated with @AckType',
+          );
+        }
+        element = schemaElement;
       } else {
         element = annotatedElements.firstWhere(
           (e) => e.name3 == model.className,
@@ -383,5 +438,25 @@ class AckSchemaGenerator extends Generator {
   /// Checks if an element has @AckType annotation
   bool _hasAckTypeAnnotation(Element2 element) {
     return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+  }
+
+  Element2? _findAnnotatedSchemaElement(
+    String schemaName,
+    List<TopLevelVariableElement2> annotatedVariables,
+    List<GetterElement> annotatedGetters,
+  ) {
+    for (final variable in annotatedVariables) {
+      if (variable.name3 == schemaName) {
+        return variable;
+      }
+    }
+
+    for (final getter in annotatedGetters) {
+      if (getter.name3 == schemaName) {
+        return getter;
+      }
+    }
+
+    return null;
   }
 }

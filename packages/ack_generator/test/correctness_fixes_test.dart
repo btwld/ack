@@ -10,14 +10,16 @@ import 'test_utils/test_assets.dart';
 /// Comprehensive tests for the generator fixes implemented in the plan.
 void main() {
   group('Phase 1: Extension type redesign', () {
-    test('primitive schemas generate extension types alongside object schemas', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'primitive schemas generate extension types alongside object schemas',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -35,22 +37,23 @@ final userSchema = Ack.object({
   'age': Ack.integer(),
 });
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              // Primitives SHOULD have extension types
-              contains('extension type StringType(String _value)'),
-              contains('extension type IntType(int _value)'),
-              // Object types SHOULD have extension types
-              contains('extension type UserType(Map<String, Object?> _data)'),
-              contains('String get name'),
-              contains('int get age'),
-            ]),
-          ),
-        },
-      );
-    });
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                // Primitives SHOULD have extension types
+                contains('extension type StringType(String _value)'),
+                contains('extension type IntType(int _value)'),
+                // Object types SHOULD have extension types
+                contains('extension type UserType(Map<String, Object?> _data)'),
+                contains('String get name'),
+                contains('int get age'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
   });
 
   group('Phase 2: Enum schema generation', () {
@@ -123,101 +126,6 @@ final personSchema = Ack.object({
         },
       );
     });
-
-    test('optional generic fields avoid double-nullable getters', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-@AckType()
-class Box<T> {
-  final T? payload;
-  Box({this.payload});
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              contains('Object? get payload'),
-              isNot(contains('Object?? get payload')),
-            ]),
-          ),
-        },
-      );
-    });
-  });
-
-  group('Phase 2: Special type conversions', () {
-    test('DateTime, Uri, Duration getters convert from raw data', () async {
-      final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-@AckType()
-class Event {
-  final DateTime timestamp;
-  final Uri url;
-  final Duration duration;
-  Event(this.timestamp, this.url, this.duration);
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.ack.g.part': decodedMatches(
-            allOf([
-              // DateTime conversion
-              contains("DateTime.parse(_data['timestamp'] as String)"),
-              // Uri conversion
-              contains("Uri.parse(_data['url'] as String)"),
-              // Duration conversion
-              contains("Duration(milliseconds: _data['duration'] as int)"),
-            ]),
-          ),
-        },
-      );
-    });
-
-    test('nullable special types have null checks', () async {
-      final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-@AckType()
-class OptionalDates {
-  final DateTime? optionalDate;
-  OptionalDates({this.optionalDate});
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.ack.g.part': decodedMatches(
-            allOf([
-              contains("_data['optionalDate'] != null"),
-              contains('DateTime.parse'),
-            ]),
-          ),
-        },
-      );
-    });
   });
 
   group('Phase 2: Discriminated types', () {
@@ -237,7 +145,6 @@ abstract class Shape {
 }
 
 @AckModel(discriminatedValue: 'circle')
-@AckType()
 class Circle extends Shape {
   @override
   String get type => 'circle';
@@ -261,8 +168,9 @@ class Circle extends Shape {
 
                 final schemaBody = schemaMatch.group(1)!;
                 // Count 'type' key occurrences - should be exactly 1
-                final typeKeyCount =
-                    RegExp(r"'type'\s*:").allMatches(schemaBody).length;
+                final typeKeyCount = RegExp(
+                  r"'type'\s*:",
+                ).allMatches(schemaBody).length;
                 return typeKeyCount == 1;
               }, 'discriminator key appears exactly once in schema'),
             ]),
@@ -287,7 +195,6 @@ abstract class Animal {
 }
 
 @AckModel(discriminatedValue: 'cat', schemaName: 'CatDataSchema')
-@AckType()
 class Cat extends Animal {
   @override
   String get kind => 'cat';
@@ -296,7 +203,6 @@ class Cat extends Animal {
 }
 
 @AckModel(discriminatedValue: 'dog', schemaName: 'DogInfoSchema')
-@AckType()
 class Dog extends Animal {
   @override
   String get kind => 'dog';
@@ -408,39 +314,6 @@ final userSchema = Ack.object({
     });
   });
 
-  group('Topological sort', () {
-    test('cyclic dependencies do not throw', () async {
-      final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
-
-      // This should not throw due to the cycle
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-@AckType()
-class Node {
-  final String value;
-  final Node? next; // Self-reference creates a cycle
-  Node(this.value, {this.next});
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.ack.g.part': decodedMatches(
-            allOf([
-              contains('final nodeSchema'),
-              contains('extension type NodeType'),
-            ]),
-          ),
-        },
-      );
-    });
-  });
-
   group('Code review fixes', () {
     test('descriptions with dollar signs are properly escaped', () async {
       final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
@@ -451,7 +324,8 @@ class Node {
           ...allAssets,
           // Dollar sign in description - tests escaping
           // Using explicit string concatenation to avoid Dart interpreting the $
-          'test_pkg|lib/schema.dart': "import 'package:ack_annotations/ack_annotations.dart';\n"
+          'test_pkg|lib/schema.dart':
+              "import 'package:ack_annotations/ack_annotations.dart';\n"
               '\n'
               '@AckModel()\n'
               'class Price {\n'
@@ -501,49 +375,6 @@ class Document {
               contains('documentSchema'),
               // Pattern should use safe quoting
               contains('.matches('),
-            ]),
-          ),
-        },
-      );
-    });
-
-    test('discriminated subtype getter reads from _data', () async {
-      // Use ackGenerator which generates both schemas and extension types
-      // Both base class and subtype need @AckType() to be in sortedModels
-      final builder = ackGenerator(BuilderOptions.empty);
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel(discriminatedKey: 'kind')
-@AckType()
-abstract class Animal {
-  String get kind;
-}
-
-@AckModel(discriminatedValue: 'dog')
-@AckType()
-class Dog extends Animal {
-  @override
-  String get kind => 'dog';
-  final String breed;
-  Dog(this.breed);
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              // Subtype getter should read from _data, not return hardcoded literal
-              contains("_data['kind'] as String"),
-              // Should have the discriminator value in schema
-              contains("'dog'"),
-              // Extension type should be generated for the subtype
-              contains('extension type DogType'),
             ]),
           ),
         },

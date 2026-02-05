@@ -47,11 +47,11 @@ final customUserSchema = Ack.object({
               contains('extension type PasswordType(String _value)'),
               contains('extension type Order2Type(int _value)'),
               // Nullable schema should NOT generate extension type
-              isNot(contains('extension type CustomPasswordType(String _value)')),
-              // Object types SHOULD have extension types
-              contains(
-                'extension type UserType(Map<String, Object?> _data)',
+              isNot(
+                contains('extension type CustomPasswordType(String _value)'),
               ),
+              // Object types SHOULD have extension types
+              contains('extension type UserType(Map<String, Object?> _data)'),
               contains(
                 'extension type CustomUserType(Map<String, Object?> _data)',
               ),
@@ -142,6 +142,41 @@ final invalidSchema = Ack.string();
           }
         },
       );
+    });
+
+    test('rejects @AckType on classes', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+      var sawError = false;
+
+      try {
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+class User {
+  final String name;
+  User(this.name);
+}
+''',
+          },
+          outputs: {},
+          onLog: (log) {
+            if (log.level.name == 'SEVERE') {
+              sawError = true;
+              expect(log.message, contains('AckType'));
+            }
+          },
+        );
+      } catch (error) {
+        sawError = true;
+        expect(error.toString(), contains('AckType'));
+      }
+
+      expect(sawError, isTrue);
     });
 
     test('nullable object schemas do not generate extension types', () async {

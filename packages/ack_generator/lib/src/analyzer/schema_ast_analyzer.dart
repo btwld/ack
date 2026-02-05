@@ -89,10 +89,7 @@ class _ListElementRef {
   final MethodInvocation? ackBaseInvocation;
   final String? schemaVarName;
 
-  _ListElementRef._({
-    this.ackBaseInvocation,
-    this.schemaVarName,
-  });
+  _ListElementRef._({this.ackBaseInvocation, this.schemaVarName});
 
   factory _ListElementRef.ack(MethodInvocation invocation) {
     return _ListElementRef._(ackBaseInvocation: invocation);
@@ -117,7 +114,9 @@ class SchemaAstAnalyzer {
   final Set<String> _schemaVariableTypeStack = {};
   final Map<LibraryElement2, Map<String, ClassElement2>> _classByNameCache = {};
   final Map<LibraryElement2, Map<String, TopLevelVariableElement2>>
-      _schemaVarByNameCache = {};
+  _schemaVarByNameCache = {};
+  final Map<LibraryElement2, Map<String, GetterElement>>
+  _schemaGetterByNameCache = {};
 
   Map<String, ClassElement2> _classesByName(LibraryElement2 library) {
     return _classByNameCache.putIfAbsent(library, () {
@@ -141,6 +140,21 @@ class SchemaAstAnalyzer {
         final name = variable.name3;
         if (name != null) {
           map.putIfAbsent(name, () => variable);
+        }
+      }
+      return map;
+    });
+  }
+
+  Map<String, GetterElement> _schemaGettersByName(LibraryElement2 library) {
+    return _schemaGetterByNameCache.putIfAbsent(library, () {
+      final map = <String, GetterElement>{};
+      for (final getter in library.getters) {
+        if (getter.isSynthetic) continue;
+
+        final name = getter.name3;
+        if (name != null) {
+          map.putIfAbsent(name, () => getter);
         }
       }
       return map;
@@ -200,6 +214,80 @@ class SchemaAstAnalyzer {
     return _parseSchemaFromAST(
       element.name3!,
       initializer,
+      element,
+      customTypeName: customTypeName,
+    );
+  }
+
+  /// Analyzes a top-level schema getter annotated with @AckType.
+  ///
+  /// Supported forms:
+  /// - `AckSchema get userSchema => Ack.object({...});`
+  /// - `AckSchema get userSchema { return Ack.object({...}); }`
+  ModelInfo? analyzeSchemaGetter(
+    GetterElement element, {
+    String? customTypeName,
+  }) {
+    final fragment = element.firstFragment;
+    final session = fragment.libraryFragment.element.session;
+    final library = element.library2;
+
+    final parsedLibResult = session.getParsedLibraryByElement2(library);
+    if (parsedLibResult is! ParsedLibraryResult) {
+      throw InvalidGenerationSourceError(
+        'Could not get parsed library for getter "${element.name3}"',
+        element: element,
+      );
+    }
+
+    final declaration = parsedLibResult.getFragmentDeclaration(fragment);
+    if (declaration == null || declaration.node is! FunctionDeclaration) {
+      throw InvalidGenerationSourceError(
+        'Could not find getter declaration for "${element.name3}"',
+        element: element,
+      );
+    }
+
+    final getterDecl = declaration.node as FunctionDeclaration;
+    if (!getterDecl.isGetter) {
+      throw InvalidGenerationSourceError(
+        '"${element.name3}" is not a getter declaration',
+        element: element,
+      );
+    }
+
+    final body = getterDecl.functionExpression.body;
+    Expression? schemaExpression;
+
+    if (body is ExpressionFunctionBody) {
+      schemaExpression = body.expression;
+    } else if (body is BlockFunctionBody) {
+      final statements = body.block.statements;
+      if (statements.length != 1 || statements.first is! ReturnStatement) {
+        throw InvalidGenerationSourceError(
+          'Schema getter "${element.name3}" must return a schema expression',
+          element: element,
+          todo:
+              'Use an expression body or a single return statement (e.g., return Ack.object({...});).',
+        );
+      }
+
+      final returnStatement = statements.first as ReturnStatement;
+      schemaExpression = returnStatement.expression;
+    }
+
+    if (schemaExpression is! MethodInvocation) {
+      throw InvalidGenerationSourceError(
+        'Schema getter "${element.name3}" must return an Ack schema invocation',
+        element: element,
+        todo:
+            'Return a schema expression such as Ack.object({...}) or Ack.string().',
+      );
+    }
+
+    return _parseSchemaFromAST(
+      element.name3!,
+      schemaExpression,
       element,
       customTypeName: customTypeName,
     );
@@ -527,8 +615,10 @@ class SchemaAstAnalyzer {
 
     // Map schema type to Dart type (passing full invocation for context)
     // Also captures schema variable reference for list fields with nested schemas
-    final (dartType, listElementSchemaRef) =
-        _mapSchemaTypeToDartType(baseInvocation, element);
+    final (dartType, listElementSchemaRef) = _mapSchemaTypeToDartType(
+      baseInvocation,
+      element,
+    );
 
     return FieldInfo(
       name: fieldName,
@@ -640,8 +730,10 @@ class SchemaAstAnalyzer {
 
     final ref = _resolveListElementRef(firstArg);
     if (ref.ackBaseInvocation != null) {
-      final (elementType, _) =
-          _mapSchemaTypeToDartType(ref.ackBaseInvocation!, element);
+      final (elementType, _) = _mapSchemaTypeToDartType(
+        ref.ackBaseInvocation!,
+        element,
+      );
       return (typeProvider.listType(elementType), null);
     }
 
@@ -695,6 +787,19 @@ class SchemaAstAnalyzer {
           schemaVarName,
         );
       }
+
+      final schemaGetter = _schemaGettersByName(library)[schemaVarName];
+      if (schemaGetter != null) {
+        return (
+          typeProvider.listType(
+            typeProvider.mapType(
+              typeProvider.stringType,
+              typeProvider.dynamicType,
+            ),
+          ),
+          schemaVarName,
+        );
+      }
     }
 
     // Not found - fall back to List<dynamic>
@@ -735,13 +840,7 @@ class SchemaAstAnalyzer {
         return resolvedType;
       }
 
-      final schemaVar = _schemaVarsByName(library)[schemaVarName];
-
-      if (schemaVar == null) {
-        return resolvedType;
-      }
-
-      final modelInfo = analyzeSchemaVariable(schemaVar);
+      final modelInfo = _analyzeSchemaByName(schemaVarName, element);
       if (modelInfo == null) {
         return resolvedType;
       }
@@ -757,6 +856,25 @@ class SchemaAstAnalyzer {
       _schemaVariableTypeStack.remove(cacheKey);
       _schemaVariableTypeCache[cacheKey] = resolvedType;
     }
+  }
+
+  ModelInfo? _analyzeSchemaByName(String schemaName, Element2 contextElement) {
+    final library = contextElement.library2;
+    if (library == null) {
+      return null;
+    }
+
+    final schemaVar = _schemaVarsByName(library)[schemaName];
+    if (schemaVar != null) {
+      return analyzeSchemaVariable(schemaVar);
+    }
+
+    final schemaGetter = _schemaGettersByName(library)[schemaName];
+    if (schemaGetter != null) {
+      return analyzeSchemaGetter(schemaGetter);
+    }
+
+    return null;
   }
 
   /// Extracts the identifier name from different expression forms.
@@ -834,8 +952,10 @@ class SchemaAstAnalyzer {
     }
 
     if (truncated) {
-      _log.warning('Method chain exceeded max depth of 20. '
-          'List element type will fall back to dynamic.');
+      _log.warning(
+        'Method chain exceeded max depth of 20. '
+        'List element type will fall back to dynamic.',
+      );
     }
     return null;
   }
@@ -1085,8 +1205,10 @@ class SchemaAstAnalyzer {
 
       // Handle nested lists recursively
       if (methodName == 'list') {
-        final nestedType =
-            _extractListElementTypeString(ref.ackBaseInvocation!, element);
+        final nestedType = _extractListElementTypeString(
+          ref.ackBaseInvocation!,
+          element,
+        );
         return 'List<$nestedType>';
       }
 

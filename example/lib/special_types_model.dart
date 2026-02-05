@@ -4,7 +4,6 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'special_types_model.g.dart';
 
 @AckModel()
-@AckType()
 class Event {
   final String name;
   final DateTime timestamp;
