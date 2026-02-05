@@ -123,6 +123,35 @@ final personSchema = Ack.object({
         },
       );
     });
+
+    test('optional generic fields avoid double-nullable getters', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+@AckType()
+class Box<T> {
+  final T? payload;
+  Box({this.payload});
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('Object? get payload'),
+              isNot(contains('Object?? get payload')),
+            ]),
+          ),
+        },
+      );
+    });
   });
 
   group('Phase 2: Special type conversions', () {
@@ -225,7 +254,7 @@ class Circle extends Shape {
               predicate<String>((content) {
                 // Extract the circleSchema definition
                 final schemaMatch = RegExp(
-                  r"final circleSchema = Ack\.object\(\{([^}]+)\}\)",
+                  r'final circleSchema = Ack\.object\(\{([^}]+)\}\)',
                   dotAll: true,
                 ).firstMatch(content);
                 if (schemaMatch == null) return false;

@@ -36,7 +36,7 @@ class ModelInfo {
   /// Whether this ModelInfo was created from a schema variable (not a class)
   final bool isFromSchemaVariable;
 
-  /// Representation type for extension type (e.g., 'String', 'int', 'Map<String, Object?>')
+  /// Representation type for extension type (e.g., `String`, `int`, `Map<String, Object?>`)
   final String representationType;
 
   /// Whether the schema variable is nullable via `.nullable()`.

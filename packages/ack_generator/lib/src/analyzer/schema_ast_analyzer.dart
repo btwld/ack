@@ -85,6 +85,28 @@ const _dartKeywords = {
   'yield',
 };
 
+class _ListElementRef {
+  final MethodInvocation? ackBaseInvocation;
+  final String? schemaVarName;
+
+  _ListElementRef._({
+    this.ackBaseInvocation,
+    this.schemaVarName,
+  });
+
+  factory _ListElementRef.ack(MethodInvocation invocation) {
+    return _ListElementRef._(ackBaseInvocation: invocation);
+  }
+
+  factory _ListElementRef.schema(String name) {
+    return _ListElementRef._(schemaVarName: name);
+  }
+
+  factory _ListElementRef.unknown() {
+    return _ListElementRef._();
+  }
+}
+
 /// Analyzes schema variables by walking the AST
 ///
 /// This analyzer inspects the AST structure of schema definitions
@@ -93,6 +115,37 @@ const _dartKeywords = {
 class SchemaAstAnalyzer {
   final Map<String, String> _schemaVariableTypeCache = {};
   final Set<String> _schemaVariableTypeStack = {};
+  final Map<LibraryElement2, Map<String, ClassElement2>> _classByNameCache = {};
+  final Map<LibraryElement2, Map<String, TopLevelVariableElement2>>
+      _schemaVarByNameCache = {};
+
+  Map<String, ClassElement2> _classesByName(LibraryElement2 library) {
+    return _classByNameCache.putIfAbsent(library, () {
+      final map = <String, ClassElement2>{};
+      for (final classElement in library.classes) {
+        final name = classElement.name3;
+        if (name != null) {
+          map.putIfAbsent(name, () => classElement);
+        }
+      }
+      return map;
+    });
+  }
+
+  Map<String, TopLevelVariableElement2> _schemaVarsByName(
+    LibraryElement2 library,
+  ) {
+    return _schemaVarByNameCache.putIfAbsent(library, () {
+      final map = <String, TopLevelVariableElement2>{};
+      for (final variable in library.topLevelVariables) {
+        final name = variable.name3;
+        if (name != null) {
+          map.putIfAbsent(name, () => variable);
+        }
+      }
+      return map;
+    });
+  }
 
   /// Analyzes a schema variable annotated with @AckType
   ///
@@ -534,6 +587,33 @@ class SchemaAstAnalyzer {
     }
   }
 
+  _ListElementRef _resolveListElementRef(Expression firstArg) {
+    if (firstArg is MethodInvocation) {
+      // First try: Walk the method chain to find the base Ack.xxx() call
+      final baseInvocation = _findBaseAckInvocation(firstArg);
+      if (baseInvocation != null) {
+        return _ListElementRef.ack(baseInvocation);
+      }
+
+      // Second try: Check for schema variable with method chain
+      // e.g., Ack.list(itemSchema.optional())
+      final schemaVarName = _findSchemaVariableBase(firstArg);
+      if (schemaVarName != null) {
+        return _ListElementRef.schema(schemaVarName);
+      }
+
+      return _ListElementRef.unknown();
+    }
+
+    // Handle Ack.list(schemaVariableName) - simple or prefixed schema reference
+    final schemaVarName = _extractSchemaVariableName(firstArg);
+    if (schemaVarName != null) {
+      return _ListElementRef.schema(schemaVarName);
+    }
+
+    return _ListElementRef.unknown();
+  }
+
   /// Extracts the element type from Ack.list(elementSchema) calls
   ///
   /// Handles:
@@ -558,31 +638,16 @@ class SchemaAstAnalyzer {
 
     final firstArg = args.first;
 
-    // Handle Ack.list(Ack.string()) or Ack.list(Ack.string().describe('...'))
-    if (firstArg is MethodInvocation) {
-      // First try: Walk the method chain to find the base Ack.xxx() call
-      final baseInvocation = _findBaseAckInvocation(firstArg);
-      if (baseInvocation != null) {
-        final (elementType, _) = _mapSchemaTypeToDartType(baseInvocation, element);
-        return (typeProvider.listType(elementType), null);
-      }
-
-      // Second try: Check for schema variable with method chain
-      // e.g., Ack.list(itemSchema.optional())
-      final schemaVarName = _findSchemaVariableBase(firstArg);
-      if (schemaVarName != null) {
-        return _resolveSchemaVariableType(
-          schemaVarName,
-          element,
-          typeProvider,
-        );
-      }
+    final ref = _resolveListElementRef(firstArg);
+    if (ref.ackBaseInvocation != null) {
+      final (elementType, _) =
+          _mapSchemaTypeToDartType(ref.ackBaseInvocation!, element);
+      return (typeProvider.listType(elementType), null);
     }
 
-    // Handle Ack.list(addressSchema) - direct schema variable reference
-    if (firstArg is SimpleIdentifier) {
+    if (ref.schemaVarName != null) {
       return _resolveSchemaVariableType(
-        firstArg.name,
+        ref.schemaVarName!,
         element,
         typeProvider,
       );
@@ -606,10 +671,7 @@ class SchemaAstAnalyzer {
 
     if (library != null) {
       // Try @AckModel class lookup
-      final classElement = library.classes.cast<ClassElement2?>().firstWhere(
-            (c) => c?.name3 == baseTypeName,
-            orElse: () => null,
-          );
+      final classElement = _classesByName(library)[baseTypeName];
 
       if (classElement != null) {
         // For @AckModel classes, use the class type (no schema ref needed)
@@ -617,11 +679,7 @@ class SchemaAstAnalyzer {
       }
 
       // Try @AckType schema variable lookup
-      final schemaVar =
-          library.topLevelVariables.cast<TopLevelVariableElement2?>().firstWhere(
-                (v) => v?.name3 == schemaVarName,
-                orElse: () => null,
-              );
+      final schemaVar = _schemaVarsByName(library)[schemaVarName];
 
       if (schemaVar != null) {
         // Schema variable exists - return List<Map<String, Object?>>
@@ -677,11 +735,7 @@ class SchemaAstAnalyzer {
         return resolvedType;
       }
 
-      final schemaVar =
-          library.topLevelVariables.cast<TopLevelVariableElement2?>().firstWhere(
-                (v) => v?.name3 == schemaVarName,
-                orElse: () => null,
-              );
+      final schemaVar = _schemaVarsByName(library)[schemaVarName];
 
       if (schemaVar == null) {
         return resolvedType;
@@ -739,6 +793,30 @@ class SchemaAstAnalyzer {
     return name;
   }
 
+  (List<MethodInvocation>, bool) _collectMethodChain(
+    MethodInvocation invocation,
+  ) {
+    final chain = <MethodInvocation>[];
+    MethodInvocation? current = invocation;
+
+    // Safety limit to prevent infinite loops on malformed AST
+    const maxDepth = 20;
+    var depth = 0;
+
+    while (current != null && depth < maxDepth) {
+      chain.add(current);
+      final target = current.target;
+      if (target is MethodInvocation) {
+        current = target;
+        depth++;
+      } else {
+        break;
+      }
+    }
+
+    return (chain, depth >= maxDepth);
+  }
+
   /// Walks a method chain to find the base Ack.xxx() invocation.
   ///
   /// For `Ack.string().describe('...').optional()`, returns `Ack.string()`.
@@ -746,33 +824,19 @@ class SchemaAstAnalyzer {
   ///
   /// Returns `null` if no Ack.xxx() base is found.
   MethodInvocation? _findBaseAckInvocation(MethodInvocation invocation) {
-    MethodInvocation current = invocation;
+    final (chain, truncated) = _collectMethodChain(invocation);
 
-    // Safety limit to prevent infinite loops on malformed AST
-    const maxDepth = 20;
-    var depth = 0;
-
-    while (depth < maxDepth) {
+    for (final current in chain) {
       final target = current.target;
-
-      // Found base: target is 'Ack' identifier (supports prefixed Ack)
       if (_isAckTarget(target)) {
         return current;
       }
-
-      // Continue walking the chain
-      if (target is MethodInvocation) {
-        current = target;
-        depth++;
-      } else {
-        // Unknown target type
-        return null;
-      }
     }
 
-    // Exceeded depth limit - likely malformed AST
-    _log.warning('Method chain exceeded max depth of $maxDepth. '
-        'List element type will fall back to dynamic.');
+    if (truncated) {
+      _log.warning('Method chain exceeded max depth of 20. '
+          'List element type will fall back to dynamic.');
+    }
     return null;
   }
 
@@ -785,12 +849,9 @@ class SchemaAstAnalyzer {
   /// (e.g., if it's an Ack.xxx() chain or unknown structure).
   ///
   String? _findSchemaVariableBase(MethodInvocation invocation) {
-    MethodInvocation current = invocation;
+    final (chain, truncated) = _collectMethodChain(invocation);
 
-    const maxDepth = 20;
-    var depth = 0;
-
-    while (depth < maxDepth) {
+    for (final current in chain) {
       final target = current.target;
 
       final schemaVarName = _extractSchemaVariableName(target);
@@ -802,19 +863,14 @@ class SchemaAstAnalyzer {
       if (_isAckTarget(target)) {
         return null;
       }
-
-      // Continue walking the chain
-      if (target is MethodInvocation) {
-        current = target;
-        depth++;
-      } else {
-        return null;
-      }
     }
 
-    // Exceeded depth limit - likely malformed AST
-    _log.warning('Schema variable method chain exceeded max depth of $maxDepth. '
-        'List element type will fall back to dynamic.');
+    if (truncated) {
+      _log.warning(
+        'Schema variable method chain exceeded max depth of 20. '
+        'List element type will fall back to dynamic.',
+      );
+    }
     return null;
   }
 
@@ -1009,7 +1065,7 @@ class SchemaAstAnalyzer {
   ///
   /// This handles:
   /// - Primitive schemas: `Ack.list(Ack.string())` → 'String'
-  /// - Nested lists: `Ack.list(Ack.list(Ack.int()))` → 'List<int>'
+  /// - Nested lists: `Ack.list(Ack.list(Ack.int()))` → `List<int>`
   /// - Schema references: `Ack.list(addressSchema)` → resolves to the referenced schema's representation type
   String _extractListElementTypeString(
     MethodInvocation listInvocation,
@@ -1022,35 +1078,27 @@ class SchemaAstAnalyzer {
     }
 
     final firstArg = args.first;
+    final ref = _resolveListElementRef(firstArg);
 
-    // Handle Ack.list(Ack.xxx().chain()) - nested method invocation
-    if (firstArg is MethodInvocation) {
-      final baseInvocation = _findBaseAckInvocation(firstArg);
-      if (baseInvocation != null) {
-        final methodName = baseInvocation.methodName.name;
+    if (ref.ackBaseInvocation != null) {
+      final methodName = ref.ackBaseInvocation!.methodName.name;
 
-        // Handle nested lists recursively
-        if (methodName == 'list') {
-          final nestedType =
-              _extractListElementTypeString(baseInvocation, element);
-          return 'List<$nestedType>';
-        }
-
-        // Map primitive schema types
-        return _mapSchemaMethodToType(methodName);
+      // Handle nested lists recursively
+      if (methodName == 'list') {
+        final nestedType =
+            _extractListElementTypeString(ref.ackBaseInvocation!, element);
+        return 'List<$nestedType>';
       }
 
-      // Handle schema variable reference with method chain (e.g., schema.optional())
-      final schemaVarName = _findSchemaVariableBase(firstArg);
-      if (schemaVarName != null) {
-        return _resolveSchemaVariableElementTypeString(schemaVarName, element);
-      }
+      // Map primitive schema types
+      return _mapSchemaMethodToType(methodName);
     }
 
-    // Handle Ack.list(schemaVariableName) - schema variable reference (simple or prefixed)
-    final schemaVarName = _extractSchemaVariableName(firstArg);
-    if (schemaVarName != null) {
-      return _resolveSchemaVariableElementTypeString(schemaVarName, element);
+    if (ref.schemaVarName != null) {
+      return _resolveSchemaVariableElementTypeString(
+        ref.schemaVarName!,
+        element,
+      );
     }
 
     return 'dynamic';
@@ -1181,20 +1229,12 @@ class SchemaAstAnalyzer {
   }
 
   bool _hasModifier(MethodInvocation invocation, String modifierName) {
-    MethodInvocation? current = invocation;
-    while (current != null) {
+    final (chain, _) = _collectMethodChain(invocation);
+    for (final current in chain) {
       if (current.methodName.name == modifierName) {
         return true;
       }
-
-      final target = current.target;
-      if (target is MethodInvocation) {
-        current = target;
-      } else {
-        break;
-      }
     }
-
     return false;
   }
 
