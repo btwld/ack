@@ -1,10 +1,13 @@
 import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart' show log;
 import 'package:code_builder/code_builder.dart';
 
 import '../models/field_info.dart';
 import '../models/model_info.dart';
+
+const _ackPackageUrl = 'package:ack/ack.dart';
 
 class _ModelLookups {
   final Map<String, ModelInfo> byClassName;
@@ -262,6 +265,86 @@ class TypeBuilder {
 
   // --- Private Helper Methods ---
 
+  Reference _schemaResultRef(Reference innerType) {
+    return TypeReference(
+      (b) => b
+        ..symbol = 'SchemaResult'
+        ..url = _ackPackageUrl
+        ..types.add(innerType),
+    );
+  }
+
+  Reference _referenceFromDartType(
+    DartType type, {
+    bool forceNullable = false,
+    bool stripNullability = false,
+  }) {
+    final isNullable = forceNullable || (!stripNullability && _isNullable(type));
+
+    if (type is ParameterizedType) {
+      final element = type.element3;
+      final symbol =
+          element?.name3 ?? type.getDisplayString(withNullability: false);
+      final url = _urlForElement(element);
+      final typeArgs = type.typeArguments
+          .map(
+            (arg) => _referenceFromDartType(
+              arg,
+              stripNullability: stripNullability,
+            ),
+          )
+          .toList();
+      return _typeReference(
+        symbol,
+        url: url,
+        types: typeArgs,
+        isNullable: isNullable,
+      );
+    }
+
+    final element = type.element3;
+    final symbol =
+        element?.name3 ?? type.getDisplayString(withNullability: false);
+    final url = _urlForElement(element);
+    return _typeReference(
+      symbol,
+      url: url,
+      isNullable: isNullable,
+    );
+  }
+
+  bool _isNullable(DartType type) {
+    return type.nullabilitySuffix == NullabilitySuffix.question ||
+        type.nullabilitySuffix == NullabilitySuffix.star;
+  }
+
+  Reference _typeReference(
+    String symbol, {
+    String? url,
+    Iterable<Reference> types = const [],
+    bool isNullable = false,
+  }) {
+    if (types.isEmpty && !isNullable) {
+      return refer(symbol, url);
+    }
+    return TypeReference(
+      (b) => b
+        ..symbol = symbol
+        ..url = url
+        ..types.addAll(types)
+        ..isNullable = isNullable,
+    );
+  }
+
+  String? _urlForElement(Element2? element) {
+    final uri = element?.library2?.uri;
+    if (uri == null) return null;
+    if (uri.scheme == 'dart' || uri.scheme == 'package') {
+      return uri.toString();
+    }
+    return null;
+  }
+
   String _getExtensionTypeName(ModelInfo model) {
     return '${model.className}Type';
   }
@@ -320,7 +403,7 @@ return $typeName(validated as $castType);
         (m) => m
           ..name = 'safeParse'
           ..static = true
-          ..returns = refer('SchemaResult<$typeName>')
+          ..returns = _schemaResultRef(refer(typeName))
           ..requiredParameters.add(
             Parameter(
               (p) => p
@@ -393,7 +476,7 @@ return $switchExpression;'''),
               ..type = refer('Object?'),
           ),
         )
-        ..returns = refer('SchemaResult<$typeName>')
+        ..returns = _schemaResultRef(refer(typeName))
         ..body = Code('''
 final result = $schemaVarName.safeParse(data);
 return result.match(
@@ -864,12 +947,14 @@ ${cases.join(',\n')},
 
     // Build parameters - all parameters are nullable to support copyWith semantics
     final parameters = model.fields.map((field) {
-      final typeString = field.type.getDisplayString(withNullability: false);
-
       return Parameter(
         (p) => p
           ..name = field.name
-          ..type = refer('$typeString?')
+          ..type = _referenceFromDartType(
+            field.type,
+            forceNullable: true,
+            stripNullability: true,
+          )
           ..named = true,
       );
     }).toList();
