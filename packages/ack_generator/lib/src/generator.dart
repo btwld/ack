@@ -78,6 +78,7 @@ class AckSchemaGenerator extends Generator {
     final schemaAstAnalyzer = SchemaAstAnalyzer();
     final schemaBuilder = SchemaBuilder();
     final typeBuilder = TypeBuilder();
+    typeBuilder.setAckImportPrefix(_resolveAckImportPrefix(library));
 
     // First pass: Analyze all models individually (from @AckModel classes)
     final modelInfos = <ModelInfo>[];
@@ -446,5 +447,36 @@ class AckSchemaGenerator extends Generator {
     }
 
     return null;
+  }
+
+  /// Returns the import prefix used for `package:ack/ack.dart`, if any.
+  ///
+  /// This is required so generated part files can emit `ack.SchemaResult`
+  /// when the source library uses a prefixed Ack import.
+  String? _resolveAckImportPrefix(LibraryReader library) {
+    for (final import in library.element.firstFragment.libraryImports2) {
+      if (!_isAckImport(import)) continue;
+
+      final prefixElement = import.prefix2?.element;
+      final prefix = prefixElement?.name3;
+      if (prefix != null && prefix.isNotEmpty) {
+        return prefix;
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  bool _isAckImport(LibraryImport import) {
+    final importedLibrary = import.importedLibrary2;
+    if (importedLibrary != null) {
+      if (importedLibrary.uri.toString() == 'package:ack/ack.dart') {
+        return true;
+      }
+    }
+
+    final uriText = import.uri.toString();
+    return uriText.contains('package:ack/ack.dart');
   }
 }

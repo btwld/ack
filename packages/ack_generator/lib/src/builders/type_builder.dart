@@ -7,15 +7,13 @@ import 'package:code_builder/code_builder.dart';
 import '../models/field_info.dart';
 import '../models/model_info.dart';
 
-const _ackPackageUrl = 'package:ack/ack.dart';
-
 class _ModelLookups {
   final Map<String, ModelInfo> byClassName;
   final Map<String, ModelInfo> bySchemaClassName;
 
   _ModelLookups(List<ModelInfo> models)
-      : byClassName = _buildByClassName(models),
-        bySchemaClassName = _buildBySchemaClassName(models);
+    : byClassName = _buildByClassName(models),
+      bySchemaClassName = _buildBySchemaClassName(models);
 
   ModelInfo? classByName(String name) => byClassName[name];
   ModelInfo? schemaByName(String name) => bySchemaClassName[name];
@@ -44,6 +42,17 @@ class _ModelLookups {
 /// Extension types provide zero-cost type-safe wrappers over validated
 /// `Map<String, Object?>` data returned by schema validation.
 class TypeBuilder {
+  String? _ackImportPrefix;
+
+  /// Configures the import prefix used for `package:ack/ack.dart` in the
+  /// source library that owns the generated part file.
+  ///
+  /// When Ack is imported as `import 'package:ack/ack.dart' as ack;`,
+  /// generated references must use `ack.SchemaResult` in part files.
+  void setAckImportPrefix(String? prefix) {
+    _ackImportPrefix = prefix;
+  }
+
   /// Builds an extension type for the given model
   ///
   /// Returns null if the model should not generate an extension type:
@@ -268,11 +277,16 @@ class TypeBuilder {
 
   // --- Private Helper Methods ---
 
+  String _qualifyAckSymbol(String symbol) {
+    final prefix = _ackImportPrefix;
+    if (prefix == null || prefix.isEmpty) return symbol;
+    return '$prefix.$symbol';
+  }
+
   Reference _schemaResultRef(Reference innerType) {
     return TypeReference(
       (b) => b
-        ..symbol = 'SchemaResult'
-        ..url = _ackPackageUrl
+        ..symbol = _qualifyAckSymbol('SchemaResult')
         ..types.add(innerType),
     );
   }
@@ -282,7 +296,8 @@ class TypeBuilder {
     bool forceNullable = false,
     bool stripNullability = false,
   }) {
-    final isNullable = forceNullable || (!stripNullability && _isNullable(type));
+    final isNullable =
+        forceNullable || (!stripNullability && _isNullable(type));
 
     if (type is ParameterizedType) {
       final element = type.element3;
@@ -291,10 +306,8 @@ class TypeBuilder {
       final url = _urlForElement(element);
       final typeArgs = type.typeArguments
           .map(
-            (arg) => _referenceFromDartType(
-              arg,
-              stripNullability: stripNullability,
-            ),
+            (arg) =>
+                _referenceFromDartType(arg, stripNullability: stripNullability),
           )
           .toList();
       return _typeReference(
@@ -309,11 +322,7 @@ class TypeBuilder {
     final symbol =
         element?.name3 ?? type.getDisplayString(withNullability: false);
     final url = _urlForElement(element);
-    return _typeReference(
-      symbol,
-      url: url,
-      isNullable: isNullable,
-    );
+    return _typeReference(symbol, url: url, isNullable: isNullable);
   }
 
   bool _isNullable(DartType type) {
@@ -381,6 +390,7 @@ class TypeBuilder {
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
+    final schemaResultSymbol = _qualifyAckSymbol('SchemaResult');
 
     return [
       // Static parse factory
@@ -417,8 +427,8 @@ return $typeName(validated as $castType);
           ..body = Code('''
 final result = $schemaVarName.safeParse(data);
 return result.match(
-  onOk: (validated) => SchemaResult.ok($typeName(validated as $castType)),
-  onFail: (error) => SchemaResult.fail(error),
+  onOk: (validated) => $schemaResultSymbol.ok($typeName(validated as $castType)),
+  onFail: (error) => $schemaResultSymbol.fail(error),
 );'''),
       ),
     ];
@@ -455,13 +465,11 @@ return $switchExpression;'''),
     );
   }
 
-  Method _buildDiscriminatedSafeParse(
-    ModelInfo model,
-    String schemaVarName,
-  ) {
+  Method _buildDiscriminatedSafeParse(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
     final subtypes = model.subtypes!;
+    final schemaResultSymbol = _qualifyAckSymbol('SchemaResult');
     final switchExpression = _buildDiscriminatorSwitchExpression(
       'map',
       discriminatorKey,
@@ -486,9 +494,9 @@ return result.match(
   onOk: (validated) {
     final map = validated as Map<String, Object?>;
     final parsed = $switchExpression;
-    return SchemaResult.ok(parsed);
+    return $schemaResultSymbol.ok(parsed);
   },
-  onFail: (error) => SchemaResult.fail(error),
+  onFail: (error) => $schemaResultSymbol.fail(error),
 );'''),
     );
   }
@@ -594,8 +602,7 @@ ${cases.join(',\n')},
 
     // Nested schema variable reference (e.g., 'address': addressSchema).
     if (field.nestedSchemaRef != null) {
-      final referencedModel =
-          _findSchemaModel(field.nestedSchemaRef!, lookups);
+      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
       if (referencedModel != null) {
         final typeName = '${referencedModel.className}Type';
         final castType = referencedModel.representationType;
@@ -641,8 +648,12 @@ ${cases.join(',\n')},
     }
 
     // For complex types, check null first
-    final nonNullPart =
-        _buildNonNullableGetter(field, lookups, key, baseType: baseType);
+    final nonNullPart = _buildNonNullableGetter(
+      field,
+      lookups,
+      key,
+      baseType: baseType,
+    );
     return "_data['$key'] != null ? $nonNullPart : null";
   }
 
@@ -664,27 +675,19 @@ ${cases.join(',\n')},
       'Uri' => "Uri.parse(_data['$key'] as String)",
       'Duration' => "Duration(milliseconds: _data['$key'] as int)",
       _ => throw StateError(
-          'Unsupported special type: $typeName. '
-          'Callers must gate with _isSpecialType before calling this method.',
-        ),
+        'Unsupported special type: $typeName. '
+        'Callers must gate with _isSpecialType before calling this method.',
+      ),
     };
 
-    return nullable
-        ? "_data['$key'] != null ? $conversion : null"
-        : conversion;
+    return nullable ? "_data['$key'] != null ? $conversion : null" : conversion;
   }
 
-  String _buildListGetter(
-    FieldInfo field,
-    _ModelLookups lookups,
-    String key,
-  ) => _buildCollectionGetter(field, lookups, key, isSet: false);
+  String _buildListGetter(FieldInfo field, _ModelLookups lookups, String key) =>
+      _buildCollectionGetter(field, lookups, key, isSet: false);
 
-  String _buildSetGetter(
-    FieldInfo field,
-    _ModelLookups lookups,
-    String key,
-  ) => _buildCollectionGetter(field, lookups, key, isSet: true);
+  String _buildSetGetter(FieldInfo field, _ModelLookups lookups, String key) =>
+      _buildCollectionGetter(field, lookups, key, isSet: true);
 
   /// Builds getter code for List or Set collections
   String _buildCollectionGetter(
@@ -693,8 +696,7 @@ ${cases.join(',\n')},
     String key, {
     required bool isSet,
   }) {
-    final elementType =
-        _getCollectionElementType(field, lookups, isSet: isSet);
+    final elementType = _getCollectionElementType(field, lookups, isSet: isSet);
 
     final suffix = isSet ? '.toSet()' : '';
 
@@ -702,8 +704,7 @@ ${cases.join(',\n')},
     if (_isCustomElementType(field, lookups)) {
       // Return eager List for object lists (per requirements: List<T>, not Iterable<T>)
       final listSuffix = isSet ? '' : '.toList()';
-      final castType =
-          _getCustomElementCastType(field, elementType, lookups);
+      final castType = _getCustomElementCastType(field, elementType, lookups);
       return "(_data['$key'] as List).map((e) => ${elementType}Type(e as $castType))$listSuffix$suffix";
     }
 
@@ -731,7 +732,11 @@ ${cases.join(',\n')},
 
     // Lists
     if (field.isList) {
-      final elementType = _getCollectionElementType(field, lookups, isSet: false);
+      final elementType = _getCollectionElementType(
+        field,
+        lookups,
+        isSet: false,
+      );
       // Use List for all list types (eager evaluation per requirements)
       if (_isCustomElementType(field, lookups)) {
         return 'List<${elementType}Type>';
@@ -741,8 +746,7 @@ ${cases.join(',\n')},
 
     // Nested schema variable reference (e.g., 'address': addressSchema).
     if (field.nestedSchemaRef != null) {
-      final referencedModel =
-          _findSchemaModel(field.nestedSchemaRef!, lookups);
+      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
       if (referencedModel != null) {
         return '${referencedModel.className}Type';
       }
@@ -756,7 +760,11 @@ ${cases.join(',\n')},
 
     // Sets
     if (field.isSet) {
-      final elementType = _getCollectionElementType(field, lookups, isSet: true);
+      final elementType = _getCollectionElementType(
+        field,
+        lookups,
+        isSet: true,
+      );
       if (_isCustomElementType(field, lookups)) {
         return 'Set<${elementType}Type>';
       }
@@ -785,8 +793,10 @@ ${cases.join(',\n')},
   }) {
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (!isSet && field.listElementSchemaRef != null) {
-      final referencedModel =
-          _findSchemaModel(field.listElementSchemaRef!, lookups);
+      final referencedModel = _findSchemaModel(
+        field.listElementSchemaRef!,
+        lookups,
+      );
       if (referencedModel != null) {
         return referencedModel.className;
       }
@@ -844,10 +854,7 @@ ${cases.join(',\n')},
     return _hasAckTypeForElement(element, lookups);
   }
 
-  bool _hasAckTypeForElement(
-    InterfaceElement2 element,
-    _ModelLookups lookups,
-  ) {
+  bool _hasAckTypeForElement(InterfaceElement2 element, _ModelLookups lookups) {
     final name = element.name3;
     if (name == null) return false;
     return lookups.byClassName.containsKey(name);
@@ -887,8 +894,10 @@ ${cases.join(',\n')},
     _ModelLookups lookups,
   ) {
     if (field.listElementSchemaRef != null) {
-      final referencedModel =
-          _findSchemaModel(field.listElementSchemaRef!, lookups);
+      final referencedModel = _findSchemaModel(
+        field.listElementSchemaRef!,
+        lookups,
+      );
       if (referencedModel != null) {
         return referencedModel.representationType;
       }

@@ -85,5 +85,33 @@ ObjectSchema get userSchema {
         },
       );
     });
+
+    test('uses prefixed SchemaResult when Ack import is aliased', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart' as ack;
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+ack.StringSchema get statusSchema => ack.Ack.string();
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('extension type StatusType(String _value)'),
+              contains('ack.SchemaResult<StatusType> safeParse'),
+              contains('ack.SchemaResult.ok(StatusType(validated as String))'),
+              contains('ack.SchemaResult.fail(error)'),
+            ]),
+          ),
+        },
+      );
+    });
   });
 }
