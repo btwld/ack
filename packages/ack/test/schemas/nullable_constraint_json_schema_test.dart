@@ -1,6 +1,5 @@
 import 'package:ack/ack.dart';
 import 'package:ack/src/constraints/comparison_constraint.dart';
-import 'package:ack/src/constraints/constraint.dart';
 import 'package:meta/meta.dart';
 import 'package:test/test.dart';
 
@@ -12,10 +11,10 @@ import 'package:test/test.dart';
 class _TestJsonSchemaConstraint extends Constraint<Object>
     with Validator<Object>, JsonSchemaSpec<Object> {
   const _TestJsonSchemaConstraint()
-      : super(
-          constraintKey: 'test_marker',
-          description: 'Test constraint for JSON Schema merging verification',
-        );
+    : super(
+        constraintKey: 'test_marker',
+        description: 'Test constraint for JSON Schema merging verification',
+      );
 
   @override
   @protected
@@ -49,13 +48,16 @@ void main() {
       });
 
       test('nullable merges constraints in inner JSON Schema', () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {
-            'a': Ack.object({'type': Ack.literal('a')}),
-            'b': Ack.object({'type': Ack.literal('b')}),
-          },
-        ).nullable().withConstraint(ComparisonConstraint.objectMinProperties(1));
+        final schema =
+            Ack.discriminated(
+              discriminatorKey: 'type',
+              schemas: {
+                'a': Ack.object({'type': Ack.literal('a')}),
+                'b': Ack.object({'type': Ack.literal('b')}),
+              },
+            ).nullable().withConstraint(
+              ComparisonConstraint.objectMinProperties(1),
+            );
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -77,16 +79,17 @@ void main() {
       });
 
       test('nullable with multiple constraints merges all', () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {
-            'a': Ack.object({'type': Ack.literal('a')}),
-            'b': Ack.object({'type': Ack.literal('b')}),
-          },
-        )
-            .nullable()
-            .withConstraint(ComparisonConstraint.objectMinProperties(1))
-            .withConstraint(ComparisonConstraint.objectMaxProperties(10));
+        final schema =
+            Ack.discriminated(
+                  discriminatorKey: 'type',
+                  schemas: {
+                    'a': Ack.object({'type': Ack.literal('a')}),
+                    'b': Ack.object({'type': Ack.literal('b')}),
+                  },
+                )
+                .nullable()
+                .withConstraint(ComparisonConstraint.objectMinProperties(1))
+                .withConstraint(ComparisonConstraint.objectMaxProperties(10));
 
         final jsonSchema = schema.toJsonSchema();
         final anyOfList = jsonSchema['anyOf'] as List;

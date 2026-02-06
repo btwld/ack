@@ -250,8 +250,9 @@ class JsonSchema {
         raw is List ? raw.map((e) => e.toString()).toList() : null;
 
     JsonSchema? parseSchema(Object? raw) {
-      if (raw is Map)
+      if (raw is Map) {
         return JsonSchema.fromJson(Map<String, Object?>.from(raw));
+      }
       return null;
     }
 
