@@ -232,7 +232,6 @@ class AckSchemaGenerator extends Generator {
     final inputFileName = buildStep.inputId.pathSegments.last;
     final generatedLibrary = Library(
       (b) => b
-        ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
         ..directives.addAll([Directive.partOf(inputFileName)])
         ..body.addAll([...schemaFields, ...extensionTypes]),
     );

@@ -41,7 +41,8 @@ class FieldBuilder {
     'email': (schema, args) => '$schema.email()',
     'url': (schema, args) => '$schema.url()',
     // Use _buildRegexLiteral to safely handle all regex patterns including '''
-    'matches': (schema, args) => '$schema.matches(${_buildRegexLiteral(args[0])})',
+    'matches': (schema, args) =>
+        '$schema.matches(${_buildRegexLiteral(args[0])})',
     'min': (schema, args) => '$schema.min(${args[0]})',
     'max': (schema, args) => '$schema.max(${args[0]})',
     'positive': (schema, args) => '$schema.positive()',
@@ -53,7 +54,8 @@ class FieldBuilder {
       return '$schema.enumString([$values])';
     },
     // Use _buildRegexLiteral for pattern as well
-    'pattern': (schema, args) => '$schema.matches(${_buildRegexLiteral(args[0])})',
+    'pattern': (schema, args) =>
+        '$schema.matches(${_buildRegexLiteral(args[0])})',
   };
 
   String buildFieldSchema(FieldInfo field, [ModelInfo? model]) {
@@ -101,7 +103,9 @@ class FieldBuilder {
     }
 
     if (field.description != null && field.description!.isNotEmpty) {
-      final escapedDescription = _escapeForSingleQuotedString(field.description!);
+      final escapedDescription = _escapeForSingleQuotedString(
+        field.description!,
+      );
       schema = "$schema.describe('$escapedDescription')";
     }
 
@@ -200,9 +204,9 @@ class FieldBuilder {
 
     // Custom schema reference - look up by class name to honor custom schemaName
     final modelInfo = _allModels.cast<ModelInfo?>().firstWhere(
-          (m) => m?.className == typeName,
-          orElse: () => null,
-        );
+      (m) => m?.className == typeName,
+      orElse: () => null,
+    );
 
     if (modelInfo != null) {
       // Use the model's schema class name (handles @AckModel(schemaName: ...))
@@ -241,8 +245,9 @@ class FieldBuilder {
       return generator(schema, constraint.arguments);
     }
 
-    // Unknown constraint - log warning for potential typos
-    log.warning(
+    // Unknown constraints are intentionally ignored to allow custom extensions.
+    // Log at fine level for diagnostics without noisy build warnings.
+    log.fine(
       'Unknown constraint "${constraint.name}" ignored. '
       'Check spelling or ensure constraint is registered.',
     );

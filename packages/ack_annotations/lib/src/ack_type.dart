@@ -47,9 +47,13 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ### Primitive Schemas
 ///
-/// Primitive schemas (String, int, double, bool) generate extension types that
-/// implement the underlying primitive type. These are thin wrappers that add
-/// `parse()`/`safeParse()` factories while keeping the primitive API available.
+/// Non-nullable primitive schemas (String, int, double, bool) generate
+/// extension types that implement the underlying primitive type. These are
+/// thin wrappers that add `parse()`/`safeParse()` factories while keeping the
+/// primitive API available.
+///
+/// Nullable primitive schemas (for example, `Ack.string().nullable()`) do not
+/// generate extension types.
 ///
 /// ```dart
 /// @AckType()
@@ -134,12 +138,13 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Collections
 ///
-/// Lists of primitives return `List<T>`, lists of nested schemas return lazy `Iterable<TType>`:
+/// Lists of primitives return `List<T>`, and lists of nested schemas return
+/// `List<TType>`:
 /// ```dart
 /// @ackType
 /// final blogPostSchema = Ack.object({
 ///   'tags': Ack.list(Ack.string()),      // List<String>
-///   'comments': Ack.list(commentSchema), // Iterable<CommentType>
+///   'comments': Ack.list(commentSchema), // List<CommentType>
 /// });
 /// ```
 ///
@@ -200,10 +205,11 @@ import 'package:meta/meta_meta.dart';
 /// - **Nullable schema variables**: Extension types are not generated for schemas
 ///   marked with `.nullable()` because the representation is non-nullable.
 ///   - Use the schema directly for nullable validation.
-/// - **List element modifiers**: List element types with chained modifiers may not
-///   be fully inferred:
+/// - **List element modifiers**: List element nullability from chained
+///   modifiers may not be fully inferred:
 ///   - ✅ `Ack.list(Ack.string())` → `List<String>`
-///   - ⚠️ `Ack.list(Ack.string().nullable())` → `List<dynamic>` (element nullability lost)
+///   - ⚠️ `Ack.list(Ack.string().nullable())` → `List<String>` (element
+///     nullability lost; expected `List<String?>`)
 /// - **Transform modifier**: Not supported (changes output type)
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
