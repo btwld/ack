@@ -69,7 +69,7 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Pattern Matching
 
-- `matches(String pattern, {String? example, String? message})`: Must match regex pattern. **Note**: Patterns are NOT automatically anchored - use `^...$` for full-string matching. See [String Validation](../core-concepts/validation.mdx#string-validation) for details.
+- `matches(String pattern, {String? example, String? message})`: Must match regex pattern. **Note**: Patterns are NOT automatically anchored - use `^...$` for full-string matching. See [String Validation](../core-concepts/validation.mdx#string-constraints) for details.
 - `contains(String pattern, {String? example, String? message})`: Must contain pattern anywhere in string (partial matching)
 - `startsWith(String value)`: Must start with specified value
 - `endsWith(String value)`: Must end with specified value
@@ -103,7 +103,7 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ## `IntegerSchema` / `DoubleSchema` (Number Schemas)
 
-Schemas for validating numbers. See [Number Validation](../core-concepts/validation.mdx#number-constraints).
+Schemas for validating numbers. See [Number Validation](../core-concepts/validation.mdx#number-constraints-int-and-double).
 
 - `min(num limit)`: Minimum value (inclusive)
 - `max(num limit)`: Maximum value (inclusive)
@@ -131,7 +131,7 @@ Schema for validating arrays. See [List Validation](../core-concepts/validation.
 
 ## `ObjectSchema`
 
-Schema for validating objects (maps). See [Object Validation](../core-concepts/schemas.mdx#object-schema).
+Schema for validating objects (maps). See [Object Validation](../core-concepts/schemas.mdx#object).
 
 - Constructed using `Ack.object(Map<String, AckSchema> properties, {bool additionalProperties = false})`.
 - Use `.pick(List<String> keys)` to create schema with only specified properties.
@@ -148,10 +148,10 @@ Object returned by `safeParse()`. See [Error Handling](../core-concepts/error-ha
 
 - `bool isOk`: True if validation succeeded
 - `bool isFail`: True if validation failed
-- `T getOrThrow()`: Returns the validated value or throws an exception
+- `T? getOrThrow()`: Returns the validated value (nullable for nullable schemas) or throws an exception
 - `T? getOrNull()`: Returns the validated value or null if validation failed
 - `SchemaError getError()`: Returns the validation error (only valid when `isFail` is true)
-- `T getOrElse(T Function() defaultValue)`: Returns the validated value or a default
+- `T? getOrElse(T? Function() orElse)`: Returns the validated value or the fallback result
 
 ## `SchemaError` (and Subclasses)
 
@@ -169,8 +169,17 @@ Object representing a validation failure. See [Error Handling](../core-concepts/
 
 Base class for creating custom validation rules. See [Custom Validation](../guides/custom-validation.mdx).
 
-- `ConstraintError? validate(T value)`: Validates a value and returns an error if invalid
+- `String constraintKey`: Unique key for the constraint
+- `String description`: Human-readable description
 - `Map<String, Object?> toMap()`: Serializes the constraint for debugging
+
+## `Validator<T>` (Mixin)
+
+Validation behavior mixin used with `Constraint<T>`.
+
+- `bool isValid(T value)`: Returns `true` when the value passes validation
+- `String buildMessage(T value)`: Builds the validation failure message
+- `ConstraintError? validate(T value)`: Validates a value and returns an error if invalid
 
 ## Additional Schema Types
 

@@ -15,13 +15,13 @@ final optionalName = Ack.string().nullable();
 final optionalAge = Ack.integer().nullable();
 ```
 
-### `constrain(SchemaConstraint constraint)`
+### `constrain(Constraint<T> constraint, {String? message})`
 
-Applies a custom `SchemaConstraint`. See the [Custom Validation](../guides/custom-validation.mdx) guide.
+Applies a custom `Constraint<T>` that also implements `Validator<T>`. See the [Custom Validation](../guides/custom-validation.mdx) guide.
 
 ## String Constraints
 
-Apply these to [`Ack.string()`](./schemas.mdx#string-schema) schemas.
+Apply these to [`Ack.string()`](./schemas.mdx#string) schemas.
 
 ### `minLength(int min)`
 Ensures the string has at least `min` characters.
@@ -192,7 +192,7 @@ Ack.string().toUpperCase()
 
 ## Number Constraints (Int and Double)
 
-Apply these to [`Ack.integer()`](./schemas.mdx#number-schemas) and [`Ack.double()`](./schemas.mdx#number-schemas) schemas.
+Apply these to [`Ack.integer()`](./schemas.mdx#number) and [`Ack.double()`](./schemas.mdx#number) schemas.
 
 ### `min(num limit)`
 Ensures the number is greater than or equal to the `limit` (inclusive).
@@ -257,7 +257,7 @@ Ack.double().finite()
 
 ## List Constraints
 
-Apply these to [`Ack.list()`](./schemas.mdx#list-schema) schemas.
+Apply these to [`Ack.list()`](./schemas.mdx#list) schemas.
 
 ### `minLength(int min)`
 Ensures the list has at least `min` items.

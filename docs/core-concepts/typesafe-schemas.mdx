@@ -41,7 +41,7 @@ You can use the generated schema for validation:
 ```dart
 final result = userSchema.safeParse(json);
 if (result.isOk) {
-  final data = result.getOrThrow();
+  final data = result.getOrThrow()!;
   final user = User(
     name: data['name'] as String,
     age: data['age'] as int,
@@ -98,7 +98,7 @@ final addressSchema = Ack.object({
 
 After running `dart run build_runner build`, the part file contains:
 
-- **The original schema constants** remain unchanged (so existing imports keep working).
+- **Your original schema constants/getters** remain in your source file.
 - **Extension type** `UserType(Map<String, Object?> _data)` with typed getters (removes "Schema" suffix from variable name, adds "Type").
 - **Extension type** `AddressType(Map<String, Object?> _data)` for the nested schema.
 - **Static helpers** `parse`/`safeParse` so you can do `final user = UserType.parse(json);`.
@@ -134,7 +134,7 @@ behave like `String`, `int`, etc., while object wrappers implement
 | Annotation | Target | Generates Schema? | Generates Extension Type? | Use When |
 |------------|--------|-------------------|---------------------------|----------|
 | `@AckModel` | Dart class | ✅ Yes | ❌ No | You have a class definition and want schema generation |
-| `@AckType` | Schema variable | ❌ No (uses existing) | ✅ Yes | You have a schema and want type-safe access |
+| `@AckType` | Top-level schema variable/getter | ❌ No (uses existing) | ✅ Yes | You have a schema and want type-safe access |
 
 **Examples:**
 
