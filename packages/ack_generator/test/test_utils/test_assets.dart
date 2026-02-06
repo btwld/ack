@@ -62,15 +62,21 @@ class AckModel {
   'ack_annotations|lib/src/ack_field.dart': '''
 import 'package:meta/meta_meta.dart';
 
+enum AckFieldRequiredMode {
+  auto,
+  required,
+  optional,
+}
+
 @Target({TargetKind.field})
 class AckField {
-  final bool required;
+  final AckFieldRequiredMode requiredMode;
   final String? jsonKey;
   final String? description;
   final List<String> constraints;
 
   const AckField({
-    this.required = false,
+    this.requiredMode = AckFieldRequiredMode.auto,
     this.jsonKey,
     this.description,
     this.constraints = const [],

@@ -146,7 +146,7 @@ import 'package:ack_annotations/ack_annotations.dart';
   additionalPropertiesField: 'extras'
 )
 class FieldWithAdditionalProps {
-  @AckField(jsonKey: 'user_name', required: true)
+  @AckField(jsonKey: 'user_name', requiredMode: AckFieldRequiredMode.required)
   final String name;
 
   @AckField(jsonKey: 'user_email', constraints: ['email'])
@@ -258,7 +258,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
 class ContradictoryModel {
-  @AckField(required: true)  // Marked required but type is nullable
+  @AckField(requiredMode: AckFieldRequiredMode.required)  // Marked required but type is nullable
   final String? contradictoryField;
   
   ContradictoryModel({this.contradictoryField});
@@ -347,7 +347,7 @@ class ApiUser {
     jsonKey: 'email_address',
     description: 'User email address',
     constraints: ['email', 'notEmpty'],
-    required: true
+    requiredMode: AckFieldRequiredMode.required
   )
   final String email;
 
@@ -404,7 +404,9 @@ class ApiUser {
                   "'user_role': Ack.enumValues<UserRole>(UserRole.values)",
                 ),
                 // subscription_status is formatted across lines, check each part
-                contains("'subscription_status': Ack.enumValues<SubscriptionStatus>"),
+                contains(
+                  "'subscription_status': Ack.enumValues<SubscriptionStatus>",
+                ),
                 contains('SubscriptionStatus.values'),
                 contains('.optional()'),
                 contains('.nullable()'),

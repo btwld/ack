@@ -663,10 +663,11 @@ ${cases.join(',\n')},
       'DateTime' => "DateTime.parse(_data['$key'] as String)",
       'Uri' => "Uri.parse(_data['$key'] as String)",
       'Duration' => "Duration(milliseconds: _data['$key'] as int)",
-      _ => null,
+      _ => throw StateError(
+          'Unsupported special type: $typeName. '
+          'Callers must gate with _isSpecialType before calling this method.',
+        ),
     };
-
-    if (conversion == null) return "_data['$key']";
 
     return nullable
         ? "_data['$key'] != null ? $conversion : null"

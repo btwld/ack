@@ -63,71 +63,42 @@ class FieldAnalyzer {
   }
 
   bool _isRequired(FieldElement2 field, DartObject? annotation) {
-    // If no annotation, use automatic detection
+    // If no annotation, use automatic detection.
     if (annotation == null) {
-      return field.type.nullabilitySuffix == NullabilitySuffix.none &&
-          !field.firstFragment.hasInitializer;
+      return _inferRequiredFromField(field);
     }
 
-    // Check if the annotation explicitly sets required
-    // We need to distinguish between @AckField(required: true/false)
-    // and @AckField(jsonKey: 'something') where required is not explicitly set
-
-    // For now, we'll use a heuristic: if the annotation only has jsonKey set,
-    // fall back to automatic detection. This handles the common case where
-    // @AckField is used only to customize the JSON key.
-    final hasExplicitRequired = _hasExplicitRequiredValue(annotation);
-
-    if (hasExplicitRequired) {
-      return annotation.getField('required')!.toBoolValue()!;
+    // Tri-state mode is authoritative.
+    switch (_getRequiredMode(annotation)) {
+      case AckFieldRequiredMode.required:
+        return true;
+      case AckFieldRequiredMode.optional:
+        return false;
+      case AckFieldRequiredMode.auto:
+        return _inferRequiredFromField(field);
     }
+  }
 
-    // Fall back to automatic detection
+  bool _inferRequiredFromField(FieldElement2 field) {
     return field.type.nullabilitySuffix == NullabilitySuffix.none &&
         !field.firstFragment.hasInitializer;
   }
 
-  bool _hasExplicitRequiredValue(DartObject annotation) {
-    // Check if `required` was explicitly provided in the annotation.
-    //
-    // The AckField annotation has `required` with a default value of `false`.
-    // We can detect explicit usage by checking if the value differs from default,
-    // OR if the annotation ONLY contains `required` (meaning the user wrote it).
-    //
-    // Heuristic: If required=true, it was definitely explicitly set (differs from default).
-    // If required=false and NO other fields are set, it was explicitly set.
-    // If required=false and other fields ARE set (jsonKey, constraints, description),
-    // we need to check if description is set (which has no default) - if it is,
-    // we can't tell. For simplicity, we'll treat required=true as explicit,
-    // and required=false as "use automatic detection" to avoid breaking changes.
-    //
-    // This is imperfect - ideally we'd inspect the annotation AST directly.
-    // But it preserves backward compatibility: existing code using
-    // @AckField(jsonKey: 'x') will continue to use auto-detection.
-
-    final requiredValue = annotation.getField('required')?.toBoolValue();
-
-    // If required is true, it was explicitly set (differs from default of false)
-    if (requiredValue == true) {
-      return true;
+  AckFieldRequiredMode _getRequiredMode(DartObject annotation) {
+    final modeIndex = annotation
+        .getField('requiredMode')
+        ?.getField('index')
+        ?.toIntValue();
+    switch (modeIndex) {
+      case 0:
+        return AckFieldRequiredMode.auto;
+      case 1:
+        return AckFieldRequiredMode.required;
+      case 2:
+        return AckFieldRequiredMode.optional;
+      default:
+        return AckFieldRequiredMode.auto;
     }
-
-    // If required is false (the default), check if it's the only field set.
-    // If the annotation has no jsonKey, constraints, or description,
-    // then the user wrote @AckField(required: false) explicitly.
-    final hasJsonKey = annotation.getField('jsonKey')?.toStringValue() != null;
-    final hasConstraints =
-        annotation.getField('constraints')?.toListValue()?.isNotEmpty ?? false;
-    final hasDescription =
-        annotation.getField('description')?.toStringValue() != null;
-
-    // If no other fields are set, required: false was explicit
-    if (!hasJsonKey && !hasConstraints && !hasDescription) {
-      return true;
-    }
-
-    // Otherwise, we can't tell - fall back to automatic detection
-    return false;
   }
 
   List<ConstraintInfo> _extractConstraints(
@@ -136,28 +107,37 @@ class FieldAnalyzer {
   ) {
     final constraints = <ConstraintInfo>[];
 
-    // Extract constraints from @AckField annotation (legacy support)
-    if (annotation != null) {
-      final constraintsField = annotation.getField('constraints');
-      if (constraintsField != null && !constraintsField.isNull) {
-        final constraintsList = constraintsField.toListValue();
-        if (constraintsList != null) {
-          for (final constraint in constraintsList) {
-            // Parse constraint strings like "minLength(3)", "email()"
-            final constraintStr = constraint.toStringValue();
-            if (constraintStr != null) {
-              final parsed = _parseConstraintString(constraintStr);
-              if (parsed != null) {
-                constraints.add(parsed);
-              }
-            }
-          }
-        }
-      }
-    }
+    // Extract constraints from @AckField annotation.
+    constraints.addAll(_extractAckFieldConstraints(annotation));
 
     // Extract constraints from decorator annotations
     constraints.addAll(_extractDecoratorConstraints(field));
+
+    return constraints;
+  }
+
+  List<ConstraintInfo> _extractAckFieldConstraints(DartObject? annotation) {
+    if (annotation == null) return const [];
+
+    final constraints = <ConstraintInfo>[];
+    final constraintsField = annotation.getField('constraints');
+    if (constraintsField == null || constraintsField.isNull) {
+      return constraints;
+    }
+
+    final constraintsList = constraintsField.toListValue();
+    if (constraintsList == null) return constraints;
+
+    for (final constraint in constraintsList) {
+      // Parse constraint strings like "minLength(3)", "email()".
+      final constraintStr = constraint.toStringValue();
+      if (constraintStr == null) continue;
+
+      final parsed = _parseConstraintString(constraintStr);
+      if (parsed != null) {
+        constraints.add(parsed);
+      }
+    }
 
     return constraints;
   }
@@ -182,32 +162,21 @@ class FieldAnalyzer {
   List<ConstraintInfo> _extractDecoratorConstraints(FieldElement2 field) {
     final constraints = <ConstraintInfo>[];
 
-    // STRING LENGTH CONSTRAINTS
-    final minLengthAnnotation = TypeChecker.typeNamed(
-      MinLength,
-    ).firstAnnotationOf(field);
-    if (minLengthAnnotation != null) {
-      final length = minLengthAnnotation.getField('length')?.toIntValue();
-      if (length != null) {
-        constraints.add(
-          ConstraintInfo(name: 'minLength', arguments: [length.toString()]),
-        );
-      }
-    }
+    _addStringConstraints(constraints, field);
+    _addNumericConstraints(constraints, field);
+    _addListConstraints(constraints, field);
+    _addEnumConstraints(constraints, field);
 
-    final maxLengthAnnotation = TypeChecker.typeNamed(
-      MaxLength,
-    ).firstAnnotationOf(field);
-    if (maxLengthAnnotation != null) {
-      final length = maxLengthAnnotation.getField('length')?.toIntValue();
-      if (length != null) {
-        constraints.add(
-          ConstraintInfo(name: 'maxLength', arguments: [length.toString()]),
-        );
-      }
-    }
+    return constraints;
+  }
 
-    // STRING FORMAT CONSTRAINTS
+  void _addStringConstraints(
+    List<ConstraintInfo> constraints,
+    FieldElement2 field,
+  ) {
+    _addIntConstraint(constraints, field, MinLength, 'length', 'minLength');
+    _addIntConstraint(constraints, field, MaxLength, 'length', 'maxLength');
+
     if (TypeChecker.typeNamed(Email).hasAnnotationOfExact(field)) {
       constraints.add(ConstraintInfo(name: 'email', arguments: []));
     }
@@ -216,116 +185,100 @@ class FieldAnalyzer {
       constraints.add(ConstraintInfo(name: 'url', arguments: []));
     }
 
-    // STRING PATTERN CONSTRAINTS
     final patternAnnotation = TypeChecker.typeNamed(
       Pattern,
     ).firstAnnotationOf(field);
-    if (patternAnnotation != null) {
-      final pattern = patternAnnotation.getField('pattern')?.toStringValue();
-      if (pattern != null) {
-        constraints.add(ConstraintInfo(name: 'matches', arguments: [pattern]));
-      }
+    final pattern = patternAnnotation?.getField('pattern')?.toStringValue();
+    if (pattern != null) {
+      constraints.add(ConstraintInfo(name: 'matches', arguments: [pattern]));
     }
+  }
 
-    // NUMERIC CONSTRAINTS
-    // Note: We try toIntValue() first, then toDoubleValue(), because
-    // int literals like @Min(5) have toDoubleValue() return null
-    final minAnnotation = TypeChecker.typeNamed(Min).firstAnnotationOf(field);
-    if (minAnnotation != null) {
-      final valueField = minAnnotation.getField('value');
-      final intValue = valueField?.toIntValue();
-      final doubleValue = valueField?.toDoubleValue();
-      final valueStr = intValue != null
-          ? intValue.toString()
-          : doubleValue?.toString();
-      if (valueStr != null) {
-        constraints.add(
-          ConstraintInfo(name: 'min', arguments: [valueStr]),
-        );
-      }
-    }
-
-    final maxAnnotation = TypeChecker.typeNamed(Max).firstAnnotationOf(field);
-    if (maxAnnotation != null) {
-      final valueField = maxAnnotation.getField('value');
-      final intValue = valueField?.toIntValue();
-      final doubleValue = valueField?.toDoubleValue();
-      final valueStr = intValue != null
-          ? intValue.toString()
-          : doubleValue?.toString();
-      if (valueStr != null) {
-        constraints.add(
-          ConstraintInfo(name: 'max', arguments: [valueStr]),
-        );
-      }
-    }
+  void _addNumericConstraints(
+    List<ConstraintInfo> constraints,
+    FieldElement2 field,
+  ) {
+    _addNumericConstraint(constraints, field, Min, 'min');
+    _addNumericConstraint(constraints, field, Max, 'max');
 
     if (TypeChecker.typeNamed(Positive).hasAnnotationOfExact(field)) {
       constraints.add(ConstraintInfo(name: 'positive', arguments: []));
     }
 
-    final multipleOfAnnotation = TypeChecker.typeNamed(
-      MultipleOf,
-    ).firstAnnotationOf(field);
-    if (multipleOfAnnotation != null) {
-      final valueField = multipleOfAnnotation.getField('value');
-      final intValue = valueField?.toIntValue();
-      final doubleValue = valueField?.toDoubleValue();
-      final valueStr = intValue != null
-          ? intValue.toString()
-          : doubleValue?.toString();
-      if (valueStr != null) {
-        constraints.add(
-          ConstraintInfo(name: 'multipleOf', arguments: [valueStr]),
-        );
-      }
-    }
+    _addNumericConstraint(constraints, field, MultipleOf, 'multipleOf');
+  }
 
-    // LIST CONSTRAINTS
-    final minItemsAnnotation = TypeChecker.typeNamed(
-      MinItems,
-    ).firstAnnotationOf(field);
-    if (minItemsAnnotation != null) {
-      final count = minItemsAnnotation.getField('count')?.toIntValue();
-      if (count != null) {
-        constraints.add(
-          ConstraintInfo(name: 'minItems', arguments: [count.toString()]),
-        );
-      }
-    }
+  void _addListConstraints(
+    List<ConstraintInfo> constraints,
+    FieldElement2 field,
+  ) {
+    _addIntConstraint(constraints, field, MinItems, 'count', 'minItems');
+    _addIntConstraint(constraints, field, MaxItems, 'count', 'maxItems');
+  }
 
-    final maxItemsAnnotation = TypeChecker.typeNamed(
-      MaxItems,
-    ).firstAnnotationOf(field);
-    if (maxItemsAnnotation != null) {
-      final count = maxItemsAnnotation.getField('count')?.toIntValue();
-      if (count != null) {
-        constraints.add(
-          ConstraintInfo(name: 'maxItems', arguments: [count.toString()]),
-        );
-      }
-    }
-
-    // ENUM CONSTRAINTS
+  void _addEnumConstraints(
+    List<ConstraintInfo> constraints,
+    FieldElement2 field,
+  ) {
     final enumStringAnnotation = TypeChecker.typeNamed(
       EnumString,
     ).firstAnnotationOf(field);
-    if (enumStringAnnotation != null) {
-      final valuesList = enumStringAnnotation.getField('values')?.toListValue();
-      if (valuesList != null) {
-        final values = valuesList
-            .map((v) => v.toStringValue())
-            .where((v) => v != null)
-            .cast<String>()
-            .toList();
-        if (values.isNotEmpty) {
-          constraints.add(
-            ConstraintInfo(name: 'enumString', arguments: values),
-          );
-        }
-      }
-    }
+    if (enumStringAnnotation == null) return;
 
-    return constraints;
+    final valuesList = enumStringAnnotation.getField('values')?.toListValue();
+    if (valuesList == null) return;
+
+    final values = valuesList
+        .map((v) => v.toStringValue())
+        .where((v) => v != null)
+        .cast<String>()
+        .toList();
+    if (values.isNotEmpty) {
+      constraints.add(ConstraintInfo(name: 'enumString', arguments: values));
+    }
+  }
+
+  void _addIntConstraint(
+    List<ConstraintInfo> constraints,
+    FieldElement2 field,
+    Type annotationType,
+    String valueFieldName,
+    String constraintName,
+  ) {
+    final annotation = TypeChecker.typeNamed(
+      annotationType,
+    ).firstAnnotationOf(field);
+    final value = annotation?.getField(valueFieldName)?.toIntValue();
+    if (value != null) {
+      constraints.add(
+        ConstraintInfo(name: constraintName, arguments: [value.toString()]),
+      );
+    }
+  }
+
+  /// Extracts a numeric value from an annotation and adds it as a constraint.
+  ///
+  /// Tries toIntValue() first, then toDoubleValue(), because int literals
+  /// like @Min(5) have toDoubleValue() return null in the analyzer.
+  void _addNumericConstraint(
+    List<ConstraintInfo> constraints,
+    FieldElement2 field,
+    Type annotationType,
+    String constraintName,
+  ) {
+    final annotation = TypeChecker.typeNamed(
+      annotationType,
+    ).firstAnnotationOf(field);
+    if (annotation == null) return;
+
+    final valueField = annotation.getField('value');
+    final valueStr =
+        valueField?.toIntValue()?.toString() ??
+        valueField?.toDoubleValue()?.toString();
+    if (valueStr != null) {
+      constraints.add(
+        ConstraintInfo(name: constraintName, arguments: [valueStr]),
+      );
+    }
   }
 }

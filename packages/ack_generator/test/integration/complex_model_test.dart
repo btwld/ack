@@ -20,13 +20,13 @@ import 'package:ack_annotations/ack_annotations.dart';
 @AckModel()
 class User {
   @AckField(
-    required: true,
+    requiredMode: AckFieldRequiredMode.required,
     constraints: ['notEmpty()', 'minLength(3)', 'maxLength(50)'],
   )
   final String username;
   
   @AckField(
-    required: true,
+    requiredMode: AckFieldRequiredMode.required,
     constraints: ['email()'],
   )
   final String email;

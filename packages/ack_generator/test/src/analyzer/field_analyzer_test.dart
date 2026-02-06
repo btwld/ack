@@ -21,7 +21,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
 class User {
-  @AckField(required: true, jsonKey: 'user_name')
+  @AckField(requiredMode: AckFieldRequiredMode.required, jsonKey: 'user_name')
   final String name;
   
   User(this.name);
@@ -75,6 +75,91 @@ class User {
         final fieldInfo = analyzer.analyze(field);
 
         expect(fieldInfo.jsonKey, equals('firstName'));
+      });
+    });
+
+    test('uses auto required inference for bare AckField()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+class RequiredInference {
+  @AckField()
+  final String mustStayRequired;
+
+  @AckField()
+  final String? nullableField;
+
+  RequiredInference(this.mustStayRequired, this.nullableField);
+}
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'RequiredInference',
+        );
+
+        final requiredField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'mustStayRequired',
+        );
+        final nullableField = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'nullableField',
+        );
+
+        expect(analyzer.analyze(requiredField).isRequired, isTrue);
+        expect(analyzer.analyze(nullableField).isRequired, isFalse);
+      });
+    });
+
+    test('supports explicit requiredMode overrides', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+class RequiredOverrides {
+  @AckField(requiredMode: AckFieldRequiredMode.optional, jsonKey: 'optional_name')
+  final String optionalWithJsonKey;
+
+  @AckField(requiredMode: AckFieldRequiredMode.optional)
+  final String modeOptional;
+
+  @AckField(requiredMode: AckFieldRequiredMode.required)
+  final String modeWins;
+
+  RequiredOverrides(this.optionalWithJsonKey, this.modeOptional, this.modeWins);
+}
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
+        final classElement = library.classes.firstWhere(
+          (e) => e.name3 == 'RequiredOverrides',
+        );
+
+        final optionalWithJsonKey = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'optionalWithJsonKey',
+        );
+        final modeOptional = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'modeOptional',
+        );
+        final modeWins = classElement.fields2.firstWhere(
+          (f) => f.name3 == 'modeWins',
+        );
+
+        expect(analyzer.analyze(optionalWithJsonKey).isRequired, isFalse);
+        expect(analyzer.analyze(modeOptional).isRequired, isFalse);
+        expect(analyzer.analyze(modeWins).isRequired, isTrue);
       });
     });
 

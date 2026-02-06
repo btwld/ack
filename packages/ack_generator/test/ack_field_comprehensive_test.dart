@@ -20,10 +20,10 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
 class RequiredFieldsModel {
-  @AckField(required: true)
+  @AckField(requiredMode: AckFieldRequiredMode.required)
   final String mandatoryField;
   
-  @AckField(required: false)
+  @AckField(requiredMode: AckFieldRequiredMode.optional)
   final String? optionalField;
   
   final String defaultField; // No annotation
@@ -190,7 +190,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 @AckModel()
 class AllOptionsModel {
   @AckField(
-    required: true,
+    requiredMode: AckFieldRequiredMode.required,
     jsonKey: 'user_email',
     description: 'User\\'s primary email address',
     constraints: ['email', 'notEmpty']
@@ -198,7 +198,7 @@ class AllOptionsModel {
   final String email;
   
   @AckField(
-    required: false,
+    requiredMode: AckFieldRequiredMode.optional,
     jsonKey: 'display_name',
     description: 'Optional display name',
     constraints: ['minLength(1)', 'maxLength(100)']
@@ -456,9 +456,7 @@ class VariousTypesModel {
                 contains("'number_field': Ack.integer()"),
                 contains("'decimal_field': Ack.double()"),
                 contains("'boolean_field': Ack.boolean()"),
-                contains(
-                  "'enum_field': Ack.enumValues<Status>(Status.values)",
-                ),
+                contains("'enum_field': Ack.enumValues<Status>(Status.values)"),
                 contains("'list_field': Ack.list(Ack.string())"),
                 contains(
                   "'nullable_field': Ack.string().optional().nullable()",

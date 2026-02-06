@@ -107,21 +107,9 @@ class AckSchemaGenerator extends Generator {
     // Also analyze schema variables annotated with @AckType
     for (final variable in annotatedVariables) {
       try {
-        String? customTypeName;
-        final ackTypeAnnotation = TypeChecker.typeNamed(
-          AckType,
-        ).firstAnnotationOfExact(variable);
-        if (ackTypeAnnotation != null) {
-          final annotationReader = ConstantReader(ackTypeAnnotation);
-          final nameField = annotationReader.peek('name');
-          if (nameField != null && !nameField.isNull) {
-            customTypeName = nameField.stringValue;
-          }
-        }
-
         final modelInfo = schemaAstAnalyzer.analyzeSchemaVariable(
           variable,
-          customTypeName: customTypeName,
+          customTypeName: _extractAckTypeName(variable),
         );
         if (modelInfo != null) {
           modelInfos.add(modelInfo);
@@ -139,21 +127,9 @@ class AckSchemaGenerator extends Generator {
     // Also analyze schema getters annotated with @AckType
     for (final getter in annotatedGetters) {
       try {
-        String? customTypeName;
-        final ackTypeAnnotation = TypeChecker.typeNamed(
-          AckType,
-        ).firstAnnotationOfExact(getter);
-        if (ackTypeAnnotation != null) {
-          final annotationReader = ConstantReader(ackTypeAnnotation);
-          final nameField = annotationReader.peek('name');
-          if (nameField != null && !nameField.isNull) {
-            customTypeName = nameField.stringValue;
-          }
-        }
-
         final modelInfo = schemaAstAnalyzer.analyzeSchemaGetter(
           getter,
-          customTypeName: customTypeName,
+          customTypeName: _extractAckTypeName(getter),
         );
         if (modelInfo != null) {
           modelInfos.add(modelInfo);
@@ -437,6 +413,19 @@ class AckSchemaGenerator extends Generator {
   /// Checks if an element has @AckType annotation
   bool _hasAckTypeAnnotation(Element2 element) {
     return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+  }
+
+  /// Extracts the custom type name from an @AckType annotation, if present.
+  String? _extractAckTypeName(Element2 element) {
+    final annotation = TypeChecker.typeNamed(
+      AckType,
+    ).firstAnnotationOfExact(element);
+    if (annotation == null) return null;
+
+    final nameField = ConstantReader(annotation).peek('name');
+    return (nameField != null && !nameField.isNull)
+        ? nameField.stringValue
+        : null;
   }
 
   Element2? _findAnnotatedSchemaElement(

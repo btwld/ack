@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/token.dart' show Keyword;
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_provider.dart';
@@ -15,94 +16,7 @@ final _log = Logger('SchemaAstAnalyzer');
 /// Default representation type for object schemas
 const String _kMapType = 'Map<String, Object?>';
 
-/// Dart reserved keywords that cannot be used as identifiers
-const _dartKeywords = {
-  'abstract',
-  'as',
-  'assert',
-  'async',
-  'await',
-  'base',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'covariant',
-  'default',
-  'deferred',
-  'do',
-  'dynamic',
-  'else',
-  'enum',
-  'export',
-  'extends',
-  'extension',
-  'external',
-  'factory',
-  'false',
-  'final',
-  'finally',
-  'for',
-  'Function',
-  'get',
-  'hide',
-  'if',
-  'implements',
-  'import',
-  'in',
-  'interface',
-  'is',
-  'late',
-  'library',
-  'mixin',
-  'new',
-  'null',
-  'on',
-  'operator',
-  'part',
-  'required',
-  'rethrow',
-  'return',
-  'sealed',
-  'set',
-  'show',
-  'static',
-  'super',
-  'switch',
-  'sync',
-  'this',
-  'throw',
-  'true',
-  'try',
-  'typedef',
-  'var',
-  'void',
-  'when',
-  'while',
-  'with',
-  'yield',
-};
-
-class _ListElementRef {
-  final MethodInvocation? ackBaseInvocation;
-  final String? schemaVarName;
-
-  _ListElementRef._({this.ackBaseInvocation, this.schemaVarName});
-
-  factory _ListElementRef.ack(MethodInvocation invocation) {
-    return _ListElementRef._(ackBaseInvocation: invocation);
-  }
-
-  factory _ListElementRef.schema(String name) {
-    return _ListElementRef._(schemaVarName: name);
-  }
-
-  factory _ListElementRef.unknown() {
-    return _ListElementRef._();
-  }
-}
+typedef _ListElementRef = ({MethodInvocation? ackBase, String? schemaVar});
 
 /// Analyzes schema variables by walking the AST
 ///
@@ -679,29 +593,25 @@ class SchemaAstAnalyzer {
 
   _ListElementRef _resolveListElementRef(Expression firstArg) {
     if (firstArg is MethodInvocation) {
-      // First try: Walk the method chain to find the base Ack.xxx() call
       final baseInvocation = _findBaseAckInvocation(firstArg);
       if (baseInvocation != null) {
-        return _ListElementRef.ack(baseInvocation);
+        return (ackBase: baseInvocation, schemaVar: null);
       }
 
-      // Second try: Check for schema variable with method chain
-      // e.g., Ack.list(itemSchema.optional())
       final schemaVarName = _findSchemaVariableBase(firstArg);
       if (schemaVarName != null) {
-        return _ListElementRef.schema(schemaVarName);
+        return (ackBase: null, schemaVar: schemaVarName);
       }
 
-      return _ListElementRef.unknown();
+      return (ackBase: null, schemaVar: null);
     }
 
-    // Handle Ack.list(schemaVariableName) - simple or prefixed schema reference
     final schemaVarName = _extractSchemaVariableName(firstArg);
     if (schemaVarName != null) {
-      return _ListElementRef.schema(schemaVarName);
+      return (ackBase: null, schemaVar: schemaVarName);
     }
 
-    return _ListElementRef.unknown();
+    return (ackBase: null, schemaVar: null);
   }
 
   /// Extracts the element type from Ack.list(elementSchema) calls
@@ -729,20 +639,13 @@ class SchemaAstAnalyzer {
     final firstArg = args.first;
 
     final ref = _resolveListElementRef(firstArg);
-    if (ref.ackBaseInvocation != null) {
-      final (elementType, _) = _mapSchemaTypeToDartType(
-        ref.ackBaseInvocation!,
-        element,
-      );
+    if (ref.ackBase != null) {
+      final (elementType, _) = _mapSchemaTypeToDartType(ref.ackBase!, element);
       return (typeProvider.listType(elementType), null);
     }
 
-    if (ref.schemaVarName != null) {
-      return _resolveSchemaVariableType(
-        ref.schemaVarName!,
-        element,
-        typeProvider,
-      );
+    if (ref.schemaVar != null) {
+      return _resolveSchemaVariableType(ref.schemaVar!, element, typeProvider);
     }
 
     // Fallback for unknown argument types
@@ -1200,15 +1103,12 @@ class SchemaAstAnalyzer {
     final firstArg = args.first;
     final ref = _resolveListElementRef(firstArg);
 
-    if (ref.ackBaseInvocation != null) {
-      final methodName = ref.ackBaseInvocation!.methodName.name;
+    if (ref.ackBase != null) {
+      final methodName = ref.ackBase!.methodName.name;
 
       // Handle nested lists recursively
       if (methodName == 'list') {
-        final nestedType = _extractListElementTypeString(
-          ref.ackBaseInvocation!,
-          element,
-        );
+        final nestedType = _extractListElementTypeString(ref.ackBase!, element);
         return 'List<$nestedType>';
       }
 
@@ -1216,11 +1116,8 @@ class SchemaAstAnalyzer {
       return _mapSchemaMethodToType(methodName);
     }
 
-    if (ref.schemaVarName != null) {
-      return _resolveSchemaVariableElementTypeString(
-        ref.schemaVarName!,
-        element,
-      );
+    if (ref.schemaVar != null) {
+      return _resolveSchemaVariableElementTypeString(ref.schemaVar!, element);
     }
 
     return 'dynamic';
@@ -1405,8 +1302,10 @@ class SchemaAstAnalyzer {
       );
     }
 
-    // Check for reserved keywords
-    if (_dartKeywords.contains(fieldName)) {
+    // Reject only reserved words. Built-in and pseudo keywords are allowed
+    // as identifiers in many contexts (for example `of`, `augment`).
+    final keyword = Keyword.keywords[fieldName];
+    if (keyword?.isReservedWord == true) {
       throw InvalidGenerationSourceError(
         'JSON key "$fieldName" is a Dart reserved keyword and cannot be used as a field name.',
         element: element,
