@@ -223,5 +223,43 @@ final contactListSchema = Ack.object({
         },
       );
     });
+
+    test('Ack.list(schemaRef.optional()) generates List<ExtensionType> getter', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/contact_list.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+});
+
+@AckType()
+final contactListSchema = Ack.object({
+  'name': Ack.string(),
+  'addresses': Ack.list(addressSchema.optional()),
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/contact_list.g.dart': decodedMatches(
+            allOf([
+              contains('extension type AddressType'),
+              contains('extension type ContactListType'),
+              contains('List<AddressType> get addresses'),
+              contains('.map((e) => AddressType(e as Map<String, Object?>))'),
+              contains('.toList()'),
+            ]),
+          ),
+        },
+      );
+    });
   });
 }

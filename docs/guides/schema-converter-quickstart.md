@@ -2,7 +2,7 @@
 
 **Use this for rapid prototyping of new schema converter packages**
 
-## 1️⃣ Create Package (2 minutes)
+## 1. Create Package (2 minutes)
 
 ```bash
 cd packages/
@@ -20,11 +20,11 @@ touch analysis_options.yaml
 touch .pubignore
 ```
 
-## 2️⃣ Configure pubspec.yaml (3 minutes)
+## 2. Configure pubspec.yaml (3 minutes)
 
 ```yaml
 name: ack_<target>
-description: <Target> schema converter for ACK validation library
+description: <Target> schema converter for Ack validation library
 version: 1.0.0-beta.1
 repository: https://github.com/btwld/ack
 
@@ -42,12 +42,12 @@ dev_dependencies:
   lints: ^5.0.0
 ```
 
-## 3️⃣ Main Library File (5 minutes)
+## 3. Main Library File (5 minutes)
 
 **`lib/ack_<target>.dart`**:
 
 ```dart
-/// <Target> schema converter for ACK validation library.
+/// <Target> schema converter for Ack validation library.
 library;
 
 import 'package:ack/ack.dart';
@@ -55,7 +55,7 @@ import 'package:ack/ack.dart';
 export 'src/extension.dart';
 ```
 
-## 4️⃣ Extension Method (3 minutes)
+## 4. Extension Method (3 minutes)
 
 **`lib/src/extension.dart`**:
 
@@ -64,14 +64,14 @@ import 'package:ack/ack.dart';
 import 'converter.dart';
 
 extension <Target>SchemaExtension on AckSchema {
-  /// Converts this ACK schema to <Target> format.
+  /// Converts this Ack schema to <Target> format.
   <TargetType> to<Target>Schema() {
     return <Target>SchemaConverter.convert(this);
   }
 }
 ```
 
-## 5️⃣ Converter Skeleton (10 minutes)
+## 5. Converter Skeleton (10 minutes)
 
 **`lib/src/converter.dart`**:
 
@@ -142,7 +142,7 @@ class <Target>SchemaConverter {
 }
 ```
 
-## 6️⃣ Basic Tests (15 minutes)
+## 6. Basic Tests (15 minutes)
 
 **`test/to_<target>_schema_test.dart`**:
 
@@ -188,7 +188,7 @@ void main() {
 }
 ```
 
-## 7️⃣ Example Usage (5 minutes)
+## 7. Example Usage (5 minutes)
 
 **`example/basic_usage.dart`**:
 
@@ -211,14 +211,14 @@ void main() {
 }
 ```
 
-## 8️⃣ README (10 minutes)
+## 8. README (10 minutes)
 
 **`README.md`**:
 
 ```markdown
 # ack_<target>
 
-<Target> schema converter for ACK.
+<Target> schema converter for Ack.
 
 ## Installation
 
@@ -247,10 +247,10 @@ final targetSchema = schema.to<Target>Schema();
 
 ## License
 
-Part of the [ACK](https://github.com/btwld/ack) monorepo.
+Part of the [Ack](https://github.com/btwld/ack) monorepo.
 ```
 
-## 9️⃣ Verify Setup (2 minutes)
+## 9. Verify Setup (2 minutes)
 
 ```bash
 # Get dependencies
@@ -271,7 +271,7 @@ dart format .
 ## Next Steps
 
 1. **Implement converters** - Fill in `UnimplementedError()` methods
-2. **Add comprehensive tests** - Cover all ACK schema types
+2. **Add comprehensive tests** - Cover all Ack schema types
 3. **Document limitations** - Update README with specific constraints
 4. **Add examples** - Real-world usage patterns
 5. **Publish** - Once tests pass and docs are complete

@@ -36,8 +36,13 @@ class ModelInfo {
   /// Whether this ModelInfo was created from a schema variable (not a class)
   final bool isFromSchemaVariable;
 
-  /// Representation type for extension type (e.g., 'String', 'int', 'Map&lt;String, Object?&gt;')
+  /// Representation type for extension type (e.g., `String`, `int`, `Map<String, Object?>`)
   final String representationType;
+
+  /// Whether the schema variable is nullable via `.nullable()`.
+  ///
+  /// This only applies to @AckType schema variables (not @AckModel classes).
+  final bool isNullableSchema;
 
   const ModelInfo({
     required this.className,
@@ -52,5 +57,6 @@ class ModelInfo {
     this.subtypes,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
+    this.isNullableSchema = false,
   });
 }

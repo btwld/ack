@@ -99,7 +99,7 @@ class User {
       );
     });
 
-    test('generates part directive comment', () async {
+    test('does not inject duplicate generated header in part output', () async {
       final builder = SharedPartBuilder([generator], 'ack');
 
       await testBuilder(
@@ -120,7 +120,11 @@ class Model {
         },
         outputs: {
           'test_pkg|lib/model.ack.g.part': decodedMatches(
-            contains('// GENERATED CODE - DO NOT MODIFY BY HAND'),
+            allOf([
+              contains('// AckSchemaGenerator'),
+              contains("part of 'model.dart';"),
+              isNot(contains('// GENERATED CODE - DO NOT MODIFY BY HAND')),
+            ]),
           ),
         },
       );

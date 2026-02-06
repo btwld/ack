@@ -5,8 +5,6 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-// // GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'mixed_examples.dart';
 
 /// Generated schema for BasicUser
@@ -55,7 +53,7 @@ final blogPostSchema = Ack.object({
 /// Product inventory with comprehensive constraints
 final productInventorySchema = Ack.object({
   'sku': Ack.string().minLength(3).maxLength(50),
-  'quantity': Ack.integer(),
+  'quantity': Ack.integer().min(0).max(10000),
   'unitPrice': Ack.double().min(0.01),
   'lastRestocked': Ack.string().matches(r'''^\d{4}-\d{2}-\d{2}$'''),
   'isAvailable': Ack.boolean(),

@@ -32,10 +32,19 @@ class AckSchemaGenerator extends Generator {
   String generate(LibraryReader library, BuildStep buildStep) {
     final annotatedElements = <ClassElement2>[];
     final annotatedVariables = <TopLevelVariableElement2>[];
+    final annotatedGetters = <GetterElement>[];
 
     // Find all classes annotated with @AckModel and variables annotated with @AckType
     for (final element in library.allElements) {
       if (element is ClassElement2) {
+        if (_hasAckTypeAnnotation(element)) {
+          throw InvalidGenerationSourceError(
+            '@AckType can only be applied to top-level schema variables or getters, not classes.',
+            element: element,
+            todo:
+                'Remove @AckType from the class and annotate a schema variable instead.',
+          );
+        }
         final annotation = TypeChecker.typeNamed(
           AckModel,
         ).firstAnnotationOf(element);
@@ -46,10 +55,19 @@ class AckSchemaGenerator extends Generator {
         if (_hasAckTypeAnnotation(element)) {
           annotatedVariables.add(element);
         }
+      } else if (element is GetterElement) {
+        final isTopLevel = element.enclosingElement2 is LibraryElement2;
+        if (isTopLevel &&
+            !element.isSynthetic &&
+            _hasAckTypeAnnotation(element)) {
+          annotatedGetters.add(element);
+        }
       }
     }
 
-    if (annotatedElements.isEmpty && annotatedVariables.isEmpty) {
+    if (annotatedElements.isEmpty &&
+        annotatedVariables.isEmpty &&
+        annotatedGetters.isEmpty) {
       return '';
     }
 
@@ -60,6 +78,7 @@ class AckSchemaGenerator extends Generator {
     final schemaAstAnalyzer = SchemaAstAnalyzer();
     final schemaBuilder = SchemaBuilder();
     final typeBuilder = TypeBuilder();
+    typeBuilder.setAckImportPrefix(_resolveAckImportPrefix(library));
 
     // First pass: Analyze all models individually (from @AckModel classes)
     final modelInfos = <ModelInfo>[];
@@ -89,21 +108,9 @@ class AckSchemaGenerator extends Generator {
     // Also analyze schema variables annotated with @AckType
     for (final variable in annotatedVariables) {
       try {
-        String? customTypeName;
-        final ackTypeAnnotation = TypeChecker.typeNamed(
-          AckType,
-        ).firstAnnotationOfExact(variable);
-        if (ackTypeAnnotation != null) {
-          final annotationReader = ConstantReader(ackTypeAnnotation);
-          final nameField = annotationReader.peek('name');
-          if (nameField != null && !nameField.isNull) {
-            customTypeName = nameField.stringValue;
-          }
-        }
-
         final modelInfo = schemaAstAnalyzer.analyzeSchemaVariable(
           variable,
-          customTypeName: customTypeName,
+          customTypeName: _extractAckTypeName(variable),
         );
         if (modelInfo != null) {
           modelInfos.add(modelInfo);
@@ -118,11 +125,34 @@ class AckSchemaGenerator extends Generator {
       }
     }
 
+    // Also analyze schema getters annotated with @AckType
+    for (final getter in annotatedGetters) {
+      try {
+        final modelInfo = schemaAstAnalyzer.analyzeSchemaGetter(
+          getter,
+          customTypeName: _extractAckTypeName(getter),
+        );
+        if (modelInfo != null) {
+          modelInfos.add(modelInfo);
+        }
+      } catch (e) {
+        throw InvalidGenerationSourceError(
+          'Failed to analyze schema getter "${getter.name3}": $e',
+          element: getter,
+          todo:
+              'Ensure the getter returns Ack schema syntax (e.g., Ack.object(), Ack.string()).',
+        );
+      }
+    }
+
     // Second pass: Build discriminator relationships
     final finalModelInfos = analyzer.buildDiscriminatorRelationships(
       modelInfos,
       annotatedElements,
     );
+
+    // Set all models on schema builder for cross-referencing (e.g., custom schemaNames in discriminated types)
+    schemaBuilder.setAllModels(finalModelInfos);
 
     // Third pass: Generate code for all models
     for (final modelInfo in finalModelInfos) {
@@ -164,6 +194,7 @@ class AckSchemaGenerator extends Generator {
     _generateExtensionTypes(
       annotatedElements,
       annotatedVariables,
+      annotatedGetters,
       finalModelInfos,
       typeBuilder,
       extensionTypes,
@@ -178,7 +209,6 @@ class AckSchemaGenerator extends Generator {
     final inputFileName = buildStep.inputId.pathSegments.last;
     final generatedLibrary = Library(
       (b) => b
-        ..comments.add('// GENERATED CODE - DO NOT MODIFY BY HAND')
         ..directives.addAll([Directive.partOf(inputFileName)])
         ..body.addAll([...schemaFields, ...extensionTypes]),
     );
@@ -197,21 +227,27 @@ class AckSchemaGenerator extends Generator {
       formattedCode = _formatter.format(generatedCode);
     } catch (e) {
       // If formatting fails, use unformatted code but still validate
-      _log.warning('Failed to format generated code: $e');
+      _log.warning('Code formatting failed, using unformatted output: $e');
       formattedCode = generatedCode;
     }
 
     // Validate formatted code to ensure what we write is syntactically correct
     final validation = CodeValidator.validate(formattedCode);
     if (validation.isFailure) {
-      // Write to file for debugging
-      final outputPath = buildStep.inputId.changeExtension('.g.dart.debug');
-      final file = File(outputPath.path);
-      file.writeAsStringSync(formattedCode);
+      String debugInfo = '';
+
+      // Only write debug file if ACK_GENERATOR_DEBUG=true environment variable is set
+      final debugEnabled =
+          Platform.environment['ACK_GENERATOR_DEBUG']?.toLowerCase() == 'true';
+      if (debugEnabled) {
+        final outputPath = buildStep.inputId.changeExtension('.g.dart.debug');
+        final file = File(outputPath.path);
+        file.writeAsStringSync(formattedCode);
+        debugInfo = '\nDebug output written to: ${outputPath.path}';
+      }
 
       throw InvalidGenerationSourceError(
-        'Generated code validation failed: ${validation.errorMessage}\n'
-        'Debug output written to: ${outputPath.path}',
+        'Generated code validation failed: ${validation.errorMessage}$debugInfo',
         todo: 'Fix the code generation logic to produce valid Dart syntax',
       );
     }
@@ -245,41 +281,35 @@ class AckSchemaGenerator extends Generator {
   void _generateExtensionTypes(
     List<ClassElement2> annotatedElements,
     List<TopLevelVariableElement2> annotatedVariables,
+    List<GetterElement> annotatedGetters,
     List<ModelInfo> finalModelInfos,
     TypeBuilder typeBuilder,
     List<Spec> extensionTypes,
   ) {
-    // Collect models that have @AckType annotation
+    // Collect models that have @AckType annotation (schema variables only)
     final typedModels = <ModelInfo>[];
     final typedElements = <Element2>[];
 
     for (final modelInfo in finalModelInfos) {
-      Element2? element;
+      if (!modelInfo.isFromSchemaVariable) {
+        continue;
+      }
 
-      // Find the corresponding element (class or variable)
-      if (modelInfo.isFromSchemaVariable) {
-        element = annotatedVariables.firstWhere(
-          (e) => e.name3 == modelInfo.schemaClassName,
-          orElse: () => throw InvalidGenerationSourceError(
-            'Could not find schema variable "${modelInfo.schemaClassName}"',
-            todo:
-                'Ensure the schema variable exists and is annotated with @AckType',
-          ),
-        );
-      } else {
-        element = annotatedElements.firstWhere(
-          (e) => e.name3 == modelInfo.className,
-          orElse: () => throw InvalidGenerationSourceError(
-            'Could not find class "${modelInfo.className}"',
-            todo: 'Ensure the class exists and is annotated with @AckModel',
-          ),
+      final element = _findAnnotatedSchemaElement(
+        modelInfo.schemaClassName,
+        annotatedVariables,
+        annotatedGetters,
+      );
+      if (element == null) {
+        throw InvalidGenerationSourceError(
+          'Could not find schema declaration "${modelInfo.schemaClassName}"',
+          todo:
+              'Ensure the schema variable/getter exists and is annotated with @AckType',
         );
       }
 
-      if (_hasAckTypeAnnotation(element)) {
-        typedModels.add(modelInfo);
-        typedElements.add(element);
-      }
+      typedModels.add(modelInfo);
+      typedElements.add(element);
     }
 
     if (typedModels.isEmpty) {
@@ -306,9 +336,19 @@ class AckSchemaGenerator extends Generator {
       // Find the corresponding element (class or variable)
       Element2 element;
       if (model.isFromSchemaVariable) {
-        element = annotatedVariables.firstWhere(
-          (e) => e.name3 == model.schemaClassName,
+        final schemaElement = _findAnnotatedSchemaElement(
+          model.schemaClassName,
+          annotatedVariables,
+          annotatedGetters,
         );
+        if (schemaElement == null) {
+          throw InvalidGenerationSourceError(
+            'Could not find schema declaration "${model.schemaClassName}"',
+            todo:
+                'Ensure the schema variable/getter exists and is annotated with @AckType',
+          );
+        }
+        element = schemaElement;
       } else {
         element = annotatedElements.firstWhere(
           (e) => e.name3 == model.className,
@@ -374,5 +414,69 @@ class AckSchemaGenerator extends Generator {
   /// Checks if an element has @AckType annotation
   bool _hasAckTypeAnnotation(Element2 element) {
     return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+  }
+
+  /// Extracts the custom type name from an @AckType annotation, if present.
+  String? _extractAckTypeName(Element2 element) {
+    final annotation = TypeChecker.typeNamed(
+      AckType,
+    ).firstAnnotationOfExact(element);
+    if (annotation == null) return null;
+
+    final nameField = ConstantReader(annotation).peek('name');
+    return (nameField != null && !nameField.isNull)
+        ? nameField.stringValue
+        : null;
+  }
+
+  Element2? _findAnnotatedSchemaElement(
+    String schemaName,
+    List<TopLevelVariableElement2> annotatedVariables,
+    List<GetterElement> annotatedGetters,
+  ) {
+    for (final variable in annotatedVariables) {
+      if (variable.name3 == schemaName) {
+        return variable;
+      }
+    }
+
+    for (final getter in annotatedGetters) {
+      if (getter.name3 == schemaName) {
+        return getter;
+      }
+    }
+
+    return null;
+  }
+
+  /// Returns the import prefix used for `package:ack/ack.dart`, if any.
+  ///
+  /// This is required so generated part files can emit `ack.SchemaResult`
+  /// when the source library uses a prefixed Ack import.
+  String? _resolveAckImportPrefix(LibraryReader library) {
+    for (final import in library.element.firstFragment.libraryImports2) {
+      if (!_isAckImport(import)) continue;
+
+      final prefixElement = import.prefix2?.element;
+      final prefix = prefixElement?.name3;
+      if (prefix != null && prefix.isNotEmpty) {
+        return prefix;
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  bool _isAckImport(LibraryImport import) {
+    final importedLibrary = import.importedLibrary2;
+    if (importedLibrary != null) {
+      if (importedLibrary.uri.toString() == 'package:ack/ack.dart') {
+        return true;
+      }
+    }
+
+    final uriText = import.uri.toString();
+    return uriText.contains('package:ack/ack.dart');
   }
 }

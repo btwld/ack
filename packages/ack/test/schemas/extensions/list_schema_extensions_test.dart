@@ -170,6 +170,29 @@ void main() {
         ]);
         expect(duplicateResult.isOk, isFalse);
       });
+
+      // Numeric type equality semantics: int and double are different types
+      // even if they represent the same numeric value. This aligns with
+      // deepEquals which checks runtimeType, not Dart's == operator.
+      test('should treat int and double as different types (1 vs 1.0)', () {
+        final schema = Ack.list(Ack.any()).unique();
+
+        // 1 (int) and 1.0 (double) are different types, so both should be allowed
+        final result = schema.safeParse([1, 1.0]);
+        expect(result.isOk, isTrue, reason: 'int and double are different types');
+      });
+
+      test('should detect duplicate integers', () {
+        final schema = Ack.list(Ack.any()).unique();
+        final result = schema.safeParse([1, 2, 1]);
+        expect(result.isOk, isFalse, reason: 'same int values are duplicates');
+      });
+
+      test('should detect duplicate doubles', () {
+        final schema = Ack.list(Ack.any()).unique();
+        final result = schema.safeParse([1.0, 2.0, 1.0]);
+        expect(result.isOk, isFalse, reason: 'same double values are duplicates');
+      });
     });
   });
 }

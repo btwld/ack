@@ -5,8 +5,6 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-// // GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'simple_examples.dart';
 
 /// Generated schema for User

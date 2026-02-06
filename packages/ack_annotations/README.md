@@ -95,7 +95,7 @@ class User {
   @AckField(jsonKey: 'primary_email', constraints: ['email'])
   final String email;
 
-  @AckField(required: true)
+  @AckField(requiredMode: AckFieldRequiredMode.required)
   final bool marketingOptIn;
 
   User({
@@ -107,7 +107,7 @@ class User {
 ```
 
 Field options:
-- `required`: ensures the field is present (otherwise Ack treats fields as required unless they are nullable/optional in the generated schema).
+- `requiredMode`: tri-state requiredness (`auto`, `required`, `optional`).
 - `jsonKey`: map to a different JSON key.
 - `description`: add documentation to the generated schema.
 - `constraints`: string-based helpers for quick validation rules.

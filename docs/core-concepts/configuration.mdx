@@ -16,7 +16,7 @@ Most "configuration" happens when you define your schemas using the fluent API p
 
 ### Required Fields
 
-Use the `required` parameter in [`Ack.object`](./schemas.mdx#object-schema) to specify mandatory fields within an object.
+Fields in [`Ack.object`](./schemas.mdx#object) are required by default. Mark a field as optional with `.optional()`.
 
 ```dart
 Ack.object({
@@ -28,7 +28,7 @@ Ack.object({
 
 ### Additional Properties
 
-Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object-schema).
+Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object).
 
 ```dart
 // Disallow any extra properties (default behavior)
@@ -134,7 +134,6 @@ class User {
 After running `dart run build_runner build`, the generator creates in `user.g.dart`:
 
 1. **Schema constant**: `final userSchema = Ack.object({...});`
-2. **Extension type**: `extension type UserType(Map<String, Object?> _data) {...}`
 
 ```dart
 // Generated in user.g.dart:
@@ -145,16 +144,7 @@ After running `dart run build_runner build`, the generator creates in `user.g.da
 //   'age': Ack.integer().min(18).optional().nullable(),
 // }, additionalProperties: true);
 //
-// extension type UserType(Map<String, Object?> _data) {
-//   static UserType parse(Object? data) { ... }
-//   static SchemaResult<UserType> safeParse(Object? data) { ... }
-//   String get name => ...
-//   String get email => ...
-//   int? get age => ...
-//   Map<String, dynamic> get preferences => ...
-// }
-
-// Usage with the generated extension type:
+// Usage with the generated schema:
 final userData = {
   'name': 'John Doe',
   'email': 'john@example.com',
@@ -164,14 +154,18 @@ final userData = {
   'notifications': true,
 };
 
-final result = UserType.safeParse(userData);
+final result = userSchema.safeParse(userData);
 if (result.isOk) {
-  final user = result.getOrThrow();
-  print(user.name);  // Type-safe: John Doe
-  print(user.email); // Type-safe: john@example.com
-  print(user.preferences['theme']); // dark (additional properties)
+  final user = result.getOrThrow()!;
+  print(user['name']);  // John Doe
+  print(user['email']); // john@example.com
+  print(user['theme']); // dark (additional properties)
 }
 ```
+
+If you want extension types, define a hand-written top-level schema variable/getter
+annotated with `@AckType()` (see
+[TypeSafe Schemas](./typesafe-schemas.mdx#typed-schemas-from-hand-written-definitions-with-acktype)).
 
 *See the [Installation Guide](../getting-started/installation.mdx#code-generator-production-ready) for setup instructions and the generator README for advanced features.*
 

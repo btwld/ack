@@ -5,8 +5,6 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-// // GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'schema_types_primitives.dart';
 
 /// Extension type for Password
@@ -23,6 +21,8 @@ extension type PasswordType(String _value) implements String {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  String toJson() => _value;
 }
 
 /// Extension type for Age
@@ -39,6 +39,8 @@ extension type AgeType(int _value) implements int {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  int toJson() => _value;
 }
 
 /// Extension type for Price
@@ -55,6 +57,8 @@ extension type PriceType(double _value) implements double {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  double toJson() => _value;
 }
 
 /// Extension type for Active
@@ -71,6 +75,8 @@ extension type ActiveType(bool _value) implements bool {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  bool toJson() => _value;
 }
 
 /// Extension type for Tags
@@ -87,6 +93,8 @@ extension type TagsType(List<String> _value) implements List<String> {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  List<String> toJson() => _value;
 }
 
 /// Extension type for Scores
@@ -103,6 +111,8 @@ extension type ScoresType(List<int> _value) implements List<int> {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  List<int> toJson() => _value;
 }
 
 /// Extension type for Status
@@ -119,6 +129,8 @@ extension type StatusType(String _value) implements String {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  String toJson() => _value;
 }
 
 /// Extension type for Role
@@ -135,6 +147,8 @@ extension type RoleType(String _value) implements String {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  String toJson() => _value;
 }
 
 /// Extension type for UserRole
@@ -151,6 +165,8 @@ extension type UserRoleType(UserRole _value) implements UserRole {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  UserRole toJson() => _value;
 }
 
 /// Extension type for StatusEnum
@@ -167,6 +183,8 @@ extension type StatusEnumType(Status _value) implements Status {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  Status toJson() => _value;
 }
 
 /// Extension type for OptionalStatus
@@ -184,23 +202,8 @@ extension type OptionalStatusType(String _value) implements String {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
-}
 
-/// Extension type for NullableRole
-extension type NullableRoleType(String _value) implements String {
-  static NullableRoleType parse(Object? data) {
-    final validated = nullableRoleSchema.parse(data);
-    return NullableRoleType(validated as String);
-  }
-
-  static SchemaResult<NullableRoleType> safeParse(Object? data) {
-    final result = nullableRoleSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(NullableRoleType(validated as String)),
-      onFail: (error) => SchemaResult.fail(error),
-    );
-  }
+  String toJson() => _value;
 }
 
 /// Extension type for DefaultedEnum
@@ -218,23 +221,8 @@ extension type DefaultedEnumType(UserRole _value) implements UserRole {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
-}
 
-/// Extension type for OptionalNullableLiteral
-extension type OptionalNullableLiteralType(String _value) implements String {
-  static OptionalNullableLiteralType parse(Object? data) {
-    final validated = optionalNullableLiteralSchema.parse(data);
-    return OptionalNullableLiteralType(validated as String);
-  }
-
-  static SchemaResult<OptionalNullableLiteralType> safeParse(Object? data) {
-    final result = optionalNullableLiteralSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(OptionalNullableLiteralType(validated as String)),
-      onFail: (error) => SchemaResult.fail(error),
-    );
-  }
+  UserRole toJson() => _value;
 }
 
 /// Extension type for ChainedEnumString
@@ -252,6 +240,8 @@ extension type ChainedEnumStringType(String _value) implements String {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  String toJson() => _value;
 }
 
 /// Extension type for RefinedAge
@@ -268,4 +258,6 @@ extension type RefinedAgeType(int _value) implements int {
       onFail: (error) => SchemaResult.fail(error),
     );
   }
+
+  int toJson() => _value;
 }

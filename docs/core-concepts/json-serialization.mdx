@@ -63,7 +63,7 @@ processApiResponse('not valid json'); // Decoding error
 
 ## Working with Validated Data
 
-After successful validation, `result.getOrThrow()` returns a `Map<String, dynamic>` whose structure and types match your schema. You can work with this validated data directly or convert it to a model class:
+After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with this validated data directly or convert it to a model class:
 
 ```dart
 final result = userSchema.safeParse(jsonData);
@@ -77,8 +77,8 @@ if (result.isOk) {
 
   // Option 2: Convert to your model class using your preferred method
   // - Constructor: User(name: validData['name'], age: validData['age'])
-  // - json_serializable: User.fromJson(validData)
-  // - freezed: User.fromJson(validData)
+  // - json_serializable: User.fromJson(Map<String, dynamic>.from(validData))
+  // - freezed: User.fromJson(Map<String, dynamic>.from(validData))
   // - dart_mappable: UserMapper.fromMap(validData)
   // - Manual factory: User.fromMap(validData)
 }
@@ -107,7 +107,6 @@ class User {
 After running `dart run build_runner build`, the generator creates in `user.g.dart`:
 
 1. **Schema constant**: `final userSchema = Ack.object({...});`
-2. **Extension type**: `extension type UserType(Map<String, Object?> _data) {...}`
 
 ```dart
 // user.g.dart (generated)
@@ -116,18 +115,9 @@ final userSchema = Ack.object({
   'email': Ack.string(),
   'age': Ack.integer(),
 });
-
-extension type UserType(Map<String, Object?> _data) {
-  static UserType parse(Object? data) { ... }
-  static SchemaResult<UserType> safeParse(Object? data) { ... }
-  String get name => _data['name'] as String;
-  String get email => _data['email'] as String;
-  int get age => _data['age'] as int;
-  // ... plus toJson(), copyWith(), equality, etc.
-}
 ```
 
-You can use either the schema or the extension type:
+Use the generated schema for validation:
 
 ```dart
 import 'user.dart';
@@ -145,15 +135,6 @@ if (result.isOk) {
     email: validData['email'] as String,
     age: validData['age'] as int,
   );
-}
-
-// Option 2: Use extension type (type-safe)
-final result = UserType.safeParse(jsonData);
-if (result.isOk) {
-  final user = result.getOrThrow();
-  print(user.name);  // Type-safe String access
-  print(user.email); // Type-safe String access
-  print(user.age);   // Type-safe int access
 }
 ```
 
@@ -179,7 +160,7 @@ final userSchema = Ack.object({
 
 Running `dart run build_runner build` generates in `user_schema.g.dart`:
 
-- **The original schema constant** remains in the generated file (so imports keep working)
+- **The original schema constant** stays in your source file (`user_schema.dart`)
 - **Extension type** `UserType` with `parse`/`safeParse`, typed getters, and `toJson()` helpers
 
 The type name is derived from the variable name by removing "Schema" suffix and adding "Type" (e.g., `userSchema` → `UserType`).
@@ -199,10 +180,12 @@ if (result.isOk) {
 }
 ```
 
-**Note**: Nested schemas annotated with `@AckType()` generate their own extension types, but when referenced in object fields, getters return `Map<String, Object?>` rather than the typed extension type.
+**Note**: Nested schemas annotated with `@AckType()` generate their own extension types. When referenced in object fields or list elements, getters return the typed extension type (e.g., `AddressType`) when the reference can be resolved in the same library; unresolved references fall back to `Map<String, Object?>`.
+
+`@AckType()` is only supported on top-level schema variables/getters, not classes.
 
 ## Key Considerations
 
 -   **`dart:convert`:** Use the standard `dart:convert` library (`jsonEncode`, `jsonDecode`) for JSON string conversion. Ack handles validation only.
--   **Type Safety:** While `jsonDecode` produces `dynamic`, successful validation gives you confidence in the structure and types of the resulting `Map<String, dynamic>`.
+-   **Type Safety:** While `jsonDecode` produces `dynamic`, successful validation gives you confidence in the structure and types of the resulting `Map<String, Object?>`.
 -   **Model Conversion:** After validation, how you convert the validated Map to your model class is your choice. Ack doesn't prescribe a specific pattern - use whatever works best for your project. 

@@ -88,7 +88,7 @@ void main() {
       expect(schema.safeParse(5).isFail, isTrue);
     });
   });
-  // Defaults on AnyOf are not supported by design; no tests for defaults here
+  // AnyOf defaults are supported; see AnyOf defaults group below.
 
   group('AnyOf Error Reporting', () {
     test('should collect errors from all member schemas', () {
@@ -111,7 +111,46 @@ void main() {
       );
     });
 
-    // No default-related error tests (defaults unsupported on AnyOf)
+    // Default-related error tests are covered in AnyOf defaults group below.
+  });
+
+  group('AnyOf defaults', () {
+    test('should apply anyOf default when input is null', () {
+      const defaultValue = 'default string';
+      final schema = Ack.anyOf([
+        Ack.string(),
+        Ack.integer(),
+      ]).copyWith(defaultValue: defaultValue);
+
+      final result = schema.safeParse(null);
+      expect(result.isOk, isTrue);
+      expect(result.getOrThrow(), equals(defaultValue));
+    });
+
+    test('should prefer default over nullable member schema', () {
+      const defaultValue = 'default string';
+      final schema = Ack.anyOf([
+        Ack.string().nullable(),
+        Ack.integer(),
+      ]).copyWith(defaultValue: defaultValue);
+
+      final result = schema.safeParse(null);
+      expect(result.isOk, isTrue);
+      expect(result.getOrThrow(), equals(defaultValue));
+    });
+
+    test('should fail when default is invalid for all member schemas', () {
+      // Use a list as default - neither integer nor double accept lists
+      const defaultValue = [1, 2, 3];
+      final schema = Ack.anyOf([
+        Ack.integer(),
+        Ack.double(),
+      ]).copyWith(defaultValue: defaultValue);
+
+      final result = schema.safeParse(null);
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaNestedError>());
+    });
   });
 
   group('AnyOf Edge Cases', () {

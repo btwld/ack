@@ -5,8 +5,6 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-// // GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'product_model.dart';
 
 /// Generated schema for Product

@@ -3,6 +3,9 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema_types_primitives.g.dart';
 
+// Note: Primitive schemas generate extension types, but you can still use
+// the schema directly via parse() or safeParse().
+
 /// Test primitive schema types with @AckType
 
 /// Test enums for enumValues schema

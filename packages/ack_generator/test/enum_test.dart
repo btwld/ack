@@ -7,7 +7,7 @@ import 'test_utils/test_assets.dart';
 
 void main() {
   group('Enum Support Tests', () {
-    test('should generate schema for simple enum field', () async {
+    test('should generate schema for simple enum field using Ack.enumValues', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -23,7 +23,7 @@ enum Status { active, inactive, pending }
 class User {
   final String name;
   final Status status;
-  
+
   User({required this.name, required this.status});
 }
 ''',
@@ -33,9 +33,8 @@ class User {
             allOf([
               contains('final userSchema = Ack.object('),
               contains("'name': Ack.string()"),
-              contains(
-                "'status': Ack.string().enumString(['active', 'inactive', 'pending'])",
-              ),
+              // Now uses Ack.enumValues<T>(T.values) instead of enumString
+              contains("'status': Ack.enumValues<Status>(Status.values)"),
             ]),
           ),
         },
@@ -58,7 +57,7 @@ enum Priority { low, medium, high }
 class Task {
   final String title;
   final Priority? priority;
-  
+
   Task({required this.title, this.priority});
 }
 ''',
@@ -68,8 +67,8 @@ class Task {
             allOf([
               contains('final taskSchema = Ack.object('),
               contains("'title': Ack.string()"),
-              contains("'priority': Ack.string()"),
-              contains(".enumString(['low', 'medium', 'high'])"),
+              // Now uses Ack.enumValues<T>(T.values) instead of enumString
+              contains("'priority': Ack.enumValues<Priority>(Priority.values)"),
               contains('.optional()'),
               contains('.nullable()'),
             ]),

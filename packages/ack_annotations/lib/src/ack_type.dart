@@ -3,8 +3,8 @@ import 'package:meta/meta_meta.dart';
 /// Annotation to generate extension types for validated data.
 ///
 /// **Note:** This annotation should only be used on schema variables and getters,
-/// not on classes. For classes, use [@AckModel] to generate the schema, then
-/// use [@AckType] on the generated schema variable for extension types.
+/// not on classes. Use [@AckModel] to generate schemas from classes; if you need
+/// extension types, define the schema in source and annotate it with [@AckType].
 ///
 /// Can be applied to:
 /// - Schema variable declarations (extracts types from schema AST)
@@ -46,20 +46,24 @@ import 'package:meta/meta_meta.dart';
 /// ```
 ///
 /// ### Primitive Schemas
+///
+/// Non-nullable primitive schemas (String, int, double, bool) generate
+/// extension types that implement the underlying primitive type. These are
+/// thin wrappers that add `parse()`/`safeParse()` factories while keeping the
+/// primitive API available.
+///
+/// Nullable primitive schemas (for example, `Ack.string().nullable()`) do not
+/// generate extension types.
+///
 /// ```dart
 /// @AckType()
 /// final passwordSchema = Ack.string().minLength(8);
 ///
 /// // Generated extension type:
-/// extension type PasswordType(String _value) implements String {
-///   static PasswordType parse(Object? data) { ... }
-///   static SchemaResult<PasswordType> safeParse(Object? data) { ... }
-/// }
+/// // extension type PasswordType(String _value) implements String { ... }
 ///
-/// // Usage - String methods work via implements:
 /// final password = PasswordType.parse('mySecurePassword123');
-/// print(password.length);        // 19
-/// print(password.toUpperCase()); // 'MYSECUREPASSWORD123'
+/// print(password.length);  // 19
 /// ```
 ///
 /// ### Literal Schemas
@@ -67,15 +71,9 @@ import 'package:meta/meta_meta.dart';
 /// @AckType()
 /// final statusSchema = Ack.literal('active');
 ///
-/// // Generated:
-/// extension type StatusType(String _value) implements String {
-///   static StatusType parse(Object? data) { ... }
-/// }
-///
-/// // Usage:
-/// final status = StatusType.parse('active');  // ✅ Valid
-/// print(status.toUpperCase());                // 'ACTIVE'
-/// StatusType.parse('inactive');               // ❌ Throws AckException
+/// // Extension type is generated, wrapping the validated literal value:
+/// final status = StatusType.parse('active'); // ✅ Valid
+/// statusSchema.parse('inactive');            // ❌ Throws AckException
 /// ```
 ///
 /// ### EnumString Schemas
@@ -83,9 +81,8 @@ import 'package:meta/meta_meta.dart';
 /// @AckType()
 /// final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 ///
-/// // Usage:
+/// // Extension type is generated:
 /// final role = RoleType.parse('admin');
-/// print(role.contains('adm'));  // true - String methods work!
 /// ```
 ///
 /// ### EnumValues Schemas
@@ -95,19 +92,9 @@ import 'package:meta/meta_meta.dart';
 /// @AckType()
 /// final roleSchema = Ack.enumValues(UserRole.values);
 ///
-/// // Generated:
-/// extension type RoleType(UserRole _value) implements UserRole {
-///   static RoleType parse(Object? data) { ... }
-/// }
-///
-/// // Usage:
+/// // Extension type is generated:
 /// final role = RoleType.parse(UserRole.admin);
-/// print(role.name);   // 'admin' - Enum methods work!
-/// print(role.index);  // 0
-///
-/// // Can parse from string or index too:
-/// RoleType.parse('admin');  // ✅ Works
-/// RoleType.parse(0);        // ✅ Works (index)
+/// print(role.name); // 'admin'
 /// ```
 ///
 /// ## Benefits
@@ -151,27 +138,33 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Collections
 ///
-/// Lists of primitives return `List<T>`, lists of nested schemas return lazy `Iterable<TType>`:
+/// Lists of primitives return `List<T>`, and lists of nested schemas return
+/// `List<TType>`:
 /// ```dart
 /// @ackType
 /// final blogPostSchema = Ack.object({
 ///   'tags': Ack.list(Ack.string()),      // List<String>
-///   'comments': Ack.list(commentSchema), // Iterable<CommentType>
+///   'comments': Ack.list(commentSchema), // List<CommentType>
 /// });
 /// ```
 ///
 /// ## Supported Schema Types
 ///
-/// The following Ack schema types are currently supported:
-/// - **Object schemas**: `Ack.object({...})` → `extension type XType(Map<String, Object?>)`
-/// - **String schemas**: `Ack.string()` → `extension type XType(String)`
-/// - **Integer schemas**: `Ack.integer()` → `extension type XType(int)`
-/// - **Double schemas**: `Ack.double()` → `extension type XType(double)`
-/// - **Boolean schemas**: `Ack.boolean()` → `extension type XType(bool)`
-/// - **List schemas**: `Ack.list(T)` → `extension type XType(List<T>)`
-/// - **Literal schemas**: `Ack.literal('value')` → `extension type XType(String)`
-/// - **EnumString schemas**: `Ack.enumString([...])` → `extension type XType(String)`
-/// - **EnumValues schemas**: `Ack.enumValues<T>([...])` → `extension type XType(T)`
+/// Extension types are generated for all supported schema types:
+///
+/// | Schema Type | Generated Extension Type |
+/// |-------------|--------------------------|
+/// | `Ack.object({...})` | `XType(Map<String, Object?>)` with field getters, copyWith, toJson |
+/// | `Ack.string()` | `XType(String)` implements String |
+/// | `Ack.integer()` | `XType(int)` implements int |
+/// | `Ack.double()` | `XType(double)` implements double |
+/// | `Ack.boolean()` | `XType(bool)` implements bool |
+/// | `Ack.list(T)` | `XType(List<T>)` implements List<T> |
+/// | `Ack.literal('value')` | `XType(String)` implements String |
+/// | `Ack.enumString([...])` | `XType(String)` implements String |
+/// | `Ack.enumValues<T>([...])` | `XType(T)` implements T |
+///
+/// All extension types include `parse()` and `safeParse()` factory methods.
 ///
 /// ## Unsupported Schema Types
 ///
@@ -184,7 +177,7 @@ import 'package:meta/meta_meta.dart';
 ///
 /// Extension types work with most schema modifiers:
 /// - ✅ **`.optional()`** - Supported, affects validation
-/// - ✅ **`.nullable()`** - Supported, affects validation (extension type still wraps non-nullable value)
+/// - ⚠️ **`.nullable()`** - Extension type is NOT generated (see Limitations)
 /// - ✅ **`.withDefault()`** - Supported, provides fallback value
 /// - ✅ **`.refine()`** - Supported, adds custom validation
 /// - ⚠️ **`.transform()`** - NOT recommended (changes output type, breaks extension type contract)
@@ -205,13 +198,18 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ## Limitations
 ///
-/// - **Generic classes**: Cannot be used on generic classes
-/// - **Discriminated base types**: Cannot be used on discriminated base types (use on subtypes instead)
+/// - **Class annotations**: `@AckType` is not supported on classes.
 /// - **Cross-file schema references**: Schema references must be in the same file
 ///   - ✅ Same file: `'address': addressSchema` → getter returns `AddressType`
 ///   - ❌ Cross-file: `'address': addressSchema` → getter returns `Map<String, Object?>`
-/// - **Nullable primitives**: Extension types wrap non-nullable values even when schema is `.nullable()`
-///   - The `.nullable()` modifier affects validation, not the extension type's representation
+/// - **Nullable schema variables**: Extension types are not generated for schemas
+///   marked with `.nullable()` because the representation is non-nullable.
+///   - Use the schema directly for nullable validation.
+/// - **List element modifiers**: List element nullability from chained
+///   modifiers may not be fully inferred:
+///   - ✅ `Ack.list(Ack.string())` → `List<String>`
+///   - ⚠️ `Ack.list(Ack.string().nullable())` → `List<String>` (element
+///     nullability lost; expected `List<String?>`)
 /// - **Transform modifier**: Not supported (changes output type)
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///

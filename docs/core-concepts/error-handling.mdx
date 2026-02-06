@@ -13,7 +13,7 @@ All `safeParse()` methods in Ack return a `SchemaResult` object. This object enc
 - `result.getOrThrow()`: Returns the validated data if `isOk` is true, otherwise throws an exception.
 - `result.getOrNull()`: Returns the validated data if `isOk` is true, otherwise returns `null`.
 - `result.getError()`: Returns the `SchemaError` if `isFail` is true, otherwise throws an exception.
-- `result.getOrElse(defaultValue)`: Returns the validated data if `isOk` is true, otherwise returns the `defaultValue`.
+- `result.getOrElse(() => defaultValue)`: Returns the validated data if `isOk` is true, otherwise calls the fallback function.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -42,10 +42,10 @@ if (result.isFail) {
 
 The `SchemaError` object contains details about the validation failure.
 
-- `error.name`: A short identifier for the error type (e.g., `'string'`, `'object'`).
-- `error.errorKey`: The specific error key (e.g., `'schema_constraints_error'`, `'schema_nested_error'`).
+- `error.name`: The schema/context name where validation failed (for example, a field name or your `debugName`).
 - `error.value`: The actual value that failed validation.
 - `error.schema`: The schema that was being validated against.
+- `error.path`: The JSON Pointer path to the failing location (for example, `#/address/city`).
 
 ```dart
 final userSchema = Ack.object({
@@ -68,8 +68,8 @@ final result = userSchema.safeParse(invalidData);
 
 if (result.isFail) {
   final error = result.getError();
-  print('Error Name: ${error.name}');         // Example: 'object'
-  print('Error Key: ${error.errorKey}');      // Example: 'schema_nested_error'
+  print('Error Name: ${error.name}');         // Example: 'address'
+  print('Error Path: ${error.path}');         // Example: '#/address/city'
   print('Failed Value: ${error.value}');      // Example: the invalid data
   print('Full Error: $error');               // Complete error details
 

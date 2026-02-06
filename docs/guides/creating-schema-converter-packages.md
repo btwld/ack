@@ -1,6 +1,6 @@
-# Creating Schema Converter Packages for ACK
+# Creating Schema Converter Packages for Ack
 
-This guide provides detailed instructions for creating schema converter packages that transform ACK validation schemas into other schema formats (e.g., JSON Schema, OpenAPI, GraphQL, Protobuf, TypeBox, AJV, etc.).
+This guide provides detailed instructions for creating schema converter packages that transform Ack validation schemas into other schema formats (e.g., JSON Schema, OpenAPI, GraphQL, Protobuf, TypeBox, AJV, etc.).
 
 **Based on**: `ack_firebase_ai` package (reference implementation)
 
@@ -21,7 +21,7 @@ This guide provides detailed instructions for creating schema converter packages
 
 ### Purpose
 
-Schema converter packages bridge ACK's validation schemas with external schema systems, enabling:
+Schema converter packages bridge Ack's validation schemas with external schema systems, enabling:
 - **Structured AI output** (Firebase AI, OpenAI Function Calling)
 - **API documentation** (OpenAPI, GraphQL)
 - **Cross-language validation** (JSON Schema, Protobuf)
@@ -115,7 +115,7 @@ touch .pubignore
 
 ```yaml
 name: ack_<target>
-description: <Target System> schema converter for ACK validation library
+description: <Target System> schema converter for Ack validation library
 version: 1.0.0-beta.1
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
@@ -185,9 +185,9 @@ example/local/
 **Template**:
 
 ```dart
-/// <Target System> schema converter for ACK validation library.
+/// <Target System> schema converter for Ack validation library.
 ///
-/// Converts ACK validation schemas to <Target> format for [use case].
+/// Converts Ack validation schemas to <Target> format for [use case].
 ///
 /// ## Usage
 ///
@@ -206,7 +206,7 @@ example/local/
 ///
 /// ## Limitations
 ///
-/// Some ACK features cannot be converted to <Target> format:
+/// Some Ack features cannot be converted to <Target> format:
 /// - [List specific limitations based on target system]
 /// - Custom refinements (`.refine()`) - validate after
 /// - [Other limitations...]
@@ -240,9 +240,9 @@ import 'package:ack/ack.dart';
 
 import 'converter.dart';
 
-/// Extension methods for converting ACK schemas to <Target> format.
+/// Extension methods for converting Ack schemas to <Target> format.
 extension <Target>SchemaExtension on AckSchema {
-  /// Converts this ACK schema to <Target> format.
+  /// Converts this Ack schema to <Target> format.
   ///
   /// Returns a [<TargetSchema>] instance that can be used with
   /// [describe target use case].
@@ -260,7 +260,7 @@ extension <Target>SchemaExtension on AckSchema {
   ///
   /// ## Limitations
   ///
-  /// Some ACK features cannot be converted:
+  /// Some Ack features cannot be converted:
   /// - [List specific limitations]
   /// - Custom refinements (`.refine()`)
   /// - Regex patterns (`.matches()`)
@@ -289,7 +289,7 @@ import 'package:ack/ack.dart';
 // Import target SDK
 // import 'package:<target_sdk>/<target_sdk>.dart' as target;
 
-/// Converts ACK schemas to <Target> format.
+/// Converts Ack schemas to <Target> format.
 ///
 /// <Target> uses [describe schema format] for [describe use case].
 ///
@@ -298,7 +298,7 @@ class <Target>SchemaConverter {
   // Private constructor prevents instantiation
   const <Target>SchemaConverter._();
 
-  /// Converts an ACK schema to <Target> format.
+  /// Converts an Ack schema to <Target> format.
   ///
   /// Returns a [<TargetSchema>] representing the schema structure.
   static <TargetSchema> convert(AckSchema schema) {
@@ -309,7 +309,7 @@ class <Target>SchemaConverter {
     // Option 1: If target needs JSON Schema intermediate step
     final jsonSchema = schema.toJsonSchema();
 
-    // Option 2: Direct conversion based on ACK type
+    // Option 2: Direct conversion based on Ack type
     return switch (schema) {
       StringSchema() => _convertString(schema),
       IntegerSchema() => _convertInteger(schema),
@@ -647,11 +647,13 @@ class <Target>SchemaConverter {
 1. **Private constructor** - Prevent instantiation
 2. **Static converter methods** - Pure functions
 3. **Switch expression** - Type-safe routing
-4. **JSON Schema bridge** - Reuse ACK's `toJsonSchema()`
+4. **JSON Schema bridge** - Reuse Ack's `toJsonSchema()`
 5. **Helper builders** - Wrap target SDK API
 6. **Type coercion** - Handle num/int/double safely
 
 ---
+
+## Testing Strategy
 
 ### Phase 3: Testing (2-3 hours)
 
@@ -1007,6 +1009,8 @@ void main() {
 
 ---
 
+## Documentation Requirements
+
 ### Phase 4: Documentation (1-2 hours)
 
 #### 4.1 README.md Template
@@ -1014,13 +1018,13 @@ void main() {
 ```markdown
 # ack_<target>
 
-<Target System> schema converter for the [ACK](https://pub.dev/packages/ack) validation library.
+<Target System> schema converter for the [Ack](https://pub.dev/packages/ack) validation library.
 
 [![pub package](https://img.shields.io/pub/v/ack_<target>.svg)](https://pub.dev/packages/ack_<target>)
 
 ## Overview
 
-Converts ACK schemas to <Target> format for [use case]. Assumes familiarity with [ACK](https://pub.dev/packages/ack) and [target system].
+Converts Ack schemas to <Target> format for [use case]. Assumes familiarity with [Ack](https://pub.dev/packages/ack) and [target system].
 
 ## Installation
 
@@ -1078,7 +1082,7 @@ final targetSchema = userSchema.to<Target>Schema();
 // 3. Use with <Target> system
 [Show actual usage with target system]
 
-// 4. ALWAYS validate with ACK after
+// 4. ALWAYS validate with Ack after
 final result = userSchema.safeParse(responseData);
 if (result.isOk) {
   final user = result.getOrThrow();
@@ -1092,7 +1096,7 @@ if (result.isOk) {
 
 ### Supported Types
 
-| ACK Type | <Target> Type | Notes |
+| Ack Type | <Target> Type | Notes |
 |----------|---------------|-------|
 | `Ack.string()` | [target type] | [Notes] |
 | `Ack.integer()` | [target type] | [Notes] |
@@ -1105,7 +1109,7 @@ if (result.isOk) {
 
 ### Supported Constraints
 
-| ACK Constraint | <Target> | Notes |
+| Ack Constraint | <Target> | Notes |
 |----------------|----------|-------|
 | `.minLength()` / `.maxLength()` | [mapping] | [Notes] |
 | `.min()` / `.max()` | [mapping] | [Notes] |
@@ -1129,7 +1133,7 @@ For contribution guidelines, see the [CONTRIBUTING.md](https://github.com/btwld/
 
 ## License
 
-This package is part of the [ACK](https://github.com/btwld/ack) monorepo.
+This package is part of the [Ack](https://github.com/btwld/ack) monorepo.
 
 ## Related Packages
 
@@ -1152,7 +1156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial release of ack_<target> package
-- Extension method `.to<Target>Schema()` for converting ACK schemas
+- Extension method `.to<Target>Schema()` for converting Ack schemas
 - Support for all basic schema types (string, integer, double, boolean, object, array)
 - Support for enum schemas
 - Constraint mapping ([list key constraints])
@@ -1196,7 +1200,7 @@ static TargetSchema _convertString(StringSchema schema) {
 }
 ```
 
-**Pros**: Reuses ACK's existing JSON Schema logic
+**Pros**: Reuses Ack's existing JSON Schema logic
 **Cons**: Indirect, may include unused fields
 
 ### Pattern 2: Direct Conversion
@@ -1585,7 +1589,7 @@ class GraphQlSchemaConverter {
 ### Target System Documentation
 - Research target schema format documentation
 - Understand supported types and constraints
-- Identify gaps vs ACK features
+- Identify gaps vs Ack features
 - Document limitations clearly
 
 ### Monorepo Integration
@@ -1607,7 +1611,7 @@ class GraphQlSchemaConverter {
 
 **During development**:
 - Reference `ack_firebase_ai` for patterns
-- Use ACK's `toJsonSchema()` as a bridge when possible
+- Use Ack's `toJsonSchema()` as a bridge when possible
 - Write tests first (TDD approach)
 - Document limitations as you discover them
 

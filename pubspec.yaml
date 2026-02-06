@@ -70,8 +70,8 @@ melos:
           - "ack"  # This will ensure 'ack' is prioritized
 
     test:
-      run: melos run test:dart --no-select && melos run test:flutter --no-select
-      description: Run all Dart & Flutter tests in this project
+      run: melos run analyze --no-select && melos run test:dart --no-select && melos run test:flutter --no-select
+      description: Run strict analysis (fatal infos) and all Dart & Flutter tests
 
     test:dart:
       run: melos exec -c 1 --fail-fast -- "dart test"
@@ -175,7 +175,7 @@ melos:
       description: "Check API compatibility for packages against specified version (usage: melos api-check v0.2.0)"
 
     ci:
-      run: melos run test:dart --no-select && melos run test:flutter --no-select
-      description: Run all Dart & Flutter tests in this project
+      run: melos run test --no-select
+      description: Run strict analysis (fatal infos) and all Dart & Flutter tests
 
   sdkPath: .fvm/flutter_sdk
