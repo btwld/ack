@@ -206,6 +206,7 @@ class TypeBuilder {
     final visiting = <String>{};
     final visited = <String>{};
     var hasCycle = false;
+    final cycleParticipants = <String>{};
 
     // Build dependency map
     final dependencies = <String, Set<String>>{};
@@ -220,6 +221,7 @@ class TypeBuilder {
         // Cycle detected - mark flag but continue
         // Extension types with Map representation work fine with cycles
         hasCycle = true;
+        cycleParticipants.add(className);
         return;
       }
 
@@ -254,7 +256,8 @@ class TypeBuilder {
     // require declaration order
     if (hasCycle) {
       log.warning(
-        'Circular dependency detected in extension types. '
+        'Circular dependency detected between extension types: '
+        '${cycleParticipants.join(', ')}. '
         'Using original declaration order (safe for Map-based types).',
       );
       return models;
