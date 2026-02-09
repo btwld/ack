@@ -1,3 +1,17 @@
+## 1.0.0-beta.6
+
+### Features
+
+* **Discriminated unions**: Enforce Map-returning child schemas in discriminated unions (#67).
+
+### Improvements
+
+* **Schemas**: Centralize null/default handling and extract ObjectSchema helpers (#65).
+
+### Bug Fixes
+
+* **Schemas**: Fixes to schema correctness including transformed schema defaults and list unique items constraint (#50).
+
 ## 1.0.0-beta.5 (2026-01-14)
 
 ### Features

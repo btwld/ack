@@ -150,20 +150,14 @@ melos build
 # Clean build artifacts
 melos clean
 
-# Bump patch version (0.0.x)
-melos version-patch
+# Propose/apply version and changelog updates
+melos version
 
-# Bump minor version (0.x.0)
-melos version-minor
+# Dry-run pub.dev validation for one package
+(cd packages/ack && dart pub publish --dry-run)
 
-# Bump major version (x.0.0)
-melos version-major
-
-# Dry-run publish (validation only)
-melos publish-dry
-
-# Publish packages to pub.dev
-melos publish
+# Publish all packages (no dry-run)
+melos run publish
 ```
 
 ### Development Tools

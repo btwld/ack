@@ -7,8 +7,7 @@ This document explains how to version and publish the Ack packages to pub.dev.
 The Ack project uses GitHub Releases to manage versioning and publishing. This approach provides:
 
 - Centralized release management through GitHub's UI
-- Automatic version updates across all packages
-- Automatic changelog generation from release notes
+- Explicit version/changelog control in this repository
 - Automated publishing to pub.dev
 
 ## Release Process
@@ -20,8 +19,8 @@ Before creating a release:
 1. Ensure all changes are committed and pushed to the `main` branch
 2. Verify that all tests pass by running `melos test` (include `melos run validate-jsonschema` and `melos run test:gen` for full coverage)
 3. Check that the documentation is up to date across the repo and docs site
-4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`)
-5. The version hook automatically rewrites the newest changelog entry to a single “See release notes” link. If you need to regenerate it manually, run `dart scripts/update_release_changelog.dart <version> <yyyy-mm-dd>` after `melos version`.
+4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`, `ack_firebase_ai`, `ack_json_schema_builder`)
+5. Ensure package CHANGELOG entries are finalized before tagging. If you want a link-only entry for a version, you can run `dart scripts/update_release_changelog.dart <version> [tag]` after `melos version`.
 
 ### 2. Create a GitHub Release
 
@@ -54,7 +53,7 @@ This release introduces [brief description of major changes].
 - Fixed [description of bug]
 ```
 
-> **Note**: You should manually update the CHANGELOG.md files in each package before creating a release. The release workflow will no longer automatically extract content from release notes to update changelogs.
+> **Note**: You should manually update the `pubspec.yaml` and `CHANGELOG.md` files in each package before creating a tag/release. The release workflow publishes what is already committed.
 
 6. Choose whether this is a pre-release:
    - Check "This is a pre-release" if you're releasing a beta or RC version
@@ -65,24 +64,13 @@ This release introduces [brief description of major changes].
 
 ### 3. Automated Steps
 
-When you publish the release, the GitHub Actions workflow will automatically:
+When the `v*` tag is pushed, the GitHub Actions workflow will automatically:
 
-1. Run tests and static analysis to ensure everything is working
-2. Extract the version number from the tag (e.g., `v0.2.0` → `0.2.0`)
-3. Update version numbers in all package pubspec.yaml files
-4. Add a simple changelog entry to each package's CHANGELOG.md with a link to the GitHub release
-5. Commit and push these changes back to the repository
-6. Publish packages to pub.dev (both regular releases and pre-releases, but not drafts)
+1. Run package tests (Dart/Flutter, depending on package type)
+2. Run `dart pub publish --dry-run` for each package
+3. Publish each package to pub.dev
 
-The auto-generated changelog entry will look like:
-
-```markdown
-## 0.2.0 (2025-05-03)
-
-* See [release notes](https://github.com/btwld/ack/releases/tag/v0.2.0) for details.
-```
-
-This ensures your changelogs meet pub.dev requirements while directing users to your detailed release notes.
+The workflow does **not** modify versions or changelogs, and does **not** commit changes back to the repository.
 
 ### 4. Verify the Release
 
@@ -94,17 +82,14 @@ After the workflow completes:
 
 ## Alternative: Manual Versioning
 
-If needed, you can also version packages locally:
+If needed, you can version packages locally from conventional commits:
 
 ```bash
-# Bump patch version (0.0.x)
-melos version-patch
+# Propose/apply version and changelog updates
+melos version
 
-# Bump minor version (0.x.0)
-melos version-minor
-
-# Bump major version (x.0.0)
-melos version-major
+# Non-interactive
+melos version --yes
 
 # Push the changes and tags
 git push --follow-tags
@@ -115,11 +100,13 @@ git push --follow-tags
 If you need to publish packages manually:
 
 ```bash
-# Dry run (validation only)
-melos publish-dry
+# Dry-run each package (validation only)
+for pkg in ack ack_annotations ack_generator ack_json_schema_builder ack_firebase_ai; do
+  (cd packages/$pkg && dart pub publish --dry-run) || exit 1
+done
 
-# Actual publish
-melos publish
+# Actual publish (no dry-run)
+melos run publish
 ```
 
 ## Troubleshooting

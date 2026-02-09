@@ -4,11 +4,10 @@ import 'dart:io';
 /// only a link to the GitHub release notes.
 ///
 /// Usage:
-///   dart scripts/update_release_changelog.dart [version] [yyyy-mm-dd] [tag]
+///   dart scripts/update_release_changelog.dart [version] [tag]
 ///
 /// If args are omitted:
 ///   * version defaults to the value in packages/ack/pubspec.yaml
-///   * date defaults to today (local time)
 ///   * tag defaults to `v<version>`
 void main(List<String> args) {
   final version = args.isNotEmpty
@@ -22,11 +21,12 @@ void main(List<String> args) {
     return;
   }
 
-  final date = (args.length >= 2 && args[1].trim().isNotEmpty)
-      ? args[1].trim()
-      : _today();
   final tag = (args.length >= 3 && args[2].trim().isNotEmpty)
+      // Backward compatible: if the historical [version] [date] [tag] form
+      // is used, the third argument still wins as tag.
       ? args[2].trim()
+      : (args.length >= 2 && args[1].trim().isNotEmpty)
+      ? args[1].trim()
       : 'v$version';
 
   final releaseUrl = 'https://github.com/btwld/ack/releases/tag/$tag';
@@ -34,6 +34,8 @@ void main(List<String> args) {
     'packages/ack/CHANGELOG.md',
     'packages/ack_annotations/CHANGELOG.md',
     'packages/ack_generator/CHANGELOG.md',
+    'packages/ack_firebase_ai/CHANGELOG.md',
+    'packages/ack_json_schema_builder/CHANGELOG.md',
   ];
 
   for (final path in changelogPaths) {
@@ -52,7 +54,10 @@ void main(List<String> args) {
       continue;
     }
 
-    lines[headingIndex] = '## $version ($date)';
+    final currentHeading = lines[headingIndex].trim();
+    lines[headingIndex] = currentHeading.startsWith('## [')
+        ? '## [$version]'
+        : '## $version';
 
     var sectionEnd = headingIndex + 1;
     while (sectionEnd < lines.length && !lines[sectionEnd].startsWith('## ')) {
@@ -108,13 +113,6 @@ String? _readVersionFromPubspec(String path) {
     }
   }
   return null;
-}
-
-String _today() {
-  final now = DateTime.now();
-  return '${now.year.toString().padLeft(4, '0')}-'
-      '${now.month.toString().padLeft(2, '0')}-'
-      '${now.day.toString().padLeft(2, '0')}';
 }
 
 bool _sectionMatches(List<String> existing, List<String> expected) {

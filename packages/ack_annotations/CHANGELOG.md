@@ -1,3 +1,10 @@
+## 1.0.0-beta.6
+
+### Improvements
+
+* **AckType**: Refined annotation parameters and improved type handling (#50).
+* **AckField**: Improved field annotation correctness (#50).
+
 ## 1.0.0-beta.5 (2026-01-14)
 
 ### Improvements

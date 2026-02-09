@@ -1,3 +1,15 @@
+## 1.0.0-beta.6
+
+### Bug Fixes
+
+* **Primitives**: Comprehensive fixes for primitives and correctness (#50).
+
+### Improvements
+
+* **Analyzer**: Refactored field analyzer, model analyzer, and schema AST analyzer for correctness (#50).
+* **Builders**: Improved type builder, field builder, and schema builder (#50).
+* **Generator**: Centralized null/default handling in generator output (#65).
+
 ## 1.0.0-beta.5 (2026-01-14)
 
 ### Features
