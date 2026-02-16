@@ -1067,5 +1067,147 @@ final configSchema = Ack.object({
         );
       });
     });
+
+    test('handles Ack.list(Ack.enumValues<T>()) in Ack.object()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+enum UserRole { admin, editor, viewer }
+
+@AckType()
+final teamSchema = Ack.object({
+  'name': Ack.string(),
+  'roles': Ack.list(Ack.enumValues<UserRole>(UserRole.values)),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'teamSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+
+        final rolesField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'roles',
+        );
+
+        expect(rolesField.type.isDartCoreList, isTrue);
+
+        final listType = rolesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+        expect(
+          elementType.getDisplayString(withNullability: false),
+          equals('UserRole'),
+          reason:
+              'Expected UserRole element type for list of enumValues, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('handles Ack.list(Ack.literal()) in Ack.object()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final actionSchema = Ack.object({
+  'types': Ack.list(Ack.literal('click')),
+  'name': Ack.string(),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'actionSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+
+        final typesField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'types',
+        );
+
+        expect(typesField.type.isDartCoreList, isTrue);
+
+        final listType = typesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason:
+              'Expected String element type for list of literals, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('handles Ack.enumValues<T>().nullable() without optional()',
+        () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+enum UserRole { admin, editor, viewer }
+
+@AckType()
+final profileSchema = Ack.object({
+  'name': Ack.string(),
+  'role': Ack.enumValues<UserRole>(UserRole.values).nullable(),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'profileSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+
+        final roleField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'role',
+        );
+
+        expect(
+          roleField.type.getDisplayString(withNullability: false),
+          equals('UserRole'),
+        );
+        expect(roleField.isNullable, isTrue);
+        expect(
+          roleField.isRequired,
+          isTrue,
+          reason: 'nullable() alone should not make the field optional',
+        );
+      });
+    });
   });
 }
