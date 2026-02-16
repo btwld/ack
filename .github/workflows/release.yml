@@ -6,8 +6,26 @@ on:
       - 'v*'
 
 jobs:
+  validate-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      semver_ok: ${{ steps.validate-tag.outputs.semver_ok }}
+    steps:
+      - name: Validate release tag as SemVer 2.0.0 with optional pre-release/build metadata
+        id: validate-tag
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9A-Za-z-]+\.)*[0-9A-Za-z-]+)?(\+(0|[1-9][0-9]*|[0-9A-Za-z-]+\.)*[0-9A-Za-z-]+)?$ ]]; then
+            echo "::error::Release tag '$TAG' is not SemVer 2.0.0 compatible. Use tags like v1.0.0, v1.0.0-alpha.1, or v1.0.0-beta.6+exp.sha."
+            exit 1
+          fi
+          echo "semver_ok=true" >> "$GITHUB_OUTPUT"
+
   publish:
-    uses: btwld/dart-actions/.github/workflows/publish.yml@main
+    needs: validate-tag
+    if: needs.validate-tag.outputs.semver_ok == 'true'
+    uses: btwld/dart-actions/.github/workflows/publish.yml@9075ce1232ec77b8747953f2ff4a349190e5a805
     permissions:
       id-token: write
     with:
