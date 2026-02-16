@@ -838,13 +838,7 @@ final reviewSchema = Ack.object({
           (f) => f.name == 'severity',
         );
 
-        expect(
-          severityField.type.isDartCoreString,
-          isTrue,
-          reason:
-              'Expected String for enumString field, got '
-              '${severityField.type.getDisplayString(withNullability: false)}',
-        );
+        expect(severityField.type.isDartCoreString, isTrue);
       });
     });
 
@@ -917,13 +911,7 @@ final eventSchema = Ack.object({
           (f) => f.name == 'type',
         );
 
-        expect(
-          typeField.type.isDartCoreString,
-          isTrue,
-          reason:
-              'Expected String for literal field, got '
-              '${typeField.type.getDisplayString(withNullability: false)}',
-        );
+        expect(typeField.type.isDartCoreString, isTrue);
       });
     });
 
@@ -962,18 +950,10 @@ final userSchema = Ack.object({
           (f) => f.name == 'role',
         );
 
-        // enumValues<UserRole> should resolve to the UserRole enum type
-        expect(
-          roleField.type.element3,
-          isNotNull,
-          reason: 'Expected resolved type element for enum field',
-        );
+        expect(roleField.type.element3, isNotNull);
         expect(
           roleField.type.getDisplayString(withNullability: false),
           equals('UserRole'),
-          reason:
-              'Expected UserRole for enumValues field, got '
-              '${roleField.type.getDisplayString(withNullability: false)}',
         );
       });
     });
@@ -1058,13 +1038,7 @@ final configSchema = Ack.object({
 
         final listType = tagsField.type as InterfaceType;
         final elementType = listType.typeArguments.first;
-        expect(
-          elementType.isDartCoreString,
-          isTrue,
-          reason:
-              'Expected String element type, got '
-              '${elementType.getDisplayString(withNullability: false)}',
-        );
+        expect(elementType.isDartCoreString, isTrue);
       });
     });
 
@@ -1109,9 +1083,6 @@ final teamSchema = Ack.object({
         expect(
           elementType.getDisplayString(withNullability: false),
           equals('UserRole'),
-          reason:
-              'Expected UserRole element type for list of enumValues, got '
-              '${elementType.getDisplayString(withNullability: false)}',
         );
       });
     });
@@ -1152,13 +1123,7 @@ final actionSchema = Ack.object({
 
         final listType = typesField.type as InterfaceType;
         final elementType = listType.typeArguments.first;
-        expect(
-          elementType.isDartCoreString,
-          isTrue,
-          reason:
-              'Expected String element type for list of literals, got '
-              '${elementType.getDisplayString(withNullability: false)}',
-        );
+        expect(elementType.isDartCoreString, isTrue);
       });
     });
 

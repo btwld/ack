@@ -585,15 +585,13 @@ class SchemaAstAnalyzer {
         );
       case 'enumString':
       case 'literal':
-        // enumString and literal are StringSchema variants — representation is String
         return (typeProvider.stringType, null);
       case 'enumValues':
-        // Try to resolve the enum DartType from the type argument: Ack.enumValues<T>(...)
         final resolvedType = _resolveEnumValuesType(invocation, library);
         if (resolvedType != null) {
           return (resolvedType, null);
         }
-        // Fallback: treat as String (safe default for enum-like schemas)
+        // Fallback to String if the enum type can't be resolved
         return (typeProvider.stringType, null);
       default:
         throw InvalidGenerationSourceError(
@@ -603,15 +601,12 @@ class SchemaAstAnalyzer {
     }
   }
 
-  /// Extracts the enum type name string from an `Ack.enumValues<T>(...)` invocation.
+  /// Extracts the enum type name from an `Ack.enumValues<T>(...)` invocation.
   ///
-  /// Tries two strategies:
-  /// 1. Extract from explicit type argument: `Ack.enumValues<UserRole>(...)`
-  /// 2. Infer from argument pattern: `Ack.enumValues(UserRole.values)`
-  ///
-  /// Returns `null` if the type name cannot be determined.
+  /// Tries the explicit type argument first, then infers from the argument
+  /// pattern (e.g. `UserRole.values`).
   String? _extractEnumTypeNameFromInvocation(MethodInvocation invocation) {
-    // Strategy 1: Extract from type arguments — Ack.enumValues<UserRole>(...)
+    // From type argument: Ack.enumValues<UserRole>(...)
     final typeArgs = invocation.typeArguments?.arguments;
     if (typeArgs != null && typeArgs.isNotEmpty) {
       final typeAnnotation = typeArgs.first;
@@ -621,7 +616,7 @@ class SchemaAstAnalyzer {
       return typeArgs.first.toString();
     }
 
-    // Strategy 2: Infer from argument — Ack.enumValues(UserRole.values)
+    // From argument pattern: Ack.enumValues(UserRole.values)
     final args = invocation.argumentList.arguments;
     if (args.isNotEmpty) {
       final firstArg = args.first;
@@ -634,11 +629,8 @@ class SchemaAstAnalyzer {
     return null;
   }
 
-  /// Attempts to resolve the enum DartType from an `Ack.enumValues<T>(...)` invocation.
-  ///
-  /// Uses [_extractEnumTypeNameFromInvocation] to get the type name, then
-  /// looks it up in the library's declared enums and classes.
-  /// Returns `null` if the type cannot be resolved.
+  /// Resolves the enum DartType from an `Ack.enumValues<T>(...)` invocation
+  /// by extracting the type name and looking it up in the library.
   DartType? _resolveEnumValuesType(
     MethodInvocation invocation,
     LibraryElement2 library,
@@ -646,14 +638,13 @@ class SchemaAstAnalyzer {
     final enumTypeName = _extractEnumTypeNameFromInvocation(invocation);
     if (enumTypeName == null) return null;
 
-    // Look up enum in the library's declared enums
     for (final enumElement in library.enums) {
       if (enumElement.name3 == enumTypeName) {
         return enumElement.thisType;
       }
     }
 
-    // Also check classes (for class-based enums or imported types)
+    // Also check classes (for class-based enums)
     for (final classElement in library.classes) {
       if (classElement.name3 == enumTypeName) {
         return classElement.thisType;
@@ -1184,12 +1175,11 @@ class SchemaAstAnalyzer {
         return 'List<$nestedType>';
       }
 
-      // Handle enumValues — needs type extraction from invocation
       if (methodName == 'enumValues') {
-        return _extractEnumValuesTypeName(ref.ackBase!) ?? 'dynamic';
+        return _extractEnumTypeNameFromInvocation(ref.ackBase!) ?? 'dynamic';
       }
 
-      // Map primitive schema types (handles string, enumString, literal, etc.)
+      // Map primitive schema types
       return _mapSchemaMethodToType(methodName);
     }
 
@@ -1359,15 +1349,6 @@ class SchemaAstAnalyzer {
       default:
         return 'dynamic';
     }
-  }
-
-  /// Extracts the enum type name from an `Ack.enumValues<T>(...)` invocation as a string.
-  ///
-  /// Delegates to [_extractEnumTypeNameFromInvocation] for the shared extraction logic.
-  /// Used for list element type resolution where we need a string representation
-  /// rather than a DartType.
-  String? _extractEnumValuesTypeName(MethodInvocation invocation) {
-    return _extractEnumTypeNameFromInvocation(invocation);
   }
 
   /// Validates that a field name is a valid Dart identifier
