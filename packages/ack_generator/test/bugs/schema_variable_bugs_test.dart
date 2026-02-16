@@ -802,4 +802,270 @@ final keywordSchema = Ack.object({
       }
     });
   });
+
+  group('Enum, literal, and enumValues as fields inside Ack.object()', () {
+    test('handles Ack.enumString() as field in Ack.object()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final reviewSchema = Ack.object({
+  'file': Ack.string(),
+  'severity': Ack.enumString(['error', 'warning', 'info']),
+  'message': Ack.string(),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'reviewSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+        expect(modelInfo!.fields.length, 3);
+
+        final severityField = modelInfo.fields.firstWhere(
+          (f) => f.name == 'severity',
+        );
+
+        expect(
+          severityField.type.isDartCoreString,
+          isTrue,
+          reason:
+              'Expected String for enumString field, got '
+              '${severityField.type.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('handles Ack.enumString() with optional/nullable modifiers', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final formSchema = Ack.object({
+  'priority': Ack.enumString(['low', 'medium', 'high']).optional().nullable(),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'formSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+
+        final priorityField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'priority',
+        );
+
+        expect(priorityField.type.isDartCoreString, isTrue);
+        expect(priorityField.isRequired, isFalse);
+        expect(priorityField.isNullable, isTrue);
+      });
+    });
+
+    test('handles Ack.literal() as field in Ack.object()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final eventSchema = Ack.object({
+  'type': Ack.literal('click'),
+  'target': Ack.string(),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'eventSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+
+        final typeField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'type',
+        );
+
+        expect(
+          typeField.type.isDartCoreString,
+          isTrue,
+          reason:
+              'Expected String for literal field, got '
+              '${typeField.type.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test('handles Ack.enumValues<T>() as field in Ack.object()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+enum UserRole { admin, editor, viewer }
+
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'role': Ack.enumValues<UserRole>(UserRole.values),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'userSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+        expect(modelInfo!.fields.length, 2);
+
+        final roleField = modelInfo.fields.firstWhere(
+          (f) => f.name == 'role',
+        );
+
+        // enumValues<UserRole> should resolve to the UserRole enum type
+        expect(
+          roleField.type.element3,
+          isNotNull,
+          reason: 'Expected resolved type element for enum field',
+        );
+        expect(
+          roleField.type.getDisplayString(withNullability: false),
+          equals('UserRole'),
+          reason:
+              'Expected UserRole for enumValues field, got '
+              '${roleField.type.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+
+    test(
+      'handles Ack.enumValues<T>() with optional modifier in Ack.object()',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+enum Priority { low, medium, high, critical }
+
+@AckType()
+final taskSchema = Ack.object({
+  'title': Ack.string(),
+  'priority': Ack.enumValues<Priority>(Priority.values).optional(),
+});
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/schema.dart'),
+          );
+          final schemaVar = library.topLevelVariables
+              .whereType<TopLevelVariableElement2>()
+              .firstWhere((e) => e.name3 == 'taskSchema');
+
+          final analyzer = SchemaAstAnalyzer();
+          final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+          expect(modelInfo, isNotNull);
+
+          final priorityField = modelInfo!.fields.firstWhere(
+            (f) => f.name == 'priority',
+          );
+
+          expect(priorityField.isRequired, isFalse);
+          expect(
+            priorityField.type.getDisplayString(withNullability: false),
+            equals('Priority'),
+          );
+        });
+      },
+    );
+
+    test('handles Ack.list(Ack.enumString()) in Ack.object()', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final configSchema = Ack.object({
+  'tags': Ack.list(Ack.enumString(['a', 'b', 'c'])),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'configSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+
+        expect(modelInfo, isNotNull);
+
+        final tagsField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'tags',
+        );
+
+        expect(tagsField.type.isDartCoreList, isTrue);
+
+        final listType = tagsField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason:
+              'Expected String element type, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
+  });
 }

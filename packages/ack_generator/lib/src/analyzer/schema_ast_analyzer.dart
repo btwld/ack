@@ -583,12 +583,78 @@ class SchemaAstAnalyzer {
           ),
           null,
         );
+      case 'enumString':
+      case 'literal':
+        // enumString and literal are StringSchema variants — representation is String
+        return (typeProvider.stringType, null);
+      case 'enumValues':
+        // Try to resolve the enum DartType from the type argument: Ack.enumValues<T>(...)
+        final resolvedType = _resolveEnumValuesType(invocation, library);
+        if (resolvedType != null) {
+          return (resolvedType, null);
+        }
+        // Fallback: treat as String (safe default for enum-like schemas)
+        return (typeProvider.stringType, null);
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema method: Ack.$schemaMethod()',
           element: element,
         );
     }
+  }
+
+  /// Attempts to resolve the enum DartType from an `Ack.enumValues<T>(...)` invocation.
+  ///
+  /// Tries two strategies:
+  /// 1. Extract type name from explicit type argument: `Ack.enumValues<UserRole>(...)`
+  /// 2. Infer from argument pattern: `Ack.enumValues(UserRole.values)`
+  ///
+  /// Then looks up the type in the library's declared enums and classes.
+  /// Returns `null` if the type cannot be resolved.
+  DartType? _resolveEnumValuesType(
+    MethodInvocation invocation,
+    LibraryElement2 library,
+  ) {
+    String? enumTypeName;
+
+    // Strategy 1: Extract from type arguments — Ack.enumValues<UserRole>(...)
+    final typeArgs = invocation.typeArguments?.arguments;
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      final typeAnnotation = typeArgs.first;
+      if (typeAnnotation is NamedType) {
+        enumTypeName = typeAnnotation.name2.lexeme;
+      }
+    }
+
+    // Strategy 2: Infer from argument — Ack.enumValues(UserRole.values)
+    if (enumTypeName == null) {
+      final args = invocation.argumentList.arguments;
+      if (args.isNotEmpty) {
+        final firstArg = args.first;
+        if (firstArg is PrefixedIdentifier &&
+            firstArg.identifier.name == 'values') {
+          enumTypeName = firstArg.prefix.name;
+        }
+      }
+    }
+
+    if (enumTypeName == null) return null;
+
+    // Look up enum in the library's declared enums
+    for (final enumElement in library.enums) {
+      if (enumElement.name3 == enumTypeName) {
+        return enumElement.thisType;
+      }
+    }
+
+    // Also check classes (for class-based enums or imported types)
+    for (final classElement in library.classes) {
+      if (classElement.name3 == enumTypeName) {
+        return classElement.thisType;
+      }
+    }
+
+    return null;
   }
 
   _ListElementRef _resolveListElementRef(Expression firstArg) {
@@ -1112,7 +1178,12 @@ class SchemaAstAnalyzer {
         return 'List<$nestedType>';
       }
 
-      // Map primitive schema types
+      // Handle enumValues — needs type extraction from invocation
+      if (methodName == 'enumValues') {
+        return _extractEnumValuesTypeName(ref.ackBase!) ?? 'dynamic';
+      }
+
+      // Map primitive schema types (handles string, enumString, literal, etc.)
       return _mapSchemaMethodToType(methodName);
     }
 
@@ -1264,6 +1335,8 @@ class SchemaAstAnalyzer {
   String _mapSchemaMethodToType(String methodName) {
     switch (methodName) {
       case 'string':
+      case 'enumString':
+      case 'literal':
         return 'String';
       case 'integer':
         return 'int';
@@ -1280,6 +1353,30 @@ class SchemaAstAnalyzer {
       default:
         return 'dynamic';
     }
+  }
+
+  /// Extracts the enum type name from an `Ack.enumValues<T>(...)` invocation as a string.
+  ///
+  /// Used for list element type resolution where we need a string representation
+  /// rather than a DartType.
+  String? _extractEnumValuesTypeName(MethodInvocation invocation) {
+    // Strategy 1: Type argument — Ack.enumValues<UserRole>(...)
+    final typeArgs = invocation.typeArguments?.arguments;
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      return typeArgs.first.toString();
+    }
+
+    // Strategy 2: Argument pattern — Ack.enumValues(UserRole.values)
+    final args = invocation.argumentList.arguments;
+    if (args.isNotEmpty) {
+      final firstArg = args.first;
+      if (firstArg is PrefixedIdentifier &&
+          firstArg.identifier.name == 'values') {
+        return firstArg.prefix.name;
+      }
+    }
+
+    return null;
   }
 
   /// Validates that a field name is a valid Dart identifier
