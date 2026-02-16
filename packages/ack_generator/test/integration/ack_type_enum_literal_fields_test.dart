@@ -29,9 +29,7 @@ final reviewSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains(
-                'extension type ReviewType(Map<String, Object?> _data)',
-              ),
+              contains('extension type ReviewType(Map<String, Object?> _data)'),
               contains('String get file'),
               contains("_data['file'] as String"),
               contains('String get severity'),
@@ -65,9 +63,7 @@ final eventSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains(
-                'extension type EventType(Map<String, Object?> _data)',
-              ),
+              contains('extension type EventType(Map<String, Object?> _data)'),
               contains('String get type'),
               contains("_data['type'] as String"),
               contains('String get target'),
@@ -101,9 +97,7 @@ final userSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains(
-                'extension type UserType(Map<String, Object?> _data)',
-              ),
+              contains('extension type UserType(Map<String, Object?> _data)'),
               contains('String get name'),
               contains('UserRole get role'),
               contains("_data['role'] as UserRole"),
@@ -136,9 +130,7 @@ final formSchema = Ack.object({
           outputs: {
             'test_pkg|lib/schema.g.dart': decodedMatches(
               allOf([
-                contains(
-                  'extension type FormType(Map<String, Object?> _data)',
-                ),
+                contains('extension type FormType(Map<String, Object?> _data)'),
                 contains('String get title'),
                 contains('String? get priority'),
                 contains("_data['priority'] as String?"),
@@ -172,9 +164,7 @@ final taskSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains(
-                'extension type TaskType(Map<String, Object?> _data)',
-              ),
+              contains('extension type TaskType(Map<String, Object?> _data)'),
               contains('String get title'),
               contains('Priority? get priority'),
               contains("_data['priority'] as Priority?"),
@@ -205,9 +195,7 @@ final configSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains(
-                'extension type ConfigType(Map<String, Object?> _data)',
-              ),
+              contains('extension type ConfigType(Map<String, Object?> _data)'),
               contains('String get name'),
               contains('List<String> get tags'),
               contains("(_data['tags'] as List).cast<String>()"),
@@ -240,9 +228,7 @@ final teamSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains(
-                'extension type TeamType(Map<String, Object?> _data)',
-              ),
+              contains('extension type TeamType(Map<String, Object?> _data)'),
               contains('String get name'),
               contains('List<UserRole> get roles'),
               contains("(_data['roles'] as List).cast<UserRole>()"),
@@ -252,15 +238,88 @@ final teamSchema = Ack.object({
       );
     });
 
-    test('mixed schema with literal, enumString, enumValues, and string fields',
-        () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'enumValues with imported prefixed enum keeps prefixed field type',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/enums.dart': '''
+enum UserRole { admin, editor, viewer }
+''',
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'enums.dart' as models;
+
+@AckType()
+final userSchema = Ack.object({
+  'role': Ack.enumValues(models.UserRole.values),
+});
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('extension type UserType(Map<String, Object?> _data)'),
+                contains('models.UserRole get role'),
+                contains("_data['role'] as models.UserRole"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test(
+      'top-level list enumValues preserves imported prefixed enum type',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/enums.dart': '''
+enum UserRole { admin, editor, viewer }
+''',
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'enums.dart' as models;
+
+@AckType()
+final roleListSchema = Ack.list(Ack.enumValues(models.UserRole.values));
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains(
+                  'extension type RoleListType(List<models.UserRole> _value)',
+                ),
+                contains('implements List<models.UserRole>'),
+                contains('RoleListType(validated as List<models.UserRole>)'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test(
+      'mixed schema with literal, enumString, enumValues, and string fields',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -274,25 +333,26 @@ final widgetSchema = Ack.object({
   'style': Ack.enumString(['solid', 'outline', 'ghost']),
 });
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              contains(
-                'extension type WidgetType(Map<String, Object?> _data)',
-              ),
-              contains('String get type'),
-              contains("_data['type'] as String"),
-              contains('String get label'),
-              contains("_data['label'] as String"),
-              contains('Color get color'),
-              contains("_data['color'] as Color"),
-              contains('String get style'),
-              contains("_data['style'] as String"),
-            ]),
-          ),
-        },
-      );
-    });
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains(
+                  'extension type WidgetType(Map<String, Object?> _data)',
+                ),
+                contains('String get type'),
+                contains("_data['type'] as String"),
+                contains('String get label'),
+                contains("_data['label'] as String"),
+                contains('Color get color'),
+                contains("_data['color'] as Color"),
+                contains('String get style'),
+                contains("_data['style'] as String"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
   });
 }

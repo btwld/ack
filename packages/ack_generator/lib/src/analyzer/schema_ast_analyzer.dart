@@ -533,6 +533,18 @@ class SchemaAstAnalyzer {
       baseInvocation,
       element,
     );
+    final schemaMethod = baseInvocation.methodName.name;
+
+    String? displayTypeOverride;
+    String? collectionElementDisplayTypeOverride;
+
+    if (schemaMethod == 'enumValues') {
+      displayTypeOverride = _extractEnumTypeNameFromInvocation(baseInvocation);
+    } else if (schemaMethod == 'list') {
+      collectionElementDisplayTypeOverride = _extractListEnumElementTypeName(
+        baseInvocation,
+      );
+    }
 
     return FieldInfo(
       name: fieldName,
@@ -542,6 +554,9 @@ class SchemaAstAnalyzer {
       isNullable: isNullable,
       constraints: [],
       listElementSchemaRef: listElementSchemaRef,
+      displayTypeOverride: displayTypeOverride,
+      collectionElementDisplayTypeOverride:
+          collectionElementDisplayTypeOverride,
     );
   }
 
@@ -587,12 +602,20 @@ class SchemaAstAnalyzer {
       case 'literal':
         return (typeProvider.stringType, null);
       case 'enumValues':
-        final resolvedType = _resolveEnumValuesType(invocation, library);
+        final resolvedType = _resolveEnumValuesType(
+          invocation,
+          library: library,
+        );
         if (resolvedType != null) {
           return (resolvedType, null);
         }
-        // Fallback to String if the enum type can't be resolved
-        return (typeProvider.stringType, null);
+        // Fallback to `dynamic` if the enum type can't be resolved.
+        // This avoids incorrectly assuming `String` when EnumSchema<T>.parse()
+        // returns the enum value type T.
+        _log.warning(
+          'Could not resolve enum type for Ack.enumValues(); falling back to dynamic.',
+        );
+        return (typeProvider.dynamicType, null);
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema method: Ack.$schemaMethod()',
@@ -603,51 +626,164 @@ class SchemaAstAnalyzer {
 
   /// Extracts the enum type name from an `Ack.enumValues<T>(...)` invocation.
   ///
-  /// Tries the explicit type argument first, then infers from the argument
-  /// pattern (e.g. `UserRole.values`).
+  /// Prefers resolved static types so imported/re-exported enums and prefixed
+  /// references (e.g., `alias.UserRole`) are preserved in generated code.
+  /// Falls back to source-based extraction if static typing is unavailable.
   String? _extractEnumTypeNameFromInvocation(MethodInvocation invocation) {
-    // From type argument: Ack.enumValues<UserRole>(...)
-    final typeArgs = invocation.typeArguments?.arguments;
-    if (typeArgs != null && typeArgs.isNotEmpty) {
-      final typeAnnotation = typeArgs.first;
-      if (typeAnnotation is NamedType) {
-        return typeAnnotation.name2.lexeme;
-      }
-      return typeArgs.first.toString();
+    final sourceTypeName = _extractEnumTypeNameFromSource(invocation);
+    if (sourceTypeName != null) {
+      return sourceTypeName;
     }
 
-    // From argument pattern: Ack.enumValues(UserRole.values)
+    final resolvedType = _resolveEnumValuesType(invocation);
+    if (resolvedType != null) {
+      return resolvedType.getDisplayString(withNullability: false);
+    }
+
+    return null;
+  }
+
+  String? _extractEnumTypeNameFromSource(MethodInvocation invocation) {
+    // From type argument: Ack.enumValues<UserRole>(...) or Ack.enumValues<foo.UserRole>(...)
+    final typeArgs = invocation.typeArguments?.arguments;
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      return typeArgs.first.toSource();
+    }
+
+    // From argument pattern: Ack.enumValues(UserRole.values) / Ack.enumValues(alias.UserRole.values)
     final args = invocation.argumentList.arguments;
     if (args.isNotEmpty) {
       final firstArg = args.first;
       if (firstArg is PrefixedIdentifier &&
           firstArg.identifier.name == 'values') {
-        return firstArg.prefix.name;
+        return firstArg.prefix.toSource();
+      }
+      if (firstArg is PropertyAccess &&
+          firstArg.propertyName.name == 'values') {
+        return firstArg.target?.toSource();
       }
     }
 
     return null;
   }
 
-  /// Resolves the enum DartType from an `Ack.enumValues<T>(...)` invocation
-  /// by extracting the type name and looking it up in the library.
-  DartType? _resolveEnumValuesType(
-    MethodInvocation invocation,
-    LibraryElement2 library,
-  ) {
-    final enumTypeName = _extractEnumTypeNameFromInvocation(invocation);
-    if (enumTypeName == null) return null;
+  String? _extractListEnumElementTypeName(MethodInvocation listInvocation) {
+    final args = listInvocation.argumentList.arguments;
+    if (args.isEmpty) return null;
 
-    for (final enumElement in library.enums) {
-      if (enumElement.name3 == enumTypeName) {
-        return enumElement.thisType;
+    final ref = _resolveListElementRef(args.first);
+    final elementSchema = ref.ackBase;
+    if (elementSchema == null ||
+        elementSchema.methodName.name != 'enumValues') {
+      return null;
+    }
+
+    return _extractEnumTypeNameFromInvocation(elementSchema);
+  }
+
+  /// Resolves enum type `T` from an `Ack.enumValues<T>(...)` invocation.
+  ///
+  /// Resolution strategy (in order):
+  /// 1. Explicit type argument's resolved type (`Ack.enumValues<T>(...)`)
+  /// 2. Invocation static type argument (`EnumSchema<T>`)
+  /// 3. First argument static type (`List<T>` from `T.values`)
+  /// 4. Source name lookup in the library/import scope
+  DartType? _resolveEnumValuesType(
+    MethodInvocation invocation, {
+    LibraryElement2? library,
+  }) {
+    final typeArgs = invocation.typeArguments?.arguments;
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      final explicitType = typeArgs.first.type;
+      if (explicitType is InterfaceType) {
+        return explicitType;
       }
     }
 
-    // Also check classes (for class-based enums)
+    final invocationType = invocation.staticType;
+    if (invocationType is InterfaceType &&
+        invocationType.typeArguments.isNotEmpty) {
+      final schemaTypeArg = invocationType.typeArguments.first;
+      if (schemaTypeArg is InterfaceType) {
+        return schemaTypeArg;
+      }
+    }
+
+    final args = invocation.argumentList.arguments;
+    if (args.isNotEmpty) {
+      final argType = args.first.staticType;
+      if (argType is InterfaceType) {
+        if (argType.isDartCoreList && argType.typeArguments.isNotEmpty) {
+          final elementType = argType.typeArguments.first;
+          if (elementType is InterfaceType) {
+            return elementType;
+          }
+        } else {
+          return argType;
+        }
+      }
+    }
+
+    if (library != null) {
+      final enumTypeName = _extractEnumTypeNameFromSource(invocation);
+      if (enumTypeName != null) {
+        final resolvedByName = _resolveTypeByName(enumTypeName, library);
+        if (resolvedByName != null) {
+          return resolvedByName;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveTypeByName(String typeName, LibraryElement2 library) {
+    final normalizedTypeName = typeName.trim();
+    if (normalizedTypeName.isEmpty) return null;
+
+    final scopeResult = library.firstFragment.scope.lookup(normalizedTypeName);
+    final scopeType = _resolveTypeFromElement(scopeResult.getter);
+    if (scopeType != null) {
+      return scopeType;
+    }
+
+    // Try import namespaces directly as a fallback for prefixed names.
+    for (final import in library.firstFragment.libraryImports) {
+      final importedElement = import.namespace.get2(normalizedTypeName);
+      final importedType = _resolveTypeFromElement(importedElement);
+      if (importedType != null) {
+        return importedType;
+      }
+    }
+
+    // Last-resort local lookup.
+    for (final enumElement in library.enums) {
+      if (enumElement.name3 == normalizedTypeName) {
+        return enumElement.thisType;
+      }
+    }
     for (final classElement in library.classes) {
-      if (classElement.name3 == enumTypeName) {
+      if (classElement.name3 == normalizedTypeName) {
         return classElement.thisType;
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveTypeFromElement(Element2? element) {
+    if (element is EnumElement2) {
+      return element.thisType;
+    }
+
+    if (element is ClassElement2) {
+      return element.thisType;
+    }
+
+    if (element is TypeAliasElement2) {
+      final aliasedType = element.aliasedType;
+      if (aliasedType is InterfaceType) {
+        return aliasedType;
       }
     }
 
@@ -1267,32 +1403,7 @@ class SchemaAstAnalyzer {
       customTypeName: customTypeName,
     );
 
-    // Strategy 1: Try to extract from type arguments: Ack.enumValues<UserRole>([...])
-    final typeArgs = invocation.typeArguments?.arguments;
-    String? enumTypeName;
-
-    if (typeArgs != null && typeArgs.isNotEmpty) {
-      // Get the first type argument (the enum type)
-      final typeArg = typeArgs.first;
-      enumTypeName = typeArg.toString();
-    } else {
-      // Strategy 2: Try to infer from argument list: Ack.enumValues(UserRole.values)
-      final args = invocation.argumentList.arguments;
-      if (args.isNotEmpty) {
-        final firstArg = args.first;
-
-        // Check if it's EnumType.values (PrefixedIdentifier)
-        if (firstArg is PrefixedIdentifier) {
-          final prefix = firstArg.prefix.name;
-          final identifier = firstArg.identifier.name;
-
-          if (identifier == 'values') {
-            // UserRole.values → use 'UserRole'
-            enumTypeName = prefix;
-          }
-        }
-      }
-    }
+    final enumTypeName = _extractEnumTypeNameFromInvocation(invocation);
 
     // If we couldn't extract the enum type, throw an error
     if (enumTypeName == null) {

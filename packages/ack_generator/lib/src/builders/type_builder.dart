@@ -727,7 +727,8 @@ ${cases.join(',\n')},
 
     // Enums
     if (field.isEnum) {
-      return field.type.getDisplayString(withNullability: false);
+      return field.displayTypeOverride ??
+          field.type.getDisplayString(withNullability: false);
     }
 
     // Lists
@@ -801,6 +802,10 @@ ${cases.join(',\n')},
         return referencedModel.className;
       }
       return kMapType;
+    }
+
+    if (field.collectionElementDisplayTypeOverride != null) {
+      return field.collectionElementDisplayTypeOverride!;
     }
 
     if (field.type is! ParameterizedType) return 'dynamic';

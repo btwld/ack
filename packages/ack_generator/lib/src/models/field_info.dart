@@ -27,6 +27,13 @@ class FieldInfo {
   /// properly typed getters like `AddressType get address`.
   final String? nestedSchemaRef;
 
+  /// Optional display type override used when source qualification matters
+  /// (e.g., `alias.UserRole` from a prefixed import).
+  final String? displayTypeOverride;
+
+  /// Optional collection element display type override for list/set fields.
+  final String? collectionElementDisplayTypeOverride;
+
   const FieldInfo({
     required this.name,
     required this.jsonKey,
@@ -37,6 +44,8 @@ class FieldInfo {
     this.description,
     this.listElementSchemaRef,
     this.nestedSchemaRef,
+    this.displayTypeOverride,
+    this.collectionElementDisplayTypeOverride,
   });
 
   /// Whether this field references another schema model

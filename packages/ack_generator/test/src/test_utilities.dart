@@ -50,6 +50,12 @@ class MockFieldInfo implements FieldInfo {
   @override
   final String? nestedSchemaRef;
 
+  @override
+  final String? displayTypeOverride;
+
+  @override
+  final String? collectionElementDisplayTypeOverride;
+
   final String typeName;
   final String? listItemTypeName;
   final String? mapKeyTypeName;
@@ -74,6 +80,8 @@ class MockFieldInfo implements FieldInfo {
     this.mapValueTypeName,
     this.listElementSchemaRef,
     this.nestedSchemaRef,
+    this.displayTypeOverride,
+    this.collectionElementDisplayTypeOverride,
   }) : jsonKey = name;
 
   @override
