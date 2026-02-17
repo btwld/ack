@@ -18,7 +18,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumString(List<String> values)`: Creates a string schema that only accepts specific values.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any value.
-- `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema<MapValue>> schemas})`: Creates a discriminated union schema.
+- `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema<Map<String, Object?>>> schemas})`: Creates a discriminated union schema.
 
 ## `AckSchema<T>` (Base Class)
 
@@ -285,7 +285,7 @@ Schema for union types (value must match one of several schemas).
 
 Schema for polymorphic validation based on a discriminator field.
 
-- Created using `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema<MapValue>> schemas})`
+- Created using `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema<Map<String, Object?>>> schemas})`
 
 ### `AnySchema`
 

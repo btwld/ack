@@ -626,21 +626,25 @@ class SchemaAstAnalyzer {
 
   /// Extracts the enum type name from an `Ack.enumValues<T>(...)` invocation.
   ///
-  /// Prefers resolved static types so imported/re-exported enums and prefixed
-  /// references (e.g., `alias.UserRole`) are preserved in generated code.
-  /// Falls back to source-based extraction if static typing is unavailable.
+  /// Prefers source text only when it contains a qualifier
+  /// (e.g., `alias.UserRole`) so import prefixes are preserved in generated
+  /// part files.
+  ///
+  /// For non-qualified names, prefers resolved static types to avoid
+  /// incorrectly treating arbitrary `.values` receivers as enum type names
+  /// (for example, `holder.values` should resolve to the list element type).
   String? _extractEnumTypeNameFromInvocation(MethodInvocation invocation) {
+    final sourceTypeName = _extractEnumTypeNameFromSource(invocation);
+    if (sourceTypeName != null && sourceTypeName.contains('.')) {
+      return sourceTypeName;
+    }
+
     final resolvedType = _resolveEnumValuesType(invocation);
     if (resolvedType != null) {
       return resolvedType.getDisplayString(withNullability: false);
     }
 
-    final sourceTypeName = _extractEnumTypeNameFromSource(invocation);
-    if (sourceTypeName != null) {
-      return sourceTypeName;
-    }
-
-    return null;
+    return sourceTypeName;
   }
 
   String? _extractEnumTypeNameFromSource(MethodInvocation invocation) {
@@ -747,7 +751,7 @@ class SchemaAstAnalyzer {
       return scopeType;
     }
 
-    // Try import namespaces directly as a fallback for prefixed names.
+    // Try import namespaces directly as a fallback for simple imported names.
     for (final import in library.firstFragment.libraryImports) {
       final importedElement = import.namespace.get2(normalizedTypeName);
       final importedType = _resolveTypeFromElement(importedElement);
