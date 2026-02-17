@@ -69,14 +69,11 @@ class FieldAnalyzer {
     }
 
     // Tri-state mode is authoritative.
-    switch (_getRequiredMode(annotation)) {
-      case AckFieldRequiredMode.required:
-        return true;
-      case AckFieldRequiredMode.optional:
-        return false;
-      case AckFieldRequiredMode.auto:
-        return _inferRequiredFromField(field);
-    }
+    return switch (_getRequiredMode(annotation)) {
+      AckFieldRequiredMode.required => true,
+      AckFieldRequiredMode.optional => false,
+      AckFieldRequiredMode.auto => _inferRequiredFromField(field),
+    };
   }
 
   bool _inferRequiredFromField(FieldElement2 field) {
@@ -89,16 +86,12 @@ class FieldAnalyzer {
         .getField('requiredMode')
         ?.getField('index')
         ?.toIntValue();
-    switch (modeIndex) {
-      case 0:
-        return AckFieldRequiredMode.auto;
-      case 1:
-        return AckFieldRequiredMode.required;
-      case 2:
-        return AckFieldRequiredMode.optional;
-      default:
-        return AckFieldRequiredMode.auto;
-    }
+    return switch (modeIndex) {
+      0 => AckFieldRequiredMode.auto,
+      1 => AckFieldRequiredMode.required,
+      2 => AckFieldRequiredMode.optional,
+      _ => AckFieldRequiredMode.auto,
+    };
   }
 
   List<ConstraintInfo> _extractConstraints(

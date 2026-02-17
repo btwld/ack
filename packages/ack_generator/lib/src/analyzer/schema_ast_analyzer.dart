@@ -1440,26 +1440,15 @@ class SchemaAstAnalyzer {
   /// Used for generating string representations of types in list element contexts.
   /// For nested lists, this function is called recursively via [_parseListSchema].
   String _mapSchemaMethodToType(String methodName) {
-    switch (methodName) {
-      case 'string':
-      case 'enumString':
-      case 'literal':
-        return 'String';
-      case 'integer':
-        return 'int';
-      case 'double':
-        return 'double';
-      case 'boolean':
-        return 'bool';
-      case 'object':
-        return _kMapType;
-      case 'list':
-        // Note: Nested lists are handled by _parseListSchema recursively
-        // This case exists for consistency but should not be reached in normal flow
-        return 'List<dynamic>';
-      default:
-        return 'dynamic';
-    }
+    return switch (methodName) {
+      'string' || 'enumString' || 'literal' => 'String',
+      'integer' => 'int',
+      'double' => 'double',
+      'boolean' => 'bool',
+      'object' => _kMapType,
+      'list' => 'List<dynamic>',
+      _ => 'dynamic',
+    };
   }
 
   /// Validates that a field name is a valid Dart identifier
