@@ -630,14 +630,14 @@ class SchemaAstAnalyzer {
   /// references (e.g., `alias.UserRole`) are preserved in generated code.
   /// Falls back to source-based extraction if static typing is unavailable.
   String? _extractEnumTypeNameFromInvocation(MethodInvocation invocation) {
-    final sourceTypeName = _extractEnumTypeNameFromSource(invocation);
-    if (sourceTypeName != null) {
-      return sourceTypeName;
-    }
-
     final resolvedType = _resolveEnumValuesType(invocation);
     if (resolvedType != null) {
       return resolvedType.getDisplayString(withNullability: false);
+    }
+
+    final sourceTypeName = _extractEnumTypeNameFromSource(invocation);
+    if (sourceTypeName != null) {
+      return sourceTypeName;
     }
 
     return null;
