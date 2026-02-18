@@ -106,8 +106,46 @@ ack.StringSchema get statusSchema => ack.Ack.string();
             allOf([
               contains('extension type StatusType(String _value)'),
               contains('ack.SchemaResult<StatusType> safeParse'),
-              contains('ack.SchemaResult.ok(StatusType(validated as String))'),
-              contains('ack.SchemaResult.fail(error)'),
+              contains(
+                'ack.SchemaResult<T> _\$ackSafeParse<T extends Object>(',
+              ),
+              contains(
+                'onOk: (validated) => ack.SchemaResult.ok(wrap(validated))',
+              ),
+              contains('onFail: (error) => ack.SchemaResult.fail(error)'),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test('uses shared collection cast helper for primitive lists', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+ObjectSchema get userSchema => Ack.object({
+  'tags': Ack.list(Ack.string()),
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('extension type UserType(Map<String, Object?> _data)'),
+              contains(
+                "List<String> get tags => _\$ackListCast<String>(_data['tags'])",
+              ),
+              contains(
+                'List<T> _\$ackListCast<T>(Object? value) => (value as List).cast<T>();',
+              ),
             ]),
           ),
         },

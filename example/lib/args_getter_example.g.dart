@@ -7,20 +7,43 @@
 
 part of 'args_getter_example.dart';
 
+T _$ackParse<T extends Object>(
+  dynamic schema,
+  Object? data,
+  T Function(Object?) wrap,
+) {
+  final validated = schema.parse(data);
+  return wrap(validated);
+}
+
+SchemaResult<T> _$ackSafeParse<T extends Object>(
+  dynamic schema,
+  Object? data,
+  T Function(Object?) wrap,
+) {
+  final result = schema.safeParse(data);
+  return result.match(
+    onOk: (validated) => SchemaResult.ok(wrap(validated)),
+    onFail: (error) => SchemaResult.fail(error),
+  );
+}
+
 /// Extension type for UserConfig
 extension type UserConfigType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static UserConfigType parse(Object? data) {
-    final validated = userConfigSchema.parse(data);
-    return UserConfigType(validated as Map<String, Object?>);
+    return _$ackParse<UserConfigType>(
+      userConfigSchema,
+      data,
+      (validated) => UserConfigType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<UserConfigType> safeParse(Object? data) {
-    final result = userConfigSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(UserConfigType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<UserConfigType>(
+      userConfigSchema,
+      data,
+      (validated) => UserConfigType(validated as Map<String, Object?>),
     );
   }
 
@@ -46,16 +69,18 @@ extension type UserConfigType(Map<String, Object?> _data)
 extension type ApiRequestType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ApiRequestType parse(Object? data) {
-    final validated = apiRequestSchema.parse(data);
-    return ApiRequestType(validated as Map<String, Object?>);
+    return _$ackParse<ApiRequestType>(
+      apiRequestSchema,
+      data,
+      (validated) => ApiRequestType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<ApiRequestType> safeParse(Object? data) {
-    final result = apiRequestSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(ApiRequestType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<ApiRequestType>(
+      apiRequestSchema,
+      data,
+      (validated) => ApiRequestType(validated as Map<String, Object?>),
     );
   }
 
@@ -81,16 +106,18 @@ extension type ApiRequestType(Map<String, Object?> _data)
 extension type FeatureFlagsType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static FeatureFlagsType parse(Object? data) {
-    final validated = featureFlagsSchema.parse(data);
-    return FeatureFlagsType(validated as Map<String, Object?>);
+    return _$ackParse<FeatureFlagsType>(
+      featureFlagsSchema,
+      data,
+      (validated) => FeatureFlagsType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<FeatureFlagsType> safeParse(Object? data) {
-    final result = featureFlagsSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(FeatureFlagsType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<FeatureFlagsType>(
+      featureFlagsSchema,
+      data,
+      (validated) => FeatureFlagsType(validated as Map<String, Object?>),
     );
   }
 
@@ -116,16 +143,18 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
 extension type DynamicDataType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static DynamicDataType parse(Object? data) {
-    final validated = dynamicDataSchema.parse(data);
-    return DynamicDataType(validated as Map<String, Object?>);
+    return _$ackParse<DynamicDataType>(
+      dynamicDataSchema,
+      data,
+      (validated) => DynamicDataType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<DynamicDataType> safeParse(Object? data) {
-    final result = dynamicDataSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(DynamicDataType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<DynamicDataType>(
+      dynamicDataSchema,
+      data,
+      (validated) => DynamicDataType(validated as Map<String, Object?>),
     );
   }
 
