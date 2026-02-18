@@ -660,15 +660,36 @@ class SchemaAstAnalyzer {
       final firstArg = args.first;
       if (firstArg is PrefixedIdentifier &&
           firstArg.identifier.name == 'values') {
-        return firstArg.prefix.toSource();
+        final targetSource = firstArg.prefix.toSource();
+        if (_looksLikeTypeReference(targetSource)) {
+          return targetSource;
+        }
       }
       if (firstArg is PropertyAccess &&
           firstArg.propertyName.name == 'values') {
-        return firstArg.target?.toSource();
+        final targetSource = firstArg.target?.toSource();
+        if (targetSource != null && _looksLikeTypeReference(targetSource)) {
+          return targetSource;
+        }
       }
     }
 
     return null;
+  }
+
+  bool _looksLikeTypeReference(String source) {
+    final trimmed = source.trim();
+    if (trimmed.isEmpty) return false;
+
+    final identifier = trimmed.split('.').last;
+    if (identifier.isEmpty) return false;
+
+    final firstCodeUnit = identifier.codeUnitAt(0);
+    const uppercaseA = 65;
+    const uppercaseZ = 90;
+    const underscore = 95;
+    return (firstCodeUnit >= uppercaseA && firstCodeUnit <= uppercaseZ) ||
+        firstCodeUnit == underscore;
   }
 
   String? _extractListEnumElementTypeName(MethodInvocation listInvocation) {
@@ -715,16 +736,12 @@ class SchemaAstAnalyzer {
 
     final args = invocation.argumentList.arguments;
     if (args.isNotEmpty) {
-      final argType = args.first.staticType;
-      if (argType is InterfaceType) {
-        if (argType.isDartCoreList && argType.typeArguments.isNotEmpty) {
-          final elementType = argType.typeArguments.first;
-          if (elementType is InterfaceType) {
-            return elementType;
-          }
-        } else {
-          return argType;
-        }
+      final resolvedFromArgument = _resolveEnumValuesTypeFromArgument(
+        args.first,
+        library: library,
+      );
+      if (resolvedFromArgument != null) {
+        return resolvedFromArgument;
       }
     }
 
@@ -739,6 +756,142 @@ class SchemaAstAnalyzer {
     }
 
     return null;
+  }
+
+  DartType? _resolveEnumValuesTypeFromArgument(
+    Expression argument, {
+    LibraryElement2? library,
+  }) {
+    final enumFromStaticType = _extractEnumTypeFromCandidate(
+      argument.staticType,
+    );
+    if (enumFromStaticType != null) {
+      return enumFromStaticType;
+    }
+
+    if (library == null) {
+      return null;
+    }
+
+    final resolvedExpressionType = _resolveExpressionType(argument, library);
+    return _extractEnumTypeFromCandidate(resolvedExpressionType);
+  }
+
+  DartType? _extractEnumTypeFromCandidate(DartType? candidate) {
+    if (candidate is! InterfaceType) {
+      return null;
+    }
+
+    if (candidate.element3 is EnumElement2) {
+      return candidate;
+    }
+
+    if (candidate.isDartCoreList && candidate.typeArguments.isNotEmpty) {
+      final elementType = candidate.typeArguments.first;
+      if (elementType is InterfaceType &&
+          elementType.element3 is EnumElement2) {
+        return elementType;
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveExpressionType(
+    Expression expression,
+    LibraryElement2 library,
+  ) {
+    final staticType = expression.staticType;
+    if (staticType != null && staticType is! DynamicType) {
+      return staticType;
+    }
+
+    if (expression is SimpleIdentifier) {
+      final variableType = _schemaVarsByName(library)[expression.name]?.type;
+      if (variableType != null) {
+        return variableType;
+      }
+
+      final getterType = _schemaGettersByName(
+        library,
+      )[expression.name]?.returnType;
+      if (getterType != null) {
+        return getterType;
+      }
+
+      return _resolveTypeByName(expression.name, library);
+    }
+
+    if (expression is PrefixedIdentifier) {
+      final targetType = _resolveExpressionType(expression.prefix, library);
+      if (targetType is InterfaceType) {
+        final memberType = _resolveClassMemberType(
+          targetType: targetType,
+          memberName: expression.identifier.name,
+          library: library,
+        );
+        if (memberType != null) {
+          return memberType;
+        }
+      }
+
+      return _resolveTypeByName(expression.toSource(), library);
+    }
+
+    if (expression is PropertyAccess) {
+      final target = expression.target;
+      if (target != null) {
+        final targetType = _resolveExpressionType(target, library);
+        if (targetType is InterfaceType) {
+          final memberType = _resolveClassMemberType(
+            targetType: targetType,
+            memberName: expression.propertyName.name,
+            library: library,
+          );
+          if (memberType != null) {
+            return memberType;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveClassMemberType({
+    required InterfaceType targetType,
+    required String memberName,
+    required LibraryElement2 library,
+  }) {
+    final className = targetType.element3?.name3;
+    if (className == null) return null;
+
+    final classElement = _classesByName(library)[className];
+    if (classElement == null) return null;
+
+    final allFields = [
+      ...classElement.fields2,
+      ...classElement.allSupertypes.expand((type) => type.element3.fields2),
+    ];
+
+    final field = allFields.cast<FieldElement2?>().firstWhere(
+      (current) => current?.name3 == memberName,
+      orElse: () => null,
+    );
+    if (field != null) {
+      return field.type;
+    }
+
+    final allGetters = [
+      ...classElement.getters2,
+      ...classElement.allSupertypes.expand((type) => type.element3.getters2),
+    ];
+
+    final getter = allGetters.cast<GetterElement?>().firstWhere(
+      (current) => current?.name3 == memberName,
+      orElse: () => null,
+    );
+    return getter?.returnType;
   }
 
   DartType? _resolveTypeByName(String typeName, LibraryElement2 library) {

@@ -267,6 +267,7 @@ final userSchema = Ack.object({
                 contains('extension type UserType(Map<String, Object?> _data)'),
                 contains('models.UserRole get role'),
                 contains("_data['role'] as models.UserRole"),
+                contains('models.UserRole? role'),
               ]),
             ),
           },
@@ -303,6 +304,41 @@ final roleListSchema = Ack.list(Ack.enumValues(models.UserRole.values));
                 ),
                 contains('implements List<models.UserRole>'),
                 contains('RoleListType(validated as List<models.UserRole>)'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test(
+      'list enumValues with imported prefixed enum keeps prefixed copyWith type',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/enums.dart': '''
+enum UserRole { admin, editor, viewer }
+''',
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'enums.dart' as models;
+
+@AckType()
+final teamSchema = Ack.object({
+  'roles': Ack.list(Ack.enumValues(models.UserRole.values)),
+});
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('List<models.UserRole> get roles'),
+                contains('List<models.UserRole>? roles'),
               ]),
             ),
           },
@@ -348,6 +384,51 @@ final widgetSchema = Ack.object({
                 contains("_data['color'] as Color"),
                 contains('String get style'),
                 contains("_data['style'] as String"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test(
+      'enumValues infers enum type from variable and property inputs',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+enum UserRole { admin, editor, viewer }
+
+final roleValues = UserRole.values;
+
+class RoleHolder {
+  const RoleHolder(this.values);
+  final List<UserRole> values;
+}
+
+const holder = RoleHolder(UserRole.values);
+
+@AckType()
+final userSchema = Ack.object({
+  'roleFromVar': Ack.enumValues(roleValues),
+  'roleFromProp': Ack.enumValues(holder.values),
+});
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('UserRole get roleFromVar'),
+                contains("_data['roleFromVar'] as UserRole"),
+                contains('UserRole get roleFromProp'),
+                contains("_data['roleFromProp'] as UserRole"),
               ]),
             ),
           },
