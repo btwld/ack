@@ -109,10 +109,8 @@ ack.StringSchema get statusSchema => ack.Ack.string();
               contains(
                 'ack.SchemaResult<T> _\$ackSafeParse<T extends Object>(',
               ),
-              contains(
-                'onOk: (validated) => ack.SchemaResult.ok(wrap(validated))',
-              ),
-              contains('onFail: (error) => ack.SchemaResult.fail(error)'),
+              contains('ack.SchemaResult.ok(wrap(result.getOrNull()))'),
+              contains('ack.SchemaResult.fail(result.getError()!)'),
             ]),
           ),
         },
