@@ -863,7 +863,7 @@ class SchemaAstAnalyzer {
     required String memberName,
     required LibraryElement2 library,
   }) {
-    final className = targetType.element3?.name3;
+    final className = targetType.element3.name3;
     if (className == null) return null;
 
     final classElement = _classesByName(library)[className];
