@@ -19,11 +19,11 @@ Add the following dependencies to your `pubspec.yaml` (check [pub.dev](https://p
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_annotations: ^1.0.0
+  ack: ^1.0.0-beta.6
+  ack_annotations: ^1.0.0-beta.6
 
 dev_dependencies:
-  ack_generator: ^1.0.0
+  ack_generator: ^1.0.0-beta.6
   build_runner: ^2.4.0
 ```
 

@@ -4,6 +4,7 @@
 
 * **AckType**: Refined annotation parameters and improved type handling (#50).
 * **AckField**: Improved field annotation correctness (#50).
+* **Breaking**: `AckField.required` was replaced by `requiredMode` (`AckFieldRequiredMode.auto|required|optional`). Migrate `@AckField(required: true)` to `@AckField(requiredMode: AckFieldRequiredMode.required)` and `required: false` to `requiredMode: AckFieldRequiredMode.optional`.
 
 ## 1.0.0-beta.5 (2026-01-14)
 

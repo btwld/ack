@@ -49,7 +49,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   });
 
   // NOTE: TransformedSchema intentionally does NOT use the centralized
-  // handleNullInput/processClonedDefault pattern. This is because:
+  // handleNullInput pattern. This is because:
   // 1. defaultValue is of type OutputType (post-transformation), not InputType
   // 2. Using handleNullInput would route the default through parseAndValidate,
   //    which would try to validate OutputType through the InputType inner schema
@@ -60,36 +60,24 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Handle TransformedSchema's own defaultValue for null input.
-    // Clone the default to prevent mutation of shared state.
-    // This must happen BEFORE delegating to wrapped schema, because the wrapped
-    // schema might not accept null (e.g., non-nullable StringSchema).
-    //
-    // NOTE: cloneDefault() returns List<Object?> or Map<Object?, Object?> for
-    // collections, which cannot be safely cast to parameterized OutputType like
-    // List<MyClass>. We use runtime type checking: if the clone is type-compatible,
-    // use it; otherwise fall back to the original (accepts mutation risk for
-    // parameterized collection defaults, but avoids runtime TypeError).
+    // Handle defaults before delegation, since wrapped schemas may reject null.
+    // If cloning loses generic type information, fall back to the original value.
     if (inputValue == null && defaultValue != null) {
       final cloned = cloneDefault(defaultValue!);
       final safeDefault = (cloned is OutputType) ? cloned : defaultValue!;
       return applyConstraintsAndRefinements(safeDefault, context);
     }
 
-    // For non-null input OR null input without default:
-    // Delegate to underlying schema (handles type conversion, null validation, constraints)
-    // The inner schema determines if null is valid based on its own isNullable setting.
+    // Delegate validation/parsing to the wrapped schema for all other cases.
     final originalResult = schema.parseAndValidate(inputValue, context);
     if (originalResult.isFail) {
       return SchemaResult.fail(originalResult.getError());
     }
 
-    // Transform the validated value (may be null if underlying schema is nullable)
     final validatedValue = originalResult.getOrNull();
     try {
       final transformedValue = transformer(validatedValue);
 
-      // Apply TransformedSchema's own constraints and refinements
       return applyConstraintsAndRefinements(transformedValue, context);
     } catch (e, st) {
       return SchemaResult.fail(

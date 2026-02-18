@@ -49,7 +49,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling (delegates to processClonedDefault for defaults)
+    // Use centralized null handling (including cloned default handling).
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 

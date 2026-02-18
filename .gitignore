@@ -72,3 +72,5 @@ api-compat-*-vs-*.md
 
 .ai
 .dart-tool
+.dartServer/
+.pub-cache/
