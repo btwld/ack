@@ -832,10 +832,10 @@ return wrap(validated);'''),
         ])
         ..body = Code('''
 final result = schema.safeParse(data);
-return result.match(
-  onOk: (validated) => $schemaResultSymbol.ok(wrap(validated)),
-  onFail: (error) => $schemaResultSymbol.fail(error),
-);'''),
+if (result.isOk) {
+  return $schemaResultSymbol.ok(wrap(result.getOrNull()));
+}
+return $schemaResultSymbol.fail(result.getError()!);'''),
     );
   }
 

@@ -22,10 +22,10 @@ SchemaResult<T> _$ackSafeParse<T extends Object>(
   T Function(Object?) wrap,
 ) {
   final result = schema.safeParse(data);
-  return result.match(
-    onOk: (validated) => SchemaResult.ok(wrap(validated)),
-    onFail: (error) => SchemaResult.fail(error),
-  );
+  if (result.isOk) {
+    return SchemaResult.ok(wrap(result.getOrNull()));
+  }
+  return SchemaResult.fail(result.getError()!);
 }
 
 /// Extension type for User
