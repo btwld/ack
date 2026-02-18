@@ -185,29 +185,11 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
-  /// Handles null input according to schema's nullability and default value.
+  /// Handles null input for schemas using the standard null/default flow.
   ///
-  /// This is the centralized null-handling logic that most schema types should use.
-  /// The base implementation of [processClonedDefault] calls [parseAndValidate],
-  /// ensuring composite schemas (Object, List, Discriminated) recursively validate
-  /// their structure without needing to override.
-  ///
-  /// **Exceptions**:
-  /// - [AnyOfSchema] bypasses this method because union types have special null
-  ///   semantics: member schemas are tried first (a nullable member can accept
-  ///   null), and isNullable is only checked after all members fail.
-  /// - [TransformedSchema] handles defaults inline because its defaultValue is
-  ///   OutputType (post-transformation), not InputType.
-  ///
-  /// Override [processClonedDefault] only in schemas where the default value type
-  /// differs from the input type (e.g., TransformedSchema where default is
-  /// OutputType, not InputType).
-  ///
-  /// Returns `null` if [inputValue] is not null (caller should continue with validation).
-  /// Otherwise returns the appropriate [SchemaResult]:
-  /// - If defaultValue exists: clones it and processes via [processClonedDefault]
-  /// - If isNullable: returns Ok(null)
-  /// - Otherwise: returns failure via [failNonNullable]
+  /// Returns `null` when [inputValue] is non-null so callers can continue parsing.
+  /// For null input, returns a validated clone of [defaultValue] when present,
+  /// otherwise `Ok(null)` if nullable, else a non-nullable failure result.
   @protected
   SchemaResult<DartType>? handleNullInput(
     Object? inputValue,
@@ -216,9 +198,9 @@ sealed class AckSchema<DartType extends Object> {
     if (inputValue != null) return null;
 
     if (defaultValue != null) {
-      // Clone without casting - processClonedDefault handles validation/typing
+      // Clone mutable defaults to avoid shared state across parse calls.
       final clonedDefault = cloneDefault(defaultValue!);
-      return processClonedDefault(clonedDefault, context);
+      return parseAndValidate(clonedDefault, context);
     }
 
     if (isNullable) {
@@ -226,21 +208,6 @@ sealed class AckSchema<DartType extends Object> {
     }
 
     return failNonNullable(context);
-  }
-
-  /// Processes a cloned default value through validation.
-  ///
-  /// Routes the cloned default through [parseAndValidate] to ensure proper
-  /// type conversion and validation for all schema types, including collections.
-  ///
-  /// Override in schemas where the default value type differs from input type
-  /// (e.g., TransformedSchema where default is OutputType, not InputType).
-  @protected
-  SchemaResult<DartType> processClonedDefault(
-    Object? clonedDefault,
-    SchemaContext context,
-  ) {
-    return parseAndValidate(clonedDefault, context);
   }
 
   /// The schema type category for this schema.
