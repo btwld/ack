@@ -727,7 +727,8 @@ ${cases.join(',\n')},
 
     // Enums
     if (field.isEnum) {
-      return field.type.getDisplayString(withNullability: false);
+      return field.displayTypeOverride ??
+          field.type.getDisplayString(withNullability: false);
     }
 
     // Lists
@@ -801,6 +802,10 @@ ${cases.join(',\n')},
         return referencedModel.className;
       }
       return kMapType;
+    }
+
+    if (field.collectionElementDisplayTypeOverride != null) {
+      return field.collectionElementDisplayTypeOverride!;
     }
 
     if (field.type is! ParameterizedType) return 'dynamic';
@@ -963,11 +968,7 @@ ${cases.join(',\n')},
       return Parameter(
         (p) => p
           ..name = field.name
-          ..type = _referenceFromDartType(
-            field.type,
-            forceNullable: true,
-            stripNullability: true,
-          )
+          ..type = _buildCopyWithParameterType(field)
           ..named = true,
       );
     }).toList();
@@ -998,6 +999,28 @@ ${assignments.join(',\n')},
 });'''),
           ),
         ),
+    );
+  }
+
+  Reference _buildCopyWithParameterType(FieldInfo field) {
+    if (field.isEnum && field.displayTypeOverride != null) {
+      return _typeReference(field.displayTypeOverride!, isNullable: true);
+    }
+
+    if ((field.isList || field.isSet) &&
+        field.collectionElementDisplayTypeOverride != null) {
+      final collectionType = field.isSet ? 'Set' : 'List';
+      return _typeReference(
+        collectionType,
+        types: [_typeReference(field.collectionElementDisplayTypeOverride!)],
+        isNullable: true,
+      );
+    }
+
+    return _referenceFromDartType(
+      field.type,
+      forceNullable: true,
+      stripNullability: true,
     );
   }
 

@@ -134,6 +134,10 @@ class Ack {
         discriminatorKey: discriminatorKey,
         schemas: schemas,
       );
+
+  static StringSchema literal(String value) => const StringSchema();
+  static StringSchema enumString(List<String> values) => const StringSchema();
+  static EnumSchema<T> enumValues<T extends Enum>(List<T> values) => EnumSchema<T>();
 }
 
 abstract class AckSchema<T> {
@@ -259,11 +263,20 @@ class ObjectSchema extends AckSchema<Map<String, Object?>> {
 extension ObjectSchemaExtensions on ObjectSchema {
   ObjectSchema passthrough() => copyWith(additionalProperties: true);
 }
+class EnumSchema<T> extends AckSchema<T> {
+  EnumSchema();
+  EnumSchema<T> nullable() => this;
+  EnumSchema<T> optional() => this;
+  EnumSchema<T> describe(String description) => this;
+
+  @override
+  Map<String, Object?> toJsonSchema() => {'type': 'string', 'enum': []};
+}
 class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
   final String discriminatorKey;
   final Map<String, AckSchema> schemas;
   const DiscriminatedSchema({required this.discriminatorKey, required this.schemas});
-  
+
   @override
   Map<String, Object?> toJsonSchema() => {
     'oneOf': schemas.values.map((schema) => schema.toJsonSchema()).toList(),
