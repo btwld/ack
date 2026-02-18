@@ -25,7 +25,7 @@ jobs:
   publish:
     needs: validate-tag
     if: needs.validate-tag.outputs.semver_ok == 'true'
-    uses: btwld/dart-actions/.github/workflows/publish.yml@9075ce1232ec77b8747953f2ff4a349190e5a805
+    uses: btwld/dart-actions/.github/workflows/publish.yml@main
     permissions:
       id-token: write
     with:
