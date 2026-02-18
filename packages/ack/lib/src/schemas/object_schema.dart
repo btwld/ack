@@ -27,7 +27,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling (delegates to processClonedDefault for defaults)
+    // Use centralized null handling (including cloned default handling).
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 
@@ -50,128 +50,81 @@ final class ObjectSchema extends AckSchema<MapValue>
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
-    // Validate defined properties and handle additional properties
-    _validateDefinedProperties(mapValue, context, validatedMap, validationErrors);
-    _handleAdditionalProperties(mapValue, context, validatedMap, validationErrors);
-
-    if (validationErrors.isNotEmpty) {
-      return SchemaResult.fail(
-        SchemaNestedError(errors: validationErrors, context: context),
-      );
-    }
-
-    return applyConstraintsAndRefinements(validatedMap, context);
-  }
-
-  /// Validates all properties defined in the schema.
-  void _validateDefinedProperties(
-    Map<String, Object?> mapValue,
-    SchemaContext context,
-    Map<String, Object?> validatedMap,
-    List<SchemaError> errors,
-  ) {
+    // Validate all properties defined in the schema
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
+      final hasValue = mapValue.containsKey(key);
 
-      if (mapValue.containsKey(key)) {
-        _validateExistingProperty(key, schema, mapValue[key], context, validatedMap, errors);
-      } else {
-        _handleMissingProperty(key, schema, mapValue, context, validatedMap, errors);
-      }
-    }
-  }
-
-  /// Validates a property that exists in the input map.
-  void _validateExistingProperty(
-    String key,
-    AckSchema schema,
-    Object? propertyValue,
-    SchemaContext context,
-    Map<String, Object?> validatedMap,
-    List<SchemaError> errors,
-  ) {
-    final propertyContext = context.createChild(
-      name: key,
-      schema: schema,
-      value: propertyValue,
-      pathSegment: key,
-    );
-    final result = schema.parseAndValidate(propertyValue, propertyContext);
-    result.match(
-      onOk: (validatedValue) {
-        validatedMap[key] = validatedValue;
-      },
-      onFail: errors.add,
-    );
-  }
-
-  /// Handles a property that is missing from the input map.
-  void _handleMissingProperty(
-    String key,
-    AckSchema schema,
-    Map<String, Object?> mapValue,
-    SchemaContext context,
-    Map<String, Object?> validatedMap,
-    List<SchemaError> errors,
-  ) {
-    if (schema.isOptional) {
-      // Optional field with default - pass null to trigger the child schema's
-      // handleNullInput, which will clone and validate the default value.
-      // This ensures mutation safety is handled consistently by each schema type.
-      if (schema.defaultValue != null) {
-        final propertyContext = context.createChild(
-          name: key,
-          schema: schema,
-          value: null,
-          pathSegment: key,
-        );
-        final result = schema.parseAndValidate(null, propertyContext);
-        result.match(
-          onOk: (validatedValue) {
-            if (validatedValue != null) {
-              validatedMap[key] = validatedValue;
-            }
-          },
-          onFail: errors.add,
-        );
-      }
-      // Optional field without default - omit from output
-    } else {
-      // Required field missing
-      final ce = ObjectRequiredPropertiesConstraint(
-        missingPropertyKey: key,
-      ).validate(mapValue);
-      if (ce != null) {
-        errors.add(
-          SchemaConstraintsError(
-            constraints: [ce],
-            context: context.createChild(
+      if (!hasValue) {
+        // Property missing from input
+        if (schema.isOptional) {
+          // Optional field with default - pass null to trigger the child schema's
+          // handleNullInput, which clones and validates the default.
+          if (schema.defaultValue != null) {
+            final propertyContext = context.createChild(
               name: key,
               schema: schema,
               value: null,
               pathSegment: key,
-            ),
-          ),
+            );
+            final result = schema.parseAndValidate(null, propertyContext);
+            result.match(
+              onOk: (validatedValue) {
+                if (validatedValue != null) {
+                  validatedMap[key] = validatedValue;
+                }
+              },
+              onFail: validationErrors.add,
+            );
+          }
+          // Optional field without default - omit from output
+        } else {
+          // Required field missing
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
+          if (ce != null) {
+            validationErrors.add(
+              SchemaConstraintsError(
+                constraints: [ce],
+                context: context.createChild(
+                  name: key,
+                  schema: schema,
+                  value: null,
+                  pathSegment: key,
+                ),
+              ),
+            );
+          }
+        }
+      } else {
+        // Property exists - validate it
+        final propertyValue = mapValue[key];
+        final propertyContext = context.createChild(
+          name: key,
+          schema: schema,
+          value: propertyValue,
+          pathSegment: key,
+        );
+        final result = schema.parseAndValidate(propertyValue, propertyContext);
+        result.match(
+          onOk: (validatedValue) {
+            validatedMap[key] = validatedValue;
+          },
+          onFail: validationErrors.add,
         );
       }
     }
-  }
 
-  /// Handles properties in the input that are not defined in the schema.
-  void _handleAdditionalProperties(
-    Map<String, Object?> mapValue,
-    SchemaContext context,
-    Map<String, Object?> validatedMap,
-    List<SchemaError> errors,
-  ) {
+    // Handle additional properties
     final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
       if (!knownKeys.contains(key)) {
         if (additionalProperties) {
           validatedMap[key] = mapValue[key];
         } else {
-          errors.add(
+          validationErrors.add(
             SchemaConstraintsError(
               constraints: [
                 ConstraintError(
@@ -192,6 +145,14 @@ final class ObjectSchema extends AckSchema<MapValue>
         }
       }
     }
+
+    if (validationErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: validationErrors, context: context),
+      );
+    }
+
+    return applyConstraintsAndRefinements(validatedMap, context);
   }
 
   @override

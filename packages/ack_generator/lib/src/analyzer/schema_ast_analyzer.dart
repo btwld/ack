@@ -533,6 +533,18 @@ class SchemaAstAnalyzer {
       baseInvocation,
       element,
     );
+    final schemaMethod = baseInvocation.methodName.name;
+
+    String? displayTypeOverride;
+    String? collectionElementDisplayTypeOverride;
+
+    if (schemaMethod == 'enumValues') {
+      displayTypeOverride = _extractEnumTypeNameFromInvocation(baseInvocation);
+    } else if (schemaMethod == 'list') {
+      collectionElementDisplayTypeOverride = _extractListEnumElementTypeName(
+        baseInvocation,
+      );
+    }
 
     return FieldInfo(
       name: fieldName,
@@ -542,6 +554,9 @@ class SchemaAstAnalyzer {
       isNullable: isNullable,
       constraints: [],
       listElementSchemaRef: listElementSchemaRef,
+      displayTypeOverride: displayTypeOverride,
+      collectionElementDisplayTypeOverride:
+          collectionElementDisplayTypeOverride,
     );
   }
 
@@ -583,12 +598,353 @@ class SchemaAstAnalyzer {
           ),
           null,
         );
+      case 'enumString':
+      case 'literal':
+        return (typeProvider.stringType, null);
+      case 'enumValues':
+        final resolvedType = _resolveEnumValuesType(
+          invocation,
+          library: library,
+        );
+        if (resolvedType != null) {
+          return (resolvedType, null);
+        }
+        // Fallback to `dynamic` if the enum type can't be resolved.
+        // This avoids incorrectly assuming `String` when EnumSchema<T>.parse()
+        // returns the enum value type T.
+        _log.warning(
+          'Could not resolve enum type for Ack.enumValues(); falling back to dynamic.',
+        );
+        return (typeProvider.dynamicType, null);
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema method: Ack.$schemaMethod()',
           element: element,
         );
     }
+  }
+
+  /// Extracts the enum type name from an `Ack.enumValues<T>(...)` invocation.
+  ///
+  /// Prefers source text only when it contains a qualifier
+  /// (e.g., `alias.UserRole`) so import prefixes are preserved in generated
+  /// part files.
+  ///
+  /// For non-qualified names, prefers resolved static types to avoid
+  /// incorrectly treating arbitrary `.values` receivers as enum type names
+  /// (for example, `holder.values` should resolve to the list element type).
+  String? _extractEnumTypeNameFromInvocation(MethodInvocation invocation) {
+    final sourceTypeName = _extractEnumTypeNameFromSource(invocation);
+    if (sourceTypeName != null && sourceTypeName.contains('.')) {
+      return sourceTypeName;
+    }
+
+    final resolvedType = _resolveEnumValuesType(invocation);
+    if (resolvedType != null) {
+      return resolvedType.getDisplayString(withNullability: false);
+    }
+
+    return sourceTypeName;
+  }
+
+  String? _extractEnumTypeNameFromSource(MethodInvocation invocation) {
+    // From type argument: Ack.enumValues<UserRole>(...) or Ack.enumValues<foo.UserRole>(...)
+    final typeArgs = invocation.typeArguments?.arguments;
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      return typeArgs.first.toSource();
+    }
+
+    // From argument pattern: Ack.enumValues(UserRole.values) / Ack.enumValues(alias.UserRole.values)
+    final args = invocation.argumentList.arguments;
+    if (args.isNotEmpty) {
+      final firstArg = args.first;
+      if (firstArg is PrefixedIdentifier &&
+          firstArg.identifier.name == 'values') {
+        final targetSource = firstArg.prefix.toSource();
+        if (_looksLikeTypeReference(targetSource)) {
+          return targetSource;
+        }
+      }
+      if (firstArg is PropertyAccess &&
+          firstArg.propertyName.name == 'values') {
+        final targetSource = firstArg.target?.toSource();
+        if (targetSource != null && _looksLikeTypeReference(targetSource)) {
+          return targetSource;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  bool _looksLikeTypeReference(String source) {
+    final trimmed = source.trim();
+    if (trimmed.isEmpty) return false;
+
+    final identifier = trimmed.split('.').last;
+    if (identifier.isEmpty) return false;
+
+    final firstCodeUnit = identifier.codeUnitAt(0);
+    const uppercaseA = 65;
+    const uppercaseZ = 90;
+    const underscore = 95;
+    return (firstCodeUnit >= uppercaseA && firstCodeUnit <= uppercaseZ) ||
+        firstCodeUnit == underscore;
+  }
+
+  String? _extractListEnumElementTypeName(MethodInvocation listInvocation) {
+    final args = listInvocation.argumentList.arguments;
+    if (args.isEmpty) return null;
+
+    final ref = _resolveListElementRef(args.first);
+    final elementSchema = ref.ackBase;
+    if (elementSchema == null ||
+        elementSchema.methodName.name != 'enumValues') {
+      return null;
+    }
+
+    return _extractEnumTypeNameFromInvocation(elementSchema);
+  }
+
+  /// Resolves enum type `T` from an `Ack.enumValues<T>(...)` invocation.
+  ///
+  /// Resolution strategy (in order):
+  /// 1. Explicit type argument's resolved type (`Ack.enumValues<T>(...)`)
+  /// 2. Invocation static type argument (`EnumSchema<T>`)
+  /// 3. First argument static type (`List<T>` from `T.values`)
+  /// 4. Source name lookup in the library/import scope
+  DartType? _resolveEnumValuesType(
+    MethodInvocation invocation, {
+    LibraryElement2? library,
+  }) {
+    final typeArgs = invocation.typeArguments?.arguments;
+    if (typeArgs != null && typeArgs.isNotEmpty) {
+      final explicitType = typeArgs.first.type;
+      if (explicitType is InterfaceType) {
+        return explicitType;
+      }
+    }
+
+    final invocationType = invocation.staticType;
+    if (invocationType is InterfaceType &&
+        invocationType.typeArguments.isNotEmpty) {
+      final schemaTypeArg = invocationType.typeArguments.first;
+      if (schemaTypeArg is InterfaceType) {
+        return schemaTypeArg;
+      }
+    }
+
+    final args = invocation.argumentList.arguments;
+    if (args.isNotEmpty) {
+      final resolvedFromArgument = _resolveEnumValuesTypeFromArgument(
+        args.first,
+        library: library,
+      );
+      if (resolvedFromArgument != null) {
+        return resolvedFromArgument;
+      }
+    }
+
+    if (library != null) {
+      final enumTypeName = _extractEnumTypeNameFromSource(invocation);
+      if (enumTypeName != null) {
+        final resolvedByName = _resolveTypeByName(enumTypeName, library);
+        if (resolvedByName != null) {
+          return resolvedByName;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveEnumValuesTypeFromArgument(
+    Expression argument, {
+    LibraryElement2? library,
+  }) {
+    final enumFromStaticType = _extractEnumTypeFromCandidate(
+      argument.staticType,
+    );
+    if (enumFromStaticType != null) {
+      return enumFromStaticType;
+    }
+
+    if (library == null) {
+      return null;
+    }
+
+    final resolvedExpressionType = _resolveExpressionType(argument, library);
+    return _extractEnumTypeFromCandidate(resolvedExpressionType);
+  }
+
+  DartType? _extractEnumTypeFromCandidate(DartType? candidate) {
+    if (candidate is! InterfaceType) {
+      return null;
+    }
+
+    if (candidate.element3 is EnumElement2) {
+      return candidate;
+    }
+
+    if (candidate.isDartCoreList && candidate.typeArguments.isNotEmpty) {
+      final elementType = candidate.typeArguments.first;
+      if (elementType is InterfaceType &&
+          elementType.element3 is EnumElement2) {
+        return elementType;
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveExpressionType(
+    Expression expression,
+    LibraryElement2 library,
+  ) {
+    final staticType = expression.staticType;
+    if (staticType != null && staticType is! DynamicType) {
+      return staticType;
+    }
+
+    if (expression is SimpleIdentifier) {
+      final variableType = _schemaVarsByName(library)[expression.name]?.type;
+      if (variableType != null) {
+        return variableType;
+      }
+
+      final getterType = _schemaGettersByName(
+        library,
+      )[expression.name]?.returnType;
+      if (getterType != null) {
+        return getterType;
+      }
+
+      return _resolveTypeByName(expression.name, library);
+    }
+
+    if (expression is PrefixedIdentifier) {
+      final targetType = _resolveExpressionType(expression.prefix, library);
+      if (targetType is InterfaceType) {
+        final memberType = _resolveClassMemberType(
+          targetType: targetType,
+          memberName: expression.identifier.name,
+          library: library,
+        );
+        if (memberType != null) {
+          return memberType;
+        }
+      }
+
+      return _resolveTypeByName(expression.toSource(), library);
+    }
+
+    if (expression is PropertyAccess) {
+      final target = expression.target;
+      if (target != null) {
+        final targetType = _resolveExpressionType(target, library);
+        if (targetType is InterfaceType) {
+          final memberType = _resolveClassMemberType(
+            targetType: targetType,
+            memberName: expression.propertyName.name,
+            library: library,
+          );
+          if (memberType != null) {
+            return memberType;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveClassMemberType({
+    required InterfaceType targetType,
+    required String memberName,
+    required LibraryElement2 library,
+  }) {
+    final className = targetType.element3.name3;
+    if (className == null) return null;
+
+    final classElement = _classesByName(library)[className];
+    if (classElement == null) return null;
+
+    final allFields = [
+      ...classElement.fields2,
+      ...classElement.allSupertypes.expand((type) => type.element3.fields2),
+    ];
+
+    final field = allFields.cast<FieldElement2?>().firstWhere(
+      (current) => current?.name3 == memberName,
+      orElse: () => null,
+    );
+    if (field != null) {
+      return field.type;
+    }
+
+    final allGetters = [
+      ...classElement.getters2,
+      ...classElement.allSupertypes.expand((type) => type.element3.getters2),
+    ];
+
+    final getter = allGetters.cast<GetterElement?>().firstWhere(
+      (current) => current?.name3 == memberName,
+      orElse: () => null,
+    );
+    return getter?.returnType;
+  }
+
+  DartType? _resolveTypeByName(String typeName, LibraryElement2 library) {
+    final normalizedTypeName = typeName.trim();
+    if (normalizedTypeName.isEmpty) return null;
+
+    final scopeResult = library.firstFragment.scope.lookup(normalizedTypeName);
+    final scopeType = _resolveTypeFromElement(scopeResult.getter);
+    if (scopeType != null) {
+      return scopeType;
+    }
+
+    // Try import namespaces directly as a fallback for simple imported names.
+    for (final import in library.firstFragment.libraryImports) {
+      final importedElement = import.namespace.get2(normalizedTypeName);
+      final importedType = _resolveTypeFromElement(importedElement);
+      if (importedType != null) {
+        return importedType;
+      }
+    }
+
+    // Last-resort local lookup.
+    for (final enumElement in library.enums) {
+      if (enumElement.name3 == normalizedTypeName) {
+        return enumElement.thisType;
+      }
+    }
+    for (final classElement in library.classes) {
+      if (classElement.name3 == normalizedTypeName) {
+        return classElement.thisType;
+      }
+    }
+
+    return null;
+  }
+
+  DartType? _resolveTypeFromElement(Element2? element) {
+    if (element is EnumElement2) {
+      return element.thisType;
+    }
+
+    if (element is ClassElement2) {
+      return element.thisType;
+    }
+
+    if (element is TypeAliasElement2) {
+      final aliasedType = element.aliasedType;
+      if (aliasedType is InterfaceType) {
+        return aliasedType;
+      }
+    }
+
+    return null;
   }
 
   _ListElementRef _resolveListElementRef(Expression firstArg) {
@@ -1112,6 +1468,10 @@ class SchemaAstAnalyzer {
         return 'List<$nestedType>';
       }
 
+      if (methodName == 'enumValues') {
+        return _extractEnumTypeNameFromInvocation(ref.ackBase!) ?? 'dynamic';
+      }
+
       // Map primitive schema types
       return _mapSchemaMethodToType(methodName);
     }
@@ -1200,32 +1560,7 @@ class SchemaAstAnalyzer {
       customTypeName: customTypeName,
     );
 
-    // Strategy 1: Try to extract from type arguments: Ack.enumValues<UserRole>([...])
-    final typeArgs = invocation.typeArguments?.arguments;
-    String? enumTypeName;
-
-    if (typeArgs != null && typeArgs.isNotEmpty) {
-      // Get the first type argument (the enum type)
-      final typeArg = typeArgs.first;
-      enumTypeName = typeArg.toString();
-    } else {
-      // Strategy 2: Try to infer from argument list: Ack.enumValues(UserRole.values)
-      final args = invocation.argumentList.arguments;
-      if (args.isNotEmpty) {
-        final firstArg = args.first;
-
-        // Check if it's EnumType.values (PrefixedIdentifier)
-        if (firstArg is PrefixedIdentifier) {
-          final prefix = firstArg.prefix.name;
-          final identifier = firstArg.identifier.name;
-
-          if (identifier == 'values') {
-            // UserRole.values → use 'UserRole'
-            enumTypeName = prefix;
-          }
-        }
-      }
-    }
+    final enumTypeName = _extractEnumTypeNameFromInvocation(invocation);
 
     // If we couldn't extract the enum type, throw an error
     if (enumTypeName == null) {
@@ -1262,24 +1597,15 @@ class SchemaAstAnalyzer {
   /// Used for generating string representations of types in list element contexts.
   /// For nested lists, this function is called recursively via [_parseListSchema].
   String _mapSchemaMethodToType(String methodName) {
-    switch (methodName) {
-      case 'string':
-        return 'String';
-      case 'integer':
-        return 'int';
-      case 'double':
-        return 'double';
-      case 'boolean':
-        return 'bool';
-      case 'object':
-        return _kMapType;
-      case 'list':
-        // Note: Nested lists are handled by _parseListSchema recursively
-        // This case exists for consistency but should not be reached in normal flow
-        return 'List<dynamic>';
-      default:
-        return 'dynamic';
-    }
+    return switch (methodName) {
+      'string' || 'enumString' || 'literal' => 'String',
+      'integer' => 'int',
+      'double' => 'double',
+      'boolean' => 'bool',
+      'object' => _kMapType,
+      'list' => 'List<dynamic>',
+      _ => 'dynamic',
+    };
   }
 
   /// Validates that a field name is a valid Dart identifier

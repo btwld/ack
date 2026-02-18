@@ -16,8 +16,6 @@ class NonNullableConstraint extends Constraint<Object?>
 
   @override
   String buildMessage(Object? value) => 'Value is required and cannot be null.';
-
-  // No additional fields - base class equality is sufficient.
 }
 
 /// Constraint for validating that a value is of an expected Dart type.
