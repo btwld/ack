@@ -73,6 +73,7 @@ class AckSchemaGenerator extends Generator {
 
     // Generate all schema fields and extension types for this file
     final schemaFields = <Field>[];
+    final helperMethods = <Method>[];
     final extensionTypes = <Spec>[];
     final analyzer = ModelAnalyzer();
     final schemaAstAnalyzer = SchemaAstAnalyzer();
@@ -197,6 +198,7 @@ class AckSchemaGenerator extends Generator {
       annotatedGetters,
       finalModelInfos,
       typeBuilder,
+      helperMethods,
       extensionTypes,
     );
 
@@ -210,7 +212,7 @@ class AckSchemaGenerator extends Generator {
     final generatedLibrary = Library(
       (b) => b
         ..directives.addAll([Directive.partOf(inputFileName)])
-        ..body.addAll([...schemaFields, ...extensionTypes]),
+        ..body.addAll([...schemaFields, ...helperMethods, ...extensionTypes]),
     );
 
     final emitter = DartEmitter(
@@ -284,6 +286,7 @@ class AckSchemaGenerator extends Generator {
     List<GetterElement> annotatedGetters,
     List<ModelInfo> finalModelInfos,
     TypeBuilder typeBuilder,
+    List<Method> helperMethods,
     List<Spec> extensionTypes,
   ) {
     // Collect models that have @AckType annotation (schema variables only)
@@ -332,6 +335,7 @@ class AckSchemaGenerator extends Generator {
     }
 
     // Generate extension types or sealed classes
+    final generatedTypeModels = <ModelInfo>[];
     for (final model in sortedModels) {
       // Find the corresponding element (class or variable)
       Element2 element;
@@ -383,6 +387,7 @@ class AckSchemaGenerator extends Generator {
               );
               if (subtypeExtension != null) {
                 extensionTypes.add(subtypeExtension);
+                generatedTypeModels.add(subtypeModel);
               }
             }
           }
@@ -397,6 +402,7 @@ class AckSchemaGenerator extends Generator {
           );
           if (extensionType != null) {
             extensionTypes.add(extensionType);
+            generatedTypeModels.add(model);
           }
         }
       } catch (e) {
@@ -408,6 +414,12 @@ class AckSchemaGenerator extends Generator {
               'Generic classes are not supported.',
         );
       }
+    }
+
+    if (generatedTypeModels.isNotEmpty) {
+      helperMethods.addAll(
+        typeBuilder.buildTopLevelHelpers(generatedTypeModels),
+      );
     }
   }
 

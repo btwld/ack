@@ -7,20 +7,45 @@
 
 part of 'schema_types_edge_cases.dart';
 
+T _$ackParse<T extends Object>(
+  dynamic schema,
+  Object? data,
+  T Function(Object?) wrap,
+) {
+  final validated = schema.parse(data);
+  return wrap(validated);
+}
+
+SchemaResult<T> _$ackSafeParse<T extends Object>(
+  dynamic schema,
+  Object? data,
+  T Function(Object?) wrap,
+) {
+  final result = schema.safeParse(data);
+  if (result.isOk) {
+    return SchemaResult.ok(wrap(result.getOrNull()));
+  }
+  return SchemaResult.fail(result.getError()!);
+}
+
+List<T> _$ackListCast<T>(Object? value) => (value as List).cast<T>();
+
 /// Extension type for Product
 extension type ProductType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ProductType parse(Object? data) {
-    final validated = productSchema.parse(data);
-    return ProductType(validated as Map<String, Object?>);
+    return _$ackParse<ProductType>(
+      productSchema,
+      data,
+      (validated) => ProductType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<ProductType> safeParse(Object? data) {
-    final result = productSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(ProductType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<ProductType>(
+      productSchema,
+      data,
+      (validated) => ProductType(validated as Map<String, Object?>),
     );
   }
 
@@ -28,11 +53,11 @@ extension type ProductType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  List<String> get tags => (_data['tags'] as List).cast<String>();
+  List<String> get tags => _$ackListCast<String>(_data['tags']);
 
-  List<int> get scores => (_data['scores'] as List).cast<int>();
+  List<int> get scores => _$ackListCast<int>(_data['scores']);
 
-  List<bool> get flags => (_data['flags'] as List).cast<bool>();
+  List<bool> get flags => _$ackListCast<bool>(_data['flags']);
 
   ProductType copyWith({
     String? name,
@@ -53,16 +78,18 @@ extension type ProductType(Map<String, Object?> _data)
 extension type GridType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static GridType parse(Object? data) {
-    final validated = gridSchema.parse(data);
-    return GridType(validated as Map<String, Object?>);
+    return _$ackParse<GridType>(
+      gridSchema,
+      data,
+      (validated) => GridType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<GridType> safeParse(Object? data) {
-    final result = gridSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(GridType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<GridType>(
+      gridSchema,
+      data,
+      (validated) => GridType(validated as Map<String, Object?>),
     );
   }
 
@@ -70,7 +97,7 @@ extension type GridType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  List<List<int>> get matrix => (_data['matrix'] as List).cast<List<int>>();
+  List<List<int>> get matrix => _$ackListCast<List<int>>(_data['matrix']);
 
   GridType copyWith({String? name, List<List<int>>? matrix}) {
     return GridType.parse({
@@ -84,16 +111,18 @@ extension type GridType(Map<String, Object?> _data)
 extension type AddressType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static AddressType parse(Object? data) {
-    final validated = addressSchema.parse(data);
-    return AddressType(validated as Map<String, Object?>);
+    return _$ackParse<AddressType>(
+      addressSchema,
+      data,
+      (validated) => AddressType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<AddressType> safeParse(Object? data) {
-    final result = addressSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(AddressType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<AddressType>(
+      addressSchema,
+      data,
+      (validated) => AddressType(validated as Map<String, Object?>),
     );
   }
 
@@ -126,16 +155,18 @@ extension type AddressType(Map<String, Object?> _data)
 extension type PersonType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static PersonType parse(Object? data) {
-    final validated = personSchema.parse(data);
-    return PersonType(validated as Map<String, Object?>);
+    return _$ackParse<PersonType>(
+      personSchema,
+      data,
+      (validated) => PersonType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<PersonType> safeParse(Object? data) {
-    final result = personSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(PersonType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<PersonType>(
+      personSchema,
+      data,
+      (validated) => PersonType(validated as Map<String, Object?>),
     );
   }
 
@@ -169,16 +200,18 @@ extension type PersonType(Map<String, Object?> _data)
 extension type EmployeeType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static EmployeeType parse(Object? data) {
-    final validated = employeeSchema.parse(data);
-    return EmployeeType(validated as Map<String, Object?>);
+    return _$ackParse<EmployeeType>(
+      employeeSchema,
+      data,
+      (validated) => EmployeeType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<EmployeeType> safeParse(Object? data) {
-    final result = employeeSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(EmployeeType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<EmployeeType>(
+      employeeSchema,
+      data,
+      (validated) => EmployeeType(validated as Map<String, Object?>),
     );
   }
 
@@ -213,16 +246,18 @@ extension type EmployeeType(Map<String, Object?> _data)
 extension type ModifierType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ModifierType parse(Object? data) {
-    final validated = modifierSchema.parse(data);
-    return ModifierType(validated as Map<String, Object?>);
+    return _$ackParse<ModifierType>(
+      modifierSchema,
+      data,
+      (validated) => ModifierType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<ModifierType> safeParse(Object? data) {
-    final result = modifierSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(ModifierType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<ModifierType>(
+      modifierSchema,
+      data,
+      (validated) => ModifierType(validated as Map<String, Object?>),
     );
   }
 
@@ -262,16 +297,18 @@ extension type ModifierType(Map<String, Object?> _data)
 extension type TaggedItemType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static TaggedItemType parse(Object? data) {
-    final validated = taggedItemSchema.parse(data);
-    return TaggedItemType(validated as Map<String, Object?>);
+    return _$ackParse<TaggedItemType>(
+      taggedItemSchema,
+      data,
+      (validated) => TaggedItemType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<TaggedItemType> safeParse(Object? data) {
-    final result = taggedItemSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(TaggedItemType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<TaggedItemType>(
+      taggedItemSchema,
+      data,
+      (validated) => TaggedItemType(validated as Map<String, Object?>),
     );
   }
 
@@ -279,15 +316,14 @@ extension type TaggedItemType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  List<String> get requiredTags =>
-      (_data['requiredTags'] as List).cast<String>();
+  List<String> get requiredTags => _$ackListCast<String>(_data['requiredTags']);
 
   List<String>? get optionalTags => _data['optionalTags'] != null
-      ? (_data['optionalTags'] as List).cast<String>()
+      ? _$ackListCast<String>(_data['optionalTags'])
       : null;
 
   List<String>? get nullableTags => _data['nullableTags'] != null
-      ? (_data['nullableTags'] as List).cast<String>()
+      ? _$ackListCast<String>(_data['nullableTags'])
       : null;
 
   TaggedItemType copyWith({
@@ -310,16 +346,18 @@ extension type TaggedItemType(Map<String, Object?> _data)
 extension type ContactListType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ContactListType parse(Object? data) {
-    final validated = contactListSchema.parse(data);
-    return ContactListType(validated as Map<String, Object?>);
+    return _$ackParse<ContactListType>(
+      contactListSchema,
+      data,
+      (validated) => ContactListType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<ContactListType> safeParse(Object? data) {
-    final result = contactListSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(ContactListType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<ContactListType>(
+      contactListSchema,
+      data,
+      (validated) => ContactListType(validated as Map<String, Object?>),
     );
   }
 
@@ -346,16 +384,18 @@ extension type ContactListType(Map<String, Object?> _data)
 extension type EmptyType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static EmptyType parse(Object? data) {
-    final validated = emptySchema.parse(data);
-    return EmptyType(validated as Map<String, Object?>);
+    return _$ackParse<EmptyType>(
+      emptySchema,
+      data,
+      (validated) => EmptyType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<EmptyType> safeParse(Object? data) {
-    final result = emptySchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(EmptyType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<EmptyType>(
+      emptySchema,
+      data,
+      (validated) => EmptyType(validated as Map<String, Object?>),
     );
   }
 
@@ -366,16 +406,18 @@ extension type EmptyType(Map<String, Object?> _data)
 extension type MinimalType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static MinimalType parse(Object? data) {
-    final validated = minimalSchema.parse(data);
-    return MinimalType(validated as Map<String, Object?>);
+    return _$ackParse<MinimalType>(
+      minimalSchema,
+      data,
+      (validated) => MinimalType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<MinimalType> safeParse(Object? data) {
-    final result = minimalSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(MinimalType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<MinimalType>(
+      minimalSchema,
+      data,
+      (validated) => MinimalType(validated as Map<String, Object?>),
     );
   }
 
@@ -392,16 +434,18 @@ extension type MinimalType(Map<String, Object?> _data)
 extension type NamedItemType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static NamedItemType parse(Object? data) {
-    final validated = namedItemSchema.parse(data);
-    return NamedItemType(validated as Map<String, Object?>);
+    return _$ackParse<NamedItemType>(
+      namedItemSchema,
+      data,
+      (validated) => NamedItemType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<NamedItemType> safeParse(Object? data) {
-    final result = namedItemSchema.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(NamedItemType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<NamedItemType>(
+      namedItemSchema,
+      data,
+      (validated) => NamedItemType(validated as Map<String, Object?>),
     );
   }
 
@@ -418,16 +462,18 @@ extension type NamedItemType(Map<String, Object?> _data)
 extension type ItemType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ItemType parse(Object? data) {
-    final validated = item.parse(data);
-    return ItemType(validated as Map<String, Object?>);
+    return _$ackParse<ItemType>(
+      item,
+      data,
+      (validated) => ItemType(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<ItemType> safeParse(Object? data) {
-    final result = item.safeParse(data);
-    return result.match(
-      onOk: (validated) =>
-          SchemaResult.ok(ItemType(validated as Map<String, Object?>)),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<ItemType>(
+      item,
+      data,
+      (validated) => ItemType(validated as Map<String, Object?>),
     );
   }
 
@@ -444,17 +490,18 @@ extension type ItemType(Map<String, Object?> _data)
 extension type MyCustomSchema123Type(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static MyCustomSchema123Type parse(Object? data) {
-    final validated = myCustomSchema123.parse(data);
-    return MyCustomSchema123Type(validated as Map<String, Object?>);
+    return _$ackParse<MyCustomSchema123Type>(
+      myCustomSchema123,
+      data,
+      (validated) => MyCustomSchema123Type(validated as Map<String, Object?>),
+    );
   }
 
   static SchemaResult<MyCustomSchema123Type> safeParse(Object? data) {
-    final result = myCustomSchema123.safeParse(data);
-    return result.match(
-      onOk: (validated) => SchemaResult.ok(
-        MyCustomSchema123Type(validated as Map<String, Object?>),
-      ),
-      onFail: (error) => SchemaResult.fail(error),
+    return _$ackSafeParse<MyCustomSchema123Type>(
+      myCustomSchema123,
+      data,
+      (validated) => MyCustomSchema123Type(validated as Map<String, Object?>),
     );
   }
 

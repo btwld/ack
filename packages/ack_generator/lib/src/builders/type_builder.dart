@@ -37,6 +37,8 @@ class _ModelLookups {
   }
 }
 
+enum _GeneratedHelper { parse, safeParse, listCast, setCast }
+
 /// Builds Dart 3 extension types for models annotated with `@AckType`
 ///
 /// Extension types provide zero-cost type-safe wrappers over validated
@@ -51,6 +53,48 @@ class TypeBuilder {
   /// generated references must use `ack.SchemaResult` in part files.
   void setAckImportPrefix(String? prefix) {
     _ackImportPrefix = prefix;
+  }
+
+  /// Builds top-level private helper functions used by generated extension
+  /// types.
+  ///
+  /// Helpers are emitted only when needed to avoid analyzer warnings in
+  /// generated files.
+  List<Method> buildTopLevelHelpers(List<ModelInfo> models) {
+    if (models.isEmpty) return const [];
+
+    final lookups = _ModelLookups(models);
+    final helpers = <_GeneratedHelper>{
+      _GeneratedHelper.parse,
+      _GeneratedHelper.safeParse,
+    };
+
+    for (final model in models) {
+      for (final field in model.fields) {
+        if ((field.isList || field.isSet) &&
+            !_isCustomElementType(field, lookups)) {
+          helpers.add(
+            field.isSet ? _GeneratedHelper.setCast : _GeneratedHelper.listCast,
+          );
+        }
+      }
+    }
+
+    final result = <Method>[];
+    if (helpers.contains(_GeneratedHelper.parse)) {
+      result.add(_buildParseHelper());
+    }
+    if (helpers.contains(_GeneratedHelper.safeParse)) {
+      result.add(_buildSafeParseHelper());
+    }
+    if (helpers.contains(_GeneratedHelper.listCast)) {
+      result.add(_buildListCastHelper());
+    }
+    if (helpers.contains(_GeneratedHelper.setCast)) {
+      result.add(_buildSetCastHelper());
+    }
+
+    return result;
   }
 
   /// Builds an extension type for the given model
@@ -390,7 +434,6 @@ class TypeBuilder {
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
-    final schemaResultSymbol = _qualifyAckSymbol('SchemaResult');
 
     return [
       // Static parse factory
@@ -407,9 +450,11 @@ class TypeBuilder {
             ),
           )
           ..body = Code('''
-final validated = $schemaVarName.parse(data);
-return $typeName(validated as $castType);
-'''),
+return _\$ackParse<$typeName>(
+  $schemaVarName,
+  data,
+  (validated) => $typeName(validated as $castType),
+);'''),
       ),
       // Static safeParse method
       Method(
@@ -425,10 +470,10 @@ return $typeName(validated as $castType);
             ),
           )
           ..body = Code('''
-final result = $schemaVarName.safeParse(data);
-return result.match(
-  onOk: (validated) => $schemaResultSymbol.ok($typeName(validated as $castType)),
-  onFail: (error) => $schemaResultSymbol.fail(error),
+return _\$ackSafeParse<$typeName>(
+  $schemaVarName,
+  data,
+  (validated) => $typeName(validated as $castType),
 );'''),
       ),
     ];
@@ -460,8 +505,14 @@ return result.match(
         )
         ..returns = refer(typeName)
         ..body = Code('''
-final validated = $schemaVarName.parse(data) as Map<String, Object?>;
-return $switchExpression;'''),
+return _\$ackParse<$typeName>(
+  $schemaVarName,
+  data,
+  (validated) {
+    final map = validated as Map<String, Object?>;
+    return $switchExpression;
+  },
+);'''),
     );
   }
 
@@ -469,7 +520,6 @@ return $switchExpression;'''),
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
     final subtypes = model.subtypes!;
-    final schemaResultSymbol = _qualifyAckSymbol('SchemaResult');
     final switchExpression = _buildDiscriminatorSwitchExpression(
       'map',
       discriminatorKey,
@@ -489,14 +539,13 @@ return $switchExpression;'''),
         )
         ..returns = _schemaResultRef(refer(typeName))
         ..body = Code('''
-final result = $schemaVarName.safeParse(data);
-return result.match(
-  onOk: (validated) {
+return _\$ackSafeParse<$typeName>(
+  $schemaVarName,
+  data,
+  (validated) {
     final map = validated as Map<String, Object?>;
-    final parsed = $switchExpression;
-    return $schemaResultSymbol.ok(parsed);
+    return $switchExpression;
   },
-  onFail: (error) => $schemaResultSymbol.fail(error),
 );'''),
     );
   }
@@ -709,7 +758,129 @@ ${cases.join(',\n')},
     }
 
     // Primitive lists/sets - direct cast
-    return "(_data['$key'] as List).cast<$elementType>()$suffix";
+    if (isSet) {
+      return "_\$ackSetCast<$elementType>(_data['$key'])";
+    }
+    return "_\$ackListCast<$elementType>(_data['$key'])";
+  }
+
+  Method _buildParseHelper() {
+    return Method(
+      (m) => m
+        ..name = '_\$ackParse'
+        ..types.add(
+          TypeReference(
+            (b) => b
+              ..symbol = 'T'
+              ..bound = refer('Object'),
+          ),
+        )
+        ..returns = refer('T')
+        ..requiredParameters.addAll([
+          Parameter(
+            (p) => p
+              ..name = 'schema'
+              ..type = refer('dynamic'),
+          ),
+          Parameter(
+            (p) => p
+              ..name = 'data'
+              ..type = refer('Object?'),
+          ),
+          Parameter(
+            (p) => p
+              ..name = 'wrap'
+              ..type = refer('T Function(Object?)'),
+          ),
+        ])
+        ..body = Code('''
+final validated = schema.parse(data);
+return wrap(validated);'''),
+    );
+  }
+
+  Method _buildSafeParseHelper() {
+    final schemaResultSymbol = _qualifyAckSymbol('SchemaResult');
+
+    return Method(
+      (m) => m
+        ..name = '_\$ackSafeParse'
+        ..types.add(
+          TypeReference(
+            (b) => b
+              ..symbol = 'T'
+              ..bound = refer('Object'),
+          ),
+        )
+        ..returns = _schemaResultRef(refer('T'))
+        ..requiredParameters.addAll([
+          Parameter(
+            (p) => p
+              ..name = 'schema'
+              ..type = refer('dynamic'),
+          ),
+          Parameter(
+            (p) => p
+              ..name = 'data'
+              ..type = refer('Object?'),
+          ),
+          Parameter(
+            (p) => p
+              ..name = 'wrap'
+              ..type = refer('T Function(Object?)'),
+          ),
+        ])
+        ..body = Code('''
+final result = schema.safeParse(data);
+if (result.isOk) {
+  return $schemaResultSymbol.ok(wrap(result.getOrNull()));
+}
+return $schemaResultSymbol.fail(result.getError()!);'''),
+    );
+  }
+
+  Method _buildListCastHelper() {
+    return Method(
+      (m) => m
+        ..name = '_\$ackListCast'
+        ..types.add(refer('T'))
+        ..returns = TypeReference(
+          (b) => b
+            ..symbol = 'List'
+            ..types.add(refer('T')),
+        )
+        ..requiredParameters.add(
+          Parameter(
+            (p) => p
+              ..name = 'value'
+              ..type = refer('Object?'),
+          ),
+        )
+        ..lambda = true
+        ..body = Code('(value as List).cast<T>()'),
+    );
+  }
+
+  Method _buildSetCastHelper() {
+    return Method(
+      (m) => m
+        ..name = '_\$ackSetCast'
+        ..types.add(refer('T'))
+        ..returns = TypeReference(
+          (b) => b
+            ..symbol = 'Set'
+            ..types.add(refer('T')),
+        )
+        ..requiredParameters.add(
+          Parameter(
+            (p) => p
+              ..name = 'value'
+              ..type = refer('Object?'),
+          ),
+        )
+        ..lambda = true
+        ..body = Code('(value as List).cast<T>().toSet()'),
+    );
   }
 
   String _resolveFieldType(FieldInfo field, _ModelLookups lookups) {
