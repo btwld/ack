@@ -1,4 +1,6 @@
 import 'common_types.dart';
+import 'constraints/pattern_constraint.dart';
+import 'constraints/string_literal_constraint.dart';
 import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
@@ -12,7 +14,8 @@ final class Ack {
 
   /// Creates a literal string schema that only accepts the exact [value].
   /// Similar to Zod's `z.literal("value")`.
-  static StringSchema literal(String value) => string().literal(value);
+  static StringSchema literal(String value) =>
+      string().withConstraint(StringLiteralConstraint(value));
 
   /// Creates an integer schema.
   static IntegerSchema integer() => const IntegerSchema();
@@ -48,7 +51,7 @@ final class Ack {
       EnumSchema(values: values);
 
   static StringSchema enumString(List<String> values) =>
-      string().enumString(values);
+      string().withConstraint(PatternConstraint.enumString(values));
 
   /// Creates a schema that can be one of many types.
   static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);

@@ -567,7 +567,7 @@ void main() {
       test('preserves nullable on complex types', () {
         final objectSchema = Ack.object({'key': Ack.string()}).nullable();
         final listSchema = Ack.list(Ack.string()).nullable();
-        final enumSchema = Ack.string().enumString(['a', 'b']).nullable();
+        final enumSchema = Ack.enumString(['a', 'b']).nullable();
 
         expect(objectSchema.toFirebaseAiSchema().nullable, isTrue);
         expect(listSchema.toFirebaseAiSchema().nullable, isTrue);
@@ -584,7 +584,7 @@ void main() {
         });
 
         test('nullable enum keeps enumValues', () {
-          final schema = Ack.string().enumString(['x', 'y']).nullable();
+          final schema = Ack.enumString(['x', 'y']).nullable();
 
           final result = schema.toFirebaseAiSchema();
           expect(result.enumValues, ['x', 'y']);

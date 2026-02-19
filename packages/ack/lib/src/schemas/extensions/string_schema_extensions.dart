@@ -125,12 +125,14 @@ extension StringSchemaExtensions on StringSchema {
   StringSchema ipv6() => ip(version: 6);
 
   /// Adds a constraint that the string must be one of the allowed values.
+  @Deprecated('Use Ack.enumString() instead.')
   StringSchema enumString(List<String> allowedValues) {
     return withConstraint(PatternConstraint.enumString(allowedValues));
   }
 
   /// Adds a constraint that the string must be exactly equal to [value].
   /// Similar to Zod's `z.literal("value")`.
+  @Deprecated('Use Ack.literal() instead.')
   StringSchema literal(String value) {
     return withConstraint(StringLiteralConstraint(value));
   }

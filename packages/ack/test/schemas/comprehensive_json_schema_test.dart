@@ -48,7 +48,7 @@ void main() {
         });
 
         test('should validate literal values', () {
-          final schema = Ack.string().literal('exact');
+          final schema = Ack.literal('exact');
           expect(schema.safeParse('exact').isOk, isTrue);
           expect(schema.safeParse('different').isOk, isFalse);
         });

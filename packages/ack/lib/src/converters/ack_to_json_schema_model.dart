@@ -217,7 +217,7 @@ JsonSchema _discriminated(
     final normalized = branchSchema.copyWith(
       properties: {
         ...branchSchema.properties,
-        discriminatorKey: Ack.string().enumString([label]),
+        discriminatorKey: Ack.enumString([label]),
       },
     );
 

@@ -28,7 +28,7 @@ final enhancedUserSchema = Ack.object({
 /// Order with status enum - schema only
 final orderSchema = Ack.object({
   'id': Ack.string(),
-  'status': Ack.string().enumString([
+  'status': Ack.enumString([
     'pending',
     'processing',
     'shipped',
