@@ -131,14 +131,14 @@ void main() {
     test('enum validation recipe restricts status and priority', () {
       final orderSchema = Ack.object({
         'orderId': Ack.string(),
-        'status': Ack.string().enumString([
+        'status': Ack.enumString([
           'pending',
           'processing',
           'shipped',
           'delivered',
           'cancelled',
         ]),
-        'priority': Ack.string().enumString(['low', 'medium', 'high']),
+        'priority': Ack.enumString(['low', 'medium', 'high']),
       });
 
       expect(

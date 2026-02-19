@@ -448,7 +448,7 @@ final testSchema = Ack.object({
     });
 
     test(
-      'extracts String from Ack.list(Ack.string().enumString(...))',
+      'extracts String from Ack.list(Ack.enumString(...))',
       () async {
         final assets = {
           ...allAssets,
@@ -458,7 +458,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
-  'styles': Ack.list(Ack.string().enumString(['bold', 'italic', 'underline'])),
+  'styles': Ack.list(Ack.enumString(['bold', 'italic', 'underline'])),
 });
 ''',
         };

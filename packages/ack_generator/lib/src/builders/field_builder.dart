@@ -49,9 +49,9 @@ class FieldBuilder {
     'multipleOf': (schema, args) => '$schema.multipleOf(${args[0]})',
     'minItems': (schema, args) => '$schema.minItems(${args[0]})',
     'maxItems': (schema, args) => '$schema.maxItems(${args[0]})',
-    'enumString': (schema, args) {
+    'enumString': (_, args) {
       final values = args.map((v) => "'$v'").join(', ');
-      return '$schema.enumString([$values])';
+      return 'Ack.enumString([$values])';
     },
     // Use _buildRegexLiteral for pattern as well
     'pattern': (schema, args) =>

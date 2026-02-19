@@ -153,6 +153,7 @@ void main() {
 
     group('literal', () {
       test('should pass for exact string match', () {
+        // ignore: deprecated_member_use_from_same_package
         final schema = Ack.string().literal('hello');
 
         expect(schema.safeParse('hello').isOk, isTrue);
@@ -160,6 +161,7 @@ void main() {
       });
 
       test('should fail for different string', () {
+        // ignore: deprecated_member_use_from_same_package
         final schema = Ack.string().literal('hello');
 
         final result = schema.safeParse('world');
@@ -172,6 +174,7 @@ void main() {
       });
 
       test('should work with empty string', () {
+        // ignore: deprecated_member_use_from_same_package
         final schema = Ack.string().literal('');
 
         expect(schema.safeParse('').isOk, isTrue);
@@ -179,6 +182,7 @@ void main() {
       });
 
       test('should work chained with other constraints', () {
+        // ignore: deprecated_member_use_from_same_package
         final schema = Ack.string().minLength(3).literal('hello');
 
         expect(schema.safeParse('hello').isOk, isTrue);

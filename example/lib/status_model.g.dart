@@ -10,5 +10,5 @@ part of 'status_model.dart';
 /// Generated schema for StatusModel
 /// A model demonstrating enum field validation
 final statusModelSchema = Ack.object({
-  'simpleStatus': Ack.string().enumString(['active', 'inactive', 'pending']),
+  'simpleStatus': Ack.enumString(['active', 'inactive', 'pending']),
 });

@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   group('StringSchemaExtensions enumString', () {
     test('should pass for allowed values', () {
-      final schema = Ack.string().enumString(['red', 'green', 'blue']);
+      final schema = Ack.enumString(['red', 'green', 'blue']);
 
       expect(schema.safeParse('red').isOk, isTrue);
       expect(schema.safeParse('green').isOk, isTrue);
@@ -12,7 +12,7 @@ void main() {
     });
 
     test('should fail for disallowed values', () {
-      final schema = Ack.string().enumString(['red', 'green', 'blue']);
+      final schema = Ack.enumString(['red', 'green', 'blue']);
 
       final result = schema.safeParse('yellow');
       expect(result.isOk, isFalse);
@@ -25,13 +25,13 @@ void main() {
     });
 
     test('should handle empty string if allowed', () {
-      final schema = Ack.string().enumString(['', 'yes', 'no']);
+      final schema = Ack.enumString(['', 'yes', 'no']);
 
       expect(schema.safeParse('').isOk, isTrue);
     });
 
     test('should work with nullable string schema', () {
-      final schema = Ack.string().nullable().enumString(['active', 'inactive']);
+      final schema = Ack.enumString(['active', 'inactive']).nullable();
 
       expect(schema.safeParse(null).isOk, isTrue);
       expect(schema.safeParse('active').isOk, isTrue);
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('should generate correct JSON schema', () {
-      final schema = Ack.string().enumString(['small', 'medium', 'large']);
+      final schema = Ack.enumString(['small', 'medium', 'large']);
 
       final jsonSchema = schema.toJsonSchema();
       expect(jsonSchema['type'], equals('string'));

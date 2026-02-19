@@ -47,7 +47,7 @@ void main() {
         final datetimeSchema = Ack.string().datetime();
         expect(datetimeSchema.safeParse('2024-01-01T12:00:00Z').isOk, isTrue);
 
-        final roleSchema = Ack.string().enumString(['admin', 'user', 'guest']);
+        final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
         expect(roleSchema.safeParse('user').isOk, isTrue);
         expect(roleSchema.safeParse('unknown').isFail, isTrue);
       });
