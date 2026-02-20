@@ -7,41 +7,18 @@
 
 part of 'schema_types_simple.dart';
 
-T _$ackParse<T extends Object>(
-  dynamic schema,
-  Object? data,
-  T Function(Object?) wrap,
-) {
-  final validated = schema.parse(data);
-  return wrap(validated);
-}
-
-SchemaResult<T> _$ackSafeParse<T extends Object>(
-  dynamic schema,
-  Object? data,
-  T Function(Object?) wrap,
-) {
-  final result = schema.safeParse(data);
-  if (result.isOk) {
-    return SchemaResult.ok(wrap(result.getOrNull()));
-  }
-  return SchemaResult.fail(result.getError()!);
-}
-
 /// Extension type for User
 extension type UserType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static UserType parse(Object? data) {
-    return _$ackParse<UserType>(
-      userSchema,
+    return userSchema.parseAs(
       data,
       (validated) => UserType(validated as Map<String, Object?>),
     );
   }
 
   static SchemaResult<UserType> safeParse(Object? data) {
-    return _$ackSafeParse<UserType>(
-      userSchema,
+    return userSchema.safeParseAs(
       data,
       (validated) => UserType(validated as Map<String, Object?>),
     );

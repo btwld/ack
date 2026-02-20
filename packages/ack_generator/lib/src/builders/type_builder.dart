@@ -37,7 +37,7 @@ class _ModelLookups {
   }
 }
 
-enum _GeneratedHelper { parse, safeParse, listCast, setCast }
+enum _GeneratedHelper { listCast, setCast }
 
 /// Builds Dart 3 extension types for models annotated with `@AckType`
 ///
@@ -64,10 +64,7 @@ class TypeBuilder {
     if (models.isEmpty) return const [];
 
     final lookups = _ModelLookups(models);
-    final helpers = <_GeneratedHelper>{
-      _GeneratedHelper.parse,
-      _GeneratedHelper.safeParse,
-    };
+    final helpers = <_GeneratedHelper>{};
 
     for (final model in models) {
       for (final field in model.fields) {
@@ -81,12 +78,6 @@ class TypeBuilder {
     }
 
     final result = <Method>[];
-    if (helpers.contains(_GeneratedHelper.parse)) {
-      result.add(_buildParseHelper());
-    }
-    if (helpers.contains(_GeneratedHelper.safeParse)) {
-      result.add(_buildSafeParseHelper());
-    }
     if (helpers.contains(_GeneratedHelper.listCast)) {
       result.add(_buildListCastHelper());
     }
@@ -450,8 +441,7 @@ class TypeBuilder {
             ),
           )
           ..body = Code('''
-return _\$ackParse<$typeName>(
-  $schemaVarName,
+return $schemaVarName.parseAs(
   data,
   (validated) => $typeName(validated as $castType),
 );'''),
@@ -470,8 +460,7 @@ return _\$ackParse<$typeName>(
             ),
           )
           ..body = Code('''
-return _\$ackSafeParse<$typeName>(
-  $schemaVarName,
+return $schemaVarName.safeParseAs(
   data,
   (validated) => $typeName(validated as $castType),
 );'''),
@@ -505,8 +494,7 @@ return _\$ackSafeParse<$typeName>(
         )
         ..returns = refer(typeName)
         ..body = Code('''
-return _\$ackParse<$typeName>(
-  $schemaVarName,
+return $schemaVarName.parseAs(
   data,
   (validated) {
     final map = validated as Map<String, Object?>;
@@ -539,8 +527,7 @@ return _\$ackParse<$typeName>(
         )
         ..returns = _schemaResultRef(refer(typeName))
         ..body = Code('''
-return _\$ackSafeParse<$typeName>(
-  $schemaVarName,
+return $schemaVarName.safeParseAs(
   data,
   (validated) {
     final map = validated as Map<String, Object?>;
@@ -762,81 +749,6 @@ ${cases.join(',\n')},
       return "_\$ackSetCast<$elementType>(_data['$key'])";
     }
     return "_\$ackListCast<$elementType>(_data['$key'])";
-  }
-
-  Method _buildParseHelper() {
-    return Method(
-      (m) => m
-        ..name = '_\$ackParse'
-        ..types.add(
-          TypeReference(
-            (b) => b
-              ..symbol = 'T'
-              ..bound = refer('Object'),
-          ),
-        )
-        ..returns = refer('T')
-        ..requiredParameters.addAll([
-          Parameter(
-            (p) => p
-              ..name = 'schema'
-              ..type = refer('dynamic'),
-          ),
-          Parameter(
-            (p) => p
-              ..name = 'data'
-              ..type = refer('Object?'),
-          ),
-          Parameter(
-            (p) => p
-              ..name = 'wrap'
-              ..type = refer('T Function(Object?)'),
-          ),
-        ])
-        ..body = Code('''
-final validated = schema.parse(data);
-return wrap(validated);'''),
-    );
-  }
-
-  Method _buildSafeParseHelper() {
-    final schemaResultSymbol = _qualifyAckSymbol('SchemaResult');
-
-    return Method(
-      (m) => m
-        ..name = '_\$ackSafeParse'
-        ..types.add(
-          TypeReference(
-            (b) => b
-              ..symbol = 'T'
-              ..bound = refer('Object'),
-          ),
-        )
-        ..returns = _schemaResultRef(refer('T'))
-        ..requiredParameters.addAll([
-          Parameter(
-            (p) => p
-              ..name = 'schema'
-              ..type = refer('dynamic'),
-          ),
-          Parameter(
-            (p) => p
-              ..name = 'data'
-              ..type = refer('Object?'),
-          ),
-          Parameter(
-            (p) => p
-              ..name = 'wrap'
-              ..type = refer('T Function(Object?)'),
-          ),
-        ])
-        ..body = Code('''
-final result = schema.safeParse(data);
-if (result.isOk) {
-  return $schemaResultSymbol.ok(wrap(result.getOrNull()));
-}
-return $schemaResultSymbol.fail(result.getError()!);'''),
-    );
   }
 
   Method _buildListCastHelper() {

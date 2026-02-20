@@ -295,6 +295,20 @@ sealed class AckSchema<DartType extends Object> {
     return result.getOrThrow();
   }
 
+  /// Parses and validates a value, then maps the validated value to [TOut].
+  ///
+  /// This method throws an [AckException] when validation fails (same as [parse]).
+  /// Mapper exceptions are wrapped into a [SchemaTransformError] and then thrown
+  /// as part of [AckException] for consistent error handling.
+  TOut parseAs<TOut extends Object>(
+    Object? value,
+    TOut Function(DartType? validated) map, {
+    String? debugName,
+  }) {
+    final result = safeParseAs(value, map, debugName: debugName);
+    return result.getOrThrow() as TOut;
+  }
+
   /// Parses and validates a value, returning a [SchemaResult].
   ///
   /// This method never throws exceptions. Instead, it returns a [SchemaResult]
@@ -313,19 +327,49 @@ sealed class AckSchema<DartType extends Object> {
   /// }
   /// ```
   SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
+    final context = _createRootContext(value, debugName: debugName);
+    return parseAndValidate(value, context);
+  }
+
+  /// Parses and validates a value, then maps the validated value to [TOut].
+  ///
+  /// Validation failures are returned as [Fail] with the original schema error.
+  /// Mapper exceptions are caught and returned as [SchemaTransformError].
+  ///
+  /// This method never throws exceptions.
+  SchemaResult<TOut> safeParseAs<TOut extends Object>(
+    Object? value,
+    TOut Function(DartType? validated) map, {
+    String? debugName,
+  }) {
+    final result = safeParse(value, debugName: debugName);
+    if (result case Fail(error: final error)) {
+      return SchemaResult.fail(error);
+    }
+
+    final validated = result.getOrNull();
+    try {
+      return SchemaResult.ok(map(validated));
+    } catch (e, st) {
+      return SchemaResult.fail(
+        SchemaTransformError(
+          message: 'Transformation failed: ${e.toString()}',
+          context: _createRootContext(value, debugName: debugName),
+          cause: e,
+          stackTrace: st,
+        ),
+      );
+    }
+  }
+
+  SchemaContext _createRootContext(Object? value, {String? debugName}) {
     // Use provided debugName or derive from runtime type (e.g., "StringSchema" -> "string")
     final typeName = runtimeType
         .toString()
         .replaceFirst(RegExp(r'Schema$'), '')
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
-    final context = SchemaContext(
-      name: effectiveDebugName,
-      schema: this,
-      value: value,
-    );
-
-    return parseAndValidate(value, context);
+    return SchemaContext(name: effectiveDebugName, schema: this, value: value);
   }
 
   /// Legacy alias for [safeParse].

@@ -9,6 +9,7 @@
 * **Analyzer**: Refactored field analyzer, model analyzer, and schema AST analyzer for correctness (#50).
 * **Builders**: Improved type builder, field builder, and schema builder (#50).
 * **Generator**: Centralized null/default handling in generator output (#65).
+* **AckType factories**: Generate direct `schema.parseAs(...)` / `schema.safeParseAs(...)` calls and stop emitting `_$ackParse` / `_$ackSafeParse` helpers.
 
 ## 1.0.0-beta.5 (2026-01-14)
 

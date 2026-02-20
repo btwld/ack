@@ -55,6 +55,16 @@ sealed class SchemaResult<T extends Object> {
     };
   }
 
+  /// Maps the successful value into a new [SchemaResult] type.
+  ///
+  /// For failed results, the original error is propagated unchanged.
+  SchemaResult<R> map<R extends Object>(R Function(T? value) transform) {
+    return switch (this) {
+      Ok(value: final v) => SchemaResult.ok(transform(v)),
+      Fail(error: final e) => SchemaResult.fail(e),
+    };
+  }
+
   /// Returns the contained value if successful; otherwise, throws an [AckException].
   /// If the successful value is `null` (for nullable schemas), `null` is returned.
   T? getOrThrow() {

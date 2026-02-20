@@ -3,6 +3,7 @@
 ### Features
 
 * **Discriminated unions**: Enforce Map-returning child schemas in discriminated unions (#67).
+* **Schema mapping API**: Add `AckSchema.parseAs` and `AckSchema.safeParseAs` for validated-value mapping with consistent `SchemaTransformError` handling.
 
 ### Improvements
 
