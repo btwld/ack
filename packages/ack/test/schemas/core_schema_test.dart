@@ -155,6 +155,88 @@ void main() {
       );
     });
 
+    group('parseAs / safeParseAs', () {
+      test('parseAs maps validated primitive value', () {
+        final schema = Ack.string().minLength(1);
+
+        final result = schema.parseAs(
+          'hello',
+          (validated) => validated!.length,
+        );
+
+        expect(result, equals(5));
+      });
+
+      test('safeParseAs maps validated object value', () {
+        final schema = Ack.object({'id': Ack.integer()});
+
+        final result = schema.safeParseAs({
+          'id': 42,
+        }, (validated) => validated!['id'] as int);
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrNull(), equals(42));
+      });
+
+      test('safeParseAs keeps validation failures and does not run mapper', () {
+        final schema = Ack.string().strictParsing();
+        var mapperCalled = false;
+
+        final result = schema.safeParseAs(123, (validated) {
+          mapperCalled = true;
+          return validated?.length ?? 0;
+        });
+
+        expect(result.isFail, isTrue);
+        expect(mapperCalled, isFalse);
+        expect(result.getError(), isA<TypeMismatchError>());
+      });
+
+      test('safeParseAs wraps mapper exceptions as SchemaTransformError', () {
+        final schema = Ack.integer();
+
+        final result = schema.safeParseAs(
+          5,
+          (_) => throw StateError('mapper failed'),
+          debugName: 'numberAdapter',
+        );
+
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaTransformError>());
+        expect(error.name, equals('numberAdapter'));
+        expect(error.value, equals(5));
+        expect(error.schema, same(schema));
+        expect(
+          error.message,
+          contains('Transformation failed: Bad state: mapper failed'),
+        );
+      });
+
+      test('parseAs throws AckException for mapper exceptions', () {
+        final schema = Ack.integer();
+
+        expect(
+          () => schema.parseAs(
+            7,
+            (_) => throw StateError('mapper exploded'),
+            debugName: 'mapperDebugName',
+          ),
+          throwsA(
+            isA<AckException>().having(
+              (exception) => exception.errors.single,
+              'error',
+              isA<SchemaTransformError>().having(
+                (error) => error.name,
+                'name',
+                equals('mapperDebugName'),
+              ),
+            ),
+          ),
+        );
+      });
+    });
+
     group('ListSchema', () {
       test('should fail when nullable item resolves to null', () {
         final schema = Ack.list(Ack.string().nullable());
