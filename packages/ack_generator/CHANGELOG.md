@@ -1,3 +1,15 @@
+## 1.0.0-beta.7
+
+### Features
+
+* **Nested schema resolution**: Strict typed schema resolution for nested schemas with cross-file support (#77).
+* **Enum and literal fields**: Support `Ack.enumString()`, `Ack.literal()`, and `Ack.enumValues()` field types in generated schemas (#73).
+
+### Improvements
+
+* **AckType conversion**: Refactored generated AckType conversion helpers for cleaner output (#72).
+* **Schema AST analyzer**: Major improvements to schema AST analyzer for correctness in complex nested scenarios.
+
 ## 1.0.0-beta.6
 
 ### Bug Fixes
