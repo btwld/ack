@@ -613,6 +613,22 @@ ${cases.join(',\n')},
     String key, {
     required String baseType,
   }) {
+    // Nested schema variable reference (e.g., 'status': statusSchema).
+    if (field.nestedSchemaRef != null) {
+      if (field.displayTypeOverride != null) {
+        final castType = field.nestedSchemaCastTypeOverride ?? kMapType;
+        return "${field.displayTypeOverride!}(_data['$key'] as $castType)";
+      }
+
+      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
+      if (referencedModel != null) {
+        final typeName = '${referencedModel.className}Type';
+        final castType = referencedModel.representationType;
+        return "$typeName(_data['$key'] as $castType)";
+      }
+      return "_data['$key'] as Map<String, Object?>";
+    }
+
     // Primitives
     if (field.isPrimitive) {
       return "_data['$key'] as $baseType";
@@ -634,17 +650,6 @@ ${cases.join(',\n')},
     // Lists
     if (field.isList) {
       return _buildListGetter(field, lookups, key);
-    }
-
-    // Nested schema variable reference (e.g., 'address': addressSchema).
-    if (field.nestedSchemaRef != null) {
-      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
-      if (referencedModel != null) {
-        final typeName = '${referencedModel.className}Type';
-        final castType = referencedModel.representationType;
-        return "$typeName(_data['$key'] as $castType)";
-      }
-      return "_data['$key'] as Map<String, Object?>";
     }
 
     // Maps
@@ -673,6 +678,16 @@ ${cases.join(',\n')},
     String key, {
     required String baseType,
   }) {
+    if (field.nestedSchemaRef != null) {
+      final nonNullPart = _buildNonNullableGetter(
+        field,
+        lookups,
+        key,
+        baseType: baseType,
+      );
+      return "_data['$key'] != null ? $nonNullPart : null";
+    }
+
     // For primitives and enums, nullable cast works
     if (field.isPrimitive || field.isEnum) {
       return "_data['$key'] as $baseType?";
@@ -741,7 +756,10 @@ ${cases.join(',\n')},
       // Return eager List for object lists (per requirements: List<T>, not Iterable<T>)
       final listSuffix = isSet ? '' : '.toList()';
       final castType = _getCustomElementCastType(field, elementType, lookups);
-      return "(_data['$key'] as List).map((e) => ${elementType}Type(e as $castType))$listSuffix$suffix";
+      final constructorName = field.collectionElementIsCustomType
+          ? _asExtensionTypeName(elementType)
+          : '${elementType}Type';
+      return "(_data['$key'] as List).map((e) => $constructorName(e as $castType))$listSuffix$suffix";
     }
 
     // Primitive lists/sets - direct cast
@@ -796,6 +814,19 @@ ${cases.join(',\n')},
   }
 
   String _resolveFieldType(FieldInfo field, _ModelLookups lookups) {
+    // Nested schema variable reference (e.g., 'status': statusSchema).
+    if (field.nestedSchemaRef != null) {
+      if (field.displayTypeOverride != null) {
+        return field.displayTypeOverride!;
+      }
+
+      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
+      if (referencedModel != null) {
+        return '${referencedModel.className}Type';
+      }
+      return kMapType;
+    }
+
     // Primitives
     if (field.type.isDartCoreString) return 'String';
     if (field.type.isDartCoreInt) return 'int';
@@ -823,18 +854,12 @@ ${cases.join(',\n')},
       );
       // Use List for all list types (eager evaluation per requirements)
       if (_isCustomElementType(field, lookups)) {
-        return 'List<${elementType}Type>';
+        final customElementType = field.collectionElementIsCustomType
+            ? _asExtensionTypeName(elementType)
+            : '${elementType}Type';
+        return 'List<$customElementType>';
       }
       return 'List<$elementType>';
-    }
-
-    // Nested schema variable reference (e.g., 'address': addressSchema).
-    if (field.nestedSchemaRef != null) {
-      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
-      if (referencedModel != null) {
-        return '${referencedModel.className}Type';
-      }
-      return kMapType;
     }
 
     // Maps
@@ -850,7 +875,10 @@ ${cases.join(',\n')},
         isSet: true,
       );
       if (_isCustomElementType(field, lookups)) {
-        return 'Set<${elementType}Type>';
+        final customElementType = field.collectionElementIsCustomType
+            ? _asExtensionTypeName(elementType)
+            : '${elementType}Type';
+        return 'Set<$customElementType>';
       }
       return 'Set<$elementType>';
     }
@@ -875,6 +903,10 @@ ${cases.join(',\n')},
     _ModelLookups lookups, {
     required bool isSet,
   }) {
+    if (field.collectionElementDisplayTypeOverride != null) {
+      return field.collectionElementDisplayTypeOverride!;
+    }
+
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (!isSet && field.listElementSchemaRef != null) {
       final referencedModel = _findSchemaModel(
@@ -885,10 +917,6 @@ ${cases.join(',\n')},
         return referencedModel.className;
       }
       return kMapType;
-    }
-
-    if (field.collectionElementDisplayTypeOverride != null) {
-      return field.collectionElementDisplayTypeOverride!;
     }
 
     if (field.type is! ParameterizedType) return 'dynamic';
@@ -949,6 +977,10 @@ ${cases.join(',\n')},
   }
 
   bool _isCustomElementType(FieldInfo field, _ModelLookups lookups) {
+    if (field.collectionElementIsCustomType) {
+      return true;
+    }
+
     // Check for schema variable reference first (e.g., Ack.list(addressSchema))
     if (field.listElementSchemaRef != null) {
       return _findSchemaModel(field.listElementSchemaRef!, lookups) != null;
@@ -972,6 +1004,10 @@ ${cases.join(',\n')},
     return '${baseType}Type';
   }
 
+  String _asExtensionTypeName(String typeName) {
+    return typeName.endsWith('Type') ? typeName : '${typeName}Type';
+  }
+
   ModelInfo? _findSchemaModel(String schemaVarName, _ModelLookups lookups) {
     return lookups.schemaByName(schemaVarName);
   }
@@ -981,6 +1017,10 @@ ${cases.join(',\n')},
     String elementType,
     _ModelLookups lookups,
   ) {
+    if (field.collectionElementCastTypeOverride != null) {
+      return field.collectionElementCastTypeOverride!;
+    }
+
     if (field.listElementSchemaRef != null) {
       final referencedModel = _findSchemaModel(
         field.listElementSchemaRef!,
@@ -1093,9 +1133,12 @@ ${assignments.join(',\n')},
     if ((field.isList || field.isSet) &&
         field.collectionElementDisplayTypeOverride != null) {
       final collectionType = field.isSet ? 'Set' : 'List';
+      final elementType = field.collectionElementIsCustomType
+          ? _asExtensionTypeName(field.collectionElementDisplayTypeOverride!)
+          : field.collectionElementDisplayTypeOverride!;
       return _typeReference(
         collectionType,
-        types: [_typeReference(field.collectionElementDisplayTypeOverride!)],
+        types: [_typeReference(elementType)],
         isNullable: true,
       );
     }

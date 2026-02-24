@@ -117,6 +117,28 @@ After running `dart run build_runner build`, the part file contains:
 Unsupported helpers include `Ack.any`, `Ack.anyOf`, and `Ack.discriminated`.
 Use `@AckModel` for discriminated unions instead.
 
+## `@AckType` Resolution Requirements and Limitations
+
+`@AckType()` now uses strict resolution for nested typed schemas. This prevents
+silent fallbacks to `Map<String, Object?>` when references cannot be resolved
+unambiguously.
+
+- Nested object fields must reference a named top-level schema variable/getter.
+  Anonymous inline object fields are not supported for typed generation.
+- `Ack.list(...)` elements must be statically resolvable. Dynamic expressions
+  such as `schemaFactory()` or excessively deep method chains are rejected.
+- Cross-file references (direct import, prefixed import, re-export) are
+  supported, but prefixed references must resolve inside the specified prefix.
+  `prefix.symbol` never falls back to a different namespace.
+- Object schema references used for typed wrappers must be annotated with
+  `@AckType()`. Unannotated object refs fail generation instead of degrading to
+  raw map access.
+- Circular schema alias/reference chains fail generation with a clear circular
+  reference error.
+
+If you need a typed nested object, extract it to a top-level schema variable or
+getter and annotate it with `@AckType()`, then reference that symbol.
+
 ## Working with Extension Types
 
 - `TypeName.parse(Object? data)` throws on invalid input.
