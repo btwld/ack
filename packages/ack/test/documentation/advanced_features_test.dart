@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   group('Advanced Features Documentation Examples', () {
     group('Optional vs Nullable Patterns', () {
-      test('should demonstrate nullable field behavior', () {
+      test('interprets nullable fields as present-but-nullable', () {
         final userSchema = Ack.object({
           'name': Ack.string(),
           'middleName': Ack.string().nullable(), // Must be present, can be null
@@ -23,7 +23,7 @@ void main() {
         expect(userSchema.safeParse(invalidData).isOk, isFalse);
       });
 
-      test('should demonstrate optional field behavior', () {
+      test('interprets optional fields as conditionally present', () {
         final userSchema = Ack.object({
           'name': Ack.string(),
           'age': Ack.integer().min(0).optional(), // Can be missing entirely
@@ -42,7 +42,7 @@ void main() {
         expect(userSchema.safeParse(invalidData).isFail, isTrue);
       });
 
-      test('should demonstrate optional and nullable combined', () {
+      test('combines optional and nullable field semantics', () {
         final userSchema = Ack.object({
           'name': Ack.string(),
           'bio': Ack.string().optional().nullable(), // Can be missing OR null
@@ -64,7 +64,7 @@ void main() {
     });
 
     group('Advanced Refinements', () {
-      test('should support multiple chained refinements', () {
+      test('chains multiple refinements in a single validator', () {
         final strongPasswordSchema = Ack.string()
             .minLength(8)
             .refine(
@@ -98,7 +98,7 @@ void main() {
     });
 
     group('Advanced Transformations', () {
-      test('should support type transformation', () {
+      test('transforms a validated date string into DateTime', () {
         final dateSchema = Ack.string()
             .matches(r'^\d{4}-\d{2}-\d{2}$')
             .transform<DateTime>((dateStr) {
@@ -114,7 +114,7 @@ void main() {
         expect(transformedDate.day, equals(15));
       });
 
-      test('should support data normalization', () {
+      test('normalizes phone numbers before validation', () {
         final phoneSchema = Ack.string()
             .matches(r'^[\d\s\-\(\)\+]+$')
             .transform((phone) {
@@ -129,7 +129,7 @@ void main() {
     });
 
     group('Schema Composition Patterns', () {
-      test('should support schema extension', () {
+      test('extends a base schema with admin-specific fields', () {
         final baseUserSchema = Ack.object({
           'id': Ack.string().uuid(),
           'name': Ack.string(),
@@ -155,7 +155,7 @@ void main() {
         expect(adminUserSchema.safeParse(adminData).isOk, isTrue);
       });
 
-      test('should support property picking', () {
+      test('extracts and validates only selected properties', () {
         final fullUserSchema = Ack.object({
           'id': Ack.string().uuid(),
           'name': Ack.string(),
@@ -181,7 +181,7 @@ void main() {
         expect(publicUserSchema.safeParse(dataWithPassword).isOk, isFalse);
       });
 
-      test('should support property omission', () {
+      test('removes selected properties during passthrough', () {
         final fullUserSchema = Ack.object({
           'id': Ack.string().uuid(),
           'name': Ack.string(),
@@ -205,7 +205,7 @@ void main() {
         expect(safeUserSchema.safeParse(dataWithPassword).isOk, isFalse);
       });
 
-      test('should support partial schemas', () {
+      test('validates partial input using .partial()', () {
         final userSchema = Ack.object({
           'name': Ack.string(),
           'email': Ack.string().email(),
@@ -215,7 +215,7 @@ void main() {
         // All fields become optional
         final partialUserSchema = userSchema.partial();
 
-        // All these should be valid:
+        // Valid input cases:
         expect(
           partialUserSchema.safeParse(<String, Object?>{}).isOk,
           isTrue,
@@ -233,7 +233,7 @@ void main() {
         ); // Subset
       });
 
-      test('should support strict vs passthrough modes', () {
+      test('compares strict and passthrough validation modes', () {
         final baseSchema = Ack.object({
           'id': Ack.string(),
           'name': Ack.string(),

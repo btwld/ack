@@ -6,7 +6,8 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 ## Why Use Ack?
 
 - **Simplify Validation**: Easily handle complex data validation logic.
-- **Ensure Data Integrity**: Guarantee data consistency from external sources (APIs, user input).
+- **Validate external payloads**: Enforce required fields, type constraints,
+  and schema rules at input/output boundaries.
 - **Single Source of Truth**: Define data structures and rules in one place.
 - **Reduce Boilerplate**: Minimize repetitive validation code.
 
@@ -15,7 +16,7 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 - Validates data against defined schemas
 - Provides detailed error messages for validation failures
 - Generates JSON Schema specifications
-- Works seamlessly with JSON data from APIs
+- Works directly with JSON data from APIs
 
 ## Quick Start
 
@@ -61,7 +62,7 @@ if (result.isOk) {
 
 ## Core Features
 
-Ack provides a comprehensive set of features for data validation and transformation:
+Ack includes these core capabilities for data validation and transformation:
 
 - **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
 - **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
@@ -80,7 +81,7 @@ Ready to dive deeper? Start with the [Quickstart Tutorial](/getting-started/quic
 
 ## Advanced Features
 
-Ack provides powerful features for complex validation scenarios:
+Ack supports these advanced patterns for complex validation scenarios:
 
 - **[Nested validation](/core-concepts/schemas#object)**: Validate deeply nested objects and lists
 - **[Custom validation](/guides/custom-validation)**: Add custom logic with `.refine()` and constraints

@@ -1189,11 +1189,9 @@ class SchemaAstAnalyzer {
 
   /// Extracts the element type from Ack.list(elementSchema) calls
   ///
-  /// Handles:
-  /// - Method invocations: `Ack.list(Ack.string())` → `List<String>`
-  /// - Method chains: `Ack.list(Ack.string().describe(...))` → `List<String>`
-  /// - Schema references: `Ack.list(addressSchema)` → `List<Map<String, Object?>>`
-  /// - Schema ref chains: `Ack.list(addressSchema.optional())` → `List<Map<String, Object?>>`
+  /// Supports method invocations and schema references such as
+  /// `Ack.list(Ack.string())`, `Ack.list(Ack.string().describe(...))`,
+  /// `Ack.list(addressSchema)`, or `Ack.list(addressSchema.optional())`.
   ///
   /// Returns a mapping with the list [DartType] and optional metadata used to
   /// build typed list wrappers when the element references another schema.

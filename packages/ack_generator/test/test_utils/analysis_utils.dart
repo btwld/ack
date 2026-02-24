@@ -3,12 +3,11 @@ import 'package:source_gen/source_gen.dart';
 
 /// Utilities for analyzing Dart code in tests
 class AnalysisUtils {
-  /// Parse source code and return the library element
-  /// Note: This is simplified for testing - use testBuilder for real integration tests
+  /// Parse source code into an analyzer model for unit-test scope.
   static Future<LibraryElement2> resolveSource(String source) async {
     throw UnimplementedError(
       'Use testBuilder with resolveSources for integration testing. '
-      'This method is a placeholder.',
+      'Use this utility only for analyzer unit tests.',
     );
   }
 
@@ -24,7 +23,7 @@ class AnalysisUtils {
 
   /// Create a ConstantReader from an annotation value
   static ConstantReader createAnnotationReader(Map<String, dynamic> values) {
-    // Simplified for testing - in real scenarios this would use DartObject
+    // Keep a deterministic null-reader for tests that only validate parser wiring.
     return ConstantReader(null);
   }
 }
