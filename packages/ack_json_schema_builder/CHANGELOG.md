@@ -7,8 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0-beta.7]
 
-### Changed
-- Updated dependency on ack to v1.0.0-beta.7
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.7) for details.
 
 ## [1.0.0-beta.6]
 
