@@ -1,3 +1,9 @@
+## 1.0.0-beta.7
+
+### Features
+
+* **Field types**: Support `enumString`, `literal`, and `enumValues` as direct field type expressions in `@AckModel` classes (#73).
+
 ## 1.0.0-beta.6
 
 ### Improvements

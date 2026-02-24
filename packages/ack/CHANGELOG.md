@@ -1,3 +1,14 @@
+## 1.0.0-beta.7
+
+### Features
+
+* **Enum and literal schemas**: Add `Ack.enumString()`, `Ack.literal()`, and `Ack.enumValues()` as top-level constructors for enum and literal schemas (#73).
+* **Schema result mapping**: Add `SchemaResult.map()` for transforming validated values.
+
+### Deprecations
+
+* **StringSchema extensions**: `StringSchema.literal()` and `.enumString()` are deprecated. Use `Ack.literal()` and `Ack.enumString()` instead (#74).
+
 ## 1.0.0-beta.6
 
 ### Features
