@@ -115,6 +115,7 @@ final userSchema = Ack.object({
           },
           outputs: {'test_pkg|lib/schema.g.dart': anything},
         ),
+        // Generator emits: 'anonymous inline Ack.object(...). Strict typed generation requires a named schema reference.'
         throwsA(isA<Exception>()),
       );
     });
@@ -141,6 +142,7 @@ final userSchema = Ack.object({
           },
           outputs: {'test_pkg|lib/schema.g.dart': anything},
         ),
+        // Generator emits: 'anonymous inline Ack.object(...). Strict typed generation requires a named schema reference.'
         throwsA(isA<Exception>()),
       );
     });

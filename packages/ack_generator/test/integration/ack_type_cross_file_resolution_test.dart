@@ -276,6 +276,7 @@ final deckToolArgsSchema = Ack.object({
           },
           outputs: {'test_pkg|lib/deck_tools_schemas.g.dart': anything},
         ),
+        // Generator emits: 'Could not resolve schema reference "missingSlideSchema"'
         throwsA(isA<Exception>()),
       );
     });
@@ -323,6 +324,7 @@ final deckToolArgsSchema = Ack.object({
             },
             outputs: {'test_pkg|lib/deck_tools_schemas.g.dart': anything},
           ),
+          // Generator emits: 'Could not resolve schema reference "slideSchema"'
           throwsA(isA<Exception>()),
         );
       },
@@ -357,6 +359,7 @@ final deckToolArgsSchema = Ack.object({
           },
           outputs: {'test_pkg|lib/deck_tools_schemas.g.dart': anything},
         ),
+        // Generator emits: 'references object schema "slideSchema" without @AckType'
         throwsA(isA<Exception>()),
       );
     });
@@ -391,6 +394,7 @@ final deckToolArgsSchema = Ack.object({
             },
             outputs: {'test_pkg|lib/deck_tools_schemas.g.dart': anything},
           ),
+          // Generator emits: 'Ack.list(slideSchema) references object schema without @AckType'
           throwsA(isA<Exception>()),
         );
       },

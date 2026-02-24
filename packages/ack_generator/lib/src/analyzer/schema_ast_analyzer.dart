@@ -1491,7 +1491,11 @@ class SchemaAstAnalyzer {
       return resolvedReference;
     } on InvalidGenerationSourceError {
       rethrow;
-    } catch (_) {
+    } catch (e, st) {
+      _log.warning(
+        'Unexpected error resolving schema reference '
+        '"${_formatSchemaReference(reference)}": $e\n$st',
+      );
       shouldCacheResult = true;
       resolvedReference = null;
       return null;
