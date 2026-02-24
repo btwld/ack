@@ -24,13 +24,13 @@ Applies a custom `Constraint<T>` that also implements `Validator<T>`. See the [C
 Apply these to [`Ack.string()`](./schemas.mdx#string) schemas.
 
 ### `minLength(int min)`
-Ensures the string has at least `min` characters.
+Minimum length check: value must contain at least `min` characters.
 ```dart
 Ack.string().minLength(5)
 ```
 
 ### `maxLength(int max)`
-Ensures the string has at most `max` characters.
+Maximum length check: value must contain at most `max` characters.
 ```dart
 Ack.string().maxLength(100)
 ```
@@ -43,13 +43,13 @@ Ack.string().minLength(10).maxLength(10)
 ```
 
 ### `notEmpty()`
-Ensures the string is not empty (`''`). Equivalent to `minLength(1)`.
+Shortcut for non-empty strings (`minLength(1)`).
 ```dart
 Ack.string().notEmpty()
 ```
 
 ### `matches(String pattern, {String? example, String? message})`
-Ensures the string matches the given regular expression `pattern`.
+Applies a regular expression match against `pattern`.
 
 **Important**: Patterns are NOT automatically anchored. The pattern will match if found anywhere in the string (substring matching). To require full-string matching, explicitly add anchors: `^...$`
 
@@ -66,7 +66,7 @@ Ack.string().matches(r'[0-9]+')  // Matches "abc123xyz" ⚠️
 ```
 
 ### `contains(String pattern, {String? example, String? message})`
-Ensures the string contains the given pattern anywhere within it.
+Checks that `pattern` appears somewhere in the string.
 ```dart
 // Password must contain at least one uppercase letter
 Ack.string().contains(r'[A-Z]')
@@ -76,7 +76,7 @@ Ack.string().contains(r'[0-9]')
 ```
 
 ### `email()`
-Ensures the string is a valid email address format.
+Validates email address format.
 ```dart
 Ack.string().email()
 ```
@@ -84,43 +84,43 @@ Ack.string().email()
 
 
 ### `date()`
-Ensures the string is a valid date format (YYYY-MM-DD).
+Validates date strings in `YYYY-MM-DD` format.
 ```dart
 Ack.string().date()
 ```
 
 ### `datetime()`
-Ensures the string is a valid date-time format (ISO 8601).
+Validates ISO 8601 date-time strings.
 ```dart
 Ack.string().datetime()
 ```
 
 ### `time()`
-Ensures the string is a valid time format (HH:MM:SS).
+Validates time strings in `HH:MM:SS` format.
 ```dart
 Ack.string().time()
 ```
 
 ### `uri()`
-Ensures the string is a valid URI according to RFC 3986.
+Validates URI syntax against RFC 3986.
 ```dart
 Ack.string().uri()
 ```
 
 ### `uuid()`
-Ensures the string is a valid UUID according to RFC 4122.
+Validates UUID syntax against RFC 4122.
 ```dart
 Ack.string().uuid()
 ```
 
 ### `ipv4()`
-Ensures the string is a valid IPv4 address.
+Validates IPv4 address syntax.
 ```dart
 Ack.string().ipv4()
 ```
 
 ### `ipv6()`
-Ensures the string is a valid IPv6 address.
+Validates IPv6 address syntax.
 ```dart
 Ack.string().ipv6()
 ```
@@ -128,37 +128,37 @@ Ack.string().ipv6()
 
 
 ### `enumString(List<String> allowedValues)`
-Ensures the string is one of the `allowedValues`.
+Restricts values to the provided `allowedValues` list.
 ```dart
 Ack.enumString(['active', 'inactive', 'pending'])
 ```
 
 ### `literal(String value)`
-Ensures the string exactly matches the specified value.
+Requires an exact string match.
 ```dart
-Ack.string().literal('admin')
+Ack.literal('admin')
 ```
 
 ### `startsWith(String prefix)`
-Ensures the string starts with the given prefix.
+Requires the string to start with `prefix`.
 ```dart
 Ack.string().startsWith('https://')
 ```
 
 ### `endsWith(String suffix)`
-Ensures the string ends with the given suffix.
+Requires the string to end with `suffix`.
 ```dart
 Ack.string().endsWith('.dart')
 ```
 
 ### `url()`
-Alias for `uri()`. Ensures the string is a valid URL.
+Alias for `uri()`. Validates URL syntax.
 ```dart
 Ack.string().url()
 ```
 
 ### `ip({int? version})`
-Ensures the string is a valid IP address. Optionally specify version 4 or 6.
+Validates IP addresses. Set `version` to restrict to IPv4 or IPv6.
 ```dart
 Ack.string().ip()          // Any IP (v4 or v6)
 Ack.string().ip(version: 4) // IPv4 only
@@ -195,62 +195,62 @@ Ack.string().toUpperCase()
 Apply these to [`Ack.integer()`](./schemas.mdx#number) and [`Ack.double()`](./schemas.mdx#number) schemas.
 
 ### `min(num limit)`
-Ensures the number is greater than or equal to the `limit` (inclusive).
+Lower bound check (inclusive): value must be `>= limit`.
 ```dart
 Ack.integer().min(0) // >= 0
 Ack.double().min(0.0) // >= 0.0
 ```
 
 ### `max(num limit)`
-Ensures the number is less than or equal to the `limit` (inclusive).
+Upper bound check (inclusive): value must be `<= limit`.
 ```dart
 Ack.integer().max(100) // <= 100
 Ack.double().max(100.0) // <= 100.0
 ```
 
 ### `greaterThan(num limit)`
-Ensures the number is strictly greater than the `limit` (exclusive).
+Exclusive lower bound: value must be `> limit`.
 ```dart
 Ack.integer().greaterThan(0) // > 0
 Ack.double().greaterThan(0.0) // > 0.0
 ```
 
 ### `lessThan(num limit)`
-Ensures the number is strictly less than the `limit` (exclusive).
+Exclusive upper bound: value must be `< limit`.
 ```dart
 Ack.integer().lessThan(100) // < 100
 Ack.double().lessThan(100.0) // < 100.0
 ```
 
 ### `multipleOf(num factor)`
-Ensures the number is a multiple of the `factor`.
+Requires the number to be a multiple of `factor`.
 ```dart
 Ack.integer().multipleOf(5) // Must be divisible by 5
 Ack.double().multipleOf(0.5) // Use factors that avoid floating point rounding issues
 ```
 
 ### `positive()`
-Ensures the number is positive (greater than 0).
+Accepts only values greater than 0.
 ```dart
 Ack.integer().positive() // > 0
 Ack.double().positive() // > 0.0
 ```
 
 ### `negative()`
-Ensures the number is negative (less than 0).
+Accepts only values less than 0.
 ```dart
 Ack.integer().negative() // < 0
 Ack.double().negative() // < 0.0
 ```
 
 ### `safe()` (Integer only)
-Ensures the integer is within the safe integer range for JavaScript interoperability (-2^53+1 to 2^53-1).
+Limits integers to JavaScript's safe integer range (`-2^53+1` to `2^53-1`).
 ```dart
 Ack.integer().safe()
 ```
 
 ### `finite()` (Double only)
-Ensures the double is a finite number (not `infinity` or `NaN`).
+Rejects `infinity` and `NaN`.
 ```dart
 Ack.double().finite()
 ```
@@ -260,31 +260,32 @@ Ack.double().finite()
 Apply these to [`Ack.list()`](./schemas.mdx#list) schemas.
 
 ### `minLength(int min)`
-Ensures the list has at least `min` items.
+Minimum item count: list must contain at least `min` entries.
 ```dart
 Ack.list(Ack.string()).minLength(1)
 ```
 
 ### `maxLength(int max)`
-Ensures the list has at most `max` items.
+Maximum item count: list must contain at most `max` entries.
 ```dart
 Ack.list(Ack.integer()).maxLength(10)
 ```
 
 ### `length(int count)`
-Ensures the list has exactly `count` items.
+Exact item count: list must contain exactly `count` entries.
 ```dart
 Ack.list(Ack.boolean()).length(5)
 ```
 
 ### `notEmpty()`
-Ensures the list is not empty. Equivalent to `minLength(1)`.
+Shortcut for non-empty lists (`minLength(1)`).
 ```dart
 Ack.list(Ack.object({})).notEmpty()
 ```
 
 ### `unique()`
-Ensures all items in the list are unique. Uses deep structural equality, so nested maps/lists are compared by value.
+Requires all items to be unique. Uses deep structural equality, so nested
+maps/lists are compared by value.
 ```dart
 Ack.list(Ack.string()).unique()
 ```

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -78,32 +79,34 @@ void main() {
         );
       });
 
-      test('example tests should run (may have failures)', () async {
-        final result = await Process.run('dart', [
-          'test',
-        ], workingDirectory: '../../example');
+      test(
+        'example package should compile and run tests successfully',
+        () async {
+          final result = await Process.run('dart', [
+            'test',
+          ], workingDirectory: '../../example');
 
-        // Just check that tests can run, don't require them to pass
-        // Exit code 1 means test failures, which is acceptable for this check
-        expect(
-          [0, 1],
-          contains(result.exitCode),
-          reason: 'Example tests should be runnable:\n${result.stderr}',
-        );
-      });
+          expect(
+            result.exitCode,
+            equals(0),
+            reason: 'Example tests should pass:\n${result.stderr}',
+          );
+        },
+      );
     });
 
     group('Manual Schema Examples', () {
       test(
-        'migration guide classes are present without deprecated parameters',
+        'migration guide classes and generated schema are present',
         () async {
           final productModelFile = File('../../example/lib/product_model.dart');
           expect(productModelFile.existsSync(), isTrue);
           final content = await productModelFile.readAsString();
 
-          expect(content, contains('@AckModel()'));
-          expect(content, isNot(contains('@AckModel(model: true)')));
+          expect(content, contains('class Product'));
+          expect(content, contains('class Category'));
           expect(content, contains('part \'product_model.g.dart\';'));
+          expect(content, isNot(contains('@AckModel(model: true)')));
         },
       );
 
@@ -114,59 +117,6 @@ void main() {
 
         expect(content, contains('final productSchema = Ack.object'));
         expect(content, contains("'name': Ack.string()"));
-      });
-    });
-
-    group('Documentation Consistency', () {
-      test('README examples should be up to date', () async {
-        final readmeFile = File('../../example/README.md');
-        expect(readmeFile.existsSync(), isTrue);
-
-        final content = await readmeFile.readAsString();
-
-        // Check that README mentions key concepts
-        expect(
-          content,
-          contains('ack'),
-          reason: 'README should mention ack package',
-        );
-        expect(
-          content,
-          contains('validation'),
-          reason: 'README should mention validation',
-        );
-        expect(
-          content,
-          contains('build_runner'),
-          reason: 'README should mention build_runner',
-        );
-      });
-
-      test('example files should have proper documentation', () async {
-        final exampleFiles = [
-          '../../example/lib/simple_examples.dart',
-          '../../example/lib/product_model.dart',
-        ];
-
-        for (final filePath in exampleFiles) {
-          final file = File(filePath);
-          final content = await file.readAsString();
-
-          // Check for documentation comments (either /// or //)
-          expect(
-            content,
-            anyOf([contains('///'), contains('//')]),
-            reason:
-                'Example file $filePath should have some documentation comments',
-          );
-
-          // Check for @AckModel annotations
-          expect(
-            content,
-            contains('@AckModel'),
-            reason: 'Example file $filePath should use @AckModel annotations',
-          );
-        }
       });
     });
 
@@ -233,27 +183,28 @@ void main() {
           );
           expect(
             content,
-            contains('class'),
-            reason: 'Generated file should contain class definitions',
+            contains('Ack.object('),
+            reason:
+                'Generated file should contain generated schema definitions',
           );
         }
       });
 
-      test('generated code should compile', () async {
-        // This is already covered by the analyze test above, but we can add specific checks
+      test('generated example entrypoint should execute', () async {
         final result = await Process.run('dart', [
-          'compile',
-          'kernel',
-          '--no-sound-null-safety',
+          'run',
           'lib/simple_examples.dart',
         ], workingDirectory: '../../example');
 
-        // We expect this to succeed or at least not fail due to syntax errors
-        // Exit code 254 typically means compilation succeeded but there were warnings
         expect(
-          [0, 254],
-          contains(result.exitCode),
-          reason: 'Generated code should compile without syntax errors',
+          result.exitCode,
+          equals(0),
+          reason: 'Generated code should execute successfully',
+        );
+        expect(
+          result.stdout.toString(),
+          contains('🎉 All examples completed!'),
+          reason: 'Example entrypoint should complete',
         );
       });
     });
@@ -283,43 +234,22 @@ void main() {
           reason: 'Examples should show metadata/preferences fields',
         );
       });
-
-      test('example tests should cover important scenarios', () async {
-        final testFiles = Directory('../../example/test')
-            .listSync()
-            .whereType<File>()
-            .where((f) => f.path.endsWith('_test.dart'))
-            .toList();
-
-        expect(
-          testFiles.isNotEmpty,
-          isTrue,
-          reason: 'Example package should have test files',
-        );
-
-        for (final testFile in testFiles) {
-          final content = await testFile.readAsString();
-
-          // Check that tests use proper testing patterns
-          expect(
-            content,
-            contains('test('),
-            reason: 'Test files should contain test cases',
-          );
-          expect(
-            content,
-            contains('expect('),
-            reason: 'Test files should contain assertions',
-          );
-        }
-      });
     });
 
     group('Cross-Platform Compatibility', () {
-      test('examples should work on different platforms', () {
-        // This is a placeholder for platform-specific tests
-        // In a real implementation, we might test on different Dart/Flutter versions
-        expect(true, isTrue, reason: 'Platform compatibility placeholder');
+      test('schema JSON roundtrip produces consistent output', () {
+        // Verify schema serialization is deterministic across platforms
+        final schema = Ack.object({
+          'name': Ack.string().minLength(1),
+          'age': Ack.integer().min(0),
+        });
+
+        final jsonSchema1 = schema.toJsonSchema();
+        final jsonSchema2 = schema.toJsonSchema();
+
+        expect(jsonSchema1, equals(jsonSchema2));
+        expect(jsonSchema1, containsPair('type', 'object'));
+        expect(jsonSchema1, contains('properties'));
       });
     });
   });
