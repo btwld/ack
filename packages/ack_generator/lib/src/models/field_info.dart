@@ -34,6 +34,16 @@ class FieldInfo {
   /// Optional collection element display type override for list/set fields.
   final String? collectionElementDisplayTypeOverride;
 
+  /// Optional cast type override for list/set element wrappers
+  /// (for example, `Map<String, Object?>` for object schema references).
+  final String? collectionElementCastTypeOverride;
+
+  /// Whether list/set elements should be wrapped as generated extension types.
+  final bool collectionElementIsCustomType;
+
+  /// Optional cast type override for nested schema references.
+  final String? nestedSchemaCastTypeOverride;
+
   const FieldInfo({
     required this.name,
     required this.jsonKey,
@@ -46,6 +56,9 @@ class FieldInfo {
     this.nestedSchemaRef,
     this.displayTypeOverride,
     this.collectionElementDisplayTypeOverride,
+    this.collectionElementCastTypeOverride,
+    this.collectionElementIsCustomType = false,
+    this.nestedSchemaCastTypeOverride,
   });
 
   /// Whether this field references another schema model

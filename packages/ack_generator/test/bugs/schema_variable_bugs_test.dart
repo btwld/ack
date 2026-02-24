@@ -198,6 +198,103 @@ final statusesSchema = Ack.list(statusSchema);
       });
     });
 
+    test('throws on circular list schema variable references', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final schemaASchema = Ack.list(schemaBSchema);
+
+@AckType()
+final schemaBSchema = Ack.list(schemaASchema);
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'schemaASchema');
+
+        final analyzer = SchemaAstAnalyzer();
+
+        expect(
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(isA<InvalidGenerationSourceError>()),
+        );
+      });
+    });
+
+    test('throws on top-level Ack.list(Ack.object(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final usersSchema = Ack.list(Ack.object({
+  'id': Ack.string(),
+}));
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'usersSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+
+        expect(
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(isA<InvalidGenerationSourceError>()),
+        );
+      });
+    });
+
+    test(
+      'throws on top-level Ack.list(schemaFactory()) when element is not statically resolvable',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+schemaFactory() => Ack.string();
+
+@AckType()
+final usersSchema = Ack.list(schemaFactory());
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/schema.dart'),
+          );
+          final schemaVar = library.topLevelVariables
+              .whereType<TopLevelVariableElement2>()
+              .firstWhere((e) => e.name3 == 'usersSchema');
+
+          final analyzer = SchemaAstAnalyzer();
+
+          expect(
+            () => analyzer.analyzeSchemaVariable(schemaVar),
+            throwsA(isA<InvalidGenerationSourceError>()),
+          );
+        });
+      },
+    );
+
     test('supports prefixed Ack invocations in list schemas', () async {
       final assets = {
         ...allAssets,
@@ -226,6 +323,46 @@ final statusesSchema = ack.Ack.list(ack.Ack.string().minLength(2));
 
         expect(modelInfo, isNotNull);
         expect(modelInfo!.representationType, equals('List<String>'));
+      });
+    });
+  });
+
+  group('Schema alias cycles', () {
+    test('throws a clear circular-reference error for alias cycles', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final schemaASchema = schemaBSchema;
+
+@AckType()
+final schemaBSchema = schemaASchema;
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'schemaASchema');
+
+        final analyzer = SchemaAstAnalyzer();
+
+        expect(
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(
+            predicate(
+              (error) =>
+                  error is InvalidGenerationSourceError &&
+                  error.toString().contains('Circular schema reference'),
+            ),
+          ),
+        );
       });
     });
   });
@@ -447,12 +584,10 @@ final testSchema = Ack.object({
       });
     });
 
-    test(
-      'extracts String from Ack.list(Ack.enumString(...))',
-      () async {
-        final assets = {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+    test('extracts String from Ack.list(Ack.enumString(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -461,35 +596,34 @@ final testSchema = Ack.object({
   'styles': Ack.list(Ack.enumString(['bold', 'italic', 'underline'])),
 });
 ''',
-        };
+      };
 
-        await resolveSources(assets, (resolver) async {
-          final library = await resolver.libraryFor(
-            AssetId('test_pkg', 'lib/schema.dart'),
-          );
-          final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement2>()
-              .firstWhere((e) => e.name3 == 'testSchema');
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
 
-          final analyzer = SchemaAstAnalyzer();
-          final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
+        final analyzer = SchemaAstAnalyzer();
+        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
 
-          final stylesField = modelInfo!.fields.firstWhere(
-            (f) => f.name == 'styles',
-          );
-          final listType = stylesField.type as InterfaceType;
-          final elementType = listType.typeArguments.first;
+        final stylesField = modelInfo!.fields.firstWhere(
+          (f) => f.name == 'styles',
+        );
+        final listType = stylesField.type as InterfaceType;
+        final elementType = listType.typeArguments.first;
 
-          expect(
-            elementType.isDartCoreString,
-            isTrue,
-            reason:
-                'Expected String, got '
-                '${elementType.getDisplayString(withNullability: false)}',
-          );
-        });
-      },
-    );
+        expect(
+          elementType.isDartCoreString,
+          isTrue,
+          reason:
+              'Expected String, got '
+              '${elementType.getDisplayString(withNullability: false)}',
+        );
+      });
+    });
 
     test('extracts int from Ack.list(Ack.integer().min(0).max(100))', () async {
       final assets = {
@@ -531,11 +665,9 @@ final testSchema = Ack.object({
         );
       });
     });
-  });
 
-  group('Nested object lists with method chain modifiers', () {
     test(
-      'extracts Map from Ack.list(Ack.object({...}).describe(...))',
+      'throws on Ack.list(schemaFactory()) when element is not statically resolvable',
       () async {
         final assets = {
           ...allAssets,
@@ -543,11 +675,11 @@ final testSchema = Ack.object({
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
+schemaFactory() => Ack.string();
+
 @AckType()
 final testSchema = Ack.object({
-  'items': Ack.list(Ack.object({
-    'name': Ack.string(),
-  }).describe('An item')),
+  'items': Ack.list(schemaFactory()),
 });
 ''',
         };
@@ -561,26 +693,87 @@ final testSchema = Ack.object({
               .firstWhere((e) => e.name3 == 'testSchema');
 
           final analyzer = SchemaAstAnalyzer();
-          final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
-
-          final itemsField = modelInfo!.fields.firstWhere(
-            (f) => f.name == 'items',
-          );
-          final listType = itemsField.type as InterfaceType;
-          final elementType = listType.typeArguments.first;
 
           expect(
-            elementType.isDartCoreMap,
-            isTrue,
-            reason:
-                'Expected Map<String, Object?>, got '
-                '${elementType.getDisplayString(withNullability: false)}',
+            () => analyzer.analyzeSchemaVariable(schemaVar),
+            throwsA(isA<InvalidGenerationSourceError>()),
           );
         });
       },
     );
 
-    test('extracts Map from Ack.list(Ack.object({...}).optional())', () async {
+    test(
+      'throws when list element method chain exceeds analyzer depth',
+      () async {
+        final deepChain =
+            'Ack.string()${List.filled(24, ".describe('x')").join()}';
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/schema.dart':
+              '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'items': Ack.list($deepChain),
+});
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/schema.dart'),
+          );
+          final schemaVar = library.topLevelVariables
+              .whereType<TopLevelVariableElement2>()
+              .firstWhere((e) => e.name3 == 'testSchema');
+
+          final analyzer = SchemaAstAnalyzer();
+
+          expect(
+            () => analyzer.analyzeSchemaVariable(schemaVar),
+            throwsA(isA<InvalidGenerationSourceError>()),
+          );
+        });
+      },
+    );
+  });
+
+  group('Nested object lists with method chain modifiers', () {
+    test('throws on Ack.list(Ack.object({...}).describe(...))', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final testSchema = Ack.object({
+  'items': Ack.list(Ack.object({
+    'name': Ack.string(),
+  }).describe('An item')),
+});
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement2>()
+            .firstWhere((e) => e.name3 == 'testSchema');
+
+        final analyzer = SchemaAstAnalyzer();
+        expect(
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(isA<InvalidGenerationSourceError>()),
+        );
+      });
+    });
+
+    test('throws on Ack.list(Ack.object({...}).optional())', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -605,20 +798,9 @@ final testSchema = Ack.object({
             .firstWhere((e) => e.name3 == 'testSchema');
 
         final analyzer = SchemaAstAnalyzer();
-        final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
-
-        final recordsField = modelInfo!.fields.firstWhere(
-          (f) => f.name == 'records',
-        );
-        final listType = recordsField.type as InterfaceType;
-        final elementType = listType.typeArguments.first;
-
         expect(
-          elementType.isDartCoreMap,
-          isTrue,
-          reason:
-              'Expected Map<String, Object?>, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(isA<InvalidGenerationSourceError>()),
         );
       });
     });
@@ -907,9 +1089,7 @@ final eventSchema = Ack.object({
 
         expect(modelInfo, isNotNull);
 
-        final typeField = modelInfo!.fields.firstWhere(
-          (f) => f.name == 'type',
-        );
+        final typeField = modelInfo!.fields.firstWhere((f) => f.name == 'type');
 
         expect(typeField.type.isDartCoreString, isTrue);
       });
@@ -946,9 +1126,7 @@ final userSchema = Ack.object({
         expect(modelInfo, isNotNull);
         expect(modelInfo!.fields.length, 2);
 
-        final roleField = modelInfo.fields.firstWhere(
-          (f) => f.name == 'role',
-        );
+        final roleField = modelInfo.fields.firstWhere((f) => f.name == 'role');
 
         expect(roleField.type.element3, isNotNull);
         expect(
@@ -1030,9 +1208,7 @@ final configSchema = Ack.object({
 
         expect(modelInfo, isNotNull);
 
-        final tagsField = modelInfo!.fields.firstWhere(
-          (f) => f.name == 'tags',
-        );
+        final tagsField = modelInfo!.fields.firstWhere((f) => f.name == 'tags');
 
         expect(tagsField.type.isDartCoreList, isTrue);
 
@@ -1127,8 +1303,7 @@ final actionSchema = Ack.object({
       });
     });
 
-    test('handles Ack.enumValues<T>().nullable() without optional()',
-        () async {
+    test('handles Ack.enumValues<T>().nullable() without optional()', () async {
       final assets = {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
@@ -1158,9 +1333,7 @@ final profileSchema = Ack.object({
 
         expect(modelInfo, isNotNull);
 
-        final roleField = modelInfo!.fields.firstWhere(
-          (f) => f.name == 'role',
-        );
+        final roleField = modelInfo!.fields.firstWhere((f) => f.name == 'role');
 
         expect(
           roleField.type.getDisplayString(withNullability: false),

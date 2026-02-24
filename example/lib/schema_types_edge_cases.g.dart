@@ -332,10 +332,7 @@ extension type ContactListType(Map<String, Object?> _data)
       .map((e) => AddressType(e as Map<String, Object?>))
       .toList();
 
-  ContactListType copyWith({
-    String? name,
-    List<Map<String, dynamic>>? addresses,
-  }) {
+  ContactListType copyWith({String? name, List<AddressType>? addresses}) {
     return ContactListType.parse({
       'name': name ?? this.name,
       'addresses': addresses ?? this.addresses,

@@ -92,5 +92,57 @@ final orderSchema = Ack.object({
         },
       );
     });
+
+    test('fails on anonymous inline object fields in strict mode', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'profile': Ack.object({
+    'name': Ack.string(),
+  }),
+});
+''',
+          },
+          outputs: {'test_pkg|lib/schema.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('fails on Ack.list(Ack.object(...)) in strict mode', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'profiles': Ack.list(Ack.object({
+    'name': Ack.string(),
+  })),
+});
+''',
+          },
+          outputs: {'test_pkg|lib/schema.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }
