@@ -1,10 +1,10 @@
 # Ack - Schema Validation Library for Dart
 
-> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.5.
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.6.
 
 ## Overview
 
-Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.5 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.6 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
 
 **Repository**: https://github.com/btwld/ack
 **Documentation**: https://docs.page/btwld/ack
@@ -648,6 +648,25 @@ sealed class SchemaResult<T extends Object> {
 }
 ```
 
+### @AckType Resolution Requirements (Strict Behavior)
+
+`@AckType()` uses strict nested schema resolution to prevent silent fallback to
+`Map<String, Object?>` when references are ambiguous or unresolved.
+
+- Nested object fields must reference a named top-level schema variable/getter.
+  Anonymous inline object fields are not supported for typed wrapper
+  generation.
+- `Ack.list(...)` items must be statically resolvable. Dynamic expressions
+  (for example `schemaFactory()`) or overly deep method chains are rejected.
+- Cross-file references (direct import, prefixed import, re-export) are
+  supported, but prefixed references must resolve inside the specified prefix.
+  `prefix.symbol` does not fall back to another namespace.
+- Object schema references used for typed wrappers must be annotated with
+  `@AckType()`. Unannotated object references fail generation instead of
+  degrading to raw map access.
+- Circular schema alias/reference chains fail generation with a clear circular
+  reference error.
+
 ---
 
 ## Code Generation Setup
@@ -657,11 +676,11 @@ sealed class SchemaResult<T extends Object> {
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack: ^1.0.0-beta.5
-  ack_annotations: ^1.0.0-beta.5
+  ack: ^1.0.0-beta.6
+  ack_annotations: ^1.0.0-beta.6
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.5
+  ack_generator: ^1.0.0-beta.6
   build_runner: ^2.4.0
 ```
 
@@ -758,7 +777,7 @@ Converts Ack schemas to Firebase AI Schema format for structured output generati
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_firebase_ai: ^1.0.0-beta.5
+  ack_firebase_ai: ^1.0.0-beta.6
 ```
 
 ```dart
@@ -791,7 +810,7 @@ Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_json_schema_builder: ^1.0.0-beta.5
+  ack_json_schema_builder: ^1.0.0-beta.6
 ```
 
 ```dart
