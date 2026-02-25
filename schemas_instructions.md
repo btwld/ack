@@ -16,7 +16,7 @@ void main() {
 }
 ```
 
-All schemas expose `validate`, `safeParse`, `tryParse`, and `parseOrThrow`. Fluent helpers like `.nullable()`, `.optional()`, `.withDefault()`, `.describe()`, `.refine()`, and `.transform()` are available on every schema unless noted.
+All schemas expose `parse` (throws on failure), `safeParse` (returns `SchemaResult`), `parseAs` (maps the validated value), and `safeParseAs` (safe version of `parseAs`). Fluent helpers like `.nullable()`, `.optional()`, `.withDefault()`, `.describe()`, `.refine()`, and `.transform()` are available on every schema unless noted.
 
 ---
 
@@ -46,7 +46,7 @@ final quantitySchema = Ack.integer()
     .max(100)
     .withDefault(1);
 
-quantitySchema.validateOrThrow(5);      // passes
+quantitySchema.parse(5);                // passes (throws on failure)
 quantitySchema.safeParse('3');           // Ok(3) via lenient parsing
 Ack.integer(strictPrimitiveParsing: true).safeParse('3'); // Fails
 ```
@@ -70,7 +70,7 @@ Ack.double(strictPrimitiveParsing: true).safeParse(10); // Fails (int cannot be 
 ```dart
 final enabledSchema = Ack.boolean().withDefault(false);
 
-enabledSchema.parseOrThrow(true);       // returns true
+enabledSchema.parse(true);              // returns true (throws on failure)
 Ack.boolean().safeParse('true');          // Ok(true) when strict parsing is off
 Ack.boolean().strictParsing().safeParse('true'); // Fails
 ```

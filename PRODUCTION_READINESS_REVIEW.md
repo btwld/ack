@@ -8,20 +8,27 @@
 
 ## Executive Summary
 
-The ack validation library is well-architected with consistent patterns, strong type safety, and good test coverage. However, several issues should be addressed before a 1.0.0 release. This review identified **8 critical/high-priority items**, **15 medium-priority items**, and **12 low-priority items** across all checklist categories.
+The ack validation library is well-architected with consistent patterns, strong type safety, and good test coverage. However, several issues should be addressed before a 1.0.0 release. This review identified **4 release-blocking items** (now fixed), **4 medium-priority items**, and several low-priority improvements across all checklist categories.
 
-### Top Blockers for 1.0.0
+### Release Blockers (all fixed in this branch)
+
+| # | Issue | Category | Status |
+|---|-------|----------|--------|
+| 1 | `packages/ack/README.md` was empty (0 bytes) — pub.dev landing page | Documentation | **FIXED** |
+| 2 | `safeParse()` could throw on `Map<int, dynamic>` input via `.cast()` | Core Logic | **FIXED** |
+| 3 | `schemas_instructions.md` referenced non-existent methods (`validateOrThrow`, `parseOrThrow`) | Documentation | **FIXED** |
+| 4 | IPv6 regex lacked `^$` anchors — correctness bug + performance concern | Security | **FIXED** |
+
+### Remaining Items (non-blocking)
 
 | # | Issue | Category | Severity |
 |---|-------|----------|----------|
-| 1 | `packages/ack/README.md` is empty (0 bytes) — this is the pub.dev landing page | Documentation | **CRITICAL** |
-| 2 | Deprecated APIs (`validate()`, `tryParse()`, `withDescription()`, `StringSchema.enumString()`, `StringSchema.literal()`) still ship — decide: remove or keep with migration path | API Surface | **HIGH** |
-| 3 | `schemas_instructions.md` references non-existent methods (`validateOrThrow`, `parseOrThrow`) | Documentation | **HIGH** |
-| 4 | IPv6 regex lacks `^$` anchors — correctness bug + performance concern | Security | **HIGH** |
-| 5 | `safeParse()` can throw on `Map<int, dynamic>` input via `.cast()` — violates never-throws guarantee | Core Logic | **HIGH** |
-| 6 | Error messages echo full input values — data leakage risk for sensitive fields | Security | **HIGH** |
-| 7 | No depth limit on nested validation — stack overflow on adversarial input | Security | **HIGH** |
-| 8 | `topics` field missing from ALL pubspec.yaml files — impacts pub.dev discoverability | Metadata | **HIGH** |
+| 5 | Deprecated APIs still ship — acceptable if removal timeline is documented | API Surface | **MEDIUM** |
+| 6 | Release/version docs drift (`docs.json`, `llms.txt`) | Documentation | **MEDIUM** |
+| 7 | Root CHANGELOG.md duplicated/stale entries | Documentation | **MEDIUM** |
+| 8 | Error messages echo full input values — data leakage risk for sensitive fields | Security | **MEDIUM** |
+| 9 | No depth limit on nested validation — stack overflow on adversarial input | Security | **MEDIUM** |
+| 10 | Missing `topics`/`homepage` in pubspec.yaml files — discoverability, not a hard blocker | Metadata | **LOW** |
 
 ---
 
@@ -438,14 +445,12 @@ The melos `format` script runs `dart format . --fix` (apply mode). There is no v
 | UUID regex | `pattern_constraint.dart:104` | Safe (fixed quantifiers) |
 | Hex color regex | `pattern_constraint.dart:114` | Safe |
 | IPv4 regex | `string_ip_constraint.dart:9` | Safe |
-| **IPv6 regex** | **`string_ip_constraint.dart:13`** | **MEDIUM — lacks `^$` anchors (correctness bug + perf)** |
+| IPv6 regex | `string_ip_constraint.dart:13` | **FIXED** — `^$` anchors added |
 | Timezone offset | `pattern_constraint.dart:196` | Safe |
 | Time format | `pattern_constraint.dart:225` | Safe |
 | User-supplied regex | `pattern_constraint.dart:67,173` | By design — should document ReDoS risk |
 
-**IPv6 Bug:** The regex lacks `^` and `$` anchors, meaning:
-1. `hasMatch()` finds substring matches — `"garbage::1garbage"` would incorrectly match
-2. On long non-IPv6 strings, the engine attempts matching at every position × all 9+ alternation branches
+**IPv6 Bug (FIXED):** The regex previously lacked `^` and `$` anchors, meaning `hasMatch()` found substring matches and the engine attempted matching at every position. Anchors have been added.
 
 ### 10.2 Nested Input — Stack Overflow
 
@@ -488,53 +493,43 @@ All clean. Core `ack` has only 2 dependencies (`meta`, `collection`) — both of
 | `topics` | **Missing** | **Missing** | **Missing** | **Missing** | **Missing** |
 | `description < 180` | Yes (36) | Yes (42) | Yes (47) | Yes (64) | Yes (56) |
 | `LICENSE` | Yes | Yes | Yes | Yes | Yes |
-| `README` | **EMPTY** | Yes | Yes | Yes | Yes |
+| `README` | **FIXED** | Yes | Yes | Yes | Yes |
 
 ### 11.2 Recommended Actions
 
 1. Add `topics` to all packages (e.g., `validation`, `schema`, `dart`, `codegen`, `firebase`)
 2. Add `homepage: https://docs.page/btwld/ack` to packages missing it
 3. Add `issue_tracker` to `ack_annotations`
-4. Create `packages/ack/README.md` content (most important — pub.dev landing page)
 
 ---
 
 ## Recommended Fix Priority
 
-### Phase 1 — Must Fix Before 1.0.0 Tag
+### Fixed in This Branch (Release Blockers)
 
-1. **Create `packages/ack/README.md`** with content from root README or dedicated package docs
-2. **Fix IPv6 regex** — add `^` and `$` anchors in `string_ip_constraint.dart`
-3. **Fix Map cast safety** in `ObjectSchema` and `DiscriminatedObjectSchema` — wrap `.cast()` in try-catch
-4. **Fix `schemas_instructions.md`** — remove references to non-existent `validateOrThrow`/`parseOrThrow`
+1. ~~**Create `packages/ack/README.md`**~~ — **DONE** — full pub.dev-ready README with schema table, features, ecosystem links
+2. ~~**Fix IPv6 regex**~~ — **DONE** — `^$` anchors added in `string_ip_constraint.dart`
+3. ~~**Fix Map cast safety**~~ — **DONE** — try-catch wrapping `.cast()` in `ObjectSchema` and `DiscriminatedObjectSchema`
+4. ~~**Fix `schemas_instructions.md`**~~ — **DONE** — replaced `validateOrThrow`/`parseOrThrow` with `parse`
+
+### Before 1.0.0 Tag (Medium Priority)
+
 5. **Update `llms.txt`** version references to match current release
-6. **Add `topics` to all pubspec.yaml files**
-7. **Add `homepage` and `issue_tracker`** to packages missing them
-8. **Clean up root CHANGELOG.md** — remove duplicates, add missing beta entries
-9. **Decide on deprecated APIs** — remove or explicitly commit to keeping with timeline
+6. **Update docs.json version** from `0.2.0` to `1.0.0`
+7. **Clean up root CHANGELOG.md** — remove duplicates, add missing beta entries
+8. **Update inter-package version constraints** from `^1.0.0-beta.7` to `^1.0.0`
+9. **Document deprecated API removal timeline** — acceptable to keep in 1.0 if timeline is clear
 
-### Phase 2 — Should Fix Before 1.0.0
+### Nice to Have
 
-10. **Fix DiscriminatedObjectSchema** null-vs-missing discriminator error message
-11. **Document AnyOfSchema order dependency** in class documentation
-12. **Update docs.json version** from `0.2.0` to `1.0.0`
-13. **Link orphaned docs pages** in sidebar
-14. **Add `ack_annotations` and `ack_json_schema_builder`** to root README package list
-15. **Update inter-package version constraints** from `^1.0.0-beta.7` to `^1.0.0`
-16. **Pin CI workflows** to SHA/tag instead of `@main`
-17. **Fix/remove broken `ensure_analysis_options` script** reference
-
-### Phase 3 — Nice to Have for 1.0.0
-
-18. Document sensitive data in error messages (or add option to redact)
-19. Add depth limit parameter to validation context
-20. Standardize `analysis_options.yaml` across packages
-21. Extend `api_check.dart` to cover all 5 packages
-22. Remove unused `very_good_analysis` dependency
-23. Add documentation tests for remaining docs pages
-24. Add more performance benchmarks (deeply nested, large lists)
-25. Fill CHANGELOG gaps for `ack_json_schema_builder` beta.2–3
-26. Fix stale beta version references in `ack_annotations` and `ack_generator` READMEs
+10. Add `topics`, `homepage`, `issue_tracker` to pubspec.yaml files where missing
+11. Fix DiscriminatedObjectSchema null-vs-missing discriminator error message
+12. Document AnyOfSchema order dependency in class documentation
+13. Link orphaned docs pages in sidebar
+14. Add `ack_annotations` and `ack_json_schema_builder` to root README package list
+15. Pin CI workflows to SHA/tag instead of `@main`
+16. Document sensitive data in error messages (or add option to redact)
+17. Add depth limit parameter to validation context
 
 ---
 

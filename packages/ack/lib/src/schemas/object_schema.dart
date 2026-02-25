@@ -43,10 +43,24 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
-    final mapValue = inputValue is Map<String, Object?>
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON.
+    // Use a safe conversion that cannot throw, preserving safeParse's guarantee.
+    final MapValue mapValue;
+    if (inputValue is Map<String, Object?>) {
+      mapValue = inputValue;
+    } else {
+      try {
+        mapValue = inputValue.cast<String, Object?>();
+      } on TypeError {
+        return SchemaResult.fail(
+          TypeMismatchError(
+            expectedType: schemaType,
+            actualType: AckSchema.getSchemaType(inputValue),
+            context: context,
+          ),
+        );
+      }
+    }
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
