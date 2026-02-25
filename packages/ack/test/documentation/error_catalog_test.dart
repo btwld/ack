@@ -3,8 +3,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('Error Message Catalog', () {
-    final errorCatalog = <String, List<ErrorExample>>{};
-
     test('type validation errors', () {
       final examples = <ErrorExample>[];
 
@@ -13,7 +11,6 @@ void main() {
         ErrorExample(
           schema: Ack.string(),
           input: {'not': 'a string'},
-          expectedErrorType: 'type',
           description: 'Object provided to string schema',
         ),
       );
@@ -23,7 +20,6 @@ void main() {
         ErrorExample(
           schema: Ack.integer(),
           input: {'not': 'a number'},
-          expectedErrorType: 'type',
           description: 'Object instead of integer',
         ),
       );
@@ -33,7 +29,6 @@ void main() {
         ErrorExample(
           schema: Ack.boolean(),
           input: {'not': 'a boolean'},
-          expectedErrorType: 'type',
           description: 'Object instead of boolean',
         ),
       );
@@ -43,7 +38,6 @@ void main() {
         ErrorExample(
           schema: Ack.object({'id': Ack.string()}),
           input: 'not an object',
-          expectedErrorType: 'type',
           description: 'Non-object value',
         ),
       );
@@ -53,12 +47,9 @@ void main() {
         ErrorExample(
           schema: Ack.list(Ack.string()),
           input: 'not a list',
-          expectedErrorType: 'type',
           description: 'Non-list value',
         ),
       );
-
-      errorCatalog['Type Validation'] = examples;
 
       // Verify all examples
       for (final example in examples) {
@@ -86,7 +77,6 @@ void main() {
         ErrorExample(
           schema: Ack.string().minLength(5),
           input: 'hi',
-          expectedErrorType: 'constraint',
           description: 'String too short',
         ),
       );
@@ -95,7 +85,6 @@ void main() {
         ErrorExample(
           schema: Ack.string().maxLength(3),
           input: 'hello',
-          expectedErrorType: 'constraint',
           description: 'String too long',
         ),
       );
@@ -104,7 +93,6 @@ void main() {
         ErrorExample(
           schema: Ack.string().length(5),
           input: 'hi',
-          expectedErrorType: 'constraint',
           description: 'String wrong exact length',
         ),
       );
@@ -114,7 +102,6 @@ void main() {
         ErrorExample(
           schema: Ack.integer().min(0),
           input: -5,
-          expectedErrorType: 'constraint',
           description: 'Number below minimum',
         ),
       );
@@ -123,7 +110,6 @@ void main() {
         ErrorExample(
           schema: Ack.integer().max(100),
           input: 150,
-          expectedErrorType: 'constraint',
           description: 'Number above maximum',
         ),
       );
@@ -132,7 +118,6 @@ void main() {
         ErrorExample(
           schema: Ack.integer().positive(),
           input: -1,
-          expectedErrorType: 'constraint',
           description: 'Number not positive',
         ),
       );
@@ -141,7 +126,6 @@ void main() {
         ErrorExample(
           schema: Ack.integer().negative(),
           input: 1,
-          expectedErrorType: 'constraint',
           description: 'Number not negative',
         ),
       );
@@ -151,7 +135,6 @@ void main() {
         ErrorExample(
           schema: Ack.string().email(),
           input: 'not-an-email',
-          expectedErrorType: 'constraint',
           description: 'Invalid email format',
         ),
       );
@@ -160,7 +143,6 @@ void main() {
         ErrorExample(
           schema: Ack.string().url(),
           input: 'not-a-url',
-          expectedErrorType: 'constraint',
           description: 'Invalid URL format',
         ),
       );
@@ -169,7 +151,6 @@ void main() {
         ErrorExample(
           schema: Ack.string().uuid(),
           input: 'not-a-uuid',
-          expectedErrorType: 'constraint',
           description: 'Invalid UUID format',
         ),
       );
@@ -179,7 +160,6 @@ void main() {
         ErrorExample(
           schema: Ack.list(Ack.string()).minItems(2),
           input: ['one'],
-          expectedErrorType: 'constraint',
           description: 'List too few items',
         ),
       );
@@ -188,12 +168,9 @@ void main() {
         ErrorExample(
           schema: Ack.list(Ack.string()).maxItems(2),
           input: ['one', 'two', 'three'],
-          expectedErrorType: 'constraint',
           description: 'List too many items',
         ),
       );
-
-      errorCatalog['Constraint Validation'] = examples;
 
       for (final example in examples) {
         final result = example.schema.safeParse(example.input);
@@ -213,7 +190,6 @@ void main() {
         ErrorExample(
           schema: Ack.object({'id': Ack.string(), 'name': Ack.string()}),
           input: {'id': '123'},
-          expectedErrorType: 'nested',
           description: 'Missing required field',
         ),
       );
@@ -227,7 +203,6 @@ void main() {
           input: {
             'user': {'email': 'invalid-email'},
           },
-          expectedErrorType: 'nested',
           description: 'Nested object validation failure',
         ),
       );
@@ -237,7 +212,6 @@ void main() {
         ErrorExample(
           schema: Ack.list(Ack.string().email()),
           input: ['valid@example.com', 'invalid-email'],
-          expectedErrorType: 'nested',
           description: 'List item validation failure',
         ),
       );
@@ -253,7 +227,6 @@ void main() {
             },
           ),
           input: {'type': 'c'},
-          expectedErrorType: 'discriminated',
           description: 'Invalid discriminator value',
         ),
       );
@@ -263,12 +236,9 @@ void main() {
         ErrorExample(
           schema: Ack.enumString(['red', 'green', 'blue']),
           input: 'yellow',
-          expectedErrorType: 'constraint',
           description: 'Invalid enum value',
         ),
       );
-
-      errorCatalog['Complex Validation'] = examples;
 
       for (final example in examples) {
         final result = example.schema.safeParse(example.input);
@@ -288,7 +258,6 @@ void main() {
         ErrorExample(
           schema: Ack.string(),
           input: null,
-          expectedErrorType: 'constraint',
           description: 'Null value for non-nullable schema',
         ),
       );
@@ -298,12 +267,9 @@ void main() {
         ErrorExample(
           schema: Ack.object({'required': Ack.string()}),
           input: {},
-          expectedErrorType: 'nested',
           description: 'Required field missing',
         ),
       );
-
-      errorCatalog['Null and Undefined'] = examples;
 
       for (final example in examples) {
         final result = example.schema.safeParse(example.input);
@@ -342,42 +308,17 @@ void main() {
         expect(error, isA<SchemaError>());
       }
     });
-
-    test('generate error documentation', () {
-      // This test demonstrates how to generate documentation from the error catalog
-      final doc = StringBuffer();
-      doc.writeln('# Ack Validation Error Catalog\n');
-      doc.writeln('This document lists all possible validation errors.\n');
-
-      for (final category in errorCatalog.entries) {
-        doc.writeln('## ${category.key}\n');
-
-        for (final example in category.value) {
-          doc.writeln('### ${example.description}');
-          doc.writeln('**Input:** `${example.input}`');
-          doc.writeln('**Expected Error Type:** ${example.expectedErrorType}');
-          doc.writeln('');
-        }
-      }
-
-      // Verify documentation was generated
-      expect(doc.toString(), contains('Error Catalog'));
-      expect(doc.toString(), contains('Type Validation'));
-      expect(doc.toString(), contains('Constraint Validation'));
-    });
   });
 }
 
 class ErrorExample {
   final AckSchema schema;
   final dynamic input;
-  final String expectedErrorType;
   final String description;
 
   ErrorExample({
     required this.schema,
     required this.input,
-    required this.expectedErrorType,
     required this.description,
   });
 }

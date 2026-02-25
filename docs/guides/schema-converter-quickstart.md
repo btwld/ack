@@ -2,6 +2,12 @@
 
 **Use this for rapid prototyping of new schema converter packages**
 
+This guide is a scaffold for converter authors. The generated converter examples
+use `Map<String, Object?>` as a stable intermediate representation to keep this
+template runnable without binding to any one target schema SDK.
+If your target SDK uses native schema objects, replace each map construction with
+the corresponding SDK builders.
+
 ## 1. Create Package (2 minutes)
 
 ```bash
@@ -65,7 +71,10 @@ import 'converter.dart';
 
 extension <Target>SchemaExtension on AckSchema {
   /// Converts this Ack schema to <Target> format.
-  <TargetType> to<Target>Schema() {
+  ///
+  /// In this template, this returns a map representation so the example stays
+  /// self-consistent across targets.
+  Map<String, Object?> to<Target>Schema() {
     return <Target>SchemaConverter.convert(this);
   }
 }
@@ -81,11 +90,13 @@ import 'package:ack/ack.dart';
 class <Target>SchemaConverter {
   const <Target>SchemaConverter._();
 
-  static <TargetType> convert(AckSchema schema) {
+  /// Returns a map-based representation to avoid binding this template to one
+  /// specific SDK type. Replace these map shapes with your target SDK schema types.
+  static Map<String, Object?> convert(AckSchema schema) {
     return _convertSchema(schema);
   }
 
-  static <TargetType> _convertSchema(AckSchema schema) {
+  static Map<String, Object?> _convertSchema(AckSchema schema) {
     final json = schema.toJsonSchema();
 
     return switch (schema) {
@@ -103,37 +114,100 @@ class <Target>SchemaConverter {
     };
   }
 
-  // TODO: Implement converters
-  static <TargetType> _convertString(StringSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertString(StringSchema s, Map<String, Object?> j) {
+    return <String, Object?>{
+      'type': 'string',
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+      if (_asInt(j['minLength']) != null) 'minLength': _asInt(j['minLength']),
+      if (_asInt(j['maxLength']) != null) 'maxLength': _asInt(j['maxLength']),
+      if (j['pattern'] is String && (j['pattern'] as String).isNotEmpty)
+        'pattern': j['pattern'],
+      if (j['format'] is String) 'format': j['format'],
+    };
   }
 
-  static <TargetType> _convertInteger(IntegerSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertInteger(IntegerSchema s, Map<String, Object?> j) {
+    return <String, Object?>{
+      'type': 'integer',
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+      if (_asInt(j['minimum']) != null) 'minimum': _asInt(j['minimum']),
+      if (_asInt(j['maximum']) != null) 'maximum': _asInt(j['maximum']),
+      if (j['exclusiveMinimum'] is bool)
+        'exclusiveMinimum': j['exclusiveMinimum'],
+      if (j['exclusiveMaximum'] is bool)
+        'exclusiveMaximum': j['exclusiveMaximum'],
+    };
   }
 
-  static <TargetType> _convertDouble(DoubleSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertDouble(DoubleSchema s, Map<String, Object?> j) {
+    return <String, Object?>{
+      'type': 'number',
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+      if (_asDouble(j['minimum']) != null) 'minimum': _asDouble(j['minimum']),
+      if (_asDouble(j['maximum']) != null) 'maximum': _asDouble(j['maximum']),
+      if (j['exclusiveMinimum'] is bool)
+        'exclusiveMinimum': j['exclusiveMinimum'],
+      if (j['exclusiveMaximum'] is bool)
+        'exclusiveMaximum': j['exclusiveMaximum'],
+    };
   }
 
-  static <TargetType> _convertBoolean(BooleanSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertBoolean(BooleanSchema s, Map<String, Object?> j) {
+    return <String, Object?>{
+      'type': 'boolean',
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+    };
   }
 
-  static <TargetType> _convertObject(ObjectSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertObject(ObjectSchema s, Map<String, Object?> j) {
+    final properties = j['properties'];
+    final required = (j['required'] is List)
+        ? (j['required'] as List).whereType<String>().toList()
+        : null;
+
+    return <String, Object?>{
+      'type': 'object',
+      'properties': properties,
+      if (required != null && required.isNotEmpty) 'required': required,
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+      if (j['additionalProperties'] is bool)
+        'additionalProperties': j['additionalProperties'],
+    };
   }
 
-  static <TargetType> _convertArray(ListSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertArray(ListSchema s, Map<String, Object?> j) {
+    return <String, Object?>{
+      'type': 'array',
+      'items': j['items'],
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+      if (_asInt(j['minItems']) != null) 'minItems': _asInt(j['minItems']),
+      if (_asInt(j['maxItems']) != null) 'maxItems': _asInt(j['maxItems']),
+    };
   }
 
-  static <TargetType> _convertEnum(EnumSchema s, Map<String, Object?> j) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertEnum(EnumSchema s, Map<String, Object?> j) {
+    return <String, Object?>{
+      'type': 'string',
+      if (j['description'] is String) 'description': j['description'],
+      if (s.isNullable) 'nullable': true,
+      if (j['enum'] is List) 'enum': j['enum'],
+    };
   }
 
-  static <TargetType> _convertAnyOf(AnyOfSchema s) {
-    throw UnimplementedError();
+  static Map<String, Object?> _convertAnyOf(AnyOfSchema s) {
+    final json = s.toJsonSchema();
+    return <String, Object?>{
+      'type': 'anyOf',
+      if (json['description'] is String) 'description': json['description'],
+      if (s.isNullable) 'nullable': true,
+      if (json['anyOf'] is List) 'branches': json['anyOf'],
+    };
   }
 
   // Helpers
@@ -270,7 +344,8 @@ dart format .
 
 ## Next Steps
 
-1. **Implement converters** - Fill in `UnimplementedError()` methods
+1. **Verify converter mappings** - Confirm required/optional fields and
+   constraints map correctly for your target SDK
 2. **Add comprehensive tests** - Cover all Ack schema types
 3. **Document limitations** - Update README with specific constraints
 4. **Add examples** - Real-world usage patterns

@@ -2,9 +2,9 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Social Media Demo Tests', () {
-    group('Demo 1: Transform Magic', () {
-      test('should transform data with age calculation', () {
+  group('Social Media Documentation Examples', () {
+    group('Derived Fields with Transform', () {
+      test('computes age from birthYear', () {
         final userSchema =
             Ack.object({
               'name': Ack.string(),
@@ -23,7 +23,7 @@ void main() {
         expect(result['age'], equals(DateTime.now().year - 1990));
       });
 
-      test('should validate birth year constraints', () {
+      test('rejects birthYear outside configured range', () {
         final userSchema =
             Ack.object({
               'name': Ack.string(),
@@ -40,8 +40,8 @@ void main() {
       });
     });
 
-    group('Demo 2: Custom Validation with refine()', () {
-      test('should validate password confirmation', () {
+    group('Custom Validation with refine()', () {
+      test('ensures password confirmation matches', () {
         final signupSchema =
             Ack.object({
               'email': Ack.string().email(),
@@ -73,7 +73,7 @@ void main() {
         );
       });
 
-      test('should validate order total calculation', () {
+      test('verifies order total matches item lines', () {
         final orderSchema =
             Ack.object({
               'items': Ack.list(
@@ -114,8 +114,8 @@ void main() {
       });
     });
 
-    group('Demo 3: Flexible Union Types with anyOf()', () {
-      test('should validate different payment methods', () {
+    group('Flexible Union Types with anyOf()', () {
+      test('accepts different payment methods', () {
         final paymentSchema = Ack.object({
           'amount': Ack.double().positive(),
           'method': Ack.anyOf([
@@ -174,8 +174,8 @@ void main() {
       });
     });
 
-    group('Demo 4: Discriminated Unions', () {
-      test('should validate different notification types', () {
+    group('Discriminated Unions', () {
+      test('accepts all supported notification types', () {
         final notificationSchema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
@@ -245,8 +245,8 @@ void main() {
       });
     });
 
-    group('Demo 5: Chain Everything Together', () {
-      test('should validate and transform API responses', () {
+    group('Validation and Transformation Pipeline', () {
+      test('validates and transforms API payloads', () {
         final apiResponseSchema =
             Ack.anyOf([
                   // Success response
@@ -311,7 +311,7 @@ void main() {
         final invalidError = apiResponseSchema.safeParse({
           'status': 'error',
           'code': 200, // Not in 400-599 range
-          'message': 'This should fail',
+          'message': 'Expected failure',
         });
         expect(invalidError.isFail, isTrue);
       });

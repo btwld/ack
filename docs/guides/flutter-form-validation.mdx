@@ -20,7 +20,9 @@ flutter pub add ack
 
 ## Basic Form Validation with `TextFormField`
 
-Ack integrates seamlessly with Flutter's `Form` and `TextFormField` widgets. You can use [Ack schemas](../core-concepts/schemas.mdx) directly within the `validator` function of a `TextFormField`.
+Ack works with Flutter form APIs by running `safeParse` inside
+`TextFormField.validator` and returning a `String?` error message
+(`null` when valid).
 
 ```dart
 import 'package:ack/ack.dart';

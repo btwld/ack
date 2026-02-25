@@ -133,11 +133,8 @@ sealed class AckSchema<DartType extends Object> {
   /// Builds a JSON Schema with proper nullable handling.
   ///
   /// This helper centralizes the nullable/non-nullable pattern used by most
-  /// schema types. It handles:
-  /// - Adding description to the base schema
-  /// - Wrapping in anyOf with null type when nullable
-  /// - Placing default value at the correct level
-  /// - Merging constraint schemas
+  /// schema types by combining description, defaults, nullability wrapping, and
+  /// constraint schema merging.
   ///
   /// [typeSchema] contains type-specific fields (e.g., `{'type': 'string'}`
   /// or `{'type': 'array', 'items': ...}`).
@@ -306,7 +303,7 @@ sealed class AckSchema<DartType extends Object> {
     String? debugName,
   }) {
     final result = safeParseAs(value, map, debugName: debugName);
-    return result.getOrThrow() as TOut;
+    return result.getOrThrow()!;
   }
 
   /// Parses and validates a value, returning a [SchemaResult].

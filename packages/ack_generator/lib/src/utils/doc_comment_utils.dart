@@ -3,10 +3,8 @@ library;
 
 /// Parses a Dart documentation comment into a clean description string.
 ///
-/// Handles:
-/// - Single-line doc comments (`/// ...`)
-/// - Multi-line doc comments joined with spaces
-/// - Block doc comments (`/** ... */`)
+/// Supports `///` and `/** ... */` doc comments, including multi-line variants,
+/// and returns cleaned text as a single string.
 ///
 /// Returns `null` if the comment is empty or cannot be parsed.
 ///

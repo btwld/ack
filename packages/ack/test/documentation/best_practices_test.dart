@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   group('Best Practices Examples', () {
     group('Schema Reuse Pattern', () {
-      test('should define reusable schemas', () {
+      test('reuses validated schema instances', () {
         // Best practice: Define reusable schemas
         final emailSchema = Ack.string().email();
         final uuidSchema = Ack.string().uuid();
@@ -50,36 +50,28 @@ void main() {
     });
 
     group('Error Handling Pattern', () {
-      test('should use structured error handling', () {
+      test('returns stable structured error objects', () {
         final schema = Ack.object({
           'name': Ack.string().minLength(3),
           'age': Ack.integer().min(18).max(100),
         });
 
-        ValidationResult<Map<String, dynamic>> validateUser(dynamic data) {
-          final result = schema.safeParse(data);
-          if (result.isOk) {
-            return ValidationResult.valid(result.getOrThrow()!);
-          } else {
-            final error = result.getError();
-            return ValidationResult.invalid(error.message);
-          }
+        SchemaResult<Map<String, Object?>> validateUser(dynamic data) {
+          return schema.safeParse(data);
         }
 
-        // Valid case
         final validResult = validateUser({'name': 'John', 'age': 25});
-        expect(validResult.isValid, isTrue);
-        expect(validResult.value, isNotNull);
+        expect(validResult.isOk, isTrue);
+        expect(validResult.getOrThrow(), isNotNull);
 
-        // Invalid case
         final invalidResult = validateUser({'name': 'Jo', 'age': 150});
-        expect(invalidResult.isValid, isFalse);
-        expect(invalidResult.error, isNotNull);
+        expect(invalidResult.isFail, isTrue);
+        expect(invalidResult.getError(), isA<SchemaError>());
       });
     });
 
     group('Type-Safe Parsing Pattern', () {
-      test('should use type parameters for safety', () {
+      test('parses JSON into a typed map safely', () {
         T parseConfig<T>(String json, AckSchema schema) {
           final data = jsonDecode(json);
           return schema.parse(data) as T;
@@ -103,7 +95,7 @@ void main() {
     });
 
     group('Gradual Validation Pattern', () {
-      test('should support progressive validation', () {
+      test('parses data in staged validation steps', () {
         // Best practice: Progressive validation
         final basicSchema = Ack.object({'email': Ack.string().email()});
 
@@ -156,7 +148,7 @@ void main() {
     });
 
     group('Composition Pattern', () {
-      test('should compose complex schemas from simple ones', () {
+      test('builds a complex schema from reusable pieces', () {
         // Base schemas
         final addressSchema = Ack.object({
           'street': Ack.string(),
@@ -197,7 +189,7 @@ void main() {
     });
 
     group('Validation with Fallbacks', () {
-      test('should provide fallback values on validation failure', () {
+      test('returns fallback defaults when parsing fails', () {
         T parseWithFallback<T>(dynamic input, AckSchema schema, T fallback) {
           final result = schema.safeParse(input);
           return result.isOk ? result.getOrThrow() as T : fallback;
@@ -212,7 +204,7 @@ void main() {
     });
 
     group('Schema Documentation Pattern', () {
-      test('should document schemas with descriptions', () {
+      test('keeps schema descriptions on parsed output', () {
         final userSchema = Ack.object({
           'id': Ack.string().uuid().describe('Unique user identifier'),
           'email': Ack.string().email().describe('User email address'),
@@ -244,7 +236,7 @@ void main() {
     });
 
     group('Performance Best Practices', () {
-      test('should reuse schema instances for performance', () {
+      test('reuses schema instances to reduce rebuild work', () {
         // Good: Reuse schema instances
         final emailSchema = Ack.string().email();
         final userSchema = Ack.object({
@@ -269,13 +261,4 @@ void main() {
       });
     });
   });
-}
-
-class ValidationResult<T> {
-  final bool isValid;
-  final T? value;
-  final String? error;
-
-  ValidationResult.valid(this.value) : isValid = true, error = null;
-  ValidationResult.invalid(this.error) : isValid = false, value = null;
 }

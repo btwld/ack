@@ -251,10 +251,7 @@ void main() {
         var attemptCount = 0;
         final maxAttempts = 3;
 
-        Future<ValidationResult<String>> validateWithRetry(
-          String input,
-          AckSchema schema,
-        ) async {
+        Future<bool> validateWithRetry(String input, AckSchema schema) async {
           for (var attempt = 1; attempt <= maxAttempts; attempt++) {
             attemptCount++;
 
@@ -267,20 +264,16 @@ void main() {
 
             // Success on third attempt
             final result = schema.safeParse(input);
-            if (result.isOk) {
-              return ValidationResult.success(result.getOrThrow() as String);
-            } else {
-              return ValidationResult.failure(result.getError().message);
-            }
+            return result.isOk;
           }
 
-          return ValidationResult.failure('Max retry attempts exceeded');
+          return false;
         }
 
         final schema = Ack.string().email();
-        final result = await validateWithRetry('user@example.com', schema);
+        final isValid = await validateWithRetry('user@example.com', schema);
 
-        expect(result.isSuccess, isTrue);
+        expect(isValid, isTrue);
         expect(attemptCount, equals(3));
       });
     });
@@ -395,13 +388,4 @@ class ValidationError {
 
   @override
   String toString() => '$field: $message';
-}
-
-class ValidationResult<T> {
-  final bool isSuccess;
-  final T? value;
-  final String? error;
-
-  ValidationResult.success(this.value) : isSuccess = true, error = null;
-  ValidationResult.failure(this.error) : isSuccess = false, value = null;
 }

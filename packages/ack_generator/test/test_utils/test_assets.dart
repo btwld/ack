@@ -301,7 +301,7 @@ abstract class SchemaModel<T> {
   bool get hasData => _data != null;
   
   SchemaModel parse(Object? input) {
-    // Simplified implementation for testing
+    // Parse test input into the schema model contract used by test fixtures.
     return createValidated(input as Map<String, Object?>);
   }
   

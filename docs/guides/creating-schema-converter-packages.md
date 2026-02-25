@@ -520,8 +520,15 @@ class <Target>SchemaConverter {
     int? maxLength,
     String? pattern,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildStringSchema');
+    return <String, Object?>{
+      'type': 'string',
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+      if (format != null) 'format': format,
+      if (minLength != null) 'minLength': minLength,
+      if (maxLength != null) 'maxLength': maxLength,
+      if (pattern != null) 'pattern': pattern,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildIntegerSchema({
@@ -532,8 +539,17 @@ class <Target>SchemaConverter {
     bool? exclusiveMinimum,
     bool? exclusiveMaximum,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildIntegerSchema');
+    return <String, Object?>{
+      'type': 'integer',
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+      if (minimum != null) 'minimum': minimum,
+      if (maximum != null) 'maximum': maximum,
+      if (exclusiveMinimum != null)
+        'exclusiveMinimum': exclusiveMinimum,
+      if (exclusiveMaximum != null)
+        'exclusiveMaximum': exclusiveMaximum,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildNumberSchema({
@@ -542,16 +558,24 @@ class <Target>SchemaConverter {
     num? minimum,
     num? maximum,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildNumberSchema');
+    return <String, Object?>{
+      'type': 'number',
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+      if (minimum != null) 'minimum': minimum,
+      if (maximum != null) 'maximum': maximum,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildBooleanSchema({
     String? description,
     bool nullable = false,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildBooleanSchema');
+    return <String, Object?>{
+      'type': 'boolean',
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildObjectSchema({
@@ -561,8 +585,21 @@ class <Target>SchemaConverter {
     bool nullable = false,
     bool additionalProperties = false,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildObjectSchema');
+    final required = <String>[];
+    for (final propertyName in properties.keys) {
+      if (optionalProperties == null || !optionalProperties.contains(propertyName)) {
+        required.add(propertyName);
+      }
+    }
+
+    return <String, Object?>{
+      'type': 'object',
+      'properties': properties,
+      if (required.isNotEmpty) 'required': required,
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+      'additionalProperties': additionalProperties,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildArraySchema({
@@ -572,16 +609,26 @@ class <Target>SchemaConverter {
     int? minItems,
     int? maxItems,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildArraySchema');
+    return <String, Object?>{
+      'type': 'array',
+      'items': items,
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+      if (minItems != null) 'minItems': minItems,
+      if (maxItems != null) 'maxItems': maxItems,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildEnumSchema(
     List<String> enumValues,
     AckSchema schema,
   ) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildEnumSchema');
+    return <String, Object?>{
+      'type': 'string',
+      'enum': enumValues,
+      if (schema.isNullable) 'nullable': true,
+      if (schema.description != null) 'description': schema.description,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildAnyOfSchema({
@@ -589,16 +636,24 @@ class <Target>SchemaConverter {
     String? description,
     bool nullable = false,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildAnyOfSchema');
+    return <String, Object?>{
+      'type': 'anyOf',
+      'branches': branches,
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _buildAnySchema({
     String? description,
     bool nullable = false,
   }) {
-    // TODO: Implement using target SDK
-    throw UnimplementedError('Implement _buildAnySchema');
+    return <String, Object?>{
+      'type': 'any',
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+      'additionalProperties': true,
+    } as TargetSchema;
   }
 
   static <TargetSchema> _injectDiscriminatorField(
@@ -606,8 +661,16 @@ class <Target>SchemaConverter {
     String discriminatorKey,
     String discriminatorValue,
   ) {
-    // TODO: Implement discriminator field injection
-    throw UnimplementedError('Implement _injectDiscriminatorField');
+    if (schema is! Map<String, Object?>) {
+      return schema;
+    }
+
+    final withDiscriminator = Map<String, Object?>.from(schema)
+      ..['discriminator'] = <String, Object?>{
+        'propertyName': discriminatorKey,
+        'value': discriminatorValue,
+      };
+    return withDiscriminator as TargetSchema;
   }
 
   // ========================================================================
