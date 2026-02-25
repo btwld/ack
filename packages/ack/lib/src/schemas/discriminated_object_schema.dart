@@ -64,22 +64,9 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         ),
       );
     }
-    final MapValue mapValue;
-    if (inputValue is MapValue) {
-      mapValue = inputValue;
-    } else {
-      try {
-        mapValue = inputValue.cast<String, Object?>();
-      } on TypeError {
-        return SchemaResult.fail(
-          TypeMismatchError(
-            expectedType: schemaType,
-            actualType: AckSchema.getSchemaType(inputValue),
-            context: context,
-          ),
-        );
-      }
-    }
+    final mapValue = inputValue is MapValue
+        ? inputValue
+        : inputValue.cast<String, Object?>();
 
     final Object? discValueRaw = mapValue[discriminatorKey];
 

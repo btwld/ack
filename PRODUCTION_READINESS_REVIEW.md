@@ -8,16 +8,16 @@
 
 ## Executive Summary
 
-The ack validation library is well-architected with consistent patterns, strong type safety, and good test coverage. However, several issues should be addressed before a 1.0.0 release. This review identified **4 release-blocking items** (now fixed), **4 medium-priority items**, and several low-priority improvements across all checklist categories.
+The ack validation library is well-architected with consistent patterns, strong type safety, and good test coverage. However, several issues must be addressed before a 1.0.0 release. This review identified **4 release-blocking items**, **5 medium-priority items**, and several low-priority improvements across all checklist categories.
 
-### Release Blockers (all fixed in this branch)
+### Release Blockers — Fix Before Tagging 1.0.0
 
-| # | Issue | Category | Status |
-|---|-------|----------|--------|
-| 1 | `packages/ack/README.md` was empty (0 bytes) — pub.dev landing page | Documentation | **FIXED** |
-| 2 | `safeParse()` could throw on `Map<int, dynamic>` input via `.cast()` | Core Logic | **FIXED** |
-| 3 | `schemas_instructions.md` referenced non-existent methods (`validateOrThrow`, `parseOrThrow`) | Documentation | **FIXED** |
-| 4 | IPv6 regex lacked `^$` anchors — correctness bug + performance concern | Security | **FIXED** |
+| # | Issue | Category | Severity |
+|---|-------|----------|----------|
+| 1 | `packages/ack/README.md` is empty (0 bytes) — pub.dev landing page | Documentation | **CRITICAL** |
+| 2 | `safeParse()` can throw on `Map<int, dynamic>` input via `.cast()` | Core Logic | **HIGH** |
+| 3 | `schemas_instructions.md` references non-existent methods (`validateOrThrow`, `parseOrThrow`) | Documentation | **HIGH** |
+| 4 | IPv6 regex lacks `^$` anchors — correctness bug + performance concern | Security | **HIGH** |
 
 ### Remaining Items (non-blocking)
 
@@ -445,12 +445,16 @@ The melos `format` script runs `dart format . --fix` (apply mode). There is no v
 | UUID regex | `pattern_constraint.dart:104` | Safe (fixed quantifiers) |
 | Hex color regex | `pattern_constraint.dart:114` | Safe |
 | IPv4 regex | `string_ip_constraint.dart:9` | Safe |
-| IPv6 regex | `string_ip_constraint.dart:13` | **FIXED** — `^$` anchors added |
+| **IPv6 regex** | **`string_ip_constraint.dart:13`** | **HIGH — missing `^$` anchors** |
 | Timezone offset | `pattern_constraint.dart:196` | Safe |
 | Time format | `pattern_constraint.dart:225` | Safe |
 | User-supplied regex | `pattern_constraint.dart:67,173` | By design — should document ReDoS risk |
 
-**IPv6 Bug (FIXED):** The regex previously lacked `^` and `$` anchors, meaning `hasMatch()` found substring matches and the engine attempted matching at every position. Anchors have been added.
+**IPv6 Bug:** The regex lacks `^` and `$` anchors, meaning:
+1. `hasMatch()` finds substring matches — `"garbage::1garbage"` would incorrectly match
+2. On long non-IPv6 strings, the engine attempts matching at every position × all 9+ alternation branches
+
+**Fix:** Add `^` prefix and `$` suffix to the regex pattern.
 
 ### 10.2 Nested Input — Stack Overflow
 
@@ -493,7 +497,7 @@ All clean. Core `ack` has only 2 dependencies (`meta`, `collection`) — both of
 | `topics` | **Missing** | **Missing** | **Missing** | **Missing** | **Missing** |
 | `description < 180` | Yes (36) | Yes (42) | Yes (47) | Yes (64) | Yes (56) |
 | `LICENSE` | Yes | Yes | Yes | Yes | Yes |
-| `README` | **FIXED** | Yes | Yes | Yes | Yes |
+| `README` | **EMPTY** | Yes | Yes | Yes | Yes |
 
 ### 11.2 Recommended Actions
 
@@ -503,14 +507,71 @@ All clean. Core `ack` has only 2 dependencies (`meta`, `collection`) — both of
 
 ---
 
-## Recommended Fix Priority
+## Recommended Fixes
 
-### Fixed in This Branch (Release Blockers)
+### Blocker 1 — Populate `packages/ack/README.md`
 
-1. ~~**Create `packages/ack/README.md`**~~ — **DONE** — full pub.dev-ready README with schema table, features, ecosystem links
-2. ~~**Fix IPv6 regex**~~ — **DONE** — `^$` anchors added in `string_ip_constraint.dart`
-3. ~~**Fix Map cast safety**~~ — **DONE** — try-catch wrapping `.cast()` in `ObjectSchema` and `DiscriminatedObjectSchema`
-4. ~~**Fix `schemas_instructions.md`**~~ — **DONE** — replaced `validateOrThrow`/`parseOrThrow` with `parse`
+The file is currently empty (0 bytes). This is the pub.dev landing page for the core package. Needs installation instructions, quick start, schema table, and ecosystem links.
+
+### Blocker 2 — Fix `safeParse` Map Cast Safety
+
+**Files:** `object_schema.dart:47-49`, `discriminated_object_schema.dart:67-69`
+
+Currently `.cast<String, Object?>()` can throw on `Map<int, dynamic>` input, violating `safeParse()`'s never-throws guarantee. Wrap in try-catch:
+
+```dart
+// Before (both files):
+final mapValue = inputValue is Map<String, Object?>
+    ? inputValue
+    : inputValue.cast<String, Object?>();
+
+// After:
+final MapValue mapValue;
+if (inputValue is Map<String, Object?>) {
+  mapValue = inputValue;
+} else {
+  try {
+    mapValue = inputValue.cast<String, Object?>();
+  } on TypeError {
+    return SchemaResult.fail(
+      TypeMismatchError(
+        expectedType: schemaType,
+        actualType: AckSchema.getSchemaType(inputValue),
+        context: context,
+      ),
+    );
+  }
+}
+```
+
+### Blocker 3 — Fix `schemas_instructions.md` Non-Existent Methods
+
+**File:** `schemas_instructions.md:19,49,73`
+
+Three references to methods that don't exist in the API:
+
+```diff
+- All schemas expose `validate`, `safeParse`, `tryParse`, and `parseOrThrow`.
++ All schemas expose `parse` (throws on failure), `safeParse` (returns `SchemaResult`),
++ `parseAs` (maps the validated value), and `safeParseAs` (safe version of `parseAs`).
+
+- quantitySchema.validateOrThrow(5);      // passes
++ quantitySchema.parse(5);                // passes (throws on failure)
+
+- enabledSchema.parseOrThrow(true);       // returns true
++ enabledSchema.parse(true);              // returns true (throws on failure)
+```
+
+### Blocker 4 — Fix IPv6 Regex Anchors
+
+**File:** `string_ip_constraint.dart:13`
+
+Add `^` and `$` anchors to the IPv6 regex to prevent substring matching:
+
+```diff
+- r'(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]...'
++ r'^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]...')$'
+```
 
 ### Before 1.0.0 Tag (Medium Priority)
 
