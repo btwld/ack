@@ -55,9 +55,9 @@ Ack.list(itemSchema)                           // ListSchema<T>
 Ack.discriminated(discriminatorKey: ..., schemas: {...})  // DiscriminatedObjectSchema
 Ack.anyOf([schema1, schema2])                  // AnyOfSchema
 
-// Enum schemas
-Ack.enumString(['val1', 'val2'])               // StringSchema with enum constraint
-Ack.enumValues(MyEnum.values)                  // EnumSchema<T>
+// Enum schemas (prefer enumValues when a Dart enum exists)
+Ack.enumValues(MyEnum.values)                  // EnumSchema<T> - type-safe, preferred
+Ack.enumString(['val1', 'val2'])               // StringSchema with enum constraint (ad-hoc string lists only)
 Ack.literal('exactValue')                      // StringSchema matching exact value
 
 // Date/Time schemas (with transformation)
@@ -72,7 +72,7 @@ final userSchema = Ack.object({
   'name': Ack.string().minLength(2).maxLength(50),
   'email': Ack.string().email(),
   'age': Ack.integer().min(0).max(120).optional(),
-  'role': Ack.enumString(['admin', 'user', 'guest']),
+  'role': Ack.enumValues(UserRole.values),
   'active': Ack.boolean(),
 });
 ```
@@ -116,7 +116,7 @@ Ack.string()
   .email()                  // Email format validation
   .url()                    // URL format validation
   .matches(r'^[A-Z]+$')     // Custom regex pattern
-  .enumString(['a', 'b'])   // Allowed values
+  .enumString(['a', 'b'])   // Allowed string values (prefer Ack.enumValues for Dart enums)
   .literal('exact')         // Exact value match
 ```
 
@@ -146,7 +146,7 @@ Ack.list(Ack.string())
 ### Default Values
 
 ```dart
-'status': Ack.enumString(['draft', 'published']).withDefault('draft'),
+'status': Ack.enumValues(Status.values).withDefault(Status.draft),
 'count': Ack.integer().withDefault(0),
 ```
 
@@ -236,8 +236,7 @@ class User {
   @Max(150)
   final int? age;
 
-  @EnumString(['admin', 'user', 'guest'])
-  final String role;
+  final UserRole role;  // Dart enum fields generate Ack.enumValues automatically
 
   @Pattern(r'^[A-Z]{2}-\d{4}$')
   final String code;
@@ -250,7 +249,7 @@ class User {
 //   'username': Ack.string().minLength(3).maxLength(50),
 //   'email': Ack.string().email(),
 //   'age': Ack.integer().min(0).max(150).optional().nullable(),
-//   'role': Ack.string().enumString(['admin', 'user', 'guest']),
+//   'role': Ack.enumValues(UserRole.values),
 //   'code': Ack.string().matches(r'^[A-Z]{2}-\d{4}$'),
 // });
 ```
@@ -721,7 +720,7 @@ dart run build_runner build --delete-conflicting-outputs
 | `@Email()` | Email format validation | `@Email()` |
 | `@Url()` | URL format validation | `@Url()` |
 | `@Pattern(regex)` | Custom regex pattern | `@Pattern(r'^[A-Z]+$')` |
-| `@EnumString([...])` | Allowed string values | `@EnumString(['a', 'b'])` |
+| `@EnumString([...])` | Allowed string values (prefer Dart enum fields instead) | `@EnumString(['a', 'b'])` |
 
 ### Numeric Constraints
 
