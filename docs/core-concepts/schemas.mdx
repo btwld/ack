@@ -61,7 +61,8 @@ final dateSchema = Ack.string().date(); // YYYY-MM-DD
 final datetimeSchema = Ack.string().datetime(); // ISO 8601
 
 // Enum values
-final roleSchema = Ack.string().enumString(['admin', 'user', 'guest']);
+enum Role { admin, user, guest }
+final roleSchema = Ack.enumValues(Role.values);
 ```
 
 ### Number

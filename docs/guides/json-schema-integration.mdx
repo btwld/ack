@@ -17,7 +17,7 @@ final userSchema = Ack.object({
   'id': Ack.integer().positive().describe('Unique user identifier'),
   'name': Ack.string().minLength(2).maxLength(50).describe('User\'s full name'),
   'email': Ack.string().email().describe('User\'s email address'),
-  'role': Ack.enumString(['admin', 'user', 'guest']).withDefault('user'),
+  'role': Ack.enumValues(UserRole.values).withDefault(UserRole.user),
   'isActive': Ack.boolean().withDefault(true),
   'tags': Ack.list(Ack.string()).unique().describe('List of user tags').nullable(),
   'age': Ack.integer().min(0).max(120).nullable().describe('User\'s age'),
@@ -217,7 +217,7 @@ Schemas with default values will include them in the generated JSON Schema:
 
 ```dart
 final configSchema = Ack.object({
-  'theme': Ack.enumString(['light', 'dark']).withDefault('light'),
+  'theme': Ack.enumValues(Theme.values).withDefault(Theme.light),
   'notifications': Ack.boolean().withDefault(true),
   'maxItems': Ack.integer().min(1).max(100).withDefault(10),
 });

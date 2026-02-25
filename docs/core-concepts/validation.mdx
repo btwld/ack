@@ -128,7 +128,7 @@ Ack.string().ipv6()
 
 
 ### `enumString(List<String> allowedValues)`
-Requires the value to be one of `allowedValues`.
+Requires the value to be one of `allowedValues`. Use this only for ad-hoc string lists. When a Dart enum exists, prefer `Ack.enumValues(MyEnum.values)` for type-safe validation.
 ```dart
 Ack.enumString(['active', 'inactive', 'pending'])
 ```

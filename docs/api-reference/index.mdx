@@ -14,8 +14,8 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.boolean()`: Creates a `BooleanSchema` for validating booleans.
 - `Ack.list(AckSchema itemSchema)`: Creates a `ListSchema` for validating arrays.
 - `Ack.object(Map<String, AckSchema> properties)`: Creates an `ObjectSchema` for validating objects.
-- `Ack.enumValues(List<T> values)`: Creates an `EnumSchema` for validating enum values.
-- `Ack.enumString(List<String> values)`: Creates a string schema that only accepts specific values.
+- `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum types. Accepts enum instances, string names, or indices. **Preferred over `enumString` when a Dart enum exists.**
+- `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any value.
 - `Ack.discriminated({required String discriminatorKey, required Map<String, AckSchema<Map<String, Object?>>> schemas})`: Creates a discriminated union schema.

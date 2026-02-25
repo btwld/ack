@@ -99,20 +99,16 @@ final postSchema = Ack.object({
 
 ## Enum Validation
 
-Validate string values against allowed options:
+Validate values against a set of allowed options using Dart enums:
 
 ```dart
-// Status with specific allowed values
+enum OrderStatus { pending, processing, shipped, delivered, cancelled }
+enum Priority { low, medium, high }
+
 final orderSchema = Ack.object({
   'orderId': Ack.string(),
-  'status': Ack.string().enumString([
-    'pending',
-    'processing',
-    'shipped',
-    'delivered',
-    'cancelled',
-  ]),
-  'priority': Ack.string().enumString(['low', 'medium', 'high']),
+  'status': Ack.enumValues(OrderStatus.values),
+  'priority': Ack.enumValues(Priority.values),
 });
 
 // Usage
