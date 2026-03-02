@@ -366,7 +366,7 @@ class AckSchemaGenerator extends Generator {
 
       try {
         // Check if this is a discriminated base class
-        if (model.isDiscriminatedBase) {
+        if (model.isDiscriminatedBaseDefinition) {
           // @AckType discriminated bases generate extension types.
           if (model.isFromSchemaVariable) {
             final baseExtension = typeBuilder.buildDiscriminatedExtensionBase(
@@ -469,7 +469,8 @@ class AckSchemaGenerator extends Generator {
 
     for (var i = 0; i < linked.length; i++) {
       final baseModel = linked[i];
-      if (!baseModel.isFromSchemaVariable || !baseModel.isDiscriminatedBase) {
+      if (!baseModel.isFromSchemaVariable ||
+          !baseModel.isDiscriminatedBaseDefinition) {
         continue;
       }
 

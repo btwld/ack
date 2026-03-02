@@ -64,7 +64,7 @@ class SchemaBuilder {
 
   String _buildSchemaDefinition(ModelInfo model) {
     // Check if this is a discriminated base class
-    if (model.isDiscriminatedBase && model.subtypeNames != null) {
+    if (model.isDiscriminatedBaseDefinition) {
       return _buildDiscriminatedSchema(model);
     }
 

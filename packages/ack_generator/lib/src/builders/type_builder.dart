@@ -140,7 +140,7 @@ class TypeBuilder {
 
   /// Builds a sealed class for discriminated base types
   Class? buildSealedClass(ModelInfo model, List<ModelInfo> allModels) {
-    if (!model.isDiscriminatedBase) {
+    if (!model.isDiscriminatedBaseDefinition) {
       return null;
     }
 
@@ -221,6 +221,12 @@ class TypeBuilder {
     for (final entry in subtypeNames.entries) {
       final branchModel = allModels.firstWhere(
         (m) => m.schemaClassName == entry.value,
+        orElse: () => throw StateError(
+          'Failed to resolve discriminated subtype "${entry.value}" '
+          '(discriminator "${entry.key}") for base '
+          '"${model.schemaClassName}" while building '
+          'extension type "$typeName".',
+        ),
       );
       resolvedSubtypeNames[entry.key] = branchModel.className;
     }

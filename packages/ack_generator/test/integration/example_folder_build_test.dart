@@ -188,7 +188,7 @@ void main() {
         discriminatedContent,
         contains('implements PetType, Map<String, Object?>'),
         reason:
-            'schema_types_discriminated.g.dart should include discriminated subtype extension types',
+            'schema_types_discriminated.g.dart discriminated subtypes should implement PetType and Map<String, Object?>',
       );
     });
 

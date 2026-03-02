@@ -16,7 +16,10 @@ class ModelInfo {
   List<String> get requiredFields =>
       fields.where((f) => f.isRequired).map((f) => f.jsonKey).toList();
 
-  /// Field name for discrimination (only for base classes)
+  /// Field name for discrimination.
+  ///
+  /// This is set on declared discriminated bases and may also be propagated
+  /// to linked schema-variable subtypes.
   final String? discriminatorKey;
 
   /// This class's discriminator value (only for subtypes)
@@ -30,8 +33,17 @@ class ModelInfo {
   /// Parent discriminated base class name for subtypes.
   final String? discriminatedBaseClassName;
 
-  /// Computed property: Whether this class is a discriminated base class (has discriminatedKey)
+  /// Computed property: Whether this model has a discriminator key.
+  ///
+  /// This may be true for linked schema-variable subtypes.
   bool get isDiscriminatedBase => discriminatorKey != null;
+
+  /// Computed property: Whether this model declares subtype mappings.
+  bool get hasDiscriminatedSubtypeMappings => subtypeNames != null;
+
+  /// Computed property: Whether this model is a declared discriminated base.
+  bool get isDiscriminatedBaseDefinition =>
+      discriminatorKey != null && subtypeNames != null;
 
   /// Computed property: Whether this class is a discriminated subtype (has discriminatedValue)
   bool get isDiscriminatedSubtype => discriminatorValue != null;
