@@ -181,7 +181,7 @@ if (result.isOk) {
 }
 ```
 
-**Note**: Nested schemas annotated with `@AckType()` generate their own extension types. When referenced in object fields or list elements, getters return the typed extension type (e.g., `AddressType`) when the reference can be resolved in the same library; unresolved references fall back to `Map<String, Object?>`.
+**Note**: Nested schemas annotated with `@AckType()` generate their own extension types. Object/list references must be statically resolvable for typed generation; unsupported or unresolved references fail generation instead of falling back to `Map<String, Object?>`. For current `Ack.discriminated(...)` limits, see [Type-safe Schemas](./typesafe-schemas.mdx#ackdiscriminated-with-acktype-current-constraints).
 
 `@AckType()` is only supported on top-level schema variables/getters, not classes.
 

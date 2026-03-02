@@ -246,6 +246,28 @@ final petSchema = Ack.discriminated(
       );
     });
 
+    test('fails when schemas map is empty', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await _expectGenerationFailure(
+        builder: builder,
+        expectedMessage: 'must contain at least one branch',
+        assets: {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {},
+);
+''',
+        },
+      );
+    });
+
     test('fails when a branch schema is nullable', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

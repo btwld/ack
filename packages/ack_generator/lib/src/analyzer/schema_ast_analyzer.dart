@@ -462,8 +462,9 @@ class SchemaAstAnalyzer {
 
   /// Parses Ack.discriminated(...) schema for @AckType bases.
   ///
-  /// v1 constraints:
+  /// Current constraints:
   /// - Base cannot be nullable
+  /// - `schemas` must be a non-empty map literal
   /// - Branches must be top-level schema variable/getter references
   /// - Branches must be @AckType object schemas and non-nullable
   /// - Branches must declare `discriminatorKey` as a matching `Ack.literal(...)`
@@ -534,6 +535,12 @@ class SchemaAstAnalyzer {
     if (resolvedSchemasLiteral == null) {
       throw InvalidGenerationSourceError(
         'Ack.discriminated(...): missing required `schemas` map literal.',
+        element: element,
+      );
+    }
+    if (resolvedSchemasLiteral.elements.isEmpty) {
+      throw InvalidGenerationSourceError(
+        'Ack.discriminated(...): `schemas` must contain at least one branch.',
         element: element,
       );
     }

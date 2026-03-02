@@ -113,9 +113,18 @@ After running `dart run build_runner build`, the part file contains:
 - Primitive schemas (`Ack.string`, `Ack.integer`, `Ack.double`, `Ack.boolean`)
 - Lists of supported schemas (`Ack.list(...)`)
 - Literal/enum helpers (`Ack.literal`, `Ack.enumValues`, `Ack.enumString`)
+- `Ack.discriminated(...)` (with constraints below)
 
-Unsupported helpers include `Ack.any`, `Ack.anyOf`, and `Ack.discriminated`.
-Use `@AckModel` for discriminated unions instead.
+Unsupported helpers include `Ack.any` and `Ack.anyOf`.
+
+### `Ack.discriminated(...)` with `@AckType` (Current constraints)
+
+- `schemas` must be a non-empty map literal.
+- Base schema cannot be nullable.
+- Each branch must be a top-level schema variable/getter reference.
+- Each branch must be `@AckType`, object-shaped, non-nullable, and declared in the same library.
+- Branch discriminator literal (`Ack.literal(...)`) must match the branch key in `schemas`.
+- A branch schema can belong to only one discriminated base.
 
 ## `@AckType` Resolution Requirements and Limitations
 
