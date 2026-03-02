@@ -99,7 +99,7 @@ class TypeBuilder {
     List<ModelInfo> allModels,
   ) {
     // Discriminated base classes get sealed classes, not extension types
-    if (model.isDiscriminatedBase) {
+    if (model.isDiscriminatedBaseDefinition) {
       return null;
     }
 
@@ -202,7 +202,7 @@ class TypeBuilder {
     ModelInfo model,
     List<ModelInfo> allModels,
   ) {
-    if (!model.isDiscriminatedBase) {
+    if (!model.isDiscriminatedBaseDefinition) {
       return null;
     }
 

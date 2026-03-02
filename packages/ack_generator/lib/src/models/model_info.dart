@@ -38,9 +38,6 @@ class ModelInfo {
   /// This may be true for linked schema-variable subtypes.
   bool get isDiscriminatedBase => discriminatorKey != null;
 
-  /// Computed property: Whether this model declares subtype mappings.
-  bool get hasDiscriminatedSubtypeMappings => subtypeNames != null;
-
   /// Computed property: Whether this model is a declared discriminated base.
   bool get isDiscriminatedBaseDefinition =>
       discriminatorKey != null && subtypeNames != null;
