@@ -26,6 +26,35 @@ part 'testing/testing_schemas.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
+SchemaResult<MapValue> _normalizeMapWithStringKeys(
+  Map inputValue,
+  SchemaContext context,
+) {
+  final normalized = <String, Object?>{};
+
+  for (final entry in inputValue.entries) {
+    final key = entry.key;
+    if (key is! String) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Object keys must be strings. Found key type ${key.runtimeType}.',
+          context: context.createChild(
+            name: 'mapKey',
+            schema: const StringSchema(),
+            value: key,
+            pathSegment: '',
+          ),
+        ),
+      );
+    }
+
+    normalized[key] = entry.value;
+  }
+
+  return SchemaResult.ok(normalized);
+}
+
 @immutable
 sealed class AckSchema<DartType extends Object> {
   final bool isNullable;
@@ -50,6 +79,23 @@ sealed class AckSchema<DartType extends Object> {
     List<Refinement<DartType>> refinements = const [],
   }) : _constraints = constraints,
        _refinements = refinements;
+
+  SchemaResult<DartType> _parseWithDepthGuard(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    if (context.depth > SchemaContext.maxValidationDepth) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Maximum validation depth of ${SchemaContext.maxValidationDepth} exceeded.',
+          context: context,
+        ),
+      );
+    }
+
+    return parseAndValidate(inputValue, context);
+  }
 
   /// Utility method to get the schema type of any value.
   static SchemaType getSchemaType(Object? value) {
@@ -197,7 +243,7 @@ sealed class AckSchema<DartType extends Object> {
     if (defaultValue != null) {
       // Clone mutable defaults to avoid shared state across parse calls.
       final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
+      return _parseWithDepthGuard(clonedDefault, context);
     }
 
     if (isNullable) {
@@ -325,7 +371,7 @@ sealed class AckSchema<DartType extends Object> {
   /// ```
   SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
     final context = _createRootContext(value, debugName: debugName);
-    return parseAndValidate(value, context);
+    return _parseWithDepthGuard(value, context);
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
@@ -367,18 +413,6 @@ sealed class AckSchema<DartType extends Object> {
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
     return SchemaContext(name: effectiveDebugName, schema: this, value: value);
-  }
-
-  /// Legacy alias for [safeParse].
-  @Deprecated('Use safeParse(...) instead.')
-  SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
-      safeParse(value, debugName: debugName);
-
-  /// Legacy helper that returns the parsed value or `null` when validation fails.
-  @Deprecated('Use safeParse(...).getOrNull() instead.')
-  DartType? tryParse(Object? value, {String? debugName}) {
-    final result = safeParse(value, debugName: debugName);
-    return result.getOrNull();
   }
 
   AckSchema<DartType> copyWith({

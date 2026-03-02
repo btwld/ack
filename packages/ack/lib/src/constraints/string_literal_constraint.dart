@@ -20,8 +20,7 @@ class StringLiteralConstraint extends Constraint<String>
   }
 
   @override
-  String buildMessage(String value) =>
-      'Must be exactly "$expectedValue", but got "$value".';
+  String buildMessage(String value) => 'Must be exactly "$expectedValue".';
 
   @override
   Map<String, Object?> toJsonSchema() => {

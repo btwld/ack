@@ -1,3 +1,10 @@
+## 1.0.0-beta.8
+
+### Improvements
+
+* Updated package metadata/docs references for the `1.0.0-beta.8` release cycle.
+* Fixed README migration guide link target.
+
 ## 1.0.0-beta.7
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.7) for details.

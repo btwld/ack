@@ -1,3 +1,20 @@
+## 1.0.0-beta.8
+
+### Breaking Changes
+
+* Removed deprecated APIs: `AckSchema.validate(...)`, `AckSchema.tryParse(...)`, `FluentSchema.withDescription(...)`, `StringSchemaExtensions.enumString(...)`, and `StringSchemaExtensions.literal(...)`.
+
+### Security
+
+* Added default redaction for serialized/printed validation errors.
+* Enforced a hard validation depth cap of 64 levels.
+
+### Bug Fixes
+
+* `safeParse(...)` no longer throws for non-string map keys in object/discriminated schemas.
+* Discriminated schema now differentiates missing discriminator keys from present-but-null values.
+* Anchored IPv6 regex matching to reject substring-only matches.
+
 ## 1.0.0-beta.7
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.7) for details.

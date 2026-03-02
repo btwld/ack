@@ -5,11 +5,14 @@ import 'schemas/schema.dart';
 /// Represents the context in which a schema validation is occurring.
 @immutable
 class SchemaContext {
+  static const int maxValidationDepth = 64;
+
   final String name;
   final Object? value;
   final AckSchema schema;
   final SchemaContext? parent;
   final String? pathSegment;
+  final int depth;
 
   const SchemaContext({
     required this.name,
@@ -17,6 +20,7 @@ class SchemaContext {
     required this.value,
     this.parent,
     this.pathSegment,
+    this.depth = 0,
   });
 
   /// Escapes a JSON Pointer segment per RFC 6901.
@@ -73,14 +77,15 @@ class SchemaContext {
       value: value,
       parent: this,
       pathSegment: pathSegment,
+      depth: depth + 1,
     );
   }
 
   @override
   String toString() {
     final schemaTypeString = schema.schemaTypeName;
-    final valueString = value?.toString() ?? 'null';
+    final valueType = value?.runtimeType;
 
-    return 'SchemaContext(name: "$name", path: "$path", schema: $schemaTypeString, value: "$valueString")';
+    return 'SchemaContext(name: "$name", path: "$path", depth: $depth, schema: $schemaTypeString, valueType: "${valueType ?? 'null'}")';
   }
 }

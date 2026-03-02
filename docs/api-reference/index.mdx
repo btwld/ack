@@ -28,8 +28,8 @@ Base class for all schema types.
 
 - `SchemaResult<T> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure.
 - `T? parse(Object? data, {String? debugName})`: Validates the input data and returns the value. Throws `AckException` if validation fails.
-- `T? tryParse(Object? data, {String? debugName})`: **Deprecated** - Use `safeParse(...).getOrNull()` instead.
-- `SchemaResult<T> validate(Object? data, {String? debugName})`: **Deprecated** - Use `safeParse(...)` instead.
+- `TOut parseAs<TOut>(Object? data, TOut Function(T? validated) map, {String? debugName})`: Validates, maps, and throws on validation or mapper failures.
+- `SchemaResult<TOut> safeParseAs<TOut>(Object? data, TOut Function(T? validated) map, {String? debugName})`: Validates, maps, and returns `SchemaResult` without throwing.
 
 ### Schema Modification Methods
 
@@ -92,8 +92,8 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Value Restrictions
 
-- `literal(String value)`: Must exactly match the given value
-- `enumString(List<String> values)`: Must be one of the specified values
+- Use `Ack.literal(String value)` for exact string matching.
+- Use `Ack.enumString(List<String> values)` for ad-hoc string enums.
 
 ### Transformations
 

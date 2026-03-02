@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    uses: btwld/dart-actions/.github/workflows/publish.yml@main
+    uses: btwld/dart-actions/.github/workflows/publish.yml@9075ce1232ec77b8747953f2ff4a349190e5a805
     permissions:
       id-token: write
     with:

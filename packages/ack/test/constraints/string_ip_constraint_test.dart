@@ -44,7 +44,7 @@ void main() {
       test('builds correct error message', () {
         final message = ipv4Constraint.buildMessage('invalid');
         expect(message, contains('IPv4'));
-        expect(message, contains('invalid'));
+        expect(message, isNot(contains('invalid')));
       });
     });
 
@@ -85,6 +85,7 @@ void main() {
         expect(ipv6Constraint.isValid(''), isFalse);
         expect(ipv6Constraint.isValid('not an ipv6'), isFalse);
         expect(ipv6Constraint.isValid('192.168.1.1'), isFalse); // IPv4
+        expect(ipv6Constraint.isValid('garbage::1garbage'), isFalse);
       });
 
       test('rejects IPv4 addresses when version is 6', () {
@@ -95,7 +96,7 @@ void main() {
       test('builds correct error message', () {
         final message = ipv6Constraint.buildMessage('invalid');
         expect(message, contains('IPv6'));
-        expect(message, contains('invalid'));
+        expect(message, isNot(contains('invalid')));
       });
     });
 
@@ -121,7 +122,7 @@ void main() {
       test('builds correct error message without version', () {
         final message = anyIpConstraint.buildMessage('invalid');
         expect(message, contains('IP address'));
-        expect(message, contains('invalid'));
+        expect(message, isNot(contains('invalid')));
         expect(message.contains('IPv4') || message.contains('IPv6'), isFalse);
       });
     });

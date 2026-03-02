@@ -21,7 +21,6 @@ void main() {
         error.constraints.first.message,
         contains('is not one of the allowed values'),
       );
-      expect(error.constraints.first.message, contains('"yellow"'));
     });
 
     test('should handle empty string if allowed', () {

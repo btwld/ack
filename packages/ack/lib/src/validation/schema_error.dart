@@ -32,7 +32,7 @@ abstract class SchemaError {
     return {
       'message': message,
       'name': name,
-      'value': value,
+      'valueType': value?.runtimeType.toString(),
       'schemaType': schema.schemaTypeName,
       'path': path,
     };
@@ -41,11 +41,11 @@ abstract class SchemaError {
   @override
   String toString() {
     final loc = context.name;
-    final val = context.value;
+    final valueType = context.value?.runtimeType;
     final trace = stackTrace != null ? '\n$stackTrace' : '';
     final causeMsg = cause != null ? '\nCaused by: $cause' : '';
 
-    return 'Validation failed for "$loc" with value "${val ?? 'null'}": $message$causeMsg$trace';
+    return 'Validation failed for "$loc" (valueType: "${valueType ?? 'null'}"): $message$causeMsg$trace';
   }
 }
 

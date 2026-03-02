@@ -52,7 +52,7 @@ final class AnyOfSchema extends AckSchema<Object>
     // This differs from handleNullInput which checks isNullable before trying validation.
     if (inputValue == null && defaultValue != null) {
       final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
+      return _parseWithDepthGuard(clonedDefault, context);
     }
 
     // Try all member schemas (including with null input for nullable members)
@@ -67,7 +67,7 @@ final class AnyOfSchema extends AckSchema<Object>
         pathSegment: '', // Inherit parent path
       );
 
-      final result = schema.parseAndValidate(inputValue, childContext);
+      final result = schema._parseWithDepthGuard(inputValue, childContext);
 
       if (result.isOk) {
         final validatedValue = result.getOrNull();

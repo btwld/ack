@@ -43,10 +43,11 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
-    final mapValue = inputValue is Map<String, Object?>
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+    final mapResult = _normalizeMapWithStringKeys(inputValue, context);
+    if (mapResult.isFail) {
+      return SchemaResult.fail(mapResult.getError());
+    }
+    final mapValue = mapResult.getOrThrow()!;
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
@@ -68,7 +69,7 @@ final class ObjectSchema extends AckSchema<MapValue>
               value: null,
               pathSegment: key,
             );
-            final result = schema.parseAndValidate(null, propertyContext);
+            final result = schema._parseWithDepthGuard(null, propertyContext);
             result.match(
               onOk: (validatedValue) {
                 if (validatedValue != null) {
@@ -107,7 +108,10 @@ final class ObjectSchema extends AckSchema<MapValue>
           value: propertyValue,
           pathSegment: key,
         );
-        final result = schema.parseAndValidate(propertyValue, propertyContext);
+        final result = schema._parseWithDepthGuard(
+          propertyValue,
+          propertyContext,
+        );
         result.match(
           onOk: (validatedValue) {
             validatedMap[key] = validatedValue;

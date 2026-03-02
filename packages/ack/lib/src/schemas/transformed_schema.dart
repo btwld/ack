@@ -69,7 +69,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     }
 
     // Delegate validation/parsing to the wrapped schema for all other cases.
-    final originalResult = schema.parseAndValidate(inputValue, context);
+    final originalResult = schema._parseWithDepthGuard(inputValue, context);
     if (originalResult.isFail) {
       return SchemaResult.fail(originalResult.getError());
     }

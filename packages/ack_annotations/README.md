@@ -10,10 +10,10 @@ Add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack_annotat
 
 ```yaml
 dependencies:
-  ack_annotations: ^1.0.0-beta.6
+  ack_annotations: ^1.0.0-beta.8
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.6
+  ack_generator: ^1.0.0-beta.8
   build_runner: ^2.4.0
 ```
 
@@ -145,4 +145,4 @@ Mix and match annotation-based constraints with the string list syntax from `@Ac
 
 - Core concepts & runtime API: [`ack` README](../../README.md)
 - Generator workflows: [`ack_generator` README](../ack_generator/README.md)
-- Full 1.0 migration plan: [`MIGRATION.md`](../../MIGRATION.md)
+- Full 1.0 migration guide: [`migration-v1.mdx`](../../docs/guides/migration-v1.mdx)

@@ -109,11 +109,12 @@ void main() {
         });
 
         expect(result.isFail, isTrue);
-        final error = result.getError();
+        final error = result.getError() as SchemaNestedError;
+        final emailError = error.errors.first as SchemaConstraintsError;
         expect(
-          error.toString(),
-          contains('email'),
-          reason: 'Error should show field that failed',
+          emailError.context.path,
+          equals('#/email'),
+          reason: 'Error should keep the failing branch field path',
         );
       });
     });

@@ -1,3 +1,10 @@
+## 1.0.0-beta.8
+
+### Improvements
+
+* Updated inter-package constraints to `^1.0.0-beta.8`.
+* Refreshed README dependency snippets for beta.8.
+
 ## 1.0.0-beta.7
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.7) for details.

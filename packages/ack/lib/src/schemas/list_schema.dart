@@ -53,7 +53,10 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         pathSegment: '$i',
       );
 
-      final itemResult = itemSchema.parseAndValidate(itemValue, itemContext);
+      final itemResult = itemSchema._parseWithDepthGuard(
+        itemValue,
+        itemContext,
+      );
 
       if (itemResult.isOk) {
         final validatedItemValue = itemResult.getOrNull();

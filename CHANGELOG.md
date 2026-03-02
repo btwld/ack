@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-02-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - `ack` - Removed deprecated APIs (`validate`, `tryParse`, `withDescription`, string extension `enumString`/`literal`).
+
+Packages with other changes:
+
+ - `ack` - `v1.0.0-beta.8`
+ - `ack_annotations` - `v1.0.0-beta.8`
+ - `ack_generator` - `v1.0.0-beta.8`
+ - `ack_json_schema_builder` - `v1.0.0-beta.8`
+ - `ack_firebase_ai` - `v1.0.0-beta.8`
+
+---
+
 ## 2025-10-09
 
 ### Changes
@@ -462,4 +482,3 @@ Packages with other changes:
 #### `ack` - `v0.2.0`
 
  - Bump "ack" to 0.2.0 with improved SchemaModel API and enhanced string validation
-

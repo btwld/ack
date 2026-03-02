@@ -85,7 +85,7 @@ void main() {
               .constraints
               .first
               .message,
-          'Invalid email format. Expected format like user@example.com, got "not-an-email".',
+          'Invalid email format. Expected format like user@example.com.',
         );
       });
 
@@ -104,7 +104,7 @@ void main() {
               .constraints
               .first
               .message,
-          'Invalid URI format, got "not-a-url".',
+          'Invalid URI format.',
         );
       });
 
@@ -123,7 +123,7 @@ void main() {
               .constraints
               .first
               .message,
-          'Invalid UUID format, got "not-a-uuid".',
+          'Invalid UUID format.',
         );
       });
     });
@@ -144,7 +144,7 @@ void main() {
             .constraints
             .first
             .message,
-        'Invalid email format. Expected format like user@example.com, got "this-is-not-an-email".',
+        'Invalid email format. Expected format like user@example.com.',
       );
 
       final result3 = schema.safeParse('long.email@example.com');
@@ -153,44 +153,40 @@ void main() {
 
     group('literal', () {
       test('should pass for exact string match', () {
-        // ignore: deprecated_member_use_from_same_package
-        final schema = Ack.string().literal('hello');
+        final schema = Ack.literal('hello');
 
         expect(schema.safeParse('hello').isOk, isTrue);
         expect(schema.safeParse('hello').getOrNull(), equals('hello'));
       });
 
       test('should fail for different string', () {
-        // ignore: deprecated_member_use_from_same_package
-        final schema = Ack.string().literal('hello');
+        final schema = Ack.literal('hello');
 
         final result = schema.safeParse('world');
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
         expect(
           error.constraints.first.message,
-          equals('Must be exactly "hello", but got "world".'),
+          equals('Must be exactly "hello".'),
         );
       });
 
       test('should work with empty string', () {
-        // ignore: deprecated_member_use_from_same_package
-        final schema = Ack.string().literal('');
+        final schema = Ack.literal('');
 
         expect(schema.safeParse('').isOk, isTrue);
         expect(schema.safeParse('not empty').isOk, isFalse);
       });
 
       test('should work chained with other constraints', () {
-        // ignore: deprecated_member_use_from_same_package
-        final schema = Ack.string().minLength(3).literal('hello');
+        final schema = Ack.literal('hello').minLength(3);
 
         expect(schema.safeParse('hello').isOk, isTrue);
         expect(schema.safeParse('hi').isOk, isFalse); // too short
         expect(schema.safeParse('world').isOk, isFalse); // wrong literal
       });
 
-      test('should work with Ack.literal() factory method (like Zod)', () {
+      test('should support Ack.literal() factory method (like Zod)', () {
         final schema = Ack.literal('hello');
 
         expect(schema.safeParse('hello').isOk, isTrue);

@@ -93,12 +93,22 @@ mixin Validator<T> on Constraint<T> {
   String buildMessage(T value);
 
   /// Builds an optional context map providing additional details for an invalid [value].
-  /// Stores both the raw value and its string representation for debugging.
+  /// Redacts the raw input value by default while preserving useful diagnostics.
   @protected
-  Map<String, Object?> buildContext(T value) => {
-    'inputValue': value,
-    'stringValue': value.toString(),
-  };
+  Map<String, Object?> buildContext(T value) {
+    final context = <String, Object?>{
+      'inputType': value.runtimeType.toString(),
+    };
+    if (value is String) {
+      context['inputLength'] = value.length;
+    } else if (value is Map) {
+      context['itemCount'] = value.length;
+    } else if (value is Iterable) {
+      context['itemCount'] = value.length;
+    }
+
+    return context;
+  }
 
   /// Validates the [value] against this constraint.
   ///

@@ -261,7 +261,7 @@ void main() {
             'name': 'URL format',
             'schema': Ack.string().url(),
             'input': 'not-a-url',
-            'expectedHints': ['url', 'valid'],
+            'expectedHints': ['uri', 'valid'],
           },
           {
             'name': 'UUID format',

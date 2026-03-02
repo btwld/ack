@@ -16,11 +16,6 @@ mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
   Schema describe(String description) =>
       copyWith(description: description) as Schema;
 
-  /// Alias for describe() for backward compatibility.
-  @Deprecated('Use describe() instead. Will be removed in a future version.')
-  Schema withDescription(String description) =>
-      copyWith(description: description) as Schema;
-
   /// Sets the default value for the schema.
   Schema withDefault(DartType defaultValue) =>
       copyWith(defaultValue: defaultValue) as Schema;

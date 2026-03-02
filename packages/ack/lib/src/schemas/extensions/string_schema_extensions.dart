@@ -1,7 +1,6 @@
 import '../../constraints/comparison_constraint.dart';
 import '../../constraints/pattern_constraint.dart';
 import '../../constraints/string_ip_constraint.dart';
-import '../../constraints/string_literal_constraint.dart';
 import '../schema.dart';
 import 'ack_schema_extensions.dart';
 
@@ -123,19 +122,6 @@ extension StringSchemaExtensions on StringSchema {
 
   /// Adds a constraint that the string must be a valid IPv6 address.
   StringSchema ipv6() => ip(version: 6);
-
-  /// Adds a constraint that the string must be one of the allowed values.
-  @Deprecated('Use Ack.enumString() instead.')
-  StringSchema enumString(List<String> allowedValues) {
-    return withConstraint(PatternConstraint.enumString(allowedValues));
-  }
-
-  /// Adds a constraint that the string must be exactly equal to [value].
-  /// Similar to Zod's `z.literal("value")`.
-  @Deprecated('Use Ack.literal() instead.')
-  StringSchema literal(String value) {
-    return withConstraint(StringLiteralConstraint(value));
-  }
 
   /// Trims leading and trailing whitespace from the string before validation.
   /// Returns a transformed schema that applies String.trim() to the input.

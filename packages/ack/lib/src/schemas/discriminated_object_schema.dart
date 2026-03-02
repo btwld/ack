@@ -64,13 +64,13 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         ),
       );
     }
-    final mapValue = inputValue is MapValue
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+    final mapResult = _normalizeMapWithStringKeys(inputValue, context);
+    if (mapResult.isFail) {
+      return SchemaResult.fail(mapResult.getError());
+    }
+    final mapValue = mapResult.getOrThrow()!;
 
-    final Object? discValueRaw = mapValue[discriminatorKey];
-
-    if (discValueRaw == null) {
+    if (!mapValue.containsKey(discriminatorKey)) {
       final constraintError = ObjectRequiredPropertiesConstraint(
         missingPropertyKey: discriminatorKey,
       ).validate(mapValue);
@@ -87,6 +87,8 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
         ),
       );
     }
+
+    final Object? discValueRaw = mapValue[discriminatorKey];
 
     if (discValueRaw is! String) {
       final constraintError = InvalidTypeConstraint(
@@ -137,7 +139,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       pathSegment: '', // Inherit parent path
     );
 
-    final result = selectedSubSchema.parseAndValidate(
+    final result = selectedSubSchema._parseWithDepthGuard(
       mapValue,
       subSchemaContext,
     );

@@ -21,7 +21,9 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with fluent schema building API
+- **[ack_annotations](./packages/ack_annotations)**: Annotation package for schema/code-generation metadata
 - **[ack_generator](./packages/ack_generator)**: Code generator for creating schema classes from annotated Dart models
+- **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter from Ack schemas to `json_schema_builder`
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured output generation
 - **[example](./example)**: Example projects demonstrating usage of all packages
 

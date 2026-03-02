@@ -1,10 +1,10 @@
 # Ack - Schema Validation Library for Dart
 
-> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.6.
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.8.
 
 ## Overview
 
-Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.6 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.8 focuses exclusively on schema generation and validation, using Dart 3 extension types for zero-cost type-safe wrappers over validated data.
 
 **Repository**: https://github.com/btwld/ack
 **Documentation**: https://docs.page/btwld/ack
@@ -115,9 +115,10 @@ Ack.string()
   .maxLength(50)            // Maximum length
   .email()                  // Email format validation
   .url()                    // URL format validation
-  .matches(r'^[A-Z]+$')     // Custom regex pattern
-  .enumString(['a', 'b'])   // Allowed string values (prefer Ack.enumValues for Dart enums)
-  .literal('exact')         // Exact value match
+  .matches(r'^[A-Z]+$');    // Custom regex pattern
+
+Ack.enumString(['a', 'b'])  // Allowed ad-hoc string values
+Ack.literal('exact')        // Exact value match
 ```
 
 ### Numeric Constraints
@@ -620,6 +621,13 @@ result.match(
   onOk: (value) => print('Valid: $value'),
   onFail: (error) => print('Error: $error'),
 );
+
+// Parse + map API
+final dto = schema.parseAs(data, (validated) => MyDto.fromMap(validated!));
+final dtoResult = schema.safeParseAs(
+  data,
+  (validated) => MyDto.fromMap(validated!),
+);
 ```
 
 ### SchemaResult Type
@@ -675,11 +683,11 @@ sealed class SchemaResult<T extends Object> {
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack: ^1.0.0-beta.6
-  ack_annotations: ^1.0.0-beta.6
+  ack: ^1.0.0-beta.8
+  ack_annotations: ^1.0.0-beta.8
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.6
+  ack_generator: ^1.0.0-beta.8
   build_runner: ^2.4.0
 ```
 
@@ -776,7 +784,7 @@ Converts Ack schemas to Firebase AI Schema format for structured output generati
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_firebase_ai: ^1.0.0-beta.6
+  ack_firebase_ai: ^1.0.0-beta.8
 ```
 
 ```dart
@@ -809,7 +817,7 @@ Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_json_schema_builder: ^1.0.0-beta.6
+  ack_json_schema_builder: ^1.0.0-beta.8
 ```
 
 ```dart

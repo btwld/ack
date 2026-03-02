@@ -94,8 +94,8 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_format_email',
     description: 'Must be a valid email address.',
     example: 'user@example.com',
-    customMessageBuilder: (v) =>
-        'Invalid email format. Expected format like user@example.com, got "$v".',
+    customMessageBuilder: (_) =>
+        'Invalid email format. Expected format like user@example.com.',
   );
 
   static PatternConstraint uuid() => PatternConstraint(
@@ -106,7 +106,7 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_format_uuid',
     description: 'Must be a valid UUID.',
     example: '123e4567-e89b-12d3-a456-426614174000',
-    customMessageBuilder: (v) => 'Invalid UUID format, got "$v".',
+    customMessageBuilder: (_) => 'Invalid UUID format.',
   );
 
   static PatternConstraint hexColor() => PatternConstraint(
@@ -115,7 +115,7 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_format_hexcolor',
     description: 'Must be a valid hex color code (e.g., #RRGGBB or #RGB).',
     example: '#FF0000',
-    customMessageBuilder: (v) => 'Invalid hex color format, got "$v".',
+    customMessageBuilder: (_) => 'Invalid hex color format.',
   );
 
   static PatternConstraint uri() => PatternConstraint(
@@ -126,7 +126,7 @@ class PatternConstraint extends Constraint<String>
     },
     constraintKey: 'string_format_uri',
     description: 'Must be a valid URI.',
-    customMessageBuilder: (v) => 'Invalid URI format, got "$v".',
+    customMessageBuilder: (_) => 'Invalid URI format.',
   );
 
   static PatternConstraint enumString(List<String> values) => PatternConstraint(
@@ -136,7 +136,7 @@ class PatternConstraint extends Constraint<String>
     description: 'Must be one of: ${values.join(", ")}.',
     customMessageBuilder: (v) {
       final suggestion = buildDidYouMeanSuggestion(v, values);
-      return 'Value "$v" is not one of the allowed values: ${values.map((e) => '"$e"').join(', ')}.$suggestion';
+      return 'Value is not one of the allowed values: ${values.map((e) => '"$e"').join(', ')}.$suggestion';
     },
   );
 
@@ -147,8 +147,8 @@ class PatternConstraint extends Constraint<String>
     allowedValues: disallowedValues,
     constraintKey: 'string_not_enum',
     description: 'Must not be one of: ${disallowedValues.join(", ")}.',
-    customMessageBuilder: (v) =>
-        'Value "$v" is disallowed. Cannot be one of: ${disallowedValues.map((e) => '"$e"').join(', ')}.',
+    customMessageBuilder: (_) =>
+        'Value is disallowed. Cannot be one of: ${disallowedValues.map((e) => '"$e"').join(', ')}.',
   );
 
   static PatternConstraint startsWith(String prefix) => PatternConstraint(
@@ -156,7 +156,7 @@ class PatternConstraint extends Constraint<String>
     pattern: RegExp('^${RegExp.escape(prefix)}'),
     constraintKey: 'string.startsWith',
     description: 'Value must start with "$prefix".',
-    customMessageBuilder: (v) => '"$v" does not start with "$prefix".',
+    customMessageBuilder: (_) => 'Value does not start with "$prefix".',
   );
 
   static PatternConstraint endsWith(String suffix) => PatternConstraint(
@@ -164,7 +164,7 @@ class PatternConstraint extends Constraint<String>
     pattern: RegExp('${RegExp.escape(suffix)}\$'),
     constraintKey: 'string.endsWith',
     description: 'Value must end with "$suffix".',
-    customMessageBuilder: (v) => '"$v" does not end with "$suffix".',
+    customMessageBuilder: (_) => 'Value does not end with "$suffix".',
   );
 
   static PatternConstraint contains(String pattern, {String? example}) =>
@@ -174,8 +174,7 @@ class PatternConstraint extends Constraint<String>
         constraintKey: 'string_contains',
         description: 'Must contain pattern "$pattern".',
         example: example,
-        customMessageBuilder: (v) =>
-            'Value "$v" must contain pattern "$pattern".',
+        customMessageBuilder: (_) => 'Value must contain pattern "$pattern".',
       );
 
   static PatternConstraint dateTimeIso8601() => PatternConstraint(
@@ -200,7 +199,7 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_format_datetime',
     description: 'Must be a valid ISO 8601 date-time string.',
     example: '2023-10-27T10:30:00Z',
-    customMessageBuilder: (v) => 'Invalid ISO 8601 date-time format, got "$v".',
+    customMessageBuilder: (_) => 'Invalid ISO 8601 date-time format.',
   );
 
   static PatternConstraint dateIso8601() => PatternConstraint(
@@ -215,8 +214,7 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_format_date',
     description: 'Must be a valid ISO 8601 date string (YYYY-MM-DD).',
     example: '2023-10-27',
-    customMessageBuilder: (v) =>
-        'Invalid ISO 8601 date format (YYYY-MM-DD), got "$v".',
+    customMessageBuilder: (_) => 'Invalid ISO 8601 date format (YYYY-MM-DD).',
   );
 
   static PatternConstraint time() => PatternConstraint(
@@ -239,8 +237,7 @@ class PatternConstraint extends Constraint<String>
     constraintKey: 'string_format_time',
     description: 'Must be a valid time in HH:MM:SS format.',
     example: '23:59:59',
-    customMessageBuilder: (value) =>
-        'Invalid time format (HH:MM:SS), got "$value".',
+    customMessageBuilder: (_) => 'Invalid time format (HH:MM:SS).',
   );
 
   static PatternConstraint jsonString() => PatternConstraint(
@@ -270,25 +267,21 @@ class PatternConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) {
-    final nonNullValue = value;
     if (customMessageBuilder != null) {
-      return customMessageBuilder!(nonNullValue);
+      return customMessageBuilder!(value);
     }
     // Default messages
     return switch (type) {
       PatternType.regex =>
-        'Value "$nonNullValue" does not match required pattern${example != null ? " (e.g., $example)" : ""}.',
+        'Value does not match required pattern${example != null ? " (e.g., $example)" : ""}.',
       PatternType.enumString => () {
-        final suggestion = buildDidYouMeanSuggestion(
-          nonNullValue,
-          allowedValues!,
-        );
-        return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
+        final suggestion = buildDidYouMeanSuggestion(value, allowedValues!);
+        return 'Value is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
       }(),
       PatternType.notEnumString =>
-        'Value "$nonNullValue" is disallowed. Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}.',
+        'Value is disallowed. Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}.',
       PatternType.format =>
-        'Value "$nonNullValue" is not a valid ${constraintKey.replaceFirst("string_format_", "")}${example != null ? " (e.g., $example)" : ""}.',
+        'Value is not a valid ${constraintKey.replaceFirst("string_format_", "")}${example != null ? " (e.g., $example)" : ""}.',
     };
   }
 
