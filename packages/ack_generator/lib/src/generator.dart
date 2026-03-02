@@ -390,7 +390,18 @@ class AckSchemaGenerator extends Generator {
           // Generate extension types for subtypes
           final subtypeNames = model.subtypeNames;
           if (subtypeNames != null) {
+            final emittedSubtypeSchemaNames = <String>{};
             for (final subtypeSchemaName in subtypeNames.values) {
+              if (!emittedSubtypeSchemaNames.add(subtypeSchemaName)) {
+                throw InvalidGenerationSourceError(
+                  'Discriminated base "${model.schemaClassName}" maps multiple '
+                  'discriminator values to subtype "$subtypeSchemaName".',
+                  element: element,
+                  todo:
+                      'Ensure each discriminator value maps to a unique branch schema.',
+                );
+              }
+
               final subtypeModel = sortedModels.firstWhere(
                 (m) => m.schemaClassName == subtypeSchemaName,
                 orElse: () => throw InvalidGenerationSourceError(

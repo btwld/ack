@@ -17,13 +17,16 @@ Future<void> _expectGenerationFailure({
     assets,
     outputs: expectedOutputs ?? {},
     onLog: (log) {
-      if (log.level.name == 'SEVERE' &&
-          log.message.contains(expectedMessage)) {
+      if (log.level.name == 'SEVERE' && log.message.contains(expectedMessage)) {
         sawExpectedError = true;
       }
     },
   );
-  expect(sawExpectedError, isTrue, reason: 'Expected SEVERE log containing "$expectedMessage"');
+  expect(
+    sawExpectedError,
+    isTrue,
+    reason: 'Expected SEVERE log containing "$expectedMessage"',
+  );
 }
 
 void main() {
@@ -309,6 +312,70 @@ final petSchema = Ack.discriminated(
         },
       );
     });
+
+    test('fails when a branch schema is referenced by an alias key', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await _expectGenerationFailure(
+        builder: builder,
+        expectedMessage: 'but is mapped as',
+        assets: {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.literal('cat'),
+  'lives': Ack.integer(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+    'kitty': catSchema,
+  },
+);
+''',
+        },
+      );
+    });
+
+    test(
+      'fails when schemas key does not match branch discriminator literal',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await _expectGenerationFailure(
+          builder: builder,
+          expectedMessage: 'but is mapped as',
+          assets: {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final dogSchema = Ack.object({
+  'kind': Ack.literal('dog'),
+  'bark': Ack.boolean(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': dogSchema,
+  },
+);
+''',
+          },
+        );
+      },
+    );
 
     test('fails when a branch is reused across multiple bases', () async {
       final builder = ackGenerator(BuilderOptions.empty);

@@ -14,7 +14,6 @@ import '../models/model_info.dart';
 /// Logger for schema AST analysis warnings and diagnostics.
 final _log = Logger('SchemaAstAnalyzer');
 
-
 typedef _SchemaReference = ({String name, String? prefix});
 typedef _ListElementRef = ({
   MethodInvocation? ackBase,
@@ -467,6 +466,8 @@ class SchemaAstAnalyzer {
   /// - Base cannot be nullable
   /// - Branches must be top-level schema variable/getter references
   /// - Branches must be @AckType object schemas and non-nullable
+  /// - Branches must declare `discriminatorKey` as a matching `Ack.literal(...)`
+  /// - Each branch schema can only appear once per discriminated base
   /// - Branches must be declared in the same library
   ModelInfo _parseDiscriminatedSchema(
     String variableName,
@@ -539,6 +540,7 @@ class SchemaAstAnalyzer {
 
     final currentLibraryUri = element.library2?.uri;
     final subtypeNames = <String, String>{};
+    final discriminatorByBranchSchemaName = <String, String>{};
 
     for (final schemaEntry in resolvedSchemasLiteral.elements) {
       if (schemaEntry is! MapLiteralEntry) {
@@ -620,7 +622,48 @@ class SchemaAstAnalyzer {
         );
       }
 
-      subtypeNames[discriminatorValue] = resolvedBranch.modelInfo.schemaClassName;
+      final branchLiteralValue = _extractDiscriminatorLiteralFromDeclaration(
+        declaration: resolvedBranch.sourceDeclaration,
+        discriminatorKey: resolvedDiscriminatorKey,
+        visitedDeclarations: <String>{},
+      );
+
+      if (branchLiteralValue == null) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" must define '
+          '"$resolvedDiscriminatorKey" as Ack.literal("$discriminatorValue").',
+          element: element,
+          todo:
+              'Update the branch object schema so "$resolvedDiscriminatorKey" is a literal matching its map key.',
+        );
+      }
+
+      if (branchLiteralValue != discriminatorValue) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" has '
+          '"$resolvedDiscriminatorKey" literal "$branchLiteralValue", '
+          'but is mapped as "$discriminatorValue".',
+          element: element,
+          todo:
+              'Use matching values for the schemas map key and branch discriminator literal.',
+        );
+      }
+
+      final branchSchemaName = resolvedBranch.modelInfo.schemaClassName;
+      final existingDiscriminator =
+          discriminatorByBranchSchemaName[branchSchemaName];
+      if (existingDiscriminator != null &&
+          existingDiscriminator != discriminatorValue) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch schema "$branchSchemaName" is mapped '
+          'to multiple discriminator values: "$existingDiscriminator" and "$discriminatorValue".',
+          element: element,
+          todo:
+              'Map each branch schema to only one discriminator value per Ack.discriminated(...) base.',
+        );
+      }
+      discriminatorByBranchSchemaName[branchSchemaName] = discriminatorValue;
+      subtypeNames[discriminatorValue] = branchSchemaName;
     }
 
     final typeName = _resolveModelClassName(
@@ -639,6 +682,244 @@ class SchemaAstAnalyzer {
       discriminatorKey: resolvedDiscriminatorKey,
       subtypeNames: subtypeNames,
     );
+  }
+
+  String? _extractDiscriminatorLiteralFromDeclaration({
+    required Element2 declaration,
+    required String discriminatorKey,
+    required Set<String> visitedDeclarations,
+  }) {
+    final declarationKey = _declarationVisitKey(declaration);
+    if (!visitedDeclarations.add(declarationKey)) {
+      return null;
+    }
+
+    final schemaExpression = _extractSchemaExpressionForDeclaration(
+      declaration,
+    );
+    if (schemaExpression == null) return null;
+
+    return _extractDiscriminatorLiteralFromSchemaExpression(
+      expression: schemaExpression,
+      contextElement: declaration,
+      discriminatorKey: discriminatorKey,
+      visitedDeclarations: visitedDeclarations,
+    );
+  }
+
+  String? _extractDiscriminatorLiteralFromSchemaExpression({
+    required Expression expression,
+    required Element2 contextElement,
+    required String discriminatorKey,
+    required Set<String> visitedDeclarations,
+  }) {
+    if (expression is MethodInvocation) {
+      final schemaReferenceBase = _findSchemaVariableBase(expression);
+      if (schemaReferenceBase != null) {
+        final resolvedBranch = _resolveSchemaReference(
+          schemaReferenceBase,
+          contextElement,
+        );
+        if (resolvedBranch == null) return null;
+
+        return _extractDiscriminatorLiteralFromDeclaration(
+          declaration: resolvedBranch.sourceDeclaration,
+          discriminatorKey: discriminatorKey,
+          visitedDeclarations: visitedDeclarations,
+        );
+      }
+
+      final baseInvocation = _findBaseAckInvocation(expression);
+      if (baseInvocation == null ||
+          baseInvocation.methodName.name != 'object') {
+        return null;
+      }
+
+      return _extractDiscriminatorLiteralFromObjectInvocation(
+        objectInvocation: baseInvocation,
+        contextElement: contextElement,
+        discriminatorKey: discriminatorKey,
+        visitedDeclarations: visitedDeclarations,
+      );
+    }
+
+    final schemaReference = _extractSchemaReference(expression);
+    if (schemaReference == null) return null;
+    final resolvedBranch = _resolveSchemaReference(
+      schemaReference,
+      contextElement,
+    );
+    if (resolvedBranch == null) return null;
+
+    return _extractDiscriminatorLiteralFromDeclaration(
+      declaration: resolvedBranch.sourceDeclaration,
+      discriminatorKey: discriminatorKey,
+      visitedDeclarations: visitedDeclarations,
+    );
+  }
+
+  String? _extractDiscriminatorLiteralFromObjectInvocation({
+    required MethodInvocation objectInvocation,
+    required Element2 contextElement,
+    required String discriminatorKey,
+    required Set<String> visitedDeclarations,
+  }) {
+    final args = objectInvocation.argumentList.arguments;
+    if (args.isEmpty) return null;
+
+    final firstArg = args.first;
+    if (firstArg is! SetOrMapLiteral) return null;
+
+    for (final mapElement in firstArg.elements) {
+      if (mapElement is! MapLiteralEntry) continue;
+      final keyExpression = mapElement.key;
+      if (keyExpression is! SimpleStringLiteral ||
+          keyExpression.value != discriminatorKey) {
+        continue;
+      }
+
+      return _extractLiteralValueFromSchemaExpression(
+        expression: mapElement.value,
+        contextElement: contextElement,
+        visitedDeclarations: visitedDeclarations,
+      );
+    }
+
+    return null;
+  }
+
+  String? _extractLiteralValueFromSchemaExpression({
+    required Expression expression,
+    required Element2 contextElement,
+    required Set<String> visitedDeclarations,
+  }) {
+    if (expression is MethodInvocation) {
+      final schemaReferenceBase = _findSchemaVariableBase(expression);
+      if (schemaReferenceBase != null) {
+        final resolved = _resolveSchemaReference(
+          schemaReferenceBase,
+          contextElement,
+        );
+        if (resolved == null) return null;
+
+        return _extractLiteralValueFromDeclaration(
+          declaration: resolved.sourceDeclaration,
+          visitedDeclarations: visitedDeclarations,
+        );
+      }
+
+      final baseInvocation = _findBaseAckInvocation(expression);
+      if (baseInvocation == null ||
+          baseInvocation.methodName.name != 'literal') {
+        return null;
+      }
+
+      final literalArguments = baseInvocation.argumentList.arguments;
+      if (literalArguments.length != 1 ||
+          literalArguments.first is! SimpleStringLiteral) {
+        return null;
+      }
+
+      return (literalArguments.first as SimpleStringLiteral).value;
+    }
+
+    final schemaReference = _extractSchemaReference(expression);
+    if (schemaReference == null) return null;
+    final resolved = _resolveSchemaReference(schemaReference, contextElement);
+    if (resolved == null) return null;
+
+    return _extractLiteralValueFromDeclaration(
+      declaration: resolved.sourceDeclaration,
+      visitedDeclarations: visitedDeclarations,
+    );
+  }
+
+  String? _extractLiteralValueFromDeclaration({
+    required Element2 declaration,
+    required Set<String> visitedDeclarations,
+  }) {
+    final declarationKey = _declarationVisitKey(declaration);
+    if (!visitedDeclarations.add(declarationKey)) {
+      return null;
+    }
+
+    final schemaExpression = _extractSchemaExpressionForDeclaration(
+      declaration,
+    );
+    if (schemaExpression == null) return null;
+
+    return _extractLiteralValueFromSchemaExpression(
+      expression: schemaExpression,
+      contextElement: declaration,
+      visitedDeclarations: visitedDeclarations,
+    );
+  }
+
+  String _declarationVisitKey(Element2 declaration) {
+    final libraryUri = declaration.library2?.uri.toString() ?? 'unknown';
+    final name = declaration.name3 ?? '<unnamed>';
+    return '$libraryUri::$name';
+  }
+
+  Expression? _extractSchemaExpressionForDeclaration(Element2 declaration) {
+    if (declaration is TopLevelVariableElement2) {
+      final fragment = declaration.firstFragment;
+      final session = fragment.libraryFragment.element.session;
+      final library = declaration.library2;
+      final parsedLibResult = session.getParsedLibraryByElement2(library);
+      if (parsedLibResult is! ParsedLibraryResult) {
+        return null;
+      }
+
+      final variableDeclaration = parsedLibResult.getFragmentDeclaration(
+        fragment,
+      );
+      if (variableDeclaration == null ||
+          variableDeclaration.node is! VariableDeclaration) {
+        return null;
+      }
+
+      final variableNode = variableDeclaration.node as VariableDeclaration;
+      return variableNode.initializer;
+    }
+
+    if (declaration is GetterElement) {
+      final fragment = declaration.firstFragment;
+      final session = fragment.libraryFragment.element.session;
+      final library = declaration.library2;
+      final parsedLibResult = session.getParsedLibraryByElement2(library);
+      if (parsedLibResult is! ParsedLibraryResult) {
+        return null;
+      }
+
+      final getterDeclaration = parsedLibResult.getFragmentDeclaration(
+        fragment,
+      );
+      if (getterDeclaration == null ||
+          getterDeclaration.node is! FunctionDeclaration) {
+        return null;
+      }
+
+      final functionDeclaration = getterDeclaration.node as FunctionDeclaration;
+      if (!functionDeclaration.isGetter) return null;
+
+      final body = functionDeclaration.functionExpression.body;
+      if (body is ExpressionFunctionBody) {
+        return body.expression;
+      }
+
+      if (body is BlockFunctionBody) {
+        final statements = body.block.statements;
+        if (statements.length != 1 || statements.first is! ReturnStatement) {
+          return null;
+        }
+
+        final returnStatement = statements.first as ReturnStatement;
+        return returnStatement.expression;
+      }
+    }
+
+    return null;
   }
 
   bool _hasAdditionalPropertiesFromInvocation(
