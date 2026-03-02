@@ -1,4 +1,3 @@
-import 'package:analyzer/dart/element/element2.dart';
 import 'field_info.dart';
 
 /// Default representation type for object schemas
@@ -17,15 +16,19 @@ class ModelInfo {
   List<String> get requiredFields =>
       fields.where((f) => f.isRequired).map((f) => f.jsonKey).toList();
 
-  // New discriminated type properties
   /// Field name for discrimination (only for base classes)
   final String? discriminatorKey;
 
   /// This class's discriminator value (only for subtypes)
   final String? discriminatorValue;
 
-  /// Map of discriminator values to class elements (only for base classes)
-  final Map<String, ClassElement2>? subtypes;
+  /// Map of discriminator values to subtype identifiers (only for base classes).
+  /// For @AckModel: discriminator value → className (e.g., 'cat' → 'Cat')
+  /// For @AckType:  discriminator value → schemaClassName (e.g., 'cat' → 'catSchema')
+  final Map<String, String>? subtypeNames;
+
+  /// Parent discriminated base class name for subtypes.
+  final String? discriminatedBaseClassName;
 
   /// Computed property: Whether this class is a discriminated base class (has discriminatedKey)
   bool get isDiscriminatedBase => discriminatorKey != null;
@@ -51,10 +54,10 @@ class ModelInfo {
     required this.fields,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    // New discriminated parameters
     this.discriminatorKey,
     this.discriminatorValue,
-    this.subtypes,
+    this.subtypeNames,
+    this.discriminatedBaseClassName,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
     this.isNullableSchema = false,

@@ -277,6 +277,8 @@ class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
   final Map<String, AckSchema> schemas;
   const DiscriminatedSchema({required this.discriminatorKey, required this.schemas});
 
+  DiscriminatedSchema nullable() => this;
+
   @override
   Map<String, Object?> toJsonSchema() => {
     'oneOf': schemas.values.map((schema) => schema.toJsonSchema()).toList(),

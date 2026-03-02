@@ -1,10 +1,10 @@
+import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart' show Keyword;
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_provider.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:logging/logging.dart';
 import 'package:source_gen/source_gen.dart';
 
@@ -14,8 +14,6 @@ import '../models/model_info.dart';
 /// Logger for schema AST analysis warnings and diagnostics.
 final _log = Logger('SchemaAstAnalyzer');
 
-/// Default representation type for object schemas
-const String _kMapType = 'Map<String, Object?>';
 
 typedef _SchemaReference = ({String name, String? prefix});
 typedef _ListElementRef = ({
@@ -36,12 +34,16 @@ class _ResolvedSchemaReference {
   final ModelInfo modelInfo;
   final String? importPrefix;
   final bool hasAckTypeAnnotation;
+  final Element2 sourceDeclaration;
+  final Uri? sourceLibraryUri;
 
   const _ResolvedSchemaReference({
     required this.schemaName,
     required this.modelInfo,
     required this.importPrefix,
     required this.hasAckTypeAnnotation,
+    required this.sourceDeclaration,
+    required this.sourceLibraryUri,
   });
 }
 
@@ -228,20 +230,30 @@ class SchemaAstAnalyzer {
       schemaExpression = returnStatement.expression;
     }
 
-    if (schemaExpression is! MethodInvocation) {
-      throw InvalidGenerationSourceError(
-        'Schema getter "${element.name3}" must return an Ack schema invocation',
-        element: element,
-        todo:
-            'Return a schema expression such as Ack.object({...}) or Ack.string().',
+    if (schemaExpression is MethodInvocation) {
+      return _parseSchemaFromAST(
+        element.name3!,
+        schemaExpression,
+        element,
+        customTypeName: customTypeName,
       );
     }
 
-    return _parseSchemaFromAST(
-      element.name3!,
-      schemaExpression,
-      element,
-      customTypeName: customTypeName,
+    final schemaReference = _extractSchemaReference(schemaExpression);
+    if (schemaReference != null) {
+      return _parseSchemaAlias(
+        variableName: element.name3!,
+        reference: schemaReference,
+        element: element,
+        customTypeName: customTypeName,
+      );
+    }
+
+    throw InvalidGenerationSourceError(
+      'Schema getter "${element.name3}" must return an Ack schema invocation or schema reference',
+      element: element,
+      todo:
+          'Return a schema expression such as Ack.object({...}), Ack.string(), or another @AckType schema variable/getter.',
     );
   }
 
@@ -273,6 +285,11 @@ class SchemaAstAnalyzer {
       schemaClassName: variableName,
       fields: sourceModel.fields,
       additionalProperties: sourceModel.additionalProperties,
+      additionalPropertiesField: sourceModel.additionalPropertiesField,
+      discriminatorKey: sourceModel.discriminatorKey,
+      discriminatorValue: sourceModel.discriminatorValue,
+      subtypeNames: sourceModel.subtypeNames,
+      discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
       isNullableSchema: sourceModel.isNullableSchema,
@@ -375,10 +392,18 @@ class SchemaAstAnalyzer {
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+      case 'discriminated':
+        return _parseDiscriminatedSchema(
+          variableName,
+          baseInvocation,
+          element,
+          isNullable: isNullable,
+          customTypeName: customTypeName,
+        );
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema type for @AckType: Ack.$methodName(). '
-          'Supported types: object, string, integer, double, boolean, list, literal, enumString, enumValues',
+          'Supported types: object, string, integer, double, boolean, list, literal, enumString, enumValues, discriminated',
           element: element,
         );
     }
@@ -433,6 +458,186 @@ class SchemaAstAnalyzer {
       isFromSchemaVariable: true,
       additionalProperties: hasAdditionalProperties,
       isNullableSchema: isNullable,
+    );
+  }
+
+  /// Parses Ack.discriminated(...) schema for @AckType bases.
+  ///
+  /// v1 constraints:
+  /// - Base cannot be nullable
+  /// - Branches must be top-level schema variable/getter references
+  /// - Branches must be @AckType object schemas and non-nullable
+  /// - Branches must be declared in the same library
+  ModelInfo _parseDiscriminatedSchema(
+    String variableName,
+    MethodInvocation baseInvocation,
+    Element2 element, {
+    required bool isNullable,
+    String? customTypeName,
+  }) {
+    if (isNullable) {
+      throw InvalidGenerationSourceError(
+        'Ack.discriminated(...) cannot be nullable when used with @AckType.',
+        element: element,
+        todo: 'Remove `.nullable()` from the discriminated base schema.',
+      );
+    }
+
+    String? discriminatorKey;
+    SetOrMapLiteral? schemasLiteral;
+
+    for (final argument in baseInvocation.argumentList.arguments) {
+      if (argument is! NamedExpression) continue;
+
+      final name = argument.name.label.name;
+      if (name == 'discriminatorKey') {
+        final expression = argument.expression;
+        if (expression is! SimpleStringLiteral) {
+          throw InvalidGenerationSourceError(
+            'Ack.discriminated(...): `discriminatorKey` must be a string literal.',
+            element: element,
+          );
+        }
+        discriminatorKey = expression.value;
+      } else if (name == 'schemas') {
+        final expression = argument.expression;
+        if (expression is! SetOrMapLiteral) {
+          throw InvalidGenerationSourceError(
+            'Ack.discriminated(...): `schemas` must be a map literal.',
+            element: element,
+          );
+        }
+        // Check actual content: if non-empty, entries must be MapLiteralEntry.
+        // We avoid relying on `isMap` since it may return false in unresolved
+        // contexts (e.g., build_test / source_gen pipelines).
+        if (expression.elements.isNotEmpty &&
+            expression.elements.first is! MapLiteralEntry) {
+          throw InvalidGenerationSourceError(
+            'Ack.discriminated(...): `schemas` must be a map literal.',
+            element: element,
+          );
+        }
+        schemasLiteral = expression;
+      }
+    }
+
+    final resolvedDiscriminatorKey = discriminatorKey;
+    if (resolvedDiscriminatorKey == null || resolvedDiscriminatorKey.isEmpty) {
+      throw InvalidGenerationSourceError(
+        'Ack.discriminated(...): missing required `discriminatorKey` string literal.',
+        element: element,
+      );
+    }
+
+    final resolvedSchemasLiteral = schemasLiteral;
+    if (resolvedSchemasLiteral == null) {
+      throw InvalidGenerationSourceError(
+        'Ack.discriminated(...): missing required `schemas` map literal.',
+        element: element,
+      );
+    }
+
+    final currentLibraryUri = element.library2?.uri;
+    final subtypeNames = <String, String>{};
+
+    for (final schemaEntry in resolvedSchemasLiteral.elements) {
+      if (schemaEntry is! MapLiteralEntry) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): `schemas` must contain key/value map entries.',
+          element: element,
+        );
+      }
+
+      final keyExpression = schemaEntry.key;
+      if (keyExpression is! SimpleStringLiteral) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): discriminator values in `schemas` must be string literals.',
+          element: element,
+        );
+      }
+
+      final discriminatorValue = keyExpression.value;
+      if (subtypeNames.containsKey(discriminatorValue)) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): duplicate discriminator value "$discriminatorValue".',
+          element: element,
+        );
+      }
+
+      final branchReference = _extractSchemaReference(schemaEntry.value);
+      if (branchReference == null) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "$discriminatorValue" must reference a top-level schema variable/getter.',
+          element: element,
+          todo:
+              'Extract inline expressions to a top-level @AckType schema variable/getter and reference it.',
+        );
+      }
+
+      final resolvedBranch = _resolveSchemaReference(branchReference, element);
+      if (resolvedBranch == null) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): could not resolve branch reference "${_formatSchemaReference(branchReference)}".',
+          element: element,
+        );
+      }
+
+      if (!resolvedBranch.hasAckTypeAnnotation) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" must be annotated with @AckType.',
+          element: element,
+        );
+      }
+
+      if (resolvedBranch.modelInfo.representationType != kMapType) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" must be an object schema (Map<String, Object?> representation).',
+          element: element,
+        );
+      }
+
+      if (resolvedBranch.modelInfo.isNullableSchema) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" cannot be nullable.',
+          element: element,
+        );
+      }
+
+      if (resolvedBranch.sourceLibraryUri != currentLibraryUri) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" must be declared in the same library as "$variableName".',
+          element: element,
+        );
+      }
+
+      if (resolvedBranch.modelInfo.isDiscriminatedBase) {
+        throw InvalidGenerationSourceError(
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" is itself a discriminated base. '
+          'Nested discriminated unions are not supported.',
+          element: element,
+          todo:
+              'Use a plain Ack.object(...) schema for each branch, not another Ack.discriminated(...).',
+        );
+      }
+
+      subtypeNames[discriminatorValue] = resolvedBranch.modelInfo.schemaClassName;
+    }
+
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: const [],
+      isFromSchemaVariable: true,
+      representationType: kMapType,
+      isNullableSchema: false,
+      discriminatorKey: resolvedDiscriminatorKey,
+      subtypeNames: subtypeNames,
     );
   }
 
@@ -606,7 +811,7 @@ class SchemaAstAnalyzer {
 
     final hasTypedReference = resolvedReference.hasAckTypeAnnotation;
     final isObjectRepresentation =
-        resolvedReference.modelInfo.representationType == _kMapType;
+        resolvedReference.modelInfo.representationType == kMapType;
     if (isObjectRepresentation && !hasTypedReference) {
       throw InvalidGenerationSourceError(
         'Field "$fieldName" references object schema "$schemaVarName" '
@@ -1270,7 +1475,7 @@ class SchemaAstAnalyzer {
     }
 
     final modelInfo = resolved.modelInfo;
-    final isObjectRepresentation = modelInfo.representationType == _kMapType;
+    final isObjectRepresentation = modelInfo.representationType == kMapType;
     if (isObjectRepresentation && !resolved.hasAckTypeAnnotation) {
       throw InvalidGenerationSourceError(
         'Ack.list(${schemaReference.name}) references object schema '
@@ -1357,7 +1562,7 @@ class SchemaAstAnalyzer {
         );
       }
 
-      if (resolved.modelInfo.representationType == _kMapType &&
+      if (resolved.modelInfo.representationType == kMapType &&
           !resolved.hasAckTypeAnnotation) {
         throw InvalidGenerationSourceError(
           'Ack.list(${schemaReference.name}) references object schema '
@@ -1419,24 +1624,42 @@ class SchemaAstAnalyzer {
 
       TopLevelVariableElement2? schemaVariable;
       GetterElement? schemaGetter;
+      Element2? sourceDeclaration;
 
       if (resolvedElement is TopLevelVariableElement2) {
         schemaVariable = resolvedElement;
+        sourceDeclaration = resolvedElement;
       } else if (resolvedElement is GetterElement) {
         if (resolvedElement.isSynthetic) {
           final variable = resolvedElement.variable3;
           if (variable is TopLevelVariableElement2) {
             schemaVariable = variable;
+            sourceDeclaration = variable;
           }
         } else {
           schemaGetter = resolvedElement;
+          sourceDeclaration = resolvedElement;
         }
       } else if (resolvedElement is PropertyAccessorElement2) {
         if (resolvedElement is GetterElement && resolvedElement.isSynthetic) {
           final variable = resolvedElement.variable3;
           if (variable is TopLevelVariableElement2) {
             schemaVariable = variable;
+            sourceDeclaration = variable;
           }
+        } else if (resolvedElement is GetterElement &&
+            !resolvedElement.isSynthetic) {
+          schemaGetter = resolvedElement;
+          sourceDeclaration = resolvedElement;
+        }
+      }
+
+      if (schemaVariable == null && schemaGetter != null) {
+        // Ensure this is top-level only.
+        if (schemaGetter.enclosingElement2 is! LibraryElement2) {
+          shouldCacheResult = true;
+          resolvedReference = null;
+          return null;
         }
       }
 
@@ -1453,13 +1676,19 @@ class SchemaAstAnalyzer {
         return null;
       }
 
-      final hasAckTypeAnnotation = schemaVariable != null
-          ? _hasAckTypeAnnotation(schemaVariable)
-          : _hasAckTypeAnnotation(schemaGetter!);
+      final declarationForMetadata =
+          sourceDeclaration ?? schemaVariable ?? schemaGetter;
+      if (declarationForMetadata == null) {
+        shouldCacheResult = true;
+        resolvedReference = null;
+        return null;
+      }
 
-      final customTypeName = schemaVariable != null
-          ? _extractAckTypeName(schemaVariable)
-          : _extractAckTypeName(schemaGetter!);
+      final hasAckTypeAnnotation = _hasAckTypeAnnotation(
+        declarationForMetadata,
+      );
+
+      final customTypeName = _extractAckTypeName(declarationForMetadata);
 
       ModelInfo? modelInfo;
       if (schemaVariable != null) {
@@ -1473,6 +1702,7 @@ class SchemaAstAnalyzer {
           customTypeName: customTypeName,
         );
       }
+
       if (modelInfo == null) {
         shouldCacheResult = true;
         resolvedReference = null;
@@ -1484,6 +1714,8 @@ class SchemaAstAnalyzer {
         modelInfo: modelInfo,
         importPrefix: reference.prefix,
         hasAckTypeAnnotation: hasAckTypeAnnotation,
+        sourceDeclaration: declarationForMetadata,
+        sourceLibraryUri: declarationForMetadata.library2?.uri,
       );
       shouldCacheResult = true;
       return resolvedReference;
@@ -2129,7 +2361,7 @@ class SchemaAstAnalyzer {
       'integer' => 'int',
       'double' => 'double',
       'boolean' => 'bool',
-      'object' => _kMapType,
+      'object' => kMapType,
       'list' => 'List<dynamic>',
       _ => 'dynamic',
     };
