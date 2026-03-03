@@ -50,7 +50,7 @@ final userSchema = Ack.object({
                 contains("StatusType(_data['status'] as String)"),
                 contains('AddressType get address'),
                 contains(
-                  "AddressType(_data['address'] as Map<String, Object?>)",
+                  "Map<String, Object?>.unmodifiable(_data['address'] as Map<String, Object?>)",
                 ),
                 contains('List<StatusType> get aliases'),
                 contains('StatusType(e as String)'),

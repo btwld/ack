@@ -516,6 +516,10 @@ class TypeBuilder {
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
+    final representationValue = _wrapRepresentationValue(
+      castType: castType,
+      sourceExpression: 'validated',
+    );
 
     return [
       // Static parse factory
@@ -534,7 +538,7 @@ class TypeBuilder {
           ..body = Code('''
 return $schemaVarName.parseAs(
   data,
-  (validated) => $typeName(validated as $castType),
+  (validated) => $typeName($representationValue),
 );'''),
       ),
       // Static safeParse method
@@ -553,7 +557,7 @@ return $schemaVarName.parseAs(
           ..body = Code('''
 return $schemaVarName.safeParseAs(
   data,
-  (validated) => $typeName(validated as $castType),
+  (validated) => $typeName($representationValue),
 );'''),
       ),
     ];
@@ -588,7 +592,7 @@ return $schemaVarName.safeParseAs(
 return $schemaVarName.parseAs(
   data,
   (validated) {
-    final map = validated as Map<String, Object?>;
+    final map = ${_validatedObjectMapExpression('validated')};
     return $switchExpression;
   },
 );'''),
@@ -624,11 +628,38 @@ return $schemaVarName.parseAs(
 return $schemaVarName.safeParseAs(
   data,
   (validated) {
-    final map = validated as Map<String, Object?>;
+    final map = ${_validatedObjectMapExpression('validated')};
     return $switchExpression;
   },
 );'''),
     );
+  }
+
+  String _wrapRepresentationValue({
+    required String castType,
+    required String sourceExpression,
+  }) {
+    final castExpression = '$sourceExpression as $castType';
+    if (castType == kMapType) {
+      return 'Map<String, Object?>.unmodifiable($castExpression)';
+    }
+    return castExpression;
+  }
+
+  String _validatedObjectMapExpression(String sourceExpression) {
+    const mapType = 'Map<String, Object?>';
+    final castExpression = '$sourceExpression as $mapType';
+    return '$mapType.unmodifiable($castExpression)';
+  }
+
+  String _castRepresentationValue({
+    required String sourceExpression,
+    required String castType,
+  }) {
+    if (castType == kMapType) {
+      return 'Map<String, Object?>.unmodifiable($sourceExpression as $castType)';
+    }
+    return '$sourceExpression as $castType';
   }
 
   String _buildDiscriminatorSwitchExpression(
@@ -716,16 +747,27 @@ ${cases.join(',\n')},
     if (field.nestedSchemaRef != null) {
       if (field.displayTypeOverride != null) {
         final castType = field.nestedSchemaCastTypeOverride ?? kMapType;
-        return "${field.displayTypeOverride!}(_data['$key'] as $castType)";
+        final castExpression = _castRepresentationValue(
+          sourceExpression: "_data['$key']",
+          castType: castType,
+        );
+        return '${field.displayTypeOverride!}($castExpression)';
       }
 
       final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
       if (referencedModel != null) {
         final typeName = '${referencedModel.className}Type';
         final castType = referencedModel.representationType;
-        return "$typeName(_data['$key'] as $castType)";
+        final castExpression = _castRepresentationValue(
+          sourceExpression: "_data['$key']",
+          castType: castType,
+        );
+        return '$typeName($castExpression)';
       }
-      return "_data['$key'] as Map<String, Object?>";
+      return _castRepresentationValue(
+        sourceExpression: "_data['$key']",
+        castType: kMapType,
+      );
     }
 
     // Primitives
@@ -753,7 +795,10 @@ ${cases.join(',\n')},
 
     // Maps
     if (field.isMap) {
-      return "_data['$key'] as Map<String, Object?>";
+      return _castRepresentationValue(
+        sourceExpression: "_data['$key']",
+        castType: kMapType,
+      );
     }
 
     // Sets
@@ -764,7 +809,11 @@ ${cases.join(',\n')},
     // Nested schema
     if (field.isNestedSchema && _hasAckType(field, lookups)) {
       final typeConstructor = _getTypeConstructor(field);
-      return "$typeConstructor(_data['$key'] as Map<String, Object?>)";
+      final castExpression = _castRepresentationValue(
+        sourceExpression: "_data['$key']",
+        castType: kMapType,
+      );
+      return '$typeConstructor($castExpression)';
     }
 
     // Generic or unknown - return as Object?
@@ -858,7 +907,11 @@ ${cases.join(',\n')},
       final constructorName = field.collectionElementIsCustomType
           ? _asExtensionTypeName(elementType)
           : '${elementType}Type';
-      return "(_data['$key'] as List).map((e) => $constructorName(e as $castType))$listSuffix$suffix";
+      final castExpression = _castRepresentationValue(
+        sourceExpression: 'e',
+        castType: castType,
+      );
+      return "(_data['$key'] as List).map((e) => $constructorName($castExpression))$listSuffix$suffix";
     }
 
     // Primitive lists/sets - direct cast
@@ -1283,8 +1336,8 @@ ${assignments.join(',\n')},
     // Generate filter condition inline for better performance
     final conditions = knownKeys.map((k) => "e.key != '$k'").toList();
     final filterExpr = conditions.isEmpty
-        ? '_data'
-        : 'Map.fromEntries(_data.entries.where((e) => ${conditions.join(' && ')}))';
+        ? 'Map<String, Object?>.unmodifiable(_data)'
+        : 'Map<String, Object?>.unmodifiable(Map.fromEntries(_data.entries.where((e) => ${conditions.join(' && ')})))';
 
     return Method(
       (m) => m

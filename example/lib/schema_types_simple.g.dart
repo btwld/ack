@@ -13,14 +13,18 @@ extension type UserType(Map<String, Object?> _data)
   static UserType parse(Object? data) {
     return userSchema.parseAs(
       data,
-      (validated) => UserType(validated as Map<String, Object?>),
+      (validated) => UserType(
+        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+      ),
     );
   }
 
   static SchemaResult<UserType> safeParse(Object? data) {
     return userSchema.safeParseAs(
       data,
-      (validated) => UserType(validated as Map<String, Object?>),
+      (validated) => UserType(
+        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+      ),
     );
   }
 

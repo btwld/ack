@@ -7,16 +7,14 @@ import '../test_utils/test_assets.dart';
 
 void main() {
   group('@AckType cross-file schema references', () {
-    test(
-      'resolves typed nested getters across files (direct import)',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('resolves typed nested getters across files (direct import)', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/deck_schemas.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/deck_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -26,7 +24,7 @@ final slideSchema = Ack.object({
   'title': Ack.string(),
 });
 ''',
-            'test_pkg|lib/deck_tools_schemas.dart': '''
+          'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'deck_schemas.dart';
@@ -37,28 +35,28 @@ final deckToolArgsSchema = Ack.object({
   'slides': Ack.list(slideSchema),
 });
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/deck_schemas.g.dart': decodedMatches(
-              contains('extension type SlideType(Map<String, Object?> _data)'),
-            ),
-            'test_pkg|lib/deck_tools_schemas.g.dart': decodedMatches(
-              allOf([
-                contains(
-                  'extension type DeckToolArgsType(Map<String, Object?> _data)',
-                ),
-                contains('SlideType get currentSlide'),
-                contains(
-                  "SlideType(_data['currentSlide'] as Map<String, Object?>)",
-                ),
-                contains('List<SlideType> get slides'),
-                contains('SlideType(e as Map<String, Object?>)'),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/deck_schemas.g.dart': decodedMatches(
+            contains('extension type SlideType(Map<String, Object?> _data)'),
+          ),
+          'test_pkg|lib/deck_tools_schemas.g.dart': decodedMatches(
+            allOf([
+              contains(
+                'extension type DeckToolArgsType(Map<String, Object?> _data)',
+              ),
+              contains('SlideType get currentSlide'),
+              contains('Map<String, Object?>.unmodifiable('),
+              contains("_data['currentSlide'] as Map<String, Object?>"),
+              contains('List<SlideType> get slides'),
+              contains(
+                'Map<String, Object?>.unmodifiable(e as Map<String, Object?>)',
+              ),
+            ]),
+          ),
+        },
+      );
+    });
 
     test('resolves typed nested getters for prefixed schema imports', () async {
       final builder = ackGenerator(BuilderOptions.empty);
@@ -231,16 +229,12 @@ final deckToolArgsSchema = Ack.object({
                 contains(
                   "SlideType? get currentSlide => _data['currentSlide'] != null",
                 ),
-                contains(
-                  "? SlideType(_data['currentSlide'] as Map<String, Object?>)",
-                ),
+                contains("_data['currentSlide'] as Map<String, Object?>"),
                 contains('SlideType? get selectedSlide'),
                 contains(
                   "SlideType? get selectedSlide => _data['selectedSlide'] != null",
                 ),
-                contains(
-                  "? SlideType(_data['selectedSlide'] as Map<String, Object?>)",
-                ),
+                contains("_data['selectedSlide'] as Map<String, Object?>"),
               ]),
             ),
           },

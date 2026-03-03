@@ -181,14 +181,16 @@ class Company {
       );
     });
 
-    test('Issue #43: @AckType with Ack.list(schemaRef) generates List<ExtensionType> getter', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'Issue #43: @AckType with Ack.list(schemaRef) generates List<ExtensionType> getter',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/contact_list.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/contact_list.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -204,34 +206,39 @@ final contactListSchema = Ack.object({
   'addresses': Ack.list(addressSchema),
 });
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/contact_list.g.dart': decodedMatches(
-            allOf([
-              // Extension type for Address
-              contains('extension type AddressType'),
+          },
+          outputs: {
+            'test_pkg|lib/contact_list.g.dart': decodedMatches(
+              allOf([
+                // Extension type for Address
+                contains('extension type AddressType'),
 
-              // Extension type for ContactList
-              contains('extension type ContactListType'),
+                // Extension type for ContactList
+                contains('extension type ContactListType'),
 
-              // KEY: List<AddressType> getter with .map() and .toList()
-              contains('List<AddressType> get addresses'),
-              contains('.map((e) => AddressType(e as Map<String, Object?>))'),
-              contains('.toList()'),
-            ]),
-          ),
-        },
-      );
-    });
+                // KEY: List<AddressType> getter with .map() and .toList()
+                contains('List<AddressType> get addresses'),
+                contains(
+                  'Map<String, Object?>.unmodifiable(e as Map<String, Object?>)',
+                ),
+                contains('.toList()'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
 
-    test('Ack.list(schemaRef.optional()) generates List<ExtensionType> getter', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'Ack.list(schemaRef.optional()) generates List<ExtensionType> getter',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/contact_list.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/contact_list.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -247,19 +254,22 @@ final contactListSchema = Ack.object({
   'addresses': Ack.list(addressSchema.optional()),
 });
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/contact_list.g.dart': decodedMatches(
-            allOf([
-              contains('extension type AddressType'),
-              contains('extension type ContactListType'),
-              contains('List<AddressType> get addresses'),
-              contains('.map((e) => AddressType(e as Map<String, Object?>))'),
-              contains('.toList()'),
-            ]),
-          ),
-        },
-      );
-    });
+          },
+          outputs: {
+            'test_pkg|lib/contact_list.g.dart': decodedMatches(
+              allOf([
+                contains('extension type AddressType'),
+                contains('extension type ContactListType'),
+                contains('List<AddressType> get addresses'),
+                contains(
+                  'Map<String, Object?>.unmodifiable(e as Map<String, Object?>)',
+                ),
+                contains('.toList()'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
   });
 }

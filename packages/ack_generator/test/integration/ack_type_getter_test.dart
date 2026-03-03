@@ -82,7 +82,7 @@ ObjectSchema get userSchema {
               contains('extension type UserType(Map<String, Object?> _data)'),
               contains('CustomAddressType get address'),
               contains(
-                "CustomAddressType(_data['address'] as Map<String, Object?>)",
+                "Map<String, Object?>.unmodifiable(_data['address'] as Map<String, Object?>)",
               ),
             ]),
           ),

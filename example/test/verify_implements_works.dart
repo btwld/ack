@@ -1,4 +1,5 @@
 import 'package:ack_example/schema_types_simple.dart';
+import 'package:ack_example/schema_types_edge_cases.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -50,6 +51,33 @@ void main() {
 
       // Can pass UserType where Map is expected!
       processMap(user);
+    });
+
+    test('rejects map mutation at runtime', () {
+      final user = UserType.parse({'name': 'John', 'age': 30, 'active': true});
+
+      final Map<String, Object?> map = user;
+      expect(() => map['name'] = 'Jane', throwsA(isA<UnsupportedError>()));
+    });
+
+    test('rejects nested wrapper map mutation at runtime', () {
+      final person = PersonType.parse({
+        'name': 'John',
+        'email': 'john@example.com',
+        'address': {
+          'street': 'Main St',
+          'city': 'Quito',
+          'zipCode': '17000',
+          'country': 'Ecuador',
+        },
+        'age': 30,
+      });
+
+      final Map<String, Object?> addressMap = person.address;
+      expect(
+        () => addressMap['city'] = 'Guayaquil',
+        throwsA(isA<UnsupportedError>()),
+      );
     });
 
     test('safeParse returns SchemaResult<UserType>', () {
