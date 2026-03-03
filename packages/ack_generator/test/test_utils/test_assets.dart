@@ -277,6 +277,7 @@ class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
   final Map<String, AckSchema> schemas;
   const DiscriminatedSchema({required this.discriminatorKey, required this.schemas});
 
+  // Test stub no-op: generator nullability checks inspect the AST chain.
   DiscriminatedSchema nullable() => this;
 
   @override

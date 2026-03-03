@@ -147,22 +147,25 @@ class SchemaAstAnalyzer {
     }
 
     if (initializer is MethodInvocation) {
-      return _parseSchemaFromAST(
+      final model = _parseSchemaFromAST(
         element.name3!,
         initializer,
         element,
         customTypeName: customTypeName,
       );
+      if (model == null) return null;
+      return _withSchemaIdentity(model, element);
     }
 
     final schemaReference = _extractSchemaReference(initializer);
     if (schemaReference != null) {
-      return _parseSchemaAlias(
+      final model = _parseSchemaAlias(
         variableName: element.name3!,
         reference: schemaReference,
         element: element,
         customTypeName: customTypeName,
       );
+      return _withSchemaIdentity(model, element);
     }
 
     throw InvalidGenerationSourceError(
@@ -230,22 +233,25 @@ class SchemaAstAnalyzer {
     }
 
     if (schemaExpression is MethodInvocation) {
-      return _parseSchemaFromAST(
+      final model = _parseSchemaFromAST(
         element.name3!,
         schemaExpression,
         element,
         customTypeName: customTypeName,
       );
+      if (model == null) return null;
+      return _withSchemaIdentity(model, element);
     }
 
     final schemaReference = _extractSchemaReference(schemaExpression);
     if (schemaReference != null) {
-      return _parseSchemaAlias(
+      final model = _parseSchemaAlias(
         variableName: element.name3!,
         reference: schemaReference,
         element: element,
         customTypeName: customTypeName,
       );
+      return _withSchemaIdentity(model, element);
     }
 
     throw InvalidGenerationSourceError(
@@ -288,6 +294,9 @@ class SchemaAstAnalyzer {
       discriminatorKey: sourceModel.discriminatorKey,
       discriminatorValue: sourceModel.discriminatorValue,
       subtypeNames: sourceModel.subtypeNames,
+      schemaIdentity:
+          sourceModel.schemaIdentity ??
+          _declarationVisitKey(resolved.sourceDeclaration),
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
@@ -547,7 +556,6 @@ class SchemaAstAnalyzer {
 
     final currentLibraryUri = element.library2?.uri;
     final subtypeNames = <String, String>{};
-    final discriminatorByBranchSchemaName = <String, String>{};
 
     for (final schemaEntry in resolvedSchemasLiteral.elements) {
       if (schemaEntry is! MapLiteralEntry) {
@@ -656,21 +664,8 @@ class SchemaAstAnalyzer {
         );
       }
 
-      final branchSchemaName = resolvedBranch.modelInfo.schemaClassName;
-      final existingDiscriminator =
-          discriminatorByBranchSchemaName[branchSchemaName];
-      if (existingDiscriminator != null &&
-          existingDiscriminator != discriminatorValue) {
-        throw InvalidGenerationSourceError(
-          'Ack.discriminated(...): branch schema "$branchSchemaName" is mapped '
-          'to multiple discriminator values: "$existingDiscriminator" and "$discriminatorValue".',
-          element: element,
-          todo:
-              'Map each branch schema to only one discriminator value per Ack.discriminated(...) base.',
-        );
-      }
-      discriminatorByBranchSchemaName[branchSchemaName] = discriminatorValue;
-      subtypeNames[discriminatorValue] = branchSchemaName;
+      subtypeNames[discriminatorValue] =
+          resolvedBranch.modelInfo.schemaClassName;
     }
 
     final typeName = _resolveModelClassName(
@@ -866,6 +861,29 @@ class SchemaAstAnalyzer {
     final libraryUri = declaration.library2?.uri.toString() ?? 'unknown';
     final name = declaration.name3 ?? '<unnamed>';
     return '$libraryUri::$name';
+  }
+
+  ModelInfo _withSchemaIdentity(ModelInfo model, Element2 declaration) {
+    if (model.schemaIdentity != null) {
+      return model;
+    }
+
+    return ModelInfo(
+      className: model.className,
+      schemaClassName: model.schemaClassName,
+      description: model.description,
+      fields: model.fields,
+      additionalProperties: model.additionalProperties,
+      additionalPropertiesField: model.additionalPropertiesField,
+      discriminatorKey: model.discriminatorKey,
+      discriminatorValue: model.discriminatorValue,
+      subtypeNames: model.subtypeNames,
+      schemaIdentity: _declarationVisitKey(declaration),
+      discriminatedBaseClassName: model.discriminatedBaseClassName,
+      isFromSchemaVariable: model.isFromSchemaVariable,
+      representationType: model.representationType,
+      isNullableSchema: model.isNullableSchema,
+    );
   }
 
   Expression? _extractSchemaExpressionForDeclaration(Element2 declaration) {

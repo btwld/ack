@@ -30,7 +30,15 @@ class ModelInfo {
   /// For @AckType:  discriminator value → schemaClassName (e.g., 'cat' → 'catSchema')
   final Map<String, String>? subtypeNames;
 
+  /// Canonical schema declaration identity for @AckType schema variables/getters.
+  ///
+  /// Aliases share the same canonical identity as their source declaration.
+  final String? schemaIdentity;
+
   /// Parent discriminated base class name for subtypes.
+  ///
+  /// For @AckType schema-variable subtypes this stores the generated base type
+  /// name (for example, `PetType`), not the schema variable name.
   final String? discriminatedBaseClassName;
 
   /// Computed property: Whether this model has a discriminator key.
@@ -66,6 +74,7 @@ class ModelInfo {
     this.discriminatorKey,
     this.discriminatorValue,
     this.subtypeNames,
+    this.schemaIdentity,
     this.discriminatedBaseClassName,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,

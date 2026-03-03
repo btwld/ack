@@ -335,15 +335,17 @@ final petSchema = Ack.discriminated(
       );
     });
 
-    test('fails when a branch schema is referenced by an alias key', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'fails when branch map key mismatches discriminator literal',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
-        builder: builder,
-        expectedMessage: 'but is mapped as',
-        assets: {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+        await _expectGenerationFailure(
+          builder: builder,
+          expectedMessage: 'but is mapped as',
+          assets: {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -362,9 +364,10 @@ final petSchema = Ack.discriminated(
   },
 );
 ''',
-        },
-      );
-    });
+          },
+        );
+      },
+    );
 
     test(
       'fails when schemas key does not match branch discriminator literal',
@@ -430,6 +433,50 @@ final anotherPetSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {
     'cat': catSchema,
+  },
+);
+''',
+        },
+      );
+    });
+
+    test('fails when aliased branch is reused across multiple bases', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await _expectGenerationFailure(
+        builder: builder,
+        expectedMessage: 'mapped to multiple discriminated bases',
+        assets: {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.literal('cat'),
+  'lives': Ack.integer(),
+});
+
+@AckType()
+final catAliasOne = catSchema;
+
+@AckType()
+final catAliasTwo = catSchema;
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catAliasOne,
+  },
+);
+
+@AckType()
+final anotherPetSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catAliasTwo,
   },
 );
 ''',

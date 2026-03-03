@@ -465,7 +465,7 @@ class AckSchemaGenerator extends Generator {
       schemaModelIndexBySchemaClassName[model.schemaClassName] = i;
     }
 
-    final branchOwnerBySchemaClassName = <String, String>{};
+    final branchOwnerByCanonicalIdentity = <String, String>{};
 
     for (var i = 0; i < linked.length; i++) {
       final baseModel = linked[i];
@@ -484,20 +484,6 @@ class AckSchemaGenerator extends Generator {
         final discriminatorValue = entry.key;
         final branchSchemaClassName = entry.value;
 
-        final existingOwner =
-            branchOwnerBySchemaClassName[branchSchemaClassName];
-        if (existingOwner != null &&
-            existingOwner != baseModel.schemaClassName) {
-          throw InvalidGenerationSourceError(
-            'Branch schema "$branchSchemaClassName" is mapped to multiple '
-            'discriminated bases: "$existingOwner" and "${baseModel.schemaClassName}".',
-            todo:
-                'A branch schema can only belong to one Ack.discriminated(...) base.',
-          );
-        }
-        branchOwnerBySchemaClassName[branchSchemaClassName] =
-            baseModel.schemaClassName;
-
         final branchIndex =
             schemaModelIndexBySchemaClassName[branchSchemaClassName];
         if (branchIndex == null) {
@@ -509,10 +495,28 @@ class AckSchemaGenerator extends Generator {
         }
 
         final branchModel = linked[branchIndex];
+        final canonicalBranchIdentity =
+            branchModel.schemaIdentity ?? branchSchemaClassName;
+        final existingOwner =
+            branchOwnerByCanonicalIdentity[canonicalBranchIdentity];
+        if (existingOwner != null &&
+            existingOwner != baseModel.schemaClassName) {
+          throw InvalidGenerationSourceError(
+            'Branch schema "$branchSchemaClassName" is mapped to multiple '
+            'discriminated bases: "$existingOwner" and "${baseModel.schemaClassName}".',
+            todo:
+                'A branch schema can only belong to one Ack.discriminated(...) base.',
+          );
+        }
+        branchOwnerByCanonicalIdentity[canonicalBranchIdentity] =
+            baseModel.schemaClassName;
+
         linked[branchIndex] = _copyModelInfo(
           branchModel,
           discriminatorKey: discriminatorKey,
           discriminatorValue: discriminatorValue,
+          // For @AckType flows this references the generated base type name
+          // (e.g. `PetType`) used by dependency sorting.
           discriminatedBaseClassName: baseModel.className,
         );
       }
@@ -538,6 +542,7 @@ class AckSchemaGenerator extends Generator {
       discriminatorKey: discriminatorKey ?? model.discriminatorKey,
       discriminatorValue: discriminatorValue ?? model.discriminatorValue,
       subtypeNames: subtypeNames ?? model.subtypeNames,
+      schemaIdentity: model.schemaIdentity,
       discriminatedBaseClassName:
           discriminatedBaseClassName ?? model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,

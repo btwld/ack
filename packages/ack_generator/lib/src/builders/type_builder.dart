@@ -309,6 +309,8 @@ class TypeBuilder {
               ..body = Code("_data['$discriminatorKey'] as String"),
           ),
           _buildToJson(model),
+          // This builder is currently used by @AckType schema-variable
+          // discriminated flows; keep these guards explicit to preserve behavior.
           if (model.isFromSchemaVariable)
             ..._buildStaticFactories(model, schemaVarName),
           // Add regular field getters
