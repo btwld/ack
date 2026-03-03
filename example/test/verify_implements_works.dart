@@ -1,5 +1,6 @@
 import 'package:ack_example/schema_types_simple.dart';
 import 'package:ack_example/schema_types_edge_cases.dart';
+import 'package:ack_example/args_getter_example.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -101,6 +102,27 @@ void main() {
         () => addressMap['city'] = 'Guayaquil',
         throwsA(isA<UnsupportedError>()),
       );
+    });
+
+    test('rejects args map mutation at runtime', () {
+      final config = UserConfigType.parse({
+        'username': 'john',
+        'email': 'john@example.com',
+        'theme': 'dark',
+        'metadata': {'region': 'us'},
+      });
+
+      expect(config.args, {
+        'theme': 'dark',
+        'metadata': {'region': 'us'},
+      });
+      expect(
+        () => config.args['theme'] = 'light',
+        throwsA(isA<UnsupportedError>()),
+      );
+
+      final metadata = config.args['metadata'] as Map<String, Object?>;
+      expect(() => metadata['region'] = 'eu', throwsA(isA<UnsupportedError>()));
     });
 
     test('safeParse returns SchemaResult<UserType>', () {

@@ -11,6 +11,13 @@ void main() {
       expect(user.toJson(), isA<Map<String, Object?>>());
     });
 
+    test('object extension type toJson map is immutable', () {
+      final user = UserType.parse({'name': 'Alice', 'age': 30, 'active': true});
+      final json = user.toJson();
+
+      expect(() => json['name'] = 'Bob', throwsA(isA<UnsupportedError>()));
+    });
+
     test('primitive extension type returns wrapped value', () {
       final password = PasswordType.parse('mySecurePassword123');
 

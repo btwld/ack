@@ -646,7 +646,7 @@ return $schemaVarName.safeParseAs(
       if (deepFreezeObjectMap) {
         return '${_qualifyAckSymbol('ackDeepFreezeObjectMap')}($castExpression)';
       }
-      return 'Map<String, Object?>.unmodifiable($castExpression)';
+      return castExpression;
     }
     return castExpression;
   }

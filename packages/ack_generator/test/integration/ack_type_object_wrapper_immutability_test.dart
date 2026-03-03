@@ -47,6 +47,7 @@ final petSchema = Ack.discriminated(
               allOf([
                 contains('extension type CatType(Map<String, Object?> _data)'),
                 contains('implements PetType, Map<String, Object?>'),
+                contains('Map<String, Object?> toJson() => _data;'),
                 contains('CatType(ackDeepFreezeObjectMap('),
                 contains('DogType(ackDeepFreezeObjectMap('),
                 contains(

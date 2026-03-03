@@ -159,9 +159,8 @@ extension type PersonType(Map<String, Object?> _data)
 
   String get email => _data['email'] as String;
 
-  AddressType get address => AddressType(
-    Map<String, Object?>.unmodifiable(_data['address'] as Map<String, Object?>),
-  );
+  AddressType get address =>
+      AddressType(_data['address'] as Map<String, Object?>);
 
   int get age => _data['age'] as int;
 
@@ -207,17 +206,11 @@ extension type EmployeeType(Map<String, Object?> _data)
 
   String get employeeId => _data['employeeId'] as String;
 
-  AddressType get homeAddress => AddressType(
-    Map<String, Object?>.unmodifiable(
-      _data['homeAddress'] as Map<String, Object?>,
-    ),
-  );
+  AddressType get homeAddress =>
+      AddressType(_data['homeAddress'] as Map<String, Object?>);
 
-  AddressType get workAddress => AddressType(
-    Map<String, Object?>.unmodifiable(
-      _data['workAddress'] as Map<String, Object?>,
-    ),
-  );
+  AddressType get workAddress =>
+      AddressType(_data['workAddress'] as Map<String, Object?>);
 
   EmployeeType copyWith({
     String? name,
@@ -364,11 +357,7 @@ extension type ContactListType(Map<String, Object?> _data)
   String get name => _data['name'] as String;
 
   List<AddressType> get addresses => (_data['addresses'] as List)
-      .map(
-        (e) => AddressType(
-          Map<String, Object?>.unmodifiable(e as Map<String, Object?>),
-        ),
-      )
+      .map((e) => AddressType(e as Map<String, Object?>))
       .toList();
 
   ContactListType copyWith({String? name, List<AddressType>? addresses}) {

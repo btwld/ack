@@ -218,9 +218,7 @@ final contactListSchema = Ack.object({
 
                 // KEY: List<AddressType> getter with .map() and .toList()
                 contains('List<AddressType> get addresses'),
-                contains(
-                  'Map<String, Object?>.unmodifiable(e as Map<String, Object?>)',
-                ),
+                contains('AddressType(e as Map<String, Object?>)'),
                 contains('.toList()'),
               ]),
             ),
@@ -261,9 +259,7 @@ final contactListSchema = Ack.object({
                 contains('extension type AddressType'),
                 contains('extension type ContactListType'),
                 contains('List<AddressType> get addresses'),
-                contains(
-                  'Map<String, Object?>.unmodifiable(e as Map<String, Object?>)',
-                ),
+                contains('AddressType(e as Map<String, Object?>)'),
                 contains('.toList()'),
               ]),
             ),

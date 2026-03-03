@@ -11,6 +11,11 @@
 ### Bug Fixes
 
 * **Discriminated validation**: `@AckType` now fails generation for invalid discriminated schemas (for example empty `schemas`, inline branches, nullable bases, or invalid branch references).
+* **`@AckType` object wrappers**: `toJson()` for object-shaped extension types now returns the deep-frozen backing map. Callers should treat the result as read-only.
+
+### Improvements
+
+* **`@AckType` nested map getters**: Stop wrapping already frozen nested maps with extra `Map.unmodifiable(...)` allocations.
 
 ## 1.0.0-beta.7
 

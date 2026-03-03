@@ -10,6 +10,9 @@ library;
 ///
 /// Ensures default values are safely reused without shared-state bugs.
 ///
+/// Assumes acyclic input (for example JSON-compatible values). Cyclic
+/// structures are not supported and may recurse until stack overflow.
+///
 /// Example:
 /// ```dart
 /// final defaultValue = {'user': {'name': 'Guest'}};

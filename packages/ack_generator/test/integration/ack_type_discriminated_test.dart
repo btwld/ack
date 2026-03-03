@@ -31,6 +31,58 @@ Future<void> _expectGenerationFailure({
 
 void main() {
   group('@AckType discriminated schemas', () {
+    test(
+      'uses prefixed deep-freeze helper when Ack import is aliased',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart' as ack;
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = ack.Ack.object({
+  'kind': ack.Ack.literal('cat'),
+  'lives': ack.Ack.integer(),
+});
+
+@AckType()
+final dogSchema = ack.Ack.object({
+  'kind': ack.Ack.literal('dog'),
+  'bark': ack.Ack.boolean(),
+});
+
+@AckType()
+final petSchema = ack.Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+    'dog': dogSchema,
+  },
+);
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('ack.SchemaResult<PetType> safeParse'),
+                contains('ack.SchemaResult<CatType> safeParse'),
+                contains('ack.SchemaResult<DogType> safeParse'),
+                contains(
+                  'ack.ackDeepFreezeObjectMap(validated as Map<String, Object?>)',
+                ),
+                contains('final map = ack.ackDeepFreezeObjectMap('),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
     test('generates discriminated base and subtype extension types', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
