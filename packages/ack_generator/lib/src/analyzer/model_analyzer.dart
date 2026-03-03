@@ -86,11 +86,10 @@ class ModelAnalyzer {
       fields: fields,
       additionalProperties: additionalProperties,
       additionalPropertiesField: additionalPropertiesField,
-      // New discriminated properties
       discriminatorKey: discriminatedKey,
       discriminatorValue: discriminatedValue,
       // subtypes will be populated later in a second pass
-      subtypes: null,
+      subtypeNames: null,
     );
   }
 
@@ -237,6 +236,12 @@ class ModelAnalyzer {
     final subtypes = <ModelInfo>[];
 
     for (final modelInfo in modelInfos) {
+      if (modelInfo.isFromSchemaVariable) {
+        // Schema-variable models are linked in a separate pass.
+        updatedModelInfos.add(modelInfo);
+        continue;
+      }
+
       if (modelInfo.isDiscriminatedBase) {
         baseClasses.add(modelInfo);
       } else if (modelInfo.isDiscriminatedSubtype) {
@@ -250,7 +255,7 @@ class ModelAnalyzer {
     // For each base class, find and validate its subtypes
     for (final baseClass in baseClasses) {
       final discriminatorKey = baseClass.discriminatorKey!;
-      final matchingSubtypes = <String, ClassElement2>{};
+      final matchingSubtypeNames = <String, String>{};
 
       // Find subtypes that belong to this base class
       for (final subtype in subtypes) {
@@ -266,15 +271,15 @@ class ModelAnalyzer {
           final discriminatorValue = subtype.discriminatorValue!;
 
           // Validate no duplicate discriminator values
-          if (matchingSubtypes.containsKey(discriminatorValue)) {
+          if (matchingSubtypeNames.containsKey(discriminatorValue)) {
             throw ArgumentError(
               'Duplicate discriminator value "$discriminatorValue" found in '
-              '${subtype.className} and ${matchingSubtypes[discriminatorValue]!.name3}. '
+              '${subtype.className} and ${matchingSubtypeNames[discriminatorValue]}. '
               'Each discriminator value must be unique within the hierarchy.',
             );
           }
 
-          matchingSubtypes[discriminatorValue] = subtypeElement;
+          matchingSubtypeNames[discriminatorValue] = subtype.className;
 
           // Validate the discriminator field override
           _validateDiscriminatorOverride(
@@ -295,7 +300,7 @@ class ModelAnalyzer {
         additionalPropertiesField: baseClass.additionalPropertiesField,
         discriminatorKey: discriminatorKey,
         discriminatorValue: null,
-        subtypes: matchingSubtypes,
+        subtypeNames: matchingSubtypeNames,
       );
 
       updatedModelInfos.add(updatedBaseClass);
@@ -305,6 +310,7 @@ class ModelAnalyzer {
     for (final subtype in subtypes) {
       // Find the parent discriminator key for this subtype
       String? parentDiscriminatorKey;
+      String? parentBaseClassName;
       for (final baseClass in baseClasses) {
         final subtypeElement = elementsByName[subtype.className];
         if (subtypeElement == null) {
@@ -314,6 +320,7 @@ class ModelAnalyzer {
         }
         if (_isSubtypeOf(subtypeElement, baseClass.className)) {
           parentDiscriminatorKey = baseClass.discriminatorKey;
+          parentBaseClassName = baseClass.className;
           break;
         }
       }
@@ -329,7 +336,8 @@ class ModelAnalyzer {
         discriminatorKey:
             parentDiscriminatorKey, // Add parent's discriminator key
         discriminatorValue: subtype.discriminatorValue,
-        subtypes: null,
+        subtypeNames: null,
+        discriminatedBaseClassName: parentBaseClassName,
       );
 
       updatedModelInfos.add(updatedSubtype);
@@ -340,20 +348,9 @@ class ModelAnalyzer {
 
   /// Checks if a class extends another class (direct or indirect inheritance)
   bool _isSubtypeOf(ClassElement2 element, String baseClassName) {
-    // Check direct superclass
-    final supertype = element.supertype;
-    if (supertype?.element3.name3 == baseClassName) {
-      return true;
-    }
-
-    // Check indirect inheritance through supertypes
-    for (final supertype in element.allSupertypes) {
-      if (supertype.element3.name3 == baseClassName) {
-        return true;
-      }
-    }
-
-    return false;
+    return element.allSupertypes.any(
+      (supertype) => supertype.element3.name3 == baseClassName,
+    );
   }
 
   /// Validates that the discriminator field or getter is properly overridden in subtype
@@ -363,10 +360,12 @@ class ModelAnalyzer {
     String expectedValue,
   ) {
     // First check for field override
-    final discriminatorField = element.fields2.cast<FieldElement2?>().firstWhere(
-      (field) => field?.name3 == discriminatorKey,
-      orElse: () => null,
-    );
+    final discriminatorField = element.fields2
+        .cast<FieldElement2?>()
+        .firstWhere(
+          (field) => field?.name3 == discriminatorKey,
+          orElse: () => null,
+        );
 
     if (discriminatorField != null) {
       // For fields, we can't easily validate the returned value at compile time
@@ -383,10 +382,12 @@ class ModelAnalyzer {
     }
 
     // Check for getter override
-    final discriminatorGetter = element.getters2.cast<GetterElement?>().firstWhere(
-      (getter) => getter?.name3 == discriminatorKey,
-      orElse: () => null,
-    );
+    final discriminatorGetter = element.getters2
+        .cast<GetterElement?>()
+        .firstWhere(
+          (getter) => getter?.name3 == discriminatorKey,
+          orElse: () => null,
+        );
 
     if (discriminatorGetter != null) {
       // For getters, validate return type

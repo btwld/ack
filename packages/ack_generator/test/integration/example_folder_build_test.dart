@@ -160,6 +160,36 @@ void main() {
 
         print('✅ $fileName matches expected patterns');
       }
+
+      final discriminatedFile = File(
+        p.join(exampleDir.path, 'lib', 'schema_types_discriminated.g.dart'),
+      );
+      expect(
+        discriminatedFile.existsSync(),
+        isTrue,
+        reason:
+            'schema_types_discriminated.g.dart should be generated in example/lib',
+      );
+
+      final discriminatedContent = await discriminatedFile.readAsString();
+      expect(
+        discriminatedContent,
+        contains('extension type PetType(Map<String, Object?> _data)'),
+        reason:
+            'schema_types_discriminated.g.dart should include a discriminated base extension type',
+      );
+      expect(
+        discriminatedContent,
+        contains('extension type CatType(Map<String, Object?> _data)'),
+        reason:
+            'schema_types_discriminated.g.dart should include discriminated subtype extension types',
+      );
+      expect(
+        discriminatedContent,
+        contains('implements PetType, Map<String, Object?>'),
+        reason:
+            'schema_types_discriminated.g.dart discriminated subtypes should implement PetType and Map<String, Object?>',
+      );
     });
 
     test('example folder pub get should succeed', () async {

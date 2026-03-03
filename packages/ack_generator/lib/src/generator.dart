@@ -146,16 +146,21 @@ class AckSchemaGenerator extends Generator {
       }
     }
 
-    // Second pass: Build discriminator relationships
+    // Second pass (schema-variable path): connect discriminated @AckType
+    // bases with their branch models and enforce single ownership.
+    final linkedModelInfos = _linkSchemaVariableDiscriminatedModels(modelInfos);
+
+    // Third pass (class-based path): build discriminator relationships
+    // for @AckModel hierarchies only.
     final finalModelInfos = analyzer.buildDiscriminatorRelationships(
-      modelInfos,
+      linkedModelInfos,
       annotatedElements,
     );
 
     // Set all models on schema builder for cross-referencing (e.g., custom schemaNames in discriminated types)
     schemaBuilder.setAllModels(finalModelInfos);
 
-    // Third pass: Generate code for all models
+    // Fourth pass: Generate code for all models
     for (final modelInfo in finalModelInfos) {
       // Skip schema generation for schema variables (they already exist)
       if (modelInfo.isFromSchemaVariable) {
@@ -334,7 +339,7 @@ class AckSchemaGenerator extends Generator {
       );
     }
 
-    // Generate extension types or sealed classes
+    // Generate extension types
     final generatedTypeModels = <ModelInfo>[];
     for (final model in sortedModels) {
       // Find the corresponding element (class or variable)
@@ -361,21 +366,46 @@ class AckSchemaGenerator extends Generator {
 
       try {
         // Check if this is a discriminated base class
-        if (model.isDiscriminatedBase) {
-          // Generate sealed class for discriminated base
-          final sealedClass = typeBuilder.buildSealedClass(model, sortedModels);
-          if (sealedClass != null) {
-            extensionTypes.add(sealedClass);
+        if (model.isDiscriminatedBaseDefinition) {
+          // @AckType discriminated bases generate extension types.
+          if (model.isFromSchemaVariable) {
+            final baseExtension = typeBuilder.buildDiscriminatedExtensionBase(
+              model,
+              sortedModels,
+            );
+            if (baseExtension != null) {
+              extensionTypes.add(baseExtension);
+            }
+          } else {
+            // Keep class-based discriminated behavior unchanged.
+            final sealedClass = typeBuilder.buildSealedClass(
+              model,
+              sortedModels,
+            );
+            if (sealedClass != null) {
+              extensionTypes.add(sealedClass);
+            }
           }
 
           // Generate extension types for subtypes
-          final subtypes = model.subtypes;
-          if (subtypes != null) {
-            for (final subtypeElement in subtypes.values) {
+          final subtypeNames = model.subtypeNames;
+          if (subtypeNames != null) {
+            final emittedSubtypeSchemaNames = <String>{};
+            for (final subtypeSchemaName in subtypeNames.values) {
+              if (!emittedSubtypeSchemaNames.add(subtypeSchemaName)) {
+                throw InvalidGenerationSourceError(
+                  'Discriminated base "${model.schemaClassName}" maps multiple '
+                  'discriminator values to subtype "$subtypeSchemaName".',
+                  element: element,
+                  todo:
+                      'Ensure each discriminator value maps to a unique branch schema.',
+                );
+              }
+
               final subtypeModel = sortedModels.firstWhere(
-                (m) => m.className == subtypeElement.name3,
+                (m) => m.schemaClassName == subtypeSchemaName,
                 orElse: () => throw InvalidGenerationSourceError(
-                  'Subtype ${subtypeElement.name3} not found in sorted models',
+                  'Subtype $subtypeSchemaName not found in sorted models',
                   element: element,
                 ),
               );
@@ -421,6 +451,104 @@ class AckSchemaGenerator extends Generator {
         typeBuilder.buildTopLevelHelpers(generatedTypeModels),
       );
     }
+  }
+
+  List<ModelInfo> _linkSchemaVariableDiscriminatedModels(
+    List<ModelInfo> models,
+  ) {
+    final linked = List<ModelInfo>.from(models);
+    final schemaModelIndexBySchemaClassName = <String, int>{};
+
+    for (var i = 0; i < linked.length; i++) {
+      final model = linked[i];
+      if (!model.isFromSchemaVariable) continue;
+      schemaModelIndexBySchemaClassName[model.schemaClassName] = i;
+    }
+
+    final branchOwnerByCanonicalIdentity = <String, String>{};
+
+    for (var i = 0; i < linked.length; i++) {
+      final baseModel = linked[i];
+      if (!baseModel.isFromSchemaVariable ||
+          !baseModel.isDiscriminatedBaseDefinition) {
+        continue;
+      }
+
+      final discriminatorKey = baseModel.discriminatorKey;
+      final subtypeNames = baseModel.subtypeNames;
+      if (discriminatorKey == null || subtypeNames == null) {
+        continue;
+      }
+
+      for (final entry in subtypeNames.entries) {
+        final discriminatorValue = entry.key;
+        final branchSchemaClassName = entry.value;
+
+        final branchIndex =
+            schemaModelIndexBySchemaClassName[branchSchemaClassName];
+        if (branchIndex == null) {
+          throw InvalidGenerationSourceError(
+            'Could not resolve discriminated branch "$branchSchemaClassName" for base "${baseModel.schemaClassName}".',
+            todo:
+                'Ensure every Ack.discriminated(...) branch references an @AckType schema declared in the same library.',
+          );
+        }
+
+        final branchModel = linked[branchIndex];
+        final canonicalBranchIdentity =
+            branchModel.schemaIdentity ?? branchSchemaClassName;
+        final existingOwner =
+            branchOwnerByCanonicalIdentity[canonicalBranchIdentity];
+        if (existingOwner != null &&
+            existingOwner != baseModel.schemaClassName) {
+          throw InvalidGenerationSourceError(
+            'Branch schema "$branchSchemaClassName" is mapped to multiple '
+            'discriminated bases: "$existingOwner" and "${baseModel.schemaClassName}".',
+            todo:
+                'A branch schema can only belong to one Ack.discriminated(...) base.',
+          );
+        }
+        branchOwnerByCanonicalIdentity[canonicalBranchIdentity] =
+            baseModel.schemaClassName;
+
+        linked[branchIndex] = _copyModelInfo(
+          branchModel,
+          discriminatorKey: discriminatorKey,
+          discriminatorValue: discriminatorValue,
+          // For @AckType flows this references the generated base type name
+          // (e.g. `PetType`) used by dependency sorting.
+          discriminatedBaseClassName: baseModel.className,
+        );
+      }
+    }
+
+    return linked;
+  }
+
+  ModelInfo _copyModelInfo(
+    ModelInfo model, {
+    String? discriminatorKey,
+    String? discriminatorValue,
+    Map<String, String>? subtypeNames,
+    String? discriminatedBaseClassName,
+  }) {
+    return ModelInfo(
+      className: model.className,
+      schemaClassName: model.schemaClassName,
+      description: model.description,
+      fields: model.fields,
+      additionalProperties: model.additionalProperties,
+      additionalPropertiesField: model.additionalPropertiesField,
+      discriminatorKey: discriminatorKey ?? model.discriminatorKey,
+      discriminatorValue: discriminatorValue ?? model.discriminatorValue,
+      subtypeNames: subtypeNames ?? model.subtypeNames,
+      schemaIdentity: model.schemaIdentity,
+      discriminatedBaseClassName:
+          discriminatedBaseClassName ?? model.discriminatedBaseClassName,
+      isFromSchemaVariable: model.isFromSchemaVariable,
+      representationType: model.representationType,
+      isNullableSchema: model.isNullableSchema,
+    );
   }
 
   /// Checks if an element has @AckType annotation

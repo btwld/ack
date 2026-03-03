@@ -248,8 +248,12 @@ Annotate an existing schema variable or getter to generate an extension type wra
 - Primitives: `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
 - Collections: `Ack.list(...)`
 - Enums: `Ack.literal()`, `Ack.enumString()`, `Ack.enumValues()`
+- Discriminated unions: `Ack.discriminated(...)`
 
-**Unsupported:** `Ack.any()`, `Ack.anyOf()`, `Ack.discriminated()` (use `@AckModel` for discriminated unions)
+**Unsupported:** `Ack.any()`, `Ack.anyOf()`
+
+For `Ack.discriminated(...)` constraints with `@AckType`, see
+[Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#ackdiscriminated-with-acktype-current-constraints).
 
 **Example:**
 ```dart
