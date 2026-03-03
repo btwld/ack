@@ -16,7 +16,7 @@ extension type ProductType(Map<String, Object?> _data)
     return productSchema.parseAs(
       data,
       (validated) => ProductType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -25,7 +25,7 @@ extension type ProductType(Map<String, Object?> _data)
     return productSchema.safeParseAs(
       data,
       (validated) => ProductType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -61,18 +61,16 @@ extension type GridType(Map<String, Object?> _data)
   static GridType parse(Object? data) {
     return gridSchema.parseAs(
       data,
-      (validated) => GridType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          GridType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
   static SchemaResult<GridType> safeParse(Object? data) {
     return gridSchema.safeParseAs(
       data,
-      (validated) => GridType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          GridType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
@@ -97,7 +95,7 @@ extension type AddressType(Map<String, Object?> _data)
     return addressSchema.parseAs(
       data,
       (validated) => AddressType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -106,7 +104,7 @@ extension type AddressType(Map<String, Object?> _data)
     return addressSchema.safeParseAs(
       data,
       (validated) => AddressType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -142,18 +140,16 @@ extension type PersonType(Map<String, Object?> _data)
   static PersonType parse(Object? data) {
     return personSchema.parseAs(
       data,
-      (validated) => PersonType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          PersonType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
   static SchemaResult<PersonType> safeParse(Object? data) {
     return personSchema.safeParseAs(
       data,
-      (validated) => PersonType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          PersonType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
@@ -191,7 +187,7 @@ extension type EmployeeType(Map<String, Object?> _data)
     return employeeSchema.parseAs(
       data,
       (validated) => EmployeeType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -200,7 +196,7 @@ extension type EmployeeType(Map<String, Object?> _data)
     return employeeSchema.safeParseAs(
       data,
       (validated) => EmployeeType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -245,7 +241,7 @@ extension type ModifierType(Map<String, Object?> _data)
     return modifierSchema.parseAs(
       data,
       (validated) => ModifierType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -254,7 +250,7 @@ extension type ModifierType(Map<String, Object?> _data)
     return modifierSchema.safeParseAs(
       data,
       (validated) => ModifierType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -298,7 +294,7 @@ extension type TaggedItemType(Map<String, Object?> _data)
     return taggedItemSchema.parseAs(
       data,
       (validated) => TaggedItemType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -307,7 +303,7 @@ extension type TaggedItemType(Map<String, Object?> _data)
     return taggedItemSchema.safeParseAs(
       data,
       (validated) => TaggedItemType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -349,7 +345,7 @@ extension type ContactListType(Map<String, Object?> _data)
     return contactListSchema.parseAs(
       data,
       (validated) => ContactListType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -358,7 +354,7 @@ extension type ContactListType(Map<String, Object?> _data)
     return contactListSchema.safeParseAs(
       data,
       (validated) => ContactListType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -389,18 +385,16 @@ extension type EmptyType(Map<String, Object?> _data)
   static EmptyType parse(Object? data) {
     return emptySchema.parseAs(
       data,
-      (validated) => EmptyType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          EmptyType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
   static SchemaResult<EmptyType> safeParse(Object? data) {
     return emptySchema.safeParseAs(
       data,
-      (validated) => EmptyType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          EmptyType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
@@ -414,7 +408,7 @@ extension type MinimalType(Map<String, Object?> _data)
     return minimalSchema.parseAs(
       data,
       (validated) => MinimalType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -423,7 +417,7 @@ extension type MinimalType(Map<String, Object?> _data)
     return minimalSchema.safeParseAs(
       data,
       (validated) => MinimalType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -444,7 +438,7 @@ extension type NamedItemType(Map<String, Object?> _data)
     return namedItemSchema.parseAs(
       data,
       (validated) => NamedItemType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -453,7 +447,7 @@ extension type NamedItemType(Map<String, Object?> _data)
     return namedItemSchema.safeParseAs(
       data,
       (validated) => NamedItemType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -473,18 +467,16 @@ extension type ItemType(Map<String, Object?> _data)
   static ItemType parse(Object? data) {
     return item.parseAs(
       data,
-      (validated) => ItemType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          ItemType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
   static SchemaResult<ItemType> safeParse(Object? data) {
     return item.safeParseAs(
       data,
-      (validated) => ItemType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          ItemType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
@@ -504,7 +496,7 @@ extension type MyCustomSchema123Type(Map<String, Object?> _data)
     return myCustomSchema123.parseAs(
       data,
       (validated) => MyCustomSchema123Type(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -513,7 +505,7 @@ extension type MyCustomSchema123Type(Map<String, Object?> _data)
     return myCustomSchema123.safeParseAs(
       data,
       (validated) => MyCustomSchema123Type(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }

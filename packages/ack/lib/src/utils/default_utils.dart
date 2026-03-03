@@ -5,6 +5,7 @@ library;
 ///
 /// - Maps: Creates unmodifiable copy with recursively cloned values
 /// - Lists: Creates unmodifiable copy with recursively cloned items
+/// - Sets: Creates unmodifiable copy with recursively cloned items
 /// - Primitives: Returns as-is (immutable by nature)
 ///
 /// Ensures default values are safely reused without shared-state bugs.
@@ -39,6 +40,10 @@ Object? cloneDefault(Object? value) {
 
   if (value is List) {
     return List<Object?>.unmodifiable(value.map(cloneDefault));
+  }
+
+  if (value is Set) {
+    return Set<Object?>.unmodifiable(value.map(cloneDefault));
   }
 
   // Primitives / value types are immutable enough for defaults (String, num, bool, etc.).

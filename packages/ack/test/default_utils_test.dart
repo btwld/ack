@@ -65,5 +65,21 @@ void main() {
       const primitive = 'hello';
       expect(identical(cloneDefault(primitive), primitive), isTrue);
     });
+
+    test('deep clones sets and nested set contents', () {
+      final original = {
+        'items': {
+          'a',
+          {'value': 1},
+        },
+      };
+
+      final cloned = cloneDefault(original) as Map<String, Object?>;
+      final clonedSet = cloned['items'] as Set<Object?>;
+      final clonedNestedMap = clonedSet.firstWhere((e) => e is Map) as Map;
+
+      expect(() => clonedSet.add('b'), throwsUnsupportedError);
+      expect(() => clonedNestedMap['value'] = 2, throwsUnsupportedError);
+    });
   });
 }

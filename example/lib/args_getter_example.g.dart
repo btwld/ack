@@ -14,7 +14,7 @@ extension type UserConfigType(Map<String, Object?> _data)
     return userConfigSchema.parseAs(
       data,
       (validated) => UserConfigType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -23,7 +23,7 @@ extension type UserConfigType(Map<String, Object?> _data)
     return userConfigSchema.safeParseAs(
       data,
       (validated) => UserConfigType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -55,7 +55,7 @@ extension type ApiRequestType(Map<String, Object?> _data)
     return apiRequestSchema.parseAs(
       data,
       (validated) => ApiRequestType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -64,7 +64,7 @@ extension type ApiRequestType(Map<String, Object?> _data)
     return apiRequestSchema.safeParseAs(
       data,
       (validated) => ApiRequestType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -96,7 +96,7 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
     return featureFlagsSchema.parseAs(
       data,
       (validated) => FeatureFlagsType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -105,7 +105,7 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
     return featureFlagsSchema.safeParseAs(
       data,
       (validated) => FeatureFlagsType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -139,7 +139,7 @@ extension type DynamicDataType(Map<String, Object?> _data)
     return dynamicDataSchema.parseAs(
       data,
       (validated) => DynamicDataType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }
@@ -148,7 +148,7 @@ extension type DynamicDataType(Map<String, Object?> _data)
     return dynamicDataSchema.safeParseAs(
       data,
       (validated) => DynamicDataType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
       ),
     );
   }

@@ -7,14 +7,16 @@ import '../test_utils/test_assets.dart';
 
 void main() {
   group('@AckType object wrappers are immutable', () {
-    test('uses Map.unmodifiable while preserving Map compatibility', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'deep-freezes object wrappers while preserving Map compatibility',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -39,22 +41,27 @@ final petSchema = Ack.discriminated(
   },
 );
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              contains('extension type CatType(Map<String, Object?> _data)'),
-              contains('implements PetType, Map<String, Object?>'),
-              contains('(validated) => CatType('),
-              contains('(validated) => DogType('),
-              contains(
-                'Map<String, Object?>.unmodifiable(validated as Map<String, Object?>)',
-              ),
-              contains('final map = Map<String, Object?>.unmodifiable('),
-            ]),
-          ),
-        },
-      );
-    });
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('extension type CatType(Map<String, Object?> _data)'),
+                contains('implements PetType, Map<String, Object?>'),
+                contains('CatType(ackDeepFreezeObjectMap('),
+                contains('DogType(ackDeepFreezeObjectMap('),
+                contains(
+                  'ackDeepFreezeObjectMap(validated as Map<String, Object?>)',
+                ),
+                contains('final map = ackDeepFreezeObjectMap('),
+                isNot(contains('Object? _\$ackDeepFreeze(')),
+                isNot(
+                  contains('Map<String, Object?> _\$ackDeepFreezeObjectMap('),
+                ),
+              ]),
+            ),
+          },
+        );
+      },
+    );
   });
 }

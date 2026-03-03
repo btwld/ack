@@ -16,9 +16,7 @@ extension type PetType(Map<String, Object?> _data)
 
   static PetType parse(Object? data) {
     return petSchema.parseAs(data, (validated) {
-      final map = Map<String, Object?>.unmodifiable(
-        validated as Map<String, Object?>,
-      );
+      final map = ackDeepFreezeObjectMap(validated as Map<String, Object?>);
       return switch (map['kind']) {
         'cat' => CatType(map),
         'dog' => DogType(map),
@@ -29,9 +27,7 @@ extension type PetType(Map<String, Object?> _data)
 
   static SchemaResult<PetType> safeParse(Object? data) {
     return petSchema.safeParseAs(data, (validated) {
-      final map = Map<String, Object?>.unmodifiable(
-        validated as Map<String, Object?>,
-      );
+      final map = ackDeepFreezeObjectMap(validated as Map<String, Object?>);
       return switch (map['kind']) {
         'cat' => CatType(map),
         'dog' => DogType(map),
@@ -51,18 +47,16 @@ extension type CatType(Map<String, Object?> _data)
   static CatType parse(Object? data) {
     return catSchema.parseAs(
       data,
-      (validated) => CatType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          CatType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
   static SchemaResult<CatType> safeParse(Object? data) {
     return catSchema.safeParseAs(
       data,
-      (validated) => CatType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          CatType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
@@ -83,18 +77,16 @@ extension type DogType(Map<String, Object?> _data)
   static DogType parse(Object? data) {
     return dogSchema.parseAs(
       data,
-      (validated) => DogType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          DogType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 
   static SchemaResult<DogType> safeParse(Object? data) {
     return dogSchema.safeParseAs(
       data,
-      (validated) => DogType(
-        Map<String, Object?>.unmodifiable(validated as Map<String, Object?>),
-      ),
+      (validated) =>
+          DogType(ackDeepFreezeObjectMap(validated as Map<String, Object?>)),
     );
   }
 

@@ -80,6 +80,29 @@ void main() {
       );
     });
 
+    test('rejects nested map mutation via raw Map access at runtime', () {
+      final person = PersonType.parse({
+        'name': 'John',
+        'email': 'john@example.com',
+        'address': {
+          'street': 'Main St',
+          'city': 'Quito',
+          'zipCode': '17000',
+          'country': 'Ecuador',
+        },
+        'age': 30,
+      });
+
+      final Map<String, Object?> map = person;
+      final Map<String, Object?> addressMap =
+          map['address'] as Map<String, Object?>;
+
+      expect(
+        () => addressMap['city'] = 'Guayaquil',
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+
     test('safeParse returns SchemaResult<UserType>', () {
       final result = UserType.safeParse({
         'name': 'John',

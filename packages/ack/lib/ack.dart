@@ -22,6 +22,7 @@ export 'src/schemas/extensions/string_schema_extensions.dart';
 export 'src/json_schema.dart';
 // Core schemas
 export 'src/schemas/schema.dart';
+export 'src/utils/deep_freeze_utils.dart';
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results

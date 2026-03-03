@@ -516,9 +516,10 @@ class TypeBuilder {
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
-    final representationValue = _wrapRepresentationValue(
-      castType: castType,
+    final representationValue = _castRepresentationValue(
       sourceExpression: 'validated',
+      castType: castType,
+      deepFreezeObjectMap: true,
     );
 
     return [
@@ -592,7 +593,7 @@ return $schemaVarName.safeParseAs(
 return $schemaVarName.parseAs(
   data,
   (validated) {
-    final map = ${_validatedObjectMapExpression('validated')};
+    final map = ${_castRepresentationValue(sourceExpression: 'validated', castType: kMapType, deepFreezeObjectMap: true)};
     return $switchExpression;
   },
 );'''),
@@ -628,38 +629,26 @@ return $schemaVarName.parseAs(
 return $schemaVarName.safeParseAs(
   data,
   (validated) {
-    final map = ${_validatedObjectMapExpression('validated')};
+    final map = ${_castRepresentationValue(sourceExpression: 'validated', castType: kMapType, deepFreezeObjectMap: true)};
     return $switchExpression;
   },
 );'''),
     );
   }
 
-  String _wrapRepresentationValue({
-    required String castType,
-    required String sourceExpression,
-  }) {
-    final castExpression = '$sourceExpression as $castType';
-    if (castType == kMapType) {
-      return 'Map<String, Object?>.unmodifiable($castExpression)';
-    }
-    return castExpression;
-  }
-
-  String _validatedObjectMapExpression(String sourceExpression) {
-    const mapType = 'Map<String, Object?>';
-    final castExpression = '$sourceExpression as $mapType';
-    return '$mapType.unmodifiable($castExpression)';
-  }
-
   String _castRepresentationValue({
     required String sourceExpression,
     required String castType,
+    bool deepFreezeObjectMap = false,
   }) {
+    final castExpression = '$sourceExpression as $castType';
     if (castType == kMapType) {
-      return 'Map<String, Object?>.unmodifiable($sourceExpression as $castType)';
+      if (deepFreezeObjectMap) {
+        return '${_qualifyAckSymbol('ackDeepFreezeObjectMap')}($castExpression)';
+      }
+      return 'Map<String, Object?>.unmodifiable($castExpression)';
     }
-    return '$sourceExpression as $castType';
+    return castExpression;
   }
 
   String _buildDiscriminatorSwitchExpression(
