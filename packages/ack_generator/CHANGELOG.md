@@ -1,12 +1,16 @@
+## 1.0.0-beta.8
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.8) for details.
+
 ## Unreleased
 
 ### Features
 
-* **`@AckType` discriminated unions**: Documented current `Ack.discriminated(...)` support and current constraints.
+* **`@AckType` discriminated unions**: Generate extension types for top-level `Ack.discriminated(...)` schemas with object-shaped `@AckType` branch schemas.
 
 ### Bug Fixes
 
-* **Discriminated validation**: `@AckType` now fails generation when `Ack.discriminated(..., schemas: {})` is empty.
+* **Discriminated validation**: `@AckType` now fails generation for invalid discriminated schemas (for example empty `schemas`, inline branches, nullable bases, or invalid branch references).
 
 ## 1.0.0-beta.8
 
