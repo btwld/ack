@@ -147,6 +147,45 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`Ack.list(...)`](../core-concepts/schemas.mdx#list) | `type: array`, `items: {...}` | Type |
 | [`Ack.object(...)`](../core-concepts/schemas.mdx#object) | `type: object`, `properties: {...}`, `required: [...]` | Type |
 
+## Shape Stability Notes
+
+`toJsonSchema()` uses stable nullability wrapping rules:
+
+- Primitive/object/list/enum schemas marked with `.nullable()` are emitted as:
+  - `anyOf: [<base-schema>, { "type": "null" }]`
+- `Ack.anyOf([...]).nullable()` is emitted as nested `anyOf`:
+  - outer `anyOf` for nullability
+  - inner `anyOf` for the union branches
+- `Ack.discriminated(...).nullable()` follows the same nested pattern:
+  - outer `anyOf` for nullability
+  - inner `anyOf` for discriminated branches
+
+This means nullable enums are represented as:
+
+```json
+{
+  "anyOf": [
+    { "type": "string", "enum": ["admin", "user", "guest"] },
+    { "type": "null" }
+  ]
+}
+```
+
+And nullable discriminated unions are represented as:
+
+```json
+{
+  "anyOf": [
+    { "anyOf": [/* discriminated object branches */] },
+    { "type": "null" }
+  ]
+}
+```
+
+If you build consumers that inspect generated schemas, treat nullability and
+union composition as separate concerns and avoid assuming enum values always
+live at the top level.
+
 **Limitations:**
 
 -   **Custom Constraints:** [`Constraint<T>` + `Validator<T>`](./custom-validation.mdx) instances added via `.constrain()` are **not** translated to JSON Schema as there's no standard way to represent arbitrary logic.
