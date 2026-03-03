@@ -6,9 +6,9 @@ This document explains how to version and publish the Ack packages to pub.dev.
 
 The Ack project uses GitHub Releases to manage versioning and publishing. This approach provides:
 
-- Centralized release management through GitHub tags/releases
+- Centralized release management through GitHub's UI
 - Explicit version/changelog control in this repository
-- Automated GitHub release notes + automated publishing to pub.dev
+- Automated publishing to pub.dev
 
 ## Release Process
 
@@ -20,32 +20,57 @@ Before creating a release:
 2. Verify that all tests pass by running `melos test` (include `melos run validate-jsonschema` and `melos run test:gen` for full coverage)
 3. Check that the documentation is up to date across the repo and docs site
 4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`, `ack_firebase_ai`, `ack_json_schema_builder`)
-5. Run `melos version --yes`. This updates versions/changelogs and runs the configured pre-commit hook (`dart scripts/update_release_changelog.dart`) so package changelogs point to release notes links for the new version/tag.
+5. Ensure package CHANGELOG entries are finalized before tagging. If you want a link-only entry for a version, you can run `dart scripts/update_release_changelog.dart <version> [tag]` after `melos version`.
 
-### 2. Push a Release Tag
+### 2. Create a GitHub Release
 
-Push the version commit and tags created by `melos version`:
+1. Go to the [Releases page](https://github.com/btwld/ack/releases) in the repository
+2. Click "Draft a new release"
+3. Create a new tag in the format `v0.2.0` (must start with "v")
+4. Add a title, e.g., "Release v0.2.0"
+5. Add detailed release notes with a structure like:
 
-```bash
-git push --follow-tags
+```markdown
+# Release v0.2.0
+
+This release introduces [brief description of major changes].
+
+## Key Features
+- **Feature 1**: Description
+- **Feature 2**: Description
+
+## Breaking Changes
+- **Feature**: Description of breaking change
+  - Detail 1
+  - Detail 2
+
+## Improvements
+- **Feature**: Description of improvement
+  - Detail 1
+  - Detail 2
+
+## Bug Fixes
+- Fixed [description of bug]
 ```
 
-Supported tags:
-- Stable: `v1.2.3`
-- Pre-release: `v1.2.3-beta.1`, `v1.2.3-rc.1`
+> **Note**: You should manually update the `pubspec.yaml` and `CHANGELOG.md` files in each package before creating a tag/release. The release workflow publishes what is already committed.
 
-You can still create/edit releases manually in GitHub UI, but it is optional.
+6. Choose whether this is a pre-release:
+   - Check "This is a pre-release" if you're releasing a beta or RC version
+   - Pre-releases WILL be published to pub.dev as pre-release versions
+   - Only draft releases won't be published to pub.dev
+
+7. Click "Publish release"
 
 ### 3. Automated Steps
 
-When a matching tag is pushed, GitHub Actions automatically:
+When the `v*` tag is pushed, the GitHub Actions workflow will automatically:
 
-1. Create/update a GitHub Release with auto-generated release notes
-2. Run package tests (Dart/Flutter, depending on package type)
-3. Run `dart pub publish --dry-run` for each package
-4. Publish each package to pub.dev
+1. Run package tests (Dart/Flutter, depending on package type)
+2. Run `dart pub publish --dry-run` for each package
+3. Publish each package to pub.dev
 
-The workflow does **not** modify versions or commit back to the repository.
+The workflow does **not** modify versions or changelogs, and does **not** commit changes back to the repository.
 
 ### 4. Verify the Release
 
@@ -66,7 +91,7 @@ melos version
 # Non-interactive
 melos version --yes
 
-# Push the version commit and tags (triggers release notes + pub publish)
+# Push the changes and tags
 git push --follow-tags
 ```
 
