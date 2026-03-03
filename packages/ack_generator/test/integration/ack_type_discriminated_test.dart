@@ -31,16 +31,14 @@ Future<void> _expectGenerationFailure({
 
 void main() {
   group('@AckType discriminated schemas', () {
-    test(
-      'uses prefixed deep-freeze helper when Ack import is aliased',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('uses prefixed deep-freeze helper when Ack import is aliased', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/schema.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart' as ack;
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -65,23 +63,22 @@ final petSchema = ack.Ack.discriminated(
   },
 );
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/schema.g.dart': decodedMatches(
-              allOf([
-                contains('ack.SchemaResult<PetType> safeParse'),
-                contains('ack.SchemaResult<CatType> safeParse'),
-                contains('ack.SchemaResult<DogType> safeParse'),
-                contains(
-                  'ack.ackDeepFreezeObjectMap(validated as Map<String, Object?>)',
-                ),
-                contains('final map = ack.ackDeepFreezeObjectMap('),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('ack.SchemaResult<PetType> safeParse'),
+              contains('ack.SchemaResult<CatType> safeParse'),
+              contains('ack.SchemaResult<DogType> safeParse'),
+              contains(
+                'ack.ackDeepFreezeObjectMap(validated as Map<String, Object?>)',
+              ),
+              contains('final map = ack.ackDeepFreezeObjectMap('),
+            ]),
+          ),
+        },
+      );
+    });
 
     test('generates discriminated base and subtype extension types', () async {
       final builder = ackGenerator(BuilderOptions.empty);
