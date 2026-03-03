@@ -1,3 +1,7 @@
+## 1.0.0-beta.8
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.8) for details.
+
 ## Unreleased
 
 ### Features

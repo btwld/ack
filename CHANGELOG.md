@@ -3,6 +3,91 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-03-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`ack` - `v1.0.0-beta.8`](#ack---v100-beta8)
+ - [`ack_annotations` - `v1.0.0-beta.8`](#ack_annotations---v100-beta8)
+ - [`ack_firebase_ai` - `v1.0.0-beta.8`](#ack_firebase_ai---v100-beta8)
+ - [`ack_generator` - `v1.0.0-beta.8`](#ack_generator---v100-beta8)
+ - [`ack_json_schema_builder` - `v1.0.0-beta.8`](#ack_json_schema_builder---v100-beta8)
+
+---
+
+#### `ack` - `v1.0.0-beta.8`
+
+ - **REFACTOR**(schemas): centralize null/default handling and extract ObjectSchema helpers (#65).
+ - **REFACTOR**: apply DRY improvements to schema classes (#53).
+ - **REFACTOR**: deprecate withDescription in favor of describe (#46).
+ - **REFACTOR**: consolidate JSON schema utilities and reduce duplication (#40).
+ - **REFACTOR**: flatten constraints folder structure and add type prefixes (#28).
+ - **REFACTOR**: modernize constraint switch statements to expressions (#27).
+ - **REFACTOR**: simplify validation workflow by eliminating duplicate nullable handling (#17).
+ - **REFACTOR**: Improved json-schema support (#9).
+ - **REFACTOR**: consolidate constraint system and enhance validation pipeline (#8).
+ - **FIX**(generator): comprehensive fixes for primitives and correctness (#50).
+ - **FIX**: critical error handling, documentation, and immutability improvements for 1.0.0 (#29).
+ - **FEAT**(schemas): enforce Map-returning child schemas in discriminated unions (#67).
+ - **FEAT**(schemas): implement value-based equality for schemas and constraints (#63).
+ - **FEAT**: Firebase AI schema converter package and ACK improvements (#32).
+ - **FEAT**: add date/datetime validation with min/max constraints (#26).
+ - **FEAT**: add args getter for extension types with additionalProperties (#24).
+ - **FEAT**: simplify API compatibility checking with Dart script (#14).
+ - **FEAT**: prepare for 0.3.0-beta.1 release (#11).
+ - **FEAT**: Add discriminated union schema support with pattern matching (#6).
+ - **DOCS**: enhance documentation with detailed examples and error handling (#20).
+ - **DOCS**: Fix API inconsistencies across all documentation (#12).
+
+#### `ack_annotations` - `v1.0.0-beta.8`
+
+ - **FIX**(generator): comprehensive fixes for primitives and correctness (#50).
+ - **FEAT**: add custom name parameter to @AckType annotation (#22).
+ - **DOCS**: Fix broken links and add missing API documentation (#57).
+
+#### `ack_firebase_ai` - `v1.0.0-beta.8`
+
+ - **REFACTOR**: consolidate JSON schema utilities and reduce duplication (#40).
+ - **FIX**: preserve nullable metadata in firebase ai converter (#36).
+ - **FEAT**: Firebase AI schema converter package and ACK improvements (#32).
+ - **DOCS**(firebase_ai): remove package-level docs in favor of docs.page.
+
+#### `ack_generator` - `v1.0.0-beta.8`
+
+ - **REFACTOR**(schemas): centralize null/default handling and extract ObjectSchema helpers (#65).
+ - **REFACTOR**: deprecate withDescription in favor of describe (#46).
+ - **REFACTOR**: Update for analyzer >=7.x <9  API changes (#41).
+ - **REFACTOR**: simplify validation workflow by eliminating duplicate nullable handling (#17).
+ - **REFACTOR**: Improved json-schema support (#9).
+ - **REFACTOR**: consolidate constraint system and enhance validation pipeline (#8).
+ - **FIX**(generator): comprehensive fixes for primitives and correctness (#50).
+ - **FIX**(generator): resolve list element types with method chain modifiers (#60).
+ - **FIX**(generator): support Ack.list(schemaRef) for typed list getters (#47).
+ - **FIX**: Add field descriptions to generated schema output (#44).
+ - **FEAT**(generator): support doc comments for schema descriptions (#61).
+ - **FEAT**: add args getter for extension types with additionalProperties (#24).
+ - **FEAT**: add custom name parameter to @AckType annotation (#22).
+ - **FEAT**: Add dart_mappable integration for seamless field name synchronization (#10).
+ - **FEAT**: Add discriminated union schema support with pattern matching (#6).
+ - **DOCS**: Fix broken links and add missing API documentation (#57).
+ - **DOCS**: Fix API inconsistencies across all documentation (#12).
+
+#### `ack_json_schema_builder` - `v1.0.0-beta.8`
+
+ - **REFACTOR**: consolidate JSON schema utilities and reduce duplication (#40).
+ - **FIX**(generator): comprehensive fixes for primitives and correctness (#50).
+ - **FIX**(ack_json_schema_builder): complete JSON schema conversion coverage (#45).
+ - **FEAT**: add ack_json_schema_builder converter package (#37).
+
+
 ## 2025-10-09
 
 ### Changes
