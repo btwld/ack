@@ -13,14 +13,18 @@ extension type UserConfigType(Map<String, Object?> _data)
   static UserConfigType parse(Object? data) {
     return userConfigSchema.parseAs(
       data,
-      (validated) => UserConfigType(validated as Map<String, Object?>),
+      (validated) => UserConfigType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
   static SchemaResult<UserConfigType> safeParse(Object? data) {
     return userConfigSchema.safeParseAs(
       data,
-      (validated) => UserConfigType(validated as Map<String, Object?>),
+      (validated) => UserConfigType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
@@ -30,8 +34,10 @@ extension type UserConfigType(Map<String, Object?> _data)
 
   String get email => _data['email'] as String;
 
-  Map<String, Object?> get args => Map.fromEntries(
-    _data.entries.where((e) => e.key != 'username' && e.key != 'email'),
+  Map<String, Object?> get args => Map<String, Object?>.unmodifiable(
+    Map.fromEntries(
+      _data.entries.where((e) => e.key != 'username' && e.key != 'email'),
+    ),
   );
 
   UserConfigType copyWith({String? username, String? email}) {
@@ -48,14 +54,18 @@ extension type ApiRequestType(Map<String, Object?> _data)
   static ApiRequestType parse(Object? data) {
     return apiRequestSchema.parseAs(
       data,
-      (validated) => ApiRequestType(validated as Map<String, Object?>),
+      (validated) => ApiRequestType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
   static SchemaResult<ApiRequestType> safeParse(Object? data) {
     return apiRequestSchema.safeParseAs(
       data,
-      (validated) => ApiRequestType(validated as Map<String, Object?>),
+      (validated) => ApiRequestType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
@@ -65,8 +75,10 @@ extension type ApiRequestType(Map<String, Object?> _data)
 
   String get url => _data['url'] as String;
 
-  Map<String, Object?> get args => Map.fromEntries(
-    _data.entries.where((e) => e.key != 'method' && e.key != 'url'),
+  Map<String, Object?> get args => Map<String, Object?>.unmodifiable(
+    Map.fromEntries(
+      _data.entries.where((e) => e.key != 'method' && e.key != 'url'),
+    ),
   );
 
   ApiRequestType copyWith({String? method, String? url}) {
@@ -83,14 +95,18 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
   static FeatureFlagsType parse(Object? data) {
     return featureFlagsSchema.parseAs(
       data,
-      (validated) => FeatureFlagsType(validated as Map<String, Object?>),
+      (validated) => FeatureFlagsType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
   static SchemaResult<FeatureFlagsType> safeParse(Object? data) {
     return featureFlagsSchema.safeParseAs(
       data,
-      (validated) => FeatureFlagsType(validated as Map<String, Object?>),
+      (validated) => FeatureFlagsType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
@@ -100,8 +116,12 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
 
   String get environment => _data['environment'] as String;
 
-  Map<String, Object?> get args => Map.fromEntries(
-    _data.entries.where((e) => e.key != 'appVersion' && e.key != 'environment'),
+  Map<String, Object?> get args => Map<String, Object?>.unmodifiable(
+    Map.fromEntries(
+      _data.entries.where(
+        (e) => e.key != 'appVersion' && e.key != 'environment',
+      ),
+    ),
   );
 
   FeatureFlagsType copyWith({String? appVersion, String? environment}) {
@@ -118,18 +138,22 @@ extension type DynamicDataType(Map<String, Object?> _data)
   static DynamicDataType parse(Object? data) {
     return dynamicDataSchema.parseAs(
       data,
-      (validated) => DynamicDataType(validated as Map<String, Object?>),
+      (validated) => DynamicDataType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
   static SchemaResult<DynamicDataType> safeParse(Object? data) {
     return dynamicDataSchema.safeParseAs(
       data,
-      (validated) => DynamicDataType(validated as Map<String, Object?>),
+      (validated) => DynamicDataType(
+        ackDeepFreezeObjectMap(validated as Map<String, Object?>),
+      ),
     );
   }
 
   Map<String, Object?> toJson() => _data;
 
-  Map<String, Object?> get args => _data;
+  Map<String, Object?> get args => Map<String, Object?>.unmodifiable(_data);
 }

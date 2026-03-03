@@ -25,10 +25,7 @@ void main() {
   final blogSchema = Ack.object({
     'title': Ack.string().minLength(5).maxLength(100),
     'content': Ack.string().minLength(10),
-    'author': Ack.object({
-      'name': Ack.string(),
-      'email': Ack.string().email(),
-    }),
+    'author': Ack.object({'name': Ack.string(), 'email': Ack.string().email()}),
     'tags': Ack.list(Ack.string()).minLength(1).maxLength(5),
     'published': Ack.boolean(),
   });
@@ -51,7 +48,9 @@ void main() {
   });
 
   final geminiProductSchema = productSchema.toFirebaseAiSchema();
-  print('Product schema required fields: ${geminiProductSchema.toJson()['required']}');
+  print(
+    'Product schema required fields: ${geminiProductSchema.toJson()['required']}',
+  );
   print('');
 
   // Example 4: Validating AI Response
@@ -64,10 +63,7 @@ void main() {
   final geminiSimpleSchema = simpleSchema.toFirebaseAiSchema();
 
   // Simulate AI response
-  final aiResponse = {
-    'message': 'Hello, World!',
-    'count': 42,
-  };
+  final aiResponse = {'message': 'Hello, World!', 'count': 42};
 
   // Validate with ACK
   final result = simpleSchema.safeParse(aiResponse);
@@ -93,8 +89,12 @@ void main() {
   final constrainedJson = geminiConstrainedSchema.toJson();
   // Firebase AI Schema doesn't expose string length constraints in JSON.
   // This means Gemini won't enforce minLength/maxLength - you must validate afterward.
-  print('Gemini schema exposes minLength key: ${constrainedJson.containsKey("minLength")}');
-  print('Gemini schema exposes maxLength key: ${constrainedJson.containsKey("maxLength")}');
+  print(
+    'Gemini schema exposes minLength key: ${constrainedJson.containsKey("minLength")}',
+  );
+  print(
+    'Gemini schema exposes maxLength key: ${constrainedJson.containsKey("maxLength")}',
+  );
 
   // Test invalid data
   final tooShort = 'hi';

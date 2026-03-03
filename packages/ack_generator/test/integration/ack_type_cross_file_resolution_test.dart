@@ -48,9 +48,7 @@ final deckToolArgsSchema = Ack.object({
                   'extension type DeckToolArgsType(Map<String, Object?> _data)',
                 ),
                 contains('SlideType get currentSlide'),
-                contains(
-                  "SlideType(_data['currentSlide'] as Map<String, Object?>)",
-                ),
+                contains("_data['currentSlide'] as Map<String, Object?>"),
                 contains('List<SlideType> get slides'),
                 contains('SlideType(e as Map<String, Object?>)'),
               ]),
@@ -231,16 +229,12 @@ final deckToolArgsSchema = Ack.object({
                 contains(
                   "SlideType? get currentSlide => _data['currentSlide'] != null",
                 ),
-                contains(
-                  "? SlideType(_data['currentSlide'] as Map<String, Object?>)",
-                ),
+                contains("_data['currentSlide'] as Map<String, Object?>"),
                 contains('SlideType? get selectedSlide'),
                 contains(
                   "SlideType? get selectedSlide => _data['selectedSlide'] != null",
                 ),
-                contains(
-                  "? SlideType(_data['selectedSlide'] as Map<String, Object?>)",
-                ),
+                contains("_data['selectedSlide'] as Map<String, Object?>"),
               ]),
             ),
           },
