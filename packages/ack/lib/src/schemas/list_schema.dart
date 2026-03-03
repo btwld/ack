@@ -79,7 +79,8 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       );
     }
 
-    return applyConstraintsAndRefinements(validatedItems, context);
+    final unmodifiableList = List<V>.unmodifiable(validatedItems);
+    return applyConstraintsAndRefinements(unmodifiableList, context);
   }
 
   @override
