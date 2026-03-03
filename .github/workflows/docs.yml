@@ -6,11 +6,13 @@ on:
     paths:
       - 'docs/**'
       - 'docs.json'
+      - 'llms.txt'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'docs/**'
       - 'docs.json'
+      - 'llms.txt'
 
 jobs:
   validate:
@@ -25,6 +27,17 @@ jobs:
       
       - name: Install docs.page CLI
         run: npm install -g @docs.page/cli
+
+      - name: Verify llms.txt static redirect
+        run: |
+          test -s llms.txt || {
+            echo "llms.txt is missing or empty."
+            exit 1
+          }
+          grep -q '^redirect: https://raw.githubusercontent.com/btwld/ack/main/llms.txt$' docs/llms.txt.mdx || {
+            echo "docs/llms.txt.mdx must redirect to the canonical raw llms.txt URL."
+            exit 1
+          }
       
       - name: Validate documentation
         run: npx @docs.page/cli check

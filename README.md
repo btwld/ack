@@ -7,6 +7,8 @@
 
 Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API. Ack is short for "acknowledge".
 
+For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
+
 ## Why Use Ack?
 
 - **Simplify Validation**: Easily handle complex data validation logic
@@ -114,7 +116,10 @@ if (result.isOk) {
 
 ## Documentation
 
-Detailed documentation is available at [docs.page/btwld/ack](https://docs.page/btwld/ack).
+Documentation endpoints:
+- Human docs: [docs.page/btwld/ack](https://docs.page/btwld/ack)
+- AI agent index (stable URL): [docs.page/btwld/ack/llms.txt](https://docs.page/btwld/ack/llms.txt)
+- Canonical plaintext source: [raw.githubusercontent.com/btwld/ack/main/llms.txt](https://raw.githubusercontent.com/btwld/ack/main/llms.txt)
 
 ## Development
 
