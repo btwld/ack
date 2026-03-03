@@ -216,7 +216,9 @@ void main() {
 
       test('object respects additionalProperties flag', () {
         final strict = Ack.object({'name': Ack.string()});
-        final passthrough = Ack.object({'name': Ack.string()}, additionalProperties: true);
+        final passthrough = Ack.object({
+          'name': Ack.string(),
+        }, additionalProperties: true);
 
         final strictResult = strict.toJsonSchemaBuilder();
         expect(strictResult.value['additionalProperties'], false);
@@ -258,26 +260,29 @@ void main() {
         expect(outerAnyOf.last.value['type'], 'null');
       });
 
-      test('TransformedSchema overrides are applied (description + nullable)', () {
-        final schema = Ack.date().copyWith(
-          description: 'Birth date',
-          isNullable: true,
-        );
+      test(
+        'TransformedSchema overrides are applied (description + nullable)',
+        () {
+          final schema = Ack.date().copyWith(
+            description: 'Birth date',
+            isNullable: true,
+          );
 
-        final result = schema.toJsonSchemaBuilder();
-        final anyOf = (result.value['anyOf'] as List)
-            .map(_schemaFrom)
-            .toList(growable: false);
+          final result = schema.toJsonSchemaBuilder();
+          final anyOf = (result.value['anyOf'] as List)
+              .map(_schemaFrom)
+              .toList(growable: false);
 
-        // First branch should carry description override and date format
-        final dateBranch = anyOf.first;
-        expect(dateBranch.value['description'], 'Birth date');
-        expect(dateBranch.value['format'], 'date');
+          // First branch should carry description override and date format
+          final dateBranch = anyOf.first;
+          expect(dateBranch.value['description'], 'Birth date');
+          expect(dateBranch.value['format'], 'date');
 
-        // Second branch represents nullability
-        final nullBranch = anyOf.last;
-        expect(nullBranch.value['type'], 'null');
-      });
+          // Second branch represents nullability
+          final nullBranch = anyOf.last;
+          expect(nullBranch.value['type'], 'null');
+        },
+      );
     });
 
     group('oneOf composition', () {
@@ -292,10 +297,17 @@ void main() {
         final result = schema.toJsonSchemaBuilder();
 
         // MUST have oneOf, NOT anyOf - discriminated unions require exactly-one semantics
-        expect(result.value.containsKey('oneOf'), isTrue,
-            reason: 'Discriminated schema should use oneOf for exactly-one semantics');
-        expect(result.value.containsKey('anyOf'), isFalse,
-            reason: 'oneOf should not be converted to anyOf');
+        expect(
+          result.value.containsKey('oneOf'),
+          isTrue,
+          reason:
+              'Discriminated schema should use oneOf for exactly-one semantics',
+        );
+        expect(
+          result.value.containsKey('anyOf'),
+          isFalse,
+          reason: 'oneOf should not be converted to anyOf',
+        );
       });
 
       test('oneOf preserves branch schemas', () {
@@ -337,7 +349,12 @@ void main() {
       });
 
       test('integer preserves all numeric constraints together', () {
-        final schema = Ack.integer().min(0).max(100).greaterThan(-1).lessThan(101).multipleOf(5);
+        final schema = Ack.integer()
+            .min(0)
+            .max(100)
+            .greaterThan(-1)
+            .lessThan(101)
+            .multipleOf(5);
         final result = schema.toJsonSchemaBuilder();
 
         expect(result.value['minimum'], 0);
@@ -369,7 +386,12 @@ void main() {
       });
 
       test('double preserves all numeric constraints together', () {
-        final schema = Ack.double().min(0).max(100).greaterThan(-0.5).lessThan(100.5).multipleOf(0.1);
+        final schema = Ack.double()
+            .min(0)
+            .max(100)
+            .greaterThan(-0.5)
+            .lessThan(100.5)
+            .multipleOf(0.1);
         final result = schema.toJsonSchemaBuilder();
 
         expect(result.value['minimum'], closeTo(0, 1e-9));
@@ -405,9 +427,7 @@ void main() {
       });
 
       test('wraps property conversion errors with path', () {
-        final schema = Ack.object({
-          'bad': const TestUnsupportedAckSchema(),
-        });
+        final schema = Ack.object({'bad': const TestUnsupportedAckSchema()});
 
         expect(
           () => schema.toJsonSchemaBuilder(),
@@ -431,7 +451,9 @@ void main() {
       });
 
       test('additionalProperties: true converts to boolean', () {
-        final schema = Ack.object({'name': Ack.string()}, additionalProperties: true);
+        final schema = Ack.object({
+          'name': Ack.string(),
+        }, additionalProperties: true);
         final result = schema.toJsonSchemaBuilder();
 
         // Should be true (boolean), not {} (schema)
@@ -447,8 +469,18 @@ void main() {
         // Create a JsonSchema with allOf directly (ACK doesn't have Ack.allOf() yet)
         final jsonSchema = JsonSchema.fromJson({
           'allOf': [
-            {'type': 'object', 'properties': {'name': {'type': 'string'}}},
-            {'type': 'object', 'properties': {'age': {'type': 'integer'}}},
+            {
+              'type': 'object',
+              'properties': {
+                'name': {'type': 'string'},
+              },
+            },
+            {
+              'type': 'object',
+              'properties': {
+                'age': {'type': 'integer'},
+              },
+            },
           ],
         });
 
@@ -456,10 +488,16 @@ void main() {
         final result = convertJsonSchemaToBuilder(jsonSchema);
 
         // Verify allOf is in the output
-        expect(result.value.containsKey('allOf'), isTrue,
-            reason: 'allOf should be converted to allOf');
-        expect(result.value.containsKey('anyOf'), isFalse,
-            reason: 'allOf should not become anyOf');
+        expect(
+          result.value.containsKey('allOf'),
+          isTrue,
+          reason: 'allOf should be converted to allOf',
+        );
+        expect(
+          result.value.containsKey('anyOf'),
+          isFalse,
+          reason: 'allOf should not become anyOf',
+        );
 
         final allOf = result.value['allOf'] as List;
         expect(allOf, hasLength(2));
@@ -487,7 +525,9 @@ void main() {
       test('minProperties is preserved in conversion', () {
         final jsonSchema = JsonSchema.fromJson({
           'type': 'object',
-          'properties': {'name': {'type': 'string'}},
+          'properties': {
+            'name': {'type': 'string'},
+          },
           'minProperties': 2,
         });
 
@@ -499,7 +539,9 @@ void main() {
       test('maxProperties is preserved in conversion', () {
         final jsonSchema = JsonSchema.fromJson({
           'type': 'object',
-          'properties': {'name': {'type': 'string'}},
+          'properties': {
+            'name': {'type': 'string'},
+          },
           'maxProperties': 5,
         });
 
@@ -511,7 +553,9 @@ void main() {
       test('both minProperties and maxProperties together', () {
         final jsonSchema = JsonSchema.fromJson({
           'type': 'object',
-          'properties': {'name': {'type': 'string'}},
+          'properties': {
+            'name': {'type': 'string'},
+          },
           'minProperties': 1,
           'maxProperties': 10,
         });
