@@ -179,7 +179,11 @@ void main() {
 
         // 1 (int) and 1.0 (double) are different types, so both should be allowed
         final result = schema.safeParse([1, 1.0]);
-        expect(result.isOk, isTrue, reason: 'int and double are different types');
+        expect(
+          result.isOk,
+          isTrue,
+          reason: 'int and double are different types',
+        );
       });
 
       test('should detect duplicate integers', () {
@@ -191,7 +195,11 @@ void main() {
       test('should detect duplicate doubles', () {
         final schema = Ack.list(Ack.any()).unique();
         final result = schema.safeParse([1.0, 2.0, 1.0]);
-        expect(result.isOk, isFalse, reason: 'same double values are duplicates');
+        expect(
+          result.isOk,
+          isFalse,
+          reason: 'same double values are duplicates',
+        );
       });
     });
   });

@@ -152,7 +152,8 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    return applyConstraintsAndRefinements(validatedMap, context);
+    final unmodifiableMap = Map<String, Object?>.unmodifiable(validatedMap);
+    return applyConstraintsAndRefinements(unmodifiableMap, context);
   }
 
   @override
