@@ -114,7 +114,10 @@ if (result.isOk) {
 
 ## Documentation
 
-Detailed documentation is available at [docs.page/btwld/ack](https://docs.page/btwld/ack).
+Documentation endpoints:
+- Human docs: [docs.page/btwld/ack](https://docs.page/btwld/ack)
+- Agent-oriented route (redirects to static text): [docs.page/btwld/ack/llms.txt](https://docs.page/btwld/ack/llms.txt)
+- Canonical static text: [raw.githubusercontent.com/btwld/ack/main/llms.txt](https://raw.githubusercontent.com/btwld/ack/main/llms.txt)
 
 ## Development
 
