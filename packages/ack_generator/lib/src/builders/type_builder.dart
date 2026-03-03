@@ -91,14 +91,15 @@ class TypeBuilder {
   /// Builds an extension type for the given model
   ///
   /// Returns null if the model should not generate an extension type:
-  /// - Discriminated base classes (use sealed classes instead)
+  /// - Discriminated base classes (generated separately via
+  ///   [buildDiscriminatedExtensionBase] or [buildSealedClass])
   /// - Nullable schema variables (representation is non-nullable)
   ExtensionType? buildExtensionType(
     ModelInfo model,
     List<ModelInfo> allModels,
   ) {
     // Discriminated base classes get sealed classes, not extension types
-    if (model.isDiscriminatedBase) {
+    if (model.isDiscriminatedBaseDefinition) {
       return null;
     }
 
@@ -139,15 +140,15 @@ class TypeBuilder {
 
   /// Builds a sealed class for discriminated base types
   Class? buildSealedClass(ModelInfo model, List<ModelInfo> allModels) {
-    if (!model.isDiscriminatedBase) {
+    if (!model.isDiscriminatedBaseDefinition) {
       return null;
     }
 
     final typeName = _getExtensionTypeName(model);
     final schemaVarName = _toCamelCase(model.schemaClassName);
-    final subtypes = model.subtypes;
+    final subtypeNames = model.subtypeNames;
 
-    if (subtypes == null || subtypes.isEmpty) {
+    if (subtypeNames == null || subtypeNames.isEmpty) {
       return null;
     }
 
@@ -189,9 +190,77 @@ class TypeBuilder {
           ),
           _buildToJson(model),
           // Add factory constructor for parsing
-          _buildDiscriminatedFactory(model, schemaVarName, subtypes),
+          _buildDiscriminatedFactory(model, schemaVarName, subtypeNames),
           // Add safeParse static method
-          _buildDiscriminatedSafeParse(model, schemaVarName),
+          _buildDiscriminatedSafeParse(model, schemaVarName, subtypeNames),
+        ]),
+    );
+  }
+
+  /// Builds an extension type for discriminated @AckType base schemas.
+  ExtensionType? buildDiscriminatedExtensionBase(
+    ModelInfo model,
+    List<ModelInfo> allModels,
+  ) {
+    if (!model.isDiscriminatedBaseDefinition) {
+      return null;
+    }
+
+    final typeName = _getExtensionTypeName(model);
+    final schemaVarName = _toCamelCase(model.schemaClassName);
+    final subtypeNames = model.subtypeNames;
+
+    if (subtypeNames == null || subtypeNames.isEmpty) {
+      return null;
+    }
+
+    // Resolve schemaClassName → className for the switch expression.
+    // subtypeNames stores schemaClassName for @AckType models;
+    // _buildDiscriminatorSwitchExpression needs className to emit TypeName.
+    final resolvedSubtypeNames = <String, String>{};
+    for (final entry in subtypeNames.entries) {
+      final branchModel = allModels.firstWhere(
+        (m) => m.schemaClassName == entry.value,
+        orElse: () => throw StateError(
+          'Failed to resolve discriminated subtype "${entry.value}" '
+          '(discriminator "${entry.key}") for base '
+          '"${model.schemaClassName}" while building '
+          'extension type "$typeName".',
+        ),
+      );
+      resolvedSubtypeNames[entry.key] = branchModel.className;
+    }
+
+    return ExtensionType(
+      (b) => b
+        ..name = typeName
+        ..docs.addAll(_buildDocs(model))
+        ..representationDeclaration = RepresentationDeclaration(
+          (r) => r
+            ..declaredRepresentationType = refer('Map<String, Object?>')
+            ..name = '_data',
+        )
+        ..implements.add(refer('Map<String, Object?>'))
+        ..methods.addAll([
+          Method(
+            (m) => m
+              ..type = MethodType.getter
+              ..name = model.discriminatorKey!
+              ..returns = refer('String')
+              ..lambda = true
+              ..body = Code("_data['${model.discriminatorKey}'] as String"),
+          ),
+          _buildToJson(model),
+          _buildDiscriminatedFactory(
+            model,
+            schemaVarName,
+            resolvedSubtypeNames,
+          ),
+          _buildDiscriminatedSafeParse(
+            model,
+            schemaVarName,
+            resolvedSubtypeNames,
+          ),
         ]),
     );
   }
@@ -209,6 +278,11 @@ class TypeBuilder {
     final typeName = _getExtensionTypeName(model);
     final baseTypeName = _getExtensionTypeName(baseModel);
     final lookups = _ModelLookups(allModels);
+    final discriminatorKey = baseModel.discriminatorKey!;
+    final nonDiscriminatorFields = model.fields
+        .where((field) => field.jsonKey != discriminatorKey)
+        .toList();
+    final schemaVarName = _toCamelCase(model.schemaClassName);
 
     return ExtensionType(
       (b) => b
@@ -219,22 +293,39 @@ class TypeBuilder {
             ..declaredRepresentationType = refer('Map<String, Object?>')
             ..name = '_data',
         )
-        ..implements.add(refer(baseTypeName)) // Implement sealed base class
+        ..implements.addAll([
+          refer(baseTypeName),
+          refer('Map<String, Object?>'),
+        ])
         ..methods.addAll([
           // Override discriminator to read from _data for consistency with toJson()
           // Factory constructors already validate the discriminator value matches
           Method(
             (m) => m
               ..type = MethodType.getter
-              ..name = baseModel.discriminatorKey!
+              ..name = discriminatorKey
               ..returns = refer('String')
-              ..annotations.add(refer('override'))
               ..lambda = true
-              ..body = Code("_data['${baseModel.discriminatorKey}'] as String"),
+              ..body = Code("_data['$discriminatorKey'] as String"),
           ),
           _buildToJson(model),
+          // This builder is currently used by @AckType schema-variable
+          // discriminated flows; keep these guards explicit to preserve behavior.
+          if (model.isFromSchemaVariable)
+            ..._buildStaticFactories(model, schemaVarName),
           // Add regular field getters
-          ..._buildGetters(model, lookups),
+          ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
+          if (model.additionalProperties) _buildArgsGetter(model),
+          if (model.isFromSchemaVariable && nonDiscriminatorFields.isNotEmpty)
+            _buildCopyWithForFields(
+              model,
+              nonDiscriminatorFields,
+              fixedAssignments: {
+                discriminatorKey: model.discriminatorValue != null
+                    ? _singleQuotedLiteral(model.discriminatorValue!)
+                    : 'this.$discriminatorKey',
+              },
+            ),
         ]),
     );
   }
@@ -471,14 +562,14 @@ return $schemaVarName.safeParseAs(
   Method _buildDiscriminatedFactory(
     ModelInfo model,
     String schemaVarName,
-    Map<String, ClassElement2> subtypes,
+    Map<String, String> subtypeNames,
   ) {
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
     final switchExpression = _buildDiscriminatorSwitchExpression(
-      'validated',
+      'map',
       discriminatorKey,
-      subtypes,
+      subtypeNames,
     );
 
     return Method(
@@ -504,14 +595,17 @@ return $schemaVarName.parseAs(
     );
   }
 
-  Method _buildDiscriminatedSafeParse(ModelInfo model, String schemaVarName) {
+  Method _buildDiscriminatedSafeParse(
+    ModelInfo model,
+    String schemaVarName,
+    Map<String, String> subtypeNames,
+  ) {
     final typeName = _getExtensionTypeName(model);
     final discriminatorKey = model.discriminatorKey!;
-    final subtypes = model.subtypes!;
     final switchExpression = _buildDiscriminatorSwitchExpression(
       'map',
       discriminatorKey,
-      subtypes,
+      subtypeNames,
     );
 
     return Method(
@@ -540,13 +634,13 @@ return $schemaVarName.safeParseAs(
   String _buildDiscriminatorSwitchExpression(
     String mapVarName,
     String discriminatorKey,
-    Map<String, ClassElement2> subtypes,
+    Map<String, String> subtypeNames,
   ) {
     final cases = <String>[];
-    for (final entry in subtypes.entries) {
+    for (final entry in subtypeNames.entries) {
       final discriminatorValue = entry.key;
-      final subtypeElement = entry.value;
-      final subtypeTypeName = '${subtypeElement.name3}Type';
+      final subtypeClassName = entry.value;
+      final subtypeTypeName = '${subtypeClassName}Type';
 
       cases.add("  '$discriminatorValue' => $subtypeTypeName($mapVarName)");
     }
@@ -554,14 +648,19 @@ return $schemaVarName.safeParseAs(
     return '''
 switch ($mapVarName['$discriminatorKey']) {
 ${cases.join(',\n')},
-  _ => throw StateError('Unknown $discriminatorKey: \${$mapVarName["$discriminatorKey"]}'),
+  _ => throw StateError('Unknown $discriminatorKey: \${$mapVarName['$discriminatorKey']}'),
 }''';
   }
 
-  List<Method> _buildGetters(ModelInfo model, _ModelLookups lookups) {
-    return model.fields.map((field) {
-      return _buildGetter(field, lookups);
-    }).toList();
+  List<Method> _buildGetters(
+    ModelInfo model,
+    _ModelLookups lookups, {
+    Set<String> skipJsonKeys = const {},
+  }) {
+    return model.fields
+        .where((field) => !skipJsonKeys.contains(field.jsonKey))
+        .map((field) => _buildGetter(field, lookups))
+        .toList();
   }
 
   Method _buildGetter(FieldInfo field, _ModelLookups lookups) {
@@ -1038,6 +1137,12 @@ ${cases.join(',\n')},
   Set<String> _extractDependencies(ModelInfo model, _ModelLookups lookups) {
     final dependencies = <String>{};
 
+    final discriminatedBaseClassName = model.discriminatedBaseClassName;
+    if (discriminatedBaseClassName != null &&
+        lookups.byClassName.containsKey(discriminatedBaseClassName)) {
+      dependencies.add(discriminatedBaseClassName);
+    }
+
     for (final field in model.fields) {
       if (field.isPrimitive ||
           field.isEnum ||
@@ -1084,10 +1189,18 @@ ${cases.join(',\n')},
   }
 
   Method _buildCopyWith(ModelInfo model) {
+    return _buildCopyWithForFields(model, model.fields);
+  }
+
+  Method _buildCopyWithForFields(
+    ModelInfo model,
+    List<FieldInfo> fields, {
+    Map<String, String> fixedAssignments = const {},
+  }) {
     final typeName = _getExtensionTypeName(model);
 
     // Build parameters - all parameters are nullable to support copyWith semantics
-    final parameters = model.fields.map((field) {
+    final parameters = fields.map((field) {
       return Parameter(
         (p) => p
           ..name = field.name
@@ -1097,17 +1210,22 @@ ${cases.join(',\n')},
     }).toList();
 
     // Build field assignments
-    final assignments = model.fields.map((field) {
-      final key = field.jsonKey;
-      final name = field.name;
+    final assignments = <String>[
+      ...fixedAssignments.entries.map(
+        (entry) => '      ${_singleQuotedLiteral(entry.key)}: ${entry.value}',
+      ),
+      ...fields.map((field) {
+        final key = field.jsonKey;
+        final name = field.name;
 
-      if (field.isNullable) {
-        // For nullable fields, check if explicitly provided or exists in data
-        return "      if ($name != null || _data.containsKey('$key')) '$key': $name ?? this.$name";
-      } else {
-        return "      '$key': $name ?? this.$name";
-      }
-    }).toList();
+        if (field.isNullable) {
+          // For nullable fields, check if explicitly provided or exists in data
+          return "      if ($name != null || _data.containsKey('$key')) '$key': $name ?? this.$name";
+        } else {
+          return "      '$key': $name ?? this.$name";
+        }
+      }),
+    ];
 
     return Method(
       (m) => m
@@ -1123,6 +1241,11 @@ ${assignments.join(',\n')},
           ),
         ),
     );
+  }
+
+  String _singleQuotedLiteral(String value) {
+    final escaped = value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+    return "'$escaped'";
   }
 
   Reference _buildCopyWithParameterType(FieldInfo field) {

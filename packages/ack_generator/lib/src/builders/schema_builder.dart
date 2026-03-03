@@ -64,7 +64,7 @@ class SchemaBuilder {
 
   String _buildSchemaDefinition(ModelInfo model) {
     // Check if this is a discriminated base class
-    if (model.isDiscriminatedBase && model.subtypes != null) {
+    if (model.isDiscriminatedBaseDefinition) {
       return _buildDiscriminatedSchema(model);
     }
 
@@ -81,7 +81,7 @@ class SchemaBuilder {
   String _buildDiscriminatedSchema(ModelInfo model) {
     final buffer = StringBuffer();
     final discriminatorKey = model.discriminatorKey!;
-    final subtypes = model.subtypes!;
+    final subtypeNames = model.subtypeNames!;
 
     buffer.write('Ack.discriminated(\n');
     buffer.write('  discriminatorKey: \'$discriminatorKey\',\n');
@@ -89,21 +89,21 @@ class SchemaBuilder {
 
     // Generate schema references for each subtype
     final schemaRefs = <String>[];
-    for (final entry in subtypes.entries) {
+    for (final entry in subtypeNames.entries) {
       final discriminatorValue = entry.key;
-      final subtypeElement = entry.value;
+      final subtypeClassName = entry.value;
 
       // Look up the subtype's ModelInfo to get its custom schemaClassName
       // This handles cases where the subtype has a custom schemaName annotation
       final subtypeModelInfo = _allModels.cast<ModelInfo?>().firstWhere(
-            (m) => m?.className == subtypeElement.name3,
-            orElse: () => null,
-          );
+        (m) => m?.className == subtypeClassName,
+        orElse: () => null,
+      );
 
       // Use the subtype's schemaClassName if found, otherwise fall back to default
       final subtypeSchemaName = subtypeModelInfo != null
           ? _toCamelCase(subtypeModelInfo.schemaClassName)
-          : _toCamelCase('${subtypeElement.name3}Schema');
+          : _toCamelCase('${subtypeClassName}Schema');
 
       schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
     }

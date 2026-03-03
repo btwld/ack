@@ -1,4 +1,3 @@
-import 'package:analyzer/dart/element/element2.dart';
 import 'field_info.dart';
 
 /// Default representation type for object schemas
@@ -17,18 +16,39 @@ class ModelInfo {
   List<String> get requiredFields =>
       fields.where((f) => f.isRequired).map((f) => f.jsonKey).toList();
 
-  // New discriminated type properties
-  /// Field name for discrimination (only for base classes)
+  /// Field name for discrimination.
+  ///
+  /// This is set on declared discriminated bases and may also be propagated
+  /// to linked schema-variable subtypes.
   final String? discriminatorKey;
 
   /// This class's discriminator value (only for subtypes)
   final String? discriminatorValue;
 
-  /// Map of discriminator values to class elements (only for base classes)
-  final Map<String, ClassElement2>? subtypes;
+  /// Map of discriminator values to subtype identifiers (only for base classes).
+  /// For @AckModel: discriminator value → className (e.g., 'cat' → 'Cat')
+  /// For @AckType:  discriminator value → schemaClassName (e.g., 'cat' → 'catSchema')
+  final Map<String, String>? subtypeNames;
 
-  /// Computed property: Whether this class is a discriminated base class (has discriminatedKey)
+  /// Canonical schema declaration identity for @AckType schema variables/getters.
+  ///
+  /// Aliases share the same canonical identity as their source declaration.
+  final String? schemaIdentity;
+
+  /// Parent discriminated base class name for subtypes.
+  ///
+  /// For @AckType schema-variable subtypes this stores the generated base type
+  /// name (for example, `PetType`), not the schema variable name.
+  final String? discriminatedBaseClassName;
+
+  /// Computed property: Whether this model has a discriminator key.
+  ///
+  /// This may be true for linked schema-variable subtypes.
   bool get isDiscriminatedBase => discriminatorKey != null;
+
+  /// Computed property: Whether this model is a declared discriminated base.
+  bool get isDiscriminatedBaseDefinition =>
+      discriminatorKey != null && subtypeNames != null;
 
   /// Computed property: Whether this class is a discriminated subtype (has discriminatedValue)
   bool get isDiscriminatedSubtype => discriminatorValue != null;
@@ -51,10 +71,11 @@ class ModelInfo {
     required this.fields,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    // New discriminated parameters
     this.discriminatorKey,
     this.discriminatorValue,
-    this.subtypes,
+    this.subtypeNames,
+    this.schemaIdentity,
+    this.discriminatedBaseClassName,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
     this.isNullableSchema = false,

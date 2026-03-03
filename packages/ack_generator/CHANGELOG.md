@@ -1,3 +1,13 @@
+## Unreleased
+
+### Features
+
+* **`@AckType` discriminated unions**: Documented current `Ack.discriminated(...)` support and current constraints.
+
+### Bug Fixes
+
+* **Discriminated validation**: `@AckType` now fails generation when `Ack.discriminated(..., schemas: {})` is empty.
+
 ## 1.0.0-beta.7
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.7) for details.
