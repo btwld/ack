@@ -100,4 +100,36 @@ final class Ack {
         .datetime() // Validates ISO 8601 datetime format with timezone first
         .transform<DateTime>((s) => DateTime.parse(s!));
   }
+
+  /// Creates a schema that parses URI strings into [Uri] objects.
+  ///
+  /// The schema validates the URI format before transformation, ensuring only
+  /// valid URIs are parsed.
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.uri();
+  /// final result = schema.parse('https://example.com/path?x=1');
+  /// ```
+  static TransformedSchema<String, Uri> uri() {
+    return string()
+        .uri() // Validates URI format first
+        .transform<Uri>((s) => Uri.parse(s!));
+  }
+
+  /// Creates a schema that parses millisecond integers into [Duration] objects.
+  ///
+  /// You can add range constraints using [.min()] and [.max()].
+  ///
+  /// Example:
+  /// ```dart
+  /// final schema = Ack.duration();
+  /// final result = schema.parse(1500); // Returns Duration(milliseconds: 1500)
+  ///
+  /// // With range validation
+  /// final timeout = Ack.duration().min(Duration(minutes: 1)).max(Duration(minutes: 2));
+  /// ```
+  static TransformedSchema<int, Duration> duration() {
+    return integer().transform<Duration>((ms) => Duration(milliseconds: ms!));
+  }
 }
