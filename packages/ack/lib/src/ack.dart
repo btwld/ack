@@ -103,8 +103,9 @@ final class Ack {
 
   /// Creates a schema that parses URI strings into [Uri] objects.
   ///
-  /// The schema validates the URI format before transformation, ensuring only
-  /// valid URIs are parsed.
+  /// The schema validates that the string is an absolute URI with a scheme
+  /// and host (e.g., `https://example.com`) before transformation. URIs
+  /// without an authority component (e.g., `mailto:` or `urn:`) are rejected.
   ///
   /// Example:
   /// ```dart

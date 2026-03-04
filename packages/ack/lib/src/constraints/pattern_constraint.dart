@@ -125,7 +125,7 @@ class PatternConstraint extends Constraint<String>
       return u != null && u.hasScheme && u.host.isNotEmpty;
     },
     constraintKey: 'string_format_uri',
-    description: 'Must be a valid URI.',
+    description: 'Must be a valid absolute URI with a scheme and host.',
     customMessageBuilder: (v) => 'Invalid URI format, got "$v".',
   );
 
