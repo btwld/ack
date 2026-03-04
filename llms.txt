@@ -1,14 +1,27 @@
 # Ack - Schema Validation Library for Dart
 
-> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.7 (main includes next-beta updates).
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.9.
 
 ## Overview
 
-Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.7 is the current published baseline, and main includes next-beta updates such as `@AckType` discriminated union extension generation.
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.9 is the current published baseline.
 
 **Repository**: https://github.com/btwld/ack
 **Documentation**: https://docs.page/btwld/ack
 **Dart SDK**: >=3.8.0 <4.0.0
+
+## llms.txt Maintenance Best Practices
+
+Use this file as a strict, reference-style source of truth for API surface.
+
+- Keep one canonical `llms.txt` at repository root.
+- Document both throwing and non-throwing APIs for each major feature.
+- Include aliases and deprecated methods when still available in public API.
+- Document annotation options that alter generated output, not only core annotations.
+- Document fluent helpers that affect parsing behavior, coercion, or emitted schemas.
+- Update this file in the same change that introduces public API changes.
+- Prefer small additive updates over large rewrites to preserve reviewability.
+- Keep examples minimal, deterministic, and copy-pasteable.
 
 ## Core Concepts
 
@@ -87,6 +100,30 @@ final strictSchema = Ack.object({'name': Ack.string()});
 final permissiveSchema = Ack.object({'name': Ack.string()}).passthrough();
 ```
 
+### Object Schema Composition Helpers
+
+```dart
+final baseUserSchema = Ack.object({
+  'id': Ack.string(),
+  'name': Ack.string(),
+  'email': Ack.string().email(),
+  'passwordHash': Ack.string(),
+});
+
+final mergedUserSchema = baseUserSchema.merge(
+  Ack.object({'name': Ack.string().minLength(2), 'active': Ack.boolean()}),
+);
+final publicUserSchema = baseUserSchema.omit(['passwordHash']);
+final summaryUserSchema = baseUserSchema.pick(['id', 'name']);
+final partialUserSchema = baseUserSchema.partial();
+final extendedUserSchema = baseUserSchema.extend(
+  {'nickname': Ack.string().optional()},
+  additionalProperties: true,
+  isNullable: false,
+  description: 'Extended user schema',
+);
+```
+
 ---
 
 ## Schema Modifiers and Constraints
@@ -111,36 +148,86 @@ final permissiveSchema = Ack.object({'name': Ack.string()}).passthrough();
 
 ```dart
 Ack.string()
+  .strictParsing()          // Disable primitive-to-string coercion
   .minLength(3)             // Minimum length
   .maxLength(50)            // Maximum length
+  .length(8)                // Exact length
+  .notEmpty()               // Alias for minLength(1)
   .email()                  // Email format validation
   .url()                    // URL format validation
+  .uri()                    // URI format validation
+  .uuid()                   // UUID format validation
+  .date()                   // ISO 8601 date validation (YYYY-MM-DD)
+  .datetime()               // ISO 8601 datetime validation
+  .time()                   // Time validation (HH:MM:SS)
+  .ip()                     // IPv4 or IPv6 validation
+  .ipv4()                   // IPv4 validation
+  .ipv6()                   // IPv6 validation
+  .startsWith('pre_')       // Required prefix
+  .endsWith('_suf')         // Required suffix
+  .contains('-')            // Required substring
+  .trim()                   // Transform: trim before output
+  .toLowerCase()            // Transform: lowercase output
+  .toUpperCase()            // Transform: uppercase output
   .matches(r'^[A-Z]+$')     // Custom regex pattern
-  .enumString(['a', 'b'])   // Allowed string values (prefer Ack.enumValues for Dart enums)
-  .literal('exact')         // Exact value match
+  .enumString(['a', 'b'])   // Deprecated: use Ack.enumString([...])
+  .literal('exact')         // Deprecated: use Ack.literal(...)
 ```
 
 ### Numeric Constraints
 
 ```dart
 Ack.integer()
+  .greaterThan(0)           // Exclusive lower bound
   .min(0)                   // Minimum value (inclusive)
+  .lessThan(101)            // Exclusive upper bound
   .max(100)                 // Maximum value (inclusive)
   .positive()               // Greater than 0
+  .negative()               // Less than 0
   .multipleOf(5)            // Must be divisible by value
+  .safe()                   // JavaScript-safe integer range
+  .strictParsing()          // Disable numeric coercion
 
 Ack.double()
+  .greaterThan(0.0)         // Exclusive lower bound
   .min(0.01)                // Works with decimals
+  .lessThan(1000.0)         // Exclusive upper bound
   .max(999.99)
   .positive()
+  .negative()
+  .strictParsing()
+  .finite()                 // Rejects NaN/Infinity
+
+Ack.boolean()
+  .strictParsing()          // Disable primitive coercion
 ```
 
 ### List Constraints
 
 ```dart
 Ack.list(Ack.string())
+  .minItems(1)              // Minimum items
   .minLength(1)             // Minimum items
+  .maxItems(10)             // Maximum items
   .maxLength(10)            // Maximum items
+  .exactLength(3)           // Exact size
+  .length(3)                // Alias for exactLength
+  .nonEmpty()               // Alias for minItems(1)
+  .notEmpty()               // Alias for minLength(1)
+  .unique()                 // All items must be unique
+```
+
+### Fluent Helper APIs
+
+```dart
+Ack.string()
+  .withConstraint(myConstraint)
+  .withConstraints([c1, c2])
+  .constrain(c3);           // Extension helper alias
+
+Ack.string()
+  .describe('Human readable docs')
+  .withDescription('Legacy alias'); // Deprecated alias
 ```
 
 ### Default Values
@@ -254,7 +341,7 @@ class User {
 // });
 ```
 
-### Approach 3: @AckType on Schema Variables (Extension Types)
+### Approach 3: @AckType on Schema Variables/Getters (Extension Types)
 
 Best for when you want type-safe extension types generated for your schemas:
 
@@ -358,7 +445,7 @@ Extension types are Dart 3 zero-cost type-safe wrappers over validated data. The
 - **Ergonomics**: IDE autocomplete and type inference
 - **Map Interface**: Implements `Map<String, Object?>` for direct access to underlying data
 
-**Note**: Extension types wrap mutable maps. The underlying data can be mutated through the Map interface. For true immutability, create a copy of the data before modifications.
+**Note**: Object extension types implement `Map<String, Object?>`. Values returned by schema parsing are unmodifiable map/list views; mutation attempts on parsed results throw at runtime.
 
 ### Generated Structure for Object Schemas
 
@@ -545,7 +632,7 @@ animalSchema.parse(catData);  // Validates against catSchema
 animalSchema.parse(dogData);  // Validates against dogSchema
 ```
 
-### `@AckType` + `Ack.discriminated(...)` (Next Beta)
+### `@AckType` + `Ack.discriminated(...)` (Supported)
 
 `@AckType()` now supports extension type generation for top-level
 `Ack.discriminated(...)` schemas.
@@ -647,6 +734,12 @@ try {
   print('Validation failed: $e');
 }
 
+// Typed throwing API (map validated output to your target type)
+final typed = schema.parseAs(
+  data,
+  (validated) => UserType(validated as Map<String, Object?>),
+);
+
 // Result API (recommended) - explicit error handling
 final result = schema.safeParse(data);
 if (result.isOk) {
@@ -655,11 +748,21 @@ if (result.isOk) {
   final error = result.getError();
 }
 
+// Typed result API
+final typedResult = schema.safeParseAs(
+  data,
+  (validated) => UserType(validated as Map<String, Object?>),
+);
+
 // Pattern matching
 result.match(
   onOk: (value) => print('Valid: $value'),
   onFail: (error) => print('Error: $error'),
 );
+
+// Deprecated aliases
+schema.validate(data);      // Alias for safeParse(...)
+schema.tryParse(data);      // Alias for safeParse(...).getOrNull()
 ```
 
 ### SchemaResult Type
@@ -674,6 +777,7 @@ sealed class SchemaResult<T extends Object> {
   T? getOrThrow();                             // Returns value or throws AckException
   T? getOrElse(T? Function() orElse);          // Returns value or result of orElse()
   SchemaError getError();                      // Returns error (throws if Ok)
+  SchemaResult<R> map<R extends Object>(R Function(T? value) mapper);
 
   // Pattern matching
   R match<R>({
@@ -715,11 +819,11 @@ sealed class SchemaResult<T extends Object> {
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack: ^1.0.0-beta.7
-  ack_annotations: ^1.0.0-beta.7
+  ack: ^1.0.0-beta.9
+  ack_annotations: ^1.0.0-beta.9
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.7
+  ack_generator: ^1.0.0-beta.9
   build_runner: ^2.4.0
 ```
 
@@ -778,11 +882,30 @@ dart run build_runner build --delete-conflicting-outputs
 | `@MinItems(n)` | Minimum number of items | `@MinItems(1)` |
 | `@MaxItems(n)` | Maximum number of items | `@MaxItems(10)` |
 
+## Annotation Options Beyond Basic Constraints
+
+### `@AckField(...)`
+
+- `requiredMode`: `AckFieldRequiredMode.auto`, `AckFieldRequiredMode.required`, or `AckFieldRequiredMode.optional`
+- `jsonKey`: override serialized and parsed key name
+- `description`: override generated field description
+- `constraints`: pass explicit constraint annotation values for generation
+
+### `@AckType(...)`
+
+- `name`: overrides generated extension type name
+
+### `@AckModel(...)`
+
+- `schemaName`: overrides generated schema variable name
+- `discriminatedKey` and `discriminatedValue`: configure discriminated models
+- `additionalProperties` and `additionalPropertiesField`: control additional property behavior
+
 ---
 
 ## JSON Schema Export
 
-Every schema can be exported to JSON Schema Draft-7:
+Every schema can be exported to a JSON Schema-compatible map via `toJsonSchema()`:
 
 ```dart
 final userSchema = Ack.object({
@@ -803,6 +926,31 @@ final jsonSchema = userSchema.toJsonSchema();
 // }
 ```
 
+### Canonical JSON Schema Model Surface
+
+For adapter packages and advanced conversions, use the canonical model API:
+
+```dart
+final model = schema.toJsonSchemaModel();
+```
+
+Common fields exposed on the model include:
+
+- `type`
+- `properties`
+- `required`
+- `propertyOrdering`
+- `allOf`
+- `anyOf`
+- `oneOf`
+- `enumValues`
+- `minProperties`
+- `maxProperties`
+- `discriminator`
+- `additionalPropertiesSchema`
+- `additionalPropertiesAllowed`
+- `additionalProperties` (compatibility accessor)
+
 ---
 
 ## Adapter Packages (Schema Converters)
@@ -816,7 +964,7 @@ Converts Ack schemas to Firebase AI Schema format for structured output generati
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_firebase_ai: ^1.0.0-beta.7
+  ack_firebase_ai: ^1.0.0-beta.9
 ```
 
 ```dart
@@ -849,7 +997,7 @@ Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_json_schema_builder: ^1.0.0-beta.7
+  ack_json_schema_builder: ^1.0.0-beta.9
 ```
 
 ```dart
@@ -869,7 +1017,7 @@ final jsbSchema = schema.toJsonSchemaBuilder();
 
 | Package | Purpose | Extension Method |
 |---------|---------|------------------|
-| `ack` | Core validation | `.toJsonSchema()` (Draft-7) |
+| `ack` | Core validation | `.toJsonSchema()` |
 | `ack_firebase_ai` | Gemini structured output | `.toFirebaseAiSchema()` |
 | `ack_json_schema_builder` | JSON Schema 2020-12 | `.toJsonSchemaBuilder()` |
 
@@ -976,7 +1124,7 @@ print(user.name);  // Direct typed access
 | Modifier | Supported | Notes |
 |----------|-----------|-------|
 | `.optional()` | Yes | Affects validation |
-| `.nullable()` | Yes | Affects validation |
+| `.nullable()` | No (for top-level `@AckType` schema vars) | Nullable top-level schemas do not emit extension types |
 | `.withDefault()` | Yes | Provides fallback |
 | `.refine()` | Yes | Custom validation |
 | `.transform()` | No | Changes output type |
