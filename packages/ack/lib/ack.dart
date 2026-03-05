@@ -9,10 +9,12 @@ export 'src/ack.dart';
 // Constraints
 export 'src/constraints/constraint.dart';
 export 'src/constraints/datetime_constraint.dart';
+export 'src/constraints/duration_constraint.dart';
 // Context
 export 'src/context.dart';
 // Extensions
 export 'src/schemas/extensions/ack_schema_extensions.dart';
+export 'src/schemas/extensions/duration_schema_extensions.dart';
 export 'src/schemas/extensions/datetime_schema_extensions.dart';
 export 'src/schemas/extensions/list_schema_extensions.dart';
 export 'src/schemas/extensions/numeric_extensions.dart';
