@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -123,27 +125,49 @@ void main() {
       });
     });
 
+    group('Equality', () {
+      test('supports equality across different generic type arguments', () {
+        final branch = Ack.object({
+          'type': Ack.literal('cat'),
+          'name': Ack.string(),
+        });
+
+        final mapTyped = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {'cat': branch},
+        );
+        final objectTyped = Ack.discriminated<Object>(
+          discriminatorKey: 'type',
+          schemas: {'cat': branch},
+        );
+
+        expect(() => mapTyped == objectTyped, returnsNormally);
+        expect(() => objectTyped == mapTyped, returnsNormally);
+        expect(mapTyped == objectTyped, isTrue);
+        expect(objectTyped == mapTyped, isTrue);
+        expect(mapTyped.hashCode, equals(objectTyped.hashCode));
+      });
+    });
+
     group('JSON Schema', () {
       test('supports transformed child branches in toJsonSchema', () {
         final schema = Ack.discriminated<String>(
           discriminatorKey: 'type',
           schemas: {
-            'cat': Ack.object({'name': Ack.string()}).transform<String>(
-              (map) => map!['name'] as String,
-            ),
+            'cat': Ack.object({
+              'name': Ack.string(),
+            }).transform<String>((map) => map!['name'] as String),
           },
         );
 
         final jsonSchema = schema.toJsonSchema();
         final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
             .cast<String, Object?>();
-        final properties = (branch['properties'] as Map).cast<String, Object?>();
+        final properties = (branch['properties'] as Map)
+            .cast<String, Object?>();
 
         expect(branch['x-transformed'], isTrue);
-        expect(
-          properties['type'],
-          equals({'type': 'string', 'const': 'cat'}),
-        );
+        expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
         expect(branch['required'], equals(['type', 'name']));
       });
 
@@ -164,6 +188,41 @@ void main() {
 
         expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
       });
+
+      test('omits non-JSON defaults for transformed discriminated schemas', () {
+        final schema = Ack.discriminated<Object>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'name': Ack.string(),
+            }).transform<Object>((map) => map!['name'] as Object),
+          },
+        ).copyWith(defaultValue: Object());
+
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema.containsKey('default'), isFalse);
+        expect(() => jsonEncode(jsonSchema), returnsNormally);
+      });
+
+      test(
+        'omits non-JSON defaults for nullable transformed discriminated schemas',
+        () {
+          final schema = Ack.discriminated<Object>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({
+                'name': Ack.string(),
+              }).transform<Object>((map) => map!['name'] as Object),
+            },
+          ).nullable().copyWith(defaultValue: Object());
+
+          final jsonSchema = schema.toJsonSchema();
+
+          expect(jsonSchema.containsKey('default'), isFalse);
+          expect(() => jsonEncode(jsonSchema), returnsNormally);
+        },
+      );
     });
   });
 }

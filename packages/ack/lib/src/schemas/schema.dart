@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
@@ -422,6 +424,26 @@ sealed class AckSchema<DartType extends Object> {
         defaultValue == other.defaultValue &&
         listEq.equals(_constraints, other._constraints) &&
         listEq.equals(_refinements, other._refinements);
+  }
+
+  /// Compares base schema fields while erasing generic type parameters.
+  ///
+  /// Useful when structural equality should ignore reified type arguments.
+  @protected
+  bool baseFieldsEqualErased(AckSchema other) {
+    const listEq = ListEquality<Object?>();
+    return isNullable == other.isNullable &&
+        isOptional == other.isOptional &&
+        description == other.description &&
+        defaultValue == other.defaultValue &&
+        listEq.equals(
+          _constraints as List<Object?>,
+          other._constraints as List<Object?>,
+        ) &&
+        listEq.equals(
+          _refinements as List<Object?>,
+          other._refinements as List<Object?>,
+        );
   }
 
   /// Computes hash code for base schema fields.

@@ -85,12 +85,12 @@ void main() {
       final schema = Ack.discriminated<String>(
         discriminatorKey: 'type',
         schemas: {
-          'cat': Ack.object({'name': Ack.string()}).transform<String>(
-            (map) => map!['name'] as String,
-          ),
-          'dog': Ack.object({'name': Ack.string()}).transform<String>(
-            (map) => map!['name'] as String,
-          ),
+          'cat': Ack.object({
+            'name': Ack.string(),
+          }).transform<String>((map) => map!['name'] as String),
+          'dog': Ack.object({
+            'name': Ack.string(),
+          }).transform<String>((map) => map!['name'] as String),
         },
       );
 
@@ -100,11 +100,34 @@ void main() {
       expect(json.oneOf, hasLength(2));
 
       final catBranch = json.oneOf!.firstWhere(
-        (branch) => branch.properties?['type']?.enumValues?.contains('cat') ?? false,
+        (branch) =>
+            branch.properties?['type']?.enumValues?.contains('cat') ?? false,
       );
       expect(catBranch.type, JsonSchemaType.object);
       expect(catBranch.properties, contains('name'));
       expect(catBranch.properties!['type']!.enumValues, equals(['cat']));
     });
+
+    test(
+      'preserves transformed branch description in discriminated model conversion',
+      () {
+        final schema = Ack.discriminated<String>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .transform<String>((map) => map!['name'] as String)
+                .copyWith(description: 'cat branch'),
+          },
+        );
+
+        final json = schema.toJsonSchemaModel();
+
+        final catBranch = json.oneOf!.firstWhere(
+          (branch) =>
+              branch.properties?['type']?.enumValues?.contains('cat') ?? false,
+        );
+        expect(catBranch.description, equals('cat branch'));
+      },
+    );
   });
 }

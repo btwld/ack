@@ -9,6 +9,16 @@ AckSchema _unwrapDiscriminatedBranchSchema(AckSchema schema) {
   return current;
 }
 
+Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
+  if (defaultValue == null) return null;
+
+  try {
+    return jsonDecode(jsonEncode(defaultValue));
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Schema for validating a discriminated union of objects.
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
@@ -77,10 +87,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
     // Use centralized null handling (including cloned default handling).
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
@@ -222,6 +229,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   @override
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
+    final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
     schemas.forEach((discriminatorValue, branchSchema) {
       final baseSchema = _unwrapDiscriminatedBranchSchema(branchSchema);
       if (baseSchema is! ObjectSchema) {
@@ -249,14 +257,15 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && defaultValue != null) 'default': defaultValue,
+      if (!isNullable && serializedDefault != null)
+        'default': serializedDefault,
     };
 
     // Wrap in anyOf with null if nullable
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
+        if (serializedDefault != null) 'default': serializedDefault,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -284,10 +293,10 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DiscriminatedObjectSchema) return false;
-    final mapEq = MapEquality<String, AckSchema<T>>();
-    return baseFieldsEqual(other as AckSchema<T>) &&
+    const mapEq = MapEquality<String, AckSchema>();
+    return baseFieldsEqualErased(other) &&
         discriminatorKey == other.discriminatorKey &&
-        mapEq.equals(schemas, other.schemas as Map<String, AckSchema<T>>);
+        mapEq.equals(schemas, other.schemas);
   }
 
   @override
