@@ -7,6 +7,15 @@ extension AckToJsonSchemaModel on AckSchema {
   JsonSchema toJsonSchemaModel() => _convert(this);
 }
 
+AckSchema _unwrapDiscriminatedBranchSchema(AckSchema schema) {
+  var current = schema;
+  while (current is TransformedSchema) {
+    current = current.schema;
+  }
+
+  return current;
+}
+
 JsonSchema _convert(AckSchema schema) {
   // Parse JSON Schema for constraint metadata (minLength, format, etc.)
   final parsed = JsonSchema.fromJson(schema.toJsonSchema());
@@ -202,10 +211,11 @@ JsonSchema _discriminated(
 
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
-    final branchSchema = entry.value;
+    final branchSchema = _unwrapDiscriminatedBranchSchema(entry.value);
     if (branchSchema is! ObjectSchema) {
-      branches.add(_convert(branchSchema));
-      continue;
+      throw ArgumentError(
+        'Discriminated branches must be object-backed schemas.',
+      );
     }
 
     if (branchSchema.properties.containsKey(discriminatorKey)) {

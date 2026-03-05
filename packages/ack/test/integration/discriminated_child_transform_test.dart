@@ -1,65 +1,121 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-// Simple classes for demonstration
 class Animal {
   final String name;
+
   Animal(this.name);
 }
 
 class Cat extends Animal {
   final bool meows;
+
   Cat(super.name, {this.meows = true});
 }
 
 class Dog extends Animal {
   final bool barks;
+
   Dog(super.name, {this.barks = true});
 }
 
 void main() {
   group('Discriminated schema with transforms', () {
-    test(
-      'compile-time type constraint ensures only Map-returning schemas are accepted',
-      () {
-        // The type constraint Map<String, AckSchema<MapValue>> on Ack.discriminated()
-        // prevents passing transformed schemas at compile time.
-        //
-        // The following code would NOT compile:
-        //
-        // final catSchema = Ack.object({...}).transform<Cat>(...);
-        // Ack.discriminated(
-        //   discriminatorKey: 'type',
-        //   schemas: {'cat': catSchema},  // Compile error: type mismatch
-        // );
-        //
-        // This is the intended behavior - users get a compile-time error
-        // rather than a runtime error when trying to use transformed schemas
-        // as children of discriminated unions.
+    test('supports transformed child branches', () {
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'name': Ack.string(),
+        'meows': Ack.boolean().optional(),
+      }).transform<Animal>(
+        (map) => Cat(
+          map!['name'] as String,
+          meows: (map['meows'] as bool?) ?? true,
+        ),
+      );
 
-        // Verify that ObjectSchema IS accepted (it's AckSchema<MapValue>)
-        final catSchema = Ack.object({
-          'type': Ack.literal('cat'),
-          'name': Ack.string(),
-        });
+      final dogSchema = Ack.object({
+        'type': Ack.literal('dog'),
+        'name': Ack.string(),
+        'barks': Ack.boolean().optional(),
+      }).transform<Animal>(
+        (map) => Dog(
+          map!['name'] as String,
+          barks: (map['barks'] as bool?) ?? true,
+        ),
+      );
 
-        // This compiles because catSchema is ObjectSchema which is AckSchema<MapValue>
-        final animalSchema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {'cat': catSchema},
-        );
+      final animalSchema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema, 'dog': dogSchema},
+      );
 
-        // And it works correctly
-        final result = animalSchema.safeParse({
-          'type': 'cat',
-          'name': 'Whiskers',
-        });
-        expect(result.isOk, isTrue);
-      },
-    );
+      final cat = animalSchema.parse({'type': 'cat', 'name': 'Whiskers'});
+      expect(cat, isA<Cat>());
+      expect(cat!.name, equals('Whiskers'));
+      expect((cat as Cat).meows, isTrue);
 
-    test('correct pattern: transform on discriminated union itself', () {
-      // This is the CORRECT pattern - transform the discriminated union
+      final dog = animalSchema.parse({'type': 'dog', 'name': 'Buddy'});
+      expect(dog, isA<Dog>());
+      expect(dog!.name, equals('Buddy'));
+      expect((dog as Dog).barks, isTrue);
+    });
+
+    test('supports safeParse with transformed child branches', () {
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'name': Ack.string(),
+      }).transform<Animal>((map) => Cat(map!['name'] as String));
+
+      final dogSchema = Ack.object({
+        'type': Ack.literal('dog'),
+        'name': Ack.string(),
+      }).transform<Animal>((map) => Dog(map!['name'] as String));
+
+      final animalSchema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema, 'dog': dogSchema},
+      );
+
+      final result = animalSchema.safeParse({'type': 'cat', 'name': 'Mittens'});
+      expect(result.isOk, isTrue);
+      expect(result.getOrNull(), isA<Cat>());
+      expect((result.getOrNull() as Cat).name, equals('Mittens'));
+    });
+
+    test('applies transformed defaults without re-parsing', () {
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'name': Ack.string(),
+      }).transform<Animal>((map) => Cat(map!['name'] as String));
+
+      final animalSchema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema},
+      ).copyWith(defaultValue: Cat('Default Cat'));
+
+      final result = animalSchema.safeParse(null);
+
+      expect(result.isOk, isTrue);
+      expect(result.getOrNull(), isA<Cat>());
+      expect(result.getOrThrow()!.name, equals('Default Cat'));
+    });
+
+    test('fails when a branch is not object-backed', () {
+      final animalSchema = Ack.discriminated<String>(
+        discriminatorKey: 'type',
+        schemas: {'cat': Ack.string()},
+      );
+
+      final result = animalSchema.safeParse({'type': 'cat'});
+
+      expect(result.isOk, isFalse);
+      expect(
+        result.getError().message,
+        equals('Discriminated branches must be object-backed schemas'),
+      );
+    });
+
+    test('transform on discriminated union itself still works', () {
       final catSchema = Ack.object({
         'type': Ack.literal('cat'),
         'name': Ack.string(),
@@ -90,7 +146,6 @@ void main() {
             };
           });
 
-      // This works correctly
       final cat = animalSchema.parse({'type': 'cat', 'name': 'Whiskers'});
       expect(cat, isA<Cat>());
       expect(cat!.name, equals('Whiskers'));
@@ -102,36 +157,90 @@ void main() {
       expect((dog as Dog).barks, isTrue);
     });
 
-    test('correct pattern works with safeParse', () {
+    test('invalid discriminator fails before branch transform runs', () {
+      var transformCalled = false;
       final catSchema = Ack.object({
         'type': Ack.literal('cat'),
         'name': Ack.string(),
+      }).transform<Animal>((map) {
+        transformCalled = true;
+        return Cat(map!['name'] as String);
       });
 
-      final dogSchema = Ack.object({
-        'type': Ack.literal('dog'),
-        'name': Ack.string(),
-      });
+      final schema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema},
+      );
 
-      final animalSchema =
-          Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': catSchema, 'dog': dogSchema},
-          ).transform<Animal>((map) {
-            return switch (map!['type']) {
-              'cat' => Cat(map['name'] as String),
-              'dog' => Dog(map['name'] as String),
-              _ => throw StateError('Unknown type'),
-            };
-          });
+      final result = schema.safeParse({'type': 'unknown', 'name': 'Test'});
 
-      final result = animalSchema.safeParse({'type': 'cat', 'name': 'Mittens'});
-      expect(result.isOk, isTrue);
-      expect(result.getOrNull(), isA<Cat>());
-      expect((result.getOrNull() as Cat).name, equals('Mittens'));
+      expect(result.isOk, isFalse);
+      expect(transformCalled, isFalse);
     });
 
-    test('validation errors occur before transform', () {
+    test('invalid branch payload fails before transform output', () {
+      var transformCalled = false;
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'name': Ack.string(),
+      }).transform<Animal>((map) {
+        transformCalled = true;
+        return Cat(map!['name'] as String);
+      });
+
+      final schema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema},
+      );
+
+      // Missing required 'name' field
+      final result = schema.safeParse({'type': 'cat'});
+
+      expect(result.isOk, isFalse);
+      expect(transformCalled, isFalse);
+    });
+
+    test('branch transform exceptions wrapped as SchemaTransformError', () {
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'name': Ack.string(),
+      }).transform<Animal>((map) {
+        throw FormatException('bad data');
+      });
+
+      final schema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema},
+      );
+
+      final result = schema.safeParse({'type': 'cat', 'name': 'Whiskers'});
+
+      expect(result.isOk, isFalse);
+      expect(result.getError(), isA<SchemaTransformError>());
+    });
+
+    test('multi-layer transforms dispatch correctly', () {
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'name': Ack.string(),
+      }).transform<Map<String, Object?>>(
+        (map) => {...map!, 'transformed': true},
+      ).transform<Animal>(
+        (map) => Cat(map!['name'] as String),
+      );
+
+      final schema = Ack.discriminated<Animal>(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema},
+      );
+
+      final result = schema.parse({'type': 'cat', 'name': 'Whiskers'});
+
+      expect(result, isA<Cat>());
+      expect(result!.name, equals('Whiskers'));
+    });
+
+    test('validation errors occur before union-level transform', () {
       final catSchema = Ack.object({
         'type': Ack.literal('cat'),
         'name': Ack.string(),
@@ -142,7 +251,6 @@ void main() {
         schemas: {'cat': catSchema},
       ).transform<Animal>((map) => Cat(map!['name'] as String));
 
-      // Unknown discriminator value should fail validation
       final result = animalSchema.safeParse({
         'type': 'unknown',
         'name': 'Test',

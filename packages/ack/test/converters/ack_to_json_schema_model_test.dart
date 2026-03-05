@@ -80,5 +80,31 @@ void main() {
       // This tests the fromJson path which feeds into the converter
       expect(parsed.description, 'Wrapper Description');
     });
+
+    test('unwraps transformed discriminated branches to object schemas', () {
+      final schema = Ack.discriminated<String>(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).transform<String>(
+            (map) => map!['name'] as String,
+          ),
+          'dog': Ack.object({'name': Ack.string()}).transform<String>(
+            (map) => map!['name'] as String,
+          ),
+        },
+      );
+
+      final json = schema.toJsonSchemaModel();
+
+      expect(json.discriminator?.propertyName, equals('type'));
+      expect(json.oneOf, hasLength(2));
+
+      final catBranch = json.oneOf!.firstWhere(
+        (branch) => branch.properties?['type']?.enumValues?.contains('cat') ?? false,
+      );
+      expect(catBranch.type, JsonSchemaType.object);
+      expect(catBranch.properties, contains('name'));
+      expect(catBranch.properties!['type']!.enumValues, equals(['cat']));
+    });
   });
 }

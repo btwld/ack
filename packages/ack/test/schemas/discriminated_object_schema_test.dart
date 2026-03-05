@@ -122,5 +122,48 @@ void main() {
         expect(updated.discriminatorKey, equals(animalSchema.discriminatorKey));
       });
     });
+
+    group('JSON Schema', () {
+      test('supports transformed child branches in toJsonSchema', () {
+        final schema = Ack.discriminated<String>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}).transform<String>(
+              (map) => map!['name'] as String,
+            ),
+          },
+        );
+
+        final jsonSchema = schema.toJsonSchema();
+        final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
+            .cast<String, Object?>();
+        final properties = (branch['properties'] as Map).cast<String, Object?>();
+
+        expect(branch['x-transformed'], isTrue);
+        expect(
+          properties['type'],
+          equals({'type': 'string', 'const': 'cat'}),
+        );
+        expect(branch['required'], equals(['type', 'name']));
+      });
+
+      test('rejects non-object-backed child branches in toJsonSchema', () {
+        final schema = Ack.discriminated<String>(
+          discriminatorKey: 'type',
+          schemas: {'cat': Ack.string()},
+        );
+
+        expect(() => schema.toJsonSchema(), throwsArgumentError);
+      });
+
+      test('rejects non-object-backed child branches in toJsonSchemaModel', () {
+        final schema = Ack.discriminated<String>(
+          discriminatorKey: 'type',
+          schemas: {'cat': Ack.string()},
+        );
+
+        expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+      });
+    });
   });
 }
