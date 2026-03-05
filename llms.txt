@@ -165,13 +165,20 @@ Ack.string()
   .ipv6()                   // IPv6 validation
   .startsWith('pre_')       // Required prefix
   .endsWith('_suf')         // Required suffix
-  .contains('-')            // Required substring
-  .trim()                   // Transform: trim before output
-  .toLowerCase()            // Transform: lowercase output
-  .toUpperCase()            // Transform: uppercase output
+  .contains('-')            // Required pattern (regex; escape metacharacters for literal substrings)
   .matches(r'^[A-Z]+$')     // Custom regex pattern
   .enumString(['a', 'b'])   // Deprecated: use Ack.enumString([...])
   .literal('exact')         // Deprecated: use Ack.literal(...)
+
+// Transform helpers return TransformedSchema<String, String>.
+// Apply constraints first, then transform:
+final normalized = Ack.string()
+  .minLength(3)
+  .matches(r'^[A-Za-z0-9_-]+$')
+  .toLowerCase();
+
+final trimmed = Ack.string().trim();
+final upper = Ack.string().toUpperCase();
 ```
 
 ### Numeric Constraints
@@ -221,9 +228,9 @@ Ack.list(Ack.string())
 
 ```dart
 Ack.string()
-  .withConstraint(myConstraint)
+  .withConstraint(myConstraint)     // Accepts any constraint; non-Validators are ignored during validation
   .withConstraints([c1, c2])
-  .constrain(c3);           // Extension helper alias
+  .constrain(c3);                   // Requires Validator<T>; throws otherwise; supports inline message override
 
 Ack.string()
   .describe('Human readable docs')
