@@ -2,6 +2,8 @@ library;
 
 import 'package:ack/ack.dart';
 
+import '../helpers.dart';
+
 /// Converts ACK schemas to the new JsonSchema (canonical) model.
 extension AckToJsonSchemaModel on AckSchema {
   JsonSchema toJsonSchemaModel() => _convert(this);
@@ -202,26 +204,42 @@ JsonSchema _discriminated(
 
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
-    final branchSchema = entry.value;
-    if (branchSchema is! ObjectSchema) {
-      branches.add(_convert(branchSchema));
-      continue;
+    final originalBranchSchema = entry.value;
+    final baseBranchSchema = unwrapDiscriminatedBranchSchema(
+      originalBranchSchema,
+    );
+    if (baseBranchSchema is! ObjectSchema) {
+      throw ArgumentError(
+        'Discriminated branches must be object-backed schemas.',
+      );
     }
 
-    if (branchSchema.properties.containsKey(discriminatorKey)) {
+    if (baseBranchSchema.properties.containsKey(discriminatorKey)) {
       throw ArgumentError(
         'Discriminator key "$discriminatorKey" conflicts with existing property in branch "$label".',
       );
     }
 
-    final normalized = branchSchema.copyWith(
-      properties: {
-        ...branchSchema.properties,
-        discriminatorKey: Ack.enumString([label]),
-      },
-    );
+    final convertedBranch = _convert(originalBranchSchema);
+    final properties = <String, JsonSchema>{
+      ...?convertedBranch.properties,
+      discriminatorKey: JsonSchema(
+        type: JsonSchemaType.string,
+        enumValues: [label],
+      ),
+    };
+    final required = <String>[
+      discriminatorKey,
+      ...?convertedBranch.required?.where((field) => field != discriminatorKey),
+    ];
 
-    branches.add(_convert(normalized));
+    branches.add(
+      convertedBranch.copyWith(
+        type: JsonSchemaType.object,
+        properties: properties,
+        required: required,
+      ),
+    );
   }
 
   return JsonSchema(
