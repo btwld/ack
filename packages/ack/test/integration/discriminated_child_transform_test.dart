@@ -22,27 +22,29 @@ class Dog extends Animal {
 void main() {
   group('Discriminated schema with transforms', () {
     test('supports transformed child branches', () {
-      final catSchema = Ack.object({
-        'type': Ack.literal('cat'),
-        'name': Ack.string(),
-        'meows': Ack.boolean().optional(),
-      }).transform<Animal>(
-        (map) => Cat(
-          map!['name'] as String,
-          meows: (map['meows'] as bool?) ?? true,
-        ),
-      );
+      final catSchema =
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+            'meows': Ack.boolean().optional(),
+          }).transform<Animal>(
+            (map) => Cat(
+              map!['name'] as String,
+              meows: (map['meows'] as bool?) ?? true,
+            ),
+          );
 
-      final dogSchema = Ack.object({
-        'type': Ack.literal('dog'),
-        'name': Ack.string(),
-        'barks': Ack.boolean().optional(),
-      }).transform<Animal>(
-        (map) => Dog(
-          map!['name'] as String,
-          barks: (map['barks'] as bool?) ?? true,
-        ),
-      );
+      final dogSchema =
+          Ack.object({
+            'type': Ack.literal('dog'),
+            'name': Ack.string(),
+            'barks': Ack.boolean().optional(),
+          }).transform<Animal>(
+            (map) => Dog(
+              map!['name'] as String,
+              barks: (map['barks'] as bool?) ?? true,
+            ),
+          );
 
       final animalSchema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -159,13 +161,14 @@ void main() {
 
     test('invalid discriminator fails before branch transform runs', () {
       var transformCalled = false;
-      final catSchema = Ack.object({
-        'type': Ack.literal('cat'),
-        'name': Ack.string(),
-      }).transform<Animal>((map) {
-        transformCalled = true;
-        return Cat(map!['name'] as String);
-      });
+      final catSchema =
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).transform<Animal>((map) {
+            transformCalled = true;
+            return Cat(map!['name'] as String);
+          });
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -180,13 +183,14 @@ void main() {
 
     test('invalid branch payload fails before transform output', () {
       var transformCalled = false;
-      final catSchema = Ack.object({
-        'type': Ack.literal('cat'),
-        'name': Ack.string(),
-      }).transform<Animal>((map) {
-        transformCalled = true;
-        return Cat(map!['name'] as String);
-      });
+      final catSchema =
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).transform<Animal>((map) {
+            transformCalled = true;
+            return Cat(map!['name'] as String);
+          });
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -201,12 +205,13 @@ void main() {
     });
 
     test('branch transform exceptions wrapped as SchemaTransformError', () {
-      final catSchema = Ack.object({
-        'type': Ack.literal('cat'),
-        'name': Ack.string(),
-      }).transform<Animal>((map) {
-        throw FormatException('bad data');
-      });
+      final catSchema =
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).transform<Animal>((map) {
+            throw FormatException('bad data');
+          });
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -220,14 +225,12 @@ void main() {
     });
 
     test('multi-layer transforms dispatch correctly', () {
-      final catSchema = Ack.object({
-        'type': Ack.literal('cat'),
-        'name': Ack.string(),
-      }).transform<Map<String, Object?>>(
-        (map) => {...map!, 'transformed': true},
-      ).transform<Animal>(
-        (map) => Cat(map!['name'] as String),
-      );
+      final catSchema =
+          Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()})
+              .transform<Map<String, Object?>>(
+                (map) => {...map!, 'transformed': true},
+              )
+              .transform<Animal>((map) => Cat(map!['name'] as String));
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
