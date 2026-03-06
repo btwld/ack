@@ -197,6 +197,12 @@ class ModelAnalyzer {
         );
       }
 
+      if (providerElement is! ClassElement2 || providerElement.isAbstract) {
+        throw ArgumentError(
+          'Schema provider $providerName must be a concrete class and cannot be abstract.',
+        );
+      }
+
       final defaultConstructor = providerElement.constructors2
           .cast<ConstructorElement2?>()
           .firstWhere(
@@ -233,11 +239,7 @@ class ModelAnalyzer {
         withNullability: false,
       );
       final targetTypeKey = typeIdentityKey(targetType);
-      _validateProviderSchemaType(
-        providerElement,
-        providerName,
-        targetType,
-      );
+      _validateProviderSchemaType(providerElement, providerName, targetType);
 
       final existingProvider = seenTargetTypes[targetTypeKey];
       if (existingProvider != null) {
@@ -325,9 +327,7 @@ class ModelAnalyzer {
     String providerName,
     DartType targetType,
   ) {
-    final targetTypeName = targetType.getDisplayString(
-      withNullability: false,
-    );
+    final targetTypeName = targetType.getDisplayString(withNullability: false);
     final targetTypeKey = typeIdentityKey(targetType);
     final schemaGetter = providerElement.getters2
         .cast<GetterElement?>()

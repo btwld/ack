@@ -177,6 +177,63 @@ class Circle extends Shape {
       );
     });
 
+    test(
+      'discriminator keys follow transformed field keys in discriminated subtypes',
+      () async {
+        final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+}
+
+@AckModel(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+class CreatedEvent extends Event {
+  final String eventType;
+  final String payload;
+
+  CreatedEvent({
+    required this.eventType,
+    required this.payload,
+  });
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.ack.g.part': decodedMatches(
+              allOf([
+                contains("discriminatorKey: 'event_type'"),
+                contains("'event_type': Ack.literal('created')"),
+                predicate<String>((content) {
+                  final schemaMatch = RegExp(
+                    r'final createdEventSchema = Ack\.object\(\{([^}]+)\}\)',
+                    dotAll: true,
+                  ).firstMatch(content);
+                  if (schemaMatch == null) return false;
+
+                  final schemaBody = schemaMatch.group(1)!;
+                  final transformedKeyCount = RegExp(
+                    r"'event_type'\s*:",
+                  ).allMatches(schemaBody).length;
+                  final rawKeyCount = RegExp(
+                    r"'eventType'\s*:",
+                  ).allMatches(schemaBody).length;
+                  return transformedKeyCount == 1 && rawKeyCount == 0;
+                }, 'uses only transformed discriminator key in subtype schema'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
     test('discriminated base uses custom schemaName from subtypes', () async {
       final builder = SharedPartBuilder([AckSchemaGenerator()], 'ack');
 

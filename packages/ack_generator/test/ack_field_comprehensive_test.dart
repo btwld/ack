@@ -187,6 +187,52 @@ class Invoice {
       },
     );
 
+    test('fails when useProviders contains an abstract provider', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+      var sawExpectedError = false;
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/invoice.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Money {
+  final int cents;
+  const Money(this.cents);
+}
+
+abstract class MoneySchemaProvider implements SchemaProvider<Money> {
+  const MoneySchemaProvider();
+
+  @override
+  AckSchema<Money> get schema;
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains(
+                'must be a concrete class and cannot be abstract',
+              )) {
+            sawExpectedError = true;
+          }
+        },
+      );
+
+      expect(sawExpectedError, isTrue);
+    });
+
     test('fails with a helpful error for unresolved custom types', () async {
       final builder = ackGenerator(BuilderOptions.empty);
       var sawExpectedError = false;
