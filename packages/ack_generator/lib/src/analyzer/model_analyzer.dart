@@ -461,6 +461,7 @@ class ModelAnalyzer {
     List<ClassElement2> elements,
   ) {
     final updatedModelInfos = <ModelInfo>[];
+    final canonicalDiscriminatorKeysByBaseClass = <String, String>{};
     final elementsByName = <String, ClassElement2>{
       for (final element in elements)
         if (element.name3 != null) element.name3!: element,
@@ -486,6 +487,7 @@ class ModelAnalyzer {
 
     for (final baseClass in baseClasses) {
       final matchingSubtypeNames = <String, String>{};
+      final matchingSubtypes = <ModelInfo>[];
 
       for (final subtype in subtypes) {
         final subtypeElement = elementsByName[subtype.className];
@@ -505,6 +507,7 @@ class ModelAnalyzer {
           }
 
           matchingSubtypeNames[discriminatorValue] = subtype.className;
+          matchingSubtypes.add(subtype);
         }
       }
 
@@ -513,6 +516,13 @@ class ModelAnalyzer {
           'Sealed discriminated root ${baseClass.className} has no annotated leaves.',
         );
       }
+
+      final canonicalDiscriminatorKey = _canonicalDiscriminatorKey(
+        baseClass,
+        matchingSubtypes,
+      );
+      canonicalDiscriminatorKeysByBaseClass[baseClass.className] =
+          canonicalDiscriminatorKey;
 
       updatedModelInfos.add(
         ModelInfo(
@@ -523,7 +533,7 @@ class ModelAnalyzer {
           additionalProperties: baseClass.additionalProperties,
           additionalPropertiesField: baseClass.additionalPropertiesField,
           typeProviders: baseClass.typeProviders,
-          discriminatorKey: baseClass.discriminatorKey,
+          discriminatorKey: canonicalDiscriminatorKey,
           discriminatorValue: null,
           subtypeNames: matchingSubtypeNames,
         ),
@@ -543,8 +553,10 @@ class ModelAnalyzer {
         }
 
         if (_isSubtypeOf(subtypeElement, baseClass.className)) {
-          parentDiscriminatorKey = baseClass.discriminatorKey;
           parentBaseClassName = baseClass.className;
+          parentDiscriminatorKey =
+              canonicalDiscriminatorKeysByBaseClass[baseClass.className] ??
+              baseClass.discriminatorKey;
           break;
         }
       }
@@ -574,6 +586,48 @@ class ModelAnalyzer {
     }
 
     return updatedModelInfos;
+  }
+
+  String _canonicalDiscriminatorKey(
+    ModelInfo baseClass,
+    List<ModelInfo> matchingSubtypes,
+  ) {
+    final declaredKey = baseClass.discriminatorKey!;
+    final resolvedKeys =
+        matchingSubtypes
+            .map(
+              (subtype) => _resolvedDiscriminatorJsonKey(subtype, declaredKey),
+            )
+            .toSet()
+            .toList()
+          ..sort();
+
+    if (resolvedKeys.length != 1) {
+      final formattedKeys = resolvedKeys.map((key) => '"$key"').join(', ');
+      throw ArgumentError(
+        'Discriminated root ${baseClass.className} resolves conflicting '
+        'discriminator keys for "$declaredKey": $formattedKeys. Ensure all '
+        'subtypes expose the same JSON key for the discriminator field.',
+      );
+    }
+
+    return resolvedKeys.single;
+  }
+
+  String _resolvedDiscriminatorJsonKey(ModelInfo subtype, String declaredKey) {
+    for (final field in subtype.fields) {
+      if (field.jsonKey == declaredKey) {
+        return declaredKey;
+      }
+    }
+
+    for (final field in subtype.fields) {
+      if (field.name == declaredKey) {
+        return field.jsonKey;
+      }
+    }
+
+    return declaredKey;
   }
 
   bool _isSubtypeOf(ClassElement2 element, String baseClassName) {

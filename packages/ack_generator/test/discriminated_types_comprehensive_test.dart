@@ -247,6 +247,148 @@ class Boat extends Vehicle {
       );
     });
 
+    test(
+      'canonicalizes transformed discriminator keys across aligned subtypes',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/transformed_discriminator.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'transformed_discriminator.g.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+}
+
+@Schemable(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+class CreatedEvent extends Event {
+  final String eventType;
+  final String payload;
+
+  const CreatedEvent({
+    required this.eventType,
+    required this.payload,
+  });
+}
+
+@Schemable(discriminatedValue: 'updated', caseStyle: CaseStyle.snakeCase)
+class UpdatedEvent extends Event {
+  final String eventType;
+  final int version;
+
+  const UpdatedEvent({
+    required this.eventType,
+    required this.version,
+  });
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/transformed_discriminator.g.dart': decodedMatches(
+              allOf([
+                contains('final eventSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'event_type'"),
+                contains("'event_type': Ack.literal('created')"),
+                contains("'event_type': Ack.literal('updated')"),
+                predicate<String>((content) {
+                  final createdSchemaMatch = RegExp(
+                    r'final createdEventSchema = Ack\.object\(\{([^}]+)\}\)',
+                    dotAll: true,
+                  ).firstMatch(content);
+                  final updatedSchemaMatch = RegExp(
+                    r'final updatedEventSchema = Ack\.object\(\{([^}]+)\}\)',
+                    dotAll: true,
+                  ).firstMatch(content);
+                  if (createdSchemaMatch == null ||
+                      updatedSchemaMatch == null) {
+                    return false;
+                  }
+
+                  final createdSchema = createdSchemaMatch.group(1)!;
+                  final updatedSchema = updatedSchemaMatch.group(1)!;
+                  final transformedKeyCount =
+                      RegExp(
+                        r"'event_type'\s*:",
+                      ).allMatches(createdSchema).length +
+                      RegExp(
+                        r"'event_type'\s*:",
+                      ).allMatches(updatedSchema).length;
+                  final rawKeyCount =
+                      RegExp(
+                        r"'eventType'\s*:",
+                      ).allMatches(createdSchema).length +
+                      RegExp(
+                        r"'eventType'\s*:",
+                      ).allMatches(updatedSchema).length;
+
+                  return transformedKeyCount == 2 && rawKeyCount == 0;
+                }, 'uses only canonical transformed discriminator keys'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test('rejects conflicting transformed discriminator keys', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+      var sawExpectedError = false;
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/invalid.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+}
+
+@Schemable(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+class CreatedEvent extends Event {
+  final String eventType;
+  final String payload;
+
+  const CreatedEvent({
+    required this.eventType,
+    required this.payload,
+  });
+}
+
+@Schemable(discriminatedValue: 'deleted')
+class DeletedEvent extends Event {
+  final String eventType;
+  final String reason;
+
+  const DeletedEvent({
+    @SchemaKey('event-type') required this.eventType,
+    required this.reason,
+  });
+}
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains('conflicting discriminator keys') &&
+              log.message.contains('event_type') &&
+              log.message.contains('event-type')) {
+            sawExpectedError = true;
+          }
+        },
+      );
+
+      expect(sawExpectedError, isTrue);
+    });
+
     test('rejects mutually exclusive discriminator configuration', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

@@ -78,7 +78,7 @@ class SchemaBuilder {
   /// Builds a discriminated schema for base classes
   String _buildDiscriminatedSchema(ModelInfo model) {
     final buffer = StringBuffer();
-    final discriminatorKey = _resolvedBaseDiscriminatorKey(model);
+    final discriminatorKey = model.discriminatorKey!;
     final subtypeNames = model.subtypeNames!;
 
     buffer.write('Ack.discriminated(\n');
@@ -113,56 +113,6 @@ class SchemaBuilder {
     return buffer.toString();
   }
 
-  String _resolvedBaseDiscriminatorKey(ModelInfo model) {
-    final declaredKey = model.discriminatorKey!;
-    final subtypeNames = model.subtypeNames;
-    if (subtypeNames == null || subtypeNames.isEmpty) {
-      return declaredKey;
-    }
-
-    final subtypeKeys = <String>{};
-    for (final subtypeName in subtypeNames.values) {
-      final subtypeModel = _allModels.cast<ModelInfo?>().firstWhere(
-        (candidate) =>
-            candidate?.className == subtypeName ||
-            candidate?.schemaClassName == subtypeName,
-        orElse: () => null,
-      );
-      if (subtypeModel == null ||
-          !subtypeModel.isDiscriminatedSubtype ||
-          subtypeModel.discriminatorKey != declaredKey) {
-        continue;
-      }
-      subtypeKeys.add(_resolvedSubtypeDiscriminatorKey(subtypeModel));
-    }
-
-    if (subtypeKeys.length == 1) {
-      return subtypeKeys.single;
-    }
-
-    return declaredKey;
-  }
-
-  String _resolvedSubtypeDiscriminatorKey(ModelInfo model) {
-    final declaredKey = model.discriminatorKey;
-    if (declaredKey == null) {
-      return '';
-    }
-
-    final byJsonKey = model.fields.any((field) => field.jsonKey == declaredKey);
-    if (byJsonKey) {
-      return declaredKey;
-    }
-
-    for (final field in model.fields) {
-      if (field.name == declaredKey) {
-        return field.jsonKey;
-      }
-    }
-
-    return declaredKey;
-  }
-
   /// Common logic for building object schemas
   ///
   /// Extracted from _buildSubtypeSchema and _buildRegularObjectSchema to eliminate duplication.
@@ -174,15 +124,11 @@ class SchemaBuilder {
     final fieldDefs = <String>[];
 
     // For discriminated subtypes, add the discriminator field first
-    final discriminatorJsonKey = model.isDiscriminatedSubtype
-        ? _resolvedSubtypeDiscriminatorKey(model)
-        : null;
     if (model.isDiscriminatedSubtype &&
-        discriminatorJsonKey != null &&
-        discriminatorJsonKey.isNotEmpty &&
+        model.discriminatorKey != null &&
         model.discriminatorValue != null) {
       fieldDefs.add(
-        "'$discriminatorJsonKey': Ack.literal('${model.discriminatorValue}')",
+        "'${model.discriminatorKey}': Ack.literal('${model.discriminatorValue}')",
       );
     }
 
@@ -190,8 +136,8 @@ class SchemaBuilder {
       // Skip the discriminator field for subtypes - it was already added above
       // This prevents duplicate keys in the generated schema
       if (model.isDiscriminatedSubtype &&
-          discriminatorJsonKey != null &&
-          field.jsonKey == discriminatorJsonKey) {
+          model.discriminatorKey != null &&
+          field.jsonKey == model.discriminatorKey) {
         continue;
       }
 

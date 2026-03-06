@@ -237,5 +237,143 @@ class Invoice {
         );
       });
     });
+
+    test(
+      'canonicalizes discriminator keys from transformed subtype fields',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+}
+
+@Schemable(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+class CreatedEvent extends Event {
+  final String eventType;
+  final String payload;
+
+  const CreatedEvent({
+    required this.eventType,
+    required this.payload,
+  });
+}
+
+@Schemable(discriminatedValue: 'updated', caseStyle: CaseStyle.snakeCase)
+class UpdatedEvent extends Event {
+  final String eventType;
+  final int version;
+
+  const UpdatedEvent({
+    required this.eventType,
+    required this.version,
+  });
+}
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/model.dart'),
+          );
+          final classElements = library.classes.toList();
+          final modelInfos = classElements.map((classElement) {
+            final annotation = TypeChecker.typeNamed(
+              Schemable,
+            ).firstAnnotationOfExact(classElement)!;
+            return analyzer.analyze(classElement, ConstantReader(annotation));
+          }).toList();
+
+          final linkedModels = analyzer.buildDiscriminatorRelationships(
+            modelInfos,
+            classElements,
+          );
+          final eventModel = linkedModels.firstWhere(
+            (model) => model.className == 'Event',
+          );
+          final createdModel = linkedModels.firstWhere(
+            (model) => model.className == 'CreatedEvent',
+          );
+          final updatedModel = linkedModels.firstWhere(
+            (model) => model.className == 'UpdatedEvent',
+          );
+
+          expect(eventModel.discriminatorKey, equals('event_type'));
+          expect(createdModel.discriminatorKey, equals('event_type'));
+          expect(updatedModel.discriminatorKey, equals('event_type'));
+        });
+      },
+    );
+
+    test('rejects conflicting transformed discriminator keys', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+}
+
+@Schemable(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+class CreatedEvent extends Event {
+  final String eventType;
+  final String payload;
+
+  const CreatedEvent({
+    required this.eventType,
+    required this.payload,
+  });
+}
+
+@Schemable(discriminatedValue: 'deleted')
+class DeletedEvent extends Event {
+  final String eventType;
+  final String reason;
+
+  const DeletedEvent({
+    @SchemaKey('event-type') required this.eventType,
+    required this.reason,
+  });
+}
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
+        final classElements = library.classes.toList();
+        final modelInfos = classElements.map((classElement) {
+          final annotation = TypeChecker.typeNamed(
+            Schemable,
+          ).firstAnnotationOfExact(classElement)!;
+          return analyzer.analyze(classElement, ConstantReader(annotation));
+        }).toList();
+
+        expect(
+          () => analyzer.buildDiscriminatorRelationships(
+            modelInfos,
+            classElements,
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message.toString(),
+              'message',
+              allOf([
+                contains('conflicting discriminator keys'),
+                contains('Event'),
+                contains('event_type'),
+                contains('event-type'),
+              ]),
+            ),
+          ),
+        );
+      });
+    });
   });
 }
