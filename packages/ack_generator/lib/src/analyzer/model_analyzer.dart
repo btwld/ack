@@ -232,13 +232,14 @@ class ModelAnalyzer {
       final targetTypeName = targetType.getDisplayString(
         withNullability: false,
       );
+      final targetTypeKey = typeIdentityKey(targetType);
       _validateProviderSchemaType(
         providerElement,
         providerName,
-        targetTypeName,
+        targetType,
       );
 
-      final existingProvider = seenTargetTypes[targetTypeName];
+      final existingProvider = seenTargetTypes[targetTypeKey];
       if (existingProvider != null) {
         throw ArgumentError(
           'Schema providers $existingProvider and $providerName both handle '
@@ -246,7 +247,7 @@ class ModelAnalyzer {
         );
       }
 
-      seenTargetTypes[targetTypeName] = providerName;
+      seenTargetTypes[targetTypeKey] = providerName;
       typeProviders.add(
         TypeProviderInfo(
           providerTypeName: providerName,
@@ -322,8 +323,12 @@ class ModelAnalyzer {
   void _validateProviderSchemaType(
     InterfaceElement2 providerElement,
     String providerName,
-    String targetTypeName,
+    DartType targetType,
   ) {
+    final targetTypeName = targetType.getDisplayString(
+      withNullability: false,
+    );
+    final targetTypeKey = typeIdentityKey(targetType);
     final schemaGetter = providerElement.getters2
         .cast<GetterElement?>()
         .firstWhere((getter) => getter?.name3 == 'schema', orElse: () => null);
@@ -342,10 +347,11 @@ class ModelAnalyzer {
       );
     }
 
-    final providedTypeName = schemaType.typeArguments.first.getDisplayString(
+    final providedType = schemaType.typeArguments.first;
+    final providedTypeName = providedType.getDisplayString(
       withNullability: false,
     );
-    if (providedTypeName != targetTypeName) {
+    if (typeIdentityKey(providedType) != targetTypeKey) {
       throw ArgumentError(
         'Schema provider $providerName must return AckSchema<$targetTypeName> '
         'from `schema`, but returns AckSchema<$providedTypeName>.',

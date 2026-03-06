@@ -119,9 +119,9 @@ class SchemableTypeResolver {
   }
 
   TypeProviderInfo? _providerFor(DartType type) {
-    final typeName = type.getDisplayString(withNullability: false);
+    final targetTypeKey = typeIdentityKey(type);
     for (final provider in typeProviders) {
-      if (provider.targetTypeName == typeName) {
+      if (provider.targetTypeIdentityKey == targetTypeKey) {
         return provider;
       }
     }
