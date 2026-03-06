@@ -2,18 +2,11 @@ library;
 
 import 'package:ack/ack.dart';
 
+import '../helpers.dart';
+
 /// Converts ACK schemas to the new JsonSchema (canonical) model.
 extension AckToJsonSchemaModel on AckSchema {
   JsonSchema toJsonSchemaModel() => _convert(this);
-}
-
-AckSchema _unwrapDiscriminatedBranchSchema(AckSchema schema) {
-  var current = schema;
-  while (current is TransformedSchema) {
-    current = current.schema;
-  }
-
-  return current;
 }
 
 JsonSchema _convert(AckSchema schema) {
@@ -212,7 +205,7 @@ JsonSchema _discriminated(
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
     final originalBranchSchema = entry.value;
-    final baseBranchSchema = _unwrapDiscriminatedBranchSchema(
+    final baseBranchSchema = unwrapDiscriminatedBranchSchema(
       originalBranchSchema,
     );
     if (baseBranchSchema is! ObjectSchema) {

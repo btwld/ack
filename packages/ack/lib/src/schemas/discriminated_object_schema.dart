@@ -1,14 +1,5 @@
 part of 'schema.dart';
 
-AckSchema _unwrapDiscriminatedBranchSchema(AckSchema schema) {
-  var current = schema;
-  while (current is TransformedSchema) {
-    current = current.schema;
-  }
-
-  return current;
-}
-
 Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
   if (defaultValue == null) return null;
 
@@ -176,7 +167,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       pathSegment: '', // Inherit parent path
     );
 
-    final baseSubSchema = _unwrapDiscriminatedBranchSchema(selectedSubSchema);
+    final baseSubSchema = unwrapDiscriminatedBranchSchema(selectedSubSchema);
     if (baseSubSchema is! ObjectSchema) {
       return SchemaResult.fail(
         SchemaValidationError(
@@ -231,7 +222,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final anyOfClauses = <Map<String, Object?>>[];
     final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
     schemas.forEach((discriminatorValue, branchSchema) {
-      final baseSchema = _unwrapDiscriminatedBranchSchema(branchSchema);
+      final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
       if (baseSchema is! ObjectSchema) {
         throw ArgumentError(
           'Discriminated branches must be object-backed schemas.',
