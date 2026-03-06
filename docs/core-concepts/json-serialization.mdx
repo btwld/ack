@@ -87,7 +87,8 @@ if (result.isOk) {
 
 ## Using Code Generation
 
-The `ack_generator` package automatically creates schemas from your annotated classes:
+The `ack_generator` package automatically creates schemas from `@Schemable()`
+classes using the selected constructor's named parameters:
 
 ```dart
 // user.dart
@@ -95,13 +96,13 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.g.dart';
 
-@AckModel()
+@Schemable()
 class User {
   final String name;
   final String email;
   final int age;
 
-  User({required this.name, required this.email, required this.age});
+  const User({required this.name, required this.email, required this.age});
 }
 ```
 
@@ -143,7 +144,7 @@ if (result.isOk) {
 
 ### Generating Extension Types from Standalone Schemas with `@AckType()`
 
-When you write schemas manually (without a backing class), annotate the variable or getter with `@AckType()` to generate an extension type wrapper. Unlike `@AckModel`, this **does not create the schema**—it only adds type-safe access to your hand-written schema.
+When you write schemas manually (without a backing class), annotate the variable or getter with `@AckType()` to generate an extension type wrapper. Unlike `@Schemable`, this **does not create the schema**—it only adds type-safe access to your hand-written schema.
 
 ```dart
 // user_schema.dart

@@ -239,6 +239,7 @@ class ModelAnalyzer {
         withNullability: false,
       );
       final targetTypeKey = typeIdentityKey(targetType);
+      _validateProviderTargetType(providerName, targetType);
       _validateProviderSchemaType(providerElement, providerName, targetType);
 
       final existingProvider = seenTargetTypes[targetTypeKey];
@@ -357,6 +358,24 @@ class ModelAnalyzer {
         'from `schema`, but returns AckSchema<$providedTypeName>.',
       );
     }
+  }
+
+  void _validateProviderTargetType(String providerName, DartType targetType) {
+    final targetElement = targetType.element3;
+    if (targetElement is! InterfaceElement2) {
+      return;
+    }
+
+    if (firstSchemableAnnotationOf(targetElement) == null) {
+      return;
+    }
+
+    final targetTypeName = targetType.getDisplayString(withNullability: false);
+    throw ArgumentError(
+      'Schema provider $providerName cannot target $targetTypeName because '
+      '$targetTypeName already has a generated schema. Remove the provider '
+      'registration or stop annotating $targetTypeName with @Schemable().',
+    );
   }
 
   InterfaceType? _ackSchemaInterfaceFor(DartType type) {

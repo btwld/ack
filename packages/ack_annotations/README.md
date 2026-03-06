@@ -104,6 +104,10 @@ Register a `SchemaProvider<T>` when a constructor parameter uses a custom type
 `SchemaProvider<T>` must return `AckSchema<T>`. If the wire shape differs from
  `T`, return a transformed schema.
 
+Provider targets that are themselves `@Schemable()` are rejected. If you need
+composition over generated schemas, keep the provider target non-schemable and
+reference generated schemas inside the provider implementation.
+
 ```dart
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';

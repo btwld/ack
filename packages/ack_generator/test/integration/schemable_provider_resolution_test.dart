@@ -149,5 +149,75 @@ class Invoice {
         },
       );
     });
+
+    test(
+      'allows non-schemable wrapper providers to compose schemable leaves',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/response.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+sealed class ResponseData {
+  const ResponseData();
+}
+
+class ResponseDataSchemaProvider implements SchemaProvider<ResponseData> {
+  const ResponseDataSchemaProvider();
+
+  @override
+  AckSchema<ResponseData> get schema => Ack.anyOf([
+    userResponseSchema,
+    errorResponseSchema,
+  ]).transform(
+    (value) => switch (value) {
+      {'id': final String id} => UserResponse(id: id),
+      {'message': final String message} => ErrorResponse(message: message),
+      _ => throw StateError('Unsupported payload: \$value'),
+    },
+  );
+}
+
+@Schemable(useProviders: const [ResponseDataSchemaProvider])
+class ApiResponse {
+  final ResponseData data;
+
+  const ApiResponse({required this.data});
+}
+
+@Schemable()
+class UserResponse extends ResponseData {
+  final String id;
+
+  const UserResponse({required this.id});
+}
+
+@Schemable()
+class ErrorResponse extends ResponseData {
+  final String message;
+
+  const ErrorResponse({required this.message});
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/response.g.dart': decodedMatches(
+              allOf([
+                contains(
+                  "'data': (const ResponseDataSchemaProvider().schema as AckSchema)",
+                ),
+                contains('final userResponseSchema = Ack.object({'),
+                contains('final errorResponseSchema = Ack.object({'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
   });
 }

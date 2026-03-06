@@ -238,6 +238,68 @@ class Invoice {
       });
     });
 
+    test('rejects providers that target schemable types', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable()
+class Money {
+  final int cents;
+
+  const Money({required this.cents});
+}
+
+class MoneySchemaProvider implements SchemaProvider<Money> {
+  const MoneySchemaProvider();
+
+  @override
+  AckSchema<Money> get schema => Ack.object({
+    'cents': Ack.integer(),
+  }).transform((value) => Money(cents: value!['cents'] as int));
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
+        final classElement = library.classes.firstWhere(
+          (element) => element.name3 == 'Invoice',
+        );
+
+        final annotation = TypeChecker.typeNamed(
+          Schemable,
+        ).firstAnnotationOfExact(classElement)!;
+        final reader = ConstantReader(annotation);
+
+        expect(
+          () => analyzer.analyze(classElement, reader),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message.toString(),
+              'message',
+              allOf([
+                contains('MoneySchemaProvider'),
+                contains('cannot target Money'),
+                contains('already has a generated schema'),
+              ]),
+            ),
+          ),
+        );
+      });
+    });
+
     test(
       'canonicalizes discriminator keys from transformed subtype fields',
       () async {

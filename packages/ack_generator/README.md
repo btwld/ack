@@ -114,7 +114,8 @@ class Invoice {
 ```
 
 The generated schema embeds the provider schema for both `Money` and
- `List<Money>`.
+ `List<Money>`. Provider targets that are themselves `@Schemable()` are
+ rejected; generated schemas remain the source of truth for schemable types.
 
 ## Discriminated Unions
 

@@ -28,7 +28,7 @@ class Schemable {
   /// Case style to apply to parameter names before schema generation.
   final CaseStyle caseStyle;
 
-  /// Explicit compile-time schema providers for otherwise unsupported custom types.
+  /// Explicit compile-time schema providers for custom types without generated schemas.
   final List<Type> useProviders;
 
   const Schemable({
@@ -75,7 +75,8 @@ class Description {
 ///
 /// Register provider types through `@Schemable(useProviders: const [...])`
 /// when a constructor parameter uses a custom type that is not itself
-/// schemable.
+/// schemable. Providers may compose generated schemas internally, but the
+/// provider target type itself must not be `@Schemable()`.
 abstract interface class SchemaProvider<T extends Object> {
   const SchemaProvider();
 

@@ -70,14 +70,14 @@ class SchemableTypeResolver {
       return 'Ack.list(${schemaExpressionFor(itemType)}).unique()';
     }
 
-    final provider = _providerFor(type);
-    if (provider != null) {
-      return '(${provider.accessor}.schema as AckSchema)';
-    }
-
     final schemableSchema = _schemableSchemaReferenceFor(type);
     if (schemableSchema != null) {
       return schemableSchema;
+    }
+
+    final provider = _providerFor(type);
+    if (provider != null) {
+      return '(${provider.accessor}.schema as AckSchema)';
     }
 
     throw UnsupportedSchemaTypeError(typeName);
