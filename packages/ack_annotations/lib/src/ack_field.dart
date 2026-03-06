@@ -5,9 +5,15 @@ import 'package:meta/meta_meta.dart';
 /// - [auto]: Infer from nullability and default value.
 /// - [required]: Always required.
 /// - [optional]: Always optional.
+@Deprecated(
+  'AckField is no longer used by the generator. Use constructor parameters instead.',
+)
 enum AckFieldRequiredMode { auto, required, optional }
 
 /// Annotation to configure field generation
+@Deprecated(
+  'AckField is no longer used by the generator. Use constructor parameter annotations instead.',
+)
 @Target({TargetKind.field})
 class AckField {
   /// Requiredness mode for this field.

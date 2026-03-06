@@ -5,7 +5,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'mixed_examples.g.dart';
 
 /// Example 1: Schema-only (default behavior)
-@AckModel(description: 'Basic user model - generates only schema variable')
+@Schemable(description: 'Basic user model - generates only schema variable')
 class BasicUser {
   final String id;
   final String username;
@@ -15,7 +15,7 @@ class BasicUser {
 }
 
 /// Example 2: Enhanced user with validation
-@AckModel(description: 'Enhanced user with comprehensive validation')
+@Schemable(description: 'Enhanced user with comprehensive validation')
 class EnhancedUser {
   final String id;
   final String username;
@@ -31,20 +31,23 @@ class EnhancedUser {
 }
 
 /// Example 3: Enum example with schema-only
-@AckModel(description: 'Order with status enum - schema only')
+@Schemable(description: 'Order with status enum - schema only')
 class Order {
   final String id;
-
-  @EnumString(['pending', 'processing', 'shipped', 'delivered', 'cancelled'])
   final String status;
 
   final double total;
 
-  Order({required this.id, required this.status, required this.total});
+  Order({
+    required this.id,
+    @EnumString(['pending', 'processing', 'shipped', 'delivered', 'cancelled'])
+    required this.status,
+    required this.total,
+  });
 }
 
 /// Example 4: Complex nested model
-@AckModel(
+@Schemable(
   description: 'Blog post with author - demonstrates nested models',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -70,29 +73,23 @@ class BlogPost {
 }
 
 /// Example 5: Model with various constraints
-@AckModel(description: 'Product inventory with comprehensive constraints')
+@Schemable(description: 'Product inventory with comprehensive constraints')
 class ProductInventory {
-  @MinLength(3)
-  @MaxLength(50)
   final String sku;
 
-  @Min(0)
-  @Max(10000)
   final int quantity;
 
-  @Min(0.01)
   final double unitPrice;
 
-  @Pattern(r'^\d{4}-\d{2}-\d{2}$')
   final String lastRestocked;
 
   final bool isAvailable;
 
   ProductInventory({
-    required this.sku,
-    required this.quantity,
-    required this.unitPrice,
-    required this.lastRestocked,
+    @MinLength(3) @MaxLength(50) required this.sku,
+    @Min(0) @Max(10000) required this.quantity,
+    @Min(0.01) required this.unitPrice,
+    @Pattern(r'^\d{4}-\d{2}-\d{2}$') required this.lastRestocked,
     required this.isAvailable,
   });
 }

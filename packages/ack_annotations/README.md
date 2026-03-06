@@ -1,148 +1,164 @@
 # ack_annotations
 
-Annotation package for the Ack validation ecosystem. Use these annotations on your Dart data classes to drive code generation with `ack_generator` and produce strongly typed validation schemas.
+Annotations for constructor-driven Ack schema generation.
 
----
+Use `ack_annotations` with `ack_generator` to derive `Ack.object()` schemas from
+ Dart models, constructor parameters, and explicit schema providers.
 
-## Installation
-
-Add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack_annotations) for the latest versions):
+## Install
 
 ```yaml
 dependencies:
-  ack_annotations: ^1.0.0-beta.7
+  ack_annotations: ^1.0.0-beta.9
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.7
+  ack_generator: ^1.0.0-beta.9
   build_runner: ^2.4.0
 ```
-
-Or use the Dart CLI:
-
-```bash
-dart pub add ack_annotations
-dart pub add --dev ack_generator build_runner
-```
-
----
 
 ## Quick Start
 
 ```dart
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
+part 'product.g.dart';
+
+@Schemable()
 class Product {
   final String name;
   final double price;
+  final String? description;
 
-  Product({required this.name, required this.price});
+  const Product({
+    required this.name,
+    required this.price,
+    this.description,
+  });
 }
 ```
 
-Run the generator:
+Generate the schema:
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-The generator emits a matching `productSchema` that you can access from `ack_generator` output.
+The generator emits `productSchema`.
 
----
+## Constructor Contract
 
-## `@AckModel`
+`@Schemable()` reads one constructor and turns its named parameters into schema
+ properties.
 
-Annotate classes that need schema generation.
-
-Key options:
-
-- `schemaName`: override the generated schema identifier.
-- `description`: surface documentation in the generated schema.
-- `additionalProperties`: allow unmodelled JSON fields.
-- `additionalPropertiesField`: capture extra properties in a `Map<String, dynamic>` field.
-- `discriminatedKey`: configure the discriminator field on base classes (for unions).
-- `discriminatedValue`: declare the discriminator value on concrete subclasses.
-
-Example (discriminated union):
+- Use the unnamed constructor by default.
+- Mark a different constructor with `@SchemaConstructor()`.
+- Use only named parameters in the selected constructor.
+- Apply parameter metadata on constructor parameters, not on fields.
 
 ```dart
-@AckModel(discriminatedKey: 'type')
-abstract class Notification {
-  String get type;
-}
-
-@AckModel(discriminatedValue: 'email')
-class EmailNotification extends Notification {
-  @override
-  String get type => 'email';
-  final String subject;
-  EmailNotification({required this.subject});
-}
-```
-
----
-
-## `@AckField`
-
-Annotate individual fields to fine-tune schema generation.
-
-```dart
-@AckModel()
+@Schemable()
 class User {
-  @AckField(constraints: ['minLength(1)', 'maxLength(50)'])
   final String name;
-
-  @AckField(jsonKey: 'primary_email', constraints: ['email'])
   final String email;
 
-  @AckField(requiredMode: AckFieldRequiredMode.required)
-  final bool marketingOptIn;
+  const User._({required this.name, required this.email});
 
-  User({
-    required this.name,
-    required this.email,
-    required this.marketingOptIn,
+  @SchemaConstructor()
+  const User.fromApi({
+    @SchemaKey('full_name') required this.name,
+    @Description('Primary email address') required this.email,
   });
 }
 ```
 
-Field options:
-- `requiredMode`: tri-state requiredness (`auto`, `required`, `optional`).
-- `jsonKey`: map to a different JSON key.
-- `description`: add documentation to the generated schema.
-- `constraints`: string-based helpers for quick validation rules.
+## Parameter Annotations
 
----
+Use constructor-parameter annotations to control the generated schema.
 
-## Constraint Annotations
+- `@SchemaKey('wire_name')`: override the property name
+- `@Description('...')`: attach schema documentation
+- `@MinLength`, `@MaxLength`, `@Email`, `@Url`, `@Pattern`
+- `@Min`, `@Max`, `@Positive`, `@MultipleOf`
+- `@MinItems`, `@MaxItems`, `@EnumString`
 
-`ack_annotations` also exposes typed constraint annotations for readability.
+```dart
+@Schemable()
+class SignupRequest {
+  final String username;
+  final String email;
+  final int age;
 
-| Category | Annotation | Generated constraint |
-| --- | --- | --- |
-| String | `@MinLength(n)` / `@MaxLength(n)` | `.minLength(n)` / `.maxLength(n)` |
-| String | `@Email()` / `@Url()` | `.email()` / `.url()` |
-| Pattern | `@Pattern('^[A-Z]')` | `.pattern(...)` |
-| Number | `@Min(0)` / `@Max(10)` | `.min(0)` / `.max(10)` |
-| Number | `@Positive()` | `.positive()` |
-| Number | `@MultipleOf(5)` | `.multipleOf(5)` |
-| List | `@MinItems(1)` / `@MaxItems(10)` | `.minLength(1)` / `.maxLength(10)` |
-| Enum | `@EnumString(['draft','published'])` | `.enumString([...])` |
+  const SignupRequest({
+    @MinLength(3) @MaxLength(20) required this.username,
+    @Email() required this.email,
+    @Min(13) required this.age,
+  });
+}
+```
 
-Mix and match annotation-based constraints with the string list syntax from `@AckField`—both map to the same generator capabilities.
+## Typed Schema Providers
 
----
+Register a `SchemaProvider<T>` when a constructor parameter uses a custom type
+ that is not itself `@Schemable()`.
 
-## Working With build_runner
+`SchemaProvider<T>` must return `AckSchema<T>`. If the wire shape differs from
+ `T`, return a transformed schema.
 
-1. Make sure all Ack packages are on matching versions.
-2. Run `dart run build_runner build --delete-conflicting-outputs` after changing annotated classes.
-3. For continuous development, `dart run build_runner watch` keeps schemas in sync.
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
 
----
+class Money {
+  final int cents;
+  const Money(this.cents);
+}
 
-## Further Reading
+class MoneySchemaProvider implements SchemaProvider<Money> {
+  const MoneySchemaProvider();
 
-- Core concepts & runtime API: [`ack` README](../../README.md)
-- Generator workflows: [`ack_generator` README](../ack_generator/README.md)
-- Full 1.0 migration plan: [`MIGRATION.md`](../../MIGRATION.md)
+  @override
+  AckSchema<Money> get schema => Ack.object({
+    'cents': Ack.integer(),
+  }).transform((value) => Money(value!['cents'] as int));
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+```
+
+## Discriminated Models
+
+Use sealed roots for discriminated unions.
+
+```dart
+@Schemable(discriminatedKey: 'type')
+sealed class Notification {
+  const Notification();
+}
+
+@Schemable(discriminatedValue: 'email')
+class EmailNotification extends Notification {
+  final String subject;
+
+  const EmailNotification({required this.subject});
+}
+```
+
+## Compatibility
+
+These APIs still exist for migration, but new code should avoid them:
+
+- `@AckModel()` and `ackModel`
+- `AckField`
+
+`AckField` is deprecated and no longer drives generation. Use constructor
+ parameter annotations instead.
+
+## Related Packages
+
+- Runtime schemas: [`ack`](../../README.md)
+- Code generation: [`ack_generator`](../ack_generator/README.md)

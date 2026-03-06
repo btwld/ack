@@ -11,7 +11,7 @@ part of 'anyof_example.dart';
 /// API response with different possible payloads
 final apiResponseSchema = Ack.object({
   'status': Ack.string(),
-  'data': responseDataSchema,
+  'data': (const ResponseDataSchemaProvider().schema as AckSchema),
 });
 
 /// Generated schema for UserResponse
@@ -39,5 +39,5 @@ final listResponseSchema = Ack.object({
 /// Configuration setting with flexible value type
 final settingSchema = Ack.object({
   'key': Ack.string(),
-  'value': settingValueSchema,
+  'value': (const SettingValueSchemaProvider().schema as AckSchema),
 });

@@ -3,35 +3,30 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'described_model.g.dart';
 
-@AckModel(description: 'User profile with comprehensive field descriptions')
+@Schemable(description: 'User profile with comprehensive field descriptions')
 class UserProfile {
-  @AckField(description: 'Unique identifier for the user')
   final String id;
 
-  @AckField(description: 'User\'s full display name')
-  @MinLength(2)
   final String name;
 
-  @AckField(description: 'Primary email address for communication')
-  @Email()
   final String email;
 
-  @AckField(description: 'User age in years (must be 13 or older)')
-  @Min(13)
   final int age;
 
-  @AckField(description: 'Optional profile picture URL')
-  @Url()
   final String? avatarUrl;
 
   final String? bio; // No description - should render normally
 
   UserProfile({
-    required this.id,
-    required this.name,
+    @Description('Unique identifier for the user') required this.id,
+    @Description('User\'s full display name') @MinLength(2) required this.name,
+    @Description('Primary email address for communication')
+    @Email()
     required this.email,
+    @Description('User age in years (must be 13 or older)')
+    @Min(13)
     required this.age,
-    this.avatarUrl,
+    @Description('Optional profile picture URL') @Url() this.avatarUrl,
     this.bio,
   });
 }

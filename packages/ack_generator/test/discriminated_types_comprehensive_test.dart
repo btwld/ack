@@ -6,472 +6,380 @@ import 'package:test/test.dart';
 import 'test_utils/test_assets.dart';
 
 void main() {
-  group('Discriminated Types Comprehensive Tests', () {
-    group('Basic Discriminated Schema Generation', () {
-      test(
-        'should generate discriminated schema for simple hierarchy',
-        () async {
-          final builder = ackGenerator(BuilderOptions.empty);
-
-          await testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/animals.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'animals.g.dart';
-
-@AckModel(discriminatedKey: 'type')
-abstract class Animal {
-  String get type;
-}
-
-@AckModel(discriminatedValue: 'cat')
-class Cat extends Animal {
-  @override
-  String get type => 'cat';
-  
-  final bool meow;
-  final int lives;
-  
-  Cat({required this.meow, this.lives = 9});
-}
-
-@AckModel(discriminatedValue: 'dog')
-class Dog extends Animal {
-  @override
-  String get type => 'dog';
-  
-  final bool bark;
-  final String breed;
-  
-  Dog({required this.bark, required this.breed});
-}
-''',
-            },
-            outputs: {
-              'test_pkg|lib/animals.g.dart': decodedMatches(
-                allOf([
-                  // Discriminated schema generation
-                  contains('final animalSchema = Ack.discriminated('),
-                  contains("discriminatorKey: 'type'"),
-                  contains("schemas: {'cat': catSchema, 'dog': dogSchema}"),
-
-                  // Individual schemas
-                  contains('final catSchema = Ack.object({'),
-                  contains("'meow': Ack.boolean()"),
-                  contains("'lives': Ack.integer()"),
-
-                  contains('final dogSchema = Ack.object({'),
-                  contains("'bark': Ack.boolean()"),
-                  contains("'breed': Ack.string()"),
-                ]),
-              ),
-            },
-          );
-        },
-      );
-
-      test(
-        'should handle multiple discriminated hierarchies in same file',
-        () async {
-          final builder = ackGenerator(BuilderOptions.empty);
-
-          await testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/multi_hierarchy.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'multi_hierarchy.g.dart';
-
-// First hierarchy: Animals
-@AckModel(discriminatedKey: 'type')
-abstract class Animal {
-  String get type;
-}
-
-@AckModel(discriminatedValue: 'cat')
-class Cat extends Animal {
-  @override
-  String get type => 'cat';
-  final bool meow;
-  Cat({required this.meow});
-}
-
-// Second hierarchy: Shapes  
-@AckModel(discriminatedKey: 'kind')
-abstract class Shape {
-  String get kind;
-}
-
-@AckModel(discriminatedValue: 'circle')
-class Circle extends Shape {
-  @override
-  String get kind => 'circle';
-  final double radius;
-  Circle({required this.radius});
-}
-''',
-            },
-            outputs: {
-              'test_pkg|lib/multi_hierarchy.g.dart': decodedMatches(
-                allOf([
-                  // Two separate discriminated schemas
-                  contains('final animalSchema = Ack.discriminated('),
-                  contains("discriminatorKey: 'type'"),
-                  contains("schemas: {'cat': catSchema}"),
-
-                  contains('final shapeSchema = Ack.discriminated('),
-                  contains("discriminatorKey: 'kind'"),
-                  contains("schemas: {'circle': circleSchema}"),
-
-                  // Individual schemas for each type
-                  contains('final catSchema = Ack.object({'),
-                  contains("'meow': Ack.boolean()"),
-
-                  contains('final circleSchema = Ack.object({'),
-                  contains("'radius': Ack.double()"),
-                ]),
-              ),
-            },
-          );
-        },
-      );
-    });
-
-    group('Complex Discriminated Types', () {
-      test('should handle discriminated types with nested models', () async {
+  group('Discriminated types', () {
+    test(
+      'generates discriminated schema for a simple sealed hierarchy',
+      () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
         await testBuilder(
           builder,
           {
             ...allAssets,
-            'test_pkg|lib/complex_discriminated.dart': '''
+            'test_pkg|lib/animals.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'animals.g.dart';
+
+@Schemable(discriminatedKey: 'type')
+sealed class Animal {
+  const Animal();
+}
+
+@Schemable(discriminatedValue: 'cat')
+class Cat extends Animal {
+  final bool meow;
+  final int lives;
+
+  const Cat({required this.meow, this.lives = 9});
+}
+
+@Schemable(discriminatedValue: 'dog')
+class Dog extends Animal {
+  final bool bark;
+  final String breed;
+
+  const Dog({required this.bark, required this.breed});
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/animals.g.dart': decodedMatches(
+              allOf([
+                contains('final animalSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'type'"),
+                contains("'cat': catSchema"),
+                contains("'dog': dogSchema"),
+                contains("'type': Ack.literal('cat')"),
+                contains("'type': Ack.literal('dog')"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test(
+      'handles multiple discriminated hierarchies in the same file',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/multi_hierarchy.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'multi_hierarchy.g.dart';
+
+@Schemable(discriminatedKey: 'type')
+sealed class Animal {
+  const Animal();
+}
+
+@Schemable(discriminatedValue: 'cat')
+class Cat extends Animal {
+  final bool meow;
+
+  const Cat({required this.meow});
+}
+
+@Schemable(discriminatedKey: 'kind')
+sealed class Shape {
+  const Shape();
+}
+
+@Schemable(discriminatedValue: 'circle')
+class Circle extends Shape {
+  final double radius;
+
+  const Circle({required this.radius});
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/multi_hierarchy.g.dart': decodedMatches(
+              allOf([
+                contains('final animalSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'type'"),
+                contains("'cat': catSchema"),
+                contains('final shapeSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'kind'"),
+                contains("'circle': circleSchema"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test('supports nested models inside discriminated leaves', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/complex_discriminated.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'complex_discriminated.g.dart';
 
-@AckModel()
+@Schemable()
 class Address {
   final String street;
   final String city;
-  Address({required this.street, required this.city});
+
+  const Address({required this.street, required this.city});
 }
 
-@AckModel(discriminatedKey: 'personType')
-abstract class Person {
-  String get personType;
+@Schemable(discriminatedKey: 'personType')
+sealed class Person {
+  const Person();
+}
+
+@Schemable(discriminatedValue: 'employee')
+class Employee extends Person {
   final String name;
   final Address address;
-  Person({required this.name, required this.address});
-}
-
-@AckModel(discriminatedValue: 'employee')
-class Employee extends Person {
-  @override
-  String get personType => 'employee';
-  
   final String employeeId;
   final double salary;
-  
-  Employee({
-    required super.name,
-    required super.address,
+
+  const Employee({
+    required this.name,
+    required this.address,
     required this.employeeId,
     required this.salary,
   });
 }
 
-@AckModel(discriminatedValue: 'customer')
+@Schemable(discriminatedValue: 'customer')
 class Customer extends Person {
-  @override
-  String get personType => 'customer';
-  
+  final String name;
+  final Address address;
   final String customerId;
   final List<String> preferences;
-  
-  Customer({
-    required super.name,
-    required super.address,
+
+  const Customer({
+    required this.name,
+    required this.address,
     required this.customerId,
     required this.preferences,
   });
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/complex_discriminated.g.dart': decodedMatches(
-              allOf([
-                // Address schema (dependency)
-                contains('final addressSchema = Ack.object({'),
-                contains("'street': Ack.string()"),
-                contains("'city': Ack.string()"),
+        },
+        outputs: {
+          'test_pkg|lib/complex_discriminated.g.dart': decodedMatches(
+            allOf([
+              contains('final personSchema = Ack.discriminated('),
+              contains("'employee': employeeSchema"),
+              contains("'customer': customerSchema"),
+              contains("'address': addressSchema"),
+              contains("'preferences': Ack.list(Ack.string())"),
+            ]),
+          ),
+        },
+      );
+    });
 
-                // Discriminated person schema
-                contains('final personSchema = Ack.discriminated('),
-                contains("discriminatorKey: 'personType'"),
-                contains(
-                  "schemas: {'employee': employeeSchema, 'customer': customerSchema}",
-                ),
+    test('supports nested sealed discriminated roots', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-                // Employee schema with nested address
-                contains('final employeeSchema = Ack.object({'),
-                contains("'name': Ack.string()"),
-                contains("'address': addressSchema"),
-                contains("'employeeId': Ack.string()"),
-                contains("'salary': Ack.double()"),
-
-                // Customer schema with list
-                contains('final customerSchema = Ack.object({'),
-                contains("'customerId': Ack.string()"),
-                contains("'preferences': Ack.list(Ack.string())"),
-              ]),
-            ),
-          },
-        );
-      });
-
-      test('should handle deeply nested discriminated hierarchies', () async {
-        final builder = ackGenerator(BuilderOptions.empty);
-
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/deep_hierarchy.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/deep_hierarchy.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'deep_hierarchy.g.dart';
 
-@AckModel(discriminatedKey: 'vehicleType')
-abstract class Vehicle {
-  String get vehicleType;
+@Schemable(discriminatedKey: 'vehicleType')
+sealed class Vehicle {
+  const Vehicle();
 }
 
-@AckModel(discriminatedKey: 'landType')
-abstract class LandVehicle extends Vehicle {
-  @override
-  String get vehicleType => 'land';
-  String get landType;
+@Schemable(discriminatedKey: 'landType')
+sealed class LandVehicle extends Vehicle {
+  const LandVehicle();
 }
 
-@AckModel(discriminatedValue: 'car')
+@Schemable(discriminatedValue: 'car')
 class Car extends LandVehicle {
-  @override
-  String get vehicleType => 'land';
-  @override
-  String get landType => 'car';
   final int doors;
   final String fuelType;
-  Car({required this.doors, required this.fuelType});
+
+  const Car({required this.doors, required this.fuelType});
 }
 
-@AckModel(discriminatedValue: 'motorcycle')
+@Schemable(discriminatedValue: 'motorcycle')
 class Motorcycle extends LandVehicle {
-  @override
-  String get vehicleType => 'land';
-  @override
-  String get landType => 'motorcycle';
   final bool hasSidecar;
   final int engineSize;
-  Motorcycle({required this.hasSidecar, required this.engineSize});
+
+  const Motorcycle({required this.hasSidecar, required this.engineSize});
 }
 
-@AckModel(discriminatedValue: 'boat')
+@Schemable(discriminatedValue: 'boat')
 class Boat extends Vehicle {
-  @override
-  String get vehicleType => 'boat';
   final double length;
   final String propulsionType;
-  Boat({required this.length, required this.propulsionType});
+
+  const Boat({required this.length, required this.propulsionType});
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/deep_hierarchy.g.dart': decodedMatches(
-              allOf([
-                // Top-level discriminated schema
-                contains('final vehicleSchema = Ack.discriminated('),
-                contains("discriminatorKey: 'vehicleType'"),
-                contains("'car': carSchema"),
-                contains("'motorcycle': motorcycleSchema"),
-                contains("'boat': boatSchema"),
-
-                // Nested discriminated schema for land vehicles
-                contains('final landVehicleSchema = Ack.discriminated('),
-                contains("discriminatorKey: 'landType'"),
-                contains("'car': carSchema, 'motorcycle': motorcycleSchema"),
-
-                // Leaf schemas
-                contains('final carSchema = Ack.object({'),
-                contains("'doors': Ack.integer()"),
-                contains("'fuelType': Ack.string()"),
-
-                contains('final motorcycleSchema = Ack.object({'),
-                contains("'hasSidecar': Ack.boolean()"),
-                contains("'engineSize': Ack.integer()"),
-
-                contains('final boatSchema = Ack.object({'),
-                contains("'length': Ack.double()"),
-                contains("'propulsionType': Ack.string()"),
-              ]),
-            ),
-          },
-        );
-      });
+        },
+        outputs: {
+          'test_pkg|lib/deep_hierarchy.g.dart': decodedMatches(
+            allOf([
+              contains('final vehicleSchema = Ack.discriminated('),
+              contains("discriminatorKey: 'vehicleType'"),
+              contains("'car': carSchema"),
+              contains("'motorcycle': motorcycleSchema"),
+              contains("'boat': boatSchema"),
+              contains('final landVehicleSchema = Ack.discriminated('),
+              contains("discriminatorKey: 'landType'"),
+            ]),
+          ),
+        },
+      );
     });
 
-    group('Discriminated Types Validation', () {
-      test(
-        'should validate discriminatedKey and discriminatedValue are mutually exclusive',
-        () async {
-          final builder = ackGenerator(BuilderOptions.empty);
+    test('rejects mutually exclusive discriminator configuration', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-          await expectLater(
-            () => testBuilder(
-              builder,
-              {
-                ...allAssets,
-                'test_pkg|lib/invalid.dart': '''
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'type', discriminatedValue: 'invalid')
+@Schemable(discriminatedKey: 'type', discriminatedValue: 'invalid')
 class InvalidModel {
   final String name;
-  InvalidModel({required this.name});
+
+  const InvalidModel({required this.name});
 }
 ''',
-              },
-              outputs: {'test_pkg|lib/invalid.g.dart': anything},
-            ),
-            throwsA(isA<Exception>()),
-          );
-        },
+          },
+          outputs: {'test_pkg|lib/invalid.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
       );
+    });
 
-      test(
-        'should validate discriminatedKey only on abstract classes',
-        () async {
-          final builder = ackGenerator(BuilderOptions.empty);
+    test('requires discriminated roots to be sealed', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-          await expectLater(
-            () => testBuilder(
-              builder,
-              {
-                ...allAssets,
-                'test_pkg|lib/invalid.dart': '''
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'type')
-class ConcreteWithKey { // Concrete class with discriminatedKey - invalid
+@Schemable(discriminatedKey: 'type')
+class ConcreteWithKey {
   final String name;
-  ConcreteWithKey({required this.name});
+
+  const ConcreteWithKey({required this.name});
 }
 ''',
-              },
-              outputs: {'test_pkg|lib/invalid.g.dart': anything},
-            ),
-            throwsA(isA<Exception>()),
-          );
-        },
+          },
+          outputs: {'test_pkg|lib/invalid.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
       );
+    });
 
-      test(
-        'should validate discriminatedValue only on concrete classes',
-        () async {
-          final builder = ackGenerator(BuilderOptions.empty);
+    test('requires discriminated leaves to be concrete', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-          await expectLater(
-            () => testBuilder(
-              builder,
-              {
-                ...allAssets,
-                'test_pkg|lib/invalid.dart': '''
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedValue: 'abstract')
-abstract class AbstractWithValue { // Abstract class with discriminatedValue - invalid
+@Schemable(discriminatedValue: 'abstract')
+abstract class AbstractWithValue {
   final String name;
-  AbstractWithValue({required this.name});
+
+  const AbstractWithValue({required this.name});
 }
 ''',
-              },
-              outputs: {'test_pkg|lib/invalid.g.dart': anything},
-            ),
-            throwsA(isA<Exception>()),
-          );
-        },
+          },
+          outputs: {'test_pkg|lib/invalid.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
       );
+    });
 
-      test(
-        'should validate discriminator field exists in base class',
-        () async {
-          final builder = ackGenerator(BuilderOptions.empty);
+    test('rejects sealed roots without annotated leaves', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-          await expectLater(
-            () => testBuilder(
-              builder,
-              {
-                ...allAssets,
-                'test_pkg|lib/invalid.dart': '''
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'missingField')
-abstract class BaseWithMissingField { // No field named 'missingField'
-  final String name;
-  BaseWithMissingField({required this.name});
+@Schemable(discriminatedKey: 'type')
+sealed class Base {
+  const Base();
 }
 ''',
-              },
-              outputs: {'test_pkg|lib/invalid.g.dart': anything},
-            ),
-            throwsA(isA<Exception>()),
-          );
-        },
+          },
+          outputs: {'test_pkg|lib/invalid.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
       );
+    });
 
-      test('should validate duplicate discriminator values', () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('rejects duplicate discriminator values', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await expectLater(
-          () => testBuilder(
-            builder,
-            {
-              ...allAssets,
-              'test_pkg|lib/invalid.dart': '''
+      await expectLater(
+        () => testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/invalid.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'type')
-abstract class Base {
-  String get type;
+@Schemable(discriminatedKey: 'type')
+sealed class Base {
+  const Base();
 }
 
-@AckModel(discriminatedValue: 'duplicate')
+@Schemable(discriminatedValue: 'duplicate')
 class First extends Base {
-  @override
-  String get type => 'duplicate';
   final String name;
-  First({required this.name});
+
+  const First({required this.name});
 }
 
-@AckModel(discriminatedValue: 'duplicate') // Duplicate value - invalid
+@Schemable(discriminatedValue: 'duplicate')
 class Second extends Base {
-  @override
-  String get type => 'duplicate';
   final String description;
-  Second({required this.description});
+
+  const Second({required this.description});
 }
 ''',
-            },
-            outputs: {'test_pkg|lib/invalid.g.dart': anything},
-          ),
-          throwsA(isA<Exception>()),
-        );
-      });
+          },
+          outputs: {'test_pkg|lib/invalid.g.dart': anything},
+        ),
+        throwsA(isA<Exception>()),
+      );
     });
   });
 }

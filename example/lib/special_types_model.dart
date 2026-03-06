@@ -3,7 +3,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'special_types_model.g.dart';
 
-@AckModel()
+@Schemable()
 class Event {
   final String name;
   final DateTime timestamp;

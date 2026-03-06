@@ -16,6 +16,7 @@ class FieldInfo {
   final bool isNullable;
   final List<ConstraintInfo> constraints;
   final String? description;
+  final String? schemaExpressionOverride;
 
   /// For list/set fields containing schema variable references (e.g., `Ack.list(addressSchema)`),
   /// this stores the schema variable name so the type builder can generate
@@ -52,6 +53,7 @@ class FieldInfo {
     required this.isNullable,
     required this.constraints,
     this.description,
+    this.schemaExpressionOverride,
     this.listElementSchemaRef,
     this.nestedSchemaRef,
     this.displayTypeOverride,
@@ -60,6 +62,49 @@ class FieldInfo {
     this.collectionElementIsCustomType = false,
     this.nestedSchemaCastTypeOverride,
   });
+
+  FieldInfo copyWith({
+    String? name,
+    String? jsonKey,
+    DartType? type,
+    bool? isRequired,
+    bool? isNullable,
+    List<ConstraintInfo>? constraints,
+    String? description,
+    String? schemaExpressionOverride,
+    String? listElementSchemaRef,
+    String? nestedSchemaRef,
+    String? displayTypeOverride,
+    String? collectionElementDisplayTypeOverride,
+    String? collectionElementCastTypeOverride,
+    bool? collectionElementIsCustomType,
+    String? nestedSchemaCastTypeOverride,
+  }) {
+    return FieldInfo(
+      name: name ?? this.name,
+      jsonKey: jsonKey ?? this.jsonKey,
+      type: type ?? this.type,
+      isRequired: isRequired ?? this.isRequired,
+      isNullable: isNullable ?? this.isNullable,
+      constraints: constraints ?? this.constraints,
+      description: description ?? this.description,
+      schemaExpressionOverride:
+          schemaExpressionOverride ?? this.schemaExpressionOverride,
+      listElementSchemaRef: listElementSchemaRef ?? this.listElementSchemaRef,
+      nestedSchemaRef: nestedSchemaRef ?? this.nestedSchemaRef,
+      displayTypeOverride: displayTypeOverride ?? this.displayTypeOverride,
+      collectionElementDisplayTypeOverride:
+          collectionElementDisplayTypeOverride ??
+          this.collectionElementDisplayTypeOverride,
+      collectionElementCastTypeOverride:
+          collectionElementCastTypeOverride ??
+          this.collectionElementCastTypeOverride,
+      collectionElementIsCustomType:
+          collectionElementIsCustomType ?? this.collectionElementIsCustomType,
+      nestedSchemaCastTypeOverride:
+          nestedSchemaCastTypeOverride ?? this.nestedSchemaCastTypeOverride,
+    );
+  }
 
   /// Whether this field references another schema model
   bool get isNestedSchema =>

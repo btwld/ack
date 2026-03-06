@@ -73,7 +73,7 @@ enum Status { active, inactive, pending }
 class User {
   final String name;
   final Status status;
-  User(this.name, this.status);
+  User({required this.name, required this.status});
 }
 ''',
         },
@@ -140,16 +140,14 @@ final personSchema = Ack.object({
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(discriminatedKey: 'type')
-abstract class Shape {
-  String get type;
+sealed class Shape {
+  const Shape();
 }
 
 @AckModel(discriminatedValue: 'circle')
 class Circle extends Shape {
-  @override
-  String get type => 'circle';
   final double radius;
-  Circle(this.radius);
+  Circle({required this.radius});
 }
 ''',
         },
@@ -190,24 +188,20 @@ class Circle extends Shape {
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel(discriminatedKey: 'kind')
-abstract class Animal {
-  String get kind;
+sealed class Animal {
+  const Animal();
 }
 
 @AckModel(discriminatedValue: 'cat', schemaName: 'CatDataSchema')
 class Cat extends Animal {
-  @override
-  String get kind => 'cat';
   final String name;
-  Cat(this.name);
+  Cat({required this.name});
 }
 
 @AckModel(discriminatedValue: 'dog', schemaName: 'DogInfoSchema')
 class Dog extends Animal {
-  @override
-  String get kind => 'dog';
   final String breed;
-  Dog(this.breed);
+  Dog({required this.breed});
 }
 ''',
         },
@@ -242,16 +236,17 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
 class Quoted {
-  @AckField(description: "Contains 'single quotes'")
   final String singleQuoted;
 
-  @AckField(description: 'Contains "double quotes"')
   final String doubleQuoted;
 
-  @AckField(description: 'Contains \\ backslash')
   final String backslash;
 
-  Quoted(this.singleQuoted, this.doubleQuoted, this.backslash);
+  Quoted({
+    @Description("Contains 'single quotes'") required this.singleQuoted,
+    @Description('Contains "double quotes"') required this.doubleQuoted,
+    @Description('Contains \\ backslash') required this.backslash,
+  });
 }
 ''',
         },
@@ -329,10 +324,9 @@ final userSchema = Ack.object({
               '\n'
               '@AckModel()\n'
               'class Price {\n'
-              "  @AckField(description: 'Price is \\\$100 USD')\n"
               '  final int amount;\n'
               '\n'
-              '  Price(this.amount);\n'
+              "  Price({@Description('Price is \\\$100 USD') required this.amount});\n"
               '}\n',
         },
         outputs: {
@@ -361,10 +355,9 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
 class Document {
-  @AckField(constraints: ["matches(test'pattern)"])
   final String content;
 
-  Document(this.content);
+  Document({@Pattern("test'pattern") required this.content});
 }
 ''',
         },

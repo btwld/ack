@@ -68,12 +68,10 @@ class SchemaBuilder {
       return _buildDiscriminatedSchema(model);
     }
 
-    // Subtypes need the model passed to the field builder to generate discriminator literals
     if (model.isDiscriminatedSubtype) {
-      return _buildObjectSchema(model, passModelToFieldBuilder: true);
+      return _buildObjectSchema(model);
     }
 
-    // Regular objects don't need model context
     return _buildObjectSchema(model);
   }
 
@@ -119,10 +117,7 @@ class SchemaBuilder {
   ///
   /// Extracted from _buildSubtypeSchema and _buildRegularObjectSchema to eliminate duplication.
   /// The only difference is whether the model is passed to the field builder (for subtypes).
-  String _buildObjectSchema(
-    ModelInfo model, {
-    bool passModelToFieldBuilder = false,
-  }) {
+  String _buildObjectSchema(ModelInfo model) {
     final buffer = StringBuffer();
 
     // Build field definitions with descriptions
@@ -146,9 +141,7 @@ class SchemaBuilder {
         continue;
       }
 
-      final fieldSchema = passModelToFieldBuilder
-          ? _fieldBuilder.buildFieldSchema(field, model)
-          : _fieldBuilder.buildFieldSchema(field);
+      final fieldSchema = _fieldBuilder.buildFieldSchema(field, model);
 
       fieldDefs.add("'${field.jsonKey}': $fieldSchema");
     }

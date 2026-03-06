@@ -65,7 +65,7 @@ class TestModel {
       test('should fail build with missing model field', () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        // Build should fail when using old annotation format with model: true
+        // Build should fail when using the removed legacy annotation shape.
         await expectLater(
           () => testBuilder(
             builder,

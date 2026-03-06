@@ -7,14 +7,16 @@ import 'test_utils/test_assets.dart';
 
 void main() {
   group('Enum Support Tests', () {
-    test('should generate schema for simple enum field using Ack.enumValues', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
+    test(
+      'should generate schema for simple enum field using Ack.enumValues',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/model.dart': '''
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
 enum Status { active, inactive, pending }
@@ -27,19 +29,20 @@ class User {
   User({required this.name, required this.status});
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/model.g.dart': decodedMatches(
-            allOf([
-              contains('final userSchema = Ack.object('),
-              contains("'name': Ack.string()"),
-              // Now uses Ack.enumValues<T>(T.values) instead of enumString
-              contains("'status': Ack.enumValues<Status>(Status.values)"),
-            ]),
-          ),
-        },
-      );
-    });
+          },
+          outputs: {
+            'test_pkg|lib/model.g.dart': decodedMatches(
+              allOf([
+                contains('final userSchema = Ack.object('),
+                contains("'name': Ack.string()"),
+                // Now uses Ack.enumValues<T>(T.values) instead of enumString
+                contains("'status': Ack.enumValues<Status>(Status.values)"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
 
     test('should handle nullable enum fields', () async {
       final builder = ackGenerator(BuilderOptions.empty);

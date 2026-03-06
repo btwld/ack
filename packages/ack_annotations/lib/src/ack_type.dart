@@ -3,7 +3,7 @@ import 'package:meta/meta_meta.dart';
 /// Annotation to generate extension types for validated data.
 ///
 /// **Note:** This annotation should only be used on schema variables and getters,
-/// not on classes. Use [@AckModel] to generate schemas from classes; if you need
+/// not on classes. Use [@Schemable] to generate schemas from classes; if you need
 /// extension types, define the schema in source and annotate it with [@AckType].
 ///
 /// Can be applied to:
@@ -171,7 +171,7 @@ import 'package:meta/meta_meta.dart';
 /// The following schema types are not currently supported for `@AckType`:
 /// - **`Ack.any()`** - Not supported (defeats type safety purpose)
 /// - **`Ack.anyOf()`** - Not supported (requires union types/sealed classes)
-/// - **`Ack.discriminated()`** - Use @AckModel on discriminated classes instead
+/// - **`Ack.discriminated()`** - Use @Schemable on discriminated classes instead
 ///
 /// ## Method Chaining Support
 ///
@@ -213,7 +213,7 @@ import 'package:meta/meta_meta.dart';
 /// - **Transform modifier**: Not supported (changes output type)
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
-/// See also: [AckModel], [AckField]
+/// See also: [Schemable], [SchemaProvider]
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
   /// Optional custom name for the generated extension type.

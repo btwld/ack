@@ -33,13 +33,13 @@ import 'package:ack_annotations/ack_annotations.dart';
 @AckModel()
 class User {
   final String name;
-  User(this.name);
+  User({required this.name});
 }
 
 @AckModel()
 class Product {
   final String title;
-  Product(this.title);
+  Product({required this.title});
 }
 
 // Not annotated - should be ignored
@@ -74,7 +74,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 @AckModel()
 class Address {
   final String street;
-  Address(this.street);
+  Address({required this.street});
 }
 ''',
           'test_pkg|lib/user.dart': '''
@@ -84,7 +84,7 @@ import 'address.dart';
 @AckModel()
 class User {
   final Address address;
-  User(this.address);
+  User({required this.address});
 }
 ''',
         },
@@ -114,7 +114,7 @@ part 'model.ack.g.dart';
 @AckModel()
 class Model {
   final String id;
-  Model(this.id);
+  Model({required this.id});
 }
 ''',
         },

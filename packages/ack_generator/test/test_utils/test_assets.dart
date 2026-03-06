@@ -6,6 +6,7 @@ const metaAssets = {
   'meta|lib/meta_meta.dart': '''
 enum TargetKind {
   classType,
+  constructor,
   field,
   function,
   getter,
@@ -28,35 +29,86 @@ const ackAnnotationsAsset = {
   'ack_annotations|lib/ack_annotations.dart': '''
 library ack_annotations;
 
+export 'src/schemable.dart';
 export 'src/ack_model.dart';
 export 'src/ack_field.dart';
 export 'src/ack_type.dart';
+export 'src/constraints.dart';
 ''',
-  'ack_annotations|lib/src/ack_model.dart': '''
+  'ack_annotations|lib/src/schemable.dart': '''
+import 'package:ack/ack.dart';
 import 'package:meta/meta_meta.dart';
 
+enum CaseStyle {
+  none,
+  camelCase,
+  pascalCase,
+  snakeCase,
+  paramCase,
+}
+
 @Target({TargetKind.classType})
-class AckModel {
+class Schemable {
   final String? schemaName;
   final String? description;
   final bool additionalProperties;
   final String? additionalPropertiesField;
-  final bool model;
   final String? discriminatedKey;
   final String? discriminatedValue;
+  final CaseStyle caseStyle;
+  final List<Type> useProviders;
 
-  const AckModel({
+  const Schemable({
     this.schemaName,
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    this.model = false,
     this.discriminatedKey,
     this.discriminatedValue,
-  }) : assert(
-         discriminatedKey == null || discriminatedValue == null,
-         'discriminatedKey and discriminatedValue cannot be used together',
-       );
+    this.caseStyle = CaseStyle.none,
+    this.useProviders = const [],
+  });
+}
+
+@Target({TargetKind.constructor})
+class SchemaConstructor {
+  const SchemaConstructor();
+}
+
+@Target({TargetKind.parameter})
+class SchemaKey {
+  final String name;
+  const SchemaKey(this.name);
+}
+
+@Target({TargetKind.parameter})
+class Description {
+  final String value;
+  const Description(this.value);
+}
+
+abstract interface class SchemaProvider<T extends Object> {
+  const SchemaProvider();
+
+  AckSchema<T> get schema;
+}
+''',
+  'ack_annotations|lib/src/ack_model.dart': '''
+import 'package:meta/meta_meta.dart';
+import 'schemable.dart';
+
+@Target({TargetKind.classType})
+class AckModel extends Schemable {
+  const AckModel({
+    super.schemaName,
+    super.description,
+    super.additionalProperties = false,
+    super.additionalPropertiesField,
+    super.discriminatedKey,
+    super.discriminatedValue,
+    super.caseStyle = CaseStyle.none,
+    super.useProviders = const [],
+  });
 }
 ''',
   'ack_annotations|lib/src/ack_field.dart': '''
@@ -81,6 +133,78 @@ class AckField {
     this.description,
     this.constraints = const [],
   });
+}
+''',
+  'ack_annotations|lib/src/constraints.dart': '''
+import 'package:meta/meta_meta.dart';
+
+@Target({TargetKind.parameter})
+class MinLength {
+  final int length;
+  const MinLength(this.length);
+}
+
+@Target({TargetKind.parameter})
+class MaxLength {
+  final int length;
+  const MaxLength(this.length);
+}
+
+@Target({TargetKind.parameter})
+class Email {
+  const Email();
+}
+
+@Target({TargetKind.parameter})
+class Url {
+  const Url();
+}
+
+@Target({TargetKind.parameter})
+class Pattern {
+  final String pattern;
+  const Pattern(this.pattern);
+}
+
+@Target({TargetKind.parameter})
+class Min {
+  final num value;
+  const Min(this.value);
+}
+
+@Target({TargetKind.parameter})
+class Max {
+  final num value;
+  const Max(this.value);
+}
+
+@Target({TargetKind.parameter})
+class Positive {
+  const Positive();
+}
+
+@Target({TargetKind.parameter})
+class MultipleOf {
+  final num value;
+  const MultipleOf(this.value);
+}
+
+@Target({TargetKind.parameter})
+class MinItems {
+  final int count;
+  const MinItems(this.count);
+}
+
+@Target({TargetKind.parameter})
+class MaxItems {
+  final int count;
+  const MaxItems(this.count);
+}
+
+@Target({TargetKind.parameter})
+class EnumString {
+  final List<String> values;
+  const EnumString(this.values);
 }
 ''',
   'ack_annotations|lib/src/ack_type.dart': '''
@@ -141,7 +265,22 @@ class Ack {
 }
 
 abstract class AckSchema<T> {
+  AckSchema<T> nullable() => this;
+  AckSchema<T> optional() => this;
+  AckSchema<T> describe(String description) => this;
+  TransformedSchema<T, R> transform<R>(R Function(T? value) transformer) =>
+      TransformedSchema<T, R>(this, transformer);
+
   Map<String, Object?> toJsonSchema();
+}
+class TransformedSchema<InputType, OutputType> extends AckSchema<OutputType> {
+  final AckSchema<InputType> schema;
+  final OutputType Function(InputType? value) transformer;
+
+  TransformedSchema(this.schema, this.transformer);
+
+  @override
+  Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
 }
 class StringSchema extends AckSchema<String> {
   const StringSchema();
@@ -149,7 +288,10 @@ class StringSchema extends AckSchema<String> {
   StringSchema notEmpty() => this;
   StringSchema minLength(int length) => this;
   StringSchema maxLength(int length) => this;
+  StringSchema matches(Object pattern) => this;
   StringSchema enumString(List<String> values) => this;
+  StringSchema datetime() => this;
+  StringSchema uri() => this;
   StringSchema nullable() => this;
   StringSchema optional() => this;
   StringSchema describe(String description) => this;
@@ -163,6 +305,7 @@ class IntegerSchema extends AckSchema<int> {
   IntegerSchema min(int value) => this;
   IntegerSchema max(int value) => this;
   IntegerSchema positive() => this;
+  IntegerSchema multipleOf(num value) => this;
   IntegerSchema nullable() => this;
   IntegerSchema optional() => this;
   IntegerSchema describe(String description) => this;
@@ -208,6 +351,8 @@ class AnySchema extends AckSchema<dynamic> {
 class ListSchema<T> extends AckSchema<List<T>> {
   final AckSchema<T> itemSchema;
   const ListSchema(this.itemSchema);
+  ListSchema<T> minItems(int count) => this;
+  ListSchema<T> maxItems(int count) => this;
   ListSchema<T> nullable() => this;
   ListSchema<T> optional() => this;
   ListSchema<T> unique() => this;

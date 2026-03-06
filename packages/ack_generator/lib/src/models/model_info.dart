@@ -1,4 +1,5 @@
 import 'field_info.dart';
+import 'type_provider_info.dart';
 
 /// Default representation type for object schemas
 const String kMapType = 'Map<String, Object?>';
@@ -11,6 +12,7 @@ class ModelInfo {
   final List<FieldInfo> fields;
   final bool additionalProperties;
   final String? additionalPropertiesField;
+  final List<TypeProviderInfo> typeProviders;
 
   /// Computed property: returns list of required field JSON keys
   List<String> get requiredFields =>
@@ -26,7 +28,7 @@ class ModelInfo {
   final String? discriminatorValue;
 
   /// Map of discriminator values to subtype identifiers (only for base classes).
-  /// For @AckModel: discriminator value → className (e.g., 'cat' → 'Cat')
+  /// For @Schemable: discriminator value → className (e.g., 'cat' → 'Cat')
   /// For @AckType:  discriminator value → schemaClassName (e.g., 'cat' → 'catSchema')
   final Map<String, String>? subtypeNames;
 
@@ -61,7 +63,7 @@ class ModelInfo {
 
   /// Whether the schema variable is nullable via `.nullable()`.
   ///
-  /// This only applies to @AckType schema variables (not @AckModel classes).
+  /// This only applies to @AckType schema variables (not @Schemable classes).
   final bool isNullableSchema;
 
   const ModelInfo({
@@ -71,6 +73,7 @@ class ModelInfo {
     required this.fields,
     this.additionalProperties = false,
     this.additionalPropertiesField,
+    this.typeProviders = const [],
     this.discriminatorKey,
     this.discriminatorValue,
     this.subtypeNames,

@@ -28,5 +28,5 @@ final productSchema = Ack.object({
 final simpleItemSchema = Ack.object({
   'id': Ack.string(),
   'name': Ack.string(),
-  'active': Ack.boolean(),
+  'active': Ack.boolean().optional(),
 });

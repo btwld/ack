@@ -5,7 +5,7 @@ part 'validation_test_model.g.dart';
 
 // This model demonstrates complex generics that are NOT supported by the generator
 // This is intentionally commented out to avoid build errors
-// @AckModel(model: true)
+// @Schemable()
 // class ComplexValidationModel {
 //   final String id;
 //
@@ -19,7 +19,7 @@ part 'validation_test_model.g.dart';
 // }
 
 // Simple model that DOES work with the generator
-@AckModel()
+@Schemable()
 class SimpleValidationModel {
   final String id;
   final String name;

@@ -23,7 +23,7 @@ final shapeSchema = Ack.discriminated(
 final catSchema = Ack.object({
   'type': Ack.literal('cat'),
   'meow': Ack.boolean(),
-  'lives': Ack.integer(),
+  'lives': Ack.integer().optional(),
 });
 
 /// Generated schema for Dog
