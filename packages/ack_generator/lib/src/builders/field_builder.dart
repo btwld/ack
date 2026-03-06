@@ -18,14 +18,12 @@ class FieldBuilder {
     _allModels = models;
   }
 
-  // Constraint application registry
-  static final _constraints = {
+  static final _constraintBuilders = {
     'minLength': (schema, args) => '$schema.minLength(${args[0]})',
     'maxLength': (schema, args) => '$schema.maxLength(${args[0]})',
     'notEmpty': (schema, args) => '$schema.notEmpty()',
     'email': (schema, args) => '$schema.email()',
     'url': (schema, args) => '$schema.url()',
-    // Use _buildRegexLiteral to safely handle all regex patterns including '''
     'matches': (schema, args) =>
         '$schema.matches(${_buildRegexLiteral(args[0])})',
     'min': (schema, args) => '$schema.min(${args[0]})',
@@ -38,26 +36,24 @@ class FieldBuilder {
       final values = args.map((v) => "'$v'").join(', ');
       return 'Ack.enumString([$values])';
     },
-    // Use _buildRegexLiteral for pattern as well
     'pattern': (schema, args) =>
         '$schema.matches(${_buildRegexLiteral(args[0])})',
   };
 
-  String buildFieldSchema(FieldInfo field, [ModelInfo? model]) {
-    if (model != null &&
-        model.isDiscriminatedSubtype &&
-        model.discriminatorKey != null &&
-        field.name == model.discriminatorKey) {
-      return 'Ack.literal(\'${model.discriminatorValue}\')';
+  String buildFieldSchema(FieldInfo field, [ModelInfo? modelInfo]) {
+    if (modelInfo != null &&
+        modelInfo.isDiscriminatedSubtype &&
+        modelInfo.discriminatorKey != null &&
+        field.name == modelInfo.discriminatorKey) {
+      return 'Ack.literal(\'${modelInfo.discriminatorValue}\')';
     }
 
-    final typeResolver = SchemableTypeResolver(
-      allModels: _allModels,
-      typeProviders: model?.typeProviders ?? const [],
-    );
     var schema =
         field.schemaExpressionOverride ??
-        typeResolver.schemaExpressionFor(field.type);
+        SchemableTypeResolver(
+          allModels: _allModels,
+          typeProviders: modelInfo?.typeProviders ?? const [],
+        ).schemaExpressionFor(field.type);
 
     for (final constraint in field.constraints) {
       schema = _applyConstraint(schema, constraint);
@@ -82,13 +78,11 @@ class FieldBuilder {
   }
 
   String _applyConstraint(String schema, ConstraintInfo constraint) {
-    final generator = _constraints[constraint.name];
+    final generator = _constraintBuilders[constraint.name];
     if (generator != null) {
       return generator(schema, constraint.arguments);
     }
 
-    // Unknown constraints are intentionally ignored to allow custom extensions.
-    // Log at fine level for diagnostics without noisy build warnings.
     log.fine(
       'Unknown constraint "${constraint.name}" ignored. '
       'Check spelling or ensure constraint is registered.',
@@ -101,15 +95,10 @@ class FieldBuilder {
   /// Uses jsonEncode to properly handle all special characters (backslashes,
   /// newlines, unicode, etc.) then converts to single-quote format.
   String _escapeForSingleQuotedString(String value) {
-    // Use jsonEncode to get proper escaping for special chars
     final jsonStr = jsonEncode(value);
-    // Remove outer double quotes: "content" -> content
     var escaped = jsonStr.substring(1, jsonStr.length - 1);
-    // Unescape double quotes: \" -> "
     escaped = escaped.replaceAll(r'\"', '"');
-    // Escape single quotes: ' -> \'
     escaped = escaped.replaceAll("'", r"\'");
-    // Escape dollar signs to prevent string interpolation: $ -> \$
     escaped = escaped.replaceAll(r'$', r'\$');
     return escaped;
   }
@@ -120,16 +109,11 @@ class FieldBuilder {
   /// - Raw triple-quoted string if pattern doesn't contain `'''`
   /// - Double-quoted string with escaping otherwise (including `$` escaping)
   static String _buildRegexLiteral(String pattern) {
-    // If pattern doesn't contain triple quotes, use raw triple-quoted string
     if (!pattern.contains("'''")) {
       return "r'''$pattern'''";
     }
 
-    // Otherwise, use jsonEncode to get a safely escaped double-quoted string.
-    // jsonEncode handles special characters but NOT `$`, which would trigger
-    // Dart string interpolation in generated code. We must escape it manually.
     final encoded = jsonEncode(pattern);
-    // Escape $ as \$ to prevent string interpolation in generated Dart code
     return encoded.replaceAll(r'$', r'\$');
   }
 }

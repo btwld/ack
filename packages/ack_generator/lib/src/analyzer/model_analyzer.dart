@@ -105,7 +105,7 @@ class ModelAnalyzer {
     SchemableTypeResolver typeResolver,
   ) {
     try {
-      typeResolver.resolve(field.type);
+      typeResolver.schemaExpressionFor(field.type);
     } on UnsupportedSchemaTypeError catch (error) {
       throw ArgumentError(
         'Unsupported type "${error.typeName}" for parameter "${field.name}" '
@@ -385,47 +385,12 @@ class ModelAnalyzer {
       throw ArgumentError('Failed to resolve provider element name.');
     }
 
-    final prefix = _importPrefixForElement(currentLibrary, providerElement);
+    final prefix = importPrefixForElement(currentLibrary, providerElement);
     if (prefix == null) {
       return 'const $providerName()';
     }
 
     return 'const $prefix.$providerName()';
-  }
-
-  String? _importPrefixForElement(
-    LibraryElement2? currentLibrary,
-    InterfaceElement2 targetElement,
-  ) {
-    if (currentLibrary == null) {
-      return null;
-    }
-
-    final targetName = targetElement.name3;
-    if (targetName == null || targetName.isEmpty) {
-      return null;
-    }
-
-    for (final import in currentLibrary.firstFragment.libraryImports2) {
-      final prefix = import.prefix2?.element.name3;
-      if (prefix == null || prefix.isEmpty) {
-        continue;
-      }
-
-      final importedElement = import.namespace.get2(targetName);
-      if (importedElement == targetElement) {
-        return prefix;
-      }
-
-      final exportedElement = import.importedLibrary2?.exportNamespace.get2(
-        targetName,
-      );
-      if (exportedElement == targetElement) {
-        return prefix;
-      }
-    }
-
-    return null;
   }
 
   void _validateDiscriminatedTypeUsage(

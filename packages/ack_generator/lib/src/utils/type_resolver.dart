@@ -14,13 +14,6 @@ class UnsupportedSchemaTypeError implements Exception {
   String toString() => 'Unsupported schema type: $typeName';
 }
 
-class ResolvedSchemaType {
-  final String schemaExpression;
-  final TypeProviderInfo? provider;
-
-  const ResolvedSchemaType({required this.schemaExpression, this.provider});
-}
-
 class SchemableTypeResolver {
   final List<ModelInfo> allModels;
   final List<TypeProviderInfo> typeProviders;
@@ -32,87 +25,63 @@ class SchemableTypeResolver {
     this.currentLibrary,
   });
 
-  ResolvedSchemaType resolve(DartType type) {
+  String schemaExpressionFor(DartType type) {
     final typeName = type.getDisplayString(withNullability: false);
 
     final primitiveSchema = _primitiveSchemaFor(typeName);
     if (primitiveSchema != null) {
-      return ResolvedSchemaType(schemaExpression: primitiveSchema);
+      return primitiveSchema;
     }
 
     final specialSchema = _specialSchemaFor(type);
     if (specialSchema != null) {
-      return ResolvedSchemaType(schemaExpression: specialSchema);
+      return specialSchema;
     }
 
     if (type is TypeParameterType ||
         type.isDartCoreObject ||
         typeName == 'dynamic') {
-      return const ResolvedSchemaType(schemaExpression: 'Ack.any()');
+      return 'Ack.any()';
     }
 
     if (_isEnum(type)) {
-      return ResolvedSchemaType(
-        schemaExpression: 'Ack.enumValues<$typeName>($typeName.values)',
-      );
+      return 'Ack.enumValues<$typeName>($typeName.values)';
     }
 
     if (type.isDartCoreList) {
       final itemType = _firstTypeArgument(type);
       if (itemType == null) {
-        return const ResolvedSchemaType(
-          schemaExpression: 'Ack.list(Ack.any())',
-        );
+        return 'Ack.list(Ack.any())';
       }
 
-      final resolvedItemType = resolve(itemType);
-      return ResolvedSchemaType(
-        schemaExpression: 'Ack.list(${resolvedItemType.schemaExpression})',
-        provider: resolvedItemType.provider,
-      );
+      return 'Ack.list(${schemaExpressionFor(itemType)})';
     }
 
     if (type.isDartCoreMap) {
-      return const ResolvedSchemaType(
-        schemaExpression: 'Ack.object({}, additionalProperties: true)',
-      );
+      return 'Ack.object({}, additionalProperties: true)';
     }
 
     if (type.isDartCoreSet) {
       final itemType = _firstTypeArgument(type);
       if (itemType == null) {
-        return const ResolvedSchemaType(
-          schemaExpression: 'Ack.list(Ack.any()).unique()',
-        );
+        return 'Ack.list(Ack.any()).unique()';
       }
 
-      final resolvedItemType = resolve(itemType);
-      return ResolvedSchemaType(
-        schemaExpression:
-            'Ack.list(${resolvedItemType.schemaExpression}).unique()',
-        provider: resolvedItemType.provider,
-      );
+      return 'Ack.list(${schemaExpressionFor(itemType)}).unique()';
     }
 
     final provider = _providerFor(type);
     if (provider != null) {
-      return ResolvedSchemaType(
-        schemaExpression: '(${provider.accessor}.schema as AckSchema)',
-        provider: provider,
-      );
+      return '(${provider.accessor}.schema as AckSchema)';
     }
 
     final schemableSchema = _schemableSchemaReferenceFor(type);
     if (schemableSchema != null) {
-      return ResolvedSchemaType(schemaExpression: schemableSchema);
+      return schemableSchema;
     }
 
     throw UnsupportedSchemaTypeError(typeName);
   }
-
-  String schemaExpressionFor(DartType type) => resolve(type).schemaExpression;
-
-  TypeProviderInfo? providerFor(DartType type) => _providerFor(type);
 
   String? schemableSchemaReferenceFor(DartType type) {
     return _schemableSchemaReferenceFor(type);
@@ -165,7 +134,7 @@ class SchemableTypeResolver {
 
       final schemaVariableName = schemaVariableNameForElement(element);
       final prefix =
-          _importPrefixForElement(element) ??
+          importPrefixForElement(currentLibrary, element) ??
           _prefixForDisplayName(typeName, element.name3);
       if (prefix == null) {
         return schemaVariableName;
@@ -215,34 +184,6 @@ class SchemableTypeResolver {
       0,
       trimmedDisplayName.length - suffix.length,
     );
-  }
-
-  String? _importPrefixForElement(InterfaceElement2 element) {
-    final library = currentLibrary;
-    if (library == null) {
-      return null;
-    }
-
-    for (final import in library.firstFragment.libraryImports2) {
-      final prefix = import.prefix2?.element.name3;
-      if (prefix == null || prefix.isEmpty) {
-        continue;
-      }
-
-      final importedElement = import.namespace.get2(element.name3 ?? '');
-      if (importedElement == element) {
-        return prefix;
-      }
-
-      final exportedElement = import.importedLibrary2?.exportNamespace.get2(
-        element.name3 ?? '',
-      );
-      if (exportedElement == element) {
-        return prefix;
-      }
-    }
-
-    return null;
   }
 
   DartType? _firstTypeArgument(DartType type) {

@@ -39,3 +39,38 @@ String schemaVariableNameForElement(InterfaceElement2 element) {
 String schemaVariableNameForSchemaClassName(String schemaClassName) {
   return schemaClassName[0].toLowerCase() + schemaClassName.substring(1);
 }
+
+String? importPrefixForElement(
+  LibraryElement2? currentLibrary,
+  InterfaceElement2 targetElement,
+) {
+  if (currentLibrary == null) {
+    return null;
+  }
+
+  final targetName = targetElement.name3;
+  if (targetName == null || targetName.isEmpty) {
+    return null;
+  }
+
+  for (final import in currentLibrary.firstFragment.libraryImports2) {
+    final prefix = import.prefix2?.element.name3;
+    if (prefix == null || prefix.isEmpty) {
+      continue;
+    }
+
+    final importedElement = import.namespace.get2(targetName);
+    if (importedElement == targetElement) {
+      return prefix;
+    }
+
+    final exportedElement = import.importedLibrary2?.exportNamespace.get2(
+      targetName,
+    );
+    if (exportedElement == targetElement) {
+      return prefix;
+    }
+  }
+
+  return null;
+}
