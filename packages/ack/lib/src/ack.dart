@@ -49,6 +49,7 @@ final class Ack {
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
       EnumSchema(values: values);
 
+  /// Creates a string schema that only accepts one of the given [values].
   static StringSchema enumString(List<String> values) =>
       string().withConstraint(PatternConstraint.enumString(values));
 

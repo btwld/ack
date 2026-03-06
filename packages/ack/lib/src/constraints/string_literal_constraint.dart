@@ -1,9 +1,8 @@
 import 'constraint.dart';
 
-/// Validates that an input string is exactly equal to an `expectedValue`.
+/// Validates that an input string is exactly equal to an [expectedValue].
 ///
 /// Useful for discriminator fields or fixed value properties.
-/// It will always pass if the input value is `null`.
 class StringLiteralConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
   final String expectedValue;
