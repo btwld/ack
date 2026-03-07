@@ -50,6 +50,109 @@ class Invoice {
       );
     });
 
+    test(
+      'accepts providers that inherit schema getter from a generic base class',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/invoice.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Money {
+  final int cents;
+  const Money(this.cents);
+}
+
+abstract class BaseSchemaProvider<T extends Object>
+    implements SchemaProvider<T> {
+  const BaseSchemaProvider();
+
+  AckSchema<T> createSchema();
+
+  @override
+  AckSchema<T> get schema => createSchema();
+}
+
+class MoneySchemaProvider extends BaseSchemaProvider<Money> {
+  const MoneySchemaProvider();
+
+  @override
+  AckSchema<Money> createSchema() => Ack.object({
+    'cents': Ack.integer(),
+  }).transform((value) => Money(value!['cents'] as int));
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/invoice.g.dart': decodedMatches(
+              contains(
+                "'total': (const MoneySchemaProvider().schema as AckSchema)",
+              ),
+            ),
+          },
+        );
+      },
+    );
+
+    test('accepts providers that inherit schema getter from a mixin', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/invoice.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Money {
+  final int cents;
+  const Money(this.cents);
+}
+
+mixin MoneySchemaProviderMixin implements SchemaProvider<Money> {
+  @override
+  AckSchema<Money> get schema => Ack.object({
+    'cents': Ack.integer(),
+  }).transform((value) => Money(value!['cents'] as int));
+}
+
+class MoneySchemaProvider
+    with MoneySchemaProviderMixin
+    implements SchemaProvider<Money> {
+  const MoneySchemaProvider();
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/invoice.g.dart': decodedMatches(
+            contains(
+              "'total': (const MoneySchemaProvider().schema as AckSchema)",
+            ),
+          ),
+        },
+      );
+    });
+
     test('uses unprefixed imported provider registrations', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

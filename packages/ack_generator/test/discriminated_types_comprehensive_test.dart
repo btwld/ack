@@ -336,6 +336,215 @@ class UpdatedEvent extends Event {
       },
     );
 
+    test(
+      'canonicalizes transformed keys across getter-only and transformed leaves',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/getter_and_transformed_discriminator.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'getter_and_transformed_discriminator.g.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+
+  String get eventType;
+}
+
+@Schemable(discriminatedValue: 'created')
+class CreatedEvent extends Event {
+  @override
+  String get eventType => 'created';
+
+  final String payload;
+
+  const CreatedEvent({required this.payload});
+}
+
+@Schemable(discriminatedValue: 'updated', caseStyle: CaseStyle.snakeCase)
+class UpdatedEvent extends Event {
+  final String eventType;
+  final int version;
+
+  const UpdatedEvent({
+    required this.eventType,
+    required this.version,
+  });
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/getter_and_transformed_discriminator.g.dart':
+                decodedMatches(
+                  allOf([
+                    contains('final eventSchema = Ack.discriminated('),
+                    contains("discriminatorKey: 'event_type'"),
+                    contains("'event_type': Ack.literal('created')"),
+                    contains("'event_type': Ack.literal('updated')"),
+                    predicate<String>((content) {
+                      final createdSchemaMatch = RegExp(
+                        r'final createdEventSchema = Ack\.object\(\{([^}]+)\}\)',
+                        dotAll: true,
+                      ).firstMatch(content);
+                      final updatedSchemaMatch = RegExp(
+                        r'final updatedEventSchema = Ack\.object\(\{([^}]+)\}\)',
+                        dotAll: true,
+                      ).firstMatch(content);
+                      if (createdSchemaMatch == null ||
+                          updatedSchemaMatch == null) {
+                        return false;
+                      }
+
+                      final createdSchema = createdSchemaMatch.group(1)!;
+                      final updatedSchema = updatedSchemaMatch.group(1)!;
+                      final transformedKeyCount =
+                          RegExp(
+                            r"'event_type'\s*:",
+                          ).allMatches(createdSchema).length +
+                          RegExp(
+                            r"'event_type'\s*:",
+                          ).allMatches(updatedSchema).length;
+                      final rawKeyCount =
+                          RegExp(
+                            r"'eventType'\s*:",
+                          ).allMatches(createdSchema).length +
+                          RegExp(
+                            r"'eventType'\s*:",
+                          ).allMatches(updatedSchema).length;
+
+                      return transformedKeyCount == 2 && rawKeyCount == 0;
+                    }, 'uses only canonical transformed discriminator keys'),
+                  ]),
+                ),
+          },
+        );
+      },
+    );
+
+    test(
+      'canonicalizes transformed keys across getter-only and annotated leaves',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/getter_and_annotated_discriminator.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'getter_and_annotated_discriminator.g.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+
+  String get eventType;
+}
+
+@Schemable(discriminatedValue: 'created')
+class CreatedEvent extends Event {
+  @override
+  String get eventType => 'created';
+
+  final String payload;
+
+  const CreatedEvent({required this.payload});
+}
+
+@Schemable(discriminatedValue: 'updated')
+class UpdatedEvent extends Event {
+  final String eventType;
+  final int version;
+
+  const UpdatedEvent({
+    @SchemaKey('event_type') required this.eventType,
+    required this.version,
+  });
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/getter_and_annotated_discriminator.g.dart':
+                decodedMatches(
+                  allOf([
+                    contains('final eventSchema = Ack.discriminated('),
+                    contains("discriminatorKey: 'event_type'"),
+                    contains("'event_type': Ack.literal('created')"),
+                    contains("'event_type': Ack.literal('updated')"),
+                    isNot(contains("'eventType': Ack.literal('created')")),
+                    isNot(contains("'eventType': Ack.literal('updated')")),
+                  ]),
+                ),
+          },
+        );
+      },
+    );
+
+    test(
+      'preserves declared discriminator key when all leaves are getter-only',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/getter_only_discriminator.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'getter_only_discriminator.g.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+
+  String get eventType;
+}
+
+@Schemable(discriminatedValue: 'created')
+class CreatedEvent extends Event {
+  @override
+  String get eventType => 'created';
+
+  final String payload;
+
+  const CreatedEvent({required this.payload});
+}
+
+@Schemable(discriminatedValue: 'updated')
+class UpdatedEvent extends Event {
+  @override
+  String get eventType => 'updated';
+
+  final int version;
+
+  const UpdatedEvent({required this.version});
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/getter_only_discriminator.g.dart': decodedMatches(
+              allOf([
+                contains('final eventSchema = Ack.discriminated('),
+                contains("discriminatorKey: 'eventType'"),
+                contains("'eventType': Ack.literal('created')"),
+                contains("'eventType': Ack.literal('updated')"),
+                isNot(contains("'event_type': Ack.literal('created')")),
+                isNot(contains("'event_type': Ack.literal('updated')")),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
     test('rejects conflicting transformed discriminator keys', () async {
       final builder = ackGenerator(BuilderOptions.empty);
       var sawExpectedError = false;

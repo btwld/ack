@@ -238,6 +238,129 @@ class Invoice {
       });
     });
 
+    test(
+      'accepts providers that inherit schema getter from a generic base class',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Money {
+  final int cents;
+  const Money(this.cents);
+}
+
+abstract class BaseSchemaProvider<T extends Object>
+    implements SchemaProvider<T> {
+  const BaseSchemaProvider();
+
+  AckSchema<T> createSchema();
+
+  @override
+  AckSchema<T> get schema => createSchema();
+}
+
+class MoneySchemaProvider extends BaseSchemaProvider<Money> {
+  const MoneySchemaProvider();
+
+  @override
+  AckSchema<Money> createSchema() =>
+      Ack.object({'cents': Ack.integer()}).transform(
+        (value) => Money(value!['cents'] as int),
+      );
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/model.dart'),
+          );
+          final classElement = library.classes.firstWhere(
+            (element) => element.name3 == 'Invoice',
+          );
+
+          final annotation = TypeChecker.typeNamed(
+            Schemable,
+          ).firstAnnotationOfExact(classElement)!;
+          final reader = ConstantReader(annotation);
+
+          final modelInfo = analyzer.analyze(classElement, reader);
+
+          expect(
+            modelInfo.typeProviders.single.providerTypeName,
+            equals('MoneySchemaProvider'),
+          );
+        });
+      },
+    );
+
+    test('accepts providers that inherit schema getter from a mixin', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Money {
+  final int cents;
+  const Money(this.cents);
+}
+
+mixin MoneySchemaProviderMixin implements SchemaProvider<Money> {
+  @override
+  AckSchema<Money> get schema =>
+      Ack.object({'cents': Ack.integer()}).transform(
+        (value) => Money(value!['cents'] as int),
+      );
+}
+
+class MoneySchemaProvider
+    with MoneySchemaProviderMixin
+    implements SchemaProvider<Money> {
+  const MoneySchemaProvider();
+}
+
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  final Money total;
+
+  const Invoice({required this.total});
+}
+''',
+      };
+
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/model.dart'),
+        );
+        final classElement = library.classes.firstWhere(
+          (element) => element.name3 == 'Invoice',
+        );
+
+        final annotation = TypeChecker.typeNamed(
+          Schemable,
+        ).firstAnnotationOfExact(classElement)!;
+        final reader = ConstantReader(annotation);
+
+        final modelInfo = analyzer.analyze(classElement, reader);
+
+        expect(
+          modelInfo.typeProviders.single.providerTypeName,
+          equals('MoneySchemaProvider'),
+        );
+      });
+    });
+
     test('rejects providers that target schemable types', () async {
       final assets = {
         ...allAssets,
@@ -366,6 +489,218 @@ class UpdatedEvent extends Event {
           expect(eventModel.discriminatorKey, equals('event_type'));
           expect(createdModel.discriminatorKey, equals('event_type'));
           expect(updatedModel.discriminatorKey, equals('event_type'));
+        });
+      },
+    );
+
+    test(
+      'canonicalizes discriminator keys from getter-only and transformed leaves',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+
+  String get eventType;
+}
+
+@Schemable(discriminatedValue: 'created')
+class CreatedEvent extends Event {
+  @override
+  String get eventType => 'created';
+
+  final String payload;
+
+  const CreatedEvent({required this.payload});
+}
+
+@Schemable(discriminatedValue: 'updated', caseStyle: CaseStyle.snakeCase)
+class UpdatedEvent extends Event {
+  final String eventType;
+  final int version;
+
+  const UpdatedEvent({
+    required this.eventType,
+    required this.version,
+  });
+}
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/model.dart'),
+          );
+          final classElements = library.classes.toList();
+          final modelInfos = classElements.map((classElement) {
+            final annotation = TypeChecker.typeNamed(
+              Schemable,
+            ).firstAnnotationOfExact(classElement)!;
+            return analyzer.analyze(classElement, ConstantReader(annotation));
+          }).toList();
+
+          final linkedModels = analyzer.buildDiscriminatorRelationships(
+            modelInfos,
+            classElements,
+          );
+          final eventModel = linkedModels.firstWhere(
+            (model) => model.className == 'Event',
+          );
+          final createdModel = linkedModels.firstWhere(
+            (model) => model.className == 'CreatedEvent',
+          );
+          final updatedModel = linkedModels.firstWhere(
+            (model) => model.className == 'UpdatedEvent',
+          );
+
+          expect(eventModel.discriminatorKey, equals('event_type'));
+          expect(createdModel.discriminatorKey, equals('event_type'));
+          expect(updatedModel.discriminatorKey, equals('event_type'));
+        });
+      },
+    );
+
+    test(
+      'canonicalizes discriminator keys from getter-only and annotated leaves',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+
+  String get eventType;
+}
+
+@Schemable(discriminatedValue: 'created')
+class CreatedEvent extends Event {
+  @override
+  String get eventType => 'created';
+
+  final String payload;
+
+  const CreatedEvent({required this.payload});
+}
+
+@Schemable(discriminatedValue: 'updated')
+class UpdatedEvent extends Event {
+  final String eventType;
+  final int version;
+
+  const UpdatedEvent({
+    @SchemaKey('event_type') required this.eventType,
+    required this.version,
+  });
+}
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/model.dart'),
+          );
+          final classElements = library.classes.toList();
+          final modelInfos = classElements.map((classElement) {
+            final annotation = TypeChecker.typeNamed(
+              Schemable,
+            ).firstAnnotationOfExact(classElement)!;
+            return analyzer.analyze(classElement, ConstantReader(annotation));
+          }).toList();
+
+          final linkedModels = analyzer.buildDiscriminatorRelationships(
+            modelInfos,
+            classElements,
+          );
+          final eventModel = linkedModels.firstWhere(
+            (model) => model.className == 'Event',
+          );
+          final createdModel = linkedModels.firstWhere(
+            (model) => model.className == 'CreatedEvent',
+          );
+          final updatedModel = linkedModels.firstWhere(
+            (model) => model.className == 'UpdatedEvent',
+          );
+
+          expect(eventModel.discriminatorKey, equals('event_type'));
+          expect(createdModel.discriminatorKey, equals('event_type'));
+          expect(updatedModel.discriminatorKey, equals('event_type'));
+        });
+      },
+    );
+
+    test(
+      'falls back to declared discriminator key for getter-only hierarchies',
+      () async {
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/model.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(discriminatedKey: 'eventType')
+sealed class Event {
+  const Event();
+
+  String get eventType;
+}
+
+@Schemable(discriminatedValue: 'created')
+class CreatedEvent extends Event {
+  @override
+  String get eventType => 'created';
+
+  final String payload;
+
+  const CreatedEvent({required this.payload});
+}
+
+@Schemable(discriminatedValue: 'updated')
+class UpdatedEvent extends Event {
+  @override
+  String get eventType => 'updated';
+
+  final int version;
+
+  const UpdatedEvent({required this.version});
+}
+''',
+        };
+
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/model.dart'),
+          );
+          final classElements = library.classes.toList();
+          final modelInfos = classElements.map((classElement) {
+            final annotation = TypeChecker.typeNamed(
+              Schemable,
+            ).firstAnnotationOfExact(classElement)!;
+            return analyzer.analyze(classElement, ConstantReader(annotation));
+          }).toList();
+
+          final linkedModels = analyzer.buildDiscriminatorRelationships(
+            modelInfos,
+            classElements,
+          );
+          final eventModel = linkedModels.firstWhere(
+            (model) => model.className == 'Event',
+          );
+          final createdModel = linkedModels.firstWhere(
+            (model) => model.className == 'CreatedEvent',
+          );
+          final updatedModel = linkedModels.firstWhere(
+            (model) => model.className == 'UpdatedEvent',
+          );
+
+          expect(eventModel.discriminatorKey, equals('eventType'));
+          expect(createdModel.discriminatorKey, equals('eventType'));
+          expect(updatedModel.discriminatorKey, equals('eventType'));
         });
       },
     );

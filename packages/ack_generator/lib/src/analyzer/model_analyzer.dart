@@ -183,7 +183,8 @@ class ModelAnalyzer {
     for (final rawProvider in rawProviders) {
       final providerType = rawProvider.toTypeValue();
       final providerElement = providerType?.element3;
-      if (providerType == null || providerElement is! InterfaceElement2) {
+      if (providerType is! InterfaceType ||
+          providerElement is! InterfaceElement2) {
         throw ArgumentError(
           'Invalid schema provider registration on ${element.name3}. '
           'Each `useProviders` entry must be a provider type.',
@@ -240,7 +241,7 @@ class ModelAnalyzer {
       );
       final targetTypeKey = typeIdentityKey(targetType);
       _validateProviderTargetType(providerName, targetType);
-      _validateProviderSchemaType(providerElement, providerName, targetType);
+      _validateProviderSchemaType(providerType, providerName, targetType);
 
       final existingProvider = seenTargetTypes[targetTypeKey];
       if (existingProvider != null) {
@@ -324,15 +325,17 @@ class ModelAnalyzer {
   }
 
   void _validateProviderSchemaType(
-    InterfaceElement2 providerElement,
+    InterfaceType providerType,
     String providerName,
     DartType targetType,
   ) {
     final targetTypeName = targetType.getDisplayString(withNullability: false);
     final targetTypeKey = typeIdentityKey(targetType);
-    final schemaGetter = providerElement.getters2
-        .cast<GetterElement?>()
-        .firstWhere((getter) => getter?.name3 == 'schema', orElse: () => null);
+    final schemaGetter = providerType.lookUpGetter(
+      'schema',
+      providerType.element3.library2,
+      concrete: true,
+    );
 
     if (schemaGetter == null) {
       throw ArgumentError(
@@ -582,9 +585,14 @@ class ModelAnalyzer {
             .map(
               (subtype) => _resolvedDiscriminatorJsonKey(subtype, declaredKey),
             )
+            .whereType<String>()
             .toSet()
             .toList()
           ..sort();
+
+    if (resolvedKeys.isEmpty) {
+      return declaredKey;
+    }
 
     if (resolvedKeys.length != 1) {
       final formattedKeys = resolvedKeys.map((key) => '"$key"').join(', ');
@@ -598,7 +606,7 @@ class ModelAnalyzer {
     return resolvedKeys.single;
   }
 
-  String _resolvedDiscriminatorJsonKey(ModelInfo subtype, String declaredKey) {
+  String? _resolvedDiscriminatorJsonKey(ModelInfo subtype, String declaredKey) {
     for (final field in subtype.fields) {
       if (field.jsonKey == declaredKey) {
         return declaredKey;
@@ -611,7 +619,7 @@ class ModelAnalyzer {
       }
     }
 
-    return declaredKey;
+    return null;
   }
 
   bool _isSubtypeOf(ClassElement2 element, String baseClassName) {
