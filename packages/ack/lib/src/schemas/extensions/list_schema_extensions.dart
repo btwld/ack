@@ -9,7 +9,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
     return withConstraint(ComparisonConstraint.listMinItems<T>(n));
   }
 
-  /// Alias for [minItems] to mirror documentation naming.
+  /// Alias for [minItems].
   ListSchema<T> minLength(int n) => minItems(n);
 
   /// Adds a constraint that the list must have no more than [n] items.
@@ -17,7 +17,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
     return withConstraint(ComparisonConstraint.listMaxItems<T>(n));
   }
 
-  /// Alias for [maxItems] to mirror documentation naming.
+  /// Alias for [maxItems].
   ListSchema<T> maxLength(int n) => maxItems(n);
 
   /// Adds a constraint that the list must have exactly [n] items.
@@ -25,7 +25,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
     return withConstraint(ComparisonConstraint.listExactItems<T>(n));
   }
 
-  /// Alias for [exactLength] to mirror documentation naming.
+  /// Alias for [exactLength].
   ListSchema<T> length(int n) => exactLength(n);
 
   /// Adds a constraint that the list must not be empty.
@@ -34,7 +34,7 @@ extension ListSchemaExtensions<T extends Object> on ListSchema<T> {
     return minItems(1);
   }
 
-  /// Alias for [nonEmpty] to mirror documentation naming.
+  /// Alias for [nonEmpty].
   ListSchema<T> notEmpty() => nonEmpty();
 
   /// Adds a constraint that all items in the list must be unique.

@@ -1,33 +1,44 @@
 part of 'schema.dart';
 
+Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
+  if (defaultValue == null) return null;
+
+  try {
+    return jsonDecode(jsonEncode(defaultValue));
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Schema for validating a discriminated union of objects.
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
 /// `schemas` to validate the object.
 ///
-/// **Important:** Child schemas must return `Map<String, Object?>`. If you need
-/// to transform the result into a custom type, apply `.transform()` to the
-/// discriminated schema itself, not to individual child schemas:
+/// Child schemas may be plain [ObjectSchema] branches that return
+/// `Map<String, Object?>`, or transformed schemas whose base schema is an
+/// [ObjectSchema]. All branches must produce the same output type [T].
 ///
 /// ```dart
-/// // Correct: transform the discriminated union
-/// final schema = Ack.discriminated(
+/// final schema = Ack.discriminated<Animal>(
 ///   discriminatorKey: 'type',
 ///   schemas: {
-///     'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
-///     'dog': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+///     'cat': Ack.object({
+///       'type': Ack.literal('cat'),
+///       'name': Ack.string(),
+///     }).transform<Animal>((map) => Cat(map!['name'] as String)),
+///     'dog': Ack.object({
+///       'type': Ack.literal('dog'),
+///       'name': Ack.string(),
+///     }).transform<Animal>((map) => Dog(map!['name'] as String)),
 ///   },
-/// ).transform<Animal>((map) => switch (map!['type']) {
-///   'cat' => Cat(map['name'] as String),
-///   'dog' => Dog(map['name'] as String),
-///   _ => throw StateError('Unknown type'),
-/// });
+/// );
 /// ```
 @immutable
-final class DiscriminatedObjectSchema extends AckSchema<MapValue>
-    with FluentSchema<MapValue, DiscriminatedObjectSchema> {
+final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
+    with FluentSchema<T, DiscriminatedObjectSchema<T>> {
   final String discriminatorKey;
-  final Map<String, AckSchema<MapValue>> schemas;
+  final Map<String, AckSchema<T>> schemas;
 
   const DiscriminatedObjectSchema({
     required this.discriminatorKey,
@@ -45,10 +56,29 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
 
   @override
   @protected
-  SchemaResult<MapValue> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  SchemaResult<T>? handleNullInput(Object? inputValue, SchemaContext context) {
+    if (inputValue != null) return null;
+
+    if (defaultValue != null) {
+      final clonedDefault = cloneDefault(defaultValue!);
+      if (clonedDefault is Map) {
+        return parseAndValidate(clonedDefault, context);
+      }
+
+      final safeDefault = clonedDefault is T ? clonedDefault : defaultValue!;
+      return applyConstraintsAndRefinements(safeDefault, context);
+    }
+
+    if (isNullable) {
+      return SchemaResult.ok(null);
+    }
+
+    return failNonNullable(context);
+  }
+
+  @override
+  @protected
+  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
     // Use centralized null handling (including cloned default handling).
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
@@ -106,7 +136,7 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final AckSchema<MapValue>? selectedSubSchema = schemas[discValueRaw];
+    final AckSchema<T>? selectedSubSchema = schemas[discValueRaw];
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
@@ -137,6 +167,16 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
       pathSegment: '', // Inherit parent path
     );
 
+    final baseSubSchema = unwrapDiscriminatedBranchSchema(selectedSubSchema);
+    if (baseSubSchema is! ObjectSchema) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Discriminated branches must be object-backed schemas',
+          context: subSchemaContext,
+        ),
+      );
+    }
+
     final result = selectedSubSchema.parseAndValidate(
       mapValue,
       subSchemaContext,
@@ -155,17 +195,17 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   }
 
   @override
-  DiscriminatedObjectSchema copyWith({
+  DiscriminatedObjectSchema<T> copyWith({
     String? discriminatorKey,
-    Map<String, AckSchema<MapValue>>? schemas,
+    Map<String, AckSchema<T>>? schemas,
     bool? isNullable,
     bool? isOptional,
     String? description,
-    MapValue? defaultValue,
-    List<Constraint<MapValue>>? constraints,
-    List<Refinement<MapValue>>? refinements,
+    T? defaultValue,
+    List<Constraint<T>>? constraints,
+    List<Refinement<T>>? refinements,
   }) {
-    return DiscriminatedObjectSchema(
+    return DiscriminatedObjectSchema<T>(
       discriminatorKey: discriminatorKey ?? this.discriminatorKey,
       schemas: schemas ?? this.schemas,
       isNullable: isNullable ?? this.isNullable,
@@ -180,8 +220,15 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   @override
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
-    schemas.forEach((discriminatorValue, objectSchema) {
-      final subSchemaJson = objectSchema.toJsonSchema();
+    final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
+    schemas.forEach((discriminatorValue, branchSchema) {
+      final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
+      if (baseSchema is! ObjectSchema) {
+        throw ArgumentError(
+          'Discriminated branches must be object-backed schemas.',
+        );
+      }
+      final subSchemaJson = branchSchema.toJsonSchema();
       // Constrain discriminator property with type and const
       subSchemaJson['properties'] = {
         ...?(subSchemaJson['properties'] as Map?),
@@ -201,14 +248,15 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && defaultValue != null) 'default': defaultValue,
+      if (!isNullable && serializedDefault != null)
+        'default': serializedDefault,
     };
 
     // Wrap in anyOf with null if nullable
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
+        if (serializedDefault != null) 'default': serializedDefault,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -236,15 +284,15 @@ final class DiscriminatedObjectSchema extends AckSchema<MapValue>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DiscriminatedObjectSchema) return false;
-    const mapEq = MapEquality<String, AckSchema<MapValue>>();
-    return baseFieldsEqual(other) &&
+    const mapEq = MapEquality<String, AckSchema>();
+    return baseFieldsEqualErased(other) &&
         discriminatorKey == other.discriminatorKey &&
         mapEq.equals(schemas, other.schemas);
   }
 
   @override
   int get hashCode {
-    const mapEq = MapEquality<String, AckSchema<MapValue>>();
+    final mapEq = MapEquality<String, AckSchema<T>>();
     return Object.hash(
       baseFieldsHashCode,
       discriminatorKey,

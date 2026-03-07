@@ -25,10 +25,7 @@ _ConstraintCategory _categorize(String constraintKey) {
 ///
 /// This versatile constraint handles comparisons like minimum/maximum length for strings/lists,
 /// min/max value for numbers, property counts for objects, etc., by using a
-/// `valueExtractor` function to get a numeric value from the input type `T`.
-///
-/// It is generic on the non-nullable type `T`, but validates the nullable type `T?`.
-/// It will always pass if the input value is `null`.
+/// [valueExtractor] function to get a numeric value from the input type [T].
 class ComparisonConstraint<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
   final ComparisonType type;

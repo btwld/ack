@@ -1,4 +1,3 @@
-import 'common_types.dart';
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
 import 'schemas/extensions/ack_schema_extensions.dart';
@@ -34,10 +33,10 @@ final class Ack {
   }) => ObjectSchema(properties, additionalProperties: additionalProperties);
 
   /// Creates a discriminated object schema for polymorphic validation.
-  static DiscriminatedObjectSchema discriminated({
+  static DiscriminatedObjectSchema<T> discriminated<T extends Object>({
     required String discriminatorKey,
-    required Map<String, AckSchema<MapValue>> schemas,
-  }) => DiscriminatedObjectSchema(
+    required Map<String, AckSchema<T>> schemas,
+  }) => DiscriminatedObjectSchema<T>(
     discriminatorKey: discriminatorKey,
     schemas: schemas,
   );
@@ -50,6 +49,7 @@ final class Ack {
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
       EnumSchema(values: values);
 
+  /// Creates a string schema that only accepts one of the given [values].
   static StringSchema enumString(List<String> values) =>
       string().withConstraint(PatternConstraint.enumString(values));
 

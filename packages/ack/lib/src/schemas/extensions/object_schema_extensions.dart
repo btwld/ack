@@ -43,11 +43,8 @@ extension ObjectSchemaExtensions on ObjectSchema {
 
   /// Extends this schema with additional or overridden properties.
   ///
-  /// Acts like an additional constructor, allowing you to override properties
-  /// one by one and add additional properties and construction elements.
-  ///
   /// Properties in [newProperties] will override existing properties with the same key.
-  /// Other schema properties can be overridden using the optional parameters.
+  /// Other schema settings can be overridden using the optional parameters.
   ObjectSchema extend(
     Map<String, AckSchema> newProperties, {
     bool? additionalProperties,

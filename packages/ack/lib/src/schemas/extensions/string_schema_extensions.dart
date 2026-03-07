@@ -32,7 +32,9 @@ extension StringSchemaExtensions on StringSchema {
     return withConstraint(PatternConstraint.email());
   }
 
-  /// Adds a constraint that the string must be a valid URL.
+  /// Adds a constraint that the string must be a valid URI.
+  ///
+  /// This is an alias for [uri]. Validates absolute URIs with a scheme and host.
   StringSchema url() {
     return withConstraint(PatternConstraint.uri());
   }

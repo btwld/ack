@@ -810,7 +810,7 @@ void main() {
       test('handles empty discriminated schema', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
-          schemas: {},
+          schemas: <String, AckSchema<Map<String, Object?>>>{},
         );
 
         final result = schema.toFirebaseAiSchema();
