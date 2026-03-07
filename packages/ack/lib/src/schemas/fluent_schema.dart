@@ -9,7 +9,9 @@ mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
   /// Marks the schema as nullable.
   Schema nullable({bool value = true}) => copyWith(isNullable: value) as Schema;
 
-  /// Marks the schema as optional (field can be omitted from an object).
+  /// Marks the schema as optional so the field can be omitted from an object.
+  ///
+  /// See [AckSchemaExtensions.optional] for detailed semantics.
   Schema optional({bool value = true}) => copyWith(isOptional: value) as Schema;
 
   /// Sets the description for the schema.

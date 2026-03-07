@@ -19,7 +19,8 @@ class NonNullableConstraint extends Constraint<Object?>
 }
 
 /// Constraint for validating that a value is of an expected Dart type.
-/// Typically used internally by `AckSchema.tryConvertInput`.
+///
+/// Used internally by [AckSchema] during type checking in `parseAndValidate`.
 class InvalidTypeConstraint extends Constraint<Object?>
     with Validator<Object?> {
   final Type expectedType;
