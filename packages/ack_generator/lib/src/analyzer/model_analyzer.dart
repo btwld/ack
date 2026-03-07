@@ -311,8 +311,6 @@ class ModelAnalyzer {
     final fieldType = field.type.getDisplayString();
     final isValidType = switch (fieldType) {
       String type when type.startsWith('Map<String,') => true,
-      String type when type.startsWith('Map<String, dynamic>') => true,
-      String type when type.startsWith('Map<String, Object?>') => true,
       _ => false,
     };
 

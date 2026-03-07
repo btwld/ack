@@ -17,7 +17,7 @@ class FieldAnalyzer {
     required CaseStyle caseStyle,
   }) {
     final jsonKey = _getJsonKey(parameter, caseStyle);
-    final constraints = _extractConstraints(parameter);
+    final constraints = _extractDecoratorConstraints(parameter);
     final description = _getDescription(parameter);
 
     return FieldInfo(
@@ -55,13 +55,6 @@ class FieldAnalyzer {
     return parseDocComment(parameter.documentationComment);
   }
 
-  List<ConstraintInfo> _extractConstraints(FormalParameterElement parameter) {
-    final constraints = <ConstraintInfo>[];
-
-    constraints.addAll(_extractDecoratorConstraints(parameter));
-    return constraints;
-  }
-
   List<ConstraintInfo> _extractDecoratorConstraints(
     FormalParameterElement parameter,
   ) {
@@ -71,6 +64,24 @@ class FieldAnalyzer {
     _addNumericConstraints(constraints, parameter);
     _addListConstraints(constraints, parameter);
     _addEnumConstraints(constraints, parameter);
+
+    final hasEnumString = constraints.any((c) => c.name == 'enumString');
+    final hasOtherStringConstraints = constraints.any(
+      (c) => const {
+        'minLength',
+        'maxLength',
+        'email',
+        'url',
+        'matches',
+      }.contains(c.name),
+    );
+    if (hasEnumString && hasOtherStringConstraints) {
+      throw ArgumentError(
+        '@EnumString cannot be combined with other string constraints '
+        '(@MinLength, @MaxLength, @Email, @Url, @Pattern) on parameter '
+        '"${parameter.name3}".',
+      );
+    }
 
     return constraints;
   }

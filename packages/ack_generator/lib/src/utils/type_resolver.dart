@@ -159,10 +159,7 @@ class SchemableTypeResolver {
   }
 
   String _baseTypeName(String displayType) {
-    final genericIndex = displayType.indexOf('<');
-    final withoutGenerics = genericIndex == -1
-        ? displayType
-        : displayType.substring(0, genericIndex);
+    final withoutGenerics = _stripGenerics(displayType);
     final segments = withoutGenerics.split('.');
     return segments.isEmpty ? withoutGenerics : segments.last;
   }
@@ -170,10 +167,7 @@ class SchemableTypeResolver {
   String? _prefixForDisplayName(String displayName, String? elementName) {
     if (elementName == null) return null;
 
-    final genericIndex = displayName.indexOf('<');
-    final trimmedDisplayName = genericIndex == -1
-        ? displayName
-        : displayName.substring(0, genericIndex);
+    final trimmedDisplayName = _stripGenerics(displayName);
 
     final suffix = '.$elementName';
     if (!trimmedDisplayName.endsWith(suffix)) {
@@ -184,6 +178,11 @@ class SchemableTypeResolver {
       0,
       trimmedDisplayName.length - suffix.length,
     );
+  }
+
+  String _stripGenerics(String s) {
+    final i = s.indexOf('<');
+    return i == -1 ? s : s.substring(0, i);
   }
 
   DartType? _firstTypeArgument(DartType type) {

@@ -32,8 +32,9 @@ String schemaClassNameForElement(InterfaceElement2 element) {
 }
 
 String schemaVariableNameForElement(InterfaceElement2 element) {
-  final schemaClassName = schemaClassNameForElement(element);
-  return schemaClassName[0].toLowerCase() + schemaClassName.substring(1);
+  return schemaVariableNameForSchemaClassName(
+    schemaClassNameForElement(element),
+  );
 }
 
 String schemaVariableNameForSchemaClassName(String schemaClassName) {

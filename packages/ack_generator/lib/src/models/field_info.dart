@@ -141,26 +141,13 @@ class FieldInfo {
   /// Get enum values if this is an enum type
   List<String> get enumValues {
     if (!isEnum) return [];
-    final element = type.element3;
-    if (element == null) return [];
-
-    // For enums, get the enum constants using the analyzer API
-    if (element is EnumElement2) {
-      try {
-        final enumConstants = element.constants2
-            .map((field) => field.name3!)
-            .toList();
-
-        return enumConstants;
-      } catch (e) {
-        // If there's any issue with the analyzer API, fall back to empty list
-        // This maintains backward compatibility with manual @EnumString annotations
-        _log.warning('Could not extract enum values for ${element.name3}: $e');
-        return [];
-      }
+    final element = type.element3 as EnumElement2;
+    try {
+      return element.constants2.map((field) => field.name3!).toList();
+    } catch (e) {
+      _log.warning('Could not extract enum values for ${element.name3}: $e');
+      return [];
     }
-
-    return [];
   }
 
   /// Whether this is a List type
