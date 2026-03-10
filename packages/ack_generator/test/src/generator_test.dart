@@ -108,6 +108,7 @@ class User {
           ...allAssets,
           'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/ack.dart';
 
 part 'model.ack.g.dart';
 
@@ -129,6 +130,41 @@ class Model {
         },
       );
     });
+
+    test(
+      'fails with a clear error when Ack import is missing for part files',
+      () async {
+        final builder = SharedPartBuilder([generator], 'ack');
+        var sawExpectedError = false;
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/missing_ack_import.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'missing_ack_import.ack.g.dart';
+
+@Schemable()
+class MissingAckImport {
+  final String id;
+  const MissingAckImport({required this.id});
+}
+''',
+          },
+          outputs: const {},
+          onLog: (log) {
+            if (log.level.name == 'SEVERE' &&
+                log.message.contains("import 'package:ack/ack.dart';")) {
+              sawExpectedError = true;
+            }
+          },
+        );
+
+        expect(sawExpectedError, isTrue);
+      },
+    );
 
     test('preserves formatting', () async {
       final builder = SharedPartBuilder([generator], 'ack');

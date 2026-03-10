@@ -19,6 +19,7 @@ produce these typed views.
 Use `@Schemable()` when you have a Dart class that should drive schema generation. The generator creates a validation schema from the selected constructor's named parameters.
 
 ```dart
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.g.dart';
@@ -31,6 +32,11 @@ class User {
   const User({required this.name, required this.age});
 }
 ```
+
+`@Schemable` source files that declare a `part` must include an unprefixed
+`import 'package:ack/ack.dart';` because generated code references `Ack`
+directly. Unsupported custom types must be provided through
+`@Schemable(useProviders: const [...])`.
 
 Running `dart run build_runner build` writes `user.g.dart` with:
 
@@ -53,17 +59,17 @@ For type-safe access without manual casting, define a schema variable in source 
 
 ### Discriminated Hierarchies
 
-Annotate an abstract base with `discriminatedKey` and each subtype with a
-`discriminatedValue` to receive a generated discriminated schema that maps
+Annotate an abstract base with `discriminatorKey` and each subtype with a
+`discriminatorValue` to receive a generated discriminated schema that maps
 discriminator values to subtype schemas.
 
 ```dart
-@Schemable(discriminatedKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Shape {
   const Shape();
 }
 
-@Schemable(discriminatedValue: 'circle')
+@Schemable(discriminatorValue: 'circle')
 class Circle extends Shape {
   final double radius;
 

@@ -209,15 +209,24 @@ Annotate a Dart class to automatically generate a validation schema. The generat
 **Parameters:**
 - `schemaName`: Custom name for the generated schema constant
 - `description`: Documentation string for the schema
-- `additionalProperties`: Allow extra fields not defined in the class
+- `additionalProperties`: Allow extra fields not defined in the class (passthrough behavior)
 - `additionalPropertiesField`: Field name to store extra properties (must be `Map<String, dynamic>`)
-- `discriminatedKey`: Field name for type discrimination (use on sealed base classes)
-- `discriminatedValue`: Discriminator value for this subtype (use on concrete implementations)
+- `discriminatorKey`: Field name for type discrimination (use on sealed base classes)
+- `discriminatorValue`: Discriminator value for this subtype (use on concrete implementations)
 - `caseStyle`: Case transformation for constructor parameter names
 - `useProviders`: Explicit `SchemaProvider<T>` registrations for custom non-schemable types
 
+`@Schemable` libraries with a `part` directive must include an unprefixed
+`import 'package:ack/ack.dart';` because generated code references `Ack`
+directly.
+
 **Example:**
 ```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.g.dart';
+
 @Schemable(description: 'User profile')
 class User {
   final String name;

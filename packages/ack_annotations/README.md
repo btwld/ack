@@ -19,6 +19,7 @@ dev_dependencies:
 ## Quick Start
 
 ```dart
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'product.g.dart';
@@ -36,6 +37,10 @@ class Product {
   });
 }
 ```
+
+When using a `part` directive with `@Schemable`, include an unprefixed
+`import 'package:ack/ack.dart';` because generated code references `Ack`
+directly.
 
 Generate the schema:
 
@@ -139,18 +144,24 @@ class Invoice {
 Use sealed roots for discriminated unions.
 
 ```dart
-@Schemable(discriminatedKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Notification {
   const Notification();
 }
 
-@Schemable(discriminatedValue: 'email')
+@Schemable(discriminatorValue: 'email')
 class EmailNotification extends Notification {
   final String subject;
 
   const EmailNotification({required this.subject});
 }
 ```
+
+## Additional Properties (Passthrough)
+
+Use `@Schemable(additionalProperties: true)` to generate
+`Ack.object(..., additionalProperties: true)` (equivalent passthrough behavior
+for unknown keys).
 
 ## Compatibility
 

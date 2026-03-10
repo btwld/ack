@@ -21,6 +21,7 @@ dev_dependencies:
 ## Generate a Schema
 
 ```dart
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.g.dart';
@@ -51,9 +52,13 @@ Generated output:
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string(),
-  'age': Ack.integer().optional(),
+  'age': Ack.integer().optional().nullable(),
 });
 ```
+
+`@Schemable` libraries that use a `part` directive must include an unprefixed
+`import 'package:ack/ack.dart';` because generated code references `Ack`
+directly.
 
 ## What the Generator Uses
 
@@ -62,6 +67,8 @@ The generator is constructor-driven.
 - It reads the unnamed constructor by default.
 - `@SchemaConstructor()` selects a different constructor.
 - The selected constructor must use named parameters only.
+- Unsupported custom types fail generation unless you register
+  `@Schemable(useProviders: const [...])`.
 - Parameter annotations define keys, descriptions, and constraints.
 - Field annotations are no longer the primary generation surface.
 
@@ -117,25 +124,30 @@ The generated schema embeds the provider schema for both `Money` and
  `List<Money>`. Provider targets that are themselves `@Schemable()` are
  rejected; generated schemas remain the source of truth for schemable types.
 
+## Additional Properties (Passthrough)
+
+Use `@Schemable(additionalProperties: true)` for object passthrough behavior
+(`Ack.object(..., additionalProperties: true)` in generated output).
+
 ## Discriminated Unions
 
-Use `discriminatedKey` on a sealed base class and `discriminatedValue` on each
+Use `discriminatorKey` on a sealed base class and `discriminatorValue` on each
  concrete subtype.
 
 ```dart
-@Schemable(discriminatedKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Shape {
   const Shape();
 }
 
-@Schemable(discriminatedValue: 'circle')
+@Schemable(discriminatorValue: 'circle')
 class Circle extends Shape {
   final double radius;
 
   const Circle({@Positive() required this.radius});
 }
 
-@Schemable(discriminatedValue: 'rectangle')
+@Schemable(discriminatorValue: 'rectangle')
 class Rectangle extends Shape {
   final double width;
   final double height;
@@ -155,6 +167,8 @@ This produces a discriminated schema keyed by `type`.
   automatically instantiate your model classes.
 - A typed `SchemaProvider<T>` should parse to `T`. Use a transformed schema if
   the wire shape differs from the model type.
+- `additionalProperties: true` is the `@Schemable` equivalent of
+  `.passthrough()` for object schemas.
 - Prefix-qualified schemable models and providers are supported.
 
 ## Compatibility

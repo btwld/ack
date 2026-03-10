@@ -70,6 +70,10 @@ class AckSchemaGenerator extends Generator {
       return '';
     }
 
+    if (annotatedElements.isNotEmpty) {
+      _validateAckImportForSchemable(library, annotatedElements.first);
+    }
+
     // Generate all schema fields and extension types for this file
     final schemaFields = <Field>[];
     final helperMethods = <Method>[];
@@ -259,19 +263,54 @@ class AckSchemaGenerator extends Generator {
     return formattedCode;
   }
 
+  void _validateAckImportForSchemable(
+    LibraryReader library,
+    ClassElement2 exampleElement,
+  ) {
+    final fragment = library.element.firstFragment;
+    if (fragment.partIncludes.isEmpty) {
+      return;
+    }
+
+    final ackImports = fragment.libraryImports2.where(_isAckImport).toList();
+    if (ackImports.isEmpty) {
+      throw InvalidGenerationSourceError(
+        '@Schemable models with a part directive require '
+        "import 'package:ack/ack.dart'; because generated code references Ack.",
+        element: exampleElement,
+        todo: "Add: import 'package:ack/ack.dart';",
+      );
+    }
+
+    final hasUnprefixedAckImport = ackImports.any((import) {
+      final prefix = import.prefix2?.element.name3;
+      return prefix == null || prefix.isEmpty;
+    });
+
+    if (!hasUnprefixedAckImport) {
+      throw InvalidGenerationSourceError(
+        '@Schemable models currently require an unprefixed '
+        "import 'package:ack/ack.dart'; in the source library.",
+        element: exampleElement,
+        todo:
+            "Add an unprefixed import alongside prefixed imports: import 'package:ack/ack.dart';",
+      );
+    }
+  }
+
   /// Validates that the element can be processed by the generator
   void _validateElement(ClassElement2 element) {
     final annotation = firstSchemableAnnotationOf(element);
     if (annotation != null) {
       final annotationReader = ConstantReader(annotation);
-      final discriminatedKey = annotationReader.read('discriminatedKey').isNull
+      final discriminatorKey = annotationReader.read('discriminatorKey').isNull
           ? null
-          : annotationReader.read('discriminatedKey').stringValue;
+          : annotationReader.read('discriminatorKey').stringValue;
 
       // Non-discriminated abstract schemable classes are not supported.
-      if (element.isAbstract && discriminatedKey == null) {
+      if (element.isAbstract && discriminatorKey == null) {
         throw InvalidGenerationSourceError(
-          '@Schemable cannot be applied to abstract classes unless discriminatedKey is specified.',
+          '@Schemable cannot be applied to abstract classes unless discriminatorKey is specified.',
           element: element,
         );
       }
@@ -511,7 +550,7 @@ class AckSchemaGenerator extends Generator {
           discriminatorValue: discriminatorValue,
           // For @AckType flows this references the generated base type name
           // (e.g. `PetType`) used by dependency sorting.
-          discriminatedBaseClassName: baseModel.className,
+          discriminatorBaseClassName: baseModel.className,
         );
       }
     }
@@ -524,7 +563,7 @@ class AckSchemaGenerator extends Generator {
     String? discriminatorKey,
     String? discriminatorValue,
     Map<String, String>? subtypeNames,
-    String? discriminatedBaseClassName,
+    String? discriminatorBaseClassName,
   }) {
     return ModelInfo(
       className: model.className,
@@ -538,8 +577,8 @@ class AckSchemaGenerator extends Generator {
       discriminatorValue: discriminatorValue ?? model.discriminatorValue,
       subtypeNames: subtypeNames ?? model.subtypeNames,
       schemaIdentity: model.schemaIdentity,
-      discriminatedBaseClassName:
-          discriminatedBaseClassName ?? model.discriminatedBaseClassName,
+      discriminatorBaseClassName:
+          discriminatorBaseClassName ?? model.discriminatorBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
       isNullableSchema: model.isNullableSchema,
