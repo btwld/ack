@@ -6,9 +6,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('Comprehensive Model Examples', () {
-    group('Schema-only approach (model: false)', () {
+    group('Schema-first validation approach', () {
       test('simple examples without SchemaModel', () {
-        // User schema (model: false)
         final userData = {
           'id': 'user_1',
           'name': 'John Doe',
@@ -19,7 +18,7 @@ void main() {
 
         final user = simple.userSchema.parse(userData) as Map<String, dynamic>;
         expect(user['id'], equals('user_1'));
-        // In schema-only mode (model: false), additional properties stay at top level
+        // Additional properties stay at top level in the validated map output.
         expect(user['theme'], equals('dark'));
         expect(user['language'], equals('en'));
       });

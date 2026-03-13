@@ -5,7 +5,7 @@ part 'simple_examples.g.dart';
 
 /// Example 1: User with Additional Properties
 /// Shows how to store flexible user preferences
-@AckModel(
+@Schemable(
   description: 'User with flexible preferences',
   additionalProperties: true,
   additionalPropertiesField: 'preferences',
@@ -28,7 +28,7 @@ class User {
 
 /// Example 2: Product with Metadata
 /// Shows how to store product variants and SEO data
-@AckModel(
+@Schemable(
   description: 'Product with flexible metadata',
   additionalProperties: true,
   additionalPropertiesField: 'metadata',
@@ -51,7 +51,7 @@ class Product {
 
 /// Example 3: Simple Model (No Additional Properties)
 /// Shows traditional fixed schema for comparison
-@AckModel(description: 'Simple model without additional properties')
+@Schemable(description: 'Simple model without additional properties')
 class SimpleItem {
   final String id;
   final String name;

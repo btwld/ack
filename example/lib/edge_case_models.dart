@@ -5,7 +5,7 @@ part 'edge_case_models.g.dart';
 
 // Test deeply nested generic types - INTENTIONALLY COMMENTED OUT
 // This demonstrates complex generics that are NOT supported by the generator
-// @AckModel(model: true)
+// @Schemable()
 // class ComplexGenericModel {
 //   final String id;
 //   final List<Map<String, List<String>>> nestedData;
@@ -20,7 +20,7 @@ part 'edge_case_models.g.dart';
 
 // Test circular reference handling - INTENTIONALLY COMMENTED OUT
 // Self-referencing models are not yet supported
-// @AckModel(model: true)
+// @Schemable()
 // class NodeModel {
 //   final String id;
 //   final String name;
@@ -36,7 +36,7 @@ part 'edge_case_models.g.dart';
 // }
 
 // Test very large number of fields (performance) - THIS WORKS
-@AckModel()
+@Schemable()
 class LargeFieldModel {
   final String field1;
   final String field2;
@@ -84,24 +84,20 @@ class LargeFieldModel {
 }
 
 // Test special characters in field names - THIS WORKS
-@AckModel()
+@Schemable()
 class SpecialFieldsModel {
-  @AckField(jsonKey: 'user-id')
   final String userId;
 
-  @AckField(jsonKey: 'full_name')
   final String fullName;
 
-  @AckField(jsonKey: 'email.address')
   final String emailAddress;
 
-  @AckField(jsonKey: 'meta:data')
   final String metadata;
 
   SpecialFieldsModel({
-    required this.userId,
-    required this.fullName,
-    required this.emailAddress,
-    required this.metadata,
+    @SchemaKey('user-id') required this.userId,
+    @SchemaKey('full_name') required this.fullName,
+    @SchemaKey('email.address') required this.emailAddress,
+    @SchemaKey('meta:data') required this.metadata,
   });
 }

@@ -1137,10 +1137,10 @@ ${cases.join(',\n')},
   Set<String> _extractDependencies(ModelInfo model, _ModelLookups lookups) {
     final dependencies = <String>{};
 
-    final discriminatedBaseClassName = model.discriminatedBaseClassName;
-    if (discriminatedBaseClassName != null &&
-        lookups.byClassName.containsKey(discriminatedBaseClassName)) {
-      dependencies.add(discriminatedBaseClassName);
+    final discriminatorBaseClassName = model.discriminatorBaseClassName;
+    if (discriminatorBaseClassName != null &&
+        lookups.byClassName.containsKey(discriminatorBaseClassName)) {
+      dependencies.add(discriminatorBaseClassName);
     }
 
     for (final field in model.fields) {

@@ -5,31 +5,31 @@ import 'package:meta/meta_meta.dart';
 // ============================================================================
 
 /// String length constraints
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class MinLength {
   final int length;
   const MinLength(this.length);
 }
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class MaxLength {
   final int length;
   const MaxLength(this.length);
 }
 
 /// String format constraints
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class Email {
   const Email();
 }
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class Url {
   const Url();
 }
 
 /// String pattern constraints
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class Pattern {
   final String pattern;
   const Pattern(this.pattern);
@@ -39,24 +39,24 @@ class Pattern {
 // NUMERIC CONSTRAINTS
 // ============================================================================
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class Min {
   final num value;
   const Min(this.value);
 }
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class Max {
   final num value;
   const Max(this.value);
 }
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class Positive {
   const Positive();
 }
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class MultipleOf {
   final num value;
   const MultipleOf(this.value);
@@ -66,13 +66,13 @@ class MultipleOf {
 // LIST CONSTRAINTS
 // ============================================================================
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class MinItems {
   final int count;
   const MinItems(this.count);
 }
 
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class MaxItems {
   final int count;
   const MaxItems(this.count);
@@ -86,7 +86,7 @@ class MaxItems {
 /// Generates: .enumString(['value1', 'value2', ...])
 /// Usage: @EnumString(['draft', 'published', 'archived'])
 /// This is for validating string fields against a set of allowed string values
-@Target({TargetKind.field})
+@Target({TargetKind.parameter})
 class EnumString {
   final List<String> values;
   const EnumString(this.values);

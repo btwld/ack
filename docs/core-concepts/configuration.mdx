@@ -97,39 +97,40 @@ final signUpSchema = Ack.object({
 
 The `ack_generator` package provides automatic schema generation from annotated classes. This feature is production-ready.
 
-To use code generation, annotate your classes with `@AckModel`. The generator creates a validation schema from your class structure. Use `@AckField` for field-level constraints:
+To use code generation, annotate your classes with `@Schemable()`. The generator reads a constructor contract, not field annotations:
 
 ```dart
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.g.dart';
 
-@AckModel(
+@Schemable(
   description: 'User profile with flexible preferences',
   additionalProperties: true,
   additionalPropertiesField: 'preferences'
 )
 class User {
-  @AckField(constraints: ['minLength(2)', 'maxLength(50)'])
   final String name;
-
-  @AckField(constraints: ['email'])
   final String email;
-
-  @AckField(constraints: ['min(18)'])
   final int? age; // Optional field
 
   // Collects extra properties not defined in the schema
   final Map<String, dynamic> preferences;
 
-  User({
-    required this.name,
-    required this.email,
-    this.age,
+  const User({
+    @MinLength(2) @MaxLength(50) required this.name,
+    @Email() required this.email,
+    @Min(18) this.age,
     this.preferences = const {},
   });
 }
 ```
+
+Key rules:
+
+- The selected constructor must use named parameters.
+- Use `@SchemaConstructor()` to choose a non-default constructor.
+- Use parameter annotations such as `@SchemaKey(...)` and `@Description(...)` to customize generated fields.
 
 After running `dart run build_runner build`, the generator creates in `user.g.dart`:
 
@@ -172,5 +173,5 @@ annotated with `@AckType()` (see
 ## Summary
 
 - Ack primarily uses **schema-level configuration** through methods and parameters like `.minLength()`, `.optional()`, `additionalProperties: ...`.
-- **Manual schema definition** is the recommended approach for production applications.
+- Ack supports both **manual schema definition** and **constructor-driven schema generation** for production applications.
 - There is currently no central **global configuration** object provided by Ack itself.
