@@ -27,13 +27,13 @@ class ModelAnalyzer {
       annotation,
       'additionalPropertiesField',
     );
-    final discriminatedKey = _readOptionalString(
+    final discriminatorKey = _readOptionalString(
       annotation,
-      'discriminatedKey',
+      'discriminatorKey',
     );
-    final discriminatedValue = _readOptionalString(
+    final discriminatorValue = _readOptionalString(
       annotation,
-      'discriminatedValue',
+      'discriminatorValue',
     );
     final caseStyle = _readCaseStyle(annotation);
     final typeProviders = _readTypeProviders(element, annotation);
@@ -42,10 +42,10 @@ class ModelAnalyzer {
       currentLibrary: element.library2,
     );
 
-    _validateDiscriminatedTypeUsage(
+    _validateDiscriminatorTypeUsage(
       element,
-      discriminatedKey,
-      discriminatedValue,
+      discriminatorKey,
+      discriminatorValue,
     );
 
     final constructor = _selectSchemaConstructor(element);
@@ -92,8 +92,8 @@ class ModelAnalyzer {
       additionalProperties: additionalProperties,
       additionalPropertiesField: additionalPropertiesField,
       typeProviders: typeProviders,
-      discriminatorKey: discriminatedKey,
-      discriminatorValue: discriminatedValue,
+      discriminatorKey: discriminatorKey,
+      discriminatorValue: discriminatorValue,
       subtypeNames: null,
     );
   }
@@ -413,28 +413,28 @@ class ModelAnalyzer {
     return 'const $prefix.$providerName()';
   }
 
-  void _validateDiscriminatedTypeUsage(
+  void _validateDiscriminatorTypeUsage(
     ClassElement2 element,
-    String? discriminatedKey,
-    String? discriminatedValue,
+    String? discriminatorKey,
+    String? discriminatorValue,
   ) {
-    if (discriminatedKey != null && discriminatedValue != null) {
+    if (discriminatorKey != null && discriminatorValue != null) {
       throw ArgumentError(
-        'Class ${element.name3} cannot have both discriminatedKey and '
-        'discriminatedValue.',
+        'Class ${element.name3} cannot have both discriminatorKey and '
+        'discriminatorValue.',
       );
     }
 
-    if (discriminatedKey != null && !element.isSealed) {
+    if (discriminatorKey != null && !element.isSealed) {
       throw ArgumentError(
-        'discriminatedKey can only be used on sealed classes. '
+        'discriminatorKey can only be used on sealed classes. '
         'Class ${element.name3} must be declared sealed.',
       );
     }
 
-    if (discriminatedValue != null && element.isAbstract) {
+    if (discriminatorValue != null && element.isAbstract) {
       throw ArgumentError(
-        'discriminatedValue can only be used on concrete classes. '
+        'discriminatorValue can only be used on concrete classes. '
         'Class ${element.name3} is abstract.',
       );
     }
@@ -548,7 +548,7 @@ class ModelAnalyzer {
 
       if (parentDiscriminatorKey == null || parentBaseClassName == null) {
         throw ArgumentError(
-          'Class ${subtype.className} declares discriminatedValue but does not '
+          'Class ${subtype.className} declares discriminatorValue but does not '
           'extend a sealed @Schemable root in the same library.',
         );
       }
@@ -565,7 +565,7 @@ class ModelAnalyzer {
           discriminatorKey: parentDiscriminatorKey,
           discriminatorValue: subtype.discriminatorValue,
           subtypeNames: null,
-          discriminatedBaseClassName: parentBaseClassName,
+          discriminatorBaseClassName: parentBaseClassName,
         ),
       );
     }

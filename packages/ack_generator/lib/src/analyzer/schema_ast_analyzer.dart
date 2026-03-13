@@ -297,7 +297,7 @@ class SchemaAstAnalyzer {
       schemaIdentity:
           sourceModel.schemaIdentity ??
           _declarationVisitKey(resolved.sourceDeclaration),
-      discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
+      discriminatorBaseClassName: sourceModel.discriminatorBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
       isNullableSchema: sourceModel.isNullableSchema,
@@ -879,7 +879,7 @@ class SchemaAstAnalyzer {
       discriminatorValue: model.discriminatorValue,
       subtypeNames: model.subtypeNames,
       schemaIdentity: _declarationVisitKey(declaration),
-      discriminatedBaseClassName: model.discriminatedBaseClassName,
+      discriminatorBaseClassName: model.discriminatorBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
       isNullableSchema: model.isNullableSchema,

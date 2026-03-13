@@ -431,12 +431,12 @@ class Invoice {
           'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@Schemable(discriminatedKey: 'eventType')
+@Schemable(discriminatorKey: 'eventType')
 sealed class Event {
   const Event();
 }
 
-@Schemable(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+@Schemable(discriminatorValue: 'created', caseStyle: CaseStyle.snakeCase)
 class CreatedEvent extends Event {
   final String eventType;
   final String payload;
@@ -447,7 +447,7 @@ class CreatedEvent extends Event {
   });
 }
 
-@Schemable(discriminatedValue: 'updated', caseStyle: CaseStyle.snakeCase)
+@Schemable(discriminatorValue: 'updated', caseStyle: CaseStyle.snakeCase)
 class UpdatedEvent extends Event {
   final String eventType;
   final int version;
@@ -501,14 +501,14 @@ class UpdatedEvent extends Event {
           'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@Schemable(discriminatedKey: 'eventType')
+@Schemable(discriminatorKey: 'eventType')
 sealed class Event {
   const Event();
 
   String get eventType;
 }
 
-@Schemable(discriminatedValue: 'created')
+@Schemable(discriminatorValue: 'created')
 class CreatedEvent extends Event {
   @override
   String get eventType => 'created';
@@ -518,7 +518,7 @@ class CreatedEvent extends Event {
   const CreatedEvent({required this.payload});
 }
 
-@Schemable(discriminatedValue: 'updated', caseStyle: CaseStyle.snakeCase)
+@Schemable(discriminatorValue: 'updated', caseStyle: CaseStyle.snakeCase)
 class UpdatedEvent extends Event {
   final String eventType;
   final int version;
@@ -572,14 +572,14 @@ class UpdatedEvent extends Event {
           'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@Schemable(discriminatedKey: 'eventType')
+@Schemable(discriminatorKey: 'eventType')
 sealed class Event {
   const Event();
 
   String get eventType;
 }
 
-@Schemable(discriminatedValue: 'created')
+@Schemable(discriminatorValue: 'created')
 class CreatedEvent extends Event {
   @override
   String get eventType => 'created';
@@ -589,7 +589,7 @@ class CreatedEvent extends Event {
   const CreatedEvent({required this.payload});
 }
 
-@Schemable(discriminatedValue: 'updated')
+@Schemable(discriminatorValue: 'updated')
 class UpdatedEvent extends Event {
   final String eventType;
   final int version;
@@ -643,14 +643,14 @@ class UpdatedEvent extends Event {
           'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@Schemable(discriminatedKey: 'eventType')
+@Schemable(discriminatorKey: 'eventType')
 sealed class Event {
   const Event();
 
   String get eventType;
 }
 
-@Schemable(discriminatedValue: 'created')
+@Schemable(discriminatorValue: 'created')
 class CreatedEvent extends Event {
   @override
   String get eventType => 'created';
@@ -660,7 +660,7 @@ class CreatedEvent extends Event {
   const CreatedEvent({required this.payload});
 }
 
-@Schemable(discriminatedValue: 'updated')
+@Schemable(discriminatorValue: 'updated')
 class UpdatedEvent extends Event {
   @override
   String get eventType => 'updated';
@@ -711,12 +711,12 @@ class UpdatedEvent extends Event {
         'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@Schemable(discriminatedKey: 'eventType')
+@Schemable(discriminatorKey: 'eventType')
 sealed class Event {
   const Event();
 }
 
-@Schemable(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+@Schemable(discriminatorValue: 'created', caseStyle: CaseStyle.snakeCase)
 class CreatedEvent extends Event {
   final String eventType;
   final String payload;
@@ -727,7 +727,7 @@ class CreatedEvent extends Event {
   });
 }
 
-@Schemable(discriminatedValue: 'deleted')
+@Schemable(discriminatorValue: 'deleted')
 class DeletedEvent extends Event {
   final String eventType;
   final String reason;

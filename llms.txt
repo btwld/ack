@@ -582,13 +582,13 @@ For polymorphic data validation based on a discriminator field:
 
 ```dart
 // Base class with discriminator key
-@AckModel(discriminatedKey: 'type')
+@AckModel(discriminatorKey: 'type')
 abstract class Animal {
   String get type;
 }
 
 // Concrete implementations with discriminator values
-@AckModel(discriminatedValue: 'cat')
+@AckModel(discriminatorValue: 'cat')
 class Cat extends Animal {
   @override
   String get type => 'cat';
@@ -597,7 +597,7 @@ class Cat extends Animal {
   Cat({required this.meow, this.lives = 9});
 }
 
-@AckModel(discriminatedValue: 'dog')
+@AckModel(discriminatorValue: 'dog')
 class Dog extends Animal {
   @override
   String get type => 'dog';
@@ -905,7 +905,7 @@ dart run build_runner build --delete-conflicting-outputs
 ### `@AckModel(...)`
 
 - `schemaName`: overrides generated schema variable name
-- `discriminatedKey` and `discriminatedValue`: configure discriminated models
+- `discriminatorKey` and `discriminatorValue`: configure discriminated models
 - `additionalProperties` and `additionalPropertiesField`: control additional property behavior
 
 ---
@@ -1113,7 +1113,7 @@ print(user.name);  // Direct typed access
 | Class with constraints | `@AckModel` | Class annotation |
 | Reusable schema variable | `@AckType` | Variable annotation |
 | Type-safe validated data | `@AckType` | Generates extension type |
-| Polymorphic/discriminated from classes | `@AckModel` | With `discriminatedKey`/`discriminatedValue` |
+| Polymorphic/discriminated from classes | `@AckModel` | With `discriminatorKey`/`discriminatorValue` |
 | Typed discriminated wrappers | `@AckType` | `Ack.discriminated(...)` with `@AckType` object branches |
 
 ### Naming Conventions

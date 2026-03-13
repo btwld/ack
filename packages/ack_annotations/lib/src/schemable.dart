@@ -20,10 +20,10 @@ class Schemable {
   final String? additionalPropertiesField;
 
   /// Discriminator key for sealed union roots.
-  final String? discriminatedKey;
+  final String? discriminatorKey;
 
   /// Discriminator value for concrete union leaves.
-  final String? discriminatedValue;
+  final String? discriminatorValue;
 
   /// Case style to apply to parameter names before schema generation.
   final CaseStyle caseStyle;
@@ -36,13 +36,13 @@ class Schemable {
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    this.discriminatedKey,
-    this.discriminatedValue,
+    this.discriminatorKey,
+    this.discriminatorValue,
     this.caseStyle = CaseStyle.none,
     this.useProviders = const [],
   }) : assert(
-         discriminatedKey == null || discriminatedValue == null,
-         'discriminatedKey and discriminatedValue cannot be used together',
+         discriminatorKey == null || discriminatorValue == null,
+         'discriminatorKey and discriminatorValue cannot be used together',
        );
 }
 

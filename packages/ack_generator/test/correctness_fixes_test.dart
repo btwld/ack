@@ -139,12 +139,12 @@ final personSchema = Ack.object({
           'test_pkg|lib/schema.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'type')
+@AckModel(discriminatorKey: 'type')
 sealed class Shape {
   const Shape();
 }
 
-@AckModel(discriminatedValue: 'circle')
+@AckModel(discriminatorValue: 'circle')
 class Circle extends Shape {
   final double radius;
   Circle({required this.radius});
@@ -189,12 +189,12 @@ class Circle extends Shape {
             'test_pkg|lib/schema.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'eventType')
+@AckModel(discriminatorKey: 'eventType')
 sealed class Event {
   const Event();
 }
 
-@AckModel(discriminatedValue: 'created', caseStyle: CaseStyle.snakeCase)
+@AckModel(discriminatorValue: 'created', caseStyle: CaseStyle.snakeCase)
 class CreatedEvent extends Event {
   final String eventType;
   final String payload;
@@ -244,18 +244,18 @@ class CreatedEvent extends Event {
           'test_pkg|lib/schema.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel(discriminatedKey: 'kind')
+@AckModel(discriminatorKey: 'kind')
 sealed class Animal {
   const Animal();
 }
 
-@AckModel(discriminatedValue: 'cat', schemaName: 'CatDataSchema')
+@AckModel(discriminatorValue: 'cat', schemaName: 'CatDataSchema')
 class Cat extends Animal {
   final String name;
   Cat({required this.name});
 }
 
-@AckModel(discriminatedValue: 'dog', schemaName: 'DogInfoSchema')
+@AckModel(discriminatorValue: 'dog', schemaName: 'DogInfoSchema')
 class Dog extends Animal {
   final String breed;
   Dog({required this.breed});

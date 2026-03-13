@@ -41,7 +41,7 @@ class ModelInfo {
   ///
   /// For @AckType schema-variable subtypes this stores the generated base type
   /// name (for example, `PetType`), not the schema variable name.
-  final String? discriminatedBaseClassName;
+  final String? discriminatorBaseClassName;
 
   /// Computed property: Whether this model has a discriminator key.
   ///
@@ -52,7 +52,7 @@ class ModelInfo {
   bool get isDiscriminatedBaseDefinition =>
       discriminatorKey != null && subtypeNames != null;
 
-  /// Computed property: Whether this class is a discriminated subtype (has discriminatedValue)
+  /// Computed property: Whether this class is a discriminated subtype (has discriminatorValue)
   bool get isDiscriminatedSubtype => discriminatorValue != null;
 
   /// Whether this ModelInfo was created from a schema variable (not a class)
@@ -78,7 +78,7 @@ class ModelInfo {
     this.discriminatorValue,
     this.subtypeNames,
     this.schemaIdentity,
-    this.discriminatedBaseClassName,
+    this.discriminatorBaseClassName,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
     this.isNullableSchema = false,

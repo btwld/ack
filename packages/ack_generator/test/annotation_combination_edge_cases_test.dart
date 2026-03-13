@@ -66,14 +66,14 @@ class FlexibleUser {
             'test_pkg|lib/notifications.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@Schemable(discriminatedKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Notification {
   final String message;
 
   const Notification({required this.message});
 }
 
-@Schemable(discriminatedValue: 'email')
+@Schemable(discriminatorValue: 'email')
 class EmailNotification extends Notification {
   final String recipient;
 
@@ -83,7 +83,7 @@ class EmailNotification extends Notification {
   });
 }
 
-@Schemable(discriminatedValue: 'sms')
+@Schemable(discriminatorValue: 'sms')
 class SmsNotification extends Notification {
   final String phoneNumber;
 

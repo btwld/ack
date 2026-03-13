@@ -29,8 +29,8 @@ class AckModel extends Schemable {
     super.description,
     super.additionalProperties = false,
     super.additionalPropertiesField,
-    super.discriminatedKey,
-    super.discriminatedValue,
+    super.discriminatorKey,
+    super.discriminatorValue,
     super.caseStyle = CaseStyle.none,
     super.useProviders = const [],
   });

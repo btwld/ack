@@ -53,8 +53,8 @@ class Schemable {
   final String? description;
   final bool additionalProperties;
   final String? additionalPropertiesField;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
+  final String? discriminatorKey;
+  final String? discriminatorValue;
   final CaseStyle caseStyle;
   final List<Type> useProviders;
 
@@ -63,8 +63,8 @@ class Schemable {
     this.description,
     this.additionalProperties = false,
     this.additionalPropertiesField,
-    this.discriminatedKey,
-    this.discriminatedValue,
+    this.discriminatorKey,
+    this.discriminatorValue,
     this.caseStyle = CaseStyle.none,
     this.useProviders = const [],
   });
@@ -104,8 +104,8 @@ class AckModel extends Schemable {
     super.description,
     super.additionalProperties = false,
     super.additionalPropertiesField,
-    super.discriminatedKey,
-    super.discriminatedValue,
+    super.discriminatorKey,
+    super.discriminatorValue,
     super.caseStyle = CaseStyle.none,
     super.useProviders = const [],
   });
