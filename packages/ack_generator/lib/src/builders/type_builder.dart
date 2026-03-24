@@ -728,8 +728,8 @@ ${cases.join(',\n')},
       return "_data['$key'] as Map<String, Object?>";
     }
 
-    // Primitives
-    if (field.isPrimitive) {
+    // Primitive and already-validated core value types.
+    if (field.isPrimitive || _isSpecialType(field.type)) {
       return "_data['$key'] as $baseType";
     }
 
@@ -738,12 +738,8 @@ ${cases.join(',\n')},
       return "_data['$key'] as $baseType";
     }
 
-    // Special types need conversion from raw data
-    // - DateTime: stored as ISO 8601 string, needs DateTime.parse()
-    // - Uri: stored as string, needs Uri.parse()
-    // - Duration: stored as int (milliseconds), needs Duration(milliseconds:)
-    if (_isSpecialType(field.type)) {
-      return _buildSpecialTypeGetter(field, key, nullable: false);
+    if (field.displayTypeOverride != null) {
+      return "_data['$key'] as $baseType";
     }
 
     // Lists
@@ -787,14 +783,14 @@ ${cases.join(',\n')},
       return "_data['$key'] != null ? $nonNullPart : null";
     }
 
-    // For primitives and enums, nullable cast works
-    if (field.isPrimitive || field.isEnum) {
+    // For primitives, enums, and already-validated core value types,
+    // nullable cast works directly on the validated map payload.
+    if (field.isPrimitive || field.isEnum || _isSpecialType(field.type)) {
       return "_data['$key'] as $baseType?";
     }
 
-    // Special types need conversion with null check
-    if (_isSpecialType(field.type)) {
-      return _buildSpecialTypeGetter(field, key, nullable: true);
+    if (field.displayTypeOverride != null) {
+      return "_data['$key'] as $baseType?";
     }
 
     // For complex types, check null first
@@ -805,32 +801,6 @@ ${cases.join(',\n')},
       baseType: baseType,
     );
     return "_data['$key'] != null ? $nonNullPart : null";
-  }
-
-  /// Builds getter code for special types (DateTime, Uri, Duration).
-  ///
-  /// These types require conversion from their JSON representation:
-  /// - DateTime: ISO 8601 string -> DateTime.parse()
-  /// - Uri: string -> Uri.parse()
-  /// - Duration: int (milliseconds) -> Duration(milliseconds:)
-  String _buildSpecialTypeGetter(
-    FieldInfo field,
-    String key, {
-    required bool nullable,
-  }) {
-    final typeName = field.type.element3?.name3;
-
-    final conversion = switch (typeName) {
-      'DateTime' => "DateTime.parse(_data['$key'] as String)",
-      'Uri' => "Uri.parse(_data['$key'] as String)",
-      'Duration' => "Duration(milliseconds: _data['$key'] as int)",
-      _ => throw StateError(
-        'Unsupported special type: $typeName. '
-        'Callers must gate with _isSpecialType before calling this method.',
-      ),
-    };
-
-    return nullable ? "_data['$key'] != null ? $conversion : null" : conversion;
   }
 
   String _buildListGetter(FieldInfo field, _ModelLookups lookups, String key) =>
@@ -985,6 +955,10 @@ ${cases.join(',\n')},
     // Generic types
     if (field.isGeneric) {
       return 'Object?';
+    }
+
+    if (field.displayTypeOverride != null) {
+      return field.displayTypeOverride!;
     }
 
     // Nested schema
