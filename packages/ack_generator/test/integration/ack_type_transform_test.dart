@@ -145,6 +145,7 @@ final profileSchema = Ack.object({
               contains('List<Color> get customColors'),
               contains('_\$ackListCast<Color>(_data[\'customColors\'])'),
               contains('TagList get tagList => _data[\'tagList\'] as TagList'),
+              contains('Map<String, Object?> toJson() => _data;'),
               isNot(contains('TagList get tagList => _\$ackListCast')),
               isNot(contains('copyWith(')),
               isNot(contains('Uri.parse(')),
