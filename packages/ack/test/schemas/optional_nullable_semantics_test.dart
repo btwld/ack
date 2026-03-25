@@ -173,7 +173,7 @@ void main() {
         // The key issue being tested: transform must preserve isOptional and isNullable flags
         // so that ObjectSchema correctly recognizes the field as optional/nullable
         final transformedSchema = Ack.string().optional().nullable().transform(
-          (val) => val ?? 'anonymous',
+          (val) => val,
         );
 
         // Verify flags are preserved
@@ -206,7 +206,7 @@ void main() {
           reason: 'Missing optional field should be null/absent in result',
         );
 
-        // Test 2: Explicit null value (nullable) - transform should be called
+        // Test 2: Explicit null value (nullable) - null passes through without calling transformer
         final result2 = objectSchema.safeParse({
           'name': 'John',
           'nickname': null,
@@ -218,8 +218,8 @@ void main() {
         );
         expect(
           result2.getOrThrow()?['nickname'],
-          'anonymous',
-          reason: 'Transform should convert null to default value',
+          isNull,
+          reason: 'Null passes through without calling transformer',
         );
 
         // Test 3: Actual value - transform should pass through

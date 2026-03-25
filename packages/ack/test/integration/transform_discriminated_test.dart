@@ -19,7 +19,7 @@ void main() {
               }),
             },
           ).transform<String>((event) {
-            return switch (event!['type']) {
+            return switch (event['type']) {
               'click' => 'Click at (${event['x']}, ${event['y']})',
               'scroll' => 'Scroll by ${event['delta']}',
               _ => 'Unknown event',
@@ -52,7 +52,7 @@ void main() {
               }),
             },
           ).transform<int>((result) {
-            return result!['status'] == 'success' ? 0 : result['code'] as int;
+            return result['status'] == 'success' ? 0 : result['code'] as int;
           });
 
       // Invalid discriminator should fail before transform

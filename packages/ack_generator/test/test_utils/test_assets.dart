@@ -273,7 +273,7 @@ abstract class AckSchema<T> {
   AckSchema<T> optional() => this;
   AckSchema<T> describe(String description) => this;
   TransformedSchema<T, R> transform<R extends Object>(
-    R Function(T? value) transformer,
+    R Function(T value) transformer,
   ) => TransformedSchema<T, R>(this);
   Map<String, Object?> toJsonSchema();
 }

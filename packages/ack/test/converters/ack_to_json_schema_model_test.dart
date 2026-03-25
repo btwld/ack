@@ -87,10 +87,10 @@ void main() {
         schemas: {
           'cat': Ack.object({
             'name': Ack.string(),
-          }).transform<String>((map) => map!['name'] as String),
+          }).transform<String>((map) => map['name'] as String),
           'dog': Ack.object({
             'name': Ack.string(),
-          }).transform<String>((map) => map!['name'] as String),
+          }).transform<String>((map) => map['name'] as String),
         },
       );
 
@@ -115,7 +115,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'cat': Ack.object({'name': Ack.string()})
-                .transform<String>((map) => map!['name'] as String)
+                .transform<String>((map) => map['name'] as String)
                 .copyWith(description: 'cat branch'),
           },
         );

@@ -42,7 +42,8 @@ void main() {
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), equals(''));
+        // Null passes through without calling transformer
+        expect(result.getOrNull(), isNull);
       });
 
       test('should validate before transforming', () {
@@ -99,7 +100,8 @@ void main() {
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), equals(''));
+        // Null passes through without calling transformer
+        expect(result.getOrNull(), isNull);
       });
 
       test('should validate before transforming', () {
@@ -156,7 +158,8 @@ void main() {
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), equals(''));
+        // Null passes through without calling transformer
+        expect(result.getOrNull(), isNull);
       });
 
       test('should validate before transforming', () {
@@ -172,7 +175,7 @@ void main() {
     group('Combining transformers with transform()', () {
       test('should combine trim and toLowerCase using transform', () {
         final schema = Ack.string().transform(
-          (s) => s?.trim().toLowerCase() ?? '',
+          (s) => s.trim().toLowerCase(),
         );
 
         expect(schema.parse('  HELLO  '), equals('hello'));
@@ -181,7 +184,7 @@ void main() {
 
       test('should combine trim and toUpperCase using transform', () {
         final schema = Ack.string().transform(
-          (s) => s?.trim().toUpperCase() ?? '',
+          (s) => s.trim().toUpperCase(),
         );
 
         expect(schema.parse('  hello  '), equals('HELLO'));
@@ -191,7 +194,6 @@ void main() {
       test('should combine all transformations', () {
         // Trim, then lowercase, then uppercase (last wins)
         final schema = Ack.string().transform((s) {
-          if (s == null) return '';
           return s.trim().toLowerCase().toUpperCase();
         });
 
@@ -200,7 +202,7 @@ void main() {
 
       test('should apply transformation and then refinements', () {
         final schema = Ack.string()
-            .transform((s) => s?.trim().toLowerCase() ?? '')
+            .transform((s) => s.trim().toLowerCase())
             .refine(
               (s) => s == 'hello',
               message: 'Must be "hello" after normalization',
@@ -219,7 +221,7 @@ void main() {
 
       test('should validate constraints before transformation', () {
         final schema = Ack.string().email().transform(
-          (s) => s?.trim().toLowerCase() ?? '',
+          (s) => s.trim().toLowerCase(),
         );
 
         // Email validation happens first - spaces cause validation to fail
@@ -246,7 +248,8 @@ void main() {
         final schema = Ack.string().nullable().trim();
 
         expect(schema.isNullable, isTrue);
-        expect(schema.parse(null), equals(''));
+        // Null passes through without calling transformer
+        expect(schema.parse(null), isNull);
         expect(schema.parse('  hello  '), equals('hello'));
       });
 
@@ -255,7 +258,8 @@ void main() {
 
         expect(schema.isOptional, isTrue);
         expect(schema.isNullable, isTrue);
-        expect(schema.parse(null), equals(''));
+        // Null passes through without calling transformer
+        expect(schema.parse(null), isNull);
         expect(schema.parse('HELLO'), equals('hello'));
       });
     });
@@ -264,7 +268,7 @@ void main() {
       test('should normalize email addresses', () {
         // Transform first (trim + lowercase), then validate email
         final emailSchema = Ack.string()
-            .transform((s) => s?.trim().toLowerCase() ?? '')
+            .transform((s) => s.trim().toLowerCase())
             .refine(
               (s) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s),
               message: 'Invalid email',
@@ -279,7 +283,7 @@ void main() {
         final usernameSchema = Ack.string()
             .minLength(3)
             .maxLength(20)
-            .transform((s) => s?.trim().toLowerCase() ?? '');
+            .transform((s) => s.trim().toLowerCase());
 
         final result = usernameSchema.safeParse('  JohnDoe123  ');
         expect(result.isOk, isTrue);
@@ -288,7 +292,7 @@ void main() {
 
       test('should normalize tags', () {
         final tagSchema = Ack.string()
-            .transform((s) => s?.trim().toLowerCase() ?? '')
+            .transform((s) => s.trim().toLowerCase())
             .refine((s) => s.isNotEmpty, message: 'Tag cannot be empty');
 
         expect(tagSchema.parse('  JavaScript  '), equals('javascript'));
@@ -301,7 +305,7 @@ void main() {
       test('should handle form input normalization', () {
         final formSchema = Ack.object({
           'email': Ack.string()
-              .transform((s) => s?.trim().toLowerCase() ?? '')
+              .transform((s) => s.trim().toLowerCase())
               .refine(
                 (s) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s),
                 message: 'Invalid email',
@@ -309,7 +313,7 @@ void main() {
           'name': Ack.string().trim(),
           'username': Ack.string()
               .minLength(3)
-              .transform((s) => s?.trim().toLowerCase() ?? ''),
+              .transform((s) => s.trim().toLowerCase()),
         });
 
         final result = formSchema.safeParse({
