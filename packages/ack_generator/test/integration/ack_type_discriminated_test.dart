@@ -97,6 +97,57 @@ final petSchema = Ack.discriminated(
       );
     });
 
+    test(
+      'suppresses copyWith for discriminated branches with transformed fields',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.literal('cat'),
+  'homepage': Ack.uri(),
+});
+
+@AckType()
+final dogSchema = Ack.object({
+  'kind': Ack.literal('dog'),
+  'timeout': Ack.duration(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+    'dog': dogSchema,
+  },
+);
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('Uri get homepage => _data[\'homepage\'] as Uri'),
+                contains(
+                  'Duration get timeout => _data[\'timeout\'] as Duration',
+                ),
+                isNot(contains('CatType copyWith(')),
+                isNot(contains('DogType copyWith(')),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
     test('fails when a branch is an inline expression', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

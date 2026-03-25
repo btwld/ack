@@ -302,7 +302,9 @@ class User {
               contains('final userSchema = Ack.object({'),
               // Verify annotation description is used, not doc comment
               contains('Public user ID'),
-              isNot(contains('Internal identifier used for database operations')),
+              isNot(
+                contains('Internal identifier used for database operations'),
+              ),
             ]),
           ),
         },

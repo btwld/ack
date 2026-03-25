@@ -112,6 +112,10 @@ class Ack {
   static NumberSchema number() => const NumberSchema();
   static BooleanSchema boolean() => const BooleanSchema();
   static AnySchema any() => const AnySchema();
+  static TransformedSchema<String, Uri> uri() => TransformedSchema<String, Uri>(const StringSchema());
+  static TransformedSchema<String, DateTime> date() => TransformedSchema<String, DateTime>(const StringSchema());
+  static TransformedSchema<String, DateTime> datetime() => TransformedSchema<String, DateTime>(const StringSchema());
+  static TransformedSchema<int, Duration> duration() => TransformedSchema<int, Duration>(const IntegerSchema());
 
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
@@ -141,7 +145,19 @@ class Ack {
 }
 
 abstract class AckSchema<T> {
+  TransformedSchema<T, R> transform<R extends Object>(R Function(T? value) transformer) =>
+      TransformedSchema<T, R>(this);
   Map<String, Object?> toJsonSchema();
+}
+class TransformedSchema<Input, Output> extends AckSchema<Output> {
+  final AckSchema<Input> schema;
+  TransformedSchema(this.schema);
+  TransformedSchema<Input, Output> nullable() => this;
+  TransformedSchema<Input, Output> optional() => this;
+  TransformedSchema<Input, Output> describe(String description) => this;
+
+  @override
+  Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
 }
 class StringSchema extends AckSchema<String> {
   const StringSchema();
@@ -150,6 +166,9 @@ class StringSchema extends AckSchema<String> {
   StringSchema minLength(int length) => this;
   StringSchema maxLength(int length) => this;
   StringSchema enumString(List<String> values) => this;
+  StringSchema uri() => this;
+  StringSchema date() => this;
+  StringSchema datetime() => this;
   StringSchema nullable() => this;
   StringSchema optional() => this;
   StringSchema describe(String description) => this;

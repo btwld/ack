@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -16,8 +17,18 @@ final _log = Logger('SchemaAstAnalyzer');
 
 typedef _SchemaReference = ({String name, String? prefix});
 typedef _ListElementRef = ({
-  MethodInvocation? ackBase,
+  MethodInvocation? invocation,
   _SchemaReference? schemaRef,
+});
+typedef _SchemaChainInfo = ({
+  MethodInvocation? ackBase,
+  _SchemaReference? schemaReference,
+  bool isOptional,
+  bool isNullable,
+  bool wasTruncated,
+  MethodInvocation? transformInvocation,
+  DartType? transformOutputType,
+  String? transformOutputTypeString,
 });
 
 typedef _SchemaTypeMapping = ({
@@ -27,11 +38,21 @@ typedef _SchemaTypeMapping = ({
   String? listElementCastTypeOverride,
   bool listElementIsCustomType,
 });
+typedef _ListElementAnalysis = ({
+  _SchemaTypeMapping mapping,
+  String elementRepresentationType,
+  bool isTransformedRepresentation,
+});
+typedef _ResolvedSchemaElement = ({
+  Element2 element,
+  LibraryImport? importDirective,
+});
 
 class _ResolvedSchemaReference {
   final String schemaName;
   final ModelInfo modelInfo;
   final String? importPrefix;
+  final LibraryImport? importDirective;
   final bool hasAckTypeAnnotation;
   final Element2 sourceDeclaration;
   final Uri? sourceLibraryUri;
@@ -40,6 +61,7 @@ class _ResolvedSchemaReference {
     required this.schemaName,
     required this.modelInfo,
     required this.importPrefix,
+    required this.importDirective,
     required this.hasAckTypeAnnotation,
     required this.sourceDeclaration,
     required this.sourceLibraryUri,
@@ -300,6 +322,7 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
+      isTransformedSchema: sourceModel.isTransformedSchema,
       isNullableSchema: sourceModel.isNullableSchema,
     );
   }
@@ -311,110 +334,249 @@ class SchemaAstAnalyzer {
     Element2 element, {
     String? customTypeName,
   }) {
-    // Walk the method chain to find the base Ack.xxx() call
-    // E.g., Ack.string().min(8) -> walk back to find Ack.string()
-    final baseInvocation = _findBaseAckInvocation(invocation);
+    final chain = _analyzeSchemaChain(invocation);
+    final baseInvocation = chain.ackBase;
+    final schemaReference = chain.schemaReference;
+
+    if (schemaReference != null) {
+      return _parseSchemaReferenceChain(
+        variableName: variableName,
+        schemaReference: schemaReference,
+        element: element,
+        customTypeName: customTypeName,
+        isNullable: chain.isNullable,
+        transformOutputTypeString: _requireTransformOutputType(
+          chain,
+          element,
+          contextLabel: 'Schema "$variableName"',
+        ),
+      );
+    }
 
     if (baseInvocation == null) {
       throw InvalidGenerationSourceError(
-        'Schema must be an Ack.xxx() method call (e.g., Ack.object(), Ack.string())',
+        'Schema must be an Ack.xxx() method call (e.g., Ack.object(), Ack.string()) or a schema reference.',
         element: element,
       );
     }
 
     final methodName = baseInvocation.methodName.name;
-    final isNullable = _hasModifier(invocation, 'nullable');
+    final isNullable = chain.isNullable;
+    final transformOutputTypeString = _requireTransformOutputType(
+      chain,
+      element,
+      contextLabel: 'Schema "$variableName"',
+    );
+    _throwIfUnsupportedTransformedBaseSchema(
+      schemaMethod: methodName,
+      transformOutputTypeString: transformOutputTypeString,
+      element: element,
+      contextLabel: 'Schema "$variableName"',
+    );
 
-    // Parse based on schema type
+    late final ModelInfo model;
     switch (methodName) {
       case 'object':
-        return _parseObjectSchema(
+        model = _parseObjectSchema(
           variableName,
           baseInvocation,
-          invocation, // Pass original invocation to check for chained methods
+          invocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'string':
-        return _parseStringSchema(
+        model = _parseStringSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'integer':
-        return _parseIntegerSchema(
+        model = _parseIntegerSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'double':
-        return _parseDoubleSchema(
+        model = _parseDoubleSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'boolean':
-        return _parseBooleanSchema(
+        model = _parseBooleanSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'list':
-        return _parseListSchema(
-          variableName,
+        final typeProvider = element.library2?.typeProvider;
+        if (typeProvider == null) {
+          throw InvalidGenerationSourceError(
+            'Could not get type provider for library',
+            element: element,
+          );
+        }
+        final listElementAnalysis = _analyzeListElement(
           baseInvocation,
           element,
+          typeProvider,
+        );
+        model = _parseListSchema(
+          variableName,
+          element,
           isNullable: isNullable,
+          listElementAnalysis: listElementAnalysis,
           customTypeName: customTypeName,
         );
+        break;
       case 'literal':
-        return _parseLiteralSchema(
+        model = _parseLiteralSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'enumString':
-        return _parseEnumStringSchema(
+        model = _parseEnumStringSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       case 'enumValues':
-        return _parseEnumValuesSchema(
+        model = _parseEnumValuesSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
+      case 'uri':
+        model = _parseRepresentationSchema(
+          variableName,
+          element,
+          representationType: 'Uri',
+          isNullable: isNullable,
+          isTransformedSchema: true,
+          customTypeName: customTypeName,
+        );
+        break;
+      case 'date':
+      case 'datetime':
+        model = _parseRepresentationSchema(
+          variableName,
+          element,
+          representationType: 'DateTime',
+          isNullable: isNullable,
+          isTransformedSchema: true,
+          customTypeName: customTypeName,
+        );
+        break;
+      case 'duration':
+        model = _parseRepresentationSchema(
+          variableName,
+          element,
+          representationType: 'Duration',
+          isNullable: isNullable,
+          isTransformedSchema: true,
+          customTypeName: customTypeName,
+        );
+        break;
       case 'discriminated':
-        return _parseDiscriminatedSchema(
+        model = _parseDiscriminatedSchema(
           variableName,
           baseInvocation,
           element,
           isNullable: isNullable,
           customTypeName: customTypeName,
         );
+        break;
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema type for @AckType: Ack.$methodName(). '
-          'Supported types: object, string, integer, double, boolean, list, literal, enumString, enumValues, discriminated',
+          'Supported types: object, string, integer, double, boolean, list, literal, enumString, enumValues, uri, date, datetime, duration, discriminated',
           element: element,
         );
     }
+
+    if (transformOutputTypeString != null) {
+      return _withRepresentationType(model, transformOutputTypeString);
+    }
+
+    return model;
+  }
+
+  ModelInfo _parseSchemaReferenceChain({
+    required String variableName,
+    required _SchemaReference schemaReference,
+    required Element2 element,
+    String? customTypeName,
+    required bool isNullable,
+    required String? transformOutputTypeString,
+  }) {
+    final resolved = _resolveSchemaReference(schemaReference, element);
+    if (resolved == null) {
+      final referenceLabel = _formatSchemaReference(schemaReference);
+      throw InvalidGenerationSourceError(
+        'Could not resolve schema reference "$referenceLabel" for "$variableName".',
+        element: element,
+      );
+    }
+
+    if (transformOutputTypeString != null) {
+      _throwIfUnsupportedTransformedReferencedSchema(
+        resolved: resolved,
+        element: element,
+        contextLabel: 'Schema "$variableName"',
+      );
+    }
+
+    final aliasTypeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
+    final sourceModel = resolved.modelInfo;
+
+    return ModelInfo(
+      className: aliasTypeName,
+      schemaClassName: variableName,
+      fields: sourceModel.fields,
+      additionalProperties: sourceModel.additionalProperties,
+      additionalPropertiesField: sourceModel.additionalPropertiesField,
+      discriminatorKey: sourceModel.discriminatorKey,
+      discriminatorValue: sourceModel.discriminatorValue,
+      subtypeNames: sourceModel.subtypeNames,
+      schemaIdentity:
+          sourceModel.schemaIdentity ??
+          _declarationVisitKey(resolved.sourceDeclaration),
+      discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
+      isFromSchemaVariable: true,
+      representationType:
+          transformOutputTypeString ?? sourceModel.representationType,
+      isTransformedSchema:
+          sourceModel.isTransformedSchema || transformOutputTypeString != null,
+      isNullableSchema: isNullable || sourceModel.isNullableSchema,
+    );
   }
 
   /// Parses Ack.object() schema
@@ -882,6 +1044,7 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
+      isTransformedSchema: model.isTransformedSchema,
       isNullableSchema: model.isNullableSchema,
     );
   }
@@ -1060,29 +1223,24 @@ class SchemaAstAnalyzer {
     MethodInvocation invocation,
     Element2 element,
   ) {
-    final schemaReference = _findSchemaVariableBase(invocation);
+    final chain = _analyzeSchemaChain(invocation);
+    final schemaReference = chain.schemaReference;
     if (schemaReference == null) {
       return null;
-    }
-
-    var isOptional = false;
-    var isNullable = false;
-    final (chain, _) = _collectMethodChain(invocation);
-    for (final current in chain) {
-      final methodName = current.methodName.name;
-      if (methodName == 'optional') {
-        isOptional = true;
-      } else if (methodName == 'nullable') {
-        isNullable = true;
-      }
     }
 
     return _buildFieldInfoForSchemaReference(
       fieldName: fieldName,
       schemaReference: schemaReference,
       element: element,
-      isRequired: !isOptional,
-      isNullable: isNullable,
+      isRequired: !chain.isOptional,
+      isNullable: chain.isNullable,
+      transformedOutputType: chain.transformOutputType,
+      transformedRepresentationType: _requireTransformOutputType(
+        chain,
+        element,
+        contextLabel: 'Field "$fieldName"',
+      ),
     );
   }
 
@@ -1092,6 +1250,8 @@ class SchemaAstAnalyzer {
     required Element2 element,
     bool isRequired = true,
     bool isNullable = false,
+    DartType? transformedOutputType,
+    String? transformedRepresentationType,
   }) {
     final schemaVarName = schemaReference.name;
     final library = element.library2;
@@ -1115,9 +1275,26 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final hasTypedReference = resolvedReference.hasAckTypeAnnotation;
-    final isObjectRepresentation =
-        resolvedReference.modelInfo.representationType == kMapType;
+    final hasTransformOverride = transformedRepresentationType != null;
+    if (hasTransformOverride) {
+      _throwIfUnsupportedTransformedReferencedSchema(
+        resolved: resolvedReference,
+        element: element,
+        contextLabel: 'Field "$fieldName"',
+      );
+    }
+
+    final representationType =
+        transformedRepresentationType ??
+        resolvedReference.modelInfo.representationType;
+    final visibleRepresentationType = _resolveVisibleRepresentationType(
+      representationType: representationType,
+      resolved: resolvedReference,
+      contextElement: element,
+    );
+    final hasTypedReference =
+        resolvedReference.hasAckTypeAnnotation && !hasTransformOverride;
+    final isObjectRepresentation = representationType == kMapType;
     if (isObjectRepresentation && !hasTypedReference) {
       throw InvalidGenerationSourceError(
         'Field "$fieldName" references object schema "$schemaVarName" '
@@ -1128,15 +1305,26 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final mappedType = _representationTypeToDartType(
-      resolvedReference.modelInfo.representationType,
-      typeProvider,
-    );
+    final mappedType =
+        transformedOutputType ??
+        _representationTypeToDartType(representationType, typeProvider);
     final typeBaseName = hasTypedReference
         ? _qualifyTypeBaseName(
             resolvedReference.modelInfo.className,
             resolvedReference.importPrefix,
           )
+        : null;
+    final rawDisplayTypeOverride =
+        !hasTypedReference &&
+            !mappedType.isDartCoreString &&
+            !mappedType.isDartCoreInt &&
+            !mappedType.isDartCoreDouble &&
+            !mappedType.isDartCoreBool &&
+            !mappedType.isDartCoreNum &&
+            !mappedType.isDartCoreList &&
+            !mappedType.isDartCoreMap &&
+            !mappedType.isDartCoreSet
+        ? visibleRepresentationType
         : null;
 
     return FieldInfo(
@@ -1147,10 +1335,15 @@ class SchemaAstAnalyzer {
       isNullable: isNullable,
       constraints: [],
       nestedSchemaRef: hasTypedReference ? schemaVarName : null,
-      displayTypeOverride: hasTypedReference ? '${typeBaseName}Type' : null,
+      displayTypeOverride: hasTypedReference
+          ? '${typeBaseName}Type'
+          : rawDisplayTypeOverride,
       nestedSchemaCastTypeOverride: hasTypedReference
-          ? resolvedReference.modelInfo.representationType
+          ? visibleRepresentationType
           : null,
+      isTransformedRepresentation:
+          resolvedReference.modelInfo.isTransformedSchema ||
+          transformedRepresentationType != null,
     );
   }
 
@@ -1160,39 +1353,20 @@ class SchemaAstAnalyzer {
     MethodInvocation invocation,
     Element2 element,
   ) {
-    // Walk the method chain to find modifiers and base type
-    var isOptional = false;
-    var isNullable = false;
-    MethodInvocation? current = invocation;
-    MethodInvocation? baseInvocation;
-
-    while (current != null) {
-      final methodName = current.methodName.name;
-
-      if (methodName == 'optional') {
-        isOptional = true;
-      } else if (methodName == 'nullable') {
-        isNullable = true;
-      } else {
-        // This might be the base schema type (Ack.string(), etc.)
-        // Supports prefixed Ack (e.g., ack.Ack.string()) via _isAckTarget
-        final target = current.target;
-        if (_isAckTarget(target)) {
-          baseInvocation = current;
-          break;
-        }
-      }
-
-      // Move to the next method in the chain
-      final target = current.target;
-      if (target is MethodInvocation) {
-        current = target;
-      } else {
-        break;
-      }
-    }
+    final chain = _analyzeSchemaChain(invocation);
+    final baseInvocation = chain.ackBase;
 
     if (baseInvocation == null) {
+      if (chain.wasTruncated) {
+        throw InvalidGenerationSourceError(
+          'Field "$fieldName" schema method chain exceeded max depth of 20. '
+          '@AckType requires statically analyzable schema chains.',
+          element: element,
+          todo:
+              'Reduce the chaining depth or extract part of the schema into a named variable.',
+        );
+      }
+
       throw InvalidGenerationSourceError(
         'Could not determine schema type for field "$fieldName"',
         element: element,
@@ -1200,6 +1374,17 @@ class SchemaAstAnalyzer {
     }
 
     final schemaMethod = baseInvocation.methodName.name;
+    final transformOutputTypeString = _requireTransformOutputType(
+      chain,
+      element,
+      contextLabel: 'Field "$fieldName"',
+    );
+    _throwIfUnsupportedTransformedBaseSchema(
+      schemaMethod: schemaMethod,
+      transformOutputTypeString: transformOutputTypeString,
+      element: element,
+      contextLabel: 'Field "$fieldName"',
+    );
 
     if (schemaMethod == 'object') {
       throw InvalidGenerationSourceError(
@@ -1211,9 +1396,16 @@ class SchemaAstAnalyzer {
       );
     }
 
+    final typeProvider = element.library2!.typeProvider;
+    final listElementAnalysis =
+        schemaMethod == 'list' && transformOutputTypeString == null
+        ? _analyzeListElement(baseInvocation, element, typeProvider)
+        : null;
     // Map schema type to Dart type (passing full invocation for context)
     // Also captures schema variable reference and list metadata for typed wrappers.
-    final mappedType = _mapSchemaTypeToDartType(baseInvocation, element);
+    final mappedType =
+        listElementAnalysis?.mapping ??
+        _mapSchemaTypeToDartType(invocation, element);
 
     String? displayTypeOverride;
     var collectionElementDisplayTypeOverride =
@@ -1231,15 +1423,31 @@ class SchemaAstAnalyzer {
       name: fieldName,
       jsonKey: fieldName,
       type: mappedType.dartType,
-      isRequired: !isOptional,
-      isNullable: isNullable,
+      isRequired: !chain.isOptional,
+      isNullable: chain.isNullable,
       constraints: [],
       listElementSchemaRef: mappedType.listElementSchemaRef,
-      displayTypeOverride: displayTypeOverride,
+      displayTypeOverride:
+          displayTypeOverride ??
+          (transformOutputTypeString != null &&
+                  !mappedType.dartType.isDartCoreString &&
+                  !mappedType.dartType.isDartCoreInt &&
+                  !mappedType.dartType.isDartCoreDouble &&
+                  !mappedType.dartType.isDartCoreBool &&
+                  !mappedType.dartType.isDartCoreNum &&
+                  !mappedType.dartType.isDartCoreList &&
+                  !mappedType.dartType.isDartCoreMap &&
+                  !mappedType.dartType.isDartCoreSet
+              ? transformOutputTypeString
+              : null),
       collectionElementDisplayTypeOverride:
           collectionElementDisplayTypeOverride,
       collectionElementCastTypeOverride: mappedType.listElementCastTypeOverride,
       collectionElementIsCustomType: mappedType.listElementIsCustomType,
+      isTransformedRepresentation:
+          transformOutputTypeString != null ||
+          _isBuiltInTransformedMethod(schemaMethod) ||
+          listElementAnalysis?.isTransformedRepresentation == true,
     );
   }
 
@@ -1251,12 +1459,53 @@ class SchemaAstAnalyzer {
     MethodInvocation invocation,
     Element2 element,
   ) {
-    final schemaMethod = invocation.methodName.name;
+    final chain = _analyzeSchemaChain(invocation);
+    final schemaReference = chain.schemaReference;
+    final baseInvocation = chain.ackBase;
 
     // We need to get the type provider from the element's library
     final library = element.library2!;
-
     final typeProvider = library.typeProvider;
+    final transformOutputTypeString = _requireTransformOutputType(
+      chain,
+      element,
+      contextLabel: 'Schema expression',
+    );
+
+    if (schemaReference != null) {
+      return _resolveSchemaVariableType(
+        schemaReference,
+        element,
+        typeProvider,
+        transformedOutputType: chain.transformOutputType,
+        transformedRepresentationType: transformOutputTypeString,
+      );
+    }
+
+    if (baseInvocation == null) {
+      throw InvalidGenerationSourceError(
+        'Could not determine schema type for "${invocation.toSource()}".',
+        element: element,
+      );
+    }
+
+    final schemaMethod = baseInvocation.methodName.name;
+    _throwIfUnsupportedTransformedBaseSchema(
+      schemaMethod: schemaMethod,
+      transformOutputTypeString: transformOutputTypeString,
+      element: element,
+      contextLabel: 'Schema expression',
+    );
+
+    if (transformOutputTypeString != null) {
+      return (
+        dartType: chain.transformOutputType ?? typeProvider.dynamicType,
+        listElementSchemaRef: null,
+        listElementDisplayTypeOverride: null,
+        listElementCastTypeOverride: null,
+        listElementIsCustomType: false,
+      );
+    }
 
     switch (schemaMethod) {
       case 'string':
@@ -1294,7 +1543,11 @@ class SchemaAstAnalyzer {
       case 'list':
         // Extract element type from Ack.list(elementSchema) argument
         // This may return a schema variable reference for nested schemas
-        return _extractListType(invocation, element, typeProvider);
+        return _analyzeListElement(
+          baseInvocation,
+          element,
+          typeProvider,
+        ).mapping;
       case 'object':
         // Nested objects represented as Map<String, Object?>
         // Note: Using dynamicType for analyzer; generated code uses Object?
@@ -1319,7 +1572,7 @@ class SchemaAstAnalyzer {
         );
       case 'enumValues':
         final resolvedType = _resolveEnumValuesType(
-          invocation,
+          baseInvocation,
           library: library,
         );
         if (resolvedType != null) {
@@ -1339,6 +1592,31 @@ class SchemaAstAnalyzer {
         );
         return (
           dartType: typeProvider.dynamicType,
+          listElementSchemaRef: null,
+          listElementDisplayTypeOverride: null,
+          listElementCastTypeOverride: null,
+          listElementIsCustomType: false,
+        );
+      case 'uri':
+        return (
+          dartType: _dartCoreType(typeProvider, 'Uri'),
+          listElementSchemaRef: null,
+          listElementDisplayTypeOverride: null,
+          listElementCastTypeOverride: null,
+          listElementIsCustomType: false,
+        );
+      case 'date':
+      case 'datetime':
+        return (
+          dartType: _dartCoreType(typeProvider, 'DateTime'),
+          listElementSchemaRef: null,
+          listElementDisplayTypeOverride: null,
+          listElementCastTypeOverride: null,
+          listElementIsCustomType: false,
+        );
+      case 'duration':
+        return (
+          dartType: _dartCoreType(typeProvider, 'Duration'),
           listElementSchemaRef: null,
           listElementDisplayTypeOverride: null,
           listElementCastTypeOverride: null,
@@ -1425,7 +1703,9 @@ class SchemaAstAnalyzer {
     if (args.isEmpty) return null;
 
     final ref = _resolveListElementRef(args.first);
-    final elementSchema = ref.ackBase;
+    final elementSchema = ref.invocation == null
+        ? null
+        : _analyzeSchemaChain(ref.invocation!).ackBase;
     if (elementSchema == null ||
         elementSchema.methodName.name != 'enumValues') {
       return null;
@@ -1602,9 +1882,8 @@ class SchemaAstAnalyzer {
       ...classElement.allSupertypes.expand((type) => type.element3.fields2),
     ];
 
-    final field = allFields.cast<FieldElement2?>().firstWhere(
-      (current) => current?.name3 == memberName,
-      orElse: () => null,
+    final field = allFields.firstWhereOrNull(
+      (current) => current.name3 == memberName,
     );
     if (field != null) {
       return field.type;
@@ -1615,9 +1894,8 @@ class SchemaAstAnalyzer {
       ...classElement.allSupertypes.expand((type) => type.element3.getters2),
     ];
 
-    final getter = allGetters.cast<GetterElement?>().firstWhere(
-      (current) => current?.name3 == memberName,
-      orElse: () => null,
+    final getter = allGetters.firstWhereOrNull(
+      (current) => current.name3 == memberName,
     );
     return getter?.returnType;
   }
@@ -1677,36 +1955,27 @@ class SchemaAstAnalyzer {
 
   _ListElementRef _resolveListElementRef(Expression firstArg) {
     if (firstArg is MethodInvocation) {
-      final baseInvocation = _findBaseAckInvocation(firstArg);
-      if (baseInvocation != null) {
-        return (ackBase: baseInvocation, schemaRef: null);
-      }
-
       final schemaRef = _findSchemaVariableBase(firstArg);
       if (schemaRef != null) {
-        return (ackBase: null, schemaRef: schemaRef);
+        return (invocation: firstArg, schemaRef: schemaRef);
       }
 
-      return (ackBase: null, schemaRef: null);
+      return (invocation: firstArg, schemaRef: null);
     }
 
     final schemaRef = _extractSchemaReference(firstArg);
     if (schemaRef != null) {
-      return (ackBase: null, schemaRef: schemaRef);
+      return (invocation: null, schemaRef: schemaRef);
     }
 
-    return (ackBase: null, schemaRef: null);
+    return (invocation: null, schemaRef: null);
   }
 
-  /// Extracts the element type from Ack.list(elementSchema) calls
+  /// Analyzes the element schema used by Ack.list(...).
   ///
-  /// Supports method invocations and schema references such as
-  /// `Ack.list(Ack.string())`, `Ack.list(Ack.string().describe(...))`,
-  /// `Ack.list(addressSchema)`, or `Ack.list(addressSchema.optional())`.
-  ///
-  /// Returns a mapping with the list [DartType] and optional metadata used to
-  /// build typed list wrappers when the element references another schema.
-  _SchemaTypeMapping _extractListType(
+  /// Returns the generated list mapping, the list element representation type
+  /// string, and whether the element is backed by a transformed schema.
+  _ListElementAnalysis _analyzeListElement(
     MethodInvocation listInvocation,
     Element2 element,
     TypeProvider typeProvider,
@@ -1725,9 +1994,17 @@ class SchemaAstAnalyzer {
     final firstArg = args.first;
 
     final ref = _resolveListElementRef(firstArg);
-    if (ref.ackBase != null) {
-      final methodName = ref.ackBase!.methodName.name;
-      if (methodName == 'object') {
+    if (ref.invocation != null) {
+      final chain = _analyzeSchemaChain(ref.invocation!);
+      final baseInvocation = chain.ackBase;
+      final transformOutputTypeString = _requireTransformOutputType(
+        chain,
+        element,
+        contextLabel: 'Ack.list(...) element schema',
+      );
+
+      if (baseInvocation != null &&
+          baseInvocation.methodName.name == 'object') {
         throw InvalidGenerationSourceError(
           'Ack.list(Ack.object(...)) uses an anonymous inline object schema. '
           'Strict typed generation requires a named schema reference.',
@@ -1737,18 +2014,97 @@ class SchemaAstAnalyzer {
         );
       }
 
-      final nestedMapping = _mapSchemaTypeToDartType(ref.ackBase!, element);
+      if (chain.schemaReference != null) {
+        final mapping = _resolveSchemaVariableType(
+          chain.schemaReference!,
+          element,
+          typeProvider,
+          transformedOutputType: chain.transformOutputType,
+          transformedRepresentationType: transformOutputTypeString,
+        );
+        final resolved = _resolveSchemaReference(
+          chain.schemaReference!,
+          element,
+        );
+        return (
+          mapping: mapping,
+          elementRepresentationType: _resolveSchemaVariableElementTypeString(
+            chain.schemaReference!,
+            element,
+            transformedRepresentationType: transformOutputTypeString,
+          ),
+          isTransformedRepresentation:
+              resolved?.modelInfo.isTransformedSchema == true ||
+              transformOutputTypeString != null,
+        );
+      }
+
+      if (baseInvocation == null) {
+        final rawExpression = firstArg.toSource();
+        throw InvalidGenerationSourceError(
+          'Could not statically resolve Ack.list($rawExpression) element type.',
+          element: element,
+          todo:
+              'Use Ack.list(Ack.<primitive>()), Ack.list(enumSchema), or Ack.list(namedSchema) so the generator can infer a concrete element type.',
+        );
+      }
+
+      final methodName = baseInvocation.methodName.name;
+      _throwIfUnsupportedTransformedBaseSchema(
+        schemaMethod: methodName,
+        transformOutputTypeString: transformOutputTypeString,
+        element: element,
+        contextLabel: 'Ack.list(...) element schema',
+      );
+
+      if (methodName == 'list') {
+        final nested = _analyzeListElement(
+          baseInvocation,
+          element,
+          typeProvider,
+        );
+        return (
+          mapping: _wrapListElementMapping(nested.mapping, typeProvider),
+          elementRepresentationType:
+              transformOutputTypeString ??
+              'List<${nested.elementRepresentationType}>',
+          isTransformedRepresentation:
+              transformOutputTypeString != null ||
+              nested.isTransformedRepresentation,
+        );
+      }
+
+      final elementMapping = _mapSchemaTypeToDartType(ref.invocation!, element);
+      final elementRepresentationType =
+          transformOutputTypeString ??
+          (methodName == 'enumValues'
+              ? _extractEnumTypeNameFromInvocation(baseInvocation) ?? 'dynamic'
+              : _mapSchemaMethodToType(methodName));
       return (
-        dartType: typeProvider.listType(nestedMapping.dartType),
-        listElementSchemaRef: null,
-        listElementDisplayTypeOverride: null,
-        listElementCastTypeOverride: null,
-        listElementIsCustomType: false,
+        mapping: _wrapListElementMapping(elementMapping, typeProvider),
+        elementRepresentationType: elementRepresentationType,
+        isTransformedRepresentation:
+            transformOutputTypeString != null ||
+            _isBuiltInTransformedMethod(methodName),
       );
     }
 
     if (ref.schemaRef != null) {
-      return _resolveSchemaVariableType(ref.schemaRef!, element, typeProvider);
+      final mapping = _resolveSchemaVariableType(
+        ref.schemaRef!,
+        element,
+        typeProvider,
+      );
+      final resolved = _resolveSchemaReference(ref.schemaRef!, element);
+      return (
+        mapping: mapping,
+        elementRepresentationType: _resolveSchemaVariableElementTypeString(
+          ref.schemaRef!,
+          element,
+        ),
+        isTransformedRepresentation:
+            resolved?.modelInfo.isTransformedSchema ?? false,
+      );
     }
 
     final rawExpression = firstArg.toSource();
@@ -1760,6 +2116,20 @@ class SchemaAstAnalyzer {
     );
   }
 
+  _SchemaTypeMapping _wrapListElementMapping(
+    _SchemaTypeMapping elementMapping,
+    TypeProvider typeProvider,
+  ) {
+    return (
+      dartType: typeProvider.listType(elementMapping.dartType),
+      listElementSchemaRef: elementMapping.listElementSchemaRef,
+      listElementDisplayTypeOverride:
+          elementMapping.listElementDisplayTypeOverride,
+      listElementCastTypeOverride: elementMapping.listElementCastTypeOverride,
+      listElementIsCustomType: elementMapping.listElementIsCustomType,
+    );
+  }
+
   /// Resolves a schema reference to its list element type.
   ///
   /// Looks up the schema in local/imported namespaces and returns the
@@ -1767,8 +2137,10 @@ class SchemaAstAnalyzer {
   _SchemaTypeMapping _resolveSchemaVariableType(
     _SchemaReference schemaReference,
     Element2 element,
-    TypeProvider typeProvider,
-  ) {
+    TypeProvider typeProvider, {
+    DartType? transformedOutputType,
+    String? transformedRepresentationType,
+  }) {
     final resolved = _resolveSchemaReference(schemaReference, element);
     if (resolved == null) {
       throw InvalidGenerationSourceError(
@@ -1781,8 +2153,26 @@ class SchemaAstAnalyzer {
     }
 
     final modelInfo = resolved.modelInfo;
-    final isObjectRepresentation = modelInfo.representationType == kMapType;
-    if (isObjectRepresentation && !resolved.hasAckTypeAnnotation) {
+    final hasTransformOverride = transformedRepresentationType != null;
+    if (hasTransformOverride) {
+      _throwIfUnsupportedTransformedReferencedSchema(
+        resolved: resolved,
+        element: element,
+        contextLabel: 'Ack.list(${schemaReference.name}) element schema',
+      );
+    }
+
+    final representationType =
+        transformedRepresentationType ?? modelInfo.representationType;
+    final visibleRepresentationType = _resolveVisibleRepresentationType(
+      representationType: representationType,
+      resolved: resolved,
+      contextElement: element,
+    );
+    final hasTypedReference =
+        resolved.hasAckTypeAnnotation && !hasTransformOverride;
+    final isObjectRepresentation = representationType == kMapType;
+    if (isObjectRepresentation && !hasTypedReference) {
       throw InvalidGenerationSourceError(
         'Ack.list(${schemaReference.name}) references object schema '
         '"${schemaReference.name}" without @AckType. This would fall back to '
@@ -1793,21 +2183,33 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final elementDartType = _representationTypeToDartType(
-      modelInfo.representationType,
-      typeProvider,
-    );
+    final elementDartType =
+        transformedOutputType ??
+        _representationTypeToDartType(representationType, typeProvider);
 
-    final hasTypedReference = resolved.hasAckTypeAnnotation;
     final typeBaseName = hasTypedReference
         ? _qualifyTypeBaseName(modelInfo.className, resolved.importPrefix)
         : null;
+    final listElementDisplayTypeOverride = hasTypedReference
+        ? typeBaseName
+        : (!elementDartType.isDartCoreString &&
+                  !elementDartType.isDartCoreInt &&
+                  !elementDartType.isDartCoreDouble &&
+                  !elementDartType.isDartCoreBool &&
+                  !elementDartType.isDartCoreNum &&
+                  !elementDartType.isDartCoreList &&
+                  !elementDartType.isDartCoreMap &&
+                  !elementDartType.isDartCoreSet
+              ? visibleRepresentationType
+              : null);
 
     return (
       dartType: typeProvider.listType(elementDartType),
-      listElementSchemaRef: resolved.schemaName,
-      listElementDisplayTypeOverride: typeBaseName,
-      listElementCastTypeOverride: modelInfo.representationType,
+      listElementSchemaRef: hasTypedReference ? resolved.schemaName : null,
+      listElementDisplayTypeOverride: listElementDisplayTypeOverride,
+      listElementCastTypeOverride: hasTypedReference
+          ? visibleRepresentationType
+          : null,
       listElementIsCustomType: hasTypedReference,
     );
   }
@@ -1821,13 +2223,15 @@ class SchemaAstAnalyzer {
   /// reference is detected.
   String _resolveSchemaVariableElementTypeString(
     _SchemaReference schemaReference,
-    Element2 element,
-  ) {
+    Element2 element, {
+    String? transformedRepresentationType,
+  }) {
     final library = element.library2;
     // Use library-scoped cache key to prevent collisions across libraries
     final prefix = schemaReference.prefix ?? '';
+    final transformKey = transformedRepresentationType ?? '';
     final cacheKey =
-        '${library?.uri ?? 'unknown'}::$prefix::${schemaReference.name}';
+        '${library?.uri ?? 'unknown'}::$prefix::${schemaReference.name}::$transformKey';
 
     final cached = _schemaVariableTypeCache[cacheKey];
     if (cached != null) {
@@ -1868,8 +2272,14 @@ class SchemaAstAnalyzer {
         );
       }
 
-      if (resolved.modelInfo.representationType == kMapType &&
-          !resolved.hasAckTypeAnnotation) {
+      final representationType =
+          transformedRepresentationType ??
+          resolved.modelInfo.representationType;
+      final hasTypedReference =
+          resolved.hasAckTypeAnnotation &&
+          transformedRepresentationType == null;
+
+      if (representationType == kMapType && !hasTypedReference) {
         throw InvalidGenerationSourceError(
           'Ack.list(${schemaReference.name}) references object schema '
           '"${schemaReference.name}" without @AckType. This would fall back to '
@@ -1880,7 +2290,11 @@ class SchemaAstAnalyzer {
         );
       }
 
-      resolvedType = resolved.modelInfo.representationType;
+      resolvedType = _resolveVisibleRepresentationType(
+        representationType: representationType,
+        resolved: resolved,
+        contextElement: element,
+      );
       return resolvedType;
     } finally {
       _schemaVariableTypeStack.remove(cacheKey);
@@ -1921,12 +2335,13 @@ class SchemaAstAnalyzer {
     var shouldCacheResult = false;
 
     try {
-      final resolvedElement = _resolveSchemaElement(reference, library);
-      if (resolvedElement == null) {
+      final resolvedElementMatch = _resolveSchemaElement(reference, library);
+      if (resolvedElementMatch == null) {
         shouldCacheResult = true;
         resolvedReference = null;
         return null;
       }
+      final resolvedElement = resolvedElementMatch.element;
 
       TopLevelVariableElement2? schemaVariable;
       GetterElement? schemaGetter;
@@ -1943,18 +2358,6 @@ class SchemaAstAnalyzer {
             sourceDeclaration = variable;
           }
         } else {
-          schemaGetter = resolvedElement;
-          sourceDeclaration = resolvedElement;
-        }
-      } else if (resolvedElement is PropertyAccessorElement2) {
-        if (resolvedElement is GetterElement && resolvedElement.isSynthetic) {
-          final variable = resolvedElement.variable3;
-          if (variable is TopLevelVariableElement2) {
-            schemaVariable = variable;
-            sourceDeclaration = variable;
-          }
-        } else if (resolvedElement is GetterElement &&
-            !resolvedElement.isSynthetic) {
           schemaGetter = resolvedElement;
           sourceDeclaration = resolvedElement;
         }
@@ -2019,6 +2422,7 @@ class SchemaAstAnalyzer {
         schemaName: schemaName,
         modelInfo: modelInfo,
         importPrefix: reference.prefix,
+        importDirective: resolvedElementMatch.importDirective,
         hasAckTypeAnnotation: hasAckTypeAnnotation,
         sourceDeclaration: declarationForMetadata,
         sourceLibraryUri: declarationForMetadata.library2?.uri,
@@ -2043,7 +2447,7 @@ class SchemaAstAnalyzer {
     }
   }
 
-  Element2? _resolveSchemaElement(
+  _ResolvedSchemaElement? _resolveSchemaElement(
     _SchemaReference reference,
     LibraryElement2 library,
   ) {
@@ -2053,16 +2457,12 @@ class SchemaAstAnalyzer {
         final prefixName = _elementName(import.prefix2?.element);
         if (prefixName != reference.prefix) continue;
 
-        final importedElement = import.namespace.get2(reference.name);
-        if (importedElement != null) {
-          return importedElement;
-        }
-
-        final exportedElement = import.importedLibrary2?.exportNamespace.get2(
+        final importedElement = import.namespace.getPrefixed2(
+          reference.prefix!,
           reference.name,
         );
-        if (exportedElement != null) {
-          return exportedElement;
+        if (importedElement != null) {
+          return (element: importedElement, importDirective: import);
         }
       }
 
@@ -2074,17 +2474,49 @@ class SchemaAstAnalyzer {
     final scopeResult = library.firstFragment.scope.lookup(reference.name);
     final scopedElement = scopeResult.getter2;
     if (scopedElement != null) {
-      return scopedElement;
+      return (
+        element: scopedElement,
+        importDirective: _findImportDirectiveForElement(
+          reference.name,
+          scopedElement,
+          library,
+        ),
+      );
     }
 
     for (final import in library.firstFragment.libraryImports2) {
       final importedElement = import.namespace.get2(reference.name);
       if (importedElement != null) {
-        return importedElement;
+        return (element: importedElement, importDirective: import);
       }
     }
 
     return null;
+  }
+
+  LibraryImport? _findImportDirectiveForElement(
+    String name,
+    Element2 element,
+    LibraryElement2 library,
+  ) {
+    for (final import in library.firstFragment.libraryImports2) {
+      final importedElement = import.namespace.get2(name);
+      if (_elementsMatch(importedElement, element)) {
+        return import;
+      }
+    }
+    return null;
+  }
+
+  bool _elementsMatch(Element2? first, Element2? second) {
+    if (identical(first, second)) {
+      return true;
+    }
+    if (first == null || second == null) {
+      return false;
+    }
+    return first.library2?.uri == second.library2?.uri &&
+        first.name3 == second.name3;
   }
 
   String? _elementName(Element2? element) {
@@ -2118,6 +2550,235 @@ class SchemaAstAnalyzer {
     return '$prefix.$baseTypeName';
   }
 
+  String _resolveVisibleRepresentationType({
+    required String representationType,
+    required _ResolvedSchemaReference resolved,
+    required Element2 contextElement,
+  }) {
+    final contextLibrary = contextElement.library2;
+    if (contextLibrary == null) {
+      throw InvalidGenerationSourceError(
+        'Could not resolve libraries while qualifying transformed representation '
+        'type "$representationType".',
+        element: contextElement,
+      );
+    }
+
+    if (resolved.sourceLibraryUri == contextLibrary.uri) {
+      return representationType;
+    }
+
+    if (_containsUnsupportedRepresentationSyntax(representationType)) {
+      throw InvalidGenerationSourceError(
+        'Transformed representation type "$representationType" for '
+        '"${resolved.schemaName}" uses unsupported syntax for cross-file '
+        'generation.',
+        element: contextElement,
+        todo:
+            'Use a nominal type with optional nested generics/nullability, or keep the schema in the same library.',
+      );
+    }
+
+    final tokenPattern = RegExp(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*');
+    final buffer = StringBuffer();
+    var lastIndex = 0;
+
+    for (final match in tokenPattern.allMatches(representationType)) {
+      buffer.write(representationType.substring(lastIndex, match.start));
+      final token = match.group(0)!;
+      buffer.write(
+        _resolveVisibleRepresentationToken(
+          token: token,
+          resolved: resolved,
+          contextLibrary: contextLibrary,
+          fullRepresentationType: representationType,
+          contextElement: contextElement,
+        ),
+      );
+      lastIndex = match.end;
+    }
+
+    buffer.write(representationType.substring(lastIndex));
+    return buffer.toString();
+  }
+
+  String _resolveVisibleRepresentationToken({
+    required String token,
+    required _ResolvedSchemaReference resolved,
+    required LibraryElement2 contextLibrary,
+    required String fullRepresentationType,
+    required Element2 contextElement,
+  }) {
+    if (_isBuiltInRepresentationIdentifier(token)) {
+      return token;
+    }
+
+    if (token.contains('.')) {
+      throw InvalidGenerationSourceError(
+        'Transformed representation type "$fullRepresentationType" for '
+        '"${resolved.schemaName}" uses a qualified type that cannot be '
+        'referenced across library boundaries.',
+        element: contextElement,
+        todo:
+            'Use an unqualified exported representation type, import that type directly into the consuming library, or keep the schema in the same library.',
+      );
+    }
+
+    final importNamespaceType = _resolveImportedType(token, resolved);
+    final scopedElement = contextLibrary.firstFragment.scope
+        .lookup(token)
+        .getter2;
+    final scopedType = _resolveTypeFromElement(scopedElement);
+    final localContextType =
+        scopedElement != null &&
+            _findImportDirectiveForElement(
+                  token,
+                  scopedElement,
+                  contextLibrary,
+                ) ==
+                null
+        ? scopedType
+        : null;
+    final importedContextTypes = _resolveImportedTypesByName(
+      token,
+      contextLibrary,
+    );
+    final unqualifiedContextType =
+        localContextType ??
+        (importedContextTypes.length == 1 ? importedContextTypes.single : null);
+    final hasAmbiguousImportedTypes =
+        localContextType == null && importedContextTypes.length > 1;
+    final prefix = resolved.importPrefix;
+
+    if (importNamespaceType != null && prefix != null && prefix.isNotEmpty) {
+      return '$prefix.$token';
+    }
+
+    if (importNamespaceType != null) {
+      if (unqualifiedContextType != null &&
+          _sameResolvedType(importNamespaceType, unqualifiedContextType)) {
+        return token;
+      }
+
+      if (hasAmbiguousImportedTypes || unqualifiedContextType != null) {
+        throw InvalidGenerationSourceError(
+          'Transformed representation type "$fullRepresentationType" for '
+          '"${resolved.schemaName}" is ambiguous in this library.',
+          element: contextElement,
+          todo:
+              'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
+        );
+      }
+    }
+
+    if (hasAmbiguousImportedTypes) {
+      throw InvalidGenerationSourceError(
+        'Transformed representation type "$fullRepresentationType" for '
+        '"${resolved.schemaName}" is ambiguous in this library.',
+        element: contextElement,
+        todo:
+            'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
+      );
+    }
+
+    if (unqualifiedContextType != null) {
+      return token;
+    }
+
+    throw InvalidGenerationSourceError(
+      'Transformed representation type "$fullRepresentationType" for '
+      '"${resolved.schemaName}" is not visible from this library.',
+      element: contextElement,
+      todo:
+          'Export the representation type from the referenced schema library or import that type directly into this library.',
+    );
+  }
+
+  bool _sameResolvedType(DartType first, DartType second) {
+    return _resolvedTypeIdentity(first) == _resolvedTypeIdentity(second);
+  }
+
+  List<DartType> _resolveImportedTypesByName(
+    String token,
+    LibraryElement2 library,
+  ) {
+    final normalizedToken = token.trim();
+    if (normalizedToken.isEmpty) {
+      return const [];
+    }
+
+    final importedTypesByIdentity = <String, DartType>{};
+    for (final import in library.firstFragment.libraryImports2) {
+      final importedElement = import.namespace.get2(normalizedToken);
+      final importedType = _resolveTypeFromElement(importedElement);
+      if (importedType == null) {
+        continue;
+      }
+
+      importedTypesByIdentity.putIfAbsent(
+        _resolvedTypeIdentity(importedType),
+        () => importedType,
+      );
+    }
+
+    return importedTypesByIdentity.values.toList(growable: false);
+  }
+
+  DartType? _resolveImportedType(
+    String token,
+    _ResolvedSchemaReference resolved,
+  ) {
+    final importDirective = resolved.importDirective;
+    if (importDirective == null) {
+      return null;
+    }
+
+    final prefix = resolved.importPrefix;
+    final importedElement = prefix != null && prefix.isNotEmpty
+        ? importDirective.namespace.getPrefixed2(prefix, token)
+        : importDirective.namespace.get2(token);
+    return _resolveTypeFromElement(importedElement);
+  }
+
+  String _resolvedTypeIdentity(DartType type) {
+    if (type is InterfaceType) {
+      final element = type.element3;
+      final libraryUri = element.library2.uri.toString();
+      final name =
+          element.name3 ?? type.getDisplayString(withNullability: false);
+      return '$libraryUri::$name';
+    }
+
+    return type.getDisplayString(withNullability: false);
+  }
+
+  bool _isBuiltInRepresentationIdentifier(String token) {
+    return token == 'String' ||
+        token == 'int' ||
+        token == 'double' ||
+        token == 'bool' ||
+        token == 'num' ||
+        token == 'dynamic' ||
+        token == 'Object' ||
+        token == 'Null' ||
+        token == 'Never' ||
+        token == 'void' ||
+        token == 'Uri' ||
+        token == 'DateTime' ||
+        token == 'Duration' ||
+        token == 'List' ||
+        token == 'Set' ||
+        token == 'Map';
+  }
+
+  bool _containsUnsupportedRepresentationSyntax(String representationType) {
+    return representationType.contains('(') ||
+        representationType.contains(')') ||
+        representationType.contains('{') ||
+        representationType.contains('}') ||
+        representationType.contains('=>');
+  }
+
   String _schemaReferenceCacheKey(
     _SchemaReference reference,
     LibraryElement2 library,
@@ -2144,6 +2805,9 @@ class SchemaAstAnalyzer {
       'double' => typeProvider.doubleType,
       'bool' => typeProvider.boolType,
       'num' => typeProvider.numType,
+      'Uri' => _dartCoreType(typeProvider, 'Uri'),
+      'DateTime' => _dartCoreType(typeProvider, 'DateTime'),
+      'Duration' => _dartCoreType(typeProvider, 'Duration'),
       _ when representationType.startsWith('Map<') => typeProvider.mapType(
         typeProvider.stringType,
         typeProvider.dynamicType,
@@ -2153,6 +2817,14 @@ class SchemaAstAnalyzer {
       ),
       _ => typeProvider.dynamicType,
     };
+  }
+
+  DartType _dartCoreType(TypeProvider typeProvider, String typeName) {
+    final type = _resolveTypeByName(
+      typeName,
+      typeProvider.stringType.element3.library2,
+    );
+    return type ?? typeProvider.dynamicType;
   }
 
   /// Extracts the identifier name from different expression forms.
@@ -2235,6 +2907,153 @@ class SchemaAstAnalyzer {
     }
 
     return (chain, depth >= maxDepth);
+  }
+
+  _SchemaChainInfo _analyzeSchemaChain(MethodInvocation invocation) {
+    final (chain, truncated) = _collectMethodChain(invocation);
+    MethodInvocation? ackBase;
+    _SchemaReference? schemaReference;
+    var isOptional = false;
+    var isNullable = false;
+    MethodInvocation? transformInvocation;
+    DartType? transformOutputType;
+    String? transformOutputTypeString;
+
+    for (final current in chain) {
+      final methodName = current.methodName.name;
+
+      if (methodName == 'optional') {
+        isOptional = true;
+      } else if (methodName == 'nullable') {
+        isNullable = true;
+      } else if (methodName == 'transform' && transformInvocation == null) {
+        transformInvocation = current;
+        final typeArgs = current.typeArguments?.arguments;
+        if (typeArgs != null && typeArgs.isNotEmpty) {
+          final typeArg = typeArgs.first;
+          transformOutputType = typeArg.type;
+          transformOutputTypeString = typeArg.toSource();
+        }
+      }
+
+      final target = current.target;
+      if (ackBase == null && _isAckTarget(target)) {
+        ackBase = current;
+      }
+
+      if (schemaReference == null) {
+        final reference = _extractSchemaReference(target);
+        if (reference != null) {
+          schemaReference = reference;
+        }
+      }
+    }
+
+    if (truncated) {
+      _log.warning(
+        'Schema method chain exceeded max depth of 20. '
+        'Type inference may fall back to dynamic.',
+      );
+    }
+
+    return (
+      ackBase: ackBase,
+      schemaReference: schemaReference,
+      isOptional: isOptional,
+      isNullable: isNullable,
+      wasTruncated: truncated,
+      transformInvocation: transformInvocation,
+      transformOutputType: transformOutputType,
+      transformOutputTypeString: transformOutputTypeString,
+    );
+  }
+
+  bool _isBuiltInTransformedMethod(String methodName) {
+    return methodName == 'uri' ||
+        methodName == 'date' ||
+        methodName == 'datetime' ||
+        methodName == 'duration';
+  }
+
+  String? _requireTransformOutputType(
+    _SchemaChainInfo chain,
+    Element2 element, {
+    required String contextLabel,
+  }) {
+    if (chain.transformInvocation == null) {
+      return null;
+    }
+
+    final typeName = chain.transformOutputTypeString;
+    if (typeName != null && typeName.isNotEmpty) {
+      return typeName;
+    }
+
+    throw InvalidGenerationSourceError(
+      '$contextLabel uses .transform(...) without an explicit output type. '
+      '@AckType requires .transform<T>(...) so the generated type can be inferred.',
+      element: element,
+      todo:
+          'Add an explicit type argument, for example .transform<Uri>((value) => ...).',
+    );
+  }
+
+  void _throwIfUnsupportedTransformedBaseSchema({
+    required String schemaMethod,
+    required String? transformOutputTypeString,
+    required Element2 element,
+    required String contextLabel,
+  }) {
+    if (transformOutputTypeString == null) {
+      return;
+    }
+
+    if (schemaMethod == 'object') {
+      throw InvalidGenerationSourceError(
+        '$contextLabel transforms an Ack.object(...) schema. '
+        'Transformed object schemas are not supported by @AckType.',
+        element: element,
+        todo:
+            'Remove .transform<T>() from the object schema or expose the transformed result through a separate non-object schema.',
+      );
+    }
+
+    if (schemaMethod == 'discriminated') {
+      throw InvalidGenerationSourceError(
+        '$contextLabel transforms an Ack.discriminated(...) schema. '
+        'Transformed discriminated schemas are not supported by @AckType.',
+        element: element,
+        todo:
+            'Remove .transform<T>() from the discriminated schema or expose the transformed result through a separate non-object schema.',
+      );
+    }
+  }
+
+  void _throwIfUnsupportedTransformedReferencedSchema({
+    required _ResolvedSchemaReference resolved,
+    required Element2 element,
+    required String contextLabel,
+  }) {
+    final modelInfo = resolved.modelInfo;
+    if (modelInfo.isDiscriminatedBaseDefinition) {
+      throw InvalidGenerationSourceError(
+        '$contextLabel transforms referenced discriminated schema '
+        '"${resolved.schemaName}". Transformed discriminated schemas are not supported by @AckType.',
+        element: element,
+        todo:
+            'Remove .transform<T>() from the referenced discriminated schema or expose a separate non-object schema.',
+      );
+    }
+
+    if (modelInfo.representationType == kMapType) {
+      throw InvalidGenerationSourceError(
+        '$contextLabel transforms referenced object schema '
+        '"${resolved.schemaName}". Transformed object schemas are not supported by @AckType.',
+        element: element,
+        todo:
+            'Remove .transform<T>() from the referenced object schema or expose a separate non-object schema.',
+      );
+    }
   }
 
   /// Walks a method chain to find the base Ack.xxx() invocation.
@@ -2460,9 +3279,9 @@ class SchemaAstAnalyzer {
   /// - `Ack.list(addressSchema)` → `List<Map<String, Object?>>` (schema reference)
   ModelInfo _parseListSchema(
     String variableName,
-    MethodInvocation invocation,
     Element2 element, {
     required bool isNullable,
+    required _ListElementAnalysis listElementAnalysis,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -2471,80 +3290,63 @@ class SchemaAstAnalyzer {
       customTypeName: customTypeName,
     );
 
-    // Extract element type from first argument: Ack.list(elementSchema)
-    final elementType = _extractListElementTypeString(invocation, element);
-
     return ModelInfo(
       className: typeName,
       schemaClassName: variableName,
       fields: [],
       isFromSchemaVariable: true,
-      representationType: 'List<$elementType>',
+      representationType:
+          'List<${listElementAnalysis.elementRepresentationType}>',
+      isTransformedSchema: listElementAnalysis.isTransformedRepresentation,
       isNullableSchema: isNullable,
     );
   }
 
-  /// Extracts the element type as a string representation for top-level list schemas.
-  ///
-  /// This handles:
-  /// - Primitive schemas: `Ack.list(Ack.string())` → 'String'
-  /// - Nested lists: `Ack.list(Ack.list(Ack.int()))` → `List<int>`
-  /// - Schema references: `Ack.list(addressSchema)` → resolves to the referenced schema's representation type
-  String _extractListElementTypeString(
-    MethodInvocation listInvocation,
-    Element2 element,
+  ModelInfo _parseRepresentationSchema(
+    String variableName,
+    Element2 element, {
+    required String representationType,
+    required bool isNullable,
+    bool isTransformedSchema = false,
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: const [],
+      isFromSchemaVariable: true,
+      representationType: representationType,
+      isTransformedSchema: isTransformedSchema,
+      isNullableSchema: isNullable,
+    );
+  }
+
+  ModelInfo _withRepresentationType(
+    ModelInfo model,
+    String representationType,
   ) {
-    final args = listInvocation.argumentList.arguments;
-
-    if (args.isEmpty) {
-      throw InvalidGenerationSourceError(
-        'Ack.list(...) requires an element schema argument for strict typed generation.',
-        element: element,
-        todo:
-            'Provide a concrete element schema, e.g. Ack.list(Ack.string()) or Ack.list(namedSchema).',
-      );
-    }
-
-    final firstArg = args.first;
-    final ref = _resolveListElementRef(firstArg);
-
-    if (ref.ackBase != null) {
-      final methodName = ref.ackBase!.methodName.name;
-
-      // Handle nested lists recursively
-      if (methodName == 'list') {
-        final nestedType = _extractListElementTypeString(ref.ackBase!, element);
-        return 'List<$nestedType>';
-      }
-
-      if (methodName == 'enumValues') {
-        return _extractEnumTypeNameFromInvocation(ref.ackBase!) ?? 'dynamic';
-      }
-
-      if (methodName == 'object') {
-        throw InvalidGenerationSourceError(
-          'Ack.list(Ack.object(...)) uses an anonymous inline object schema. '
-          'Strict typed generation requires a named schema reference.',
-          element: element,
-          todo:
-              'Extract the inline object to a top-level @AckType() variable and use Ack.list(namedSchema).',
-        );
-      }
-
-      // Map primitive schema types
-      return _mapSchemaMethodToType(methodName);
-    }
-
-    if (ref.schemaRef != null) {
-      return _resolveSchemaVariableElementTypeString(ref.schemaRef!, element);
-    }
-
-    final rawExpression = firstArg.toSource();
-    throw InvalidGenerationSourceError(
-      'Could not statically resolve Ack.list($rawExpression) element type.',
-      element: element,
-      todo:
-          'Use Ack.list(Ack.<primitive>()), Ack.list(enumSchema), or Ack.list(namedSchema) so the generator can infer a concrete element type.',
+    return ModelInfo(
+      className: model.className,
+      schemaClassName: model.schemaClassName,
+      description: model.description,
+      fields: model.fields,
+      additionalProperties: model.additionalProperties,
+      additionalPropertiesField: model.additionalPropertiesField,
+      discriminatorKey: model.discriminatorKey,
+      discriminatorValue: model.discriminatorValue,
+      subtypeNames: model.subtypeNames,
+      schemaIdentity: model.schemaIdentity,
+      discriminatedBaseClassName: model.discriminatedBaseClassName,
+      isFromSchemaVariable: model.isFromSchemaVariable,
+      representationType: representationType,
+      isTransformedSchema: true,
+      isNullableSchema: model.isNullableSchema,
     );
   }
 
@@ -2647,16 +3449,6 @@ class SchemaAstAnalyzer {
     );
   }
 
-  bool _hasModifier(MethodInvocation invocation, String modifierName) {
-    final (chain, _) = _collectMethodChain(invocation);
-    for (final current in chain) {
-      if (current.methodName.name == modifierName) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /// Maps Ack schema method names to Dart type strings
   ///
   /// Used for generating string representations of types in list element contexts.
@@ -2667,6 +3459,9 @@ class SchemaAstAnalyzer {
       'integer' => 'int',
       'double' => 'double',
       'boolean' => 'bool',
+      'uri' => 'Uri',
+      'date' || 'datetime' => 'DateTime',
+      'duration' => 'Duration',
       'object' => kMapType,
       'list' => 'List<dynamic>',
       _ => 'dynamic',
