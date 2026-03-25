@@ -535,6 +535,51 @@ final themeSchema = Ack.object({
     );
 
     test(
+      'fails for direct-import transformed refs when multiple imports expose the representation type',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await _expectGenerationFailure(
+          builder: builder,
+          expectedMessage: 'is ambiguous in this library',
+          expectedOutputs: {'test_pkg|lib/palette_schemas.g.dart': anything},
+          assets: {
+            ...allAssets,
+            'test_pkg|lib/palette_schemas.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Color {
+  final String value;
+  const Color(this.value);
+}
+
+@AckType()
+final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+''',
+            'test_pkg|lib/alt_color_types.dart': '''
+class Color {
+  final String localValue;
+  const Color(this.localValue);
+}
+''',
+            'test_pkg|lib/theme_schemas.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'alt_color_types.dart';
+import 'palette_schemas.dart';
+
+@AckType()
+final themeSchema = Ack.object({
+  'accent': colorSchema,
+});
+''',
+          },
+        );
+      },
+    );
+
+    test(
       'fails for prefixed transformed refs when representation types are not visible',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);

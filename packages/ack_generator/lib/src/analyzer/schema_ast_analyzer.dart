@@ -2625,7 +2625,29 @@ class SchemaAstAnalyzer {
     }
 
     final importNamespaceType = _resolveImportedType(token, resolved);
-    final contextType = _resolveTypeByName(token, contextLibrary);
+    final scopedElement = contextLibrary.firstFragment.scope
+        .lookup(token)
+        .getter2;
+    final scopedType = _resolveTypeFromElement(scopedElement);
+    final localContextType =
+        scopedElement != null &&
+            _findImportDirectiveForElement(
+                  token,
+                  scopedElement,
+                  contextLibrary,
+                ) ==
+                null
+        ? scopedType
+        : null;
+    final importedContextTypes = _resolveImportedTypesByName(
+      token,
+      contextLibrary,
+    );
+    final unqualifiedContextType =
+        localContextType ??
+        (importedContextTypes.length == 1 ? importedContextTypes.single : null);
+    final hasAmbiguousImportedTypes =
+        localContextType == null && importedContextTypes.length > 1;
     final prefix = resolved.importPrefix;
 
     if (importNamespaceType != null && prefix != null && prefix.isNotEmpty) {
@@ -2633,12 +2655,12 @@ class SchemaAstAnalyzer {
     }
 
     if (importNamespaceType != null) {
-      if (contextType != null &&
-          _sameResolvedType(importNamespaceType, contextType)) {
+      if (unqualifiedContextType != null &&
+          _sameResolvedType(importNamespaceType, unqualifiedContextType)) {
         return token;
       }
 
-      if (contextType != null) {
+      if (hasAmbiguousImportedTypes || unqualifiedContextType != null) {
         throw InvalidGenerationSourceError(
           'Transformed representation type "$fullRepresentationType" for '
           '"${resolved.schemaName}" is ambiguous in this library.',
@@ -2649,7 +2671,17 @@ class SchemaAstAnalyzer {
       }
     }
 
-    if (contextType != null) {
+    if (hasAmbiguousImportedTypes) {
+      throw InvalidGenerationSourceError(
+        'Transformed representation type "$fullRepresentationType" for '
+        '"${resolved.schemaName}" is ambiguous in this library.',
+        element: contextElement,
+        todo:
+            'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
+      );
+    }
+
+    if (unqualifiedContextType != null) {
       return token;
     }
 
@@ -2664,6 +2696,32 @@ class SchemaAstAnalyzer {
 
   bool _sameResolvedType(DartType first, DartType second) {
     return _resolvedTypeIdentity(first) == _resolvedTypeIdentity(second);
+  }
+
+  List<DartType> _resolveImportedTypesByName(
+    String token,
+    LibraryElement2 library,
+  ) {
+    final normalizedToken = token.trim();
+    if (normalizedToken.isEmpty) {
+      return const [];
+    }
+
+    final importedTypesByIdentity = <String, DartType>{};
+    for (final import in library.firstFragment.libraryImports2) {
+      final importedElement = import.namespace.get2(normalizedToken);
+      final importedType = _resolveTypeFromElement(importedElement);
+      if (importedType == null) {
+        continue;
+      }
+
+      importedTypesByIdentity.putIfAbsent(
+        _resolvedTypeIdentity(importedType),
+        () => importedType,
+      );
+    }
+
+    return importedTypesByIdentity.values.toList(growable: false);
   }
 
   DartType? _resolveImportedType(
