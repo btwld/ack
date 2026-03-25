@@ -101,7 +101,7 @@ void main() {
 
     test('compare: .nullable().transform() without optional', () {
       // Null passes through without calling the transformer
-      final schema = Ack.string().nullable().transform((val) {
+      final schema = Ack.string().nullable().transform((_) {
         return 'was not null';
       });
 

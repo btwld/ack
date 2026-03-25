@@ -50,6 +50,21 @@ void main() {
     });
 
     test(
+      'should respect outer non-nullability when wrapped schema is nullable',
+      () {
+        final schema = Ack.string()
+            .nullable()
+            .transform((value) => value)
+            .copyWith(isNullable: false);
+
+        final result = schema.safeParse(null);
+
+        expect(result.isFail, isTrue);
+        expect(result.getError(), isA<SchemaConstraintsError>());
+      },
+    );
+
+    test(
       'should error when transformer returns null for non-nullable output',
       () {
         final schema = Ack.string().transform<int>((val) {
@@ -84,7 +99,7 @@ void main() {
     test('should fail validation before the transformer is ever called', () {
       final schema = Ack.string()
           .minLength(10)
-          .transform((val) => 'transformed');
+          .transform((_) => 'transformed');
 
       final result = schema.safeParse('short');
 

@@ -76,12 +76,15 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
 
     final validatedValue = originalResult.getOrNull();
 
-    // Null passes through without hitting the transformer.
-    // Nullability is handled by the inner schema; the transformer only sees
-    // validated non-null values. Constraints and refinements on the transformed
+    // Null passes through without hitting the transformer when this schema
+    // itself is nullable. Outer nullability still applies even if the wrapped
+    // schema can accept null. Constraints and refinements on the transformed
     // schema are typed OutputType (extends Object) and cannot accept null,
-    // so skipping them here is both correct and required.
+    // so they must be skipped here.
     if (validatedValue == null) {
+      if (!isNullable) {
+        return failNonNullable(context);
+      }
       return SchemaResult.ok(null);
     }
 

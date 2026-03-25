@@ -206,7 +206,7 @@ import 'package:meta/meta_meta.dart';
 ///
 /// @AckType()
 /// final transformedLink = Ack.string()
-///   .transform<Uri>((value) => Uri.parse(value!)); // ✅ Works
+///   .transform<Uri>((value) => Uri.parse(value)); // ✅ Works
 ///
 /// @AckType()
 /// final directUri = Ack.uri(); // ✅ Works
