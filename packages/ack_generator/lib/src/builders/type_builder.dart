@@ -132,7 +132,9 @@ class TypeBuilder {
           // Only add args and copyWith for object schemas
           if (isObjectSchema) ...[
             if (model.additionalProperties) _buildArgsGetter(model),
-            if (model.fields.isNotEmpty) _buildCopyWith(model),
+            if (model.fields.isNotEmpty &&
+                _canGenerateCopyWithForFields(model.fields))
+              _buildCopyWith(model),
           ],
         ]),
     );
@@ -316,7 +318,9 @@ class TypeBuilder {
           // Add regular field getters
           ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
           if (model.additionalProperties) _buildArgsGetter(model),
-          if (model.isFromSchemaVariable && nonDiscriminatorFields.isNotEmpty)
+          if (model.isFromSchemaVariable &&
+              nonDiscriminatorFields.isNotEmpty &&
+              _canGenerateCopyWithForFields(nonDiscriminatorFields))
             _buildCopyWithForFields(
               model,
               nonDiscriminatorFields,
@@ -1164,6 +1168,10 @@ ${cases.join(',\n')},
 
   Method _buildCopyWith(ModelInfo model) {
     return _buildCopyWithForFields(model, model.fields);
+  }
+
+  bool _canGenerateCopyWithForFields(Iterable<FieldInfo> fields) {
+    return fields.every((field) => !field.isTransformedRepresentation);
   }
 
   Method _buildCopyWithForFields(
