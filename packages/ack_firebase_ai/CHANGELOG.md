@@ -1,3 +1,7 @@
+## 1.0.0-beta.10
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.10) for details.
+
 ## 1.0.0-beta.9
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.9) for details.
