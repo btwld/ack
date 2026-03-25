@@ -40,6 +40,16 @@ void main() {
         final result = animalSchema.safeParse({'meow': true});
         expect(result.isOk, isFalse);
       });
+
+      test('fails when schemas map is empty', () {
+        final emptySchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: const <String, AckSchema<Map<String, Object?>>>{},
+        );
+
+        final result = emptySchema.safeParse({'type': 'cat'});
+        expect(result.isOk, isFalse);
+      });
     });
 
     group('Fluent methods', () {

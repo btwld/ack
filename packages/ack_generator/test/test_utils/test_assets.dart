@@ -236,6 +236,10 @@ class Ack {
   static NumberSchema number() => const NumberSchema();
   static BooleanSchema boolean() => const BooleanSchema();
   static AnySchema any() => const AnySchema();
+  static TransformedSchema<String, Uri> uri() => TransformedSchema<String, Uri>(const StringSchema());
+  static TransformedSchema<String, DateTime> date() => TransformedSchema<String, DateTime>(const StringSchema());
+  static TransformedSchema<String, DateTime> datetime() => TransformedSchema<String, DateTime>(const StringSchema());
+  static TransformedSchema<int, Duration> duration() => TransformedSchema<int, Duration>(const IntegerSchema());
 
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
@@ -268,16 +272,15 @@ abstract class AckSchema<T> {
   AckSchema<T> nullable() => this;
   AckSchema<T> optional() => this;
   AckSchema<T> describe(String description) => this;
-  TransformedSchema<T, R> transform<R>(R Function(T? value) transformer) =>
-      TransformedSchema<T, R>(this, transformer);
-
+  TransformedSchema<T, R> transform<R extends Object>(
+    R Function(T? value) transformer,
+  ) => TransformedSchema<T, R>(this);
   Map<String, Object?> toJsonSchema();
 }
 class TransformedSchema<InputType, OutputType> extends AckSchema<OutputType> {
   final AckSchema<InputType> schema;
-  final OutputType Function(InputType? value) transformer;
 
-  TransformedSchema(this.schema, this.transformer);
+  TransformedSchema(this.schema);
 
   @override
   Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
@@ -290,8 +293,9 @@ class StringSchema extends AckSchema<String> {
   StringSchema maxLength(int length) => this;
   StringSchema matches(Object pattern) => this;
   StringSchema enumString(List<String> values) => this;
-  StringSchema datetime() => this;
   StringSchema uri() => this;
+  StringSchema date() => this;
+  StringSchema datetime() => this;
   StringSchema nullable() => this;
   StringSchema optional() => this;
   StringSchema describe(String description) => this;

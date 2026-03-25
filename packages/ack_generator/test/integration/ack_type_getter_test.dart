@@ -152,5 +152,35 @@ ObjectSchema get userSchema => Ack.object({
         },
       );
     });
+
+    test('documents nullable list element type inference loss', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+ObjectSchema get userSchema => Ack.object({
+  'tags': Ack.list(Ack.string().nullable()),
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains(
+                "List<String> get tags => _\$ackListCast<String>(_data['tags'])",
+              ),
+              isNot(contains('List<String?> get tags')),
+            ]),
+          ),
+        },
+      );
+    });
   });
 }

@@ -112,7 +112,8 @@ import 'package:meta/meta_meta.dart';
 /// - `parse(data)` factory for validation + wrapping
 /// - `safeParse(data)` for error handling
 /// - `toJson()` for serialization
-/// - `copyWith()` for immutable updates
+/// - `copyWith()` for immutable updates on object wrappers whose fields can be
+///   safely reparsed from their public getter values
 /// - Value equality (`==`, `hashCode`)
 /// - `toString()` for debugging
 ///
@@ -139,12 +140,13 @@ import 'package:meta/meta_meta.dart';
 /// ## Collections
 ///
 /// Lists of primitives return `List<T>`, and lists of nested schemas return
-/// `List<TType>`:
+/// `List<TType>`. Transformed element schemas are also supported:
 /// ```dart
 /// @ackType
 /// final blogPostSchema = Ack.object({
 ///   'tags': Ack.list(Ack.string()),      // List<String>
 ///   'comments': Ack.list(commentSchema), // List<CommentType>
+///   'links': Ack.list(Ack.uri()),        // List<Uri>
 /// });
 /// ```
 ///
@@ -154,7 +156,7 @@ import 'package:meta/meta_meta.dart';
 ///
 /// | Schema Type | Generated Extension Type |
 /// |-------------|--------------------------|
-/// | `Ack.object({...})` | `XType(Map<String, Object?>)` with field getters, copyWith, toJson |
+/// | `Ack.object({...})` | `XType(Map<String, Object?>)` with field getters, conditional copyWith, toJson |
 /// | `Ack.string()` | `XType(String)` implements String |
 /// | `Ack.integer()` | `XType(int)` implements int |
 /// | `Ack.double()` | `XType(double)` implements double |
@@ -163,15 +165,26 @@ import 'package:meta/meta_meta.dart';
 /// | `Ack.literal('value')` | `XType(String)` implements String |
 /// | `Ack.enumString([...])` | `XType(String)` implements String |
 /// | `Ack.enumValues<T>([...])` | `XType(T)` implements T |
+/// | `Ack.uri()` | `XType(Uri)` implements Uri |
+/// | `Ack.date()` / `Ack.datetime()` | `XType(DateTime)` implements DateTime |
+/// | `Ack.duration()` | `XType(Duration)` implements Duration |
+/// | `Ack.<schema>().transform<T>(...)` | `XType(T)` implements T when `T` is explicit |
 ///
 /// All extension types include `parse()` and `safeParse()` factory methods.
+/// `toJson()` returns the validated representation value that the schema
+/// produced. For transformed schemas, that means the transformed value
+/// (for example `Uri`, `DateTime`, or a custom `T`), not the original wire
+/// format.
 ///
 /// ## Unsupported Schema Types
 ///
 /// The following schema types are not currently supported for `@AckType`:
 /// - **`Ack.any()`** - Not supported (defeats type safety purpose)
 /// - **`Ack.anyOf()`** - Not supported (requires union types/sealed classes)
-/// - **`Ack.discriminated()`** - Use @Schemable on discriminated classes instead
+/// - **Transformed object schemas** - `Ack.object({...}).transform<T>()` and
+///   `objectSchema.transform<T>()` are not supported
+/// - **Transformed discriminated schemas** - `Ack.discriminated(...).transform<T>()`
+///   and `discriminatedSchema.transform<T>()` are not supported
 ///
 /// ## Method Chaining Support
 ///
@@ -180,7 +193,7 @@ import 'package:meta/meta_meta.dart';
 /// - ⚠️ **`.nullable()`** - Extension type is NOT generated (see Limitations)
 /// - ✅ **`.withDefault()`** - Supported, provides fallback value
 /// - ✅ **`.refine()`** - Supported, adds custom validation
-/// - ⚠️ **`.transform()`** - NOT recommended (changes output type, breaks extension type contract)
+/// - ✅ **`.transform<T>()`** - Supported for non-object schemas when `T` is explicit
 ///
 /// ```dart
 /// @AckType()
@@ -191,26 +204,48 @@ import 'package:meta/meta_meta.dart';
 ///   .min(0)
 ///   .refine((age) => age < 150, message: 'Too old'); // ✅ Works
 ///
-/// // @AckType()
-/// // final transformed = Ack.string().transform((s) => s.length); // ❌ Don't use
-/// //   → Extension type would wrap String, but transform returns int
+/// @AckType()
+/// final transformedLink = Ack.string()
+///   .transform<Uri>((value) => Uri.parse(value!)); // ✅ Works
+///
+/// @AckType()
+/// final directUri = Ack.uri(); // ✅ Works
+///
+/// final validatedOnly = Ack.string().uri(); // Still represents String
 /// ```
 ///
 /// ## Limitations
 ///
 /// - **Class annotations**: `@AckType` is not supported on classes.
-/// - **Cross-file schema references**: Schema references must be in the same file
-///   - ✅ Same file: `'address': addressSchema` → getter returns `AddressType`
-///   - ❌ Cross-file: `'address': addressSchema` → getter returns `Map<String, Object?>`
+/// - **Cross-file schema references**: Direct imports, prefixed imports, and
+///   re-exported schema refs are supported.
+///   - ✅ Direct import: `'address': addressSchema` → getter returns `AddressType`
+///   - ✅ Prefixed import: `'address': models.addressSchema` → getter returns
+///     `models.AddressType`
+///   - ✅ Re-export: `'address': addressSchema` through an export works
+///   - Cross-file transformed refs require the transformed representation types
+///     to be visible from the consuming library.
+///   - Direct-import transformed refs may fail when a representation type name
+///     collides with a different visible type in the consuming library.
+///   - Source-qualified transformed representation types such as `dep.Color`
+///     are not supported across library boundaries.
 /// - **Nullable schema variables**: Extension types are not generated for schemas
 ///   marked with `.nullable()` because the representation is non-nullable.
 ///   - Use the schema directly for nullable validation.
+/// - **Object wrappers with transformed-backed fields**: `copyWith()` is not
+///   generated for object wrappers, including discriminated branches, when any
+///   field is backed by `Ack.uri()`, `Ack.date()`, `Ack.datetime()`,
+///   `Ack.duration()`, or `.transform<T>(...)`.
 /// - **List element modifiers**: List element nullability from chained
 ///   modifiers may not be fully inferred:
 ///   - ✅ `Ack.list(Ack.string())` → `List<String>`
 ///   - ⚠️ `Ack.list(Ack.string().nullable())` → `List<String>` (element
 ///     nullability lost; expected `List<String?>`)
-/// - **Transform modifier**: Not supported (changes output type)
+/// - **Explicit transform output required**: use `.transform<T>(...)`, not
+///   `.transform(...)`, so the generator can infer the representation type.
+/// - **Constraint-only string helpers stay String**: `Ack.string().uri()`,
+///   `Ack.string().date()`, and `Ack.string().datetime()` validate format but do
+///   not change the generated representation type.
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
 /// See also: [Schemable], [SchemaProvider]

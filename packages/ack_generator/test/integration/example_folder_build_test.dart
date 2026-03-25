@@ -190,6 +190,50 @@ void main() {
         reason:
             'schema_types_discriminated.g.dart discriminated subtypes should implement PetType and Map<String, Object?>',
       );
+
+      final transformsFile = File(
+        p.join(exampleDir.path, 'lib', 'schema_types_transforms.g.dart'),
+      );
+      expect(
+        transformsFile.existsSync(),
+        isTrue,
+        reason:
+            'schema_types_transforms.g.dart should be generated in example/lib',
+      );
+
+      final transformsContent = await transformsFile.readAsString();
+      expect(
+        transformsContent,
+        contains('extension type ColorType(Color _value)'),
+        reason:
+            'schema_types_transforms.g.dart should include the transformed Color extension type',
+      );
+      expect(
+        transformsContent,
+        contains('extension type ProfileType(Map<String, Object?> _data)'),
+        reason:
+            'schema_types_transforms.g.dart should include the transform-backed object wrapper',
+      );
+      expect(
+        transformsContent,
+        allOf([
+          contains('Uri get homepage'),
+          contains('DateTime get birthday'),
+          contains('DateTime get lastLogin'),
+          contains('Duration get timeout'),
+          contains('List<Uri> get links'),
+          contains('ColorType get accent'),
+          contains('List<ColorType> get colors'),
+          contains('List<Color> get customColors'),
+          contains('TagList get tagList'),
+          isNot(contains('ProfileType copyWith(')),
+          isNot(contains('Uri.parse(')),
+          isNot(contains('DateTime.parse(')),
+          isNot(contains('Duration(milliseconds:')),
+        ]),
+        reason:
+            'schema_types_transforms.g.dart should emit transformed getters without unsafe reparsing or copyWith',
+      );
     });
 
     test('example folder pub get should succeed', () async {
