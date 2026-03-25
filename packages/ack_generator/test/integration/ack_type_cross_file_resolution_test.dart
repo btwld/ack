@@ -837,6 +837,51 @@ final deckToolArgsSchema = Ack.object({
     });
 
     test(
+      'resolves direct-import transformed refs without @AckType using visible representation types',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/palette.dart': '''
+import 'package:ack/ack.dart';
+
+class Color {
+  final String value;
+  const Color(this.value);
+}
+
+final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+''',
+            'test_pkg|lib/theme_schemas.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'palette.dart' as palette;
+
+@AckType()
+final themeSchema = Ack.object({
+  'primary': palette.colorSchema,
+  'accents': Ack.list(palette.colorSchema),
+});
+''',
+          },
+          outputs: {
+            'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
+              allOf([
+                contains('palette.Color get primary'),
+                contains("_data['primary'] as palette.Color"),
+                contains('List<palette.Color> get accents'),
+                contains("_\$ackListCast<palette.Color>(_data['accents'])"),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test(
       'fails when Ack.list(schemaRef) object reference lacks @AckType',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
