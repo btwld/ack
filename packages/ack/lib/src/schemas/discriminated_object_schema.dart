@@ -292,7 +292,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   @override
   int get hashCode {
-    final mapEq = MapEquality<String, AckSchema<T>>();
+    const mapEq = MapEquality<String, AckSchema>();
     return Object.hash(
       baseFieldsHashCode,
       discriminatorKey,

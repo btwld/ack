@@ -505,14 +505,16 @@ final chainedSchema = Ack.object({
       });
     });
 
-    test('handles deeply nested chains without hanging', () async {
-      // Create a chain with 25 .optional() calls to test depth limits
-      final deepChain = List.generate(25, (_) => 'optional()').join('.');
+    test(
+      'throws a clear error when field chains exceed analyzer depth',
+      () async {
+        // Create a chain with 25 .optional() calls to test depth limits
+        final deepChain = List.generate(25, (_) => 'optional()').join('.');
 
-      final assets = {
-        ...allAssets,
-        'test_pkg|lib/schema.dart':
-            '''
+        final assets = {
+          ...allAssets,
+          'test_pkg|lib/schema.dart':
+              '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -521,25 +523,31 @@ final deepSchema = Ack.object({
   'field': Ack.string().$deepChain,
 });
 ''',
-      };
+        };
 
-      await resolveSources(assets, (resolver) async {
-        final library = await resolver.libraryFor(
-          AssetId('test_pkg', 'lib/schema.dart'),
-        );
-        final schemaVar = library.topLevelVariables.firstWhere(
-          (e) => e.name3 == 'deepSchema',
-        );
+        await resolveSources(assets, (resolver) async {
+          final library = await resolver.libraryFor(
+            AssetId('test_pkg', 'lib/schema.dart'),
+          );
+          final schemaVar = library.topLevelVariables.firstWhere(
+            (e) => e.name3 == 'deepSchema',
+          );
 
-        final analyzer = SchemaAstAnalyzer();
+          final analyzer = SchemaAstAnalyzer();
 
-        // Should complete without hanging
-        expect(
-          () => analyzer.analyzeSchemaVariable(schemaVar),
-          returnsNormally,
-        );
-      });
-    });
+          expect(
+            () => analyzer.analyzeSchemaVariable(schemaVar),
+            throwsA(
+              predicate(
+                (error) =>
+                    error is InvalidGenerationSourceError &&
+                    error.toString().contains('exceeded max depth of 20'),
+              ),
+            ),
+          );
+        });
+      },
+    );
   });
 
   group('List elements with method chain modifiers', () {

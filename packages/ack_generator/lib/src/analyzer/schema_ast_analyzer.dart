@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -1323,7 +1324,7 @@ class SchemaAstAnalyzer {
             !mappedType.isDartCoreList &&
             !mappedType.isDartCoreMap &&
             !mappedType.isDartCoreSet
-        ? representationType
+        ? visibleRepresentationType
         : null;
 
     return FieldInfo(
@@ -1357,15 +1358,12 @@ class SchemaAstAnalyzer {
 
     if (baseInvocation == null) {
       if (chain.wasTruncated) {
-        final typeProvider = element.library2!.typeProvider;
-        return FieldInfo(
-          name: fieldName,
-          jsonKey: fieldName,
-          type: typeProvider.dynamicType,
-          isRequired: !chain.isOptional,
-          isNullable: chain.isNullable,
-          constraints: const [],
-          isTransformedRepresentation: false,
+        throw InvalidGenerationSourceError(
+          'Field "$fieldName" schema method chain exceeded max depth of 20. '
+          '@AckType requires statically analyzable schema chains.',
+          element: element,
+          todo:
+              'Reduce the chaining depth or extract part of the schema into a named variable.',
         );
       }
 
@@ -1884,9 +1882,8 @@ class SchemaAstAnalyzer {
       ...classElement.allSupertypes.expand((type) => type.element3.fields2),
     ];
 
-    final field = allFields.cast<FieldElement2?>().firstWhere(
-      (current) => current?.name3 == memberName,
-      orElse: () => null,
+    final field = allFields.firstWhereOrNull(
+      (current) => current.name3 == memberName,
     );
     if (field != null) {
       return field.type;
@@ -1897,9 +1894,8 @@ class SchemaAstAnalyzer {
       ...classElement.allSupertypes.expand((type) => type.element3.getters2),
     ];
 
-    final getter = allGetters.cast<GetterElement?>().firstWhere(
-      (current) => current?.name3 == memberName,
-      orElse: () => null,
+    final getter = allGetters.firstWhereOrNull(
+      (current) => current.name3 == memberName,
     );
     return getter?.returnType;
   }
@@ -2204,7 +2200,7 @@ class SchemaAstAnalyzer {
                   !elementDartType.isDartCoreList &&
                   !elementDartType.isDartCoreMap &&
                   !elementDartType.isDartCoreSet
-              ? representationType
+              ? visibleRepresentationType
               : null);
 
     return (
@@ -2362,18 +2358,6 @@ class SchemaAstAnalyzer {
             sourceDeclaration = variable;
           }
         } else {
-          schemaGetter = resolvedElement;
-          sourceDeclaration = resolvedElement;
-        }
-      } else if (resolvedElement is PropertyAccessorElement2) {
-        if (resolvedElement is GetterElement && resolvedElement.isSynthetic) {
-          final variable = resolvedElement.variable3;
-          if (variable is TopLevelVariableElement2) {
-            schemaVariable = variable;
-            sourceDeclaration = variable;
-          }
-        } else if (resolvedElement is GetterElement &&
-            !resolvedElement.isSynthetic) {
           schemaGetter = resolvedElement;
           sourceDeclaration = resolvedElement;
         }
