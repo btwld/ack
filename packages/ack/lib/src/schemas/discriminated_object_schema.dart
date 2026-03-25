@@ -26,11 +26,11 @@ Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
 ///     'cat': Ack.object({
 ///       'type': Ack.literal('cat'),
 ///       'name': Ack.string(),
-///     }).transform<Animal>((map) => Cat(map!['name'] as String)),
+///     }).transform<Animal>((map) => Cat(map['name'] as String)),
 ///     'dog': Ack.object({
 ///       'type': Ack.literal('dog'),
 ///       'name': Ack.string(),
-///     }).transform<Animal>((map) => Dog(map!['name'] as String)),
+///     }).transform<Animal>((map) => Dog(map['name'] as String)),
 ///   },
 /// );
 /// ```

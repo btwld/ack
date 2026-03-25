@@ -10,7 +10,7 @@ void main() {
               'name': Ack.string(),
               'birthYear': Ack.integer().min(1900).max(2024),
             }).transform((data) {
-              final age = DateTime.now().year - (data!['birthYear'] as int);
+              final age = DateTime.now().year - (data['birthYear'] as int);
               return {...data, 'age': age};
             });
 
@@ -29,7 +29,7 @@ void main() {
               'name': Ack.string(),
               'birthYear': Ack.integer().min(1900).max(2024),
             }).transform((data) {
-              final age = DateTime.now().year - (data!['birthYear'] as int);
+              final age = DateTime.now().year - (data['birthYear'] as int);
               return {...data, 'age': age};
             });
 

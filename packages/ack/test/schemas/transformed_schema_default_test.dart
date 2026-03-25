@@ -5,7 +5,7 @@ void main() {
   group('TransformedSchema default handling', () {
     test('applies default when input is null', () {
       final schema = Ack.string()
-          .transform((v) => v?.toUpperCase() ?? '')
+          .transform((v) => v.toUpperCase())
           .copyWith(defaultValue: 'DEF');
 
       final result = schema.safeParse(null);
@@ -15,7 +15,7 @@ void main() {
 
     test('validates default against constraints/refinements', () {
       final schema = Ack.string()
-          .transform((v) => v?.toUpperCase() ?? '')
+          .transform((v) => v.toUpperCase())
           .refine((out) => out.length >= 3, message: 'Too short')
           .copyWith(defaultValue: 'X');
 
@@ -27,7 +27,7 @@ void main() {
     test('clones primitive defaults to prevent mutation', () {
       // Primitive types (String, int, bool) are immutable, so cloning is safe
       final schema = Ack.string()
-          .transform((v) => v ?? 'default')
+          .transform((v) => v)
           .copyWith(defaultValue: 'hello');
 
       final result1 = schema.safeParse(null);
@@ -41,7 +41,7 @@ void main() {
       // List<Object> can be cloned because cloneDefault returns List<Object?>
       // which is assignable to List<Object>
       final schema = Ack.string()
-          .transform((v) => <Object>[v ?? 'default'])
+          .transform((v) => <Object>[v])
           .copyWith(defaultValue: <Object>['a', 'b']);
 
       final result = schema.safeParse(null);
@@ -58,7 +58,7 @@ void main() {
       // returns List<Object?> which cannot cast to List<String>.
       // Now it falls back to the original default (accepts mutation risk).
       final schema = Ack.string()
-          .transform((v) => v?.split(',') ?? <String>[])
+          .transform((v) => v.split(','))
           .copyWith(defaultValue: <String>['a', 'b', 'c']);
 
       final result = schema.safeParse(null);

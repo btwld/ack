@@ -20,7 +20,7 @@ void main() {
             'quantity': Ack.integer().positive(),
           }).transform<Map<String, Object?>>((product) {
             return {
-              ...product!,
+              ...product,
               'total':
                   (product['price'] as double) * (product['quantity'] as int),
             };
@@ -66,7 +66,7 @@ void main() {
               }, message: 'Order total must be positive')
               .transform<Map<String, Object?>>((order) {
                 // Calculate order summary
-                final items = order!['items'] as List;
+                final items = order['items'] as List;
                 final subtotal = items.fold<double>(
                   0,
                   (sum, item) => sum + (item as Map)['total'],
@@ -141,7 +141,7 @@ void main() {
               .partial() // Make all fields optional
               .transform<Map<String, Object?>>((obj) {
                 // Handle missing data gracefully
-                final data = obj!['data'] as Map<String, Object?>?;
+                final data = obj['data'] as Map<String, Object?>?;
                 return {
                   'hasData': data != null,
                   'value': data?['value'] ?? 'default',
@@ -182,7 +182,7 @@ void main() {
                 'profile': Ack.object({'age': Ack.integer().min(18)}),
               }),
             },
-          ).transform<Map<String, Object?>>((data) => data!).refine((data) {
+          ).transform<Map<String, Object?>>((data) => data).refine((data) {
             final profile = data['profile'] as Map;
             return (profile['age'] as int) < 100;
           }, message: 'Age too high');

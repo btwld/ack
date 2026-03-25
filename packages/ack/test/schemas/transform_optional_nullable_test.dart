@@ -9,7 +9,6 @@ void main() {
       'should handle .optional().nullable().transform() - missing field',
       () {
         final schema = Ack.string().optional().nullable().transform((val) {
-          if (val == null) return 'default';
           return val.toUpperCase();
         });
 
@@ -32,7 +31,6 @@ void main() {
 
     test('should handle .optional().nullable().transform() - null value', () {
       final schema = Ack.string().optional().nullable().transform((val) {
-        if (val == null) return 'default';
         return val.toUpperCase();
       });
 
@@ -45,7 +43,8 @@ void main() {
       }
 
       expect(result.isOk, isTrue, reason: 'Should handle null value');
-      expect(result.getOrNull(), equals('default'));
+      // Null passes through without calling transformer
+      expect(result.getOrNull(), isNull);
     });
 
     test(
@@ -54,7 +53,6 @@ void main() {
         final schema = Ack.object({
           'name': Ack.string(),
           'nickname': Ack.string().optional().nullable().transform((val) {
-            if (val == null) return 'No nickname';
             return val.toUpperCase();
           }),
         });
@@ -102,19 +100,19 @@ void main() {
     );
 
     test('compare: .nullable().transform() without optional', () {
-      // This is the working case from transform_extension_test.dart:32-44
-      final schema = Ack.string().nullable().transform((val) {
-        return val == null ? 'was null' : 'was not null';
+      // Null passes through without calling the transformer
+      final schema = Ack.string().nullable().transform((_) {
+        return 'was not null';
       });
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
-      expect(result.getOrThrow(), 'was null');
+      // Null passes through without calling transformer
+      expect(result.getOrNull(), isNull);
     });
 
     test('order matters: .nullable().optional().transform()', () {
       final schema = Ack.string().nullable().optional().transform((val) {
-        if (val == null) return 'default';
         return val.toUpperCase();
       });
 

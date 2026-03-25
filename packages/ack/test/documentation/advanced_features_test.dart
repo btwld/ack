@@ -102,7 +102,7 @@ void main() {
         final dateSchema = Ack.string()
             .matches(r'^\d{4}-\d{2}-\d{2}$')
             .transform<DateTime>((dateStr) {
-              return DateTime.parse(dateStr!);
+              return DateTime.parse(dateStr);
             });
 
         final result = dateSchema.safeParse('2024-01-15');
@@ -119,7 +119,7 @@ void main() {
             .matches(r'^[\d\s\-\(\)\+]+$')
             .transform((phone) {
               // Remove all non-digit characters except +
-              return phone!.replaceAll(RegExp(r'[^\d\+]'), '');
+              return phone.replaceAll(RegExp(r'[^\d\+]'), '');
             });
 
         final result = phoneSchema.safeParse('+1 (555) 123-4567');

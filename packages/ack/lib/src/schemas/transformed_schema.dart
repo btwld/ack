@@ -9,7 +9,7 @@ part of 'schema.dart';
 /// // Parse ISO date strings into DateTime objects
 /// final dateSchema = Ack.string()
 ///   .datetime()
-///   .transform<DateTime>((s) => DateTime.parse(s!));
+///   .transform<DateTime>((s) => DateTime.parse(s));
 /// ```
 ///
 /// ## Default Values
@@ -21,7 +21,7 @@ part of 'schema.dart';
 /// ```dart
 /// // This works - primitive defaults are safely cloned
 /// final schema = Ack.string()
-///     .transform((v) => v ?? 'fallback')
+///     .transform((v) => v)
 ///     .copyWith(defaultValue: 'hello');
 ///
 /// // Limitation: List<String> defaults may not be cloned (mutation risk)
@@ -35,7 +35,7 @@ part of 'schema.dart';
 class TransformedSchema<InputType extends Object, OutputType extends Object>
     extends AckSchema<OutputType> {
   final AckSchema<InputType> schema;
-  final OutputType Function(InputType?) transformer;
+  final OutputType Function(InputType) transformer;
 
   TransformedSchema(
     this.schema,
@@ -75,6 +75,19 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     }
 
     final validatedValue = originalResult.getOrNull();
+
+    // Null passes through without hitting the transformer when this schema
+    // itself is nullable. Outer nullability still applies even if the wrapped
+    // schema can accept null. Constraints and refinements on the transformed
+    // schema are typed OutputType (extends Object) and cannot accept null,
+    // so they must be skipped here.
+    if (validatedValue == null) {
+      if (!isNullable) {
+        return failNonNullable(context);
+      }
+      return SchemaResult.ok(null);
+    }
+
     try {
       final transformedValue = transformer(validatedValue);
 

@@ -16,7 +16,7 @@ class TagList {
 final baseColorSchema = Ack.string();
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 
 @AckType()
 final profileSchema = Ack.object({
@@ -25,14 +25,14 @@ final profileSchema = Ack.object({
   'lastLogin': Ack.datetime(),
   'timeout': Ack.duration(),
   'links': Ack.list(Ack.uri()),
-  'favoriteColor': Ack.string().transform<Color>((value) => Color(value!)),
-  'slug': Ack.string().transform<String>((value) => value! + '#'),
+  'favoriteColor': Ack.string().transform<Color>((value) => Color(value)),
+  'slug': Ack.string().transform<String>((value) => value + '#'),
   'accent': colorSchema,
   'colors': Ack.list(colorSchema),
   'customColors': Ack.list(
-    baseColorSchema.transform<Color>((value) => Color(value!)),
+    baseColorSchema.transform<Color>((value) => Color(value)),
   ),
   'tagList': Ack.list(
     Ack.string(),
-  ).transform<TagList>((value) => TagList(value!)),
+  ).transform<TagList>((value) => TagList(value)),
 });

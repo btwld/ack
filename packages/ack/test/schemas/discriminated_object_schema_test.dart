@@ -166,7 +166,7 @@ void main() {
           schemas: {
             'cat': Ack.object({
               'name': Ack.string(),
-            }).transform<String>((map) => map!['name'] as String),
+            }).transform<String>((map) => map['name'] as String),
           },
         );
 
@@ -205,7 +205,7 @@ void main() {
           schemas: {
             'cat': Ack.object({
               'name': Ack.string(),
-            }).transform<Object>((map) => map!['name'] as Object),
+            }).transform<Object>((map) => map['name'] as Object),
           },
         ).copyWith(defaultValue: Object());
 
@@ -223,7 +223,7 @@ void main() {
             schemas: {
               'cat': Ack.object({
                 'name': Ack.string(),
-              }).transform<Object>((map) => map!['name'] as Object),
+              }).transform<Object>((map) => map['name'] as Object),
             },
           ).nullable().copyWith(defaultValue: Object());
 

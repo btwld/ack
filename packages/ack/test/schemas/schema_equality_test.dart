@@ -223,8 +223,8 @@ void main() {
       });
 
       test('different transformers are not equal', () {
-        final a = Ack.string().transform((s) => s?.toUpperCase() ?? '');
-        final b = Ack.string().transform((s) => s?.toLowerCase() ?? '');
+        final a = Ack.string().transform((s) => s.toUpperCase());
+        final b = Ack.string().transform((s) => s.toLowerCase());
         expect(a, isNot(equals(b)));
       });
     });

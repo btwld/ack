@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   group('TransformedSchema flag inheritance', () {
     test('transform should inherit isOptional flag', () {
-      final schema = Ack.string().optional().transform((val) => val ?? '');
+      final schema = Ack.string().optional().transform((val) => val);
 
       print(
         'Wrapped schema isOptional: ${(schema as dynamic).schema.isOptional}',
@@ -21,7 +21,7 @@ void main() {
     });
 
     test('transform should inherit isNullable flag', () {
-      final schema = Ack.string().nullable().transform((val) => val ?? '');
+      final schema = Ack.string().nullable().transform((val) => val);
 
       print(
         'Wrapped schema isNullable: ${(schema as dynamic).schema.isNullable}',
@@ -38,7 +38,7 @@ void main() {
 
     test('transform should inherit both optional and nullable flags', () {
       final schema = Ack.string().optional().nullable().transform(
-        (val) => val ?? '',
+        (val) => val,
       );
 
       print(
@@ -68,7 +68,7 @@ void main() {
       final schema = Ack.object({
         'name': Ack.string(),
         'nickname': Ack.string().optional().nullable().transform(
-          (val) => val ?? 'no-nick',
+          (val) => val,
         ),
       });
 

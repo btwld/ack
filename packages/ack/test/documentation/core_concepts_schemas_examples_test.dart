@@ -401,7 +401,7 @@ void main() {
 
       test('transform examples adjust output data', () {
         final upperSchema = Ack.string().transform(
-          (s) => s?.toUpperCase() ?? '',
+          (s) => s.toUpperCase(),
         );
         expect(upperSchema.safeParse('hello').getOrThrow(), equals('HELLO'));
 
@@ -410,7 +410,7 @@ void main() {
               'name': Ack.string(),
               'birthYear': Ack.integer(),
             }).transform((data) {
-              final birthYear = data!['birthYear'] as int;
+              final birthYear = data['birthYear'] as int;
               final age = DateTime.now().year - birthYear;
               return {...data, 'age': age};
             });
@@ -425,7 +425,7 @@ void main() {
 
         final dateSchema = Ack.string()
             .matches(r'^\d{4}-\d{2}-\d{2}$')
-            .transform<DateTime>((s) => DateTime.parse(s!));
+            .transform<DateTime>((s) => DateTime.parse(s));
         final parsedDate =
             dateSchema.safeParse('2024-01-01').getOrThrow() as DateTime;
         expect(parsedDate.year, equals(2024));

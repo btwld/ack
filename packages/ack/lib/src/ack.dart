@@ -79,7 +79,7 @@ final class Ack {
   static TransformedSchema<String, DateTime> date() {
     return string()
         .date() // Validates ISO 8601 date format (YYYY-MM-DD) first
-        .transform<DateTime>((s) => DateTime.parse(s!));
+        .transform<DateTime>((s) => DateTime.parse(s));
   }
 
   /// Creates a datetime schema that parses ISO 8601 datetime strings into DateTime objects.
@@ -98,7 +98,7 @@ final class Ack {
   static TransformedSchema<String, DateTime> datetime() {
     return string()
         .datetime() // Validates ISO 8601 datetime format with timezone first
-        .transform<DateTime>((s) => DateTime.parse(s!));
+        .transform<DateTime>((s) => DateTime.parse(s));
   }
 
   /// Creates a schema that parses URI strings into [Uri] objects.
@@ -115,7 +115,7 @@ final class Ack {
   static TransformedSchema<String, Uri> uri() {
     return string()
         .uri() // Validates URI format first
-        .transform<Uri>((s) => Uri.parse(s!));
+        .transform<Uri>((s) => Uri.parse(s));
   }
 
   /// Creates a schema that parses millisecond integers into [Duration] objects.
@@ -131,6 +131,6 @@ final class Ack {
   /// final timeout = Ack.duration().min(Duration(minutes: 1)).max(Duration(minutes: 2));
   /// ```
   static TransformedSchema<int, Duration> duration() {
-    return integer().transform<Duration>((ms) => Duration(milliseconds: ms!));
+    return integer().transform<Duration>((ms) => Duration(milliseconds: ms));
   }
 }

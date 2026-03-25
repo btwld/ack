@@ -145,7 +145,7 @@ class Ack {
 }
 
 abstract class AckSchema<T> {
-  TransformedSchema<T, R> transform<R extends Object>(R Function(T? value) transformer) =>
+  TransformedSchema<T, R> transform<R extends Object>(R Function(T value) transformer) =>
       TransformedSchema<T, R>(this);
   Map<String, Object?> toJsonSchema();
 }
