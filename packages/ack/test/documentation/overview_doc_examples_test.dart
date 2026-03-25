@@ -180,7 +180,7 @@ void main() {
             'name': Ack.string(),
             'birthYear': Ack.integer(),
           }).transform((data) {
-            final birthYear = data!['birthYear'] as int;
+            final birthYear = data['birthYear'] as int;
             final age = DateTime.now().year - birthYear;
             return {...data, 'age': age};
           });

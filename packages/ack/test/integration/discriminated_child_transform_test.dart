@@ -29,7 +29,7 @@ void main() {
             'meows': Ack.boolean().optional(),
           }).transform<Animal>(
             (map) => Cat(
-              map!['name'] as String,
+              map['name'] as String,
               meows: (map['meows'] as bool?) ?? true,
             ),
           );
@@ -41,7 +41,7 @@ void main() {
             'barks': Ack.boolean().optional(),
           }).transform<Animal>(
             (map) => Dog(
-              map!['name'] as String,
+              map['name'] as String,
               barks: (map['barks'] as bool?) ?? true,
             ),
           );
@@ -66,12 +66,12 @@ void main() {
       final catSchema = Ack.object({
         'type': Ack.literal('cat'),
         'name': Ack.string(),
-      }).transform<Animal>((map) => Cat(map!['name'] as String));
+      }).transform<Animal>((map) => Cat(map['name'] as String));
 
       final dogSchema = Ack.object({
         'type': Ack.literal('dog'),
         'name': Ack.string(),
-      }).transform<Animal>((map) => Dog(map!['name'] as String));
+      }).transform<Animal>((map) => Dog(map['name'] as String));
 
       final animalSchema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -88,7 +88,7 @@ void main() {
       final catSchema = Ack.object({
         'type': Ack.literal('cat'),
         'name': Ack.string(),
-      }).transform<Animal>((map) => Cat(map!['name'] as String));
+      }).transform<Animal>((map) => Cat(map['name'] as String));
 
       final animalSchema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -135,7 +135,7 @@ void main() {
             discriminatorKey: 'type',
             schemas: {'cat': catSchema, 'dog': dogSchema},
           ).transform<Animal>((map) {
-            return switch (map!['type']) {
+            return switch (map['type']) {
               'cat' => Cat(
                 map['name'] as String,
                 meows: (map['meows'] as bool?) ?? true,
@@ -167,7 +167,7 @@ void main() {
             'name': Ack.string(),
           }).transform<Animal>((map) {
             transformCalled = true;
-            return Cat(map!['name'] as String);
+            return Cat(map['name'] as String);
           });
 
       final schema = Ack.discriminated<Animal>(
@@ -189,7 +189,7 @@ void main() {
             'name': Ack.string(),
           }).transform<Animal>((map) {
             transformCalled = true;
-            return Cat(map!['name'] as String);
+            return Cat(map['name'] as String);
           });
 
       final schema = Ack.discriminated<Animal>(
@@ -228,9 +228,9 @@ void main() {
       final catSchema =
           Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()})
               .transform<Map<String, Object?>>(
-                (map) => {...map!, 'transformed': true},
+                (map) => {...map, 'transformed': true},
               )
-              .transform<Animal>((map) => Cat(map!['name'] as String));
+              .transform<Animal>((map) => Cat(map['name'] as String));
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -252,7 +252,7 @@ void main() {
       final animalSchema = Ack.discriminated(
         discriminatorKey: 'type',
         schemas: {'cat': catSchema},
-      ).transform<Animal>((map) => Cat(map!['name'] as String));
+      ).transform<Animal>((map) => Cat(map['name'] as String));
 
       final result = animalSchema.safeParse({
         'type': 'unknown',

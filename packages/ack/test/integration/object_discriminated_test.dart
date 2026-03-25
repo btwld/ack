@@ -28,7 +28,7 @@ void main() {
         user,
       ) {
         return {
-          ...user!,
+          ...user,
           'lastActive': DateTime.now().toIso8601String(),
           'apiVersion': 'v2',
         };

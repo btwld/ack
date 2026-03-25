@@ -190,7 +190,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -244,7 +244,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/palette_schema_exports.dart': '''
 export 'palette_schemas.dart';
@@ -301,7 +301,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -350,7 +350,7 @@ class Color {
   const Color(this.value);
 }
 
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -403,7 +403,7 @@ import 'hidden_types.dart';
 
 @AckType()
 final hiddenColorSchema = Ack.string()
-    .transform<HiddenColor>((value) => HiddenColor(value!));
+    .transform<HiddenColor>((value) => HiddenColor(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -445,7 +445,7 @@ class Box<T> {
 
 @AckType()
 final boxedColorSchema =
-    Ack.string().transform<Box<Color>>((value) => Box(Color(value!)));
+    Ack.string().transform<Box<Color>>((value) => Box(Color(value)));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -512,7 +512,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -555,7 +555,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/alt_color_types.dart': '''
 class Color {
@@ -604,7 +604,7 @@ import 'hidden_types.dart';
 
 @AckType()
 final hiddenColorSchema = Ack.string()
-    .transform<HiddenColor>((value) => HiddenColor(value!));
+    .transform<HiddenColor>((value) => HiddenColor(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -647,7 +647,7 @@ import 'hidden_types.dart' as dep;
 
 @AckType()
 final hiddenColorSchema = Ack.string()
-    .transform<dep.HiddenColor>((value) => dep.HiddenColor(value!));
+    .transform<dep.HiddenColor>((value) => dep.HiddenColor(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
@@ -898,7 +898,7 @@ class Color {
   const Color(this.value);
 }
 
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';

@@ -5,14 +5,14 @@ import 'package:test/test.dart';
 void main() {
   group('TransformExtension', () {
     test('should transform a string to an integer successfully', () {
-      final schema = Ack.string().transform((val) => val?.length ?? 0);
+      final schema = Ack.string().transform((val) => val.length);
       final result = schema.parse('hello');
       expect(result, 5);
     });
 
     test('should chain a refinement check after a transformation', () {
       final schema = Ack.string()
-          .transform((val) => val?.length ?? 0)
+          .transform((val) => val.length)
           .refine((val) => val > 3, message: 'Length must be greater than 3');
 
       // Test success
@@ -29,18 +29,24 @@ void main() {
       );
     });
 
-    test('should handle nullable schemas and transform a null value', () {
-      final schema = Ack.string().nullable().transform((val) {
-        return val == null ? 'was null' : 'was not null';
+    test('should not call transformer when nullable schema receives null', () {
+      var transformerCalled = false;
+      final schema = Ack.string().nullable().transform<String>((val) {
+        transformerCalled = true;
+        return val.toUpperCase();
       });
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
-      expect(result.getOrThrow(), 'was null');
+      expect(result.getOrNull(), isNull);
+      expect(transformerCalled, isFalse,
+          reason: 'Transformer should not run on null input');
 
-      final result2 = schema.safeParse('a');
+      // Non-null value should still transform
+      final result2 = schema.safeParse('hello');
       expect(result2.isOk, isTrue);
-      expect(result2.getOrThrow(), 'was not null');
+      expect(result2.getOrThrow(), 'HELLO');
+      expect(transformerCalled, isTrue);
     });
 
     test(
@@ -90,14 +96,14 @@ void main() {
 
     test('should preserve isOptional flag after transform', () {
       final schema = Ack.string().optional().transform(
-        (val) => val ?? 'default',
+        (val) => val,
       );
       expect(schema.isOptional, isTrue);
     });
 
     test('should preserve isNullable flag after transform', () {
       final schema = Ack.string().nullable().transform(
-        (val) => val ?? 'default',
+        (val) => val,
       );
       expect(schema.isNullable, isTrue);
     });
@@ -106,7 +112,7 @@ void main() {
       'should preserve both isOptional and isNullable flags after transform',
       () {
         final schema = Ack.string().optional().nullable().transform(
-          (val) => val ?? 'default',
+          (val) => val,
         );
         expect(schema.isOptional, isTrue);
         expect(schema.isNullable, isTrue);

@@ -31,10 +31,10 @@ class TagList {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 
 @AckType()
-final aliasColorSchema = colorSchema.transform<Color>((value) => value!);
+final aliasColorSchema = colorSchema.transform<Color>((value) => value);
 
 @AckType()
 final uriSchema = Ack.uri();
@@ -90,7 +90,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 
 final baseColorSchema = Ack.string();
 
@@ -102,14 +102,14 @@ final profileSchema = Ack.object({
   'timeout': Ack.duration(),
   'links': Ack.list(Ack.uri()),
   'nestedLinks': Ack.list(Ack.list(Ack.uri())),
-  'favoriteColor': Ack.string().transform<Color>((value) => Color(value!)),
-  'slug': Ack.string().transform<String>((value) => value! + '#'),
+  'favoriteColor': Ack.string().transform<Color>((value) => Color(value)),
+  'slug': Ack.string().transform<String>((value) => value + '#'),
   'accent': colorSchema,
   'colors': Ack.list(colorSchema),
   'customColors': Ack.list(
-    baseColorSchema.transform<Color>((value) => Color(value!)),
+    baseColorSchema.transform<Color>((value) => Color(value)),
   ),
-  'tagList': Ack.list(Ack.string()).transform<TagList>((value) => TagList(value!)),
+  'tagList': Ack.list(Ack.string()).transform<TagList>((value) => TagList(value)),
 });
 ''',
         },
@@ -177,7 +177,7 @@ AckSchema<String> get baseColorSchema => Ack.string();
 
 @AckType()
 AckSchema<Color> get colorSchema =>
-    baseColorSchema.transform<Color>((value) => Color(value!));
+    baseColorSchema.transform<Color>((value) => Color(value));
 ''',
         },
         outputs: {
@@ -237,7 +237,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value!));
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
           'test_pkg|lib/palette_schema_exports.dart': '''
 export 'palette_schemas.dart';
@@ -320,7 +320,7 @@ class Color {
 }
 
 @AckType()
-final colorSchema = Ack.string().transform((value) => Color(value!));
+final colorSchema = Ack.string().transform((value) => Color(value));
 ''',
           },
           outputs: {'test_pkg|lib/schema.g.dart': anything},

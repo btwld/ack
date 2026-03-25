@@ -148,7 +148,7 @@ void main() {
       final baseSchema = Ack.string();
       final transformedSchema = TransformedSchema<String, String>(
         baseSchema,
-        (value) => value?.toUpperCase() ?? 'TRANSFORMED',
+        (value) => value.toUpperCase(),
         defaultValue: 'DEFAULT_OUTPUT',
       );
 
@@ -164,7 +164,7 @@ void main() {
 
     test('should apply transformation when input is not null', () {
       final schema = Ack.string()
-          .transform((value) => value?.toUpperCase() ?? '')
+          .transform((value) => value.toUpperCase())
           .copyWith(defaultValue: 'DEFAULT');
 
       final result = schema.safeParse('hello');
@@ -175,7 +175,7 @@ void main() {
 
     test('nullable transformed schema with null input and no default', () {
       final schema = Ack.string().nullable().transform(
-        (value) => value?.toUpperCase() ?? '',
+        (value) => value.toUpperCase(),
       );
 
       final result = schema.safeParse(null);
@@ -183,8 +183,8 @@ void main() {
       expect(result.isOk, isTrue);
       expect(
         result.getOrNull(),
-        equals(''),
-        reason: 'Transformer converts null to empty string',
+        isNull,
+        reason: 'Null passes through without calling transformer',
       );
     });
   });

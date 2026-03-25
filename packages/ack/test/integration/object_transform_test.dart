@@ -13,7 +13,7 @@ void main() {
           .extend({'age': Ack.integer().min(0), 'email': Ack.string().email()})
           .transform<Map<String, dynamic>>((data) {
             return {
-              ...data!,
+              ...data,
               'fullName': '${data['firstName']} ${data['lastName']}',
               'isAdult': (data['age'] as int) >= 18,
             };
@@ -43,7 +43,7 @@ void main() {
       final publicSchema = schema
           .omit(['password'])
           .transform<Map<String, dynamic>>((data) {
-            final profile = data!['profile'] as Map<String, Object?>;
+            final profile = data['profile'] as Map<String, Object?>;
             return {
               ...data,
               'displayName': profile['name'],

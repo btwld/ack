@@ -60,11 +60,11 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
 
   /// Transforms the validated value using the provided transformer function.
   ///
-  /// The transformer receives `T?` because the base schema may be nullable or
-  /// optional, meaning `null` is a valid validated value.
+  /// The transformer receives a non-null `T` value. When the schema is nullable
+  /// and receives null input, null passes through without calling the transformer.
   /// This is useful for converting data types or applying business logic transformations.
   TransformedSchema<T, R> transform<R extends Object>(
-    R Function(T? value) transformer,
+    R Function(T value) transformer,
   ) {
     return TransformedSchema(
       this,
