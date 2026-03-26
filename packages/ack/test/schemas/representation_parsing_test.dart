@@ -8,14 +8,22 @@ class Color {
 
 void main() {
   group('representation parsing', () {
-    void expectRepresentationUnavailable(SchemaResult<Object> result) {
+    void expectRepresentationUnavailable<T extends Object>(SchemaResult<T> result) {
+      bool hasRepresentationUnavailable(SchemaError error) {
+        if (error is SchemaValidationError) {
+          return error.message.contains('Representation parsing is unavailable');
+        }
+
+        if (error is SchemaNestedError) {
+          return error.errors.any(hasRepresentationUnavailable);
+        }
+
+        return false;
+      }
+
       expect(result.isFail, isTrue);
       final error = result.getError();
-      expect(error, isA<SchemaValidationError>());
-      expect(
-        (error as SchemaValidationError).message,
-        contains('Representation parsing is unavailable'),
-      );
+      expect(hasRepresentationUnavailable(error), isTrue, reason: '$error');
     }
 
     test('transformed schema keeps wire representation and parsed output', () {
@@ -84,6 +92,55 @@ void main() {
       );
     });
 
+    test('object representation parsing preserves raw default values', () {
+      final schema = Ack.object({
+        'homepage': Ack.uri(),
+        'timeout': Ack.duration(),
+      }).copyWith(
+        defaultValue: {
+          'homepage': 'https://example.com',
+          'timeout': 1500,
+        },
+      );
+
+      expect(schema.parseRepresentation(null), {
+        'homepage': 'https://example.com',
+        'timeout': 1500,
+      });
+    });
+
+    test('list representation parsing preserves raw list defaults', () {
+      final schema = Ack.list(Ack.string()).copyWith(
+        defaultValue: ['https://example.com', 'https://example.com/docs'],
+      );
+
+      expect(schema.parseRepresentation(null), [
+        'https://example.com',
+        'https://example.com/docs',
+      ]);
+    });
+
+    test('discriminated representation parsing preserves raw branch defaults', () {
+      final catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'homepage': Ack.uri(),
+      });
+      final animalSchema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {'cat': catSchema},
+      ).copyWith(
+        defaultValue: {
+          'type': 'cat',
+          'homepage': 'https://example.com',
+        },
+      );
+
+      expect(animalSchema.parseRepresentation(null), {
+        'type': 'cat',
+        'homepage': 'https://example.com',
+      });
+    });
+
     test('representation parsing fails for transformed defaults', () {
       final schema = Ack.string()
           .transform<Color>((value) => Color(value))
@@ -139,6 +196,11 @@ void main() {
         final result = schema.safeParseRepresentation({});
 
         expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaNestedError>());
+        final nestedError = (error as SchemaNestedError).errors.first;
+        expect(nestedError, isA<SchemaNestedError>());
+        expect(nestedError.context.path, '#/colors');
       },
     );
   });

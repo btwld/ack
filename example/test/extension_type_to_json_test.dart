@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ack_example/schema_types_edge_cases.dart';
 import 'package:ack_example/schema_types_primitives.dart';
 import 'package:ack_example/schema_types_simple.dart';
 import 'package:ack_example/schema_types_transforms.dart';
@@ -83,6 +84,21 @@ void main() {
       expect(updated.accentParsed.value, 'green');
       expect(updated.colorsParsed.map((color) => color.value), ['green']);
       expect(() => jsonEncode(updated.toJson()), returnsNormally);
+    });
+
+    test('copyWith preserves omission for optional non-nullable fields', () {
+      final modifier = ModifierType.parse({
+        'requiredField': 'hello',
+        'nullableField': null,
+      });
+
+      final updated = modifier.copyWith(nullableField: 'present');
+
+      expect(updated.toJson()['requiredField'], 'hello');
+      expect(updated.toJson()['nullableField'], 'present');
+      expect(updated.toJson().containsKey('optionalField'), isFalse);
+      expect(updated.toJson().containsKey('optionalNullable'), isFalse);
+      expect(updated.toJson().containsKey('nullableOptional'), isFalse);
     });
   });
 }
