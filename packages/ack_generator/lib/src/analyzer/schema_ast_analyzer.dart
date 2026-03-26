@@ -2387,11 +2387,6 @@ class SchemaAstAnalyzer {
 
       final declarationForMetadata =
           sourceDeclaration ?? schemaVariable;
-      if (declarationForMetadata == null) {
-        shouldCacheResult = true;
-        resolvedReference = null;
-        return null;
-      }
 
       final hasAckTypeAnnotation = _hasAckTypeAnnotation(
         declarationForMetadata,
