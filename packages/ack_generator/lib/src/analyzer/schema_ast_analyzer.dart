@@ -2372,13 +2372,13 @@ class SchemaAstAnalyzer {
         }
       }
 
-      if (schemaVariable == null) {
+      if (schemaVariable == null && schemaGetter == null) {
         shouldCacheResult = true;
         resolvedReference = null;
         return null;
       }
 
-      final schemaName = schemaVariable.name3 ?? schemaGetter?.name3;
+      final schemaName = schemaVariable?.name3 ?? schemaGetter?.name3;
       if (schemaName == null) {
         shouldCacheResult = true;
         resolvedReference = null;
@@ -2386,7 +2386,12 @@ class SchemaAstAnalyzer {
       }
 
       final declarationForMetadata =
-          sourceDeclaration ?? schemaVariable;
+          sourceDeclaration ?? schemaVariable ?? schemaGetter;
+      if (declarationForMetadata == null) {
+        shouldCacheResult = true;
+        resolvedReference = null;
+        return null;
+      }
 
       final hasAckTypeAnnotation = _hasAckTypeAnnotation(
         declarationForMetadata,
@@ -2394,10 +2399,18 @@ class SchemaAstAnalyzer {
 
       final customTypeName = _extractAckTypeName(declarationForMetadata);
 
-      final modelInfo = analyzeSchemaVariable(
-        schemaVariable,
-        customTypeName: customTypeName,
-      );
+      ModelInfo? modelInfo;
+      if (schemaVariable != null) {
+        modelInfo = analyzeSchemaVariable(
+          schemaVariable,
+          customTypeName: customTypeName,
+        );
+      } else if (schemaGetter != null) {
+        modelInfo = analyzeSchemaGetter(
+          schemaGetter,
+          customTypeName: customTypeName,
+        );
+      }
 
       if (modelInfo == null) {
         shouldCacheResult = true;
