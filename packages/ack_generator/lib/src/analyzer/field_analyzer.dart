@@ -1,186 +1,109 @@
+import 'package:ack_annotations/ack_annotations.dart';
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
-import 'package:analyzer/dart/constant/value.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
-import '../models/field_info.dart';
 import '../models/constraint_info.dart';
+import '../models/field_info.dart';
+import '../utils/annotation_utils.dart';
+import '../utils/case_style_utils.dart';
 import '../utils/doc_comment_utils.dart';
 
-/// Analyzes individual fields in a model
+/// Analyzes constructor parameters in a schemable model.
 class FieldAnalyzer {
-  FieldInfo analyze(FieldElement2 field) {
-    // Check for @AckField annotation
-    final ackFieldAnnotation = TypeChecker.typeNamed(
-      AckField,
-    ).firstAnnotationOf(field);
-
-    // Determine JSON key (from annotation or field name)
-    final jsonKey = _getJsonKey(field, ackFieldAnnotation);
-
-    // Determine if field is required
-    final isRequired = _isRequired(field, ackFieldAnnotation);
-
-    // Extract constraints
-    final constraints = _extractConstraints(field, ackFieldAnnotation);
-
-    // Extract description from annotation
-    final description = _getDescription(field, ackFieldAnnotation);
+  FieldInfo analyze(
+    FormalParameterElement parameter, {
+    required CaseStyle caseStyle,
+  }) {
+    final jsonKey = _getJsonKey(parameter, caseStyle);
+    final constraints = _extractDecoratorConstraints(parameter);
+    final description = _getDescription(parameter);
 
     return FieldInfo(
-      name: field.name3!,
+      name: parameter.name3!,
       jsonKey: jsonKey,
-      type: field.type,
-      isRequired: isRequired,
-      isNullable: field.type.nullabilitySuffix != NullabilitySuffix.none,
+      type: parameter.type,
+      isRequired: parameter.isRequiredNamed,
+      isNullable: parameter.type.nullabilitySuffix != NullabilitySuffix.none,
       constraints: constraints,
       description: description,
     );
   }
 
-  String _getJsonKey(FieldElement2 field, DartObject? annotation) {
+  String _getJsonKey(FormalParameterElement parameter, CaseStyle caseStyle) {
+    final annotation = schemaKeyChecker.firstAnnotationOf(parameter);
     if (annotation != null) {
-      final jsonKeyField = annotation.getField('jsonKey');
-      if (jsonKeyField != null && !jsonKeyField.isNull) {
-        return jsonKeyField.toStringValue()!;
-      }
-    }
-    return field.name3!;
-  }
-
-  String? _getDescription(FieldElement2 field, DartObject? annotation) {
-    // Priority 1: Check annotation (explicit override takes precedence)
-    if (annotation != null) {
-      final descriptionField = annotation.getField('description');
-      if (descriptionField != null && !descriptionField.isNull) {
-        return descriptionField.toStringValue();
+      final keyName = annotation.getField('name')?.toStringValue();
+      if (keyName != null && keyName.isNotEmpty) {
+        return keyName;
       }
     }
 
-    // Priority 2: Fallback to doc comment
-    return parseDocComment(field.documentationComment);
+    return applyCaseStyle(caseStyle, parameter.name3!);
   }
 
-  bool _isRequired(FieldElement2 field, DartObject? annotation) {
-    // If no annotation, use automatic detection.
-    if (annotation == null) {
-      return _inferRequiredFromField(field);
+  String? _getDescription(FormalParameterElement parameter) {
+    final annotation = descriptionChecker.firstAnnotationOf(parameter);
+    if (annotation != null) {
+      final value = annotation.getField('value')?.toStringValue();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
     }
 
-    // Tri-state mode is authoritative.
-    return switch (_getRequiredMode(annotation)) {
-      AckFieldRequiredMode.required => true,
-      AckFieldRequiredMode.optional => false,
-      AckFieldRequiredMode.auto => _inferRequiredFromField(field),
-    };
+    return parseDocComment(parameter.documentationComment);
   }
 
-  bool _inferRequiredFromField(FieldElement2 field) {
-    return field.type.nullabilitySuffix == NullabilitySuffix.none &&
-        !field.firstFragment.hasInitializer;
-  }
-
-  AckFieldRequiredMode _getRequiredMode(DartObject annotation) {
-    final modeIndex = annotation
-        .getField('requiredMode')
-        ?.getField('index')
-        ?.toIntValue();
-    return switch (modeIndex) {
-      0 => AckFieldRequiredMode.auto,
-      1 => AckFieldRequiredMode.required,
-      2 => AckFieldRequiredMode.optional,
-      _ => AckFieldRequiredMode.auto,
-    };
-  }
-
-  List<ConstraintInfo> _extractConstraints(
-    FieldElement2 field,
-    DartObject? annotation,
+  List<ConstraintInfo> _extractDecoratorConstraints(
+    FormalParameterElement parameter,
   ) {
     final constraints = <ConstraintInfo>[];
 
-    // Extract constraints from @AckField annotation.
-    constraints.addAll(_extractAckFieldConstraints(annotation));
+    _addStringConstraints(constraints, parameter);
+    _addNumericConstraints(constraints, parameter);
+    _addListConstraints(constraints, parameter);
+    _addEnumConstraints(constraints, parameter);
 
-    // Extract constraints from decorator annotations
-    constraints.addAll(_extractDecoratorConstraints(field));
-
-    return constraints;
-  }
-
-  List<ConstraintInfo> _extractAckFieldConstraints(DartObject? annotation) {
-    if (annotation == null) return const [];
-
-    final constraints = <ConstraintInfo>[];
-    final constraintsField = annotation.getField('constraints');
-    if (constraintsField == null || constraintsField.isNull) {
-      return constraints;
+    final hasEnumString = constraints.any((c) => c.name == 'enumString');
+    final hasOtherStringConstraints = constraints.any(
+      (c) => const {
+        'minLength',
+        'maxLength',
+        'email',
+        'url',
+        'matches',
+      }.contains(c.name),
+    );
+    if (hasEnumString && hasOtherStringConstraints) {
+      throw ArgumentError(
+        '@EnumString cannot be combined with other string constraints '
+        '(@MinLength, @MaxLength, @Email, @Url, @Pattern) on parameter '
+        '"${parameter.name3}".',
+      );
     }
-
-    final constraintsList = constraintsField.toListValue();
-    if (constraintsList == null) return constraints;
-
-    for (final constraint in constraintsList) {
-      // Parse constraint strings like "minLength(3)", "email()".
-      final constraintStr = constraint.toStringValue();
-      if (constraintStr == null) continue;
-
-      final parsed = _parseConstraintString(constraintStr);
-      if (parsed != null) {
-        constraints.add(parsed);
-      }
-    }
-
-    return constraints;
-  }
-
-  ConstraintInfo? _parseConstraintString(String constraint) {
-    // Match patterns like "minLength(3)" or "email()"
-    final match = RegExp(r'(\w+)\((.*)\)').firstMatch(constraint);
-    if (match != null) {
-      final name = match.group(1)!;
-      final argsStr = match.group(2)!;
-      final args = argsStr.isEmpty
-          ? <String>[]
-          : argsStr.split(',').map((a) => a.trim()).toList();
-
-      return ConstraintInfo(name: name, arguments: args);
-    }
-
-    // Simple constraint without parentheses
-    return ConstraintInfo(name: constraint, arguments: []);
-  }
-
-  List<ConstraintInfo> _extractDecoratorConstraints(FieldElement2 field) {
-    final constraints = <ConstraintInfo>[];
-
-    _addStringConstraints(constraints, field);
-    _addNumericConstraints(constraints, field);
-    _addListConstraints(constraints, field);
-    _addEnumConstraints(constraints, field);
 
     return constraints;
   }
 
   void _addStringConstraints(
     List<ConstraintInfo> constraints,
-    FieldElement2 field,
+    FormalParameterElement parameter,
   ) {
-    _addIntConstraint(constraints, field, MinLength, 'length', 'minLength');
-    _addIntConstraint(constraints, field, MaxLength, 'length', 'maxLength');
+    _addIntConstraint(constraints, parameter, MinLength, 'length', 'minLength');
+    _addIntConstraint(constraints, parameter, MaxLength, 'length', 'maxLength');
 
-    if (TypeChecker.typeNamed(Email).hasAnnotationOfExact(field)) {
-      constraints.add(ConstraintInfo(name: 'email', arguments: []));
+    if (TypeChecker.typeNamed(Email).hasAnnotationOfExact(parameter)) {
+      constraints.add(constraint('email'));
     }
 
-    if (TypeChecker.typeNamed(Url).hasAnnotationOfExact(field)) {
-      constraints.add(ConstraintInfo(name: 'url', arguments: []));
+    if (TypeChecker.typeNamed(Url).hasAnnotationOfExact(parameter)) {
+      constraints.add(constraint('url'));
     }
 
     final patternAnnotation = TypeChecker.typeNamed(
       Pattern,
-    ).firstAnnotationOf(field);
+    ).firstAnnotationOf(parameter);
     final pattern = patternAnnotation?.getField('pattern')?.toStringValue();
     if (pattern != null) {
       constraints.add(ConstraintInfo(name: 'matches', arguments: [pattern]));
@@ -189,43 +112,44 @@ class FieldAnalyzer {
 
   void _addNumericConstraints(
     List<ConstraintInfo> constraints,
-    FieldElement2 field,
+    FormalParameterElement parameter,
   ) {
-    _addNumericConstraint(constraints, field, Min, 'min');
-    _addNumericConstraint(constraints, field, Max, 'max');
+    _addNumericConstraint(constraints, parameter, Min, 'min');
+    _addNumericConstraint(constraints, parameter, Max, 'max');
 
-    if (TypeChecker.typeNamed(Positive).hasAnnotationOfExact(field)) {
-      constraints.add(ConstraintInfo(name: 'positive', arguments: []));
+    if (TypeChecker.typeNamed(Positive).hasAnnotationOfExact(parameter)) {
+      constraints.add(constraint('positive'));
     }
 
-    _addNumericConstraint(constraints, field, MultipleOf, 'multipleOf');
+    _addNumericConstraint(constraints, parameter, MultipleOf, 'multipleOf');
   }
 
   void _addListConstraints(
     List<ConstraintInfo> constraints,
-    FieldElement2 field,
+    FormalParameterElement parameter,
   ) {
-    _addIntConstraint(constraints, field, MinItems, 'count', 'minItems');
-    _addIntConstraint(constraints, field, MaxItems, 'count', 'maxItems');
+    _addIntConstraint(constraints, parameter, MinItems, 'count', 'minItems');
+    _addIntConstraint(constraints, parameter, MaxItems, 'count', 'maxItems');
   }
 
   void _addEnumConstraints(
     List<ConstraintInfo> constraints,
-    FieldElement2 field,
+    FormalParameterElement parameter,
   ) {
-    final enumStringAnnotation = TypeChecker.typeNamed(
+    final annotation = TypeChecker.typeNamed(
       EnumString,
-    ).firstAnnotationOf(field);
-    if (enumStringAnnotation == null) return;
+    ).firstAnnotationOf(parameter);
+    if (annotation == null) return;
 
-    final valuesList = enumStringAnnotation.getField('values')?.toListValue();
+    final valuesList = annotation.getField('values')?.toListValue();
     if (valuesList == null) return;
 
     final values = valuesList
-        .map((v) => v.toStringValue())
-        .where((v) => v != null)
+        .map((value) => value.toStringValue())
+        .where((value) => value != null)
         .cast<String>()
         .toList();
+
     if (values.isNotEmpty) {
       constraints.add(ConstraintInfo(name: 'enumString', arguments: values));
     }
@@ -233,14 +157,14 @@ class FieldAnalyzer {
 
   void _addIntConstraint(
     List<ConstraintInfo> constraints,
-    FieldElement2 field,
+    FormalParameterElement parameter,
     Type annotationType,
     String valueFieldName,
     String constraintName,
   ) {
     final annotation = TypeChecker.typeNamed(
       annotationType,
-    ).firstAnnotationOf(field);
+    ).firstAnnotationOf(parameter);
     final value = annotation?.getField(valueFieldName)?.toIntValue();
     if (value != null) {
       constraints.add(
@@ -249,29 +173,41 @@ class FieldAnalyzer {
     }
   }
 
-  /// Extracts a numeric value from an annotation and adds it as a constraint.
-  ///
-  /// Tries toIntValue() first, then toDoubleValue(), because int literals
-  /// like @Min(5) have toDoubleValue() return null in the analyzer.
   void _addNumericConstraint(
     List<ConstraintInfo> constraints,
-    FieldElement2 field,
+    FormalParameterElement parameter,
     Type annotationType,
     String constraintName,
   ) {
     final annotation = TypeChecker.typeNamed(
       annotationType,
-    ).firstAnnotationOf(field);
+    ).firstAnnotationOf(parameter);
     if (annotation == null) return;
 
-    final valueField = annotation.getField('value');
-    final valueStr =
-        valueField?.toIntValue()?.toString() ??
-        valueField?.toDoubleValue()?.toString();
-    if (valueStr != null) {
-      constraints.add(
-        ConstraintInfo(name: constraintName, arguments: [valueStr]),
-      );
+    final rawValue = annotation.getField('value');
+    final value = _readNumericValue(rawValue);
+    if (value == null) return;
+
+    constraints.add(ConstraintInfo(name: constraintName, arguments: [value]));
+  }
+
+  String? _readNumericValue(DartObject? value) {
+    if (value == null || value.isNull) return null;
+
+    final intValue = value.toIntValue();
+    if (intValue != null) {
+      return intValue.toString();
     }
+
+    final doubleValue = value.toDoubleValue();
+    if (doubleValue != null) {
+      return doubleValue.toString();
+    }
+
+    return null;
+  }
+
+  ConstraintInfo constraint(String name) {
+    return ConstraintInfo(name: name, arguments: const []);
   }
 }

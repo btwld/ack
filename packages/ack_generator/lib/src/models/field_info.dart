@@ -16,6 +16,7 @@ class FieldInfo {
   final bool isNullable;
   final List<ConstraintInfo> constraints;
   final String? description;
+  final String? schemaExpressionOverride;
 
   /// For list/set fields containing schema variable references (e.g., `Ack.list(addressSchema)`),
   /// this stores the schema variable name so the type builder can generate
@@ -58,6 +59,7 @@ class FieldInfo {
     required this.isNullable,
     required this.constraints,
     this.description,
+    this.schemaExpressionOverride,
     this.listElementSchemaRef,
     this.nestedSchemaRef,
     this.displayTypeOverride,
@@ -67,6 +69,49 @@ class FieldInfo {
     this.nestedSchemaCastTypeOverride,
     this.isTransformedRepresentation = false,
   });
+
+  FieldInfo copyWith({
+    String? name,
+    String? jsonKey,
+    DartType? type,
+    bool? isRequired,
+    bool? isNullable,
+    List<ConstraintInfo>? constraints,
+    String? description,
+    String? schemaExpressionOverride,
+    String? listElementSchemaRef,
+    String? nestedSchemaRef,
+    String? displayTypeOverride,
+    String? collectionElementDisplayTypeOverride,
+    String? collectionElementCastTypeOverride,
+    bool? collectionElementIsCustomType,
+    String? nestedSchemaCastTypeOverride,
+  }) {
+    return FieldInfo(
+      name: name ?? this.name,
+      jsonKey: jsonKey ?? this.jsonKey,
+      type: type ?? this.type,
+      isRequired: isRequired ?? this.isRequired,
+      isNullable: isNullable ?? this.isNullable,
+      constraints: constraints ?? this.constraints,
+      description: description ?? this.description,
+      schemaExpressionOverride:
+          schemaExpressionOverride ?? this.schemaExpressionOverride,
+      listElementSchemaRef: listElementSchemaRef ?? this.listElementSchemaRef,
+      nestedSchemaRef: nestedSchemaRef ?? this.nestedSchemaRef,
+      displayTypeOverride: displayTypeOverride ?? this.displayTypeOverride,
+      collectionElementDisplayTypeOverride:
+          collectionElementDisplayTypeOverride ??
+          this.collectionElementDisplayTypeOverride,
+      collectionElementCastTypeOverride:
+          collectionElementCastTypeOverride ??
+          this.collectionElementCastTypeOverride,
+      collectionElementIsCustomType:
+          collectionElementIsCustomType ?? this.collectionElementIsCustomType,
+      nestedSchemaCastTypeOverride:
+          nestedSchemaCastTypeOverride ?? this.nestedSchemaCastTypeOverride,
+    );
+  }
 
   /// Whether this field references another schema model
   bool get isNestedSchema =>
@@ -103,26 +148,13 @@ class FieldInfo {
   /// Get enum values if this is an enum type
   List<String> get enumValues {
     if (!isEnum) return [];
-    final element = type.element3;
-    if (element == null) return [];
-
-    // For enums, get the enum constants using the analyzer API
-    if (element is EnumElement2) {
-      try {
-        final enumConstants = element.constants2
-            .map((field) => field.name3!)
-            .toList();
-
-        return enumConstants;
-      } catch (e) {
-        // If there's any issue with the analyzer API, fall back to empty list
-        // This maintains backward compatibility with manual @EnumString annotations
-        _log.warning('Could not extract enum values for ${element.name3}: $e');
-        return [];
-      }
+    final element = type.element3 as EnumElement2;
+    try {
+      return element.constants2.map((field) => field.name3!).toList();
+    } catch (e) {
+      _log.warning('Could not extract enum values for ${element.name3}: $e');
+      return [];
     }
-
-    return [];
   }
 
   /// Whether this is a List type

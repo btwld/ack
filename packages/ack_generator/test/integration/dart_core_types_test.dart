@@ -16,8 +16,8 @@ class AckModel {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final bool model;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
+  final String? discriminatorKey;
+  final String? discriminatorValue;
 
   const AckModel({
     this.schemaName,
@@ -25,8 +25,8 @@ class AckModel {
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.model = false,
-    this.discriminatedKey,
-    this.discriminatedValue,
+    this.discriminatorKey,
+    this.discriminatorValue,
   });
 }
 ''',

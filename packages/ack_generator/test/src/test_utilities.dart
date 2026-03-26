@@ -24,6 +24,9 @@ class MockFieldInfo implements FieldInfo {
   final String? description;
 
   @override
+  final String? schemaExpressionOverride;
+
+  @override
   final bool isPrimitive;
 
   @override
@@ -83,6 +86,7 @@ class MockFieldInfo implements FieldInfo {
     required this.isList,
     required this.isMap,
     this.description,
+    this.schemaExpressionOverride,
     this.isSet = false,
     this.isGeneric = false,
     this.isEnum = false,
@@ -110,6 +114,59 @@ class MockFieldInfo implements FieldInfo {
     keyTypeName: mapKeyTypeName,
     valueTypeName: mapValueTypeName,
   );
+
+  @override
+  FieldInfo copyWith({
+    String? name,
+    String? jsonKey,
+    DartType? type,
+    bool? isRequired,
+    bool? isNullable,
+    List<ConstraintInfo>? constraints,
+    String? description,
+    String? schemaExpressionOverride,
+    String? listElementSchemaRef,
+    String? nestedSchemaRef,
+    String? displayTypeOverride,
+    String? collectionElementDisplayTypeOverride,
+    String? collectionElementCastTypeOverride,
+    bool? collectionElementIsCustomType,
+    String? nestedSchemaCastTypeOverride,
+  }) {
+    return MockFieldInfo(
+      name: name ?? this.name,
+      typeName: type?.getDisplayString(withNullability: false) ?? typeName,
+      isRequired: isRequired ?? this.isRequired,
+      isNullable: isNullable ?? this.isNullable,
+      constraints: constraints ?? this.constraints,
+      description: description ?? this.description,
+      schemaExpressionOverride:
+          schemaExpressionOverride ?? this.schemaExpressionOverride,
+      isSet: isSet,
+      isGeneric: isGeneric,
+      isEnum: isEnum,
+      enumValues: enumValues,
+      isPrimitive: isPrimitive,
+      isList: isList,
+      isMap: isMap,
+      listItemTypeName: listItemTypeName,
+      mapKeyTypeName: mapKeyTypeName,
+      mapValueTypeName: mapValueTypeName,
+      listElementSchemaRef: listElementSchemaRef ?? this.listElementSchemaRef,
+      nestedSchemaRef: nestedSchemaRef ?? this.nestedSchemaRef,
+      displayTypeOverride: displayTypeOverride ?? this.displayTypeOverride,
+      collectionElementDisplayTypeOverride:
+          collectionElementDisplayTypeOverride ??
+          this.collectionElementDisplayTypeOverride,
+      collectionElementCastTypeOverride:
+          collectionElementCastTypeOverride ??
+          this.collectionElementCastTypeOverride,
+      collectionElementIsCustomType:
+          collectionElementIsCustomType ?? this.collectionElementIsCustomType,
+      nestedSchemaCastTypeOverride:
+          nestedSchemaCastTypeOverride ?? this.nestedSchemaCastTypeOverride,
+    );
+  }
 }
 
 // Mock DartType for testing

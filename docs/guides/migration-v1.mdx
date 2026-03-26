@@ -243,12 +243,12 @@ if (result.isOk) {
 **Before (v0.x):**
 
 ```dart
-@AckModel(discriminatedKey: 'type', model: true)
+@AckModel(discriminatorKey: 'type', model: true)
 abstract class Animal {
   String get type;
 }
 
-@AckModel(discriminatedValue: 'cat', model: true)
+@AckModel(discriminatorValue: 'cat', model: true)
 class Cat extends Animal {
   @override
   String get type => 'cat';
@@ -259,7 +259,7 @@ class Cat extends Animal {
   Cat({required this.meow, this.lives = 9});
 }
 
-@AckModel(discriminatedValue: 'dog', model: true)
+@AckModel(discriminatorValue: 'dog', model: true)
 class Dog extends Animal {
   @override
   String get type => 'dog';
@@ -284,12 +284,12 @@ if (result.isOk) {
 **After (v1.0):**
 
 ```dart
-@AckModel(discriminatedKey: 'type')
+@AckModel(discriminatorKey: 'type')
 abstract class Animal {
   String get type;
 }
 
-@AckModel(discriminatedValue: 'cat')
+@AckModel(discriminatorValue: 'cat')
 class Cat extends Animal {
   @override
   String get type => 'cat';
@@ -300,7 +300,7 @@ class Cat extends Animal {
   Cat({required this.meow, this.lives = 9});
 }
 
-@AckModel(discriminatedValue: 'dog')
+@AckModel(discriminatorValue: 'dog')
 class Dog extends Animal {
   @override
   String get type => 'dog';
@@ -755,6 +755,39 @@ if (result.isOk) {
 > **Remember:** These are just examples. Choose the approach that fits your project. The key change in v1.0 is that Ack gives you a validated map and gets out of your way.
 
 ## Troubleshooting
+
+### Error: "Undefined name 'Ack'" in generated `.g.dart`
+
+`@Schemable` generated code references `Ack` directly. If your source file uses a
+`part` directive, add an unprefixed Ack import:
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.g.dart';
+```
+
+Avoid prefix-only imports (for example `import 'package:ack/ack.dart' as ack;`)
+in `@Schemable` source files.
+
+### Error: "Only named constructor parameters are supported"
+
+Constructor-driven generation only supports named parameters. Migrate positional
+parameters to named parameters, or mark an alternate named constructor with
+`@SchemaConstructor()`.
+
+### Error: "Unsupported type ... Annotate the type with @Schemable() or register a schema provider"
+
+For custom non-schemable types, register a typed provider:
+
+```dart
+@Schemable(useProviders: const [MoneySchemaProvider])
+class Invoice {
+  const Invoice({required this.total});
+  final Money total;
+}
+```
 
 ### Error: "The getter 'value' isn't defined"
 

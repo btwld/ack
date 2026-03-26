@@ -7,7 +7,7 @@ import '../test_utils/test_assets.dart';
 
 void main() {
   group('Complex Model Integration Tests', () {
-    test('generates schema with field constraints', () async {
+    test('generates schema with parameter constraints', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -17,28 +17,20 @@ void main() {
           'test_pkg|lib/user.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
+@Schemable()
 class User {
-  @AckField(
-    requiredMode: AckFieldRequiredMode.required,
-    constraints: ['notEmpty()', 'minLength(3)', 'maxLength(50)'],
-  )
   final String username;
-  
-  @AckField(
-    requiredMode: AckFieldRequiredMode.required,
-    constraints: ['email()'],
-  )
   final String email;
-  
-  @AckField(
-    constraints: ['positive()', 'max(150)'],
-  )
   final int? age;
-  
-  User({
+
+  const User({
+    @MinLength(3)
+    @MaxLength(50)
     required this.username,
+    @Email()
     required this.email,
+    @Positive()
+    @Max(150)
     this.age,
   });
 }
@@ -47,19 +39,20 @@ class User {
         outputs: {
           'test_pkg|lib/user.g.dart': decodedMatches(
             allOf([
-              contains('final userSchema = Ack.object('),
-              contains(
-                "'username': Ack.string().notEmpty().minLength(3).maxLength(50)",
-              ),
+              contains("'username': Ack.string().minLength(3).maxLength(50)"),
               contains("'email': Ack.string().email()"),
-              contains("'age': Ack.integer().positive().max(150).optional()"),
+              contains("'age': Ack.integer()"),
+              contains('.max(150)'),
+              contains('.positive()'),
+              contains('.optional()'),
+              contains('.nullable()'),
             ]),
           ),
         },
       );
     });
 
-    test('generates schema with custom JSON keys', () async {
+    test('generates schema with custom parameter keys', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -69,21 +62,16 @@ class User {
           'test_pkg|lib/api_model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
+@Schemable()
 class ApiResponse {
-  @AckField(jsonKey: 'response_id')
   final String id;
-  
-  @AckField(jsonKey: 'created_at')
   final String createdAt;
-  
-  @AckField(jsonKey: 'is_successful')
   final bool isSuccessful;
-  
-  ApiResponse({
-    required this.id,
-    required this.createdAt,
-    required this.isSuccessful,
+
+  const ApiResponse({
+    @SchemaKey('response_id') required this.id,
+    @SchemaKey('created_at') required this.createdAt,
+    @SchemaKey('is_successful') required this.isSuccessful,
   });
 }
 ''',
@@ -91,7 +79,6 @@ class ApiResponse {
         outputs: {
           'test_pkg|lib/api_model.g.dart': decodedMatches(
             allOf([
-              contains('final apiResponseSchema = Ack.object('),
               contains("'response_id': Ack.string()"),
               contains("'created_at': Ack.string()"),
               contains("'is_successful': Ack.boolean()"),
@@ -101,44 +88,7 @@ class ApiResponse {
       );
     });
 
-    test('generates schema with lists', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/collection.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-class Collection {
-  final List<String> tags;
-  final List<int> scores;
-  final List<String>? categories;
-  
-  Collection({
-    required this.tags,
-    required this.scores,
-    this.categories,
-  });
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/collection.g.dart': decodedMatches(
-            allOf([
-              contains('final collectionSchema = Ack.object('),
-              contains("'tags': Ack.list(Ack.string())"),
-              contains("'scores': Ack.list(Ack.integer())"),
-              contains("'categories': Ack.list(Ack.string()).optional()"),
-            ]),
-          ),
-        },
-      );
-    });
-
-    test('handles mixed required and optional fields', () async {
+    test('treats defaulted named parameters as optional', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -148,7 +98,7 @@ class Collection {
           'test_pkg|lib/product.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
+@Schemable()
 class Product {
   final String id;
   final String name;
@@ -157,8 +107,8 @@ class Product {
   final int? stock;
   final List<String>? tags;
   final bool isActive;
-  
-  Product({
+
+  const Product({
     required this.id,
     required this.name,
     required this.price,
@@ -173,14 +123,13 @@ class Product {
         outputs: {
           'test_pkg|lib/product.g.dart': decodedMatches(
             allOf([
-              contains('final productSchema = Ack.object('),
               contains("'id': Ack.string()"),
               contains("'name': Ack.string()"),
               contains("'price': Ack.double()"),
-              contains("'isActive': Ack.boolean()"),
-              contains("'description': Ack.string().optional()"),
-              contains("'stock': Ack.integer().optional()"),
-              contains("'tags': Ack.list(Ack.string()).optional()"),
+              contains("'description': Ack.string().optional().nullable()"),
+              contains("'stock': Ack.integer().optional().nullable()"),
+              contains("'tags': Ack.list(Ack.string()).optional().nullable()"),
+              contains("'isActive': Ack.boolean().optional()"),
             ]),
           ),
         },

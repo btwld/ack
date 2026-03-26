@@ -22,7 +22,10 @@ class NumericUserId extends UserId {
 }
 
 /// Example 2: API Response that can return different types
-@AckModel(description: 'API response with different possible payloads')
+@Schemable(
+  description: 'API response with different possible payloads',
+  useProviders: const [ResponseDataSchemaProvider],
+)
 class ApiResponse {
   final String status;
   final ResponseData data; // This would be the AnyOf field
@@ -42,7 +45,39 @@ final responseDataSchema = Ack.anyOf([
   listResponseSchema,
 ]);
 
-@AckModel()
+class ResponseDataSchemaProvider implements SchemaProvider<ResponseData> {
+  const ResponseDataSchemaProvider();
+
+  @override
+  AckSchema<ResponseData> get schema => responseDataSchema.transform(
+    (value) => switch (value) {
+      {
+        'id': final String id,
+        'name': final String name,
+        'email': final String email,
+      } =>
+        UserResponse(id: id, name: name, email: email),
+      {'code': final String code, 'message': final String message} =>
+        ErrorResponse(
+          code: code,
+          message: message,
+          details: switch (value) {
+            {'details': final Map details} => details.cast<String, dynamic>(),
+            _ => null,
+          },
+        ),
+      {
+        'items': final List<Object?> items,
+        'total': final int total,
+        'page': final int page,
+      } =>
+        ListResponse(items: items.cast<String>(), total: total, page: page),
+      _ => throw StateError('Unsupported ResponseData payload: $value'),
+    },
+  );
+}
+
+@Schemable()
 class UserResponse extends ResponseData {
   final String id;
   final String name;
@@ -55,7 +90,7 @@ class UserResponse extends ResponseData {
   });
 }
 
-@AckModel()
+@Schemable()
 class ErrorResponse extends ResponseData {
   final String code;
   final String message;
@@ -68,7 +103,7 @@ class ErrorResponse extends ResponseData {
   });
 }
 
-@AckModel()
+@Schemable()
 class ListResponse extends ResponseData {
   final List<String> items;
   final int total;
@@ -82,7 +117,10 @@ class ListResponse extends ResponseData {
 }
 
 /// Example 3: Settings value that can be different types
-@AckModel(description: 'Configuration setting with flexible value type')
+@Schemable(
+  description: 'Configuration setting with flexible value type',
+  useProviders: const [SettingValueSchemaProvider],
+)
 class Setting {
   final String key;
   final SettingValue value; // AnyOf: string, number, boolean, object
@@ -101,6 +139,21 @@ final settingValueSchema = Ack.anyOf([
   Ack.boolean(), // BooleanSetting
   Ack.object({}, additionalProperties: true), // ObjectSetting
 ]);
+
+class SettingValueSchemaProvider implements SchemaProvider<SettingValue> {
+  const SettingValueSchemaProvider();
+
+  @override
+  AckSchema<SettingValue> get schema => settingValueSchema.transform(
+    (value) => switch (value) {
+      final String text => StringSetting(text),
+      final double number => NumberSetting(number),
+      final bool enabled => BooleanSetting(enabled),
+      final Map settings => ObjectSetting(settings.cast<String, dynamic>()),
+      _ => throw StateError('Unsupported SettingValue payload: $value'),
+    },
+  );
+}
 
 class StringSetting extends SettingValue {
   final String value;

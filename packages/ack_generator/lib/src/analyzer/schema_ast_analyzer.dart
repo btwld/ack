@@ -319,7 +319,7 @@ class SchemaAstAnalyzer {
       schemaIdentity:
           sourceModel.schemaIdentity ??
           _declarationVisitKey(resolved.sourceDeclaration),
-      discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
+      discriminatorBaseClassName: sourceModel.discriminatorBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
       isTransformedSchema: sourceModel.isTransformedSchema,
@@ -569,7 +569,7 @@ class SchemaAstAnalyzer {
       schemaIdentity:
           sourceModel.schemaIdentity ??
           _declarationVisitKey(resolved.sourceDeclaration),
-      discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
+      discriminatorBaseClassName: sourceModel.discriminatorBaseClassName,
       isFromSchemaVariable: true,
       representationType:
           transformOutputTypeString ?? sourceModel.representationType,
@@ -1041,7 +1041,7 @@ class SchemaAstAnalyzer {
       discriminatorValue: model.discriminatorValue,
       subtypeNames: model.subtypeNames,
       schemaIdentity: _declarationVisitKey(declaration),
-      discriminatedBaseClassName: model.discriminatedBaseClassName,
+      discriminatorBaseClassName: model.discriminatorBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
       isTransformedSchema: model.isTransformedSchema,
@@ -3342,7 +3342,7 @@ class SchemaAstAnalyzer {
       discriminatorValue: model.discriminatorValue,
       subtypeNames: model.subtypeNames,
       schemaIdentity: model.schemaIdentity,
-      discriminatedBaseClassName: model.discriminatedBaseClassName,
+      discriminatorBaseClassName: model.discriminatorBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: representationType,
       isTransformedSchema: true,
