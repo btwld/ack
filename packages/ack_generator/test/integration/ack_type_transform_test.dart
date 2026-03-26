@@ -146,7 +146,7 @@ final profileSchema = Ack.object({
               contains('_\$ackListCast<String>(_data[\'links\'])'),
               contains('List<Uri> get linksParsed'),
               contains('List<List<String>> get nestedLinks'),
-              contains("map((e) => _\$ackListCast<String>(e))"),
+              contains('map((e) => _\$ackListCast<String>(e))'),
               contains('List<List<Uri>> get nestedLinksParsed'),
               contains(
                 'String get favoriteColor => _data[\'favoriteColor\'] as String',
@@ -249,7 +249,7 @@ final nestedTagsSchema = Ack.list(Ack.list(Ack.string())).unique();
               contains('return nestedTagsSchema.parseRepresentationAs('),
               contains('NestedTagsType('),
               contains(
-                "(representation as List).map((e) => _\$ackListCast<String>(e)).toList()",
+                '(representation as List).map((e) => _\$ackListCast<String>(e)).toList()',
               ),
             ]),
           ),

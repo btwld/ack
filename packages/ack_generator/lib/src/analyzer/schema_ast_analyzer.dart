@@ -1439,15 +1439,15 @@ class SchemaAstAnalyzer {
                       contextElement: element,
                     )
                   : mappedType.dartType);
-    final parsedDisplayTypeOverride = transformOutputTypeString != null
-        ? transformOutputTypeString
-        : listElementAnalysis != null &&
-              listElementAnalysis.elementParsedType !=
-                  listElementAnalysis.elementRepresentationType
-        ? 'List<${listElementAnalysis.elementParsedType}>'
-        : _isBuiltInTransformedMethod(schemaMethod)
-        ? _parsedTypeForSchemaMethod(schemaMethod)
-        : null;
+    final parsedDisplayTypeOverride =
+        transformOutputTypeString ??
+        (listElementAnalysis != null &&
+                listElementAnalysis.elementParsedType !=
+                    listElementAnalysis.elementRepresentationType
+            ? 'List<${listElementAnalysis.elementParsedType}>'
+            : _isBuiltInTransformedMethod(schemaMethod)
+            ? _parsedTypeForSchemaMethod(schemaMethod)
+            : null);
 
     String? displayTypeOverride;
     var collectionElementDisplayTypeOverride =
@@ -2166,13 +2166,13 @@ class SchemaAstAnalyzer {
       }
 
       final elementMapping = _mapSchemaTypeToDartType(ref.invocation!, element);
-      final parsedTypeString = transformOutputTypeString != null
-          ? transformOutputTypeString
-          : _isBuiltInTransformedMethod(methodName)
-          ? _parsedTypeForSchemaMethod(methodName)
-          : methodName == 'enumValues'
-          ? _extractEnumTypeNameFromInvocation(baseInvocation) ?? 'dynamic'
-          : _mapSchemaMethodToType(methodName);
+      final parsedTypeString =
+          transformOutputTypeString ??
+          (_isBuiltInTransformedMethod(methodName)
+              ? _parsedTypeForSchemaMethod(methodName)
+              : methodName == 'enumValues'
+              ? _extractEnumTypeNameFromInvocation(baseInvocation) ?? 'dynamic'
+              : _mapSchemaMethodToType(methodName));
       final parsedElementType =
           chain.transformOutputType ??
           _schemaTypeStringToDartType(

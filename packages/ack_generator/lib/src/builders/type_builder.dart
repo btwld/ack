@@ -809,8 +809,8 @@ ${cases.join(',\n')},
     if (field.listElementSchemaRef != null &&
         _isCustomElementType(field, lookups)) {
       final parsedCollection = field.isSet
-          ? "${field.name}.map((e) => e.parsed).toSet()"
-          : "${field.name}.map((e) => e.parsed).toList()";
+          ? '${field.name}.map((e) => e.parsed).toSet()'
+          : '${field.name}.map((e) => e.parsed).toList()';
       if (!needsNullHandling) {
         return parsedCollection;
       }
@@ -961,7 +961,7 @@ ${cases.join(',\n')},
     if (targetType.startsWith('List<') && targetType.endsWith('>')) {
       final elementType = _singleTypeArgument(targetType);
       if (!_isCollectionTypeString(elementType)) {
-        return "_\$ackListCast<$elementType>($valueExpression)";
+        return '_\$ackListCast<$elementType>($valueExpression)';
       }
 
       return "($valueExpression as List).map((e) => ${_buildRepresentationCastExpression('e', elementType)}).toList()";
@@ -970,7 +970,7 @@ ${cases.join(',\n')},
     if (targetType.startsWith('Set<') && targetType.endsWith('>')) {
       final elementType = _singleTypeArgument(targetType);
       if (!_isCollectionTypeString(elementType)) {
-        return "_\$ackSetCast<$elementType>($valueExpression)";
+        return '_\$ackSetCast<$elementType>($valueExpression)';
       }
 
       return "($valueExpression as List).map((e) => ${_buildRepresentationCastExpression('e', elementType)}).toSet()";
