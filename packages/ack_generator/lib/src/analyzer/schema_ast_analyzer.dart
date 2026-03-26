@@ -2378,7 +2378,7 @@ class SchemaAstAnalyzer {
         return null;
       }
 
-      final schemaName = schemaVariable?.name3 ?? schemaGetter?.name3;
+      final schemaName = schemaVariable.name3 ?? schemaGetter?.name3;
       if (schemaName == null) {
         shouldCacheResult = true;
         resolvedReference = null;
@@ -2386,7 +2386,7 @@ class SchemaAstAnalyzer {
       }
 
       final declarationForMetadata =
-          sourceDeclaration ?? schemaVariable ?? schemaGetter;
+          sourceDeclaration ?? schemaVariable;
       if (declarationForMetadata == null) {
         shouldCacheResult = true;
         resolvedReference = null;
@@ -2399,18 +2399,10 @@ class SchemaAstAnalyzer {
 
       final customTypeName = _extractAckTypeName(declarationForMetadata);
 
-      ModelInfo? modelInfo;
-      if (schemaVariable != null) {
-        modelInfo = analyzeSchemaVariable(
-          schemaVariable,
-          customTypeName: customTypeName,
-        );
-      } else if (schemaGetter != null) {
-        modelInfo = analyzeSchemaGetter(
-          schemaGetter,
-          customTypeName: customTypeName,
-        );
-      }
+      final modelInfo = analyzeSchemaVariable(
+        schemaVariable,
+        customTypeName: customTypeName,
+      );
 
       if (modelInfo == null) {
         shouldCacheResult = true;
