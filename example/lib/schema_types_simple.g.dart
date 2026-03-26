@@ -11,16 +11,16 @@ part of 'schema_types_simple.dart';
 extension type UserType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static UserType parse(Object? data) {
-    return userSchema.parseAs(
+    return userSchema.parseRepresentationAs(
       data,
-      (validated) => UserType(validated as Map<String, Object?>),
+      (representation) => UserType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<UserType> safeParse(Object? data) {
-    return userSchema.safeParseAs(
+    return userSchema.safeParseRepresentationAs(
       data,
-      (validated) => UserType(validated as Map<String, Object?>),
+      (representation) => UserType(representation as Map<String, Object?>),
     );
   }
 
@@ -34,9 +34,9 @@ extension type UserType(Map<String, Object?> _data)
 
   UserType copyWith({String? name, int? age, bool? active}) {
     return UserType.parse({
-      'name': name ?? this.name,
-      'age': age ?? this.age,
-      'active': active ?? this.active,
+      'name': name ?? _data['name'],
+      'age': age ?? _data['age'],
+      'active': active ?? _data['active'],
     });
   }
 }

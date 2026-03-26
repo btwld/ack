@@ -206,7 +206,7 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
+              contains('extension type ColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
@@ -214,10 +214,16 @@ final themeSchema = Ack.object({
                   'extension type ThemeType(Map<String, Object?> _data)',
                 ),
                 contains('ColorType get accent'),
-                contains("ColorType(_data['accent'] as Color)"),
+                contains("ColorType(_data['accent'] as String)"),
+                contains('Color get accentParsed => accent.parsed;'),
                 contains('List<ColorType> get colors'),
-                contains('ColorType(e as Color)'),
-                isNot(contains('copyWith(')),
+                contains('ColorType(e as String)'),
+                contains('List<Color> get colorsParsed'),
+                contains('ThemeType copyWith('),
+                contains("'accent': accent?.toJson() ?? _data['accent']"),
+                contains(
+                  "'colors': colors?.map((e) => e.toJson()).toList() ?? _data['colors']",
+                ),
               ]),
             ),
           },
@@ -226,7 +232,7 @@ final themeSchema = Ack.object({
     );
 
     test(
-      'resolves transformed schema refs through re-exported schemas and suppresses copyWith',
+      'resolves transformed schema refs through re-exported schemas',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
@@ -263,7 +269,7 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
+              contains('extension type ColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
@@ -271,10 +277,16 @@ final themeSchema = Ack.object({
                   'extension type ThemeType(Map<String, Object?> _data)',
                 ),
                 contains('ColorType get accent'),
-                contains("ColorType(_data['accent'] as Color)"),
+                contains("ColorType(_data['accent'] as String)"),
+                contains('Color get accentParsed => accent.parsed;'),
                 contains('List<ColorType> get colors'),
-                contains('ColorType(e as Color)'),
-                isNot(contains('copyWith(')),
+                contains('ColorType(e as String)'),
+                contains('List<Color> get colorsParsed'),
+                contains('ThemeType copyWith('),
+                contains("'accent': accent?.toJson() ?? _data['accent']"),
+                contains(
+                  "'colors': colors?.map((e) => e.toJson()).toList() ?? _data['colors']",
+                ),
               ]),
             ),
           },
@@ -282,16 +294,14 @@ final themeSchema = Ack.object({
       },
     );
 
-    test(
-      'resolves prefixed transformed schema refs across files and suppresses copyWith',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('resolves prefixed transformed schema refs across files', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/palette_schemas.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -303,7 +313,7 @@ class Color {
 @AckType()
 final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
-            'test_pkg|lib/theme_schemas.dart': '''
+          'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'palette_schemas.dart' as palette;
@@ -314,24 +324,29 @@ final themeSchema = Ack.object({
   'colors': Ack.list(palette.colorSchema),
 });
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
-            ),
-            'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
-              allOf([
-                contains('palette.ColorType get accent'),
-                contains("palette.ColorType(_data['accent'] as palette.Color)"),
-                contains('List<palette.ColorType> get colors'),
-                contains('palette.ColorType(e as palette.Color)'),
-                isNot(contains('copyWith(')),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
+            contains('extension type ColorType(String _value)'),
+          ),
+          'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
+            allOf([
+              contains('palette.ColorType get accent'),
+              contains("palette.ColorType(_data['accent'] as String)"),
+              contains('palette.Color get accentParsed => accent.parsed;'),
+              contains('List<palette.ColorType> get colors'),
+              contains('palette.ColorType(e as String)'),
+              contains('List<palette.Color> get colorsParsed'),
+              contains('ThemeType copyWith('),
+              contains("'accent': accent?.toJson() ?? _data['accent']"),
+              contains(
+                "'colors': colors?.map((e) => e.toJson()).toList() ?? _data['colors']",
+              ),
+            ]),
+          ),
+        },
+      );
+    });
 
     test(
       'resolves prefixed transformed refs without @AckType using visible representation types',
@@ -367,10 +382,11 @@ final themeSchema = Ack.object({
           outputs: {
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
-                contains('palette.Color get accent'),
-                contains("_data['accent'] as palette.Color"),
-                contains('List<palette.Color> get colors'),
-                contains("_\$ackListCast<palette.Color>(_data['colors'])"),
+                contains('String get accent => _data[\'accent\'] as String'),
+                contains('palette.Color get accentParsed'),
+                contains('List<String> get colors'),
+                contains("_\$ackListCast<String>(_data['colors'])"),
+                contains('List<palette.Color> get colorsParsed'),
               ]),
             ),
           },
@@ -471,19 +487,17 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type BoxedColorType(Box<Color> _value)'),
+              contains('extension type BoxedColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
                 contains('palette.BoxedColorType get accent'),
-                contains(
-                  "palette.BoxedColorType(_data['accent'] as palette.Box<palette.Color>)",
-                ),
+                contains("palette.BoxedColorType(_data['accent'] as String)"),
+                contains('palette.Box<palette.Color> get accentParsed'),
                 contains('List<palette.BoxedColorType> get colors'),
-                contains(
-                  'palette.BoxedColorType(e as palette.Box<palette.Color>)',
-                ),
-                isNot(contains('copyWith(')),
+                contains('palette.BoxedColorType(e as String)'),
+                contains('List<palette.Box<palette.Color>> get colorsParsed'),
+                contains('ThemeType copyWith('),
               ]),
             ),
           },
@@ -915,10 +929,11 @@ final themeSchema = Ack.object({
           outputs: {
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
-                contains('palette.Color get primary'),
-                contains("_data['primary'] as palette.Color"),
-                contains('List<palette.Color> get accents'),
-                contains("_\$ackListCast<palette.Color>(_data['accents'])"),
+                contains('String get primary => _data[\'primary\'] as String'),
+                contains('palette.Color get primaryParsed'),
+                contains('List<String> get accents'),
+                contains("_\$ackListCast<String>(_data['accents'])"),
+                contains('List<palette.Color> get accentsParsed'),
               ]),
             ),
           },

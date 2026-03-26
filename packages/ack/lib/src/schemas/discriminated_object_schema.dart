@@ -195,6 +195,99 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   }
 
   @override
+  @protected
+  SchemaResult<Object> parseAndValidateRepresentation(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    final usedDefault = usesDefaultRepresentationInput(inputValue);
+    final sourceValue = resolveRepresentationInput(inputValue);
+    final nullResult = handleNullRepresentationInput(sourceValue, context);
+    if (nullResult != null) {
+      return nullResult;
+    }
+
+    if (usedDefault && sourceValue is! Map) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Representation parsing is unavailable for discriminated '
+              'schemas that rely on a transformed default value.',
+          context: context,
+        ),
+      );
+    }
+
+    final parsedResult = parseAndValidate(sourceValue, context);
+    if (parsedResult case Fail(error: final error)) {
+      return SchemaResult.fail(error);
+    }
+
+    if (sourceValue is! Map) {
+      final actualType = AckSchema.getSchemaType(sourceValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+
+    final mapValue = sourceValue is MapValue
+        ? sourceValue
+        : sourceValue.cast<String, Object?>();
+    final discriminatorValue = mapValue[discriminatorKey];
+    if (discriminatorValue is! String) {
+      final constraintError = InvalidTypeConstraint(
+        expectedType: String,
+      ).validate(discriminatorValue);
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: constraintError != null ? [constraintError] : [],
+          context: context.createChild(
+            name: discriminatorKey,
+            schema: const StringSchema(),
+            value: discriminatorValue,
+            pathSegment: discriminatorKey,
+          ),
+        ),
+      );
+    }
+
+    final selectedSubSchema = schemas[discriminatorValue];
+    if (selectedSubSchema == null) {
+      final allowed = schemas.keys.toList(growable: false);
+      final enumError = PatternConstraint.enumString(
+        allowed,
+      ).validate(discriminatorValue);
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: enumError != null ? [enumError] : [],
+          context: context.createChild(
+            name: discriminatorKey,
+            schema: const StringSchema(),
+            value: discriminatorValue,
+            pathSegment: discriminatorKey,
+          ),
+        ),
+      );
+    }
+
+    final subSchemaContext = context.createChild(
+      name: 'when $discriminatorKey="$discriminatorValue"',
+      schema: selectedSubSchema,
+      value: mapValue,
+      pathSegment: '',
+    );
+
+    return selectedSubSchema.parseAndValidateRepresentation(
+      mapValue,
+      subSchemaContext,
+    );
+  }
+
+  @override
   DiscriminatedObjectSchema<T> copyWith({
     String? discriminatorKey,
     Map<String, AckSchema<T>>? schemas,

@@ -11,16 +11,18 @@ part of 'args_getter_example.dart';
 extension type UserConfigType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static UserConfigType parse(Object? data) {
-    return userConfigSchema.parseAs(
+    return userConfigSchema.parseRepresentationAs(
       data,
-      (validated) => UserConfigType(validated as Map<String, Object?>),
+      (representation) =>
+          UserConfigType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<UserConfigType> safeParse(Object? data) {
-    return userConfigSchema.safeParseAs(
+    return userConfigSchema.safeParseRepresentationAs(
       data,
-      (validated) => UserConfigType(validated as Map<String, Object?>),
+      (representation) =>
+          UserConfigType(representation as Map<String, Object?>),
     );
   }
 
@@ -36,8 +38,8 @@ extension type UserConfigType(Map<String, Object?> _data)
 
   UserConfigType copyWith({String? username, String? email}) {
     return UserConfigType.parse({
-      'username': username ?? this.username,
-      'email': email ?? this.email,
+      'username': username ?? _data['username'],
+      'email': email ?? _data['email'],
     });
   }
 }
@@ -46,16 +48,18 @@ extension type UserConfigType(Map<String, Object?> _data)
 extension type ApiRequestType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ApiRequestType parse(Object? data) {
-    return apiRequestSchema.parseAs(
+    return apiRequestSchema.parseRepresentationAs(
       data,
-      (validated) => ApiRequestType(validated as Map<String, Object?>),
+      (representation) =>
+          ApiRequestType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<ApiRequestType> safeParse(Object? data) {
-    return apiRequestSchema.safeParseAs(
+    return apiRequestSchema.safeParseRepresentationAs(
       data,
-      (validated) => ApiRequestType(validated as Map<String, Object?>),
+      (representation) =>
+          ApiRequestType(representation as Map<String, Object?>),
     );
   }
 
@@ -71,8 +75,8 @@ extension type ApiRequestType(Map<String, Object?> _data)
 
   ApiRequestType copyWith({String? method, String? url}) {
     return ApiRequestType.parse({
-      'method': method ?? this.method,
-      'url': url ?? this.url,
+      'method': method ?? _data['method'],
+      'url': url ?? _data['url'],
     });
   }
 }
@@ -81,16 +85,18 @@ extension type ApiRequestType(Map<String, Object?> _data)
 extension type FeatureFlagsType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static FeatureFlagsType parse(Object? data) {
-    return featureFlagsSchema.parseAs(
+    return featureFlagsSchema.parseRepresentationAs(
       data,
-      (validated) => FeatureFlagsType(validated as Map<String, Object?>),
+      (representation) =>
+          FeatureFlagsType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<FeatureFlagsType> safeParse(Object? data) {
-    return featureFlagsSchema.safeParseAs(
+    return featureFlagsSchema.safeParseRepresentationAs(
       data,
-      (validated) => FeatureFlagsType(validated as Map<String, Object?>),
+      (representation) =>
+          FeatureFlagsType(representation as Map<String, Object?>),
     );
   }
 
@@ -106,8 +112,8 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
 
   FeatureFlagsType copyWith({String? appVersion, String? environment}) {
     return FeatureFlagsType.parse({
-      'appVersion': appVersion ?? this.appVersion,
-      'environment': environment ?? this.environment,
+      'appVersion': appVersion ?? _data['appVersion'],
+      'environment': environment ?? _data['environment'],
     });
   }
 }
@@ -116,16 +122,18 @@ extension type FeatureFlagsType(Map<String, Object?> _data)
 extension type DynamicDataType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static DynamicDataType parse(Object? data) {
-    return dynamicDataSchema.parseAs(
+    return dynamicDataSchema.parseRepresentationAs(
       data,
-      (validated) => DynamicDataType(validated as Map<String, Object?>),
+      (representation) =>
+          DynamicDataType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<DynamicDataType> safeParse(Object? data) {
-    return dynamicDataSchema.safeParseAs(
+    return dynamicDataSchema.safeParseRepresentationAs(
       data,
-      (validated) => DynamicDataType(validated as Map<String, Object?>),
+      (representation) =>
+          DynamicDataType(representation as Map<String, Object?>),
     );
   }
 

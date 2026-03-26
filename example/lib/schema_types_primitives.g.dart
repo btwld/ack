@@ -7,19 +7,21 @@
 
 part of 'schema_types_primitives.dart';
 
+List<T> _$ackListCast<T>(Object? value) => (value as List).cast<T>();
+
 /// Extension type for Password
 extension type PasswordType(String _value) implements String {
   static PasswordType parse(Object? data) {
-    return passwordSchema.parseAs(
+    return passwordSchema.parseRepresentationAs(
       data,
-      (validated) => PasswordType(validated as String),
+      (representation) => PasswordType(representation as String),
     );
   }
 
   static SchemaResult<PasswordType> safeParse(Object? data) {
-    return passwordSchema.safeParseAs(
+    return passwordSchema.safeParseRepresentationAs(
       data,
-      (validated) => PasswordType(validated as String),
+      (representation) => PasswordType(representation as String),
     );
   }
 
@@ -29,13 +31,16 @@ extension type PasswordType(String _value) implements String {
 /// Extension type for Age
 extension type AgeType(int _value) implements int {
   static AgeType parse(Object? data) {
-    return ageSchema.parseAs(data, (validated) => AgeType(validated as int));
+    return ageSchema.parseRepresentationAs(
+      data,
+      (representation) => AgeType(representation as int),
+    );
   }
 
   static SchemaResult<AgeType> safeParse(Object? data) {
-    return ageSchema.safeParseAs(
+    return ageSchema.safeParseRepresentationAs(
       data,
-      (validated) => AgeType(validated as int),
+      (representation) => AgeType(representation as int),
     );
   }
 
@@ -45,16 +50,16 @@ extension type AgeType(int _value) implements int {
 /// Extension type for Price
 extension type PriceType(double _value) implements double {
   static PriceType parse(Object? data) {
-    return priceSchema.parseAs(
+    return priceSchema.parseRepresentationAs(
       data,
-      (validated) => PriceType(validated as double),
+      (representation) => PriceType(representation as double),
     );
   }
 
   static SchemaResult<PriceType> safeParse(Object? data) {
-    return priceSchema.safeParseAs(
+    return priceSchema.safeParseRepresentationAs(
       data,
-      (validated) => PriceType(validated as double),
+      (representation) => PriceType(representation as double),
     );
   }
 
@@ -64,16 +69,16 @@ extension type PriceType(double _value) implements double {
 /// Extension type for Active
 extension type ActiveType(bool _value) implements bool {
   static ActiveType parse(Object? data) {
-    return activeSchema.parseAs(
+    return activeSchema.parseRepresentationAs(
       data,
-      (validated) => ActiveType(validated as bool),
+      (representation) => ActiveType(representation as bool),
     );
   }
 
   static SchemaResult<ActiveType> safeParse(Object? data) {
-    return activeSchema.safeParseAs(
+    return activeSchema.safeParseRepresentationAs(
       data,
-      (validated) => ActiveType(validated as bool),
+      (representation) => ActiveType(representation as bool),
     );
   }
 
@@ -83,16 +88,16 @@ extension type ActiveType(bool _value) implements bool {
 /// Extension type for Tags
 extension type TagsType(List<String> _value) implements List<String> {
   static TagsType parse(Object? data) {
-    return tagsSchema.parseAs(
+    return tagsSchema.parseRepresentationAs(
       data,
-      (validated) => TagsType(validated as List<String>),
+      (representation) => TagsType(_$ackListCast<String>(representation)),
     );
   }
 
   static SchemaResult<TagsType> safeParse(Object? data) {
-    return tagsSchema.safeParseAs(
+    return tagsSchema.safeParseRepresentationAs(
       data,
-      (validated) => TagsType(validated as List<String>),
+      (representation) => TagsType(_$ackListCast<String>(representation)),
     );
   }
 
@@ -102,16 +107,16 @@ extension type TagsType(List<String> _value) implements List<String> {
 /// Extension type for Scores
 extension type ScoresType(List<int> _value) implements List<int> {
   static ScoresType parse(Object? data) {
-    return scoresSchema.parseAs(
+    return scoresSchema.parseRepresentationAs(
       data,
-      (validated) => ScoresType(validated as List<int>),
+      (representation) => ScoresType(_$ackListCast<int>(representation)),
     );
   }
 
   static SchemaResult<ScoresType> safeParse(Object? data) {
-    return scoresSchema.safeParseAs(
+    return scoresSchema.safeParseRepresentationAs(
       data,
-      (validated) => ScoresType(validated as List<int>),
+      (representation) => ScoresType(_$ackListCast<int>(representation)),
     );
   }
 
@@ -121,16 +126,16 @@ extension type ScoresType(List<int> _value) implements List<int> {
 /// Extension type for Status
 extension type StatusType(String _value) implements String {
   static StatusType parse(Object? data) {
-    return statusSchema.parseAs(
+    return statusSchema.parseRepresentationAs(
       data,
-      (validated) => StatusType(validated as String),
+      (representation) => StatusType(representation as String),
     );
   }
 
   static SchemaResult<StatusType> safeParse(Object? data) {
-    return statusSchema.safeParseAs(
+    return statusSchema.safeParseRepresentationAs(
       data,
-      (validated) => StatusType(validated as String),
+      (representation) => StatusType(representation as String),
     );
   }
 
@@ -140,16 +145,16 @@ extension type StatusType(String _value) implements String {
 /// Extension type for Role
 extension type RoleType(String _value) implements String {
   static RoleType parse(Object? data) {
-    return roleSchema.parseAs(
+    return roleSchema.parseRepresentationAs(
       data,
-      (validated) => RoleType(validated as String),
+      (representation) => RoleType(representation as String),
     );
   }
 
   static SchemaResult<RoleType> safeParse(Object? data) {
-    return roleSchema.safeParseAs(
+    return roleSchema.safeParseRepresentationAs(
       data,
-      (validated) => RoleType(validated as String),
+      (representation) => RoleType(representation as String),
     );
   }
 
@@ -159,16 +164,16 @@ extension type RoleType(String _value) implements String {
 /// Extension type for UserRole
 extension type UserRoleType(UserRole _value) implements UserRole {
   static UserRoleType parse(Object? data) {
-    return userRoleSchema.parseAs(
+    return userRoleSchema.parseRepresentationAs(
       data,
-      (validated) => UserRoleType(validated as UserRole),
+      (representation) => UserRoleType(representation as UserRole),
     );
   }
 
   static SchemaResult<UserRoleType> safeParse(Object? data) {
-    return userRoleSchema.safeParseAs(
+    return userRoleSchema.safeParseRepresentationAs(
       data,
-      (validated) => UserRoleType(validated as UserRole),
+      (representation) => UserRoleType(representation as UserRole),
     );
   }
 
@@ -178,16 +183,16 @@ extension type UserRoleType(UserRole _value) implements UserRole {
 /// Extension type for StatusEnum
 extension type StatusEnumType(Status _value) implements Status {
   static StatusEnumType parse(Object? data) {
-    return statusEnumSchema.parseAs(
+    return statusEnumSchema.parseRepresentationAs(
       data,
-      (validated) => StatusEnumType(validated as Status),
+      (representation) => StatusEnumType(representation as Status),
     );
   }
 
   static SchemaResult<StatusEnumType> safeParse(Object? data) {
-    return statusEnumSchema.safeParseAs(
+    return statusEnumSchema.safeParseRepresentationAs(
       data,
-      (validated) => StatusEnumType(validated as Status),
+      (representation) => StatusEnumType(representation as Status),
     );
   }
 
@@ -197,16 +202,16 @@ extension type StatusEnumType(Status _value) implements Status {
 /// Extension type for OptionalStatus
 extension type OptionalStatusType(String _value) implements String {
   static OptionalStatusType parse(Object? data) {
-    return optionalStatusSchema.parseAs(
+    return optionalStatusSchema.parseRepresentationAs(
       data,
-      (validated) => OptionalStatusType(validated as String),
+      (representation) => OptionalStatusType(representation as String),
     );
   }
 
   static SchemaResult<OptionalStatusType> safeParse(Object? data) {
-    return optionalStatusSchema.safeParseAs(
+    return optionalStatusSchema.safeParseRepresentationAs(
       data,
-      (validated) => OptionalStatusType(validated as String),
+      (representation) => OptionalStatusType(representation as String),
     );
   }
 
@@ -216,16 +221,16 @@ extension type OptionalStatusType(String _value) implements String {
 /// Extension type for DefaultedEnum
 extension type DefaultedEnumType(UserRole _value) implements UserRole {
   static DefaultedEnumType parse(Object? data) {
-    return defaultedEnumSchema.parseAs(
+    return defaultedEnumSchema.parseRepresentationAs(
       data,
-      (validated) => DefaultedEnumType(validated as UserRole),
+      (representation) => DefaultedEnumType(representation as UserRole),
     );
   }
 
   static SchemaResult<DefaultedEnumType> safeParse(Object? data) {
-    return defaultedEnumSchema.safeParseAs(
+    return defaultedEnumSchema.safeParseRepresentationAs(
       data,
-      (validated) => DefaultedEnumType(validated as UserRole),
+      (representation) => DefaultedEnumType(representation as UserRole),
     );
   }
 
@@ -235,16 +240,16 @@ extension type DefaultedEnumType(UserRole _value) implements UserRole {
 /// Extension type for ChainedEnumString
 extension type ChainedEnumStringType(String _value) implements String {
   static ChainedEnumStringType parse(Object? data) {
-    return chainedEnumStringSchema.parseAs(
+    return chainedEnumStringSchema.parseRepresentationAs(
       data,
-      (validated) => ChainedEnumStringType(validated as String),
+      (representation) => ChainedEnumStringType(representation as String),
     );
   }
 
   static SchemaResult<ChainedEnumStringType> safeParse(Object? data) {
-    return chainedEnumStringSchema.safeParseAs(
+    return chainedEnumStringSchema.safeParseRepresentationAs(
       data,
-      (validated) => ChainedEnumStringType(validated as String),
+      (representation) => ChainedEnumStringType(representation as String),
     );
   }
 
@@ -254,16 +259,16 @@ extension type ChainedEnumStringType(String _value) implements String {
 /// Extension type for RefinedAge
 extension type RefinedAgeType(int _value) implements int {
   static RefinedAgeType parse(Object? data) {
-    return refinedAgeSchema.parseAs(
+    return refinedAgeSchema.parseRepresentationAs(
       data,
-      (validated) => RefinedAgeType(validated as int),
+      (representation) => RefinedAgeType(representation as int),
     );
   }
 
   static SchemaResult<RefinedAgeType> safeParse(Object? data) {
-    return refinedAgeSchema.safeParseAs(
+    return refinedAgeSchema.safeParseRepresentationAs(
       data,
-      (validated) => RefinedAgeType(validated as int),
+      (representation) => RefinedAgeType(representation as int),
     );
   }
 

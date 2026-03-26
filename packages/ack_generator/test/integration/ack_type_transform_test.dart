@@ -55,17 +55,29 @@ final validatedStringSchema = Ack.string().uri();
           outputs: {
             'test_pkg|lib/schema.g.dart': decodedMatches(
               allOf([
-                contains('extension type ColorType(Color _value)'),
-                contains('extension type AliasColorType(Color _value)'),
-                contains('extension type UriType(Uri _value)'),
-                contains('extension type DateType(DateTime _value)'),
-                contains('extension type DatetimeType(DateTime _value)'),
-                contains('extension type DurationType(Duration _value)'),
+                contains('extension type ColorType(String _value)'),
+                contains('extension type AliasColorType(String _value)'),
+                contains('extension type UriType(String _value)'),
+                contains('extension type DateType(String _value)'),
+                contains('extension type DatetimeType(String _value)'),
+                contains('extension type DurationType(int _value)'),
                 contains('extension type ValidatedStringType(String _value)'),
-                contains('Color toJson() => _value;'),
-                contains('Uri toJson() => _value;'),
-                contains('DateTime toJson() => _value;'),
-                contains('Duration toJson() => _value;'),
+                contains('return colorSchema.parseRepresentationAs('),
+                contains(
+                  'Color get parsed => colorSchema.parse(_value) as Color;',
+                ),
+                contains('Uri get parsed => uriSchema.parse(_value) as Uri;'),
+                contains(
+                  'DateTime get parsed => dateSchema.parse(_value) as DateTime;',
+                ),
+                contains(
+                  'DateTime get parsed => datetimeSchema.parse(_value) as DateTime;',
+                ),
+                contains(
+                  'Duration get parsed => durationSchema.parse(_value) as Duration;',
+                ),
+                contains('String toJson() => _value;'),
+                contains('int toJson() => _value;'),
               ]),
             ),
           },
@@ -116,38 +128,48 @@ final profileSchema = Ack.object({
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains('extension type ColorType(Color _value)'),
+              contains('extension type ColorType(String _value)'),
               contains(
                 'extension type ProfileType(Map<String, Object?> _data)',
               ),
-              contains('Uri get homepage => _data[\'homepage\'] as Uri'),
+              contains('String get homepage => _data[\'homepage\'] as String'),
+              contains('Uri get homepageParsed'),
+              contains('String get birthday => _data[\'birthday\'] as String'),
+              contains('DateTime get birthdayParsed'),
               contains(
-                'DateTime get birthday => _data[\'birthday\'] as DateTime',
+                'String? get lastLogin => _data[\'lastLogin\'] as String?',
               ),
+              contains('DateTime? get lastLoginParsed'),
+              contains('int get timeout => _data[\'timeout\'] as int'),
+              contains('Duration get timeoutParsed'),
+              contains('List<String> get links'),
+              contains('_\$ackListCast<String>(_data[\'links\'])'),
+              contains('List<Uri> get linksParsed'),
+              contains('List<List<String>> get nestedLinks'),
+              contains("map((e) => _\$ackListCast<String>(e))"),
+              contains('List<List<Uri>> get nestedLinksParsed'),
               contains(
-                'DateTime? get lastLogin => _data[\'lastLogin\'] as DateTime?',
+                'String get favoriteColor => _data[\'favoriteColor\'] as String',
               ),
-              contains(
-                'Duration get timeout => _data[\'timeout\'] as Duration',
-              ),
-              contains('List<Uri> get links'),
-              contains('_\$ackListCast<Uri>(_data[\'links\'])'),
-              contains('List<List<Uri>> get nestedLinks'),
-              contains('_\$ackListCast<List<Uri>>(_data[\'nestedLinks\'])'),
-              contains(
-                'Color get favoriteColor => _data[\'favoriteColor\'] as Color',
-              ),
+              contains('Color get favoriteColorParsed'),
               contains('String get slug => _data[\'slug\'] as String'),
               contains('ColorType get accent'),
-              contains("ColorType(_data['accent'] as Color)"),
+              contains("ColorType(_data['accent'] as String)"),
+              contains('Color get accentParsed => accent.parsed;'),
               contains('List<ColorType> get colors'),
-              contains('ColorType(e as Color)'),
-              contains('List<Color> get customColors'),
-              contains('_\$ackListCast<Color>(_data[\'customColors\'])'),
-              contains('TagList get tagList => _data[\'tagList\'] as TagList'),
+              contains('ColorType(e as String)'),
+              contains('List<Color> get colorsParsed'),
+              contains('List<String> get customColors'),
+              contains('_\$ackListCast<String>(_data[\'customColors\'])'),
+              contains('List<Color> get customColorsParsed'),
+              contains('List<String> get tagList => _\$ackListCast<String>('),
+              contains('TagList get tagListParsed'),
               contains('Map<String, Object?> toJson() => _data;'),
-              isNot(contains('TagList get tagList => _\$ackListCast')),
-              isNot(contains('copyWith(')),
+              contains('ProfileType copyWith('),
+              contains("'accent': accent?.toJson() ?? _data['accent']"),
+              contains(
+                "'colors': colors?.map((e) => e.toJson()).toList() ?? _data['colors']",
+              ),
               isNot(contains('Uri.parse(')),
               isNot(contains('DateTime.parse(')),
               isNot(contains('Duration(milliseconds:')),
@@ -183,8 +205,8 @@ AckSchema<Color> get colorSchema =>
         outputs: {
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
-              contains('extension type ColorType(Color _value)'),
-              contains('return colorSchema.parseAs('),
+              contains('extension type ColorType(String _value)'),
+              contains('return colorSchema.parseRepresentationAs('),
             ]),
           ),
         },
@@ -207,6 +229,9 @@ final uniqueTagsSchema = Ack.list(Ack.string()).unique();
 
 @AckType()
 final describedTagsSchema = Ack.list(Ack.string()).describe('A list of tags');
+
+@AckType()
+final nestedTagsSchema = Ack.list(Ack.list(Ack.string())).unique();
 ''',
         },
         outputs: {
@@ -214,11 +239,69 @@ final describedTagsSchema = Ack.list(Ack.string()).describe('A list of tags');
             allOf([
               contains('extension type UniqueTagsType(List<String> _value)'),
               contains('extension type DescribedTagsType(List<String> _value)'),
+              contains(
+                'extension type NestedTagsType(List<List<String>> _value)',
+              ),
+              contains('return uniqueTagsSchema.parseRepresentationAs('),
+              contains(
+                'UniqueTagsType(_\$ackListCast<String>(representation))',
+              ),
+              contains('return nestedTagsSchema.parseRepresentationAs('),
+              contains('NestedTagsType('),
+              contains(
+                "(representation as List).map((e) => _\$ackListCast<String>(e)).toList()",
+              ),
             ]),
           ),
         },
       );
     });
+
+    test(
+      'copyWith preserves optional omissions and serializes wrapper inputs',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Color {
+  final String value;
+  const Color(this.value);
+}
+
+@AckType()
+final colorSchema = Ack.string().transform<Color>((value) => Color(value));
+
+@AckType()
+final themeSchema = Ack.object({
+  'slug': Ack.string().optional(),
+  'accent': colorSchema,
+  'colors': Ack.list(colorSchema),
+});
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('ThemeType copyWith({'),
+                contains("if (slug != null || _data.containsKey('slug'))"),
+                contains("'slug': slug ?? _data['slug']"),
+                contains("'accent': accent?.toJson() ?? _data['accent']"),
+                contains(
+                  "'colors': colors?.map((e) => e.toJson()).toList() ?? _data['colors']",
+                ),
+              ]),
+            ),
+          },
+        );
+      },
+    );
 
     test('supports transformed refs through re-exported schemas', () async {
       final builder = ackGenerator(BuilderOptions.empty);
@@ -256,15 +339,17 @@ final themeSchema = Ack.object({
         },
         outputs: {
           'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-            contains('extension type ColorType(Color _value)'),
+            contains('extension type ColorType(String _value)'),
           ),
           'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
             allOf([
               contains('ColorType get accent'),
-              contains("ColorType(_data['accent'] as Color)"),
+              contains("ColorType(_data['accent'] as String)"),
+              contains('Color get accentParsed => accent.parsed;'),
               contains('List<ColorType> get colors'),
-              contains('ColorType(e as Color)'),
-              isNot(contains('copyWith(')),
+              contains('ColorType(e as String)'),
+              contains('List<Color> get colorsParsed'),
+              contains('ThemeType copyWith('),
             ]),
           ),
         },

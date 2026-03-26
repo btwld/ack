@@ -15,8 +15,8 @@ extension type PetType(Map<String, Object?> _data)
   Map<String, Object?> toJson() => _data;
 
   static PetType parse(Object? data) {
-    return petSchema.parseAs(data, (validated) {
-      final map = validated as Map<String, Object?>;
+    return petSchema.parseRepresentationAs(data, (representation) {
+      final map = representation as Map<String, Object?>;
       return switch (map['kind']) {
         'cat' => CatType(map),
         'dog' => DogType(map),
@@ -26,8 +26,8 @@ extension type PetType(Map<String, Object?> _data)
   }
 
   static SchemaResult<PetType> safeParse(Object? data) {
-    return petSchema.safeParseAs(data, (validated) {
-      final map = validated as Map<String, Object?>;
+    return petSchema.safeParseRepresentationAs(data, (representation) {
+      final map = representation as Map<String, Object?>;
       return switch (map['kind']) {
         'cat' => CatType(map),
         'dog' => DogType(map),
@@ -45,23 +45,23 @@ extension type CatType(Map<String, Object?> _data)
   Map<String, Object?> toJson() => _data;
 
   static CatType parse(Object? data) {
-    return catSchema.parseAs(
+    return catSchema.parseRepresentationAs(
       data,
-      (validated) => CatType(validated as Map<String, Object?>),
+      (representation) => CatType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<CatType> safeParse(Object? data) {
-    return catSchema.safeParseAs(
+    return catSchema.safeParseRepresentationAs(
       data,
-      (validated) => CatType(validated as Map<String, Object?>),
+      (representation) => CatType(representation as Map<String, Object?>),
     );
   }
 
   int get lives => _data['lives'] as int;
 
   CatType copyWith({int? lives}) {
-    return CatType.parse({'kind': 'cat', 'lives': lives ?? this.lives});
+    return CatType.parse({'kind': 'cat', 'lives': lives ?? _data['lives']});
   }
 }
 
@@ -73,16 +73,16 @@ extension type DogType(Map<String, Object?> _data)
   Map<String, Object?> toJson() => _data;
 
   static DogType parse(Object? data) {
-    return dogSchema.parseAs(
+    return dogSchema.parseRepresentationAs(
       data,
-      (validated) => DogType(validated as Map<String, Object?>),
+      (representation) => DogType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<DogType> safeParse(Object? data) {
-    return dogSchema.safeParseAs(
+    return dogSchema.safeParseRepresentationAs(
       data,
-      (validated) => DogType(validated as Map<String, Object?>),
+      (representation) => DogType(representation as Map<String, Object?>),
     );
   }
 
@@ -93,6 +93,6 @@ extension type DogType(Map<String, Object?> _data)
   );
 
   DogType copyWith({bool? bark}) {
-    return DogType.parse({'kind': 'dog', 'bark': bark ?? this.bark});
+    return DogType.parse({'kind': 'dog', 'bark': bark ?? _data['bark']});
   }
 }

@@ -67,6 +67,13 @@ class TypeBuilder {
     final helpers = <_GeneratedHelper>{};
 
     for (final model in models) {
+      if (model.representationType.startsWith('List<')) {
+        helpers.add(_GeneratedHelper.listCast);
+      }
+      if (model.representationType.startsWith('Set<')) {
+        helpers.add(_GeneratedHelper.setCast);
+      }
+
       for (final field in model.fields) {
         if ((field.isList || field.isSet) &&
             !_isCustomElementType(field, lookups)) {
@@ -127,14 +134,14 @@ class TypeBuilder {
         ..implements.add(refer(model.representationType))
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
+          if (model.hasDistinctParsedType)
+            _buildParsedValueGetter(model, schemaVarName, valueVarName),
           _buildToJson(model),
-          ..._buildGetters(model, lookups),
+          ..._buildGetters(model, lookups, schemaVarName: schemaVarName),
           // Only add args and copyWith for object schemas
           if (isObjectSchema) ...[
             if (model.additionalProperties) _buildArgsGetter(model),
-            if (model.fields.isNotEmpty &&
-                _canGenerateCopyWithForFields(model.fields))
-              _buildCopyWith(model),
+            if (model.fields.isNotEmpty) _buildCopyWith(model),
           ],
         ]),
     );
@@ -316,11 +323,14 @@ class TypeBuilder {
           if (model.isFromSchemaVariable)
             ..._buildStaticFactories(model, schemaVarName),
           // Add regular field getters
-          ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
+          ..._buildGetters(
+            model,
+            lookups,
+            schemaVarName: schemaVarName,
+            skipJsonKeys: {discriminatorKey},
+          ),
           if (model.additionalProperties) _buildArgsGetter(model),
-          if (model.isFromSchemaVariable &&
-              nonDiscriminatorFields.isNotEmpty &&
-              _canGenerateCopyWithForFields(nonDiscriminatorFields))
+          if (model.isFromSchemaVariable && nonDiscriminatorFields.isNotEmpty)
             _buildCopyWithForFields(
               model,
               nonDiscriminatorFields,
@@ -517,9 +527,30 @@ class TypeBuilder {
     );
   }
 
+  Method _buildParsedValueGetter(
+    ModelInfo model,
+    String schemaVarName,
+    String valueVarName,
+  ) {
+    return Method(
+      (m) => m
+        ..type = MethodType.getter
+        ..name = 'parsed'
+        ..returns = refer(model.parsedType)
+        ..lambda = true
+        ..body = Code(
+          '$schemaVarName.parse($valueVarName) as ${model.parsedType}',
+        ),
+    );
+  }
+
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
+    final castExpression = _buildRepresentationCastExpression(
+      'representation',
+      castType,
+    );
 
     return [
       // Static parse factory
@@ -536,9 +567,9 @@ class TypeBuilder {
             ),
           )
           ..body = Code('''
-return $schemaVarName.parseAs(
+return $schemaVarName.parseRepresentationAs(
   data,
-  (validated) => $typeName(validated as $castType),
+  (representation) => $typeName($castExpression),
 );'''),
       ),
       // Static safeParse method
@@ -555,9 +586,9 @@ return $schemaVarName.parseAs(
             ),
           )
           ..body = Code('''
-return $schemaVarName.safeParseAs(
+return $schemaVarName.safeParseRepresentationAs(
   data,
-  (validated) => $typeName(validated as $castType),
+  (representation) => $typeName($castExpression),
 );'''),
       ),
     ];
@@ -589,10 +620,10 @@ return $schemaVarName.safeParseAs(
         )
         ..returns = refer(typeName)
         ..body = Code('''
-return $schemaVarName.parseAs(
+return $schemaVarName.parseRepresentationAs(
   data,
-  (validated) {
-    final map = validated as Map<String, Object?>;
+  (representation) {
+    final map = representation as Map<String, Object?>;
     return $switchExpression;
   },
 );'''),
@@ -625,10 +656,10 @@ return $schemaVarName.parseAs(
         )
         ..returns = _schemaResultRef(refer(typeName))
         ..body = Code('''
-return $schemaVarName.safeParseAs(
+return $schemaVarName.safeParseRepresentationAs(
   data,
-  (validated) {
-    final map = validated as Map<String, Object?>;
+  (representation) {
+    final map = representation as Map<String, Object?>;
     return $switchExpression;
   },
 );'''),
@@ -659,12 +690,23 @@ ${cases.join(',\n')},
   List<Method> _buildGetters(
     ModelInfo model,
     _ModelLookups lookups, {
+    required String schemaVarName,
     Set<String> skipJsonKeys = const {},
   }) {
-    return model.fields
-        .where((field) => !skipJsonKeys.contains(field.jsonKey))
-        .map((field) => _buildGetter(field, lookups))
-        .toList();
+    final methods = <Method>[];
+
+    for (final field in model.fields) {
+      if (skipJsonKeys.contains(field.jsonKey)) {
+        continue;
+      }
+
+      methods.add(_buildGetter(field, lookups));
+      if (_needsParsedGetter(field, lookups)) {
+        methods.add(_buildParsedGetter(field, lookups, schemaVarName));
+      }
+    }
+
+    return methods;
   }
 
   Method _buildGetter(FieldInfo field, _ModelLookups lookups) {
@@ -689,10 +731,49 @@ ${cases.join(',\n')},
     );
   }
 
+  Method _buildParsedGetter(
+    FieldInfo field,
+    _ModelLookups lookups,
+    String schemaVarName,
+  ) {
+    final baseType = _resolveParsedFieldType(field);
+    final needsNullHandling = field.isNullable || !field.isRequired;
+    final returnType = _applyNullability(baseType, needsNullHandling);
+    final body = _buildParsedGetterBody(
+      field,
+      lookups,
+      schemaVarName,
+      baseType: baseType,
+      needsNullHandling: needsNullHandling,
+    );
+
+    return Method(
+      (m) => m
+        ..type = MethodType.getter
+        ..name = '${field.name}Parsed'
+        ..returns = refer(returnType)
+        ..lambda = true
+        ..body = Code(body),
+    );
+  }
+
   String _applyNullability(String baseType, bool shouldBeNullable) {
     if (!shouldBeNullable) return baseType;
     if (baseType.endsWith('?')) return baseType;
     return '$baseType?';
+  }
+
+  bool _needsParsedGetter(FieldInfo field, _ModelLookups lookups) {
+    if (!field.isTransformedRepresentation) {
+      return false;
+    }
+
+    return _resolveParsedFieldType(field) != _resolveFieldType(field, lookups);
+  }
+
+  String _resolveParsedFieldType(FieldInfo field) {
+    return field.parsedDisplayTypeOverride ??
+        field.parsedType.getDisplayString(withNullability: false);
   }
 
   String _buildGetterBody(
@@ -708,6 +789,40 @@ ${cases.join(',\n')},
     } else {
       return _buildNonNullableGetter(field, lookups, key, baseType: baseType);
     }
+  }
+
+  String _buildParsedGetterBody(
+    FieldInfo field,
+    _ModelLookups lookups,
+    String schemaVarName, {
+    required String baseType,
+    required bool needsNullHandling,
+  }) {
+    final key = field.jsonKey;
+
+    if (field.nestedSchemaRef != null) {
+      return needsNullHandling
+          ? '${field.name}?.parsed'
+          : '${field.name}.parsed';
+    }
+
+    if (field.listElementSchemaRef != null &&
+        _isCustomElementType(field, lookups)) {
+      final parsedCollection = field.isSet
+          ? "${field.name}.map((e) => e.parsed).toSet()"
+          : "${field.name}.map((e) => e.parsed).toList()";
+      if (!needsNullHandling) {
+        return parsedCollection;
+      }
+      return "_data['$key'] != null ? $parsedCollection : null";
+    }
+
+    final parseExpression =
+        "$schemaVarName.properties['$key']!.parse(_data['$key']) as $baseType";
+    if (!needsNullHandling) {
+      return parseExpression;
+    }
+    return "_data['$key'] != null ? $parseExpression : null";
   }
 
   String _buildNonNullableGetter(
@@ -835,11 +950,41 @@ ${cases.join(',\n')},
       return "(_data['$key'] as List).map((e) => $constructorName(e as $castType))$listSuffix$suffix";
     }
 
-    // Primitive lists/sets - direct cast
-    if (isSet) {
-      return "_\$ackSetCast<$elementType>(_data['$key'])";
+    final collectionType = isSet ? 'Set<$elementType>' : 'List<$elementType>';
+    return _buildRepresentationCastExpression("_data['$key']", collectionType);
+  }
+
+  String _buildRepresentationCastExpression(
+    String valueExpression,
+    String targetType,
+  ) {
+    if (targetType.startsWith('List<') && targetType.endsWith('>')) {
+      final elementType = _singleTypeArgument(targetType);
+      if (!_isCollectionTypeString(elementType)) {
+        return "_\$ackListCast<$elementType>($valueExpression)";
+      }
+
+      return "($valueExpression as List).map((e) => ${_buildRepresentationCastExpression('e', elementType)}).toList()";
     }
-    return "_\$ackListCast<$elementType>(_data['$key'])";
+
+    if (targetType.startsWith('Set<') && targetType.endsWith('>')) {
+      final elementType = _singleTypeArgument(targetType);
+      if (!_isCollectionTypeString(elementType)) {
+        return "_\$ackSetCast<$elementType>($valueExpression)";
+      }
+
+      return "($valueExpression as List).map((e) => ${_buildRepresentationCastExpression('e', elementType)}).toSet()";
+    }
+
+    return '$valueExpression as $targetType';
+  }
+
+  bool _isCollectionTypeString(String type) {
+    return type.startsWith('List<') || type.startsWith('Set<');
+  }
+
+  String _singleTypeArgument(String type) {
+    return type.substring(type.indexOf('<') + 1, type.length - 1);
   }
 
   Method _buildListCastHelper() {
@@ -1170,10 +1315,6 @@ ${cases.join(',\n')},
     return _buildCopyWithForFields(model, model.fields);
   }
 
-  bool _canGenerateCopyWithForFields(Iterable<FieldInfo> fields) {
-    return fields.every((field) => !field.isTransformedRepresentation);
-  }
-
   Method _buildCopyWithForFields(
     ModelInfo model,
     List<FieldInfo> fields, {
@@ -1196,17 +1337,7 @@ ${cases.join(',\n')},
       ...fixedAssignments.entries.map(
         (entry) => '      ${_singleQuotedLiteral(entry.key)}: ${entry.value}',
       ),
-      ...fields.map((field) {
-        final key = field.jsonKey;
-        final name = field.name;
-
-        if (field.isNullable) {
-          // For nullable fields, check if explicitly provided or exists in data
-          return "      if ($name != null || _data.containsKey('$key')) '$key': $name ?? this.$name";
-        } else {
-          return "      '$key': $name ?? this.$name";
-        }
-      }),
+      ...fields.map(_buildCopyWithAssignment),
     ];
 
     return Method(
@@ -1230,7 +1361,36 @@ ${assignments.join(',\n')},
     return "'$escaped'";
   }
 
+  String _buildCopyWithAssignment(FieldInfo field) {
+    final key = field.jsonKey;
+    final name = field.name;
+    final serializedValue = _serializeCopyWithValue(field, name);
+    final rawFallback = "_data['$key']";
+
+    if (!field.isRequired || field.isNullable) {
+      return "      if ($name != null || _data.containsKey('$key')) '$key': $serializedValue ?? $rawFallback";
+    }
+
+    return "      '$key': $serializedValue ?? $rawFallback";
+  }
+
+  String _serializeCopyWithValue(FieldInfo field, String parameterName) {
+    if (field.nestedSchemaRef != null) {
+      return '$parameterName?.toJson()';
+    }
+
+    if ((field.isList || field.isSet) && field.collectionElementIsCustomType) {
+      return '$parameterName?.map((e) => e.toJson()).toList()';
+    }
+
+    return parameterName;
+  }
+
   Reference _buildCopyWithParameterType(FieldInfo field) {
+    if (field.nestedSchemaRef != null && field.displayTypeOverride != null) {
+      return _typeReference(field.displayTypeOverride!, isNullable: true);
+    }
+
     if (field.isEnum && field.displayTypeOverride != null) {
       return _typeReference(field.displayTypeOverride!, isNullable: true);
     }

@@ -10,6 +10,7 @@ void main() {
   group('Example Folder Build Integration', () {
     late Directory projectRoot;
     late Directory exampleDir;
+    late Map<String, String> originalGeneratedFiles;
 
     setUpAll(() {
       // Find project root (go up from test directory)
@@ -20,6 +21,11 @@ void main() {
       }
       projectRoot = current;
       exampleDir = Directory(p.join(projectRoot.path, 'example'));
+      originalGeneratedFiles = _readGeneratedFiles(exampleDir);
+    });
+
+    tearDownAll(() {
+      _restoreGeneratedFiles(exampleDir, originalGeneratedFiles);
     });
 
     test(
@@ -204,7 +210,7 @@ void main() {
       final transformsContent = await transformsFile.readAsString();
       expect(
         transformsContent,
-        contains('extension type ColorType(Color _value)'),
+        contains('extension type ColorType(String _value)'),
         reason:
             'schema_types_transforms.g.dart should include the transformed Color extension type',
       );
@@ -217,22 +223,33 @@ void main() {
       expect(
         transformsContent,
         allOf([
-          contains('Uri get homepage'),
-          contains('DateTime get birthday'),
-          contains('DateTime get lastLogin'),
-          contains('Duration get timeout'),
-          contains('List<Uri> get links'),
+          contains('String get homepage'),
+          contains('Uri get homepageParsed'),
+          contains('String get birthday'),
+          contains('DateTime get birthdayParsed'),
+          contains('int get timeout'),
+          contains('Duration get timeoutParsed'),
+          contains('List<String> get links'),
+          contains('List<Uri> get linksParsed'),
           contains('ColorType get accent'),
+          contains('Color get accentParsed'),
           contains('List<ColorType> get colors'),
-          contains('List<Color> get customColors'),
-          contains('TagList get tagList'),
-          isNot(contains('ProfileType copyWith(')),
+          contains('List<Color> get colorsParsed'),
+          contains('List<String> get customColors'),
+          contains('List<Color> get customColorsParsed'),
+          contains('List<String> get tagList'),
+          contains('TagList get tagListParsed'),
+          contains('ProfileType copyWith('),
+          contains("'accent': accent?.toJson() ?? _data['accent']"),
+          contains(
+            "'colors': colors?.map((e) => e.toJson()).toList() ?? _data['colors']",
+          ),
           isNot(contains('Uri.parse(')),
           isNot(contains('DateTime.parse(')),
           isNot(contains('Duration(milliseconds:')),
         ]),
         reason:
-            'schema_types_transforms.g.dart should emit transformed getters without unsafe reparsing or copyWith',
+            'schema_types_transforms.g.dart should emit representation-first getters with explicit parsed accessors',
       );
     });
 
@@ -254,4 +271,43 @@ void main() {
       print('✅ Example folder dependencies resolved successfully');
     });
   });
+}
+
+Map<String, String> _readGeneratedFiles(Directory exampleDir) {
+  final generatedFiles = <String, String>{};
+
+  for (final entity in exampleDir.listSync(recursive: true).whereType<File>()) {
+    if (!entity.path.endsWith('.g.dart')) {
+      continue;
+    }
+
+    generatedFiles[p.relative(entity.path, from: exampleDir.path)] = entity
+        .readAsStringSync();
+  }
+
+  return generatedFiles;
+}
+
+void _restoreGeneratedFiles(
+  Directory exampleDir,
+  Map<String, String> originalGeneratedFiles,
+) {
+  final currentGeneratedFiles = exampleDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((file) => file.path.endsWith('.g.dart'))
+      .toList();
+
+  for (final file in currentGeneratedFiles) {
+    final relativePath = p.relative(file.path, from: exampleDir.path);
+    if (!originalGeneratedFiles.containsKey(relativePath)) {
+      file.deleteSync();
+    }
+  }
+
+  for (final entry in originalGeneratedFiles.entries) {
+    final restoredFile = File(p.join(exampleDir.path, entry.key));
+    restoredFile.parent.createSync(recursive: true);
+    restoredFile.writeAsStringSync(entry.value);
+  }
 }

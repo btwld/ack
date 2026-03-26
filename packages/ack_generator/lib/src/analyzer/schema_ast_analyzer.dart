@@ -39,8 +39,10 @@ typedef _SchemaTypeMapping = ({
   bool listElementIsCustomType,
 });
 typedef _ListElementAnalysis = ({
-  _SchemaTypeMapping mapping,
+  _SchemaTypeMapping representationMapping,
+  _SchemaTypeMapping parsedMapping,
   String elementRepresentationType,
+  String elementParsedType,
   bool isTransformedRepresentation,
 });
 typedef _ResolvedSchemaElement = ({
@@ -322,6 +324,7 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
+      parsedType: sourceModel.parsedType,
       isTransformedSchema: sourceModel.isTransformedSchema,
       isNullableSchema: sourceModel.isNullableSchema,
     );
@@ -474,7 +477,8 @@ class SchemaAstAnalyzer {
         model = _parseRepresentationSchema(
           variableName,
           element,
-          representationType: 'Uri',
+          representationType: 'String',
+          parsedType: 'Uri',
           isNullable: isNullable,
           isTransformedSchema: true,
           customTypeName: customTypeName,
@@ -485,7 +489,8 @@ class SchemaAstAnalyzer {
         model = _parseRepresentationSchema(
           variableName,
           element,
-          representationType: 'DateTime',
+          representationType: 'String',
+          parsedType: 'DateTime',
           isNullable: isNullable,
           isTransformedSchema: true,
           customTypeName: customTypeName,
@@ -495,7 +500,8 @@ class SchemaAstAnalyzer {
         model = _parseRepresentationSchema(
           variableName,
           element,
-          representationType: 'Duration',
+          representationType: 'int',
+          parsedType: 'Duration',
           isNullable: isNullable,
           isTransformedSchema: true,
           customTypeName: customTypeName,
@@ -519,7 +525,7 @@ class SchemaAstAnalyzer {
     }
 
     if (transformOutputTypeString != null) {
-      return _withRepresentationType(model, transformOutputTypeString);
+      return _withParsedType(model, transformOutputTypeString);
     }
 
     return model;
@@ -571,8 +577,8 @@ class SchemaAstAnalyzer {
           _declarationVisitKey(resolved.sourceDeclaration),
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
       isFromSchemaVariable: true,
-      representationType:
-          transformOutputTypeString ?? sourceModel.representationType,
+      representationType: sourceModel.representationType,
+      parsedType: transformOutputTypeString ?? sourceModel.parsedType,
       isTransformedSchema:
           sourceModel.isTransformedSchema || transformOutputTypeString != null,
       isNullableSchema: isNullable || sourceModel.isNullableSchema,
@@ -1044,6 +1050,7 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
+      parsedType: model.parsedType,
       isTransformedSchema: model.isTransformedSchema,
       isNullableSchema: model.isNullableSchema,
     );
@@ -1236,7 +1243,7 @@ class SchemaAstAnalyzer {
       isRequired: !chain.isOptional,
       isNullable: chain.isNullable,
       transformedOutputType: chain.transformOutputType,
-      transformedRepresentationType: _requireTransformOutputType(
+      parsedTypeOverride: _requireTransformOutputType(
         chain,
         element,
         contextLabel: 'Field "$fieldName"',
@@ -1251,7 +1258,7 @@ class SchemaAstAnalyzer {
     bool isRequired = true,
     bool isNullable = false,
     DartType? transformedOutputType,
-    String? transformedRepresentationType,
+    String? parsedTypeOverride,
   }) {
     final schemaVarName = schemaReference.name;
     final library = element.library2;
@@ -1275,7 +1282,7 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final hasTransformOverride = transformedRepresentationType != null;
+    final hasTransformOverride = parsedTypeOverride != null;
     if (hasTransformOverride) {
       _throwIfUnsupportedTransformedReferencedSchema(
         resolved: resolvedReference,
@@ -1284,11 +1291,16 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final representationType =
-        transformedRepresentationType ??
-        resolvedReference.modelInfo.representationType;
+    final representationType = resolvedReference.modelInfo.representationType;
+    final parsedTypeString =
+        parsedTypeOverride ?? resolvedReference.modelInfo.parsedType;
     final visibleRepresentationType = _resolveVisibleRepresentationType(
       representationType: representationType,
+      resolved: resolvedReference,
+      contextElement: element,
+    );
+    final visibleParsedType = _resolveVisibleRepresentationType(
+      representationType: parsedTypeString,
       resolved: resolvedReference,
       contextElement: element,
     );
@@ -1305,9 +1317,17 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final mappedType =
+    final mappedType = _representationTypeToDartType(
+      representationType,
+      typeProvider,
+    );
+    final parsedType =
         transformedOutputType ??
-        _representationTypeToDartType(representationType, typeProvider);
+        _schemaTypeStringToDartType(
+          parsedTypeString,
+          typeProvider,
+          contextElement: element,
+        );
     final typeBaseName = hasTypedReference
         ? _qualifyTypeBaseName(
             resolvedReference.modelInfo.className,
@@ -1331,6 +1351,7 @@ class SchemaAstAnalyzer {
       name: fieldName,
       jsonKey: fieldName,
       type: mappedType,
+      parsedType: parsedType,
       isRequired: isRequired,
       isNullable: isNullable,
       constraints: [],
@@ -1338,12 +1359,15 @@ class SchemaAstAnalyzer {
       displayTypeOverride: hasTypedReference
           ? '${typeBaseName}Type'
           : rawDisplayTypeOverride,
+      parsedDisplayTypeOverride: parsedTypeString != representationType
+          ? visibleParsedType
+          : null,
       nestedSchemaCastTypeOverride: hasTypedReference
           ? visibleRepresentationType
           : null,
       isTransformedRepresentation:
           resolvedReference.modelInfo.isTransformedSchema ||
-          transformedRepresentationType != null,
+          parsedTypeOverride != null,
     );
   }
 
@@ -1397,15 +1421,33 @@ class SchemaAstAnalyzer {
     }
 
     final typeProvider = element.library2!.typeProvider;
-    final listElementAnalysis =
-        schemaMethod == 'list' && transformOutputTypeString == null
+    final listElementAnalysis = schemaMethod == 'list'
         ? _analyzeListElement(baseInvocation, element, typeProvider)
         : null;
     // Map schema type to Dart type (passing full invocation for context)
     // Also captures schema variable reference and list metadata for typed wrappers.
     final mappedType =
-        listElementAnalysis?.mapping ??
+        listElementAnalysis?.representationMapping ??
         _mapSchemaTypeToDartType(invocation, element);
+    final parsedType = transformOutputTypeString != null
+        ? chain.transformOutputType ?? typeProvider.dynamicType
+        : listElementAnalysis?.parsedMapping.dartType ??
+              (_isBuiltInTransformedMethod(schemaMethod)
+                  ? _schemaTypeStringToDartType(
+                      _parsedTypeForSchemaMethod(schemaMethod),
+                      typeProvider,
+                      contextElement: element,
+                    )
+                  : mappedType.dartType);
+    final parsedDisplayTypeOverride = transformOutputTypeString != null
+        ? transformOutputTypeString
+        : listElementAnalysis != null &&
+              listElementAnalysis.elementParsedType !=
+                  listElementAnalysis.elementRepresentationType
+        ? 'List<${listElementAnalysis.elementParsedType}>'
+        : _isBuiltInTransformedMethod(schemaMethod)
+        ? _parsedTypeForSchemaMethod(schemaMethod)
+        : null;
 
     String? displayTypeOverride;
     var collectionElementDisplayTypeOverride =
@@ -1423,23 +1465,13 @@ class SchemaAstAnalyzer {
       name: fieldName,
       jsonKey: fieldName,
       type: mappedType.dartType,
+      parsedType: parsedType,
       isRequired: !chain.isOptional,
       isNullable: chain.isNullable,
       constraints: [],
       listElementSchemaRef: mappedType.listElementSchemaRef,
-      displayTypeOverride:
-          displayTypeOverride ??
-          (transformOutputTypeString != null &&
-                  !mappedType.dartType.isDartCoreString &&
-                  !mappedType.dartType.isDartCoreInt &&
-                  !mappedType.dartType.isDartCoreDouble &&
-                  !mappedType.dartType.isDartCoreBool &&
-                  !mappedType.dartType.isDartCoreNum &&
-                  !mappedType.dartType.isDartCoreList &&
-                  !mappedType.dartType.isDartCoreMap &&
-                  !mappedType.dartType.isDartCoreSet
-              ? transformOutputTypeString
-              : null),
+      displayTypeOverride: displayTypeOverride,
+      parsedDisplayTypeOverride: parsedDisplayTypeOverride,
       collectionElementDisplayTypeOverride:
           collectionElementDisplayTypeOverride,
       collectionElementCastTypeOverride: mappedType.listElementCastTypeOverride,
@@ -1477,8 +1509,7 @@ class SchemaAstAnalyzer {
         schemaReference,
         element,
         typeProvider,
-        transformedOutputType: chain.transformOutputType,
-        transformedRepresentationType: transformOutputTypeString,
+        hasTransformOverride: transformOutputTypeString != null,
       );
     }
 
@@ -1498,8 +1529,20 @@ class SchemaAstAnalyzer {
     );
 
     if (transformOutputTypeString != null) {
+      if (schemaMethod == 'list') {
+        return _analyzeListElement(
+          baseInvocation,
+          element,
+          typeProvider,
+        ).representationMapping;
+      }
+
       return (
-        dartType: chain.transformOutputType ?? typeProvider.dynamicType,
+        dartType: _schemaTypeStringToDartType(
+          _mapSchemaMethodToType(schemaMethod),
+          typeProvider,
+          contextElement: element,
+        ),
         listElementSchemaRef: null,
         listElementDisplayTypeOverride: null,
         listElementCastTypeOverride: null,
@@ -1547,7 +1590,7 @@ class SchemaAstAnalyzer {
           baseInvocation,
           element,
           typeProvider,
-        ).mapping;
+        ).representationMapping;
       case 'object':
         // Nested objects represented as Map<String, Object?>
         // Note: Using dynamicType for analyzer; generated code uses Object?
@@ -1599,7 +1642,7 @@ class SchemaAstAnalyzer {
         );
       case 'uri':
         return (
-          dartType: _dartCoreType(typeProvider, 'Uri'),
+          dartType: typeProvider.stringType,
           listElementSchemaRef: null,
           listElementDisplayTypeOverride: null,
           listElementCastTypeOverride: null,
@@ -1608,7 +1651,7 @@ class SchemaAstAnalyzer {
       case 'date':
       case 'datetime':
         return (
-          dartType: _dartCoreType(typeProvider, 'DateTime'),
+          dartType: typeProvider.stringType,
           listElementSchemaRef: null,
           listElementDisplayTypeOverride: null,
           listElementCastTypeOverride: null,
@@ -1616,7 +1659,7 @@ class SchemaAstAnalyzer {
         );
       case 'duration':
         return (
-          dartType: _dartCoreType(typeProvider, 'Duration'),
+          dartType: typeProvider.intType,
           listElementSchemaRef: null,
           listElementDisplayTypeOverride: null,
           listElementCastTypeOverride: null,
@@ -2015,24 +2058,53 @@ class SchemaAstAnalyzer {
       }
 
       if (chain.schemaReference != null) {
-        final mapping = _resolveSchemaVariableType(
+        final representationMapping = _resolveSchemaVariableType(
           chain.schemaReference!,
           element,
           typeProvider,
-          transformedOutputType: chain.transformOutputType,
-          transformedRepresentationType: transformOutputTypeString,
+          hasTransformOverride: transformOutputTypeString != null,
         );
         final resolved = _resolveSchemaReference(
           chain.schemaReference!,
           element,
         );
+        final parsedTypeString =
+            transformOutputTypeString ?? resolved?.modelInfo.parsedType;
+        final visibleParsedType = resolved != null && parsedTypeString != null
+            ? _resolveVisibleRepresentationType(
+                representationType: parsedTypeString,
+                resolved: resolved,
+                contextElement: element,
+              )
+            : parsedTypeString;
+        final parsedDartType =
+            chain.transformOutputType ??
+            (visibleParsedType != null
+                ? _schemaTypeStringToDartType(
+                    visibleParsedType,
+                    typeProvider,
+                    contextElement: element,
+                  )
+                : typeProvider.dynamicType);
         return (
-          mapping: mapping,
+          representationMapping: representationMapping,
+          parsedMapping: (
+            dartType: typeProvider.listType(parsedDartType),
+            listElementSchemaRef: null,
+            listElementDisplayTypeOverride: null,
+            listElementCastTypeOverride: null,
+            listElementIsCustomType: false,
+          ),
           elementRepresentationType: _resolveSchemaVariableElementTypeString(
             chain.schemaReference!,
             element,
-            transformedRepresentationType: transformOutputTypeString,
           ),
+          elementParsedType:
+              visibleParsedType ??
+              _resolveSchemaVariableElementTypeString(
+                chain.schemaReference!,
+                element,
+              ),
           isTransformedRepresentation:
               resolved?.modelInfo.isTransformedSchema == true ||
               transformOutputTypeString != null,
@@ -2063,11 +2135,30 @@ class SchemaAstAnalyzer {
           element,
           typeProvider,
         );
+        final elementParsedType =
+            transformOutputTypeString ?? 'List<${nested.elementParsedType}>';
+        final parsedElementType =
+            chain.transformOutputType ??
+            _schemaTypeStringToDartType(
+              elementParsedType,
+              typeProvider,
+              contextElement: element,
+            );
         return (
-          mapping: _wrapListElementMapping(nested.mapping, typeProvider),
+          representationMapping: _wrapListElementMapping(
+            nested.representationMapping,
+            typeProvider,
+          ),
+          parsedMapping: (
+            dartType: typeProvider.listType(parsedElementType),
+            listElementSchemaRef: null,
+            listElementDisplayTypeOverride: null,
+            listElementCastTypeOverride: null,
+            listElementIsCustomType: false,
+          ),
           elementRepresentationType:
-              transformOutputTypeString ??
               'List<${nested.elementRepresentationType}>',
+          elementParsedType: elementParsedType,
           isTransformedRepresentation:
               transformOutputTypeString != null ||
               nested.isTransformedRepresentation,
@@ -2075,14 +2166,37 @@ class SchemaAstAnalyzer {
       }
 
       final elementMapping = _mapSchemaTypeToDartType(ref.invocation!, element);
-      final elementRepresentationType =
-          transformOutputTypeString ??
-          (methodName == 'enumValues'
-              ? _extractEnumTypeNameFromInvocation(baseInvocation) ?? 'dynamic'
-              : _mapSchemaMethodToType(methodName));
+      final parsedTypeString = transformOutputTypeString != null
+          ? transformOutputTypeString
+          : _isBuiltInTransformedMethod(methodName)
+          ? _parsedTypeForSchemaMethod(methodName)
+          : methodName == 'enumValues'
+          ? _extractEnumTypeNameFromInvocation(baseInvocation) ?? 'dynamic'
+          : _mapSchemaMethodToType(methodName);
+      final parsedElementType =
+          chain.transformOutputType ??
+          _schemaTypeStringToDartType(
+            parsedTypeString,
+            typeProvider,
+            contextElement: element,
+          );
+      final elementRepresentationType = (methodName == 'enumValues'
+          ? _extractEnumTypeNameFromInvocation(baseInvocation) ?? 'dynamic'
+          : _mapSchemaMethodToType(methodName));
       return (
-        mapping: _wrapListElementMapping(elementMapping, typeProvider),
+        representationMapping: _wrapListElementMapping(
+          elementMapping,
+          typeProvider,
+        ),
+        parsedMapping: (
+          dartType: typeProvider.listType(parsedElementType),
+          listElementSchemaRef: null,
+          listElementDisplayTypeOverride: null,
+          listElementCastTypeOverride: null,
+          listElementIsCustomType: false,
+        ),
         elementRepresentationType: elementRepresentationType,
+        elementParsedType: parsedTypeString,
         isTransformedRepresentation:
             transformOutputTypeString != null ||
             _isBuiltInTransformedMethod(methodName),
@@ -2090,18 +2204,43 @@ class SchemaAstAnalyzer {
     }
 
     if (ref.schemaRef != null) {
-      final mapping = _resolveSchemaVariableType(
+      final representationMapping = _resolveSchemaVariableType(
         ref.schemaRef!,
         element,
         typeProvider,
       );
       final resolved = _resolveSchemaReference(ref.schemaRef!, element);
+      final parsedTypeString = resolved?.modelInfo.parsedType;
+      final visibleParsedType = resolved != null && parsedTypeString != null
+          ? _resolveVisibleRepresentationType(
+              representationType: parsedTypeString,
+              resolved: resolved,
+              contextElement: element,
+            )
+          : parsedTypeString;
+      final parsedDartType = visibleParsedType != null
+          ? _schemaTypeStringToDartType(
+              visibleParsedType,
+              typeProvider,
+              contextElement: element,
+            )
+          : typeProvider.dynamicType;
       return (
-        mapping: mapping,
+        representationMapping: representationMapping,
+        parsedMapping: (
+          dartType: typeProvider.listType(parsedDartType),
+          listElementSchemaRef: null,
+          listElementDisplayTypeOverride: null,
+          listElementCastTypeOverride: null,
+          listElementIsCustomType: false,
+        ),
         elementRepresentationType: _resolveSchemaVariableElementTypeString(
           ref.schemaRef!,
           element,
         ),
+        elementParsedType:
+            visibleParsedType ??
+            _resolveSchemaVariableElementTypeString(ref.schemaRef!, element),
         isTransformedRepresentation:
             resolved?.modelInfo.isTransformedSchema ?? false,
       );
@@ -2138,8 +2277,7 @@ class SchemaAstAnalyzer {
     _SchemaReference schemaReference,
     Element2 element,
     TypeProvider typeProvider, {
-    DartType? transformedOutputType,
-    String? transformedRepresentationType,
+    bool hasTransformOverride = false,
   }) {
     final resolved = _resolveSchemaReference(schemaReference, element);
     if (resolved == null) {
@@ -2153,7 +2291,6 @@ class SchemaAstAnalyzer {
     }
 
     final modelInfo = resolved.modelInfo;
-    final hasTransformOverride = transformedRepresentationType != null;
     if (hasTransformOverride) {
       _throwIfUnsupportedTransformedReferencedSchema(
         resolved: resolved,
@@ -2162,8 +2299,7 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final representationType =
-        transformedRepresentationType ?? modelInfo.representationType;
+    final representationType = modelInfo.representationType;
     final visibleRepresentationType = _resolveVisibleRepresentationType(
       representationType: representationType,
       resolved: resolved,
@@ -2183,9 +2319,10 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final elementDartType =
-        transformedOutputType ??
-        _representationTypeToDartType(representationType, typeProvider);
+    final elementDartType = _representationTypeToDartType(
+      representationType,
+      typeProvider,
+    );
 
     final typeBaseName = hasTypedReference
         ? _qualifyTypeBaseName(modelInfo.className, resolved.importPrefix)
@@ -2223,15 +2360,13 @@ class SchemaAstAnalyzer {
   /// reference is detected.
   String _resolveSchemaVariableElementTypeString(
     _SchemaReference schemaReference,
-    Element2 element, {
-    String? transformedRepresentationType,
-  }) {
+    Element2 element,
+  ) {
     final library = element.library2;
     // Use library-scoped cache key to prevent collisions across libraries
     final prefix = schemaReference.prefix ?? '';
-    final transformKey = transformedRepresentationType ?? '';
     final cacheKey =
-        '${library?.uri ?? 'unknown'}::$prefix::${schemaReference.name}::$transformKey';
+        '${library?.uri ?? 'unknown'}::$prefix::${schemaReference.name}';
 
     final cached = _schemaVariableTypeCache[cacheKey];
     if (cached != null) {
@@ -2272,12 +2407,8 @@ class SchemaAstAnalyzer {
         );
       }
 
-      final representationType =
-          transformedRepresentationType ??
-          resolved.modelInfo.representationType;
-      final hasTypedReference =
-          resolved.hasAckTypeAnnotation &&
-          transformedRepresentationType == null;
+      final representationType = resolved.modelInfo.representationType;
+      final hasTypedReference = resolved.hasAckTypeAnnotation;
 
       if (representationType == kMapType && !hasTypedReference) {
         throw InvalidGenerationSourceError(
@@ -2819,6 +2950,38 @@ class SchemaAstAnalyzer {
     };
   }
 
+  DartType _schemaTypeStringToDartType(
+    String typeString,
+    TypeProvider typeProvider, {
+    required Element2 contextElement,
+  }) {
+    final trimmed = typeString.trim();
+
+    if (trimmed.startsWith('List<') && trimmed.endsWith('>')) {
+      final elementType = trimmed.substring(5, trimmed.length - 1);
+      return typeProvider.listType(
+        _schemaTypeStringToDartType(
+          elementType,
+          typeProvider,
+          contextElement: contextElement,
+        ),
+      );
+    }
+
+    final builtInType = _representationTypeToDartType(trimmed, typeProvider);
+    if (builtInType is! DynamicType || trimmed == 'dynamic') {
+      return builtInType;
+    }
+
+    final library = contextElement.library2;
+    if (library == null) {
+      return builtInType;
+    }
+
+    final simpleName = trimmed.split('.').last;
+    return _resolveTypeByName(simpleName, library) ?? builtInType;
+  }
+
   DartType _dartCoreType(TypeProvider typeProvider, String typeName) {
     final type = _resolveTypeByName(
       typeName,
@@ -3297,6 +3460,7 @@ class SchemaAstAnalyzer {
       isFromSchemaVariable: true,
       representationType:
           'List<${listElementAnalysis.elementRepresentationType}>',
+      parsedType: 'List<${listElementAnalysis.elementParsedType}>',
       isTransformedSchema: listElementAnalysis.isTransformedRepresentation,
       isNullableSchema: isNullable,
     );
@@ -3306,6 +3470,7 @@ class SchemaAstAnalyzer {
     String variableName,
     Element2 element, {
     required String representationType,
+    String? parsedType,
     required bool isNullable,
     bool isTransformedSchema = false,
     String? customTypeName,
@@ -3322,15 +3487,13 @@ class SchemaAstAnalyzer {
       fields: const [],
       isFromSchemaVariable: true,
       representationType: representationType,
+      parsedType: parsedType,
       isTransformedSchema: isTransformedSchema,
       isNullableSchema: isNullable,
     );
   }
 
-  ModelInfo _withRepresentationType(
-    ModelInfo model,
-    String representationType,
-  ) {
+  ModelInfo _withParsedType(ModelInfo model, String parsedType) {
     return ModelInfo(
       className: model.className,
       schemaClassName: model.schemaClassName,
@@ -3344,7 +3507,8 @@ class SchemaAstAnalyzer {
       schemaIdentity: model.schemaIdentity,
       discriminatedBaseClassName: model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
-      representationType: representationType,
+      representationType: model.representationType,
+      parsedType: parsedType,
       isTransformedSchema: true,
       isNullableSchema: model.isNullableSchema,
     );
@@ -3459,12 +3623,21 @@ class SchemaAstAnalyzer {
       'integer' => 'int',
       'double' => 'double',
       'boolean' => 'bool',
-      'uri' => 'Uri',
-      'date' || 'datetime' => 'DateTime',
-      'duration' => 'Duration',
+      'uri' => 'String',
+      'date' || 'datetime' => 'String',
+      'duration' => 'int',
       'object' => kMapType,
       'list' => 'List<dynamic>',
       _ => 'dynamic',
+    };
+  }
+
+  String _parsedTypeForSchemaMethod(String methodName) {
+    return switch (methodName) {
+      'uri' => 'Uri',
+      'date' || 'datetime' => 'DateTime',
+      'duration' => 'Duration',
+      _ => _mapSchemaMethodToType(methodName),
     };
   }
 

@@ -157,6 +157,96 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
+  @protected
+  SchemaResult<Object> parseAndValidateRepresentation(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    final sourceValue = resolveRepresentationInput(inputValue);
+    final nullResult = handleNullRepresentationInput(sourceValue, context);
+    if (nullResult != null) {
+      return nullResult;
+    }
+
+    final parsedResult = parseAndValidate(sourceValue, context);
+    if (parsedResult case Fail(error: final error)) {
+      return SchemaResult.fail(error);
+    }
+
+    if (sourceValue is! Map) {
+      final actualType = AckSchema.getSchemaType(sourceValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+
+    final mapValue = sourceValue is Map<String, Object?>
+        ? sourceValue
+        : sourceValue.cast<String, Object?>();
+    final representationMap = <String, Object?>{};
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+      final hasValue = mapValue.containsKey(key);
+
+      if (!hasValue) {
+        if (schema.isOptional && schema.defaultValue != null) {
+          final propertyContext = context.createChild(
+            name: key,
+            schema: schema,
+            value: null,
+            pathSegment: key,
+          );
+          final result = schema.parseAndValidateRepresentation(
+            null,
+            propertyContext,
+          );
+          if (result case Fail(error: final error)) {
+            return SchemaResult.fail(error);
+          }
+          final representationValue = result.getOrNull();
+          if (representationValue != null) {
+            representationMap[key] = representationValue;
+          }
+        }
+        continue;
+      }
+
+      final propertyValue = mapValue[key];
+      final propertyContext = context.createChild(
+        name: key,
+        schema: schema,
+        value: propertyValue,
+        pathSegment: key,
+      );
+      final result = schema.parseAndValidateRepresentation(
+        propertyValue,
+        propertyContext,
+      );
+      if (result case Fail(error: final error)) {
+        return SchemaResult.fail(error);
+      }
+      representationMap[key] = result.getOrNull();
+    }
+
+    final knownKeys = properties.keys.toSet();
+    for (final key in mapValue.keys) {
+      if (!knownKeys.contains(key) && additionalProperties) {
+        representationMap[key] = mapValue[key];
+      }
+    }
+
+    return SchemaResult.ok(
+      Map<String, Object?>.unmodifiable(representationMap),
+    );
+  }
+
+  @override
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
     bool? additionalProperties,

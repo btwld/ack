@@ -547,6 +547,7 @@ class AckSchemaGenerator extends Generator {
           discriminatedBaseClassName ?? model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
+      parsedType: model.parsedType,
       isTransformedSchema: model.isTransformedSchema,
       isNullableSchema: model.isNullableSchema,
     );

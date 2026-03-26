@@ -12,6 +12,7 @@ class FieldInfo {
   final String name;
   final String jsonKey;
   final DartType type;
+  final DartType parsedType;
   final bool isRequired;
   final bool isNullable;
   final List<ConstraintInfo> constraints;
@@ -31,6 +32,10 @@ class FieldInfo {
   /// (e.g., `alias.UserRole` from a prefixed import).
   final String? displayTypeOverride;
 
+  /// Optional parsed/output display type override used when source
+  /// qualification matters for parsed helpers (e.g., `alias.Color`).
+  final String? parsedDisplayTypeOverride;
+
   /// Optional collection element display type override for list/set fields.
   final String? collectionElementDisplayTypeOverride;
 
@@ -44,16 +49,15 @@ class FieldInfo {
   /// Optional cast type override for nested schema references.
   final String? nestedSchemaCastTypeOverride;
 
-  /// Whether reparsing this field's getter value would re-run a transform.
-  ///
-  /// Used to suppress generated `copyWith()` on object wrappers whose public
-  /// field values no longer match the raw schema input shape.
+  /// Whether this field stores the validated representation while exposing a
+  /// distinct parsed/output type through generated `parsed` helpers.
   final bool isTransformedRepresentation;
 
   const FieldInfo({
     required this.name,
     required this.jsonKey,
     required this.type,
+    DartType? parsedType,
     required this.isRequired,
     required this.isNullable,
     required this.constraints,
@@ -61,12 +65,13 @@ class FieldInfo {
     this.listElementSchemaRef,
     this.nestedSchemaRef,
     this.displayTypeOverride,
+    this.parsedDisplayTypeOverride,
     this.collectionElementDisplayTypeOverride,
     this.collectionElementCastTypeOverride,
     this.collectionElementIsCustomType = false,
     this.nestedSchemaCastTypeOverride,
     this.isTransformedRepresentation = false,
-  });
+  }) : parsedType = parsedType ?? type;
 
   /// Whether this field references another schema model
   bool get isNestedSchema =>

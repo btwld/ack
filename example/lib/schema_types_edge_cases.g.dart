@@ -13,16 +13,16 @@ List<T> _$ackListCast<T>(Object? value) => (value as List).cast<T>();
 extension type ProductType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ProductType parse(Object? data) {
-    return productSchema.parseAs(
+    return productSchema.parseRepresentationAs(
       data,
-      (validated) => ProductType(validated as Map<String, Object?>),
+      (representation) => ProductType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<ProductType> safeParse(Object? data) {
-    return productSchema.safeParseAs(
+    return productSchema.safeParseRepresentationAs(
       data,
-      (validated) => ProductType(validated as Map<String, Object?>),
+      (representation) => ProductType(representation as Map<String, Object?>),
     );
   }
 
@@ -43,10 +43,10 @@ extension type ProductType(Map<String, Object?> _data)
     List<bool>? flags,
   }) {
     return ProductType.parse({
-      'name': name ?? this.name,
-      'tags': tags ?? this.tags,
-      'scores': scores ?? this.scores,
-      'flags': flags ?? this.flags,
+      'name': name ?? _data['name'],
+      'tags': tags ?? _data['tags'],
+      'scores': scores ?? _data['scores'],
+      'flags': flags ?? _data['flags'],
     });
   }
 }
@@ -55,16 +55,16 @@ extension type ProductType(Map<String, Object?> _data)
 extension type GridType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static GridType parse(Object? data) {
-    return gridSchema.parseAs(
+    return gridSchema.parseRepresentationAs(
       data,
-      (validated) => GridType(validated as Map<String, Object?>),
+      (representation) => GridType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<GridType> safeParse(Object? data) {
-    return gridSchema.safeParseAs(
+    return gridSchema.safeParseRepresentationAs(
       data,
-      (validated) => GridType(validated as Map<String, Object?>),
+      (representation) => GridType(representation as Map<String, Object?>),
     );
   }
 
@@ -72,12 +72,13 @@ extension type GridType(Map<String, Object?> _data)
 
   String get name => _data['name'] as String;
 
-  List<List<int>> get matrix => _$ackListCast<List<int>>(_data['matrix']);
+  List<List<int>> get matrix =>
+      (_data['matrix'] as List).map((e) => _$ackListCast<int>(e)).toList();
 
   GridType copyWith({String? name, List<List<int>>? matrix}) {
     return GridType.parse({
-      'name': name ?? this.name,
-      'matrix': matrix ?? this.matrix,
+      'name': name ?? _data['name'],
+      'matrix': matrix ?? _data['matrix'],
     });
   }
 }
@@ -86,16 +87,16 @@ extension type GridType(Map<String, Object?> _data)
 extension type AddressType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static AddressType parse(Object? data) {
-    return addressSchema.parseAs(
+    return addressSchema.parseRepresentationAs(
       data,
-      (validated) => AddressType(validated as Map<String, Object?>),
+      (representation) => AddressType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<AddressType> safeParse(Object? data) {
-    return addressSchema.safeParseAs(
+    return addressSchema.safeParseRepresentationAs(
       data,
-      (validated) => AddressType(validated as Map<String, Object?>),
+      (representation) => AddressType(representation as Map<String, Object?>),
     );
   }
 
@@ -116,10 +117,10 @@ extension type AddressType(Map<String, Object?> _data)
     String? country,
   }) {
     return AddressType.parse({
-      'street': street ?? this.street,
-      'city': city ?? this.city,
-      'zipCode': zipCode ?? this.zipCode,
-      'country': country ?? this.country,
+      'street': street ?? _data['street'],
+      'city': city ?? _data['city'],
+      'zipCode': zipCode ?? _data['zipCode'],
+      'country': country ?? _data['country'],
     });
   }
 }
@@ -128,16 +129,16 @@ extension type AddressType(Map<String, Object?> _data)
 extension type PersonType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static PersonType parse(Object? data) {
-    return personSchema.parseAs(
+    return personSchema.parseRepresentationAs(
       data,
-      (validated) => PersonType(validated as Map<String, Object?>),
+      (representation) => PersonType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<PersonType> safeParse(Object? data) {
-    return personSchema.safeParseAs(
+    return personSchema.safeParseRepresentationAs(
       data,
-      (validated) => PersonType(validated as Map<String, Object?>),
+      (representation) => PersonType(representation as Map<String, Object?>),
     );
   }
 
@@ -155,14 +156,14 @@ extension type PersonType(Map<String, Object?> _data)
   PersonType copyWith({
     String? name,
     String? email,
-    Map<String, dynamic>? address,
+    AddressType? address,
     int? age,
   }) {
     return PersonType.parse({
-      'name': name ?? this.name,
-      'email': email ?? this.email,
-      'address': address ?? this.address,
-      'age': age ?? this.age,
+      'name': name ?? _data['name'],
+      'email': email ?? _data['email'],
+      'address': address?.toJson() ?? _data['address'],
+      'age': age ?? _data['age'],
     });
   }
 }
@@ -171,16 +172,16 @@ extension type PersonType(Map<String, Object?> _data)
 extension type EmployeeType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static EmployeeType parse(Object? data) {
-    return employeeSchema.parseAs(
+    return employeeSchema.parseRepresentationAs(
       data,
-      (validated) => EmployeeType(validated as Map<String, Object?>),
+      (representation) => EmployeeType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<EmployeeType> safeParse(Object? data) {
-    return employeeSchema.safeParseAs(
+    return employeeSchema.safeParseRepresentationAs(
       data,
-      (validated) => EmployeeType(validated as Map<String, Object?>),
+      (representation) => EmployeeType(representation as Map<String, Object?>),
     );
   }
 
@@ -199,14 +200,14 @@ extension type EmployeeType(Map<String, Object?> _data)
   EmployeeType copyWith({
     String? name,
     String? employeeId,
-    Map<String, dynamic>? homeAddress,
-    Map<String, dynamic>? workAddress,
+    AddressType? homeAddress,
+    AddressType? workAddress,
   }) {
     return EmployeeType.parse({
-      'name': name ?? this.name,
-      'employeeId': employeeId ?? this.employeeId,
-      'homeAddress': homeAddress ?? this.homeAddress,
-      'workAddress': workAddress ?? this.workAddress,
+      'name': name ?? _data['name'],
+      'employeeId': employeeId ?? _data['employeeId'],
+      'homeAddress': homeAddress?.toJson() ?? _data['homeAddress'],
+      'workAddress': workAddress?.toJson() ?? _data['workAddress'],
     });
   }
 }
@@ -215,16 +216,16 @@ extension type EmployeeType(Map<String, Object?> _data)
 extension type ModifierType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ModifierType parse(Object? data) {
-    return modifierSchema.parseAs(
+    return modifierSchema.parseRepresentationAs(
       data,
-      (validated) => ModifierType(validated as Map<String, Object?>),
+      (representation) => ModifierType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<ModifierType> safeParse(Object? data) {
-    return modifierSchema.safeParseAs(
+    return modifierSchema.safeParseRepresentationAs(
       data,
-      (validated) => ModifierType(validated as Map<String, Object?>),
+      (representation) => ModifierType(representation as Map<String, Object?>),
     );
   }
 
@@ -248,14 +249,15 @@ extension type ModifierType(Map<String, Object?> _data)
     String? nullableOptional,
   }) {
     return ModifierType.parse({
-      'requiredField': requiredField ?? this.requiredField,
-      'optionalField': optionalField ?? this.optionalField,
+      'requiredField': requiredField ?? _data['requiredField'],
+      if (optionalField != null || _data.containsKey('optionalField'))
+        'optionalField': optionalField ?? _data['optionalField'],
       if (nullableField != null || _data.containsKey('nullableField'))
-        'nullableField': nullableField ?? this.nullableField,
+        'nullableField': nullableField ?? _data['nullableField'],
       if (optionalNullable != null || _data.containsKey('optionalNullable'))
-        'optionalNullable': optionalNullable ?? this.optionalNullable,
+        'optionalNullable': optionalNullable ?? _data['optionalNullable'],
       if (nullableOptional != null || _data.containsKey('nullableOptional'))
-        'nullableOptional': nullableOptional ?? this.nullableOptional,
+        'nullableOptional': nullableOptional ?? _data['nullableOptional'],
     });
   }
 }
@@ -264,16 +266,18 @@ extension type ModifierType(Map<String, Object?> _data)
 extension type TaggedItemType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static TaggedItemType parse(Object? data) {
-    return taggedItemSchema.parseAs(
+    return taggedItemSchema.parseRepresentationAs(
       data,
-      (validated) => TaggedItemType(validated as Map<String, Object?>),
+      (representation) =>
+          TaggedItemType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<TaggedItemType> safeParse(Object? data) {
-    return taggedItemSchema.safeParseAs(
+    return taggedItemSchema.safeParseRepresentationAs(
       data,
-      (validated) => TaggedItemType(validated as Map<String, Object?>),
+      (representation) =>
+          TaggedItemType(representation as Map<String, Object?>),
     );
   }
 
@@ -298,11 +302,12 @@ extension type TaggedItemType(Map<String, Object?> _data)
     List<String>? nullableTags,
   }) {
     return TaggedItemType.parse({
-      'name': name ?? this.name,
-      'requiredTags': requiredTags ?? this.requiredTags,
-      'optionalTags': optionalTags ?? this.optionalTags,
+      'name': name ?? _data['name'],
+      'requiredTags': requiredTags ?? _data['requiredTags'],
+      if (optionalTags != null || _data.containsKey('optionalTags'))
+        'optionalTags': optionalTags ?? _data['optionalTags'],
       if (nullableTags != null || _data.containsKey('nullableTags'))
-        'nullableTags': nullableTags ?? this.nullableTags,
+        'nullableTags': nullableTags ?? _data['nullableTags'],
     });
   }
 }
@@ -311,16 +316,18 @@ extension type TaggedItemType(Map<String, Object?> _data)
 extension type ContactListType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ContactListType parse(Object? data) {
-    return contactListSchema.parseAs(
+    return contactListSchema.parseRepresentationAs(
       data,
-      (validated) => ContactListType(validated as Map<String, Object?>),
+      (representation) =>
+          ContactListType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<ContactListType> safeParse(Object? data) {
-    return contactListSchema.safeParseAs(
+    return contactListSchema.safeParseRepresentationAs(
       data,
-      (validated) => ContactListType(validated as Map<String, Object?>),
+      (representation) =>
+          ContactListType(representation as Map<String, Object?>),
     );
   }
 
@@ -334,8 +341,9 @@ extension type ContactListType(Map<String, Object?> _data)
 
   ContactListType copyWith({String? name, List<AddressType>? addresses}) {
     return ContactListType.parse({
-      'name': name ?? this.name,
-      'addresses': addresses ?? this.addresses,
+      'name': name ?? _data['name'],
+      'addresses':
+          addresses?.map((e) => e.toJson()).toList() ?? _data['addresses'],
     });
   }
 }
@@ -344,16 +352,16 @@ extension type ContactListType(Map<String, Object?> _data)
 extension type EmptyType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static EmptyType parse(Object? data) {
-    return emptySchema.parseAs(
+    return emptySchema.parseRepresentationAs(
       data,
-      (validated) => EmptyType(validated as Map<String, Object?>),
+      (representation) => EmptyType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<EmptyType> safeParse(Object? data) {
-    return emptySchema.safeParseAs(
+    return emptySchema.safeParseRepresentationAs(
       data,
-      (validated) => EmptyType(validated as Map<String, Object?>),
+      (representation) => EmptyType(representation as Map<String, Object?>),
     );
   }
 
@@ -364,16 +372,16 @@ extension type EmptyType(Map<String, Object?> _data)
 extension type MinimalType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static MinimalType parse(Object? data) {
-    return minimalSchema.parseAs(
+    return minimalSchema.parseRepresentationAs(
       data,
-      (validated) => MinimalType(validated as Map<String, Object?>),
+      (representation) => MinimalType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<MinimalType> safeParse(Object? data) {
-    return minimalSchema.safeParseAs(
+    return minimalSchema.safeParseRepresentationAs(
       data,
-      (validated) => MinimalType(validated as Map<String, Object?>),
+      (representation) => MinimalType(representation as Map<String, Object?>),
     );
   }
 
@@ -382,7 +390,7 @@ extension type MinimalType(Map<String, Object?> _data)
   String get id => _data['id'] as String;
 
   MinimalType copyWith({String? id}) {
-    return MinimalType.parse({'id': id ?? this.id});
+    return MinimalType.parse({'id': id ?? _data['id']});
   }
 }
 
@@ -390,16 +398,16 @@ extension type MinimalType(Map<String, Object?> _data)
 extension type NamedItemType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static NamedItemType parse(Object? data) {
-    return namedItemSchema.parseAs(
+    return namedItemSchema.parseRepresentationAs(
       data,
-      (validated) => NamedItemType(validated as Map<String, Object?>),
+      (representation) => NamedItemType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<NamedItemType> safeParse(Object? data) {
-    return namedItemSchema.safeParseAs(
+    return namedItemSchema.safeParseRepresentationAs(
       data,
-      (validated) => NamedItemType(validated as Map<String, Object?>),
+      (representation) => NamedItemType(representation as Map<String, Object?>),
     );
   }
 
@@ -408,7 +416,7 @@ extension type NamedItemType(Map<String, Object?> _data)
   String get name => _data['name'] as String;
 
   NamedItemType copyWith({String? name}) {
-    return NamedItemType.parse({'name': name ?? this.name});
+    return NamedItemType.parse({'name': name ?? _data['name']});
   }
 }
 
@@ -416,16 +424,16 @@ extension type NamedItemType(Map<String, Object?> _data)
 extension type ItemType(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static ItemType parse(Object? data) {
-    return item.parseAs(
+    return item.parseRepresentationAs(
       data,
-      (validated) => ItemType(validated as Map<String, Object?>),
+      (representation) => ItemType(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<ItemType> safeParse(Object? data) {
-    return item.safeParseAs(
+    return item.safeParseRepresentationAs(
       data,
-      (validated) => ItemType(validated as Map<String, Object?>),
+      (representation) => ItemType(representation as Map<String, Object?>),
     );
   }
 
@@ -434,7 +442,7 @@ extension type ItemType(Map<String, Object?> _data)
   String get id => _data['id'] as String;
 
   ItemType copyWith({String? id}) {
-    return ItemType.parse({'id': id ?? this.id});
+    return ItemType.parse({'id': id ?? _data['id']});
   }
 }
 
@@ -442,16 +450,18 @@ extension type ItemType(Map<String, Object?> _data)
 extension type MyCustomSchema123Type(Map<String, Object?> _data)
     implements Map<String, Object?> {
   static MyCustomSchema123Type parse(Object? data) {
-    return myCustomSchema123.parseAs(
+    return myCustomSchema123.parseRepresentationAs(
       data,
-      (validated) => MyCustomSchema123Type(validated as Map<String, Object?>),
+      (representation) =>
+          MyCustomSchema123Type(representation as Map<String, Object?>),
     );
   }
 
   static SchemaResult<MyCustomSchema123Type> safeParse(Object? data) {
-    return myCustomSchema123.safeParseAs(
+    return myCustomSchema123.safeParseRepresentationAs(
       data,
-      (validated) => MyCustomSchema123Type(validated as Map<String, Object?>),
+      (representation) =>
+          MyCustomSchema123Type(representation as Map<String, Object?>),
     );
   }
 
@@ -460,6 +470,6 @@ extension type MyCustomSchema123Type(Map<String, Object?> _data)
   String get value => _data['value'] as String;
 
   MyCustomSchema123Type copyWith({String? value}) {
-    return MyCustomSchema123Type.parse({'value': value ?? this.value});
+    return MyCustomSchema123Type.parse({'value': value ?? _data['value']});
   }
 }

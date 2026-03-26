@@ -75,10 +75,10 @@ final petSchema = Ack.discriminated(
               contains('extension type CatType(Map<String, Object?> _data)'),
               contains('extension type DogType(Map<String, Object?> _data)'),
               contains('implements PetType, Map<String, Object?>'),
-              contains('return catSchema.parseAs('),
-              contains('return catSchema.safeParseAs('),
-              contains('return dogSchema.parseAs('),
-              contains('return dogSchema.safeParseAs('),
+              contains('return catSchema.parseRepresentationAs('),
+              contains('return catSchema.safeParseRepresentationAs('),
+              contains('return dogSchema.parseRepresentationAs('),
+              contains('return dogSchema.safeParseRepresentationAs('),
               contains('CatType copyWith({int? lives})'),
               contains('DogType copyWith({bool? bark})'),
               contains("'kind': 'cat'"),
@@ -98,7 +98,7 @@ final petSchema = Ack.discriminated(
     });
 
     test(
-      'suppresses copyWith for discriminated branches with transformed fields',
+      'generates representation-first getters and copyWith for transformed branches',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
@@ -135,12 +135,14 @@ final petSchema = Ack.discriminated(
           outputs: {
             'test_pkg|lib/schema.g.dart': decodedMatches(
               allOf([
-                contains('Uri get homepage => _data[\'homepage\'] as Uri'),
                 contains(
-                  'Duration get timeout => _data[\'timeout\'] as Duration',
+                  'String get homepage => _data[\'homepage\'] as String',
                 ),
-                isNot(contains('CatType copyWith(')),
-                isNot(contains('DogType copyWith(')),
+                contains('Uri get homepageParsed'),
+                contains('int get timeout => _data[\'timeout\'] as int'),
+                contains('Duration get timeoutParsed'),
+                contains('CatType copyWith({String? homepage})'),
+                contains('DogType copyWith({int? timeout})'),
               ]),
             ),
           },

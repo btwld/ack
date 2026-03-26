@@ -105,6 +105,37 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }
 
   @override
+  @protected
+  SchemaResult<Object> parseAndValidateRepresentation(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    if (usesDefaultRepresentationInput(inputValue)) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Representation parsing is unavailable for transformed schemas '
+              'that rely on a transformed default value.',
+          context: context,
+        ),
+      );
+    }
+
+    final sourceValue = resolveRepresentationInput(inputValue);
+    final nullResult = handleNullRepresentationInput(sourceValue, context);
+    if (nullResult != null) {
+      return nullResult;
+    }
+
+    final parsedResult = parseAndValidate(sourceValue, context);
+    if (parsedResult case Fail(error: final error)) {
+      return SchemaResult.fail(error);
+    }
+
+    return schema.parseAndValidateRepresentation(sourceValue, context);
+  }
+
+  @override
   SchemaType get schemaType => schema.schemaType;
 
   @override
