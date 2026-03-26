@@ -84,6 +84,68 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
+  @protected
+  SchemaResult<Object> parseAndValidateRepresentation(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    final hasDefaultInput = inputValue == null && defaultValue != null;
+    final sourceValue = hasDefaultInput
+        ? cloneDefault(defaultValue!)
+        : inputValue;
+
+    if (sourceValue == null) {
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      final nullResult = failNonNullable(context);
+      return switch (nullResult) {
+        Ok(value: final value) => SchemaResult.ok(value),
+        Fail(error: final error) => SchemaResult.fail(error),
+      };
+    }
+
+    final parsedResult = parseAndValidate(sourceValue, context);
+    if (parsedResult case Fail(error: final error)) {
+      return SchemaResult.fail(error);
+    }
+
+    if (sourceValue is! List) {
+      final actualType = AckSchema.getSchemaType(sourceValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+
+    final representationItems = <Object?>[];
+    for (var i = 0; i < sourceValue.length; i++) {
+      final itemValue = sourceValue[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: itemValue,
+        pathSegment: '$i',
+      );
+
+      final itemResult = itemSchema.parseAndValidateRepresentation(
+        itemValue,
+        itemContext,
+      );
+      if (itemResult case Fail(error: final error)) {
+        return SchemaResult.fail(error);
+      }
+
+      representationItems.add(itemResult.getOrNull());
+    }
+
+    return SchemaResult.ok(List<Object?>.unmodifiable(representationItems));
+  }
+
+  @override
   ListSchema<V> copyWith({
     AckSchema<V>? itemSchema,
     bool? isNullable,

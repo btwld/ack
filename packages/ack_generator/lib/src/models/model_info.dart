@@ -59,6 +59,9 @@ class ModelInfo {
   /// Representation type for extension type (e.g., `String`, `int`, `Map<String, Object?>`)
   final String representationType;
 
+  /// Parsed/output type returned by `schema.parse(...)`.
+  final String parsedType;
+
   /// Whether this schema's validated representation is produced by a transform.
   ///
   /// This includes built-in transformed helpers such as `Ack.uri()` and
@@ -85,7 +88,11 @@ class ModelInfo {
     this.discriminatedBaseClassName,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
+    String? parsedType,
     this.isTransformedSchema = false,
     this.isNullableSchema = false,
-  });
+  }) : parsedType = parsedType ?? representationType;
+
+  /// Whether the schema's parsed/output type differs from its representation.
+  bool get hasDistinctParsedType => parsedType != representationType;
 }

@@ -280,6 +280,21 @@ sealed class AckSchema<DartType extends Object> {
     return applyConstraintsAndRefinements(convertedValue, context);
   }
 
+  /// Parses and validates a value, returning the validated representation.
+  ///
+  /// The default implementation delegates to [parseAndValidate], which is
+  /// correct for schemas whose parsed output already matches their
+  /// representation. Schemas that transform or recursively contain transformed
+  /// values override this to reconstruct the original validated wire value.
+  @protected
+  SchemaResult<Object> parseAndValidateRepresentation(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    final result = parseAndValidate(inputValue, context);
+    return _representationResultFrom(result);
+  }
+
   /// Parses and validates a value, throwing an [AckException] if validation fails.
   ///
   /// This is the primary method for validation when you want exceptions.
@@ -294,6 +309,15 @@ sealed class AckSchema<DartType extends Object> {
     return result.getOrThrow();
   }
 
+  /// Parses and validates a value, returning the validated representation.
+  ///
+  /// This is primarily used by generated `@AckType` wrappers that preserve the
+  /// original validated wire value instead of the parsed output.
+  Object? parseRepresentation(Object? value, {String? debugName}) {
+    final result = safeParseRepresentation(value, debugName: debugName);
+    return result.getOrThrow();
+  }
+
   /// Parses and validates a value, then maps the validated value to [TOut].
   ///
   /// This method throws an [AckException] when validation fails (same as [parse]).
@@ -305,6 +329,16 @@ sealed class AckSchema<DartType extends Object> {
     String? debugName,
   }) {
     final result = safeParseAs(value, map, debugName: debugName);
+    return result.getOrThrow()!;
+  }
+
+  /// Parses and validates a value's representation, then maps it to [TOut].
+  TOut parseRepresentationAs<TOut extends Object>(
+    Object? value,
+    TOut Function(Object? representation) map, {
+    String? debugName,
+  }) {
+    final result = safeParseRepresentationAs(value, map, debugName: debugName);
     return result.getOrThrow()!;
   }
 
@@ -328,6 +362,15 @@ sealed class AckSchema<DartType extends Object> {
   SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
     final context = _createRootContext(value, debugName: debugName);
     return parseAndValidate(value, context);
+  }
+
+  /// Parses and validates a value, returning its validated representation.
+  SchemaResult<Object> safeParseRepresentation(
+    Object? value, {
+    String? debugName,
+  }) {
+    final context = _createRootContext(value, debugName: debugName);
+    return parseAndValidateRepresentation(value, context);
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
@@ -361,6 +404,32 @@ sealed class AckSchema<DartType extends Object> {
     }
   }
 
+  /// Parses and validates a value's representation, then maps it to [TOut].
+  SchemaResult<TOut> safeParseRepresentationAs<TOut extends Object>(
+    Object? value,
+    TOut Function(Object? representation) map, {
+    String? debugName,
+  }) {
+    final result = safeParseRepresentation(value, debugName: debugName);
+    if (result case Fail(error: final error)) {
+      return SchemaResult.fail(error);
+    }
+
+    final representation = result.getOrNull();
+    try {
+      return SchemaResult.ok(map(representation));
+    } catch (e, st) {
+      return SchemaResult.fail(
+        SchemaTransformError(
+          message: 'Transformation failed: ${e.toString()}',
+          context: _createRootContext(value, debugName: debugName),
+          cause: e,
+          stackTrace: st,
+        ),
+      );
+    }
+  }
+
   SchemaContext _createRootContext(Object? value, {String? debugName}) {
     // Use provided debugName or derive from runtime type (e.g., "StringSchema" -> "string")
     final typeName = runtimeType
@@ -369,6 +438,15 @@ sealed class AckSchema<DartType extends Object> {
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
     return SchemaContext(name: effectiveDebugName, schema: this, value: value);
+  }
+
+  SchemaResult<Object> _representationResultFrom<T extends Object>(
+    SchemaResult<T> result,
+  ) {
+    return switch (result) {
+      Ok(value: final value) => SchemaResult.ok(value),
+      Fail(error: final error) => SchemaResult.fail(error),
+    };
   }
 
   /// Legacy alias for [safeParse].

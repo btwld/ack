@@ -206,7 +206,7 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
+              contains('extension type ColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
@@ -214,10 +214,11 @@ final themeSchema = Ack.object({
                   'extension type ThemeType(Map<String, Object?> _data)',
                 ),
                 contains('ColorType get accent'),
-                contains("ColorType(_data['accent'] as Color)"),
+                contains("ColorType(_data['accent'] as String)"),
                 contains('List<ColorType> get colors'),
-                contains('ColorType(e as Color)'),
-                isNot(contains('copyWith(')),
+                contains('ColorType(e as String)'),
+                contains('copyWith('),
+                contains('accentParsed'),
               ]),
             ),
           },
@@ -226,7 +227,7 @@ final themeSchema = Ack.object({
     );
 
     test(
-      'resolves transformed schema refs through re-exported schemas and suppresses copyWith',
+      'resolves transformed schema refs through re-exported schemas and enables copyWith',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
@@ -263,7 +264,7 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
+              contains('extension type ColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
@@ -271,10 +272,11 @@ final themeSchema = Ack.object({
                   'extension type ThemeType(Map<String, Object?> _data)',
                 ),
                 contains('ColorType get accent'),
-                contains("ColorType(_data['accent'] as Color)"),
+                contains("ColorType(_data['accent'] as String)"),
                 contains('List<ColorType> get colors'),
-                contains('ColorType(e as Color)'),
-                isNot(contains('copyWith(')),
+                contains('ColorType(e as String)'),
+                contains('copyWith('),
+                contains('accentParsed'),
               ]),
             ),
           },
@@ -283,7 +285,7 @@ final themeSchema = Ack.object({
     );
 
     test(
-      'resolves prefixed transformed schema refs across files and suppresses copyWith',
+      'resolves prefixed transformed schema refs across files and enables copyWith',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
@@ -317,15 +319,16 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
+              contains('extension type ColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
                 contains('palette.ColorType get accent'),
-                contains("palette.ColorType(_data['accent'] as palette.Color)"),
+                contains("palette.ColorType(_data['accent'] as String)"),
                 contains('List<palette.ColorType> get colors'),
-                contains('palette.ColorType(e as palette.Color)'),
-                isNot(contains('copyWith(')),
+                contains('palette.ColorType(e as String)'),
+                contains('copyWith('),
+                contains('accentParsed'),
               ]),
             ),
           },
@@ -367,10 +370,10 @@ final themeSchema = Ack.object({
           outputs: {
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
-                contains('palette.Color get accent'),
-                contains("_data['accent'] as palette.Color"),
-                contains('List<palette.Color> get colors'),
-                contains("_\$ackListCast<palette.Color>(_data['colors'])"),
+                contains('String get accent'),
+                contains("_data['accent'] as String"),
+                contains('List<String> get colors'),
+                contains("_\$ackListCast<String>(_data['colors'])"),
               ]),
             ),
           },
@@ -471,19 +474,16 @@ final themeSchema = Ack.object({
           },
           outputs: {
             'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type BoxedColorType(Box<Color> _value)'),
+              contains('extension type BoxedColorType(String _value)'),
             ),
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
                 contains('palette.BoxedColorType get accent'),
-                contains(
-                  "palette.BoxedColorType(_data['accent'] as palette.Box<palette.Color>)",
-                ),
+                contains("palette.BoxedColorType(_data['accent'] as String)"),
                 contains('List<palette.BoxedColorType> get colors'),
-                contains(
-                  'palette.BoxedColorType(e as palette.Box<palette.Color>)',
-                ),
-                isNot(contains('copyWith(')),
+                contains('palette.BoxedColorType(e as String)'),
+                contains('copyWith('),
+                contains('accentParsed'),
               ]),
             ),
           },
@@ -915,10 +915,10 @@ final themeSchema = Ack.object({
           outputs: {
             'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
               allOf([
-                contains('palette.Color get primary'),
-                contains("_data['primary'] as palette.Color"),
-                contains('List<palette.Color> get accents'),
-                contains("_\$ackListCast<palette.Color>(_data['accents'])"),
+                contains('String get primary'),
+                contains("_data['primary'] as String"),
+                contains('List<String> get accents'),
+                contains("_\$ackListCast<String>(_data['accents'])"),
               ]),
             ),
           },

@@ -68,7 +68,11 @@ class MockFieldInfo implements FieldInfo {
   @override
   final bool isTransformedRepresentation;
 
+  @override
+  final String? parsedDisplayTypeOverride;
+
   final String typeName;
+  final String? parsedTypeName;
   final String? listItemTypeName;
   final String? mapKeyTypeName;
   final String? mapValueTypeName;
@@ -98,6 +102,8 @@ class MockFieldInfo implements FieldInfo {
     this.collectionElementIsCustomType = false,
     this.nestedSchemaCastTypeOverride,
     this.isTransformedRepresentation = false,
+    this.parsedDisplayTypeOverride,
+    this.parsedTypeName,
   }) : jsonKey = name;
 
   @override
@@ -110,6 +116,10 @@ class MockFieldInfo implements FieldInfo {
     keyTypeName: mapKeyTypeName,
     valueTypeName: mapValueTypeName,
   );
+
+  @override
+  DartType get parsedType =>
+      parsedTypeName != null ? MockDartType(parsedTypeName!, null) : type;
 }
 
 // Mock DartType for testing

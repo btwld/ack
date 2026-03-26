@@ -128,13 +128,14 @@ class TypeBuilder {
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
           _buildToJson(model),
+          // Add parsed getter for top-level transformed wrappers
+          if (model.hasDistinctParsedType && !isObjectSchema)
+            _buildParsedGetter(model, schemaVarName, valueVarName),
           ..._buildGetters(model, lookups),
           // Only add args and copyWith for object schemas
           if (isObjectSchema) ...[
             if (model.additionalProperties) _buildArgsGetter(model),
-            if (model.fields.isNotEmpty &&
-                _canGenerateCopyWithForFields(model.fields))
-              _buildCopyWith(model),
+            if (model.fields.isNotEmpty) _buildCopyWith(model, lookups),
           ],
         ]),
     );
@@ -318,12 +319,11 @@ class TypeBuilder {
           // Add regular field getters
           ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
           if (model.additionalProperties) _buildArgsGetter(model),
-          if (model.isFromSchemaVariable &&
-              nonDiscriminatorFields.isNotEmpty &&
-              _canGenerateCopyWithForFields(nonDiscriminatorFields))
+          if (model.isFromSchemaVariable && nonDiscriminatorFields.isNotEmpty)
             _buildCopyWithForFields(
               model,
               nonDiscriminatorFields,
+              lookups: lookups,
               fixedAssignments: {
                 discriminatorKey: model.discriminatorValue != null
                     ? _singleQuotedLiteral(model.discriminatorValue!)
@@ -517,9 +517,25 @@ class TypeBuilder {
     );
   }
 
+  Method _buildParsedGetter(
+    ModelInfo model,
+    String schemaVarName,
+    String valueVarName,
+  ) {
+    return Method(
+      (m) => m
+        ..type = MethodType.getter
+        ..name = 'parsed'
+        ..returns = refer(model.parsedType)
+        ..lambda = true
+        ..body = Code('$schemaVarName.parse($valueVarName)!'),
+    );
+  }
+
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
     final typeName = _getExtensionTypeName(model);
     final castType = model.representationType;
+    final castExpr = _buildRepresentationCast(castType);
 
     return [
       // Static parse factory
@@ -536,9 +552,9 @@ class TypeBuilder {
             ),
           )
           ..body = Code('''
-return $schemaVarName.parseAs(
+return $schemaVarName.parseRepresentationAs(
   data,
-  (validated) => $typeName(validated as $castType),
+  (validated) => $typeName($castExpr),
 );'''),
       ),
       // Static safeParse method
@@ -555,12 +571,28 @@ return $schemaVarName.parseAs(
             ),
           )
           ..body = Code('''
-return $schemaVarName.safeParseAs(
+return $schemaVarName.safeParseRepresentationAs(
   data,
-  (validated) => $typeName(validated as $castType),
+  (validated) => $typeName($castExpr),
 );'''),
       ),
     ];
+  }
+
+  /// Builds the cast expression for validated representation values.
+  ///
+  /// List types need `.cast<T>()` because the runtime type is `List<Object?>`.
+  /// Set types similarly need `.cast<T>()`.
+  String _buildRepresentationCast(String castType) {
+    final listMatch = RegExp(r'^List<(.+)>$').firstMatch(castType);
+    if (listMatch != null) {
+      return '(validated as List).cast<${listMatch.group(1)}>()';
+    }
+    final setMatch = RegExp(r'^Set<(.+)>$').firstMatch(castType);
+    if (setMatch != null) {
+      return '(validated as Set).cast<${setMatch.group(1)}>()';
+    }
+    return 'validated as $castType';
   }
 
   Method _buildDiscriminatedFactory(
@@ -589,7 +621,7 @@ return $schemaVarName.safeParseAs(
         )
         ..returns = refer(typeName)
         ..body = Code('''
-return $schemaVarName.parseAs(
+return $schemaVarName.parseRepresentationAs(
   data,
   (validated) {
     final map = validated as Map<String, Object?>;
@@ -625,7 +657,7 @@ return $schemaVarName.parseAs(
         )
         ..returns = _schemaResultRef(refer(typeName))
         ..body = Code('''
-return $schemaVarName.safeParseAs(
+return $schemaVarName.safeParseRepresentationAs(
   data,
   (validated) {
     final map = validated as Map<String, Object?>;
@@ -661,10 +693,19 @@ ${cases.join(',\n')},
     _ModelLookups lookups, {
     Set<String> skipJsonKeys = const {},
   }) {
-    return model.fields
-        .where((field) => !skipJsonKeys.contains(field.jsonKey))
-        .map((field) => _buildGetter(field, lookups))
-        .toList();
+    final schemaVarName = _toCamelCase(model.schemaClassName);
+    final methods = <Method>[];
+    for (final field in model.fields) {
+      if (skipJsonKeys.contains(field.jsonKey)) continue;
+      methods.add(_buildGetter(field, lookups));
+      final parsedGetter = _buildFieldParsedGetter(
+        field,
+        lookups,
+        schemaVarName,
+      );
+      if (parsedGetter != null) methods.add(parsedGetter);
+    }
+    return methods;
   }
 
   Method _buildGetter(FieldInfo field, _ModelLookups lookups) {
@@ -687,6 +728,103 @@ ${cases.join(',\n')},
         ..lambda = true
         ..body = Code(body),
     );
+  }
+
+  /// Builds a `<fieldName>Parsed` getter for fields with transformed representations.
+  ///
+  /// Returns null when the field has no distinct parsed type.
+  Method? _buildFieldParsedGetter(
+    FieldInfo field,
+    _ModelLookups lookups,
+    String schemaVarName,
+  ) {
+    if (!field.isTransformedRepresentation) return null;
+
+    // Determine parsed type string
+    final parsedTypeStr = _resolveParsedFieldType(field, lookups);
+    if (parsedTypeStr == null) return null;
+
+    // Check if parsed type differs from representation type
+    final reprType = _resolveFieldType(field, lookups);
+    if (parsedTypeStr == reprType) return null;
+
+    final needsNullHandling = field.isNullable || !field.isRequired;
+    final returnType = _applyNullability(parsedTypeStr, needsNullHandling);
+    final key = field.jsonKey;
+    final name = field.name;
+
+    final String body;
+    if (field.nestedSchemaRef != null) {
+      // Named ref: delegate to wrapper's .parsed
+      if (needsNullHandling) {
+        body = '$name?.parsed';
+      } else {
+        body = '$name.parsed';
+      }
+    } else if (field.isList && _isCustomElementType(field, lookups)) {
+      // List of named refs
+      if (needsNullHandling) {
+        body = '$name?.map((e) => e.parsed).toList()';
+      } else {
+        body = '$name.map((e) => e.parsed).toList()';
+      }
+    } else {
+      // Inline transform or built-in transform: use schema property parse
+      if (needsNullHandling) {
+        body =
+            "_data['$key'] != null ? $schemaVarName.properties['$key']!.parse(_data['$key']) as $parsedTypeStr : null";
+      } else {
+        body =
+            "$schemaVarName.properties['$key']!.parse(_data['$key']) as $parsedTypeStr";
+      }
+    }
+
+    return Method(
+      (m) => m
+        ..type = MethodType.getter
+        ..name = '${name}Parsed'
+        ..returns = refer(returnType)
+        ..lambda = true
+        ..body = Code(body),
+    );
+  }
+
+  /// Resolves the parsed/output type string for a field.
+  String? _resolveParsedFieldType(FieldInfo field, _ModelLookups lookups) {
+    if (field.parsedDisplayTypeOverride != null) {
+      return field.parsedDisplayTypeOverride!;
+    }
+
+    final parsedType = field.parsedType;
+
+    // Check for named ref with distinct parsed type
+    if (field.nestedSchemaRef != null) {
+      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
+      if (referencedModel != null && referencedModel.hasDistinctParsedType) {
+        return referencedModel.parsedType;
+      }
+      return null;
+    }
+
+    // List of named refs with distinct parsed type
+    if ((field.isList || field.isSet) && field.listElementSchemaRef != null) {
+      final elementModel = _findSchemaModel(
+        field.listElementSchemaRef!,
+        lookups,
+      );
+      if (elementModel != null && elementModel.hasDistinctParsedType) {
+        final collType = field.isSet ? 'Set' : 'List';
+        return '$collType<${elementModel.parsedType}>';
+      }
+      return null;
+    }
+
+    // Check if parsedType differs from type
+    if (parsedType != field.type) {
+      return parsedType.getDisplayString(withNullability: false);
+    }
+
+    return null;
   }
 
   String _applyNullability(String baseType, bool shouldBeNullable) {
@@ -1166,17 +1304,14 @@ ${cases.join(',\n')},
     return dependencies;
   }
 
-  Method _buildCopyWith(ModelInfo model) {
-    return _buildCopyWithForFields(model, model.fields);
-  }
-
-  bool _canGenerateCopyWithForFields(Iterable<FieldInfo> fields) {
-    return fields.every((field) => !field.isTransformedRepresentation);
+  Method _buildCopyWith(ModelInfo model, _ModelLookups lookups) {
+    return _buildCopyWithForFields(model, model.fields, lookups: lookups);
   }
 
   Method _buildCopyWithForFields(
     ModelInfo model,
     List<FieldInfo> fields, {
+    required _ModelLookups lookups,
     Map<String, String> fixedAssignments = const {},
   }) {
     final typeName = _getExtensionTypeName(model);
@@ -1186,7 +1321,7 @@ ${cases.join(',\n')},
       return Parameter(
         (p) => p
           ..name = field.name
-          ..type = _buildCopyWithParameterType(field)
+          ..type = _buildCopyWithParameterType(field, lookups)
           ..named = true,
       );
     }).toList();
@@ -1199,12 +1334,18 @@ ${cases.join(',\n')},
       ...fields.map((field) {
         final key = field.jsonKey;
         final name = field.name;
+        final toJson = _copyWithToJson(field, lookups);
+        final fallback = "_data['$key']";
 
-        if (field.isNullable) {
-          // For nullable fields, check if explicitly provided or exists in data
-          return "      if ($name != null || _data.containsKey('$key')) '$key': $name ?? this.$name";
+        if (!field.isRequired && !field.isNullable) {
+          // Optional non-nullable: preserve omission when not explicitly provided
+          return "      if ($name != null || _data.containsKey('$key')) '$key': $toJson ?? $fallback";
+        } else if (field.isNullable) {
+          // Nullable: preserve existing containsKey logic
+          return "      if ($name != null || _data.containsKey('$key')) '$key': $toJson ?? $fallback";
         } else {
-          return "      '$key': $name ?? this.$name";
+          // Required non-nullable: simple fallback
+          return "      '$key': $toJson ?? $fallback";
         }
       }),
     ];
@@ -1225,12 +1366,38 @@ ${assignments.join(',\n')},
     );
   }
 
+  /// Produces the expression for the parameter value in copyWith.
+  ///
+  /// When the field's getter returns a wrapper type (named ref or list of
+  /// named refs), the copyWith parameter accepts the wrapper type and needs
+  /// `.toJson()` to unwrap it before writing into the raw map.
+  String _copyWithToJson(FieldInfo field, _ModelLookups lookups) {
+    final name = field.name;
+
+    // Named ref fields: unwrap with .toJson() when wrapper type exists
+    if (field.nestedSchemaRef != null &&
+        _findSchemaModel(field.nestedSchemaRef!, lookups) != null) {
+      return '$name?.toJson()';
+    }
+
+    // List/Set of named refs: map each element
+    if ((field.isList || field.isSet) && _isCustomElementType(field, lookups)) {
+      final suffix = field.isSet ? '.toSet()' : '';
+      return '$name?.map((e) => e.toJson()).toList()$suffix';
+    }
+
+    return name;
+  }
+
   String _singleQuotedLiteral(String value) {
     final escaped = value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
     return "'$escaped'";
   }
 
-  Reference _buildCopyWithParameterType(FieldInfo field) {
+  Reference _buildCopyWithParameterType(
+    FieldInfo field,
+    _ModelLookups lookups,
+  ) {
     if (field.isEnum && field.displayTypeOverride != null) {
       return _typeReference(field.displayTypeOverride!, isNullable: true);
     }
@@ -1246,6 +1413,17 @@ ${assignments.join(',\n')},
         types: [_typeReference(elementType)],
         isNullable: true,
       );
+    }
+
+    // Named ref fields: use the wrapper type
+    if (field.nestedSchemaRef != null) {
+      final referencedModel = _findSchemaModel(field.nestedSchemaRef!, lookups);
+      if (referencedModel != null) {
+        return _typeReference(
+          '${referencedModel.className}Type',
+          isNullable: true,
+        );
+      }
     }
 
     return _referenceFromDartType(

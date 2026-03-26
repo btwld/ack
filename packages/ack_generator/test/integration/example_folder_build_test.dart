@@ -204,9 +204,9 @@ void main() {
       final transformsContent = await transformsFile.readAsString();
       expect(
         transformsContent,
-        contains('extension type ColorType(Color _value)'),
+        contains('extension type ColorType(String _value)'),
         reason:
-            'schema_types_transforms.g.dart should include the transformed Color extension type',
+            'schema_types_transforms.g.dart should include the representation-first Color extension type',
       );
       expect(
         transformsContent,
@@ -217,22 +217,28 @@ void main() {
       expect(
         transformsContent,
         allOf([
-          contains('Uri get homepage'),
-          contains('DateTime get birthday'),
-          contains('DateTime get lastLogin'),
-          contains('Duration get timeout'),
-          contains('List<Uri> get links'),
+          // Representation-first: primary getters return wire types
+          contains('String get homepage'),
+          contains('String get birthday'),
+          contains('String get lastLogin'),
+          contains('int get timeout'),
+          contains('List<String> get links'),
           contains('ColorType get accent'),
           contains('List<ColorType> get colors'),
-          contains('List<Color> get customColors'),
-          contains('TagList get tagList'),
-          isNot(contains('ProfileType copyWith(')),
+          contains('List<String> get customColors'),
+          contains('List<String> get tagList'),
+          // Parsed getters for transformed fields
+          contains('Uri get homepageParsed'),
+          contains('DateTime get birthdayParsed'),
+          contains('Duration get timeoutParsed'),
+          // copyWith is enabled for representation-first wrappers
+          contains('ProfileType copyWith('),
           isNot(contains('Uri.parse(')),
           isNot(contains('DateTime.parse(')),
           isNot(contains('Duration(milliseconds:')),
         ]),
         reason:
-            'schema_types_transforms.g.dart should emit transformed getters without unsafe reparsing or copyWith',
+            'schema_types_transforms.g.dart should emit representation-first getters with parsed accessors',
       );
     });
 

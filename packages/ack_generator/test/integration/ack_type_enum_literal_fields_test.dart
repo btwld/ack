@@ -303,7 +303,9 @@ final roleListSchema = Ack.list(Ack.enumValues(models.UserRole.values));
                   'extension type RoleListType(List<models.UserRole> _value)',
                 ),
                 contains('implements List<models.UserRole>'),
-                contains('RoleListType(validated as List<models.UserRole>)'),
+                contains(
+                  'RoleListType((validated as List).cast<models.UserRole>())',
+                ),
               ]),
             ),
           },
