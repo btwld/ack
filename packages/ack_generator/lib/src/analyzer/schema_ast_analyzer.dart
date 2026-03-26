@@ -2372,7 +2372,7 @@ class SchemaAstAnalyzer {
         }
       }
 
-      if (schemaVariable == null && schemaGetter == null) {
+      if (schemaVariable == null) {
         shouldCacheResult = true;
         resolvedReference = null;
         return null;

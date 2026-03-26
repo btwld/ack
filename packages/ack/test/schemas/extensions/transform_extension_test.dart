@@ -39,8 +39,11 @@ void main() {
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), isNull);
-      expect(transformerCalled, isFalse,
-          reason: 'Transformer should not run on null input');
+      expect(
+        transformerCalled,
+        isFalse,
+        reason: 'Transformer should not run on null input',
+      );
 
       // Non-null value should still transform
       final result2 = schema.safeParse('hello');
@@ -97,9 +100,7 @@ void main() {
     });
 
     test('should fail validation before the transformer is ever called', () {
-      final schema = Ack.string()
-          .minLength(10)
-          .transform((_) => 'transformed');
+      final schema = Ack.string().minLength(10).transform((_) => 'transformed');
 
       final result = schema.safeParse('short');
 
@@ -110,16 +111,12 @@ void main() {
     });
 
     test('should preserve isOptional flag after transform', () {
-      final schema = Ack.string().optional().transform(
-        (val) => val,
-      );
+      final schema = Ack.string().optional().transform((val) => val);
       expect(schema.isOptional, isTrue);
     });
 
     test('should preserve isNullable flag after transform', () {
-      final schema = Ack.string().nullable().transform(
-        (val) => val,
-      );
+      final schema = Ack.string().nullable().transform((val) => val);
       expect(schema.isNullable, isTrue);
     });
 

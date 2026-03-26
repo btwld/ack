@@ -174,18 +174,14 @@ void main() {
 
     group('Combining transformers with transform()', () {
       test('should combine trim and toLowerCase using transform', () {
-        final schema = Ack.string().transform(
-          (s) => s.trim().toLowerCase(),
-        );
+        final schema = Ack.string().transform((s) => s.trim().toLowerCase());
 
         expect(schema.parse('  HELLO  '), equals('hello'));
         expect(schema.parse('\tHeLLo\n'), equals('hello'));
       });
 
       test('should combine trim and toUpperCase using transform', () {
-        final schema = Ack.string().transform(
-          (s) => s.trim().toUpperCase(),
-        );
+        final schema = Ack.string().transform((s) => s.trim().toUpperCase());
 
         expect(schema.parse('  hello  '), equals('HELLO'));
         expect(schema.parse('\theLLo\n'), equals('HELLO'));

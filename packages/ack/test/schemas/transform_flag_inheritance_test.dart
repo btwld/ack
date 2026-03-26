@@ -37,9 +37,7 @@ void main() {
     });
 
     test('transform should inherit both optional and nullable flags', () {
-      final schema = Ack.string().optional().nullable().transform(
-        (val) => val,
-      );
+      final schema = Ack.string().optional().nullable().transform((val) => val);
 
       print(
         'Wrapped schema isOptional: ${(schema as dynamic).schema.isOptional}',
@@ -67,9 +65,7 @@ void main() {
     test('optional+nullable+transform in object context should work', () {
       final schema = Ack.object({
         'name': Ack.string(),
-        'nickname': Ack.string().optional().nullable().transform(
-          (val) => val,
-        ),
+        'nickname': Ack.string().optional().nullable().transform((val) => val),
       });
 
       print('\nTesting object with optional+nullable+transform field:');
