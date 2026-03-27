@@ -1,3 +1,4 @@
+import 'lib/pet.dart';
 import 'lib/user_with_color.dart';
 
 void main() {

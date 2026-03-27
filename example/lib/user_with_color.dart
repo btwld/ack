@@ -1,6 +1,8 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
+import 'pet.dart';
+
 part 'user_with_color.g.dart';
 
 class Color {
@@ -28,34 +30,19 @@ final profileSchema = Ack.object({
   'website': Ack.uri().optional(),
 });
 
-/// Pet schemas: discriminated by 'type'
-@AckType()
-final catSchema = Ack.object({
-  'type': Ack.literal('cat'),
-  'lives': Ack.integer().min(1).max(9),
-});
-
-@AckType()
-final dogSchema = Ack.object({
-  'type': Ack.literal('dog'),
-  'breed': Ack.string().minLength(1),
-});
-
-@AckType()
-final petSchema = Ack.discriminated(
-  discriminatorKey: 'type',
-  schemas: {'cat': catSchema, 'dog': dogSchema},
-);
-
 /// User with color: combines user fields, nested profile, and color
 @AckType()
-final userWithColorSchema = Ack.object({
-  'firstName': Ack.string().minLength(1).maxLength(50),
-  'lastName': Ack.string().minLength(1).maxLength(50),
-  'age': Ack.integer().min(0).max(150),
-  'profile': profileSchema,
-  'color': colorSchema,
-  'favoriteColor': colorSchema.optional(),
-  'pet': petSchema,
-  'pets': Ack.list(petSchema),
-});
+final userWithColorSchema =
+    Ack.object({
+      'firstName': Ack.string().minLength(1).maxLength(50),
+      'lastName': Ack.string().minLength(1).maxLength(50),
+      'age': Ack.integer().min(0).max(150),
+      'profile': profileSchema,
+      'color': colorSchema,
+      'favoriteColor': colorSchema.optional(),
+      'pet': petSchema,
+      'pets': Ack.list(petSchema),
+    }).refine(
+      (data) => data['firstName'] != data['lastName'],
+      message: 'firstName and lastName must be different',
+    );

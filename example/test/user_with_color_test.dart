@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 
+import '../lib/pet.dart';
 import '../lib/user_with_color.dart';
 
 Map<String, Object?> _validData() => {
@@ -154,6 +155,21 @@ void main() {
 
     test('color validation - rejects invalid hex', () {
       final data = _validData()..['color'] = 'red';
+      final result = UserWithColorType.safeParse(data);
+      expect(result.isFail, isTrue);
+    });
+  });
+
+  group('Object-level refine (firstName != lastName)', () {
+    test('accepts when firstName and lastName differ', () {
+      final result = UserWithColorType.safeParse(_validData());
+      expect(result.isOk, isTrue);
+    });
+
+    test('rejects when firstName equals lastName', () {
+      final data = _validData()
+        ..['firstName'] = 'Same'
+        ..['lastName'] = 'Same';
       final result = UserWithColorType.safeParse(data);
       expect(result.isFail, isTrue);
     });
