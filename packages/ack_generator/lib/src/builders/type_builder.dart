@@ -1,5 +1,4 @@
 import 'package:analyzer/dart/element/element2.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart' show log;
 import 'package:code_builder/code_builder.dart';
@@ -275,9 +274,6 @@ class TypeBuilder {
     final baseTypeName = _getExtensionTypeName(baseModel);
     final lookups = _ModelLookups(allModels);
     final discriminatorKey = baseModel.discriminatorKey!;
-    final nonDiscriminatorFields = model.fields
-        .where((field) => field.jsonKey != discriminatorKey)
-        .toList();
     final schemaVarName = _toCamelCase(model.schemaClassName);
 
     return ExtensionType(
@@ -400,72 +396,6 @@ class TypeBuilder {
         ..symbol = _qualifyAckSymbol('SchemaResult')
         ..types.add(innerType),
     );
-  }
-
-  Reference _referenceFromDartType(
-    DartType type, {
-    bool forceNullable = false,
-    bool stripNullability = false,
-  }) {
-    final isNullable =
-        forceNullable || (!stripNullability && _isNullable(type));
-
-    if (type is ParameterizedType) {
-      final element = type.element3;
-      final symbol =
-          element?.name3 ?? type.getDisplayString(withNullability: false);
-      final url = _urlForElement(element);
-      final typeArgs = type.typeArguments
-          .map(
-            (arg) =>
-                _referenceFromDartType(arg, stripNullability: stripNullability),
-          )
-          .toList();
-      return _typeReference(
-        symbol,
-        url: url,
-        types: typeArgs,
-        isNullable: isNullable,
-      );
-    }
-
-    final element = type.element3;
-    final symbol =
-        element?.name3 ?? type.getDisplayString(withNullability: false);
-    final url = _urlForElement(element);
-    return _typeReference(symbol, url: url, isNullable: isNullable);
-  }
-
-  bool _isNullable(DartType type) {
-    return type.nullabilitySuffix == NullabilitySuffix.question ||
-        type.nullabilitySuffix == NullabilitySuffix.star;
-  }
-
-  Reference _typeReference(
-    String symbol, {
-    String? url,
-    Iterable<Reference> types = const [],
-    bool isNullable = false,
-  }) {
-    if (types.isEmpty && !isNullable) {
-      return refer(symbol, url);
-    }
-    return TypeReference(
-      (b) => b
-        ..symbol = symbol
-        ..url = url
-        ..types.addAll(types)
-        ..isNullable = isNullable,
-    );
-  }
-
-  String? _urlForElement(Element2? element) {
-    final uri = element?.library2?.uri;
-    if (uri == null) return null;
-    if (uri.scheme == 'dart' || uri.scheme == 'package') {
-      return uri.toString();
-    }
-    return null;
   }
 
   String _getExtensionTypeName(ModelInfo model) {

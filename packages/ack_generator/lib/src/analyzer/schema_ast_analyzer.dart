@@ -2941,13 +2941,6 @@ class SchemaAstAnalyzer {
     );
   }
 
-  bool _isBuiltInTransformedMethod(String methodName) {
-    return methodName == 'uri' ||
-        methodName == 'date' ||
-        methodName == 'datetime' ||
-        methodName == 'duration';
-  }
-
   String? _requireTransformOutputType(
     _SchemaChainInfo chain,
     Element2 element, {
