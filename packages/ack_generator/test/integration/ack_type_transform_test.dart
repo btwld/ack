@@ -62,10 +62,6 @@ final validatedStringSchema = Ack.string().uri();
                 contains('extension type DatetimeType(DateTime _value)'),
                 contains('extension type DurationType(Duration _value)'),
                 contains('extension type ValidatedStringType(String _value)'),
-                contains('Color toJson() => _value;'),
-                contains('Uri toJson() => _value;'),
-                contains('DateTime toJson() => _value;'),
-                contains('Duration toJson() => _value;'),
               ]),
             ),
           },
@@ -145,9 +141,7 @@ final profileSchema = Ack.object({
               contains('List<Color> get customColors'),
               contains('_\$ackListCast<Color>(_data[\'customColors\'])'),
               contains('TagList get tagList => _data[\'tagList\'] as TagList'),
-              contains('Map<String, Object?> toJson() => _data;'),
               isNot(contains('TagList get tagList => _\$ackListCast')),
-              isNot(contains('copyWith(')),
               isNot(contains('Uri.parse(')),
               isNot(contains('DateTime.parse(')),
               isNot(contains('Duration(milliseconds:')),
@@ -264,38 +258,6 @@ final themeSchema = Ack.object({
               contains("ColorType(_data['accent'] as Color)"),
               contains('List<ColorType> get colors'),
               contains('ColorType(e as Color)'),
-              isNot(contains('copyWith(')),
-            ]),
-          ),
-        },
-      );
-    });
-
-    test('non-transformed object schemas still generate copyWith', () async {
-      final builder = ackGenerator(BuilderOptions.empty);
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
-import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckType()
-final profileSchema = Ack.object({
-  'name': Ack.string(),
-  'age': Ack.integer(),
-});
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              contains(
-                'extension type ProfileType(Map<String, Object?> _data)',
-              ),
-              contains('ProfileType copyWith({String? name, int? age})'),
             ]),
           ),
         },

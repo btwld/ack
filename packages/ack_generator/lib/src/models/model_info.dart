@@ -59,13 +59,6 @@ class ModelInfo {
   /// Representation type for extension type (e.g., `String`, `int`, `Map<String, Object?>`)
   final String representationType;
 
-  /// Whether this schema's validated representation is produced by a transform.
-  ///
-  /// This includes built-in transformed helpers such as `Ack.uri()` and
-  /// custom `.transform<T>(...)` schemas, including aliases that resolve to
-  /// transformed schemas.
-  final bool isTransformedSchema;
-
   /// Whether the schema variable is nullable via `.nullable()`.
   ///
   /// This only applies to @AckType schema variables (not @AckModel classes).
@@ -85,7 +78,6 @@ class ModelInfo {
     this.discriminatedBaseClassName,
     this.isFromSchemaVariable = false,
     this.representationType = kMapType,
-    this.isTransformedSchema = false,
     this.isNullableSchema = false,
   });
 }
