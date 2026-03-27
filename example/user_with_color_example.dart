@@ -6,10 +6,7 @@ void main() {
     'firstName': 'Leo',
     'lastName': 'Farias',
     'age': 30,
-    'profile': {
-      'bio': 'Software engineer',
-      'website': 'https://example.com',
-    },
+    'profile': {'bio': 'Software engineer', 'website': 'https://example.com'},
     'color': '#FF5733',
     'pet': {'type': 'cat', 'lives': 7},
     'pets': [
@@ -25,7 +22,9 @@ void main() {
   print('Bio: ${user.profile.bio}');
   print('Website: ${user.profile.website}');
   print('Color: ${user.color}');
-  print('Favorite color: ${user.favoriteColor}'); // null - optional, not provided
+  print(
+    'Favorite color: ${user.favoriteColor}',
+  ); // null - optional, not provided
   print('');
 
   // Valid with favoriteColor provided

@@ -19,9 +19,7 @@ final colorSchema = Ack.string()
       (value) => RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value),
       message: 'Must be a valid hex color code (e.g., #FF0000)',
     )
-    .transform<Color>(
-      (hex) => Color(int.parse(hex.substring(1), radix: 16)),
-    );
+    .transform<Color>((hex) => Color(int.parse(hex.substring(1), radix: 16)));
 
 /// Profile: nested object with bio and website
 @AckType()
