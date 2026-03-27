@@ -25,16 +25,6 @@ void main() {
       expect(() => UserType.parse(invalidData), throwsA(isA<AckException>()));
     });
 
-    test('UserType copyWith works', () {
-      final user = UserType.parse({'name': 'Alice', 'age': 30, 'active': true});
-
-      final updated = user.copyWith(name: 'Bob', age: 35);
-
-      expect(updated.name, 'Bob');
-      expect(updated.age, 35);
-      expect(updated.active, true);
-    });
-
     test('UserType can be used as Map (implements Map)', () {
       final user = UserType.parse({'name': 'Alice', 'age': 30, 'active': true});
 

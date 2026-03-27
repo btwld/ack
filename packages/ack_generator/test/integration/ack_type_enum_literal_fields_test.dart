@@ -267,7 +267,6 @@ final userSchema = Ack.object({
                 contains('extension type UserType(Map<String, Object?> _data)'),
                 contains('models.UserRole get role'),
                 contains("_data['role'] as models.UserRole"),
-                contains('models.UserRole? role'),
               ]),
             ),
           },
@@ -312,7 +311,7 @@ final roleListSchema = Ack.list(Ack.enumValues(models.UserRole.values));
     );
 
     test(
-      'list enumValues with imported prefixed enum keeps prefixed copyWith type',
+      'list enumValues with imported prefixed enum keeps prefixed getter type',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
@@ -338,7 +337,7 @@ final teamSchema = Ack.object({
             'test_pkg|lib/schema.g.dart': decodedMatches(
               allOf([
                 contains('List<models.UserRole> get roles'),
-                contains('List<models.UserRole>? roles'),
+                contains("_\$ackListCast<models.UserRole>(_data['roles'])"),
               ]),
             ),
           },

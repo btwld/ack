@@ -136,7 +136,7 @@ final contactListSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - Should generate extension type with no fields
-/// - parse() and toJson() should still work
+/// - parse() should still work
 @AckType()
 final emptySchema = Ack.object({});
 

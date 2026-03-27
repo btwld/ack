@@ -171,16 +171,14 @@ final deckToolArgsSchema = Ack.object({
       );
     });
 
-    test(
-      'resolves transformed schema refs across files and suppresses copyWith',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('resolves transformed schema refs across files', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/palette_schemas.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -192,7 +190,7 @@ class Color {
 @AckType()
 final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
-            'test_pkg|lib/theme_schemas.dart': '''
+          'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'palette_schemas.dart';
@@ -203,30 +201,26 @@ final themeSchema = Ack.object({
   'colors': Ack.list(colorSchema),
 });
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
-            ),
-            'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
-              allOf([
-                contains(
-                  'extension type ThemeType(Map<String, Object?> _data)',
-                ),
-                contains('ColorType get accent'),
-                contains("ColorType(_data['accent'] as Color)"),
-                contains('List<ColorType> get colors'),
-                contains('ColorType(e as Color)'),
-                isNot(contains('copyWith(')),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
+            contains('extension type ColorType(Color _value)'),
+          ),
+          'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
+            allOf([
+              contains('extension type ThemeType(Map<String, Object?> _data)'),
+              contains('ColorType get accent'),
+              contains("ColorType(_data['accent'] as Color)"),
+              contains('List<ColorType> get colors'),
+              contains('ColorType(e as Color)'),
+            ]),
+          ),
+        },
+      );
+    });
 
     test(
-      'resolves transformed schema refs through re-exported schemas and suppresses copyWith',
+      'resolves transformed schema refs through re-exported schemas',
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
@@ -274,7 +268,6 @@ final themeSchema = Ack.object({
                 contains("ColorType(_data['accent'] as Color)"),
                 contains('List<ColorType> get colors'),
                 contains('ColorType(e as Color)'),
-                isNot(contains('copyWith(')),
               ]),
             ),
           },
@@ -282,16 +275,14 @@ final themeSchema = Ack.object({
       },
     );
 
-    test(
-      'resolves prefixed transformed schema refs across files and suppresses copyWith',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('resolves prefixed transformed schema refs across files', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/palette_schemas.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -303,7 +294,7 @@ class Color {
 @AckType()
 final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
-            'test_pkg|lib/theme_schemas.dart': '''
+          'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 import 'palette_schemas.dart' as palette;
@@ -314,24 +305,22 @@ final themeSchema = Ack.object({
   'colors': Ack.list(palette.colorSchema),
 });
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
-              contains('extension type ColorType(Color _value)'),
-            ),
-            'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
-              allOf([
-                contains('palette.ColorType get accent'),
-                contains("palette.ColorType(_data['accent'] as palette.Color)"),
-                contains('List<palette.ColorType> get colors'),
-                contains('palette.ColorType(e as palette.Color)'),
-                isNot(contains('copyWith(')),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/palette_schemas.g.dart': decodedMatches(
+            contains('extension type ColorType(Color _value)'),
+          ),
+          'test_pkg|lib/theme_schemas.g.dart': decodedMatches(
+            allOf([
+              contains('palette.ColorType get accent'),
+              contains("palette.ColorType(_data['accent'] as palette.Color)"),
+              contains('List<palette.ColorType> get colors'),
+              contains('palette.ColorType(e as palette.Color)'),
+            ]),
+          ),
+        },
+      );
+    });
 
     test(
       'resolves prefixed transformed refs without @AckType using visible representation types',
@@ -483,7 +472,6 @@ final themeSchema = Ack.object({
                 contains(
                   'palette.BoxedColorType(e as palette.Box<palette.Color>)',
                 ),
-                isNot(contains('copyWith(')),
               ]),
             ),
           },

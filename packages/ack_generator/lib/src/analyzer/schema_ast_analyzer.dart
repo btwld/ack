@@ -41,7 +41,6 @@ typedef _SchemaTypeMapping = ({
 typedef _ListElementAnalysis = ({
   _SchemaTypeMapping mapping,
   String elementRepresentationType,
-  bool isTransformedRepresentation,
 });
 typedef _ResolvedSchemaElement = ({
   Element2 element,
@@ -322,7 +321,7 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
       isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
-      isTransformedSchema: sourceModel.isTransformedSchema,
+
       isNullableSchema: sourceModel.isNullableSchema,
     );
   }
@@ -476,7 +475,7 @@ class SchemaAstAnalyzer {
           element,
           representationType: 'Uri',
           isNullable: isNullable,
-          isTransformedSchema: true,
+
           customTypeName: customTypeName,
         );
         break;
@@ -487,7 +486,7 @@ class SchemaAstAnalyzer {
           element,
           representationType: 'DateTime',
           isNullable: isNullable,
-          isTransformedSchema: true,
+
           customTypeName: customTypeName,
         );
         break;
@@ -497,7 +496,7 @@ class SchemaAstAnalyzer {
           element,
           representationType: 'Duration',
           isNullable: isNullable,
-          isTransformedSchema: true,
+
           customTypeName: customTypeName,
         );
         break;
@@ -573,8 +572,6 @@ class SchemaAstAnalyzer {
       isFromSchemaVariable: true,
       representationType:
           transformOutputTypeString ?? sourceModel.representationType,
-      isTransformedSchema:
-          sourceModel.isTransformedSchema || transformOutputTypeString != null,
       isNullableSchema: isNullable || sourceModel.isNullableSchema,
     );
   }
@@ -1044,7 +1041,6 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
-      isTransformedSchema: model.isTransformedSchema,
       isNullableSchema: model.isNullableSchema,
     );
   }
@@ -1341,9 +1337,6 @@ class SchemaAstAnalyzer {
       nestedSchemaCastTypeOverride: hasTypedReference
           ? visibleRepresentationType
           : null,
-      isTransformedRepresentation:
-          resolvedReference.modelInfo.isTransformedSchema ||
-          transformedRepresentationType != null,
     );
   }
 
@@ -1444,10 +1437,6 @@ class SchemaAstAnalyzer {
           collectionElementDisplayTypeOverride,
       collectionElementCastTypeOverride: mappedType.listElementCastTypeOverride,
       collectionElementIsCustomType: mappedType.listElementIsCustomType,
-      isTransformedRepresentation:
-          transformOutputTypeString != null ||
-          _isBuiltInTransformedMethod(schemaMethod) ||
-          listElementAnalysis?.isTransformedRepresentation == true,
     );
   }
 
@@ -2022,10 +2011,6 @@ class SchemaAstAnalyzer {
           transformedOutputType: chain.transformOutputType,
           transformedRepresentationType: transformOutputTypeString,
         );
-        final resolved = _resolveSchemaReference(
-          chain.schemaReference!,
-          element,
-        );
         return (
           mapping: mapping,
           elementRepresentationType: _resolveSchemaVariableElementTypeString(
@@ -2033,9 +2018,6 @@ class SchemaAstAnalyzer {
             element,
             transformedRepresentationType: transformOutputTypeString,
           ),
-          isTransformedRepresentation:
-              resolved?.modelInfo.isTransformedSchema == true ||
-              transformOutputTypeString != null,
         );
       }
 
@@ -2068,9 +2050,6 @@ class SchemaAstAnalyzer {
           elementRepresentationType:
               transformOutputTypeString ??
               'List<${nested.elementRepresentationType}>',
-          isTransformedRepresentation:
-              transformOutputTypeString != null ||
-              nested.isTransformedRepresentation,
         );
       }
 
@@ -2083,9 +2062,6 @@ class SchemaAstAnalyzer {
       return (
         mapping: _wrapListElementMapping(elementMapping, typeProvider),
         elementRepresentationType: elementRepresentationType,
-        isTransformedRepresentation:
-            transformOutputTypeString != null ||
-            _isBuiltInTransformedMethod(methodName),
       );
     }
 
@@ -2095,15 +2071,12 @@ class SchemaAstAnalyzer {
         element,
         typeProvider,
       );
-      final resolved = _resolveSchemaReference(ref.schemaRef!, element);
       return (
         mapping: mapping,
         elementRepresentationType: _resolveSchemaVariableElementTypeString(
           ref.schemaRef!,
           element,
         ),
-        isTransformedRepresentation:
-            resolved?.modelInfo.isTransformedSchema ?? false,
       );
     }
 
@@ -3297,7 +3270,6 @@ class SchemaAstAnalyzer {
       isFromSchemaVariable: true,
       representationType:
           'List<${listElementAnalysis.elementRepresentationType}>',
-      isTransformedSchema: listElementAnalysis.isTransformedRepresentation,
       isNullableSchema: isNullable,
     );
   }
@@ -3307,7 +3279,6 @@ class SchemaAstAnalyzer {
     Element2 element, {
     required String representationType,
     required bool isNullable,
-    bool isTransformedSchema = false,
     String? customTypeName,
   }) {
     final typeName = _resolveModelClassName(
@@ -3322,7 +3293,6 @@ class SchemaAstAnalyzer {
       fields: const [],
       isFromSchemaVariable: true,
       representationType: representationType,
-      isTransformedSchema: isTransformedSchema,
       isNullableSchema: isNullable,
     );
   }
@@ -3345,7 +3315,6 @@ class SchemaAstAnalyzer {
       discriminatedBaseClassName: model.discriminatedBaseClassName,
       isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: representationType,
-      isTransformedSchema: true,
       isNullableSchema: model.isNullableSchema,
     );
   }

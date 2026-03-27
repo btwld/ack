@@ -22,8 +22,6 @@ extension type PasswordType(String _value) implements String {
       (validated) => PasswordType(validated as String),
     );
   }
-
-  String toJson() => _value;
 }
 
 /// Extension type for Age
@@ -38,8 +36,6 @@ extension type AgeType(int _value) implements int {
       (validated) => AgeType(validated as int),
     );
   }
-
-  int toJson() => _value;
 }
 
 /// Extension type for Price
@@ -57,8 +53,6 @@ extension type PriceType(double _value) implements double {
       (validated) => PriceType(validated as double),
     );
   }
-
-  double toJson() => _value;
 }
 
 /// Extension type for Active
@@ -76,8 +70,6 @@ extension type ActiveType(bool _value) implements bool {
       (validated) => ActiveType(validated as bool),
     );
   }
-
-  bool toJson() => _value;
 }
 
 /// Extension type for Tags
@@ -95,8 +87,6 @@ extension type TagsType(List<String> _value) implements List<String> {
       (validated) => TagsType(validated as List<String>),
     );
   }
-
-  List<String> toJson() => _value;
 }
 
 /// Extension type for Scores
@@ -114,8 +104,6 @@ extension type ScoresType(List<int> _value) implements List<int> {
       (validated) => ScoresType(validated as List<int>),
     );
   }
-
-  List<int> toJson() => _value;
 }
 
 /// Extension type for Status
@@ -133,8 +121,6 @@ extension type StatusType(String _value) implements String {
       (validated) => StatusType(validated as String),
     );
   }
-
-  String toJson() => _value;
 }
 
 /// Extension type for Role
@@ -152,8 +138,6 @@ extension type RoleType(String _value) implements String {
       (validated) => RoleType(validated as String),
     );
   }
-
-  String toJson() => _value;
 }
 
 /// Extension type for UserRole
@@ -171,8 +155,6 @@ extension type UserRoleType(UserRole _value) implements UserRole {
       (validated) => UserRoleType(validated as UserRole),
     );
   }
-
-  UserRole toJson() => _value;
 }
 
 /// Extension type for StatusEnum
@@ -190,8 +172,6 @@ extension type StatusEnumType(Status _value) implements Status {
       (validated) => StatusEnumType(validated as Status),
     );
   }
-
-  Status toJson() => _value;
 }
 
 /// Extension type for OptionalStatus
@@ -209,8 +189,6 @@ extension type OptionalStatusType(String _value) implements String {
       (validated) => OptionalStatusType(validated as String),
     );
   }
-
-  String toJson() => _value;
 }
 
 /// Extension type for DefaultedEnum
@@ -228,8 +206,6 @@ extension type DefaultedEnumType(UserRole _value) implements UserRole {
       (validated) => DefaultedEnumType(validated as UserRole),
     );
   }
-
-  UserRole toJson() => _value;
 }
 
 /// Extension type for ChainedEnumString
@@ -247,8 +223,6 @@ extension type ChainedEnumStringType(String _value) implements String {
       (validated) => ChainedEnumStringType(validated as String),
     );
   }
-
-  String toJson() => _value;
 }
 
 /// Extension type for RefinedAge
@@ -266,6 +240,4 @@ extension type RefinedAgeType(int _value) implements int {
       (validated) => RefinedAgeType(validated as int),
     );
   }
-
-  int toJson() => _value;
 }

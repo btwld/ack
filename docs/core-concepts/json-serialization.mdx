@@ -162,7 +162,7 @@ final userSchema = Ack.object({
 Running `dart run build_runner build` generates in `user_schema.g.dart`:
 
 - **The original schema constant** stays in your source file (`user_schema.dart`)
-- **Extension type** `UserType` with `parse`/`safeParse`, typed getters, and `toJson()` helpers
+- **Extension type** `UserType` with `parse`/`safeParse` and typed getters
 
 The type name is derived from the variable name by removing "Schema" suffix and adding "Type" (e.g., `userSchema` → `UserType`).
 
