@@ -1962,8 +1962,8 @@ class SchemaAstAnalyzer {
 
   /// Analyzes the element schema used by Ack.list(...).
   ///
-  /// Returns the generated list mapping, the list element representation type
-  /// string, and whether the element is backed by a transformed schema.
+  /// Returns the generated list mapping and the list element representation
+  /// type string.
   _ListElementAnalysis _analyzeListElement(
     MethodInvocation listInvocation,
     Element2 element,
