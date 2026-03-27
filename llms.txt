@@ -1,10 +1,10 @@
 # Ack - Schema Validation Library for Dart
 
-> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.10.
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.11.
 
 ## Overview
 
-Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.10 is the current published baseline.
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.11 is the current published baseline.
 
 **Repository**: https://github.com/btwld/ack
 **Documentation**: https://docs.page/btwld/ack
@@ -819,11 +819,11 @@ sealed class SchemaResult<T extends Object> {
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack: ^1.0.0-beta.10
-  ack_annotations: ^1.0.0-beta.10
+  ack: ^1.0.0-beta.11
+  ack_annotations: ^1.0.0-beta.11
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.10
+  ack_generator: ^1.0.0-beta.11
   build_runner: ^2.4.0
 ```
 
@@ -964,7 +964,7 @@ Converts Ack schemas to Firebase AI Schema format for structured output generati
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_firebase_ai: ^1.0.0-beta.10
+  ack_firebase_ai: ^1.0.0-beta.11
 ```
 
 ```dart
@@ -997,7 +997,7 @@ Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_json_schema_builder: ^1.0.0-beta.10
+  ack_json_schema_builder: ^1.0.0-beta.11
 ```
 
 ```dart
