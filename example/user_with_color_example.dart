@@ -11,6 +11,11 @@ void main() {
       'website': 'https://example.com',
     },
     'color': '#FF5733',
+    'pet': {'type': 'cat', 'lives': 7},
+    'pets': [
+      {'type': 'cat', 'lives': 9},
+      {'type': 'dog', 'breed': 'Labrador'},
+    ],
   };
 
   print('--- Valid data ---');
@@ -20,6 +25,27 @@ void main() {
   print('Bio: ${user.profile.bio}');
   print('Website: ${user.profile.website}');
   print('Color: ${user.color}');
+  print('Favorite color: ${user.favoriteColor}'); // null - optional, not provided
+  print('');
+
+  // Valid with favoriteColor provided
+  print('--- With favorite color ---');
+  final withFav = {...validData, 'favoriteColor': '#00FF00'};
+  final userFav = UserWithColorType.parse(withFav);
+  print('Favorite color: ${userFav.favoriteColor}');
+  print('');
+
+  // Nested discriminated pet
+  print('--- Nested discriminated pet ---');
+  final userPet = user;
+  print('Pet type: ${userPet.pet.type}');
+  print('Pets count: ${userPet.pets.length}');
+  for (final p in userPet.pets) {
+    print('  - ${p.type}');
+  }
+  // Can access discriminated subtype fields via cast
+  final cat = userPet.pet as CatType;
+  print('Cat lives: ${cat.lives}');
   print('');
 
   // Invalid hex color
