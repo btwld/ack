@@ -2,6 +2,7 @@ import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
 
 import '../models/model_info.dart';
+import '../utils/annotation_utils.dart';
 import 'field_builder.dart' as fb;
 
 /// Builds schema functions using code_builder
@@ -41,13 +42,13 @@ class SchemaBuilder {
   }
 
   Field buildSchemaField(ModelInfo model) {
-    // Convert schema class name to camelCase variable name
-    // e.g., "UserSchema" -> "userSchema", "CustomUserSchema" -> "customUserSchema"
-    final variableName = _toCamelCase(model.schemaClassName);
+    final schemaVariableName = schemaVariableNameForSchemaClassName(
+      model.schemaClassName,
+    );
 
     return Field(
       (b) => b
-        ..name = variableName
+        ..name = schemaVariableName
         ..modifier = FieldModifier.final$
         ..assignment = Code(_buildSchemaDefinition(model))
         ..docs.addAll([
@@ -57,24 +58,10 @@ class SchemaBuilder {
     );
   }
 
-  String _toCamelCase(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toLowerCase() + text.substring(1);
-  }
-
   String _buildSchemaDefinition(ModelInfo model) {
-    // Check if this is a discriminated base class
-    if (model.isDiscriminatedBaseDefinition) {
-      return _buildDiscriminatedSchema(model);
-    }
-
-    // Subtypes need the model passed to the field builder to generate discriminator literals
-    if (model.isDiscriminatedSubtype) {
-      return _buildObjectSchema(model, passModelToFieldBuilder: true);
-    }
-
-    // Regular objects don't need model context
-    return _buildObjectSchema(model);
+    return model.isDiscriminatedBaseDefinition
+        ? _buildDiscriminatedSchema(model)
+        : _buildObjectSchema(model);
   }
 
   /// Builds a discriminated schema for base classes
@@ -87,23 +74,21 @@ class SchemaBuilder {
     buffer.write('  discriminatorKey: \'$discriminatorKey\',\n');
     buffer.write('  schemas: {\n');
 
-    // Generate schema references for each subtype
     final schemaRefs = <String>[];
     for (final entry in subtypeNames.entries) {
       final discriminatorValue = entry.key;
       final subtypeClassName = entry.value;
 
-      // Look up the subtype's ModelInfo to get its custom schemaClassName
-      // This handles cases where the subtype has a custom schemaName annotation
       final subtypeModelInfo = _allModels.cast<ModelInfo?>().firstWhere(
         (m) => m?.className == subtypeClassName,
         orElse: () => null,
       );
 
-      // Use the subtype's schemaClassName if found, otherwise fall back to default
       final subtypeSchemaName = subtypeModelInfo != null
-          ? _toCamelCase(subtypeModelInfo.schemaClassName)
-          : _toCamelCase('${subtypeClassName}Schema');
+          ? schemaVariableNameForSchemaClassName(
+              subtypeModelInfo.schemaClassName,
+            )
+          : schemaVariableNameForSchemaClassName('${subtypeClassName}Schema');
 
       schemaRefs.add('    \'$discriminatorValue\': $subtypeSchemaName');
     }
@@ -115,53 +100,39 @@ class SchemaBuilder {
     return buffer.toString();
   }
 
-  /// Common logic for building object schemas
-  ///
-  /// Extracted from _buildSubtypeSchema and _buildRegularObjectSchema to eliminate duplication.
-  /// The only difference is whether the model is passed to the field builder (for subtypes).
-  String _buildObjectSchema(
-    ModelInfo model, {
-    bool passModelToFieldBuilder = false,
-  }) {
+  /// Builds an object schema for both regular models and discriminated leaves.
+  String _buildObjectSchema(ModelInfo model) {
     final buffer = StringBuffer();
+    final fieldEntries = <String>[];
 
-    // Build field definitions with descriptions
-    final fieldDefs = <String>[];
-
-    // For discriminated subtypes, add the discriminator field first
     if (model.isDiscriminatedSubtype &&
         model.discriminatorKey != null &&
         model.discriminatorValue != null) {
-      fieldDefs.add(
+      fieldEntries.add(
         "'${model.discriminatorKey}': Ack.literal('${model.discriminatorValue}')",
       );
     }
 
     for (final field in model.fields) {
-      // Skip the discriminator field for subtypes - it was already added above
-      // This prevents duplicate keys in the generated schema
       if (model.isDiscriminatedSubtype &&
           model.discriminatorKey != null &&
           field.jsonKey == model.discriminatorKey) {
         continue;
       }
 
-      final fieldSchema = passModelToFieldBuilder
-          ? _fieldBuilder.buildFieldSchema(field, model)
-          : _fieldBuilder.buildFieldSchema(field);
+      final fieldSchema = _fieldBuilder.buildFieldSchema(field, model);
 
-      fieldDefs.add("'${field.jsonKey}': $fieldSchema");
+      fieldEntries.add("'${field.jsonKey}': $fieldSchema");
     }
 
     buffer.write('Ack.object({');
-    if (fieldDefs.isNotEmpty) {
+    if (fieldEntries.isNotEmpty) {
       buffer.write('\n  ');
-      buffer.write(fieldDefs.join(',\n  '));
+      buffer.write(fieldEntries.join(',\n  '));
       buffer.write(',\n');
     }
     buffer.write('}');
 
-    // Add additionalProperties if enabled
     if (model.additionalProperties) {
       buffer.write(', additionalProperties: true');
     }

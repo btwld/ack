@@ -3,7 +3,7 @@ import 'package:meta/meta_meta.dart';
 /// Annotation to generate extension types for validated data.
 ///
 /// **Note:** This annotation should only be used on schema variables and getters,
-/// not on classes. Use [@AckModel] to generate schemas from classes; if you need
+/// not on classes. Use [@Schemable] to generate schemas from classes; if you need
 /// extension types, define the schema in source and annotate it with [@AckType].
 ///
 /// Can be applied to:
@@ -235,7 +235,7 @@ import 'package:meta/meta_meta.dart';
 ///   not change the generated representation type.
 /// - **Dart version**: Requires Dart 3.3+ for extension type support
 ///
-/// See also: [AckModel], [AckField]
+/// See also: [Schemable], [SchemaProvider]
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
   /// Optional custom name for the generated extension type.

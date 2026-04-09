@@ -4,7 +4,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'test_extension_types.g.dart';
 
 /// Simple model to test basic extension type generation
-@AckModel()
+@Schemable()
 class SimpleUser {
   final String name;
   final int age;
@@ -14,7 +14,7 @@ class SimpleUser {
 }
 
 /// Model with nested types to test dependency ordering
-@AckModel()
+@Schemable()
 class Address {
   final String street;
   final String city;
@@ -23,7 +23,7 @@ class Address {
   Address({required this.street, required this.city, required this.country});
 }
 
-@AckModel()
+@Schemable()
 class UserWithAddress {
   final String name;
   final Address address;
@@ -37,7 +37,7 @@ class UserWithAddress {
 }
 
 /// Model with collections to test list handling
-@AckModel()
+@Schemable()
 class BlogPost {
   final String title;
   final String content;

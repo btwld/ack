@@ -65,7 +65,7 @@ class TestModel {
       test('should fail build with missing model field', () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        // Build should fail when using old annotation format with model: true
+        // Build should fail when using the removed legacy annotation shape.
         await expectLater(
           () => testBuilder(
             builder,
@@ -135,8 +135,8 @@ class AckModel {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final bool model;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
+  final String? discriminatorKey;
+  final String? discriminatorValue;
 
   const AckModel({
     this.schemaName,
@@ -144,8 +144,8 @@ class AckModel {
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.model = false,
-    this.discriminatedKey,
-    this.discriminatedValue,
+    this.discriminatorKey,
+    this.discriminatorValue,
   });
 }
 ''',
@@ -174,10 +174,10 @@ class TestModel {
     });
 
     group('Validation Error Messages', () {
-      test('should fail for abstract class without discriminatedKey', () async {
+      test('should fail for abstract class without discriminatorKey', () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        // Abstract class without discriminatedKey should fail
+        // Abstract class without discriminatorKey should fail
         await expectLater(
           () => testBuilder(
             builder,
@@ -192,8 +192,8 @@ class AckModel {
   final bool additionalProperties;
   final String? additionalPropertiesField;
   final bool model;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
+  final String? discriminatorKey;
+  final String? discriminatorValue;
 
   const AckModel({
     this.schemaName,
@@ -201,8 +201,8 @@ class AckModel {
     this.additionalProperties = false,
     this.additionalPropertiesField,
     this.model = false,
-    this.discriminatedKey,
-    this.discriminatedValue,
+    this.discriminatorKey,
+    this.discriminatorValue,
   });
 }
 ''',
@@ -218,7 +218,7 @@ class StringSchema {}
 import 'package:ack_annotations/ack_annotations.dart';
 
 @AckModel()
-abstract class AbstractModel { // Abstract without discriminatedKey
+abstract class AbstractModel { // Abstract without discriminatorKey
   final String name;
   AbstractModel({required this.name});
 }

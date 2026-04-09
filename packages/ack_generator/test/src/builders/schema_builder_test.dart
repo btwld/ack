@@ -84,6 +84,19 @@ void main() {
     });
 
     test('generates schema for nested objects', () {
+      builder.setAllModels([
+        const ModelInfo(
+          className: 'Order',
+          schemaClassName: 'OrderSchema',
+          fields: [],
+        ),
+        const ModelInfo(
+          className: 'Customer',
+          schemaClassName: 'CustomerSchema',
+          fields: [],
+        ),
+      ]);
+
       final model = ModelInfo(
         className: 'Order',
         schemaClassName: 'OrderSchema',

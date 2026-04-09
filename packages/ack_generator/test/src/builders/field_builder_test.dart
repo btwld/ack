@@ -1,5 +1,6 @@
 import 'package:ack_generator/src/builders/field_builder.dart';
 import 'package:ack_generator/src/models/constraint_info.dart';
+import 'package:ack_generator/src/models/model_info.dart';
 import 'package:test/test.dart';
 
 import '../test_utilities.dart';
@@ -125,12 +126,26 @@ void main() {
 
     group('nested schemas', () {
       test('builds nested schema reference', () {
+        builder.setAllModels([
+          const ModelInfo(
+            className: 'Address',
+            schemaClassName: 'AddressSchema',
+            fields: [],
+          ),
+        ]);
         final field = createField('address', 'Address', isRequired: true);
         final schema = builder.buildFieldSchema(field);
         expect(schema, equals('addressSchema'));
       });
 
       test('builds optional nested schema', () {
+        builder.setAllModels([
+          const ModelInfo(
+            className: 'Profile',
+            schemaClassName: 'ProfileSchema',
+            fields: [],
+          ),
+        ]);
         final field = createField('profile', 'Profile', isNullable: true);
         final schema = builder.buildFieldSchema(field);
         expect(schema, equals('profileSchema.optional().nullable()'));

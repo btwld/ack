@@ -33,13 +33,13 @@ import 'package:ack_annotations/ack_annotations.dart';
 @AckModel()
 class User {
   final String name;
-  User(this.name);
+  User({required this.name});
 }
 
 @AckModel()
 class Product {
   final String title;
-  Product(this.title);
+  Product({required this.title});
 }
 
 // Not annotated - should be ignored
@@ -74,7 +74,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 @AckModel()
 class Address {
   final String street;
-  Address(this.street);
+  Address({required this.street});
 }
 ''',
           'test_pkg|lib/user.dart': '''
@@ -84,7 +84,7 @@ import 'address.dart';
 @AckModel()
 class User {
   final Address address;
-  User(this.address);
+  User({required this.address});
 }
 ''',
         },
@@ -108,13 +108,14 @@ class User {
           ...allAssets,
           'test_pkg|lib/model.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/ack.dart';
 
 part 'model.ack.g.dart';
 
 @AckModel()
 class Model {
   final String id;
-  Model(this.id);
+  Model({required this.id});
 }
 ''',
         },
@@ -129,6 +130,41 @@ class Model {
         },
       );
     });
+
+    test(
+      'fails with a clear error when Ack import is missing for part files',
+      () async {
+        final builder = SharedPartBuilder([generator], 'ack');
+        var sawExpectedError = false;
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/missing_ack_import.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'missing_ack_import.ack.g.dart';
+
+@Schemable()
+class MissingAckImport {
+  final String id;
+  const MissingAckImport({required this.id});
+}
+''',
+          },
+          outputs: const {},
+          onLog: (log) {
+            if (log.level.name == 'SEVERE' &&
+                log.message.contains("import 'package:ack/ack.dart';")) {
+              sawExpectedError = true;
+            }
+          },
+        );
+
+        expect(sawExpectedError, isTrue);
+      },
+    );
 
     test('preserves formatting', () async {
       final builder = SharedPartBuilder([generator], 'ack');
