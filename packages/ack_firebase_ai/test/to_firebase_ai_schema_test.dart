@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 // Test enum types for Dart enum conversion
 enum Color { red, green, blue, yellow }
+
 enum Status { pending, active, completed }
 
 /// Tests for the toFirebaseAiSchema() extension method.
@@ -47,8 +48,11 @@ void main() {
         final result = schema.toFirebaseAiSchema();
 
         expect(result.type, firebase_ai.SchemaType.string);
-        expect(result.toJson().containsKey('minLength'), isFalse,
-            reason: 'firebase_ai Schema currently omits minLength metadata');
+        expect(
+          result.toJson().containsKey('minLength'),
+          isFalse,
+          reason: 'firebase_ai Schema currently omits minLength metadata',
+        );
       });
 
       test('converts string with maxLength (not currently surfaced)', () {
@@ -56,8 +60,11 @@ void main() {
         final result = schema.toFirebaseAiSchema();
 
         expect(result.type, firebase_ai.SchemaType.string);
-        expect(result.toJson().containsKey('maxLength'), isFalse,
-            reason: 'firebase_ai Schema currently omits maxLength metadata');
+        expect(
+          result.toJson().containsKey('maxLength'),
+          isFalse,
+          reason: 'firebase_ai Schema currently omits maxLength metadata',
+        );
       });
 
       test('converts string with email format', () {
@@ -117,10 +124,7 @@ void main() {
 
     group('Objects', () {
       test('converts basic object schema', () {
-        final schema = Ack.object({
-          'name': Ack.string(),
-          'age': Ack.integer(),
-        });
+        final schema = Ack.object({'name': Ack.string(), 'age': Ack.integer()});
         final result = schema.toFirebaseAiSchema();
 
         expect(result.type, firebase_ai.SchemaType.object);
@@ -221,10 +225,7 @@ void main() {
 
       test('converts array of objects', () {
         final schema = Ack.list(
-          Ack.object({
-            'id': Ack.integer(),
-            'name': Ack.string(),
-          }),
+          Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
         );
         final result = schema.toFirebaseAiSchema();
 
@@ -236,20 +237,14 @@ void main() {
 
       test('array schema matches expected Firebase Schema snapshot', () {
         final schema = Ack.list(
-          Ack.object({
-            'id': Ack.string(),
-            'score': Ack.double().min(0).max(1),
-          }),
+          Ack.object({'id': Ack.string(), 'score': Ack.double().min(0).max(1)}),
         ).minLength(1).maxLength(10);
 
         final expected = firebase_ai.Schema.array(
           items: firebase_ai.Schema.object(
             properties: {
               'id': firebase_ai.Schema.string(),
-              'score': firebase_ai.Schema.number(
-                minimum: 0,
-                maximum: 1,
-              ),
+              'score': firebase_ai.Schema.number(minimum: 0, maximum: 1),
             },
             propertyOrdering: ['id', 'score'],
           ),
@@ -309,7 +304,10 @@ void main() {
         expect(company.type, firebase_ai.SchemaType.object);
         final address = company.properties!['address']!;
         expect(address.type, firebase_ai.SchemaType.object);
-        expect(address.properties!.keys, containsAll(['street', 'city', 'country']));
+        expect(
+          address.properties!.keys,
+          containsAll(['street', 'city', 'country']),
+        );
       });
     });
 
@@ -323,10 +321,7 @@ void main() {
       });
 
       test('handles anyOf by converting to Schema.anyOf', () {
-        final schema = Ack.anyOf([
-          Ack.string(),
-          Ack.integer(),
-        ]);
+        final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
         final result = schema.toFirebaseAiSchema();
 
         expect(result.type, firebase_ai.SchemaType.anyOf);
@@ -345,20 +340,23 @@ void main() {
         expect(result.nullable, isNull);
       });
 
-      test('throws UnsupportedError for unsupported schema types with helpful message', () {
-        const schema = TestUnsupportedAckSchema();
+      test(
+        'throws UnsupportedError for unsupported schema types with helpful message',
+        () {
+          const schema = TestUnsupportedAckSchema();
 
-        expect(
-          () => schema.toFirebaseAiSchema(),
-          throwsA(
-            isA<UnsupportedError>().having(
-              (error) => error.message,
-              'message',
-              contains('TestUnsupportedAckSchema'),
+          expect(
+            () => schema.toFirebaseAiSchema(),
+            throwsA(
+              isA<UnsupportedError>().having(
+                (error) => error.message,
+                'message',
+                contains('TestUnsupportedAckSchema'),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
 
       test('handles empty anyOf gracefully', () {
         // AnyOf with empty schemas list
@@ -371,9 +369,7 @@ void main() {
       });
 
       test('handles empty object in anyOf', () {
-        final schema = Ack.anyOf([
-          Ack.object({}),
-        ]);
+        final schema = Ack.anyOf([Ack.object({})]);
 
         final result = schema.toFirebaseAiSchema();
 
@@ -400,10 +396,7 @@ void main() {
         });
 
         // Should not throw
-        expect(
-          () => schema.toFirebaseAiSchema(),
-          returnsNormally,
-        );
+        expect(() => schema.toFirebaseAiSchema(), returnsNormally);
 
         final result = schema.toFirebaseAiSchema();
         expect(result.type, firebase_ai.SchemaType.object);
@@ -451,7 +444,9 @@ void main() {
 
       test('TransformedSchema preserves underlying schema format', () {
         // Datetime has format 'date-time', add description via copyWith
-        final datetimeSchema = Ack.datetime().copyWith(description: 'Event timestamp');
+        final datetimeSchema = Ack.datetime().copyWith(
+          description: 'Event timestamp',
+        );
 
         final result = datetimeSchema.toFirebaseAiSchema();
 
@@ -460,34 +455,45 @@ void main() {
         expect(result.description, 'Event timestamp');
       });
 
-      test('description override on TransformedSchema wins over base schema', () {
-        // Test that TransformedSchema's description takes precedence
-        final withDescription = Ack.date().copyWith(description: 'Overridden description');
+      test(
+        'description override on TransformedSchema wins over base schema',
+        () {
+          // Test that TransformedSchema's description takes precedence
+          final withDescription = Ack.date().copyWith(
+            description: 'Overridden description',
+          );
 
-        final result = withDescription.toFirebaseAiSchema();
+          final result = withDescription.toFirebaseAiSchema();
 
-        expect(result.description, 'Overridden description');
-      });
+          expect(result.description, 'Overridden description');
+        },
+      );
     });
 
     group('TransformedSchema support', () {
-      test('converts date schema by unwrapping to underlying string schema', () {
-        final schema = Ack.date();
+      test(
+        'converts date schema by unwrapping to underlying string schema',
+        () {
+          final schema = Ack.date();
 
-        final result = schema.toFirebaseAiSchema();
+          final result = schema.toFirebaseAiSchema();
 
-        expect(result.type, firebase_ai.SchemaType.string);
-        expect(result.format, 'date');
-      });
+          expect(result.type, firebase_ai.SchemaType.string);
+          expect(result.format, 'date');
+        },
+      );
 
-      test('converts datetime schema by unwrapping to underlying string schema', () {
-        final schema = Ack.datetime();
+      test(
+        'converts datetime schema by unwrapping to underlying string schema',
+        () {
+          final schema = Ack.datetime();
 
-        final result = schema.toFirebaseAiSchema();
+          final result = schema.toFirebaseAiSchema();
 
-        expect(result.type, firebase_ai.SchemaType.string);
-        expect(result.format, 'date-time');
-      });
+          expect(result.type, firebase_ai.SchemaType.string);
+          expect(result.format, 'date-time');
+        },
+      );
 
       test('converts transformed schema in arrays', () {
         final schema = Ack.list(Ack.date());
@@ -517,9 +523,7 @@ void main() {
       });
 
       test('converts top-level TransformedSchema properties correctly', () {
-        final schema = Ack.object({
-          'timestamp': Ack.datetime(),
-        });
+        final schema = Ack.object({'timestamp': Ack.datetime()});
 
         final result = schema.toFirebaseAiSchema();
 
@@ -532,9 +536,7 @@ void main() {
       test('converts deeply nested TransformedSchema properties correctly', () {
         final schema = Ack.object({
           'data': Ack.object({
-            'metadata': Ack.object({
-              'createdAt': Ack.date(),
-            }),
+            'metadata': Ack.object({'createdAt': Ack.date()}),
           }),
         });
 
@@ -676,10 +678,7 @@ void main() {
         final result = schema.toFirebaseAiSchema();
 
         // When all fields are required, optionalProperties should be null or empty
-        expect(
-          result.optionalProperties,
-          anyOf(isNull, isEmpty),
-        );
+        expect(result.optionalProperties, anyOf(isNull, isEmpty));
       });
     });
 
@@ -715,10 +714,7 @@ void main() {
           }),
         );
 
-        expect(
-          () => schema.toFirebaseAiSchema(),
-          returnsNormally,
-        );
+        expect(() => schema.toFirebaseAiSchema(), returnsNormally);
       });
 
       test('handles anyOf with objects', () {
@@ -779,9 +775,7 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'radius': Ack.double(),
-            }),
+            'circle': Ack.object({'radius': Ack.double()}),
             'rectangle': Ack.object({
               'width': Ack.double(),
               'height': Ack.double(),
@@ -824,13 +818,8 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'radius': Ack.double(),
-            }),
-            'point': Ack.object({
-              'x': Ack.double(),
-              'y': Ack.double(),
-            }),
+            'circle': Ack.object({'radius': Ack.double()}),
+            'point': Ack.object({'x': Ack.double(), 'y': Ack.double()}),
           },
         );
 
@@ -871,10 +860,7 @@ void main() {
           ),
         });
 
-        expect(
-          () => schema.toFirebaseAiSchema(),
-          returnsNormally,
-        );
+        expect(() => schema.toFirebaseAiSchema(), returnsNormally);
 
         final result = schema.toFirebaseAiSchema();
         final shapeProp = result.properties!['shape']!;
@@ -958,9 +944,7 @@ void main() {
 
     group('Error wrapping', () {
       test('includes property path when child conversion fails', () {
-        final schema = Ack.object({
-          'bad': const TestUnsupportedAckSchema(),
-        });
+        final schema = Ack.object({'bad': const TestUnsupportedAckSchema()});
 
         expect(
           () => schema.toFirebaseAiSchema(),
@@ -1045,8 +1029,12 @@ void main() {
         expect(schema.safeParse('hi').isFail, isTrue);
 
         expect(geminiSchema.type, firebase_ai.SchemaType.string);
-        expect(geminiSchema.toJson().containsKey('minLength'), isFalse,
-            reason: 'firebase_ai Schema omits minLength metadata; track externally');
+        expect(
+          geminiSchema.toJson().containsKey('minLength'),
+          isFalse,
+          reason:
+              'firebase_ai Schema omits minLength metadata; track externally',
+        );
       });
 
       test('maxLength constraint preserves validation behavior', () {
@@ -1057,8 +1045,12 @@ void main() {
         expect(schema.safeParse('this is way too long').isFail, isTrue);
 
         expect(geminiSchema.type, firebase_ai.SchemaType.string);
-        expect(geminiSchema.toJson().containsKey('maxLength'), isFalse,
-            reason: 'firebase_ai Schema omits maxLength metadata; track externally');
+        expect(
+          geminiSchema.toJson().containsKey('maxLength'),
+          isFalse,
+          reason:
+              'firebase_ai Schema omits maxLength metadata; track externally',
+        );
       });
 
       test('email format constraint preserves validation behavior', () {
@@ -1132,10 +1124,7 @@ void main() {
 
     group('Semantic validation - Object Structure', () {
       test('required fields validation behavior preserved', () {
-        final schema = Ack.object({
-          'name': Ack.string(),
-          'age': Ack.integer(),
-        });
+        final schema = Ack.object({'name': Ack.string(), 'age': Ack.integer()});
         final geminiSchema = schema.toFirebaseAiSchema();
 
         expect(schema.safeParse({'name': 'John', 'age': 30}).isOk, isTrue);
@@ -1156,7 +1145,11 @@ void main() {
 
         expect(schema.safeParse({'name': 'John'}).isOk, isTrue);
         expect(
-          schema.safeParse({'name': 'John', 'age': 30, 'email': 'john@example.com'}).isOk,
+          schema.safeParse({
+            'name': 'John',
+            'age': 30,
+            'email': 'john@example.com',
+          }).isOk,
           isTrue,
         );
         expect(schema.safeParse({'age': 30}).isFail, isTrue);
@@ -1234,10 +1227,7 @@ void main() {
 
       test('array of objects validation behavior preserved', () {
         final schema = Ack.list(
-          Ack.object({
-            'id': Ack.integer(),
-            'name': Ack.string().minLength(1),
-          }),
+          Ack.object({'id': Ack.integer(), 'name': Ack.string().minLength(1)}),
         );
         final geminiSchema = schema.toFirebaseAiSchema();
 
@@ -1281,9 +1271,7 @@ void main() {
       });
 
       test('nullable object accepts null', () {
-        final schema = Ack.object({
-          'name': Ack.string(),
-        }).nullable();
+        final schema = Ack.object({'name': Ack.string()}).nullable();
         final geminiSchema = schema.toFirebaseAiSchema();
 
         expect(schema.safeParse(null).isOk, isTrue);
@@ -1346,7 +1334,10 @@ void main() {
         );
 
         final requiredFromJson = geminiSchema.toJson()['required'] as List;
-        expect(requiredFromJson, unorderedEquals(['username', 'email', 'password']));
+        expect(
+          requiredFromJson,
+          unorderedEquals(['username', 'email', 'password']),
+        );
       });
 
       test('blog post schema validates correctly', () {
@@ -1366,10 +1357,7 @@ void main() {
           schema.safeParse({
             'title': 'My First Blog Post',
             'content': 'This is the content of my blog post.',
-            'author': {
-              'name': 'John Doe',
-              'email': 'john@example.com',
-            },
+            'author': {'name': 'John Doe', 'email': 'john@example.com'},
             'tags': ['tech', 'tutorial'],
             'published': true,
           }).isOk,
@@ -1410,10 +1398,7 @@ void main() {
         final schema = Ack.string();
 
         // This should work (static method)
-        expect(
-          () => schema.toFirebaseAiSchema(),
-          returnsNormally,
-        );
+        expect(() => schema.toFirebaseAiSchema(), returnsNormally);
 
         // Note: We cannot directly test private constructor in Dart,
         // but attempting to instantiate would be a compile-time error:

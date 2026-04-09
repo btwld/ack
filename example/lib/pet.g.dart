@@ -5,20 +5,20 @@
 // AckSchemaGenerator
 // **************************************************************************
 
-part of 'schema_types_discriminated.dart';
+part of 'pet.dart';
 
 /// Extension type for Pet
 extension type PetType(Map<String, Object?> _data)
     implements Map<String, Object?> {
-  String get kind => _data['kind'] as String;
+  String get type => _data['type'] as String;
 
   static PetType parse(Object? data) {
     return petSchema.parseAs(data, (validated) {
       final map = validated as Map<String, Object?>;
-      return switch (map['kind']) {
+      return switch (map['type']) {
         'cat' => CatType(map),
         'dog' => DogType(map),
-        _ => throw StateError('Unknown kind: ${map['kind']}'),
+        _ => throw StateError('Unknown type: ${map['type']}'),
       };
     });
   }
@@ -26,10 +26,10 @@ extension type PetType(Map<String, Object?> _data)
   static SchemaResult<PetType> safeParse(Object? data) {
     return petSchema.safeParseAs(data, (validated) {
       final map = validated as Map<String, Object?>;
-      return switch (map['kind']) {
+      return switch (map['type']) {
         'cat' => CatType(map),
         'dog' => DogType(map),
-        _ => throw StateError('Unknown kind: ${map['kind']}'),
+        _ => throw StateError('Unknown type: ${map['type']}'),
       };
     });
   }
@@ -38,7 +38,7 @@ extension type PetType(Map<String, Object?> _data)
 /// Extension type for Cat
 extension type CatType(Map<String, Object?> _data)
     implements PetType, Map<String, Object?> {
-  String get kind => _data['kind'] as String;
+  String get type => _data['type'] as String;
 
   static CatType parse(Object? data) {
     return catSchema.parseAs(
@@ -60,7 +60,7 @@ extension type CatType(Map<String, Object?> _data)
 /// Extension type for Dog
 extension type DogType(Map<String, Object?> _data)
     implements PetType, Map<String, Object?> {
-  String get kind => _data['kind'] as String;
+  String get type => _data['type'] as String;
 
   static DogType parse(Object? data) {
     return dogSchema.parseAs(
@@ -76,9 +76,5 @@ extension type DogType(Map<String, Object?> _data)
     );
   }
 
-  bool get bark => _data['bark'] as bool;
-
-  Map<String, Object?> get args => Map.fromEntries(
-    _data.entries.where((e) => e.key != 'kind' && e.key != 'bark'),
-  );
+  String get breed => _data['breed'] as String;
 }

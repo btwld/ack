@@ -157,9 +157,6 @@ getter and annotate it with `@AckType()`, then reference that symbol.
 
 - `TypeName.parse(Object? data)` throws on invalid input.
 - `TypeName.safeParse(Object? data)` returns a `SchemaResult<TypeName>`.
-- `type.copyWith(...)` produces modified copies without mutating the backing
-  map.
-- `type.toJson()` returns the underlying map or scalar value.
 
 Extension types implement the underlying Dart type, so primitive wrappers still
 behave like `String`, `int`, etc., while object wrappers implement

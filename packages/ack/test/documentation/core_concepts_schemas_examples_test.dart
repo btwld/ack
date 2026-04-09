@@ -400,9 +400,7 @@ void main() {
       });
 
       test('transform examples adjust output data', () {
-        final upperSchema = Ack.string().transform(
-          (s) => s.toUpperCase(),
-        );
+        final upperSchema = Ack.string().transform((s) => s.toUpperCase());
         expect(upperSchema.safeParse('hello').getOrThrow(), equals('HELLO'));
 
         final userWithAgeSchema =

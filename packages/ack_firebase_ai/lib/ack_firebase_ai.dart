@@ -118,13 +118,15 @@ firebase_ai.Schema _array(JsonSchema schema) {
 
 firebase_ai.Schema _object(JsonSchema schema) {
   final properties = <String, firebase_ai.Schema>{};
-  for (final entry in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
+  for (final entry
+      in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
     properties[entry.key] = _convert(entry.value);
   }
 
   final optional = <String>[];
   final required = schema.required ?? const [];
-  for (final entry in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
+  for (final entry
+      in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
     if (!required.contains(entry.key)) {
       optional.add(entry.key);
     }

@@ -24,8 +24,6 @@ extension type ColorType(Color _value) implements Color {
       (validated) => ColorType(validated as Color),
     );
   }
-
-  Color toJson() => _value;
 }
 
 /// Extension type for Profile
@@ -44,8 +42,6 @@ extension type ProfileType(Map<String, Object?> _data)
       (validated) => ProfileType(validated as Map<String, Object?>),
     );
   }
-
-  Map<String, Object?> toJson() => _data;
 
   Uri get homepage => _data['homepage'] as Uri;
 

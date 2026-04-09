@@ -1,10 +1,10 @@
 # Ack - Schema Validation Library for Dart
 
-> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.9.
+> A schema validation library for Dart and Flutter with a fluent API, code generation via `@AckType` and `@AckModel` annotations, and Dart 3 extension types for zero-cost type-safe wrappers over validated data. Version 1.0.0-beta.11.
 
 ## Overview
 
-Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.9 is the current published baseline.
+Ack (short for "acknowledge") is a schema validation library for Dart and Flutter that enables data validation with a simple, fluent API. Version 1.0.0-beta.11 is the current published baseline.
 
 **Repository**: https://github.com/btwld/ack
 **Documentation**: https://docs.page/btwld/ack
@@ -381,8 +381,6 @@ final userSchema = Ack.object({
 //   String get name => _data['name'] as String;
 //   int get age => _data['age'] as int;
 //   bool get active => _data['active'] as bool;
-//
-//   UserType copyWith({String? name, int? age, bool? active}) { ... }
 // }
 ```
 
@@ -493,15 +491,6 @@ extension type UserType(Map<String, Object?> _data)
   String get name => _data['name'] as String;
   int get age => _data['age'] as int;
   bool get active => _data['active'] as bool;
-
-  // Utility methods
-  UserType copyWith({String? name, int? age, bool? active}) {
-    return UserType.parse({
-      'name': name ?? this.name,
-      'age': age ?? this.age,
-      'active': active ?? this.active,
-    });
-  }
 }
 ```
 
@@ -571,9 +560,6 @@ result.match(
   onOk: (user) => print('Valid: ${user.name}'),
   onFail: (error) => print('Error: $error'),
 );
-
-// Immutable updates via copyWith (re-validates through parse)
-final updated = user.copyWith(age: 31);
 
 // Serialization - extension type IS the Map (implements Map<String, Object?>)
 final json = user;  // Use directly, no conversion needed
@@ -833,11 +819,11 @@ sealed class SchemaResult<T extends Object> {
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack: ^1.0.0-beta.9
-  ack_annotations: ^1.0.0-beta.9
+  ack: ^1.0.0-beta.11
+  ack_annotations: ^1.0.0-beta.11
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.9
+  ack_generator: ^1.0.0-beta.11
   build_runner: ^2.4.0
 ```
 
@@ -978,7 +964,7 @@ Converts Ack schemas to Firebase AI Schema format for structured output generati
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_firebase_ai: ^1.0.0-beta.9
+  ack_firebase_ai: ^1.0.0-beta.11
 ```
 
 ```dart
@@ -1011,7 +997,7 @@ Converts Ack schemas to json_schema_builder format for JSON Schema Draft 2020-12
 ```yaml
 # pubspec.yaml
 dependencies:
-  ack_json_schema_builder: ^1.0.0-beta.9
+  ack_json_schema_builder: ^1.0.0-beta.11
 ```
 
 ```dart

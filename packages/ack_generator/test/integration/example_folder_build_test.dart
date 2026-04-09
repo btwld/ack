@@ -226,13 +226,12 @@ void main() {
           contains('List<ColorType> get colors'),
           contains('List<Color> get customColors'),
           contains('TagList get tagList'),
-          isNot(contains('ProfileType copyWith(')),
           isNot(contains('Uri.parse(')),
           isNot(contains('DateTime.parse(')),
           isNot(contains('Duration(milliseconds:')),
         ]),
         reason:
-            'schema_types_transforms.g.dart should emit transformed getters without unsafe reparsing or copyWith',
+            'schema_types_transforms.g.dart should emit transformed getters without unsafe reparsing',
       );
     });
 

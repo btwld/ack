@@ -1,5 +1,4 @@
 import 'package:analyzer/dart/element/element2.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart' show log;
 import 'package:code_builder/code_builder.dart';
@@ -127,14 +126,10 @@ class TypeBuilder {
         ..implements.add(refer(model.representationType))
         ..methods.addAll([
           ..._buildStaticFactories(model, schemaVarName),
-          _buildToJson(model),
           ..._buildGetters(model, lookups),
-          // Only add args and copyWith for object schemas
+          // Only add args for object schemas
           if (isObjectSchema) ...[
             if (model.additionalProperties) _buildArgsGetter(model),
-            if (model.fields.isNotEmpty &&
-                _canGenerateCopyWithForFields(model.fields))
-              _buildCopyWith(model),
           ],
         ]),
     );
@@ -190,7 +185,6 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['${model.discriminatorKey}'] as String"),
           ),
-          _buildToJson(model),
           // Add factory constructor for parsing
           _buildDiscriminatedFactory(model, schemaVarName, subtypeNames),
           // Add safeParse static method
@@ -252,7 +246,6 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['${model.discriminatorKey}'] as String"),
           ),
-          _buildToJson(model),
           _buildDiscriminatedFactory(
             model,
             schemaVarName,
@@ -281,9 +274,6 @@ class TypeBuilder {
     final baseTypeName = _getExtensionTypeName(baseModel);
     final lookups = _ModelLookups(allModels);
     final discriminatorKey = baseModel.discriminatorKey!;
-    final nonDiscriminatorFields = model.fields
-        .where((field) => field.jsonKey != discriminatorKey)
-        .toList();
     final schemaVarName = _toCamelCase(model.schemaClassName);
 
     return ExtensionType(
@@ -300,7 +290,7 @@ class TypeBuilder {
           refer('Map<String, Object?>'),
         ])
         ..methods.addAll([
-          // Override discriminator to read from _data for consistency with toJson()
+          // Override discriminator to read from _data.
           // Factory constructors already validate the discriminator value matches
           Method(
             (m) => m
@@ -310,7 +300,6 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['$discriminatorKey'] as String"),
           ),
-          _buildToJson(model),
           // This builder is currently used by @AckType schema-variable
           // discriminated flows; keep these guards explicit to preserve behavior.
           if (model.isFromSchemaVariable)
@@ -318,18 +307,6 @@ class TypeBuilder {
           // Add regular field getters
           ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
           if (model.additionalProperties) _buildArgsGetter(model),
-          if (model.isFromSchemaVariable &&
-              nonDiscriminatorFields.isNotEmpty &&
-              _canGenerateCopyWithForFields(nonDiscriminatorFields))
-            _buildCopyWithForFields(
-              model,
-              nonDiscriminatorFields,
-              fixedAssignments: {
-                discriminatorKey: model.discriminatorValue != null
-                    ? _singleQuotedLiteral(model.discriminatorValue!)
-                    : 'this.$discriminatorKey',
-              },
-            ),
         ]),
     );
   }
@@ -421,72 +398,6 @@ class TypeBuilder {
     );
   }
 
-  Reference _referenceFromDartType(
-    DartType type, {
-    bool forceNullable = false,
-    bool stripNullability = false,
-  }) {
-    final isNullable =
-        forceNullable || (!stripNullability && _isNullable(type));
-
-    if (type is ParameterizedType) {
-      final element = type.element3;
-      final symbol =
-          element?.name3 ?? type.getDisplayString(withNullability: false);
-      final url = _urlForElement(element);
-      final typeArgs = type.typeArguments
-          .map(
-            (arg) =>
-                _referenceFromDartType(arg, stripNullability: stripNullability),
-          )
-          .toList();
-      return _typeReference(
-        symbol,
-        url: url,
-        types: typeArgs,
-        isNullable: isNullable,
-      );
-    }
-
-    final element = type.element3;
-    final symbol =
-        element?.name3 ?? type.getDisplayString(withNullability: false);
-    final url = _urlForElement(element);
-    return _typeReference(symbol, url: url, isNullable: isNullable);
-  }
-
-  bool _isNullable(DartType type) {
-    return type.nullabilitySuffix == NullabilitySuffix.question ||
-        type.nullabilitySuffix == NullabilitySuffix.star;
-  }
-
-  Reference _typeReference(
-    String symbol, {
-    String? url,
-    Iterable<Reference> types = const [],
-    bool isNullable = false,
-  }) {
-    if (types.isEmpty && !isNullable) {
-      return refer(symbol, url);
-    }
-    return TypeReference(
-      (b) => b
-        ..symbol = symbol
-        ..url = url
-        ..types.addAll(types)
-        ..isNullable = isNullable,
-    );
-  }
-
-  String? _urlForElement(Element2? element) {
-    final uri = element?.library2?.uri;
-    if (uri == null) return null;
-    if (uri.scheme == 'dart' || uri.scheme == 'package') {
-      return uri.toString();
-    }
-    return null;
-  }
-
   String _getExtensionTypeName(ModelInfo model) {
     return '${model.className}Type';
   }
@@ -502,19 +413,6 @@ class TypeBuilder {
       docs.add('/// ${model.description}');
     }
     return docs;
-  }
-
-  Method _buildToJson(ModelInfo model) {
-    final isObjectSchema = model.representationType == kMapType;
-    final valueVarName = isObjectSchema ? '_data' : '_value';
-
-    return Method(
-      (m) => m
-        ..name = 'toJson'
-        ..returns = refer(model.representationType)
-        ..lambda = true
-        ..body = Code(valueVarName),
-    );
   }
 
   List<Method> _buildStaticFactories(ModelInfo model, String schemaVarName) {
@@ -1164,95 +1062,6 @@ ${cases.join(',\n')},
     }
 
     return dependencies;
-  }
-
-  Method _buildCopyWith(ModelInfo model) {
-    return _buildCopyWithForFields(model, model.fields);
-  }
-
-  bool _canGenerateCopyWithForFields(Iterable<FieldInfo> fields) {
-    return fields.every((field) => !field.isTransformedRepresentation);
-  }
-
-  Method _buildCopyWithForFields(
-    ModelInfo model,
-    List<FieldInfo> fields, {
-    Map<String, String> fixedAssignments = const {},
-  }) {
-    final typeName = _getExtensionTypeName(model);
-
-    // Build parameters - all parameters are nullable to support copyWith semantics
-    final parameters = fields.map((field) {
-      return Parameter(
-        (p) => p
-          ..name = field.name
-          ..type = _buildCopyWithParameterType(field)
-          ..named = true,
-      );
-    }).toList();
-
-    // Build field assignments
-    final assignments = <String>[
-      ...fixedAssignments.entries.map(
-        (entry) => '      ${_singleQuotedLiteral(entry.key)}: ${entry.value}',
-      ),
-      ...fields.map((field) {
-        final key = field.jsonKey;
-        final name = field.name;
-
-        if (field.isNullable) {
-          // For nullable fields, check if explicitly provided or exists in data
-          return "      if ($name != null || _data.containsKey('$key')) '$key': $name ?? this.$name";
-        } else {
-          return "      '$key': $name ?? this.$name";
-        }
-      }),
-    ];
-
-    return Method(
-      (m) => m
-        ..name = 'copyWith'
-        ..optionalParameters.addAll(parameters)
-        ..returns = refer(typeName)
-        ..body = Block(
-          (b) => b.statements.add(
-            Code('''
-return $typeName.parse({
-${assignments.join(',\n')},
-});'''),
-          ),
-        ),
-    );
-  }
-
-  String _singleQuotedLiteral(String value) {
-    final escaped = value.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
-    return "'$escaped'";
-  }
-
-  Reference _buildCopyWithParameterType(FieldInfo field) {
-    if (field.isEnum && field.displayTypeOverride != null) {
-      return _typeReference(field.displayTypeOverride!, isNullable: true);
-    }
-
-    if ((field.isList || field.isSet) &&
-        field.collectionElementDisplayTypeOverride != null) {
-      final collectionType = field.isSet ? 'Set' : 'List';
-      final elementType = field.collectionElementIsCustomType
-          ? _asExtensionTypeName(field.collectionElementDisplayTypeOverride!)
-          : field.collectionElementDisplayTypeOverride!;
-      return _typeReference(
-        collectionType,
-        types: [_typeReference(elementType)],
-        isNullable: true,
-      );
-    }
-
-    return _referenceFromDartType(
-      field.type,
-      forceNullable: true,
-      stripNullability: true,
-    );
   }
 
   /// Builds the `args` getter that returns additional properties

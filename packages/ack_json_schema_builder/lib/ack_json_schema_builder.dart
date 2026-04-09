@@ -14,7 +14,7 @@
 ///   'age': Ack.integer().min(0).optional(),
 /// });
 ///
-/// // Convert to json_schema_builder 
+/// // Convert to json_schema_builder
 /// final jsbSchema = schema.toJsonSchemaBuilder();
 /// ```
 library;
@@ -137,7 +137,9 @@ jsb.Schema _convertBoolean(JsonSchema schema, bool? nullableFlag) {
 }
 
 jsb.Schema _convertArray(JsonSchema schema, bool? nullableFlag) {
-  final items = schema.items != null ? _convert(schema.items!) : jsb.Schema.any();
+  final items = schema.items != null
+      ? _convert(schema.items!)
+      : jsb.Schema.any();
   final base = jsb.Schema.list(
     items: items,
     description: schema.description,
@@ -151,13 +153,18 @@ jsb.Schema _convertArray(JsonSchema schema, bool? nullableFlag) {
 
 jsb.Schema _convertObject(JsonSchema schema, bool? nullableFlag) {
   final props = <String, jsb.Schema>{};
-  for (final entry in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
-    props[entry.key] = wrapPropertyConversion(entry.key, () => _convert(entry.value));
+  for (final entry
+      in schema.properties?.entries ?? const <MapEntry<String, JsonSchema>>[]) {
+    props[entry.key] = wrapPropertyConversion(
+      entry.key,
+      () => _convert(entry.value),
+    );
   }
 
   final required = schema.required ?? const [];
 
-  final additional = schema.additionalPropertiesAllowed ??
+  final additional =
+      schema.additionalPropertiesAllowed ??
       (schema.additionalPropertiesSchema != null
           ? _convert(schema.additionalPropertiesSchema!)
           : true);

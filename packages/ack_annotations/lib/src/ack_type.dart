@@ -34,9 +34,6 @@ import 'package:meta/meta_meta.dart';
 ///   String get name => _data['name'] as String;
 ///   int get age => _data['age'] as int;
 ///   String? get email => _data['email'] as String?;
-///
-///   Map<String, Object?> toJson() => _data;
-///   UserType copyWith({...}) { ... }
 /// }
 ///
 /// // Usage:
@@ -111,9 +108,6 @@ import 'package:meta/meta_meta.dart';
 /// - Type-safe getters for all fields
 /// - `parse(data)` factory for validation + wrapping
 /// - `safeParse(data)` for error handling
-/// - `toJson()` for serialization
-/// - `copyWith()` for immutable updates on object wrappers whose fields can be
-///   safely reparsed from their public getter values
 /// - Value equality (`==`, `hashCode`)
 /// - `toString()` for debugging
 ///
@@ -156,7 +150,7 @@ import 'package:meta/meta_meta.dart';
 ///
 /// | Schema Type | Generated Extension Type |
 /// |-------------|--------------------------|
-/// | `Ack.object({...})` | `XType(Map<String, Object?>)` with field getters, conditional copyWith, toJson |
+/// | `Ack.object({...})` | `XType(Map<String, Object?>)` with field getters |
 /// | `Ack.string()` | `XType(String)` implements String |
 /// | `Ack.integer()` | `XType(int)` implements int |
 /// | `Ack.double()` | `XType(double)` implements double |
@@ -170,11 +164,8 @@ import 'package:meta/meta_meta.dart';
 /// | `Ack.duration()` | `XType(Duration)` implements Duration |
 /// | `Ack.<schema>().transform<T>(...)` | `XType(T)` implements T when `T` is explicit |
 ///
-/// All extension types include `parse()` and `safeParse()` factory methods.
-/// `toJson()` returns the validated representation value that the schema
-/// produced. For transformed schemas, that means the transformed value
-/// (for example `Uri`, `DateTime`, or a custom `T`), not the original wire
-/// format.
+/// All extension types include `parse()` and `safeParse()` factory methods,
+/// and implement their validated representation type directly.
 ///
 /// ## Unsupported Schema Types
 ///
@@ -232,10 +223,6 @@ import 'package:meta/meta_meta.dart';
 /// - **Nullable schema variables**: Extension types are not generated for schemas
 ///   marked with `.nullable()` because the representation is non-nullable.
 ///   - Use the schema directly for nullable validation.
-/// - **Object wrappers with transformed-backed fields**: `copyWith()` is not
-///   generated for object wrappers, including discriminated branches, when any
-///   field is backed by `Ack.uri()`, `Ack.date()`, `Ack.datetime()`,
-///   `Ack.duration()`, or `.transform<T>(...)`.
 /// - **List element modifiers**: List element nullability from chained
 ///   modifiers may not be fully inferred:
 ///   - ✅ `Ack.list(Ack.string())` → `List<String>`

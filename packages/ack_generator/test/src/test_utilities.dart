@@ -68,9 +68,6 @@ class MockFieldInfo implements FieldInfo {
   @override
   final String? nestedSchemaCastTypeOverride;
 
-  @override
-  final bool isTransformedRepresentation;
-
   final String typeName;
   final String? listItemTypeName;
   final String? mapKeyTypeName;
@@ -101,7 +98,6 @@ class MockFieldInfo implements FieldInfo {
     this.collectionElementCastTypeOverride,
     this.collectionElementIsCustomType = false,
     this.nestedSchemaCastTypeOverride,
-    this.isTransformedRepresentation = false,
   }) : jsonKey = name;
 
   @override

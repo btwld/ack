@@ -45,12 +45,6 @@ class FieldInfo {
   /// Optional cast type override for nested schema references.
   final String? nestedSchemaCastTypeOverride;
 
-  /// Whether reparsing this field's getter value would re-run a transform.
-  ///
-  /// Used to suppress generated `copyWith()` on object wrappers whose public
-  /// field values no longer match the raw schema input shape.
-  final bool isTransformedRepresentation;
-
   const FieldInfo({
     required this.name,
     required this.jsonKey,
@@ -67,7 +61,6 @@ class FieldInfo {
     this.collectionElementCastTypeOverride,
     this.collectionElementIsCustomType = false,
     this.nestedSchemaCastTypeOverride,
-    this.isTransformedRepresentation = false,
   });
 
   FieldInfo copyWith({
