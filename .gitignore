@@ -43,7 +43,8 @@ packages/*/coverage/*
 !packages/*/coverage/lcov.info
 
 # Keep .claude directory
-.claude/
+.claude/*
+!.claude/skills/
 CLAUDE.md
 .idea
 
