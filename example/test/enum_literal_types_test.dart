@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_example/schema_types_primitives.dart';
 import 'package:test/test.dart';
 
-/// Tests for enum, literal, and enumString schemas.
+/// Tests for enum, literal, and string-enum schemas.
 ///
 /// Note: Extension types are generated for non-nullable primitive schemas,
 /// but these tests use the schema directly via `safeParse()` or `parse()`.
@@ -33,7 +33,7 @@ void main() {
     });
   });
 
-  group('EnumString Schema (via safeParse)', () {
+  group('String Enum Schema (via safeParse)', () {
     test('roleSchema validates allowed values', () {
       final result = roleSchema.safeParse('admin');
 

@@ -1,148 +1,60 @@
 # ack_annotations
 
-Annotation package for the Ack validation ecosystem. Use these annotations on your Dart data classes to drive code generation with `ack_generator` and produce strongly typed validation schemas.
-
----
+`ack_annotations` provides the `@AckType()` annotation used by
+`ack_generator`.
 
 ## Installation
 
-Add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack_annotations) for the latest versions):
-
 ```yaml
 dependencies:
-  ack_annotations: ^1.0.0-beta.7
+  ack: ^1.0.0-beta.12-wip
+  ack_annotations: ^1.0.0-beta.12-wip
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.7
+  ack_generator: ^1.0.0-beta.12-wip
   build_runner: ^2.4.0
 ```
 
-Or use the Dart CLI:
+## Usage
 
-```bash
-dart pub add ack_annotations
-dart pub add --dev ack_generator build_runner
-```
-
----
-
-## Quick Start
+Annotate a top-level Ack schema variable or getter and run `build_runner`:
 
 ```dart
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
-class Product {
-  final String name;
-  final double price;
+part 'user.g.dart';
 
-  Product({required this.name, required this.price});
-}
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'email': Ack.string().email(),
+});
 ```
 
-Run the generator:
+`ack_generator` emits an extension type such as `UserType` with typed getters
+plus `parse()` and `safeParse()` helpers.
+
+Generate the wrapper with:
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-The generator emits a matching `productSchema` that you can access from `ack_generator` output.
+## Custom names
 
----
-
-## `@AckModel`
-
-Annotate classes that need schema generation.
-
-Key options:
-
-- `schemaName`: override the generated schema identifier.
-- `description`: surface documentation in the generated schema.
-- `additionalProperties`: allow unmodelled JSON fields.
-- `additionalPropertiesField`: capture extra properties in a `Map<String, dynamic>` field.
-- `discriminatedKey`: configure the discriminator field on base classes (for unions).
-- `discriminatedValue`: declare the discriminator value on concrete subclasses.
-
-Example (discriminated union):
+Use `name` to override the generated type prefix:
 
 ```dart
-@AckModel(discriminatedKey: 'type')
-abstract class Notification {
-  String get type;
-}
-
-@AckModel(discriminatedValue: 'email')
-class EmailNotification extends Notification {
-  @override
-  String get type => 'email';
-  final String subject;
-  EmailNotification({required this.subject});
-}
+@AckType(name: 'Password')
+final passwordSchema = Ack.string().minLength(8);
 ```
 
----
+This generates `PasswordType`.
 
-## `@AckField`
+## Supported targets
 
-Annotate individual fields to fine-tune schema generation.
+- Top-level schema variables
+- Top-level schema getters
 
-```dart
-@AckModel()
-class User {
-  @AckField(constraints: ['minLength(1)', 'maxLength(50)'])
-  final String name;
-
-  @AckField(jsonKey: 'primary_email', constraints: ['email'])
-  final String email;
-
-  @AckField(requiredMode: AckFieldRequiredMode.required)
-  final bool marketingOptIn;
-
-  User({
-    required this.name,
-    required this.email,
-    required this.marketingOptIn,
-  });
-}
-```
-
-Field options:
-- `requiredMode`: tri-state requiredness (`auto`, `required`, `optional`).
-- `jsonKey`: map to a different JSON key.
-- `description`: add documentation to the generated schema.
-- `constraints`: string-based helpers for quick validation rules.
-
----
-
-## Constraint Annotations
-
-`ack_annotations` also exposes typed constraint annotations for readability.
-
-| Category | Annotation | Generated constraint |
-| --- | --- | --- |
-| String | `@MinLength(n)` / `@MaxLength(n)` | `.minLength(n)` / `.maxLength(n)` |
-| String | `@Email()` / `@Url()` | `.email()` / `.url()` |
-| Pattern | `@Pattern('^[A-Z]')` | `.pattern(...)` |
-| Number | `@Min(0)` / `@Max(10)` | `.min(0)` / `.max(10)` |
-| Number | `@Positive()` | `.positive()` |
-| Number | `@MultipleOf(5)` | `.multipleOf(5)` |
-| List | `@MinItems(1)` / `@MaxItems(10)` | `.minLength(1)` / `.maxLength(10)` |
-| Enum | `@EnumString(['draft','published'])` | `.enumString([...])` |
-
-Mix and match annotation-based constraints with the string list syntax from `@AckField`—both map to the same generator capabilities.
-
----
-
-## Working With build_runner
-
-1. Make sure all Ack packages are on matching versions.
-2. Run `dart run build_runner build --delete-conflicting-outputs` after changing annotated classes.
-3. For continuous development, `dart run build_runner watch` keeps schemas in sync.
-
----
-
-## Further Reading
-
-- Core concepts & runtime API: [`ack` README](../../README.md)
-- Generator workflows: [`ack_generator` README](../ack_generator/README.md)
-- Full 1.0 migration plan: [`MIGRATION.md`](../../MIGRATION.md)
+`@AckType()` is not supported on classes or instance members.

@@ -2,8 +2,8 @@
 title: JSON Serialization
 ---
 
-Ack schemas convert between Dart models and JSON data, making API payloads
-easier to validate and consume.
+Ack schemas validate JSON data and let you work with validated data directly,
+wrap it with generated types, or hand it off to your own model layer.
 
 ## Validating JSON Data
 
@@ -42,8 +42,8 @@ void processApiResponse(String jsonString) {
     final validDataMap = result.getOrThrow();
     print('Valid JSON received: $validDataMap');
     
-    // Optionally convert to a typed model (see next section)
-    // final user = User.fromValidatedMap(validDataMap);
+    // Optionally hand the validated map to your own model layer
+    // or use an AckType-generated wrapper (see next section).
 
   } else {
     // Handle validation errors (see Error Handling guide)
@@ -64,7 +64,10 @@ processApiResponse('not valid json'); // Decoding error
 
 ## Working with Validated Data
 
-After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with this validated data directly or convert it to a model class:
+After successful validation, `result.getOrThrow()` returns a
+`Map<String, Object?>` whose structure and types match your schema. You can
+work with this validated data directly, pass it into your own model class, or
+use a generated typed wrapper:
 
 ```dart
 final result = userSchema.safeParse(jsonData);
@@ -76,7 +79,7 @@ if (result.isOk) {
   final name = validData['name'] as String;
   final age = validData['age'] as int;
 
-  // Option 2: Convert to your model class using your preferred method
+  // Option 2: Pass the validated map into your own model layer
   // - Constructor: User(name: validData['name'], age: validData['age'])
   // - json_serializable: User.fromJson(Map<String, dynamic>.from(validData))
   // - freezed: User.fromJson(Map<String, dynamic>.from(validData))
@@ -85,65 +88,10 @@ if (result.isOk) {
 }
 ```
 
-## Using Code Generation
+## Generating Extension Types with `@AckType()`
 
-The `ack_generator` package automatically creates schemas from your annotated classes:
-
-```dart
-// user.dart
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'user.g.dart';
-
-@AckModel()
-class User {
-  final String name;
-  final String email;
-  final int age;
-
-  User({required this.name, required this.email, required this.age});
-}
-```
-
-After running `dart run build_runner build`, the generator creates in `user.g.dart`:
-
-1. **Schema constant**: `final userSchema = Ack.object({...});`
-
-```dart
-// user.g.dart (generated)
-final userSchema = Ack.object({
-  'name': Ack.string(),
-  'email': Ack.string(),
-  'age': Ack.integer(),
-});
-```
-
-Use the generated schema for validation:
-
-```dart
-import 'user.dart';
-import 'dart:convert';
-
-final jsonString = '{"name": "Alice", "email": "alice@example.com", "age": 30}';
-final jsonData = jsonDecode(jsonString);
-
-// Option 1: Use schema directly (returns Map)
-final result = userSchema.safeParse(jsonData);
-if (result.isOk) {
-  final validData = result.getOrThrow();
-  final user = User(
-    name: validData['name'] as String,
-    email: validData['email'] as String,
-    age: validData['age'] as int,
-  );
-}
-```
-
-*See the [ack_generator package](https://pub.dev/packages/ack_generator) for more details on code generation.*
-
-### Generating Extension Types from Standalone Schemas with `@AckType()`
-
-When you write schemas manually (without a backing class), annotate the variable or getter with `@AckType()` to generate an extension type wrapper. Unlike `@AckModel`, this **does not create the schema**—it only adds type-safe access to your hand-written schema.
+When you write schemas manually, annotate the variable or getter with
+`@AckType()` to generate a typed wrapper around the validated data.
 
 ```dart
 // user_schema.dart
@@ -181,12 +129,17 @@ if (result.isOk) {
 }
 ```
 
-**Note**: Nested schemas annotated with `@AckType()` generate their own extension types. Object/list references must be statically resolvable for typed generation; unsupported or unresolved references fail generation instead of falling back to `Map<String, Object?>`. For current `Ack.discriminated(...)` limits, see [Type-safe Schemas](./typesafe-schemas.mdx#ackdiscriminated-with-acktype-current-constraints).
-
-`@AckType()` is only supported on top-level schema variables/getters, not classes.
+**Note**: Nested schemas annotated with `@AckType()` generate their own
+extension types. Object/list references must be statically resolvable for typed
+generation; unsupported or unresolved references fail generation instead of
+falling back to `Map<String, Object?>`. For current `Ack.discriminated(...)`
+limits, see
+[Type-safe Schemas](./typesafe-schemas.mdx#discriminated-schemas).
 
 ## Key Considerations
 
 -   **`dart:convert`:** Use the standard `dart:convert` library (`jsonEncode`, `jsonDecode`) for JSON string conversion. Ack handles validation only.
 -   **Type Safety:** While `jsonDecode` produces `dynamic`, successful validation gives you confidence in the structure and types of the resulting `Map<String, Object?>`.
--   **Model Conversion:** After validation, how you convert the validated Map to your model class is your choice. Ack doesn't prescribe a specific pattern - use whatever works best for your project. 
+-   **App-Level Model Conversion:** After validation, how you turn the validated
+    Map into an app-specific model is up to you. Ack keeps validation and
+    wrapper generation separate from your own model layer.

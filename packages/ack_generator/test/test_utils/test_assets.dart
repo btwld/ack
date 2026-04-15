@@ -28,60 +28,7 @@ const ackAnnotationsAsset = {
   'ack_annotations|lib/ack_annotations.dart': '''
 library ack_annotations;
 
-export 'src/ack_model.dart';
-export 'src/ack_field.dart';
 export 'src/ack_type.dart';
-''',
-  'ack_annotations|lib/src/ack_model.dart': '''
-import 'package:meta/meta_meta.dart';
-
-@Target({TargetKind.classType})
-class AckModel {
-  final String? schemaName;
-  final String? description;
-  final bool additionalProperties;
-  final String? additionalPropertiesField;
-  final bool model;
-  final String? discriminatedKey;
-  final String? discriminatedValue;
-
-  const AckModel({
-    this.schemaName,
-    this.description,
-    this.additionalProperties = false,
-    this.additionalPropertiesField,
-    this.model = false,
-    this.discriminatedKey,
-    this.discriminatedValue,
-  }) : assert(
-         discriminatedKey == null || discriminatedValue == null,
-         'discriminatedKey and discriminatedValue cannot be used together',
-       );
-}
-''',
-  'ack_annotations|lib/src/ack_field.dart': '''
-import 'package:meta/meta_meta.dart';
-
-enum AckFieldRequiredMode {
-  auto,
-  required,
-  optional,
-}
-
-@Target({TargetKind.field})
-class AckField {
-  final AckFieldRequiredMode requiredMode;
-  final String? jsonKey;
-  final String? description;
-  final List<String> constraints;
-
-  const AckField({
-    this.requiredMode = AckFieldRequiredMode.auto,
-    this.jsonKey,
-    this.description,
-    this.constraints = const [],
-  });
-}
 ''',
   'ack_annotations|lib/src/ack_type.dart': '''
 import 'package:meta/meta_meta.dart';

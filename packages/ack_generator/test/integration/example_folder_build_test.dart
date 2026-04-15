@@ -8,6 +8,16 @@ import 'package:test/test.dart';
 /// the generated code remains valid and analyzer-clean.
 void main() {
   group('Example Folder Build Integration', () {
+    const expectedGeneratedFiles = [
+      'lib/args_getter_example.g.dart',
+      'lib/pet.g.dart',
+      'lib/schema_types_discriminated.g.dart',
+      'lib/schema_types_edge_cases.g.dart',
+      'lib/schema_types_primitives.g.dart',
+      'lib/schema_types_simple.g.dart',
+      'lib/schema_types_transforms.g.dart',
+      'lib/user_with_color.g.dart',
+    ];
     late Directory projectRoot;
     late Directory exampleDir;
 
@@ -64,11 +74,16 @@ void main() {
             .whereType<File>()
             .where((f) => f.path.endsWith('.g.dart'))
             .toList();
+        final generatedRelativePaths =
+            generatedFiles
+                .map((file) => p.relative(file.path, from: exampleDir.path))
+                .toList()
+              ..sort();
 
         expect(
-          generatedFiles,
-          isNotEmpty,
-          reason: 'At least one .g.dart file should be generated',
+          generatedRelativePaths,
+          expectedGeneratedFiles,
+          reason: 'The retained AckType example output set should stay stable',
         );
 
         print('✅ Generated ${generatedFiles.length} files:');
@@ -115,17 +130,15 @@ void main() {
           reason: '$fileName should have generation warning',
         );
 
-        // Verify it contains either Ack schema definitions (@AckModel) OR extension types (@AckType)
-        final hasSchema = RegExp(r'final \w+Schema = Ack\.').hasMatch(content);
+        // AckType-only examples should emit extension types.
         final hasExtensionType = RegExp(
           r'extension type \w+Type',
         ).hasMatch(content);
 
         expect(
-          hasSchema || hasExtensionType,
+          hasExtensionType,
           isTrue,
-          reason:
-              '$fileName should contain either Ack schema definitions or extension types',
+          reason: '$fileName should contain generated extension types',
         );
 
         // Verify it's a part file (generated files are parts of the main file)

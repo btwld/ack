@@ -13,90 +13,53 @@ void main() {
       generator = AckSchemaGenerator();
     });
 
-    test('generator processes AckModel annotations', () {
-      // Since AckSchemaGenerator extends Generator (not GeneratorForAnnotation),
-      // it doesn't have a typeChecker property. Instead, we test that it
-      // correctly processes @AckModel annotations by checking its behavior.
-      expect(generator, isA<AckSchemaGenerator>());
-    });
+    test(
+      'generates extension types for annotated schema variables and getters',
+      () async {
+        final builder = SharedPartBuilder([generator], 'ack');
 
-    test('processes multiple annotated classes in single file', () async {
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+});
+
+@AckType(name: 'Status')
+AckSchema<String> get statusSchema => Ack.string();
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.ack.g.part': decodedMatches(
+              allOf([
+                contains('extension type UserType(Map<String, Object?> _data)'),
+                contains('extension type StatusType(String _value)'),
+                contains('String get name'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test('does not emit output when no AckType declarations exist', () async {
       final builder = SharedPartBuilder([generator], 'ack');
 
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/models.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-class User {
-  final String name;
-  User(this.name);
-}
-
-@AckModel()
-class Product {
-  final String title;
-  Product(this.title);
-}
-
-// Not annotated - should be ignored
-class Other {
-  final int value;
-  Other(this.value);
+      await testBuilder(builder, {
+        ...allAssets,
+        'test_pkg|lib/plain.dart': '''
+class PlainData {
+  final String id;
+  PlainData(this.id);
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/models.ack.g.part': decodedMatches(
-            allOf([
-              contains('final userSchema = Ack.object('),
-              contains('final productSchema = Ack.object('),
-              isNot(contains('otherSchema')),
-            ]),
-          ),
-        },
-      );
-    });
-
-    test('handles imports correctly', () async {
-      final builder = SharedPartBuilder([generator], 'ack');
-
-      await testBuilder(
-        builder,
-        {
-          ...allAssets,
-          'test_pkg|lib/address.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-
-@AckModel()
-class Address {
-  final String street;
-  Address(this.street);
-}
-''',
-          'test_pkg|lib/user.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
-import 'address.dart';
-
-@AckModel()
-class User {
-  final Address address;
-  User(this.address);
-}
-''',
-        },
-        outputs: {
-          'test_pkg|lib/address.ack.g.part': decodedMatches(
-            contains('final addressSchema = Ack.object('),
-          ),
-          'test_pkg|lib/user.ack.g.part': decodedMatches(
-            contains('addressSchema'),
-          ),
-        },
-      );
+      }, outputs: const {});
     });
 
     test('does not inject duplicate generated header in part output', () async {
@@ -107,15 +70,15 @@ class User {
         {
           ...allAssets,
           'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'model.ack.g.dart';
 
-@AckModel()
-class Model {
-  final String id;
-  Model(this.id);
-}
+@AckType()
+final modelSchema = Ack.object({
+  'id': Ack.string(),
+});
 ''',
         },
         outputs: {
@@ -138,40 +101,33 @@ class Model {
         {
           ...allAssets,
           'test_pkg|lib/formatted.dart': '''
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
-class WellFormatted {
-  final String firstName;
-  final String lastName;
-  final int age;
-  
-  WellFormatted({
-    required this.firstName,
-    required this.lastName,
-    required this.age,
-  });
-}
+@AckType()
+final wellFormattedSchema = Ack.object({
+  'firstName': Ack.string(),
+  'lastName': Ack.string(),
+  'age': Ack.integer(),
+});
 ''',
         },
         outputs: {
           'test_pkg|lib/formatted.ack.g.part': decodedMatches(
             allOf([
-              isNot(contains('\t')), // No tabs
-              contains('  '), // Uses spaces for indentation
-              isNot(
-                contains(' \n'),
-              ), // No trailing whitespace (space before newline)
+              isNot(contains('\t')),
+              contains('  '),
+              isNot(contains(' \n')),
             ]),
           ),
         },
       );
     });
 
-    test('error messages include helpful context', () async {
+    test('reports invalid AckType placement on classes', () async {
       final builder = SharedPartBuilder([generator], 'ack');
+      var sawPlacementError = false;
 
-      // When generator throws an error, no output should be generated
       await testBuilder(
         builder,
         {
@@ -179,24 +135,89 @@ class WellFormatted {
           'test_pkg|lib/bad.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckModel()
-abstract class BadModel {
-  String get name;
-}
+@AckType()
+class BadSchema {}
 ''',
         },
-        outputs: {
-          // Expect no output files when error is thrown
-        },
+        outputs: const {},
         onLog: (log) {
           if (log.level.name == 'SEVERE') {
+            sawPlacementError = true;
             expect(
               log.message,
-              contains('cannot be applied to abstract classes'),
+              contains('top-level schema variables or getters'),
             );
           }
         },
       );
+
+      expect(sawPlacementError, isTrue);
+    });
+
+    test('reports invalid AckType placement on instance getters', () async {
+      final builder = SharedPartBuilder([generator], 'ack');
+      var sawPlacementError = false;
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/bad.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class BadSchema {
+  @AckType()
+  AckSchema<String> get valueSchema => Ack.string();
+}
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE') {
+            sawPlacementError = true;
+            expect(
+              log.message,
+              contains('top-level schema variables or getters'),
+            );
+          }
+        },
+      );
+
+      expect(sawPlacementError, isTrue);
+    });
+
+    test('reports invalid AckType placement on static getters', () async {
+      final builder = SharedPartBuilder([generator], 'ack');
+      var sawPlacementError = false;
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/bad.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class BadSchema {
+  @AckType()
+  static AckSchema<String> get valueSchema => Ack.string();
+}
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE') {
+            sawPlacementError = true;
+            expect(
+              log.message,
+              contains('top-level schema variables or getters'),
+            );
+          }
+        },
+      );
+
+      expect(sawPlacementError, isTrue);
     });
   });
 }

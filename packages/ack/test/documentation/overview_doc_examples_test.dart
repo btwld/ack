@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
@@ -222,6 +223,13 @@ void main() {
 
       final encoded = jsonEncode(jsonSchema);
       expect(encoded, contains('"type":"object"'));
+    });
+
+    test('overview copy does not describe JSON as typed models', () async {
+      final content = await File('../../docs/index.mdx').readAsString();
+
+      expect(content, isNot(contains('Convert between JSON and typed models')));
+      expect(content, contains('validated data'));
     });
   });
 }

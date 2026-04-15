@@ -191,57 +191,20 @@ combinators.
 ## Code Generation Annotations
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to
-turn annotations into ready-to-use schemas and extension types. After adding
+turn annotations into extension types. After adding
 the annotations below, run:
 
 ```bash
 dart run build_runner build
 ```
 
-### `@AckModel()`
-
-**Target**: Dart classes
-
-**Generates**: A schema constant only
-
-Annotate a Dart class to automatically generate a validation schema. The generator analyzes your class fields and creates a schema constant named `<className>Schema` (e.g., `userSchema`).
-
-**Parameters:**
-- `schemaName`: Custom name for the generated schema constant
-- `description`: Documentation string for the schema
-- `additionalProperties`: Allow extra fields not defined in the class
-- `additionalPropertiesField`: Field name to store extra properties (must be `Map<String, dynamic>`)
-- `discriminatedKey`: Field name for type discrimination (use on abstract base classes)
-- `discriminatedValue`: Discriminator value for this subtype (use on concrete implementations)
-
-**Example:**
-```dart
-@AckModel(description: 'User profile')
-class User {
-  final String name;
-  final int age;
-
-  User({required this.name, required this.age});
-}
-
-// Generated:
-// - final userSchema = Ack.object({...});
-
-// Usage:
-final result = userSchema.safeParse({'name': 'Alice', 'age': 30});
-if (result.isOk) {
-  final data = result.getOrThrow();
-  print(data['name']); // 'Alice'
-}
-```
-
 ### `@AckType()`
 
 **Target**: Schema variables and getters
 
-**Generates**: ONLY an extension type (schema must already exist)
+**Generates**: An extension type wrapper around the existing schema
 
-Annotate an existing schema variable or getter to generate an extension type wrapper. Unlike `@AckModel`, this does not create the schema—it only adds type-safe access to a schema you've already written.
+Annotate an existing schema variable or getter to generate an extension type wrapper. The schema itself stays in your source file.
 
 **Supported schema types:**
 - `Ack.object({...})` → Object extension types
@@ -253,7 +216,7 @@ Annotate an existing schema variable or getter to generate an extension type wra
 **Unsupported:** `Ack.any()`, `Ack.anyOf()`
 
 For `Ack.discriminated(...)` constraints with `@AckType`, see
-[Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#ackdiscriminated-with-acktype-current-constraints).
+[Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#discriminated-schemas).
 
 **Example:**
 ```dart
