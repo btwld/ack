@@ -16,14 +16,14 @@ For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
   required fields, types, and constraints at boundaries
 - **Single Source of Truth**: Define data structures and rules in one place
 - **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion
-- **Type Safety**: Generate type-safe schema classes from your Dart models
+- **Type Safety**: Generate typed wrappers for hand-written Ack schemas with `@AckType()`
 
 ## Packages
 
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with fluent schema building API
-- **[ack_generator](./packages/ack_generator)**: Code generator for creating schema classes from annotated Dart models
+- **[ack_generator](./packages/ack_generator)**: Code generator for `@AckType()` extension-type wrappers
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured output generation
 - **[example](./example)**: Example projects demonstrating usage of all packages
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -13,6 +15,22 @@ void main() {
 
       final invalidResult = nameSchema.safeParse('Al');
       expect(invalidResult.isFail, isTrue);
+    });
+
+    test('generator setup documents the AckType workflow', () async {
+      final content = await File(
+        '../../docs/getting-started/installation.mdx',
+      ).readAsString();
+
+      expect(content, contains('ack_annotations'));
+      expect(content, contains('@AckType()'));
+      expect(content, contains('ack_generator'));
+      expect(content, contains('build_runner'));
+      expect(
+        content,
+        isNot(contains('automatic schema generation from Dart classes')),
+      );
+      expect(content, isNot(contains('annotated classes')));
     });
   });
 }

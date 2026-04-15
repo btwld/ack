@@ -1,3 +1,10 @@
+## 1.0.0-beta.12-wip
+
+### Breaking
+
+* Remove class-based schema generation. `ack_generator` now supports only
+  top-level `@AckType()` schema variables and getters.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.

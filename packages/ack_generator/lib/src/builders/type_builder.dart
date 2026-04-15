@@ -90,20 +90,20 @@ class TypeBuilder {
   /// Builds an extension type for the given model
   ///
   /// Returns null if the model should not generate an extension type:
-  /// - Discriminated base classes (generated separately via
-  ///   [buildDiscriminatedExtensionBase] or [buildSealedClass])
+  /// - Discriminated base schemas (generated separately via
+  ///   [buildDiscriminatedExtensionBase])
   /// - Nullable schema variables (representation is non-nullable)
   ExtensionType? buildExtensionType(
     ModelInfo model,
     List<ModelInfo> allModels,
   ) {
-    // Discriminated base classes get sealed classes, not extension types
+    // Discriminated base schemas get dedicated base extension types.
     if (model.isDiscriminatedBaseDefinition) {
       return null;
     }
 
     // Nullable schema variables can't be safely wrapped (representation is non-nullable).
-    if (model.isFromSchemaVariable && model.isNullableSchema) {
+    if (model.isNullableSchema) {
       return null;
     }
 
@@ -131,64 +131,6 @@ class TypeBuilder {
           if (isObjectSchema) ...[
             if (model.additionalProperties) _buildArgsGetter(model),
           ],
-        ]),
-    );
-  }
-
-  /// Builds a sealed class for discriminated base types
-  Class? buildSealedClass(ModelInfo model, List<ModelInfo> allModels) {
-    if (!model.isDiscriminatedBaseDefinition) {
-      return null;
-    }
-
-    final typeName = _getExtensionTypeName(model);
-    final schemaVarName = _toCamelCase(model.schemaClassName);
-    final subtypeNames = model.subtypeNames;
-
-    if (subtypeNames == null || subtypeNames.isEmpty) {
-      return null;
-    }
-
-    return Class(
-      (b) => b
-        ..name = typeName
-        ..sealed = true
-        ..docs.addAll(_buildDocs(model))
-        ..fields.add(
-          Field(
-            (f) => f
-              ..name = '_data'
-              ..type = refer('Map<String, Object?>')
-              ..modifier = FieldModifier.final$,
-          ),
-        )
-        ..constructors.add(
-          Constructor(
-            (c) => c
-              ..constant = true
-              ..requiredParameters.add(
-                Parameter(
-                  (p) => p
-                    ..name = '_data'
-                    ..toThis = true,
-                ),
-              ),
-          ),
-        )
-        ..methods.addAll([
-          // Add discriminator getter
-          Method(
-            (m) => m
-              ..type = MethodType.getter
-              ..name = model.discriminatorKey!
-              ..returns = refer('String')
-              ..lambda = true
-              ..body = Code("_data['${model.discriminatorKey}'] as String"),
-          ),
-          // Add factory constructor for parsing
-          _buildDiscriminatedFactory(model, schemaVarName, subtypeNames),
-          // Add safeParse static method
-          _buildDiscriminatedSafeParse(model, schemaVarName, subtypeNames),
         ]),
     );
   }
@@ -300,10 +242,7 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['$discriminatorKey'] as String"),
           ),
-          // This builder is currently used by @AckType schema-variable
-          // discriminated flows; keep these guards explicit to preserve behavior.
-          if (model.isFromSchemaVariable)
-            ..._buildStaticFactories(model, schemaVarName),
+          ..._buildStaticFactories(model, schemaVarName),
           // Add regular field getters
           ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
           if (model.additionalProperties) _buildArgsGetter(model),

@@ -2,79 +2,18 @@
 title: TypeSafe Schemas
 ---
 
-Ack generates **extension types** that wrap validated data so you can work with
-strongly typed objects instead of raw `Map<String, Object?>`. This guide shows
-how `@AckModel()` and `@AckType()` annotations interact with the generator to
-produce these typed views.
+Ack generates extension types from top-level schemas annotated with
+`@AckType()`. The schema stays in your source file; the generator adds a typed
+wrapper around its validated representation.
 
 ## Overview
 
-- `@AckModel()` goes on a **Dart class** and produces a **schema constant** (e.g., `userSchema`).
-- `@AckType()` goes on a **schema variable/getter** and produces an **extension type** for type-safe access (the schema already exists). The type name is derived from the variable name (e.g., `userSchema` → `UserType`).
-- Both annotations live in `package:ack_annotations` and are processed by the
-  `ack_generator` builder via `dart run build_runner build`.
+- Define schemas directly with the Ack fluent API.
+- Annotate the top-level schema variable or getter with `@AckType()`.
+- Run `dart run build_runner build`.
+- Use the generated `TypeName.parse()` / `TypeName.safeParse()` helpers.
 
-## Schema Generation from Classes with `@AckModel()`
-
-Use `@AckModel()` when you have a Dart class that should drive schema generation. The generator creates a validation schema based on your class structure.
-
-```dart
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'user.g.dart';
-
-@AckModel(description: 'Profile details')
-class User {
-  final String name;
-  final int age;
-
-  User({required this.name, required this.age});
-}
-```
-
-Running `dart run build_runner build` writes `user.g.dart` with:
-
-- **Schema constant**: `final userSchema = Ack.object({...});`
-
-You can use the generated schema for validation:
-
-```dart
-final result = userSchema.safeParse(json);
-if (result.isOk) {
-  final data = result.getOrThrow()!;
-  final user = User(
-    name: data['name'] as String,
-    age: data['age'] as int,
-  );
-}
-```
-
-For type-safe access without manual casting, define a schema variable in source and annotate it with `@AckType()` (see below).
-
-### Discriminated Hierarchies
-
-Annotate an abstract base with `discriminatedKey` and each subtype with a
-`discriminatedValue` to receive a generated discriminated schema that maps
-discriminator values to subtype schemas.
-
-```dart
-@AckModel(discriminatedKey: 'type')
-abstract class Shape {
-  String get type;
-}
-
-@AckModel(discriminatedValue: 'circle')
-class Circle extends Shape {
-  @override
-  String get type => 'circle';
-  final double radius;
-  Circle(this.radius);
-}
-```
-
-## Typed Schemas from Hand-Written Definitions with `@AckType()`
-
-Use `@AckType()` when you write schemas manually but still want type-safe access via extension types. Unlike `@AckModel`, this annotation does **not** generate a schema—it only generates an extension type wrapper for an existing schema.
+## Basic usage
 
 ```dart
 import 'package:ack/ack.dart';
@@ -83,98 +22,97 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'user_schema.g.dart';
 
 @AckType()
+final addressSchema = Ack.object({
+  'street': Ack.string(),
+  'city': Ack.string(),
+});
+
+@AckType()
 final userSchema = Ack.object({
   'id': Ack.string(),
   'email': Ack.string().email().nullable(),
   'address': addressSchema,
 });
-
-@AckType()
-final addressSchema = Ack.object({
-  'street': Ack.string(),
-  'city': Ack.string(),
-});
 ```
 
-After running `dart run build_runner build`, the part file contains:
+The generated part file contains:
 
-- **Your original schema constants/getters** remain in your source file.
-- **Extension type** `UserType(Map<String, Object?> _data)` with typed getters (removes "Schema" suffix from variable name, adds "Type").
-- **Extension type** `AddressType(Map<String, Object?> _data)` for the nested schema.
-- **Static helpers** `parse`/`safeParse` so you can do `final user = UserType.parse(json);`.
+- `AddressType(Map<String, Object?> _data)`
+- `UserType(Map<String, Object?> _data)`
+- typed getters for each field
+- `parse()` and `safeParse()` factories
 
-**Key difference from @AckModel**: The schemas (`userSchema`, `addressSchema`) already exist in your source code. The annotation only adds the extension type layer.
-
-### Supported Schema Shapes
+## Supported schema shapes
 
 `@AckType()` works with:
 
 - `Ack.object(...)`
-- Primitive schemas (`Ack.string`, `Ack.integer`, `Ack.double`, `Ack.boolean`)
-- Lists of supported schemas (`Ack.list(...)`)
-- Literal/enum helpers (`Ack.literal`, `Ack.enumValues`, `Ack.enumString`)
-- `Ack.discriminated(...)` (with constraints below)
+- primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
+- `Ack.list(...)`
+- `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
+- non-object transforms with explicit output types
+- `Ack.discriminated(...)` with the constraints below
 
-Unsupported helpers include `Ack.any` and `Ack.anyOf`.
+Unsupported helpers include `Ack.any()` and `Ack.anyOf()`.
 
-### `Ack.discriminated(...)` with `@AckType` (Current constraints)
+## Discriminated schemas
 
-- `schemas` must be a non-empty map literal.
-- Base schema cannot be nullable.
-- Each branch must be a top-level schema variable/getter reference.
-- Each branch must be `@AckType`, object-shaped, non-nullable, and declared in the same library.
-- Branch discriminator literal (`Ack.literal(...)`) must match the branch key in `schemas`.
-- A branch schema can belong to only one discriminated base.
+`Ack.discriminated(...)` works with `@AckType()` when:
 
-## `@AckType` Resolution Requirements and Limitations
+- `schemas` is a non-empty map literal
+- the base schema is not nullable
+- each branch is a top-level schema variable or getter
+- each branch is an `@AckType` object schema
+- each branch is non-nullable
+- each branch is declared in the same library as the base
+- the branch discriminator literal matches the branch key
 
-`@AckType()` now uses strict resolution for nested typed schemas. This prevents
-silent fallbacks to `Map<String, Object?>` when references cannot be resolved
-unambiguously.
+Example:
 
-- Nested object fields must reference a named top-level schema variable/getter.
-  Anonymous inline object fields are not supported for typed generation.
-- `Ack.list(...)` elements must be statically resolvable. Dynamic expressions
-  such as `schemaFactory()` or excessively deep method chains are rejected.
-- Cross-file references (direct import, prefixed import, re-export) are
-  supported, but prefixed references must resolve inside the specified prefix.
-  `prefix.symbol` never falls back to a different namespace.
-- Object schema references used for typed wrappers must be annotated with
-  `@AckType()`. Unannotated object refs fail generation instead of degrading to
-  raw map access.
-- Circular schema alias/reference chains fail generation with a clear circular
-  reference error.
+```dart
+@AckType()
+final catSchema = Ack.object({
+  'type': Ack.literal('cat'),
+  'lives': Ack.integer(),
+});
 
-If you need a typed nested object, extract it to a top-level schema variable or
-getter and annotate it with `@AckType()`, then reference that symbol.
+@AckType()
+final dogSchema = Ack.object({
+  'type': Ack.literal('dog'),
+  'breed': Ack.string(),
+});
 
-## Working with Extension Types
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {
+    'cat': catSchema,
+    'dog': dogSchema,
+  },
+);
+```
 
-- `TypeName.parse(Object? data)` throws on invalid input.
-- `TypeName.safeParse(Object? data)` returns a `SchemaResult<TypeName>`.
+## Resolution rules
 
-Extension types implement the underlying Dart type, so primitive wrappers still
-behave like `String`, `int`, etc., while object wrappers implement
-`Map<String, Object?>`.
+`@AckType()` uses strict schema resolution.
 
-## Choosing Between `@AckModel` and `@AckType`
+- Nested object fields must reference a named top-level schema.
+- Inline anonymous object fields are rejected for typed generation.
+- `Ack.list(...)` elements must be statically resolvable.
+- Cross-file references work for direct imports, prefixed imports, and re-exports.
+- Unannotated object schema references fail generation instead of silently falling back to raw maps.
+- Circular alias/reference chains fail generation with a clear error.
 
-| Annotation | Target | Generates Schema? | Generates Extension Type? | Use When |
-|------------|--------|-------------------|---------------------------|----------|
-| `@AckModel` | Dart class | ✅ Yes | ❌ No | You have a class definition and want schema generation |
-| `@AckType` | Top-level schema variable/getter | ❌ No (uses existing) | ✅ Yes | You have a schema and want type-safe access |
+## Limitations
 
-**Examples:**
+- `@AckType()` is only supported on top-level schema variables and getters.
+- Nullable top-level schemas do not emit extension types.
+- List element nullability may not be preserved in all chained modifier cases.
+- Use `.transform<T>(...)` with an explicit output type so the generator can infer the representation type.
 
-- Use **`@AckModel`** when you have a Dart class (or class hierarchy) that should drive schema generation.
+## Build checklist
 
-- Use **`@AckType`** on hand-written top-level schema variables or getters when you want type-safe extension type access.
-
-- **Note:** `@AckType` is not supported on classes or generated schemas. If you need extension types, define the schema directly in your source file.
-
-## Build Runner Checklist
-
-1. Add `ack_generator` and `ack_annotations` to `pubspec.yaml`.
-2. Include a `build.yaml` or rely on defaults.
-3. Ensure source files have a `part '<file>.g.dart';`.
-4. Run `dart run build_runner build` (or `watch`) after changing schemas.
+1. Add `ack_annotations`, `ack_generator`, and `build_runner`.
+2. Add a `part '<file>.g.dart';` directive.
+3. Annotate top-level schema variables/getters with `@AckType()`.
+4. Run `dart run build_runner build`.

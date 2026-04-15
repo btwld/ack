@@ -6,61 +6,73 @@ import 'package:test/test.dart';
 void main() {
   group('Documentation Example Test Suite', () {
     group('Example Package Validation', () {
+      const retainedExampleSources = [
+        'args_getter_example.dart',
+        'pet.dart',
+        'schema_types_discriminated.dart',
+        'schema_types_edge_cases.dart',
+        'schema_types_primitives.dart',
+        'schema_types_simple.dart',
+        'schema_types_transforms.dart',
+        'user_with_color.dart',
+      ];
+      const retainedGeneratedFiles = [
+        'args_getter_example.g.dart',
+        'pet.g.dart',
+        'schema_types_discriminated.g.dart',
+        'schema_types_edge_cases.g.dart',
+        'schema_types_primitives.g.dart',
+        'schema_types_simple.g.dart',
+        'schema_types_transforms.g.dart',
+        'user_with_color.g.dart',
+      ];
+
       test('example package should exist and be properly structured', () {
         final exampleDir = Directory('../../example');
-        expect(
-          exampleDir.existsSync(),
-          isTrue,
-          reason: 'Example package directory should exist',
-        );
+        expect(exampleDir.existsSync(), isTrue);
 
-        final libDir = Directory('../../example/lib');
-        expect(
-          libDir.existsSync(),
-          isTrue,
-          reason: 'Example lib directory should exist',
-        );
-
-        final testDir = Directory('../../example/test');
-        expect(
-          testDir.existsSync(),
-          isTrue,
-          reason: 'Example test directory should exist',
-        );
+        expect(Directory('../../example/lib').existsSync(), isTrue);
+        expect(Directory('../../example/test').existsSync(), isTrue);
       });
 
-      test('example package should have required files', () {
-        final requiredFiles = [
-          '../../example/pubspec.yaml',
-          '../../example/README.md',
-          '../../example/lib/simple_examples.dart',
-          '../../example/lib/product_model.dart',
-        ];
+      test(
+        'example package should have the full retained AckType source set',
+        () async {
+          final exampleLib = Directory('../../example/lib');
+          final actualSources = <String>[];
 
-        for (final filePath in requiredFiles) {
-          final file = File(filePath);
-          expect(
-            file.existsSync(),
-            isTrue,
-            reason: 'Required file $filePath should exist',
-          );
-        }
-      });
+          for (final entry in exampleLib.listSync()) {
+            if (entry is! File || !entry.path.endsWith('.dart')) {
+              continue;
+            }
 
-      test('generated files should exist', () {
-        final generatedFiles = [
-          '../../example/lib/simple_examples.g.dart',
-          '../../example/lib/product_model.g.dart',
-        ];
+            final fileName = entry.uri.pathSegments.last;
+            if (fileName.endsWith('.g.dart')) {
+              continue;
+            }
 
-        for (final filePath in generatedFiles) {
-          final file = File(filePath);
-          expect(
-            file.existsSync(),
-            isTrue,
-            reason: 'Generated file $filePath should exist',
-          );
-        }
+            final content = await entry.readAsString();
+            if (content.contains('@AckType()')) {
+              actualSources.add(fileName);
+            }
+          }
+
+          actualSources.sort();
+          expect(actualSources, retainedExampleSources);
+        },
+      );
+
+      test('generated AckType example files should match the retained set', () {
+        final actualGeneratedFiles =
+            Directory('../../example/lib')
+                .listSync()
+                .whereType<File>()
+                .map((file) => file.uri.pathSegments.last)
+                .where((fileName) => fileName.endsWith('.g.dart'))
+                .toList()
+              ..sort();
+
+        expect(actualGeneratedFiles, retainedGeneratedFiles);
       });
     });
 
@@ -70,7 +82,6 @@ void main() {
           'analyze',
         ], workingDirectory: '../../example');
 
-        // Allow warnings but not errors (exit code 3 means warnings, 1+ means errors)
         expect(
           result.exitCode,
           lessThanOrEqualTo(3),
@@ -95,42 +106,13 @@ void main() {
       );
     });
 
-    group('Manual Schema Examples', () {
-      test(
-        'migration guide classes and generated schema are present',
-        () async {
-          final productModelFile = File('../../example/lib/product_model.dart');
-          expect(productModelFile.existsSync(), isTrue);
-          final content = await productModelFile.readAsString();
-
-          expect(content, contains('class Product'));
-          expect(content, contains('class Category'));
-          expect(content, contains('part \'product_model.g.dart\';'));
-          expect(content, isNot(contains('@AckModel(model: true)')));
-        },
-      );
-
-      test('generated schema matches migration examples', () async {
-        final generatedFile = File('../../example/lib/product_model.g.dart');
-        expect(generatedFile.existsSync(), isTrue);
-        final content = await generatedFile.readAsString();
-
-        expect(content, contains('final productSchema = Ack.object'));
-        expect(content, contains("'name': Ack.string()"));
-      });
-    });
-
     group('Build System Integration', () {
       test('build.yaml should be properly configured', () async {
         final buildFile = File('../../example/build.yaml');
         expect(buildFile.existsSync(), isTrue);
 
         final content = await buildFile.readAsString();
-        expect(
-          content,
-          contains('ack_generator'),
-          reason: 'build.yaml should reference ack_generator',
-        );
+        expect(content, contains('ack_generator'));
       });
 
       test('pubspec.yaml should have correct dependencies', () async {
@@ -138,107 +120,85 @@ void main() {
         expect(pubspecFile.existsSync(), isTrue);
 
         final content = await pubspecFile.readAsString();
-
-        // Check for required dependencies
-        expect(
-          content,
-          contains('ack:'),
-          reason: 'pubspec.yaml should include ack dependency',
-        );
-        // Note: ack_annotations is not required in the current setup
-        expect(
-          content,
-          contains('ack_generator:'),
-          reason: 'pubspec.yaml should include ack_generator dev dependency',
-        );
-        expect(
-          content,
-          contains('build_runner:'),
-          reason: 'pubspec.yaml should include build_runner dev dependency',
-        );
+        expect(content, contains('ack:'));
+        expect(content, contains('ack_generator:'));
+        expect(content, contains('build_runner:'));
       });
     });
 
     group('Generated Code Quality', () {
-      test('generated files should be properly formatted', () async {
+      test('generated files should contain extension types', () async {
         final generatedFiles = [
-          '../../example/lib/simple_examples.g.dart',
-          '../../example/lib/product_model.g.dart',
+          '../../example/lib/args_getter_example.g.dart',
+          '../../example/lib/pet.g.dart',
+          '../../example/lib/schema_types_simple.g.dart',
         ];
 
         for (final filePath in generatedFiles) {
-          final file = File(filePath);
-          if (!file.existsSync()) {
-            // Skip this file if it doesn't exist
-            continue;
-          }
-
-          final content = await file.readAsString();
-
-          // Basic checks for generated content
-          expect(
-            content,
-            contains('// GENERATED CODE'),
-            reason: 'Generated file should have generation header',
-          );
-          expect(
-            content,
-            contains('Ack.object('),
-            reason:
-                'Generated file should contain generated schema definitions',
-          );
+          final content = await File(filePath).readAsString();
+          expect(content, contains('// GENERATED CODE'));
+          expect(content, contains('extension type'));
         }
       });
 
-      test('generated example entrypoint should execute', () async {
-        final result = await Process.run('dart', [
-          'run',
-          'lib/simple_examples.dart',
-        ], workingDirectory: '../../example');
+      test('README should describe AckType-based examples', () async {
+        final readme = await File('../../example/README.md').readAsString();
+        expect(readme, contains('@AckType'));
+        expect(readme, isNot(contains('annotated classes')));
+      });
 
-        expect(
-          result.exitCode,
-          equals(0),
-          reason: 'Generated code should execute successfully',
-        );
-        expect(
-          result.stdout.toString(),
-          contains('🎉 All examples completed!'),
-          reason: 'Example entrypoint should complete',
-        );
+      test('ack_annotations README documents runnable AckType setup', () async {
+        final readme = await File(
+          '../../packages/ack_annotations/README.md',
+        ).readAsString();
+
+        expect(readme, contains('ack_generator'));
+        expect(readme, contains('build_runner'));
+        expect(readme, contains("import 'package:ack/ack.dart'"));
+      });
+
+      test(
+        'api reference links to the current discriminated schemas anchor',
+        () async {
+          final content = await File(
+            '../../docs/api-reference/index.mdx',
+          ).readAsString();
+
+          expect(content, contains('#discriminated-schemas'));
+          expect(
+            content,
+            isNot(
+              contains('#ackdiscriminated-with-acktype-current-constraints'),
+            ),
+          );
+        },
+      );
+
+      test('ack_annotations library has a library-level doc comment', () async {
+        final content = await File(
+          '../../packages/ack_annotations/lib/ack_annotations.dart',
+        ).readAsString();
+
+        expect(content.trimLeft(), startsWith('///'));
       });
     });
 
     group('Example Functionality', () {
-      test('example models should demonstrate key features', () async {
-        final simpleExamplesFile = File(
-          '../../example/lib/simple_examples.dart',
-        );
-        final content = await simpleExamplesFile.readAsString();
+      test(
+        'args getter example should demonstrate passthrough access',
+        () async {
+          final content = await File(
+            '../../example/lib/args_getter_example.dart',
+          ).readAsString();
 
-        // Check that examples demonstrate key features
-        expect(
-          content,
-          contains('additionalProperties: true'),
-          reason: 'Examples should demonstrate additional properties',
-        );
-        expect(
-          content,
-          contains('additionalPropertiesField:'),
-          reason:
-              'Examples should show additional properties field configuration',
-        );
-        expect(
-          content,
-          contains('Map<String, dynamic>'),
-          reason: 'Examples should show metadata/preferences fields',
-        );
-      });
+          expect(content, contains('@AckType()'));
+          expect(content, contains('additionalProperties: true'));
+        },
+      );
     });
 
     group('Cross-Platform Compatibility', () {
       test('schema JSON roundtrip produces consistent output', () {
-        // Verify schema serialization is deterministic across platforms
         final schema = Ack.object({
           'name': Ack.string().minLength(1),
           'age': Ack.integer().min(0),

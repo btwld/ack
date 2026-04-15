@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
@@ -79,6 +80,20 @@ void main() {
       expect(result.isOk, isTrue);
       final user = result.getOrThrow()!;
       expect(user['email'], equals('alice@example.com'));
+    });
+
+    test('doc copy focuses on validated data and typed wrappers', () async {
+      final content = await File(
+        '../../docs/core-concepts/json-serialization.mdx',
+      ).readAsString();
+
+      expect(
+        content,
+        isNot(
+          contains('Ack schemas convert between Dart models and JSON data'),
+        ),
+      );
+      expect(content, contains('typed wrapper'));
     });
   });
 }

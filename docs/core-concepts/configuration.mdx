@@ -93,81 +93,32 @@ final signUpSchema = Ack.object({
 ```
 *See the [Custom Validation Guide](../guides/custom-validation.mdx) for additional patterns.*
 
-## Code Generation Configuration
+## AckType Generation
 
-The `ack_generator` package provides automatic schema generation from annotated classes. This feature is production-ready.
-
-To use code generation, annotate your classes with `@AckModel`. The generator creates a validation schema from your class structure. Use `@AckField` for field-level constraints:
+`ack_generator` works with top-level schemas annotated with `@AckType()`. Write
+the schema directly, then generate an extension type wrapper around its
+validated representation:
 
 ```dart
+import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.g.dart';
 
-@AckModel(
-  description: 'User profile with flexible preferences',
-  additionalProperties: true,
-  additionalPropertiesField: 'preferences'
-)
-class User {
-  @AckField(constraints: ['minLength(2)', 'maxLength(50)'])
-  final String name;
-
-  @AckField(constraints: ['email'])
-  final String email;
-
-  @AckField(constraints: ['min(18)'])
-  final int? age; // Optional field
-
-  // Collects extra properties not defined in the schema
-  final Map<String, dynamic> preferences;
-
-  User({
-    required this.name,
-    required this.email,
-    this.age,
-    this.preferences = const {},
-  });
-}
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2).maxLength(50),
+  'email': Ack.string().email(),
+  'age': Ack.integer().min(18).optional().nullable(),
+}, additionalProperties: true);
 ```
 
-After running `dart run build_runner build`, the generator creates in `user.g.dart`:
+After running `dart run build_runner build`, the generated part adds a typed
+wrapper such as `UserType` with `parse()` / `safeParse()` helpers and typed
+getters for the schema fields.
 
-1. **Schema constant**: `final userSchema = Ack.object({...});`
-
-```dart
-// Generated in user.g.dart:
-//
-// final userSchema = Ack.object({
-//   'name': Ack.string().minLength(2).maxLength(50),
-//   'email': Ack.string().email(),
-//   'age': Ack.integer().min(18).optional().nullable(),
-// }, additionalProperties: true);
-//
-// Usage with the generated schema:
-final userData = {
-  'name': 'John Doe',
-  'email': 'john@example.com',
-  'age': 25,
-  'theme': 'dark',
-  'language': 'en',
-  'notifications': true,
-};
-
-final result = userSchema.safeParse(userData);
-if (result.isOk) {
-  final user = result.getOrThrow()!;
-  print(user['name']);  // John Doe
-  print(user['email']); // john@example.com
-  print(user['theme']); // dark (additional properties)
-}
-```
-
-If you want extension types, define a hand-written top-level schema variable/getter
-annotated with `@AckType()` (see
-[TypeSafe Schemas](./typesafe-schemas.mdx#typed-schemas-from-hand-written-definitions-with-acktype)).
-
-*See the [Installation Guide](../getting-started/installation.mdx#code-generator-production-ready) for setup instructions and the generator README for advanced features.*
+*See [TypeSafe Schemas](./typesafe-schemas.mdx) and the generator README for
+setup details and supported schema shapes.*
 
 ## Summary
 

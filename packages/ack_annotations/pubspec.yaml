@@ -1,6 +1,6 @@
 name: ack_annotations
-description: Annotations for Ack schema code generation
-version: 1.0.0-beta.11
+description: AckType annotation for schema extension-type generation
+version: 1.0.0-beta.12-wip
 repository: https://github.com/btwld/ack
 resolution: workspace
 

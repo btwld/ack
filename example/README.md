@@ -1,49 +1,23 @@
 # Ack Example Package
 
-This package demonstrates how to use the `ack` validation library for schema-based data validation.
+This package demonstrates Ack schemas built directly in source and typed with
+`@AckType()`.
 
-## Overview
+## Included examples
 
-The code within `lib/` showcases:
+- Primitive typed schemas in `lib/schema_types_primitives.dart`
+- Object schemas in `lib/schema_types_simple.dart`
+- Discriminated schemas in `lib/schema_types_discriminated.dart`
+- Transform-backed schemas in `lib/schema_types_transforms.dart`
+- Edge cases and strict resolution in `lib/schema_types_edge_cases.dart`
+- Cross-schema object wrappers in `lib/pet.dart`, `lib/user_with_color.dart`,
+  and `lib/args_getter_example.dart`
 
--   Defining validation schemas using the fluent `Ack` API
--   Validating complex nested data structures
--   Using different schema types (string, number, object, list, etc.)
--   Custom validation with refinements and transformations
--   Error handling and validation results
+## Running the examples
 
-## Examples Included
-
-- **Basic Schema Validation**: Simple string, number, and boolean validation
-- **Object Validation**: Nested object structures with property validation
-- **List Validation**: Array validation with item schemas
-- **Custom Validation**: Using refinements for business logic validation
-- **Union Types**: Using `anyOf` and discriminated unions
-- **Flexible Schemas**: Using `AnySchema` for maximum flexibility
-
-## Running the Example
-
-1.  **Bootstrap the Workspace:**
-    Ensure you have bootstrapped the monorepo from the root directory:
-    ```bash
-    # From the root directory ../../
-    melos bootstrap
-    ```
-
-2.  **Run the Examples:**
-    ```bash
-    cd example
-    dart run any_schema_example.dart
-    ```
-
-3.  **Run Tests:**
-    The tests demonstrate various validation scenarios:
-    ```bash
-    # From the example directory
-    dart test
-
-    # Or run all workspace tests from the root directory ../../
-    melos test
-    ```
-
-Explore the code in `lib/` and `test/` to understand different validation patterns with Ack schemas.
+```bash
+melos bootstrap
+cd example
+dart run build_runner build --delete-conflicting-outputs
+dart test
+```

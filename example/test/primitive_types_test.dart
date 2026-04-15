@@ -139,7 +139,7 @@ void main() {
     });
   });
 
-  group('EnumString Schema', () {
+  group('String Enum Schema', () {
     test('roleSchema validates and returns string', () {
       final result = roleSchema.safeParse('admin');
 

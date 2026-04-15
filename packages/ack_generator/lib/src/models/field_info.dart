@@ -108,8 +108,8 @@ class FieldInfo {
 
         return enumConstants;
       } catch (e) {
-        // If there's any issue with the analyzer API, fall back to empty list
-        // This maintains backward compatibility with manual @EnumString annotations
+        // If the analyzer can't resolve the enum constants, fall back to empty
+        // values so generation still works for manual string-enum schemas.
         _log.warning('Could not extract enum values for ${element.name3}: $e');
         return [];
       }

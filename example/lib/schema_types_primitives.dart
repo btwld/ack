@@ -41,7 +41,7 @@ final scoresSchema = Ack.list(Ack.integer());
 @AckType()
 final statusSchema = Ack.literal('active');
 
-// EnumString schema
+// String enum schema
 @AckType()
 final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 
@@ -75,12 +75,6 @@ final chainedEnumStringSchema = Ack.enumString([
   'write',
   'execute',
 ]).withDefault('read');
-
-// Test transform - this may not work as expected
-// @AckType()
-// final transformedPasswordSchema = Ack.string()
-//   .minLength(8)
-//   .transform((s) => s.trim().toLowerCase());
 
 // Test refine - this should work
 @AckType()

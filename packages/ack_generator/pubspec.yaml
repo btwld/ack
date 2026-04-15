@@ -1,6 +1,6 @@
 name: ack_generator
-description: Code generator for Ack schema validation models
-version: 1.0.0-beta.11
+description: Code generator for AckType extension-type generation
+version: 1.0.0-beta.12-wip
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 resolution: workspace

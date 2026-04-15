@@ -10,7 +10,6 @@ class ModelInfo {
   final String? description;
   final List<FieldInfo> fields;
   final bool additionalProperties;
-  final String? additionalPropertiesField;
 
   /// Computed property: returns list of required field JSON keys
   List<String> get requiredFields =>
@@ -25,20 +24,13 @@ class ModelInfo {
   /// This class's discriminator value (only for subtypes)
   final String? discriminatorValue;
 
-  /// Map of discriminator values to subtype identifiers (only for base classes).
-  /// For @AckModel: discriminator value → className (e.g., 'cat' → 'Cat')
-  /// For @AckType:  discriminator value → schemaClassName (e.g., 'cat' → 'catSchema')
+  /// Map of discriminator values to subtype schema declarations.
   final Map<String, String>? subtypeNames;
 
-  /// Canonical schema declaration identity for @AckType schema variables/getters.
-  ///
-  /// Aliases share the same canonical identity as their source declaration.
+  /// Canonical schema declaration identity.
   final String? schemaIdentity;
 
   /// Parent discriminated base class name for subtypes.
-  ///
-  /// For @AckType schema-variable subtypes this stores the generated base type
-  /// name (for example, `PetType`), not the schema variable name.
   final String? discriminatedBaseClassName;
 
   /// Computed property: Whether this model has a discriminator key.
@@ -53,15 +45,10 @@ class ModelInfo {
   /// Computed property: Whether this class is a discriminated subtype (has discriminatedValue)
   bool get isDiscriminatedSubtype => discriminatorValue != null;
 
-  /// Whether this ModelInfo was created from a schema variable (not a class)
-  final bool isFromSchemaVariable;
-
   /// Representation type for extension type (e.g., `String`, `int`, `Map<String, Object?>`)
   final String representationType;
 
-  /// Whether the schema variable is nullable via `.nullable()`.
-  ///
-  /// This only applies to @AckType schema variables (not @AckModel classes).
+  /// Whether the schema declaration is nullable via `.nullable()`.
   final bool isNullableSchema;
 
   const ModelInfo({
@@ -70,13 +57,11 @@ class ModelInfo {
     this.description,
     required this.fields,
     this.additionalProperties = false,
-    this.additionalPropertiesField,
     this.discriminatorKey,
     this.discriminatorValue,
     this.subtypeNames,
     this.schemaIdentity,
     this.discriminatedBaseClassName,
-    this.isFromSchemaVariable = false,
     this.representationType = kMapType,
     this.isNullableSchema = false,
   });

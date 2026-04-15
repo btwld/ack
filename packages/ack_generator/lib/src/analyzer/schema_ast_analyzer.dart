@@ -311,7 +311,6 @@ class SchemaAstAnalyzer {
       schemaClassName: variableName,
       fields: sourceModel.fields,
       additionalProperties: sourceModel.additionalProperties,
-      additionalPropertiesField: sourceModel.additionalPropertiesField,
       discriminatorKey: sourceModel.discriminatorKey,
       discriminatorValue: sourceModel.discriminatorValue,
       subtypeNames: sourceModel.subtypeNames,
@@ -319,7 +318,6 @@ class SchemaAstAnalyzer {
           sourceModel.schemaIdentity ??
           _declarationVisitKey(resolved.sourceDeclaration),
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
-      isFromSchemaVariable: true,
       representationType: sourceModel.representationType,
 
       isNullableSchema: sourceModel.isNullableSchema,
@@ -561,7 +559,6 @@ class SchemaAstAnalyzer {
       schemaClassName: variableName,
       fields: sourceModel.fields,
       additionalProperties: sourceModel.additionalProperties,
-      additionalPropertiesField: sourceModel.additionalPropertiesField,
       discriminatorKey: sourceModel.discriminatorKey,
       discriminatorValue: sourceModel.discriminatorValue,
       subtypeNames: sourceModel.subtypeNames,
@@ -569,7 +566,6 @@ class SchemaAstAnalyzer {
           sourceModel.schemaIdentity ??
           _declarationVisitKey(resolved.sourceDeclaration),
       discriminatedBaseClassName: sourceModel.discriminatedBaseClassName,
-      isFromSchemaVariable: true,
       representationType:
           transformOutputTypeString ?? sourceModel.representationType,
       isNullableSchema: isNullable || sourceModel.isNullableSchema,
@@ -622,7 +618,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: fields,
-      isFromSchemaVariable: true,
       additionalProperties: hasAdditionalProperties,
       isNullableSchema: isNullable,
     );
@@ -837,7 +832,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: const [],
-      isFromSchemaVariable: true,
       representationType: kMapType,
       isNullableSchema: false,
       discriminatorKey: resolvedDiscriminatorKey,
@@ -1033,13 +1027,11 @@ class SchemaAstAnalyzer {
       description: model.description,
       fields: model.fields,
       additionalProperties: model.additionalProperties,
-      additionalPropertiesField: model.additionalPropertiesField,
       discriminatorKey: model.discriminatorKey,
       discriminatorValue: model.discriminatorValue,
       subtypeNames: model.subtypeNames,
       schemaIdentity: _declarationVisitKey(declaration),
       discriminatedBaseClassName: model.discriminatedBaseClassName,
-      isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: model.representationType,
       isNullableSchema: model.isNullableSchema,
     );
@@ -3155,7 +3147,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: 'String',
       isNullableSchema: isNullable,
     );
@@ -3179,7 +3170,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: 'int',
       isNullableSchema: isNullable,
     );
@@ -3203,7 +3193,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: 'double',
       isNullableSchema: isNullable,
     );
@@ -3227,7 +3216,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: 'bool',
       isNullableSchema: isNullable,
     );
@@ -3260,7 +3248,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType:
           'List<${listElementAnalysis.elementRepresentationType}>',
       isNullableSchema: isNullable,
@@ -3284,7 +3271,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: const [],
-      isFromSchemaVariable: true,
       representationType: representationType,
       isNullableSchema: isNullable,
     );
@@ -3300,13 +3286,11 @@ class SchemaAstAnalyzer {
       description: model.description,
       fields: model.fields,
       additionalProperties: model.additionalProperties,
-      additionalPropertiesField: model.additionalPropertiesField,
       discriminatorKey: model.discriminatorKey,
       discriminatorValue: model.discriminatorValue,
       subtypeNames: model.subtypeNames,
       schemaIdentity: model.schemaIdentity,
       discriminatedBaseClassName: model.discriminatedBaseClassName,
-      isFromSchemaVariable: model.isFromSchemaVariable,
       representationType: representationType,
       isNullableSchema: model.isNullableSchema,
     );
@@ -3335,18 +3319,17 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: 'String',
       isNullableSchema: isNullable,
     );
   }
 
-  /// Parses Ack.enumString() schema
+  /// Parses `Ack.enumString()` schema.
   ///
-  /// EnumString schemas are StringSchema with enum constraint.
+  /// String-enum schemas are `StringSchema` values with an enum constraint.
   /// The allowed values are enforced at runtime, not in the extension type.
   ///
-  /// Example: Ack.enumString(['a', 'b']) → extension type XType(String)
+  /// Example: `Ack.enumString(['a', 'b'])` -> `extension type XType(String)`
   ModelInfo _parseEnumStringSchema(
     String variableName,
     MethodInvocation invocation,
@@ -3364,7 +3347,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: 'String',
       isNullableSchema: isNullable,
     );
@@ -3405,7 +3387,6 @@ class SchemaAstAnalyzer {
       className: typeName,
       schemaClassName: variableName,
       fields: [],
-      isFromSchemaVariable: true,
       representationType: enumTypeName,
       isNullableSchema: isNullable,
     );
