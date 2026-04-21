@@ -188,11 +188,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional) {
-          // Optional absent field — leave it out of the encoded map.
-          continue;
-        }
-        // Required field missing during encode.
+        if (schema.isOptional) continue;
         errors.add(
           SchemaEncodeError(
             message: 'Missing required property "$key" during encode.',
@@ -229,9 +225,8 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     if (additionalProperties) {
-      final knownKeys = properties.keys.toSet();
       for (final key in mapValue.keys) {
-        if (!knownKeys.contains(key)) {
+        if (!properties.containsKey(key)) {
           encodedMap[key] = mapValue[key];
         }
       }

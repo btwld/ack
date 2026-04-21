@@ -66,12 +66,9 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     if (inputResult.isFail) {
       return SchemaResult.fail(inputResult.getError());
     }
-
-    final validatedInput = inputResult.getOrNull();
-    if (validatedInput == null) {
-      if (isNullable) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
+    // inputValue is non-null (guarded above); inputSchema cannot produce Ok(null)
+    // from a non-null input, so this is an invariant assertion.
+    final validatedInput = inputResult.getOrNull()!;
 
     final O decoded;
     try {
@@ -91,16 +88,7 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     if (outputResult.isFail) {
       return SchemaResult.fail(outputResult.getError());
     }
-
-    final validatedOutput = outputResult.getOrNull();
-    if (validatedOutput == null) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Codec decoder returned null.',
-          context: context,
-        ),
-      );
-    }
+    final validatedOutput = outputResult.getOrNull()!;
 
     return applyConstraintsAndRefinements(validatedOutput, context);
   }
@@ -128,29 +116,17 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     if (outputResult.isFail) {
       return SchemaResult.fail(outputResult.getError());
     }
-    final validatedOutput = outputResult.getOrNull();
-    if (validatedOutput == null) {
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Output schema produced null during encode.',
-          context: context,
-        ),
-      );
-    }
+    // runtimeValue is non-null O (guarded above); outputSchema cannot produce
+    // Ok(null) for a non-null O, so this is an invariant assertion. The same
+    // applies to the subsequent applyConstraintsAndRefinements and encoder
+    // boundary validation.
+    final validatedOutput = outputResult.getOrNull()!;
 
     final refined = applyConstraintsAndRefinements(validatedOutput, context);
     if (refined.isFail) {
       return SchemaResult.fail(refined.getError());
     }
-    final refinedValue = refined.getOrNull();
-    if (refinedValue == null) {
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Codec refinements produced null during encode.',
-          context: context,
-        ),
-      );
-    }
+    final refinedValue = refined.getOrNull()!;
 
     final I encoded;
     try {
@@ -170,16 +146,7 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     if (encodedResult.isFail) {
       return SchemaResult.fail(encodedResult.getError());
     }
-    final validatedInput = encodedResult.getOrNull();
-    if (validatedInput == null) {
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Encoded boundary value did not validate.',
-          context: context,
-        ),
-      );
-    }
-    return SchemaResult.ok(validatedInput);
+    return SchemaResult.ok(encodedResult.getOrNull()!);
   }
 
   /// Decodes a boundary value into the runtime type.

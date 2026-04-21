@@ -84,8 +84,10 @@ final class CustomSchema<T extends Object> extends AckSchema<T>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: const {'x-ack-custom': true});
+  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
+    typeSchema: const {'x-ack-custom': true},
+    serializedDefault: defaultValue,
+  );
 
   @override
   bool operator ==(Object other) {
