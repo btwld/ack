@@ -110,9 +110,9 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     Object? runtimeValue,
     SchemaContext context,
   ) {
-    if (runtimeValue == null && (isNullable || isOptional)) {
-      return SchemaResult.ok(null);
-    }
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
+
     return SchemaResult.fail(
       SchemaEncodeError(
         message:

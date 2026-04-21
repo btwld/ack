@@ -20,7 +20,10 @@ final _hexPattern = RegExp(r'^#[0-9A-Fa-f]{6}$');
 
 CodecSchema<String, _Color> _colorCodec() => Ack.codec<String, _Color>(
   Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),
-  Ack.custom<_Color>((c) => _hexPattern.hasMatch(c.hex), 'Invalid Color value'),
+  Ack.custom<_Color>(
+    validate: (c) => _hexPattern.hasMatch(c.hex),
+    message: 'Invalid Color value',
+  ),
   decode: _Color.fromHex,
   encode: (c) => c.toHex(),
 );
@@ -281,8 +284,8 @@ void main() {
 
     test('runs predicate after type check', () {
       final schema = Ack.custom<_Color>(
-        (c) => c.hex.startsWith('#'),
-        'must start with #',
+        validate: (c) => c.hex.startsWith('#'),
+        message: 'must start with #',
       );
       expect(schema.safeParse(const _Color('#112233')).isOk, isTrue);
       final bad = schema.safeParse(const _Color('112233'));

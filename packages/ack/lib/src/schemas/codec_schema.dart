@@ -49,22 +49,19 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   @protected
   SchemaResult<O> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Handle null up-front without routing through inputSchema, since input
-    // schemas are typically non-nullable strings that would reject null even
-    // when the codec itself is nullable.
+    // Null/default handling is inlined (rather than delegated to
+    // handleNullInput) because defaultValue is typed O, not I — it must not
+    // be routed through inputSchema.
     if (inputValue == null) {
       if (defaultValue != null) {
         final cloned = cloneDefault(defaultValue!);
         final safeDefault = (cloned is O) ? cloned : defaultValue!;
         return applyConstraintsAndRefinements(safeDefault, context);
       }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
+      if (isNullable) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
 
-    // 1. Validate boundary input.
     final inputResult = inputSchema.parseAndValidate(inputValue, context);
     if (inputResult.isFail) {
       return SchemaResult.fail(inputResult.getError());
@@ -72,14 +69,10 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
     final validatedInput = inputResult.getOrNull();
     if (validatedInput == null) {
-      // An internally-nullable input schema produced null. Codec decoders are
-      // typed non-nullable, so this only makes sense when this codec is also
-      // nullable; otherwise fail cleanly.
       if (isNullable) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
 
-    // 2. Run the decoder.
     final O decoded;
     try {
       decoded = decoder(validatedInput);
@@ -94,7 +87,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // 3. Validate the decoded output using the output schema.
     final outputResult = outputSchema.parseAndValidate(decoded, context);
     if (outputResult.isFail) {
       return SchemaResult.fail(outputResult.getError());
@@ -102,7 +94,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
     final validatedOutput = outputResult.getOrNull();
     if (validatedOutput == null) {
-      // Output schema accepted null, but codecs produce non-nullable values.
       return SchemaResult.fail(
         SchemaValidationError(
           message: 'Codec decoder returned null.',
@@ -111,7 +102,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // 4. Apply codec-level constraints and refinements.
     return applyConstraintsAndRefinements(validatedOutput, context);
   }
 
@@ -121,18 +111,8 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     Object? runtimeValue,
     SchemaContext context,
   ) {
-    // Nullability mirrors the forward direction; do NOT synthesize defaults.
-    if (runtimeValue == null) {
-      if (isNullable || isOptional) {
-        return SchemaResult.ok(null);
-      }
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Value is required and cannot be null during encode.',
-          context: context,
-        ),
-      );
-    }
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
 
     if (runtimeValue is! O) {
       return SchemaResult.fail(
@@ -144,7 +124,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // 1. Validate the runtime value against the output schema.
     final outputResult = outputSchema.parseAndValidate(runtimeValue, context);
     if (outputResult.isFail) {
       return SchemaResult.fail(outputResult.getError());
@@ -159,7 +138,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // 2. Apply codec-level constraints/refinements on the runtime value.
     final refined = applyConstraintsAndRefinements(validatedOutput, context);
     if (refined.isFail) {
       return SchemaResult.fail(refined.getError());
@@ -174,7 +152,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // 3. Run the encoder.
     final I encoded;
     try {
       encoded = encoder(refinedValue);
@@ -189,7 +166,6 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // 4. Validate the encoded boundary value against the input schema.
     final encodedResult = inputSchema.parseAndValidate(encoded, context);
     if (encodedResult.isFail) {
       return SchemaResult.fail(encodedResult.getError());

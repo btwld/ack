@@ -69,14 +69,14 @@ final class Ack {
   /// Example:
   /// ```dart
   /// final colorSchema = Ack.custom<Color>(
-  ///   (color) => RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color.hex),
+  ///   validate: (color) => RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color.hex),
   ///   message: 'Invalid Color value',
   /// );
   /// ```
-  static CustomSchema<T> custom<T extends Object>([
+  static CustomSchema<T> custom<T extends Object>({
     bool Function(T value)? validate,
     String message = 'Invalid value',
-  ]) => CustomSchema<T>(validator: validate, message: message);
+  }) => CustomSchema<T>(validator: validate, message: message);
 
   /// Creates a bidirectional codec that transforms values between a boundary
   /// type [I] and a runtime type [O].
@@ -90,7 +90,7 @@ final class Ack {
   /// final colorCodec = Ack.codec<String, Color>(
   ///   Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),
   ///   Ack.custom<Color>(
-  ///     (c) => RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(c.hex),
+  ///     validate: (c) => RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(c.hex),
   ///     message: 'Invalid Color',
   ///   ),
   ///   decode: Color.fromHex,

@@ -23,7 +23,6 @@ part 'fluent_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
-part 'schema_direction.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
@@ -374,6 +373,32 @@ sealed class AckSchema<DartType extends Object> {
     return SchemaContext(name: effectiveDebugName, schema: this, value: value);
   }
 
+  /// Handles `null` for backward (encode) traversal.
+  ///
+  /// Returns `null` when the input is non-null so callers can continue
+  /// encoding. For null input, returns `Ok(null)` when the schema is nullable
+  /// or optional, otherwise a [SchemaEncodeError] failure.
+  ///
+  /// Unlike [handleNullInput], this never synthesizes [defaultValue] —
+  /// encoding serializes an existing runtime value rather than recovering
+  /// from missing input.
+  @protected
+  SchemaResult<Object>? handleNullForEncode(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    if (runtimeValue != null) return null;
+    if (isNullable || isOptional) {
+      return SchemaResult.ok(null);
+    }
+    return SchemaResult.fail(
+      SchemaEncodeError(
+        message: 'Value is required and cannot be null during encode.',
+        context: context,
+      ),
+    );
+  }
+
   /// Backward (encode) execution for this schema.
   ///
   /// Most schemas are pure forward validators: their serialized and runtime
@@ -382,28 +407,15 @@ sealed class AckSchema<DartType extends Object> {
   /// (e.g. [CodecSchema]) override this to invert the transformation.
   ///
   /// The result's value type is `Object` because during backward traversal the
-  /// payload for a codec can differ from the forward [DartType] (for a codec
-  /// this is the boundary input type `I`).
-  ///
-  /// Defaults and catch values must NOT be synthesized during encode —
-  /// encoding serializes an existing runtime value rather than recovering
-  /// from missing input.
+  /// payload for a codec differs from the forward [DartType] (for a codec this
+  /// is the boundary input type `I`).
   @protected
   SchemaResult<Object> encodeValue(
     Object? runtimeValue,
     SchemaContext context,
   ) {
-    if (runtimeValue == null) {
-      if (isNullable || isOptional) {
-        return SchemaResult.ok(null);
-      }
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Value is required and cannot be null during encode.',
-          context: context,
-        ),
-      );
-    }
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
 
     if (runtimeValue is! DartType) {
       return SchemaResult.fail(
@@ -419,12 +431,7 @@ sealed class AckSchema<DartType extends Object> {
     if (validated.isFail) {
       return SchemaResult.fail(validated.getError());
     }
-
-    final validatedValue = validated.getOrNull();
-    if (validatedValue == null) {
-      return SchemaResult.ok(null);
-    }
-    return SchemaResult.ok(validatedValue);
+    return SchemaResult.ok(validated.getOrNull());
   }
 
   /// Encodes a validated runtime value back into its boundary representation.

@@ -162,17 +162,8 @@ final class ObjectSchema extends AckSchema<MapValue>
     Object? runtimeValue,
     SchemaContext context,
   ) {
-    if (runtimeValue == null) {
-      if (isNullable || isOptional) {
-        return SchemaResult.ok(null);
-      }
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Value is required and cannot be null during encode.',
-          context: context,
-        ),
-      );
-    }
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
 
     if (runtimeValue is! Map) {
       return SchemaResult.fail(
