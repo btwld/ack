@@ -143,3 +143,17 @@ final class SchemaTransformError extends SchemaError {
     super.stackTrace,
   }) : super(message);
 }
+
+/// Error raised when a backward (encode) operation cannot proceed.
+///
+/// This is used when the schema graph contains a unidirectional construct
+/// (e.g. a plain `.transform(...)`) that cannot be inverted during
+/// `encode`/`safeEncode`, or when an encoder function itself throws.
+final class SchemaEncodeError extends SchemaError {
+  const SchemaEncodeError({
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  }) : super(message);
+}

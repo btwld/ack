@@ -84,6 +84,59 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    if (runtimeValue == null) {
+      if (isNullable || isOptional) {
+        return SchemaResult.ok(null);
+      }
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message: 'Value is required and cannot be null during encode.',
+          context: context,
+        ),
+      );
+    }
+
+    if (runtimeValue is! List) {
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message:
+              'Expected List during encode, got ${runtimeValue.runtimeType}',
+          context: context,
+        ),
+      );
+    }
+
+    final encodedItems = <Object?>[];
+    final errors = <SchemaError>[];
+
+    for (var i = 0; i < runtimeValue.length; i++) {
+      final item = runtimeValue[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: item,
+        pathSegment: '$i',
+      );
+
+      final itemResult = itemSchema.encodeValue(item, itemContext);
+      itemResult.match(onOk: encodedItems.add, onFail: errors.add);
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    return SchemaResult.ok(List<Object?>.unmodifiable(encodedItems));
+  }
+
+  @override
   ListSchema<V> copyWith({
     AckSchema<V>? itemSchema,
     bool? isNullable,

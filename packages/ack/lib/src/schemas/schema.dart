@@ -15,12 +15,15 @@ import '../validation/schema_result.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
+part 'codec_schema.dart';
+part 'custom_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
+part 'schema_direction.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
@@ -369,6 +372,81 @@ sealed class AckSchema<DartType extends Object> {
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
     return SchemaContext(name: effectiveDebugName, schema: this, value: value);
+  }
+
+  /// Backward (encode) execution for this schema.
+  ///
+  /// Most schemas are pure forward validators: their serialized and runtime
+  /// representations are identical, so encoding is simply validation of the
+  /// already-runtime value. Schemas that define a boundary/runtime distinction
+  /// (e.g. [CodecSchema]) override this to invert the transformation.
+  ///
+  /// The result's value type is `Object` because during backward traversal the
+  /// payload for a codec can differ from the forward [DartType] (for a codec
+  /// this is the boundary input type `I`).
+  ///
+  /// Defaults and catch values must NOT be synthesized during encode —
+  /// encoding serializes an existing runtime value rather than recovering
+  /// from missing input.
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    if (runtimeValue == null) {
+      if (isNullable || isOptional) {
+        return SchemaResult.ok(null);
+      }
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message: 'Value is required and cannot be null during encode.',
+          context: context,
+        ),
+      );
+    }
+
+    if (runtimeValue is! DartType) {
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message:
+              'Expected $DartType during encode, got ${runtimeValue.runtimeType}',
+          context: context,
+        ),
+      );
+    }
+
+    final validated = applyConstraintsAndRefinements(runtimeValue, context);
+    if (validated.isFail) {
+      return SchemaResult.fail(validated.getError());
+    }
+
+    final validatedValue = validated.getOrNull();
+    if (validatedValue == null) {
+      return SchemaResult.ok(null);
+    }
+    return SchemaResult.ok(validatedValue);
+  }
+
+  /// Encodes a validated runtime value back into its boundary representation.
+  ///
+  /// For plain schemas this is effectively a forward validation pass — the
+  /// runtime and boundary representations are identical. Codec schemas invert
+  /// the transformation to recover the serialized form.
+  ///
+  /// Returns a [SchemaResult] wrapping the boundary value; failures are
+  /// returned as [SchemaEncodeError] when they originate from backward
+  /// traversal.
+  SchemaResult<Object> safeEncode(Object? value, {String? debugName}) {
+    final context = _createRootContext(value, debugName: debugName);
+    return encodeValue(value, context);
+  }
+
+  /// Encodes a validated runtime value, throwing on failure.
+  ///
+  /// See [safeEncode] for the non-throwing variant.
+  Object? encode(Object? value, {String? debugName}) {
+    final result = safeEncode(value, debugName: debugName);
+    return result.getOrThrow();
   }
 
   /// Legacy alias for [safeParse].

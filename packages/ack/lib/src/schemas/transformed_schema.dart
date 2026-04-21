@@ -105,6 +105,25 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    if (runtimeValue == null && (isNullable || isOptional)) {
+      return SchemaResult.ok(null);
+    }
+    return SchemaResult.fail(
+      SchemaEncodeError(
+        message:
+            'Encountered unidirectional transform during encode. '
+            'Use Ack.codec(...) for bidirectional transformations.',
+        context: context,
+      ),
+    );
+  }
+
+  @override
   SchemaType get schemaType => schema.schemaType;
 
   @override

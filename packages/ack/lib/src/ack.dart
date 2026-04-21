@@ -60,6 +60,55 @@ final class Ack {
   /// Useful for dynamic content or when you need maximum flexibility.
   static AnySchema any() => const AnySchema();
 
+  /// Creates a schema that validates an arbitrary runtime object of type [T].
+  ///
+  /// This is the recommended output-side schema for [codec] when the runtime
+  /// value is a richer user-defined type (e.g. a `Color` class). The optional
+  /// [validate] predicate is invoked after the runtime type check.
+  ///
+  /// Example:
+  /// ```dart
+  /// final colorSchema = Ack.custom<Color>(
+  ///   (color) => RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color.hex),
+  ///   message: 'Invalid Color value',
+  /// );
+  /// ```
+  static CustomSchema<T> custom<T extends Object>([
+    bool Function(T value)? validate,
+    String message = 'Invalid value',
+  ]) => CustomSchema<T>(validator: validate, message: message);
+
+  /// Creates a bidirectional codec that transforms values between a boundary
+  /// type [I] and a runtime type [O].
+  ///
+  /// Forward (`parse`/`decode`): [inputSchema] → [decode] → [outputSchema].
+  ///
+  /// Backward (`encode`): [outputSchema] → [encode] → [inputSchema].
+  ///
+  /// Example:
+  /// ```dart
+  /// final colorCodec = Ack.codec<String, Color>(
+  ///   Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),
+  ///   Ack.custom<Color>(
+  ///     (c) => RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(c.hex),
+  ///     message: 'Invalid Color',
+  ///   ),
+  ///   decode: Color.fromHex,
+  ///   encode: (c) => c.toHex(),
+  /// );
+  /// ```
+  static CodecSchema<I, O> codec<I extends Object, O extends Object>(
+    AckSchema<I> inputSchema,
+    AckSchema<O> outputSchema, {
+    required O Function(I value) decode,
+    required I Function(O value) encode,
+  }) => CodecSchema<I, O>(
+    inputSchema: inputSchema,
+    outputSchema: outputSchema,
+    decoder: decode,
+    encoder: encode,
+  );
+
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
   ///
   /// The schema validates the string format before transformation, ensuring only valid

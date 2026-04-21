@@ -157,6 +157,105 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    if (runtimeValue == null) {
+      if (isNullable || isOptional) {
+        return SchemaResult.ok(null);
+      }
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message: 'Value is required and cannot be null during encode.',
+          context: context,
+        ),
+      );
+    }
+
+    if (runtimeValue is! Map) {
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message:
+              'Expected Map during encode, got ${runtimeValue.runtimeType}',
+          context: context,
+        ),
+      );
+    }
+
+    final mapValue = runtimeValue is Map<String, Object?>
+        ? runtimeValue
+        : runtimeValue.cast<String, Object?>();
+
+    final encodedMap = <String, Object?>{};
+    final errors = <SchemaError>[];
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+      final hasValue = mapValue.containsKey(key);
+
+      if (!hasValue) {
+        if (schema.isOptional) {
+          // Optional absent field — leave it out of the encoded map.
+          continue;
+        }
+        // Required field missing during encode.
+        errors.add(
+          SchemaEncodeError(
+            message: 'Missing required property "$key" during encode.',
+            context: context.createChild(
+              name: key,
+              schema: schema,
+              value: null,
+              pathSegment: key,
+            ),
+          ),
+        );
+        continue;
+      }
+
+      final propertyValue = mapValue[key];
+      final childContext = context.createChild(
+        name: key,
+        schema: schema,
+        value: propertyValue,
+        pathSegment: key,
+      );
+
+      final childResult = schema.encodeValue(propertyValue, childContext);
+      childResult.match(
+        onOk: (encoded) {
+          if (encoded != null) {
+            encodedMap[key] = encoded;
+          } else if (schema.isNullable) {
+            encodedMap[key] = null;
+          }
+        },
+        onFail: errors.add,
+      );
+    }
+
+    if (additionalProperties) {
+      final knownKeys = properties.keys.toSet();
+      for (final key in mapValue.keys) {
+        if (!knownKeys.contains(key)) {
+          encodedMap[key] = mapValue[key];
+        }
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    return SchemaResult.ok(Map<String, Object?>.unmodifiable(encodedMap));
+  }
+
+  @override
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
     bool? additionalProperties,
