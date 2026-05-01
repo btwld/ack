@@ -1,8 +1,10 @@
+import 'codecs/recipes.dart';
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
 import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
+import 'validation/schema_result.dart';
 
 /// The main entry point for creating schemas with the Ack validation library.
 ///
@@ -105,14 +107,48 @@ final class Ack {
   }) => CodecSchema<I, O>(
     inputSchema: inputSchema,
     outputSchema: outputSchema,
-    decoder: decode,
-    encoder: encode,
+    decode: decode,
+    encode: encode,
   );
+
+  /// Bidirectional codec recipes (Zod-style "Useful codecs").
+  ///
+  /// See [Codecs] for the full catalogue. Use these when you need round-
+  /// trippable encoding alongside parsing.
+  static const Codecs codecs = Codecs();
+
+  /// Decodes [value] through [schema]. Equivalent to `schema.parse(value)`.
+  ///
+  /// Mirrors Zod's `z.decode(schema, value)`.
+  static T? decode<T extends Object>(AckSchema<T> schema, Object? value) =>
+      schema.parse(value);
+
+  /// Encodes [value] through [schema]. Equivalent to `schema.encode(value)`.
+  ///
+  /// Mirrors Zod's `z.encode(schema, value)`.
+  static Object? encode(AckSchema<Object> schema, Object? value) =>
+      schema.encode(value);
+
+  /// Decodes [value] through [schema] without throwing.
+  static SchemaResult<T> safeDecode<T extends Object>(
+    AckSchema<T> schema,
+    Object? value,
+  ) => schema.safeParse(value);
+
+  /// Encodes [value] through [schema] without throwing.
+  static SchemaResult<Object> safeEncode(
+    AckSchema<Object> schema,
+    Object? value,
+  ) => schema.safeEncode(value);
 
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
   ///
   /// The schema validates the string format before transformation, ensuring only valid
   /// date strings are parsed. You can add range constraints using [.min()] and [.max()].
+  ///
+  /// **Note:** this is a unidirectional transform — [safeEncode] will fail with
+  /// a [SchemaUnidirectionalEncodeError]. For round-trippable date encoding,
+  /// use [Ack.codecs.isoStringToDateTime] instead.
   ///
   /// Example:
   /// ```dart
@@ -136,6 +172,10 @@ final class Ack {
   /// The schema validates the string format (including timezone) before transformation.
   /// You can add range constraints using [.min()] and [.max()].
   ///
+  /// **Note:** this is a unidirectional transform — [safeEncode] will fail with
+  /// a [SchemaUnidirectionalEncodeError]. For round-trippable datetime encoding,
+  /// use [Ack.codecs.isoStringToDateTime] instead.
+  ///
   /// Example:
   /// ```dart
   /// final schema = Ack.datetime();
@@ -156,6 +196,10 @@ final class Ack {
   /// and host (e.g., `https://example.com`) before transformation. URIs
   /// without an authority component (e.g., `mailto:` or `urn:`) are rejected.
   ///
+  /// **Note:** this is a unidirectional transform — [safeEncode] will fail
+  /// with a [SchemaUnidirectionalEncodeError]. For round-trippable URI
+  /// encoding, use [Ack.codecs.stringToUri] instead.
+  ///
   /// Example:
   /// ```dart
   /// final schema = Ack.uri();
@@ -170,6 +214,10 @@ final class Ack {
   /// Creates a schema that parses millisecond integers into [Duration] objects.
   ///
   /// You can add range constraints using [.min()] and [.max()].
+  ///
+  /// **Note:** this is a unidirectional transform — [safeEncode] will fail
+  /// with a [SchemaUnidirectionalEncodeError]. For round-trippable duration
+  /// encoding, use [Ack.codecs.intMillisToDuration] instead.
   ///
   /// Example:
   /// ```dart

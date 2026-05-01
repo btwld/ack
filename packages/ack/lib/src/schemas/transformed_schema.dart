@@ -32,7 +32,10 @@ part of 'schema.dart';
 /// For complex collection defaults, consider using immutable collections or
 /// accepting that the default may be shared across parse calls.
 @immutable
-class TransformedSchema<InputType extends Object, OutputType extends Object>
+final class TransformedSchema<
+  InputType extends Object,
+  OutputType extends Object
+>
     extends AckSchema<OutputType> {
   final AckSchema<InputType> schema;
   final OutputType Function(InputType) transformer;
@@ -114,10 +117,11 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     if (nullResult != null) return nullResult;
 
     return SchemaResult.fail(
-      SchemaEncodeError(
+      SchemaUnidirectionalEncodeError(
         message:
             'Encountered unidirectional transform during encode. '
-            'Use Ack.codec(...) for bidirectional transformations.',
+            'Use Ack.codec(...) or one of the Ack.codecs.* recipes for '
+            'bidirectional transformations.',
         context: context,
       ),
     );

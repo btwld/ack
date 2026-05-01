@@ -5,7 +5,7 @@ import '../context.dart';
 import '../schemas/schema.dart';
 
 @immutable
-abstract class SchemaError {
+sealed class SchemaError {
   final String message;
   final SchemaContext context;
   final Object? cause;
@@ -50,7 +50,7 @@ abstract class SchemaError {
 }
 
 @immutable
-class TypeMismatchError extends SchemaError {
+final class TypeMismatchError extends SchemaError {
   TypeMismatchError({
     required SchemaType expectedType,
     required SchemaType actualType,
@@ -83,7 +83,8 @@ class TypeMismatchError extends SchemaError {
   }
 }
 
-class SchemaConstraintsError extends SchemaError {
+@immutable
+final class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
 
   SchemaConstraintsError({required this.constraints, required super.context})
@@ -110,7 +111,7 @@ class SchemaConstraintsError extends SchemaError {
 }
 
 @immutable
-class SchemaNestedError extends SchemaError {
+final class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
   const SchemaNestedError({required this.errors, required super.context})
@@ -126,7 +127,7 @@ class SchemaNestedError extends SchemaError {
 }
 
 @immutable
-class SchemaValidationError extends SchemaError {
+final class SchemaValidationError extends SchemaError {
   SchemaValidationError({
     required String message,
     required super.context,
@@ -135,6 +136,7 @@ class SchemaValidationError extends SchemaError {
   }) : super(message);
 }
 
+@immutable
 final class SchemaTransformError extends SchemaError {
   const SchemaTransformError({
     required String message,
@@ -146,14 +148,38 @@ final class SchemaTransformError extends SchemaError {
 
 /// Error raised when a backward (encode) operation cannot proceed.
 ///
-/// This is used when the schema graph contains a unidirectional construct
-/// (e.g. a plain `.transform(...)`) that cannot be inverted during
-/// `encode`/`safeEncode`, or when an encoder function itself throws.
-final class SchemaEncodeError extends SchemaError {
+/// Used when the encoder function throws, when the runtime value does not
+/// match the schema's expected runtime type, or when validation on either
+/// side of the codec boundary fails during encode.
+///
+/// For the structural case where the schema graph contains an
+/// uninvertible construct (a plain `.transform(...)`), see the more
+/// specific [SchemaUnidirectionalEncodeError] subclass.
+base class SchemaEncodeError extends SchemaError {
   const SchemaEncodeError({
     required String message,
     required super.context,
     super.cause,
     super.stackTrace,
   }) : super(message);
+}
+
+/// Error raised when `encode`/`safeEncode` traverses a unidirectional
+/// schema construct (e.g. a plain `.transform(...)`) that has no inverse.
+///
+/// Distinct from a normal validation failure: this signals a structural
+/// mismatch between the schema graph and the requested operation. Callers
+/// who want to react specifically to "this schema cannot be encoded"
+/// should catch this subtype; everything else is a regular
+/// [SchemaEncodeError].
+///
+/// To recover, replace the offending `.transform(...)` with `Ack.codec(...)`
+/// or one of the `Ack.codecs.*` recipes.
+final class SchemaUnidirectionalEncodeError extends SchemaEncodeError {
+  const SchemaUnidirectionalEncodeError({
+    required super.message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  });
 }

@@ -86,7 +86,11 @@ final class CustomSchema<T extends Object> extends AckSchema<T>
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
     typeSchema: const {'x-ack-custom': true},
-    serializedDefault: defaultValue,
+    // Defaults on `Ack.custom` are arbitrary runtime objects with no
+    // portable JSON form. They are honored at decode time but intentionally
+    // omitted from the JSON Schema. Wrap the custom schema in a
+    // `CodecSchema` and set the default there if you need it reflected.
+    serializedDefault: null,
   );
 
   @override

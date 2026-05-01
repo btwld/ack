@@ -211,6 +211,19 @@ final class ObjectSchema extends AckSchema<MapValue>
         pathSegment: key,
       );
 
+      // Explicit null for an optional non-nullable field: reject rather
+      // than silently drop. Mirrors parse-side strictness and avoids a
+      // surprising round-trip where a user-provided null disappears.
+      if (propertyValue == null && !schema.isNullable) {
+        errors.add(
+          SchemaEncodeError(
+            message: 'Property "$key" is not nullable.',
+            context: childContext,
+          ),
+        );
+        continue;
+      }
+
       final childResult = schema.encodeValue(propertyValue, childContext);
       childResult.match(
         onOk: (encoded) {
@@ -219,6 +232,9 @@ final class ObjectSchema extends AckSchema<MapValue>
           } else if (schema.isNullable) {
             encodedMap[key] = null;
           }
+          // Implicit fall-through (encoded null AND not nullable) is unreachable:
+          // the `propertyValue == null && !schema.isNullable` guard above this
+          // dispatch already rejects it with SchemaEncodeError.
         },
         onFail: errors.add,
       );

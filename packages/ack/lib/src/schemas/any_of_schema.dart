@@ -96,6 +96,37 @@ final class AnyOfSchema extends AckSchema<Object>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
+
+    final errors = <SchemaError>[];
+
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: runtimeValue,
+        pathSegment: '', // Inherit parent path
+      );
+
+      final result = schema.encodeValue(runtimeValue, childContext);
+      if (result.isOk) {
+        return result;
+      }
+      errors.add(result.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  @override
   AnyOfSchema copyWith({
     bool? isNullable,
     bool? isOptional,

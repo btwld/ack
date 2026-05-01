@@ -141,18 +141,28 @@ extension StringSchemaExtensions on StringSchema {
 
   /// Trims leading and trailing whitespace from the string before validation.
   /// Returns a transformed schema that applies String.trim() to the input.
+  ///
+  /// **Note:** this is a unidirectional transform — `safeEncode` will fail
+  /// with a `SchemaUnidirectionalEncodeError`. The trimming operation is not
+  /// invertible (the original whitespace is lost), so there is no codec
+  /// recipe for it. If you need encode support, store and validate the
+  /// already-trimmed value with `Ack.string()` instead.
   TransformedSchema<String, String> trim() {
     return transform((s) => s.trim());
   }
 
   /// Converts the string to lowercase after validation.
   /// Returns a transformed schema that applies String.toLowerCase() to the input.
+  ///
+  /// **Note:** this is a unidirectional transform — see the note on [trim].
   TransformedSchema<String, String> toLowerCase() {
     return transform((s) => s.toLowerCase());
   }
 
   /// Converts the string to uppercase after validation.
   /// Returns a transformed schema that applies String.toUpperCase() to the input.
+  ///
+  /// **Note:** this is a unidirectional transform — see the note on [trim].
   TransformedSchema<String, String> toUpperCase() {
     return transform((s) => s.toUpperCase());
   }

@@ -1,3 +1,52 @@
+## Unreleased
+
+### Features
+
+* **Codecs**: Add `Ack.codec(...)` and `CodecSchema<I, O>` for bidirectional
+  transformations between a boundary type and a runtime type. Mirrors Zod 4.1's
+  `z.codec`. New `safeEncode` / `encode` surface on every `AckSchema`.
+* **Codec recipes**: `Ack.codecs.*` catalogue ports Zod's "Useful codecs" —
+  `isoStringToDateTime`, `epochMillisToDateTime`, `stringToUri`,
+  `intMillisToDuration`, `stringToInt`, `stringToDouble`, `stringToBigInt`, and
+  `json<T>(schema)`.
+* **Custom schemas**: `Ack.custom<T>()` validates an arbitrary runtime type.
+  Recommended as the output side of a codec for non-JSON runtime values.
+* **Top-level shortcuts**: `Ack.encode(schema, v)` / `Ack.decode(schema, v)` /
+  `Ack.safeEncode` / `Ack.safeDecode` mirror `z.encode` / `z.decode`.
+* **Codec inverse**: `CodecSchema.inverse()` swaps input/output and
+  decode/encode, mirroring `z.invertCodec`.
+* **Encode dispatch on unions**: `AnyOfSchema` and `DiscriminatedObjectSchema`
+  recurse correctly during encode.
+
+### Behavior changes
+
+* `ObjectSchema.encodeValue` now rejects an explicit `null` for an optional
+  non-nullable field with a `SchemaEncodeError` instead of silently dropping
+  the key. Nullable fields are unaffected.
+* Encoding a schema graph that contains a unidirectional `.transform(...)` —
+  including `Ack.datetime()`, `Ack.uri()`, `Ack.duration()`, `.trim()`,
+  `.toLowerCase()`, `.toUpperCase()` — fails with a new
+  `SchemaUnidirectionalEncodeError` (subclass of `SchemaEncodeError`). The
+  dartdoc on each helper now points at the round-trippable `Ack.codecs.*`
+  recipe.
+* `CodecSchema` no longer exposes `decoder` / `encoder` as constructor
+  parameters or `copyWith` keys — the closures are now passed in as `decode`
+  and `encode` (matching the public `Ack.codec(...)` factory). This is a
+  pre-release rename that affects only direct `CodecSchema(...)` callers;
+  user code that goes through `Ack.codec(...)` is unaffected.
+* `SchemaError` is now a `sealed` class hierarchy. Callers can use Dart 3
+  exhaustive switch patterns over the seven concrete subclasses. External
+  subclassing of `SchemaError` is no longer supported.
+
+### Improvements
+
+* `CodecSchema.safeEncode` / `encode` are typed `SchemaResult<I>` / `I?`
+  instead of `Object`-typed.
+* `CodecSchema.toJsonSchema` encodes the default through the codec so it lands
+  in the boundary form. Codec-level constraints typed against the runtime side
+  are no longer merged into the input JSON tree.
+* `CustomSchema.toJsonSchema` no longer serializes runtime-typed defaults.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.

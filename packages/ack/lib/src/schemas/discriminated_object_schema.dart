@@ -182,16 +182,98 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       subSchemaContext,
     );
 
-    if (result.isFail) {
-      return result.match(
-        onOk: (_) => throw StateError('Unreachable'),
-        onFail: (error) => SchemaResult.fail(error),
-      );
-    }
+    if (result case Fail(:final error)) return SchemaResult.fail(error);
 
     final validatedValue = result.getOrThrow()!;
 
     return applyConstraintsAndRefinements(validatedValue, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
+
+    // Tier 1: if the runtime value is a Map and carries the discriminator,
+    // dispatch directly to the named branch.
+    if (runtimeValue is Map) {
+      final mapValue = runtimeValue is MapValue
+          ? runtimeValue
+          : runtimeValue.cast<String, Object?>();
+      final discValue = mapValue[discriminatorKey];
+      if (discValue is String) {
+        final branch = schemas[discValue];
+        if (branch != null) {
+          // Short-circuit with a named error when the branch is a
+          // TransformedSchema (unidirectional, no encode inverse).
+          // CodecSchema is a direct subclass of AckSchema — it is never a
+          // TransformedSchema — so this check is both necessary and sufficient.
+          if (branch is TransformedSchema) {
+            return SchemaResult.fail(
+              SchemaUnidirectionalEncodeError(
+                message:
+                    'Discriminated branch "$discValue" is unidirectional and '
+                    'cannot be encoded. Replace it with Ack.codec(...) or one '
+                    'of the Ack.codecs.* recipes.',
+                context: context.createChild(
+                  name: discriminatorKey,
+                  schema: branch,
+                  value: discValue,
+                  pathSegment: discriminatorKey,
+                ),
+              ),
+            );
+          }
+          final branchContext = context.createChild(
+            name: 'when $discriminatorKey="$discValue"',
+            schema: branch,
+            value: mapValue,
+            pathSegment: '',
+          );
+          return branch.encodeValue(mapValue, branchContext);
+        }
+        return SchemaResult.fail(
+          SchemaEncodeError(
+            message:
+                'Unknown discriminator "$discValue" during encode. '
+                'Allowed: ${schemas.keys.toList()}',
+            context: context.createChild(
+              name: discriminatorKey,
+              schema: const StringSchema(),
+              value: discValue,
+              pathSegment: discriminatorKey,
+            ),
+          ),
+        );
+      }
+    }
+
+    // Tier 2: runtime value is a domain object (or a Map without a
+    // discriminator). Attempt each branch in turn and return the first Ok.
+    // This covers the common case where the runtime type is a sealed class
+    // hierarchy with a transformed branch on each arm.
+    final errors = <SchemaError>[];
+    for (final entry in schemas.entries) {
+      final discValue = entry.key;
+      final branch = entry.value;
+      final branchContext = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: branch,
+        value: runtimeValue,
+        pathSegment: '',
+      );
+      final result = branch.encodeValue(runtimeValue, branchContext);
+      if (result.isOk) return result;
+      errors.add(result.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
   }
 
   @override

@@ -48,6 +48,30 @@ if (result.isOk) {
 
 Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
 
+## Codecs (bidirectional transforms)
+
+`Ack.codec(...)` ports Zod 4.1's `z.codec` to Dart: a schema with both a forward (`decode`) and a backward (`encode`) direction. Every `AckSchema` exposes a matching `safeEncode` / `encode` surface, so codec-aware schemas round-trip cleanly through `Ack.object` and `Ack.list`.
+
+```dart
+final colorCodec = Ack.codec<String, Color>(
+  Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),
+  Ack.custom<Color>(),
+  decode: Color.fromHex,
+  encode: (c) => c.toHex(),
+);
+
+final user = Ack.object({
+  'name': Ack.string(),
+  'favoriteColor': colorCodec,
+});
+
+final parsed  = user.parse({'name': 'Ada', 'favoriteColor': '#ff0000'});
+final encoded = user.encode(parsed);
+// encoded == {'name': 'Ada', 'favoriteColor': '#FF0000'}
+```
+
+For common boundary↔runtime pairs, `Ack.codecs.*` ships ready-made recipes — `isoStringToDateTime`, `epochMillisToDateTime`, `stringToUri`, `intMillisToDuration`, `stringToInt`, `stringToDouble`, `stringToBigInt`, and `json<T>(schema)`. Use them anywhere an `AckSchema` is expected. The unidirectional helpers (`Ack.datetime()`, `Ack.uri()`, `Ack.duration()`, `.trim()`, `.toLowerCase()`, `.toUpperCase()`) remain parse-only — calling `safeEncode` on a graph that contains one fails fast with a `SchemaUnidirectionalEncodeError`.
+
 ## Documentation
 
 - [Full documentation](https://docs.page/btwld/ack)
