@@ -7,6 +7,8 @@ part of 'schema.dart';
 /// the `.transform(fn)` extension) and bidirectional (`Ack.codec(...)`) forms.
 /// Use [CodecSchema] directly in new code; this alias will be removed in a
 /// future release.
-@Deprecated('Use CodecSchema instead. This alias will be removed in a future release.')
-typedef TransformedSchema<InputType extends Object, OutputType extends Object>
-    = CodecSchema<InputType, OutputType>;
+@Deprecated(
+  'Use CodecSchema instead. This alias will be removed in a future release.',
+)
+typedef TransformedSchema<InputType extends Object, OutputType extends Object> =
+    CodecSchema<InputType, OutputType>;

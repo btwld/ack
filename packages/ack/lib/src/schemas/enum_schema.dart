@@ -99,12 +99,12 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     if (nullResult != null) return nullResult;
 
     if (runtimeValue is! T || !values.contains(runtimeValue)) {
-      final allowed = values.map((e) => e.name).toList(growable: false);
+      final allowed = values.map((e) => '"${e.name}"').join(', ');
       return SchemaResult.fail(
         SchemaEncodeError(
           message:
-              'Expected one of ${allowed.map((s) => '"$s"').join(', ')} '
-              'during encode, got ${runtimeValue.runtimeType}.',
+              'Expected one of $allowed during encode, got '
+              '${runtimeValue.runtimeType}.',
           context: context,
         ),
       );

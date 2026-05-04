@@ -15,8 +15,7 @@ void main() {
       expect(
         schema.isOptional,
         isTrue,
-        reason:
-            'CodecSchema should inherit isOptional from wrapped schema',
+        reason: 'CodecSchema should inherit isOptional from wrapped schema',
       );
     });
 
@@ -31,8 +30,7 @@ void main() {
       expect(
         schema.isNullable,
         isTrue,
-        reason:
-            'CodecSchema should inherit isNullable from wrapped schema',
+        reason: 'CodecSchema should inherit isNullable from wrapped schema',
       );
     });
 
@@ -51,14 +49,12 @@ void main() {
       expect(
         schema.isOptional,
         isTrue,
-        reason:
-            'CodecSchema should inherit isOptional from wrapped schema',
+        reason: 'CodecSchema should inherit isOptional from wrapped schema',
       );
       expect(
         schema.isNullable,
         isTrue,
-        reason:
-            'CodecSchema should inherit isNullable from wrapped schema',
+        reason: 'CodecSchema should inherit isNullable from wrapped schema',
       );
     });
 

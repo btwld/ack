@@ -21,9 +21,18 @@ part of 'schema.dart';
 /// `TransformedSchema`); encode never synthesizes boundary data from a
 /// default.
 @immutable
-final class CodecSchema<I extends Object, O extends Object>
-    extends AckSchema<O>
+final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     with FluentSchema<O, CodecSchema<I, O>> {
+  /// JSON Schema extension key marking a codec/transform output.
+  static const String jsonSchemaMarker = 'x-transformed';
+
+  /// Error message produced when `encode` is called on a one-way schema
+  /// (a `.transform(...)` with no inverse).
+  static const String oneWayEncodeMessage =
+      'This schema is one-way (.transform(...)) and has no encode '
+      'function. Use Ack.codec(input, output, decode: ..., encode: ...) '
+      'for a bidirectional codec.';
+
   final AckSchema<I> inputSchema;
   final AckSchema<O> outputSchema;
   final O Function(I value) decodeFn;
@@ -50,10 +59,7 @@ final class CodecSchema<I extends Object, O extends Object>
 
   @override
   @protected
-  SchemaResult<O> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  SchemaResult<O> parseAndValidate(Object? inputValue, SchemaContext context) {
     // Default handling: codec defaults are O-typed, so short-circuit before
     // delegating to the input schema (which expects I).
     if (inputValue == null && defaultValue != null) {
@@ -118,33 +124,25 @@ final class CodecSchema<I extends Object, O extends Object>
     final encode = encodeFn;
     if (encode == null) {
       return SchemaResult.fail(
-        SchemaEncodeError(
-          message:
-              'This schema is one-way (.transform(...)) and has no encode '
-              'function. Use Ack.codec(input, output, decode: ..., encode: ...) '
-              'for a bidirectional codec.',
-          context: context,
-        ),
+        SchemaEncodeError(message: oneWayEncodeMessage, context: context),
       );
     }
 
     if (runtimeValue is! O) {
       return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Expected $O during encode, got ${runtimeValue.runtimeType}.',
+        SchemaEncodeError.typeMismatch(
+          expected: O,
+          actual: runtimeValue,
           context: context,
         ),
       );
     }
 
-    // Validate the runtime value through the output schema (catches any
-    // constraints/refinements declared on the output side).
     final outputResult = outputSchema.encodeValue(runtimeValue, context);
     if (outputResult.isFail) {
       return SchemaResult.fail(outputResult.getError());
     }
 
-    // Apply codec-level constraints/refinements on the runtime value.
     final constraintResult = applyConstraintsAndRefinements(
       runtimeValue,
       context,
@@ -167,7 +165,6 @@ final class CodecSchema<I extends Object, O extends Object>
       );
     }
 
-    // Validate the encoded boundary value through the input schema.
     return inputSchema.encodeValue(encoded, context);
   }
 
@@ -197,7 +194,7 @@ final class CodecSchema<I extends Object, O extends Object>
   @override
   Map<String, Object?> toJsonSchema() {
     final base = inputSchema.toJsonSchema();
-    base['x-transformed'] = true;
+    base[jsonSchemaMarker] = true;
     if (description != null) {
       base['description'] = description;
     }

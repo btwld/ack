@@ -146,14 +146,17 @@ void main() {
   });
 
   group('.transform(fn) — one-way encode failure', () {
-    test('encoding a transform fails with SchemaEncodeError mentioning Ack.codec', () {
-      final schema = Ack.string().transform<int>(int.parse);
-      final result = schema.safeEncode(42);
-      expect(result.isFail, isTrue);
-      final err = result.getError();
-      expect(err, isA<SchemaEncodeError>());
-      expect(err.message, contains('Ack.codec'));
-    });
+    test(
+      'encoding a transform fails with SchemaEncodeError mentioning Ack.codec',
+      () {
+        final schema = Ack.string().transform<int>(int.parse);
+        final result = schema.safeEncode(42);
+        expect(result.isFail, isTrue);
+        final err = result.getError();
+        expect(err, isA<SchemaEncodeError>());
+        expect(err.message, contains('Ack.codec'));
+      },
+    );
 
     test('parse still works as before', () {
       final schema = Ack.string().transform<int>(int.parse);

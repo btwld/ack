@@ -34,10 +34,7 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
+  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 

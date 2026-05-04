@@ -118,9 +118,8 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     // Handle additional properties
-    final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
-      if (!knownKeys.contains(key)) {
+      if (!properties.containsKey(key)) {
         if (additionalProperties) {
           validatedMap[key] = mapValue[key];
         } else {
@@ -223,9 +222,8 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
-      if (!knownKeys.contains(key)) {
+      if (!properties.containsKey(key)) {
         if (additionalProperties) {
           encodedMap[key] = mapValue[key];
         } else {

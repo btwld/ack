@@ -101,69 +101,32 @@ final class AnyOfSchema extends AckSchema<Object>
     Object? runtimeValue,
     SchemaContext context,
   ) {
-    // Mirror parseAndValidate's intentional bypass of handleNullForEncode:
-    // null has special semantics for unions (a nullable member can carry
-    // null through), so handle it inline.
+    // Null has special semantics for unions: try members first (a nullable
+    // member may accept null), then fall back to outer nullability via the
+    // shared helper. This mirrors parseAndValidate's intentional bypass of
+    // the centralized null helper.
     if (runtimeValue == null) {
-      // Try members first — a nullable member may accept null.
-      // If none match, fall back to AnyOfSchema's own isNullable.
       for (final (index, schema) in schemas.indexed) {
-        final childContext = context.createChild(
-          name: 'anyOf:$index',
-          schema: schema,
-          value: null,
-          pathSegment: '',
-        );
-        final result = schema.encodeValue(null, childContext);
-        if (result.isOk) {
-          return result;
-        }
+        final result = _tryEncodeBranch(schema, null, 'anyOf:$index', context);
+        if (result != null) return result;
       }
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message: 'Value is required and cannot be null during encode.',
-          context: context,
-        ),
-      );
+      return handleNullForEncode(null, context)!;
     }
 
     final errors = <SchemaError>[];
-
     for (final (index, schema) in schemas.indexed) {
-      final childContext = context.createChild(
-        name: 'anyOf:$index',
-        schema: schema,
-        value: runtimeValue,
-        pathSegment: '',
+      final result = _tryEncodeBranch(
+        schema,
+        runtimeValue,
+        'anyOf:$index',
+        context,
+        errors: errors,
       );
-
-      final SchemaResult<Object> result;
-      try {
-        result = schema.encodeValue(runtimeValue, childContext);
-      } catch (e, st) {
-        errors.add(
-          SchemaEncodeError(
-            message: 'Branch encode threw: ${e.toString()}',
-            context: childContext,
-            cause: e,
-            stackTrace: st,
-          ),
-        );
-        continue;
-      }
-
-      if (result.isOk) {
+      if (result != null) {
         final encoded = result.getOrNull();
-        if (encoded == null) {
-          return SchemaResult.ok(null);
-        }
+        if (encoded == null) return SchemaResult.ok(null);
         return applyConstraintsAndRefinements(encoded, context);
       }
-
-      errors.add(result.getError());
     }
 
     return SchemaResult.fail(

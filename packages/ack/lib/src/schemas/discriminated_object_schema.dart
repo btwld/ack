@@ -78,26 +78,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<Object>? handleNullForEncode(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    if (runtimeValue != null) return null;
-
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
-    return SchemaResult.fail(
-      SchemaEncodeError(
-        message: 'Value is required and cannot be null during encode.',
-        context: context,
-      ),
-    );
-  }
-
-  @override
-  @protected
   SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
     // Use centralized null handling (including cloned default handling).
     final nullResult = handleNullInput(inputValue, context);
@@ -223,90 +203,89 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final nullResult = handleNullForEncode(runtimeValue, context);
     if (nullResult != null) return nullResult;
 
-    // Apply discriminated-level constraints/refinements on the runtime T
-    // when we can promote (covers both Path 1 with T == MapValue and Path 2
-    // with a typed domain object).
-    SchemaResult<Object>? applyTypedConstraints(Object value) {
-      if (value is! T) return null;
-      final cr = applyConstraintsAndRefinements(value, context);
-      if (cr.isFail) return SchemaResult.fail(cr.getError());
-      return null;
-    }
-
     // Path 1: runtime value is a Map carrying the discriminator key —
-    // dispatch directly to the matching branch (deterministic).
+    // dispatch directly (deterministic, fast).
     if (runtimeValue is Map) {
       final mapValue = runtimeValue is Map<String, Object?>
           ? runtimeValue
           : runtimeValue.cast<String, Object?>();
       final discValueRaw = mapValue[discriminatorKey];
       if (discValueRaw is String) {
-        final selected = schemas[discValueRaw];
-        if (selected == null) {
-          final allowed = schemas.keys.toList(growable: false);
-          final enumError = PatternConstraint.enumString(
-            allowed,
-          ).validate(discValueRaw);
-          return SchemaResult.fail(
-            SchemaConstraintsError(
-              constraints: enumError != null ? [enumError] : [],
-              context: context.createChild(
-                name: discriminatorKey,
-                schema: const StringSchema(),
-                value: discValueRaw,
-                pathSegment: discriminatorKey,
-              ),
-            ),
-          );
-        }
-        final constraintFail = applyTypedConstraints(mapValue);
-        if (constraintFail != null) return constraintFail;
-        final branchContext = context.createChild(
-          name: 'when $discriminatorKey="$discValueRaw"',
-          schema: selected,
-          value: mapValue,
-          pathSegment: '',
-        );
-        return selected.encodeValue(mapValue, branchContext);
+        return _encodeViaDiscriminator(mapValue, discValueRaw, context);
       }
     }
 
     // Path 2: runtime value is a typed domain object — best-effort branch
-    // trial. Probes are wrapped in try/catch so a refinement-throwing branch
-    // does not poison the union. Users with side-effecting encoders should
-    // pre-tag their domain object with the discriminator field.
+    // trial. Each probe is wrapped in try/catch so a refinement-throwing
+    // branch does not poison the union. Users with side-effecting encoders
+    // should pre-tag their domain object with the discriminator field.
+    return _encodeByBranchTrial(runtimeValue!, context);
+  }
+
+  /// Applies discriminated-level constraints/refinements when [value] can be
+  /// promoted to `T`. Returns the failing error, or `null` on success or when
+  /// the value is not yet a `T` (Path 1 with branches that produce `T`).
+  SchemaError? _runTypedConstraints(Object value, SchemaContext context) {
+    if (value is! T) return null;
+    final result = applyConstraintsAndRefinements(value, context);
+    return result.isFail ? result.getError() : null;
+  }
+
+  SchemaResult<Object> _encodeViaDiscriminator(
+    Map<String, Object?> mapValue,
+    String discValueRaw,
+    SchemaContext context,
+  ) {
+    final selected = schemas[discValueRaw];
+    if (selected == null) {
+      final allowed = schemas.keys.toList(growable: false);
+      final enumError = PatternConstraint.enumString(
+        allowed,
+      ).validate(discValueRaw);
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: enumError != null ? [enumError] : [],
+          context: context.createChild(
+            name: discriminatorKey,
+            schema: const StringSchema(),
+            value: discValueRaw,
+            pathSegment: discriminatorKey,
+          ),
+        ),
+      );
+    }
+
+    final constraintError = _runTypedConstraints(mapValue, context);
+    if (constraintError != null) return SchemaResult.fail(constraintError);
+
+    final branchContext = context.createChild(
+      name: 'when $discriminatorKey="$discValueRaw"',
+      schema: selected,
+      value: mapValue,
+      pathSegment: '',
+    );
+    return selected.encodeValue(mapValue, branchContext);
+  }
+
+  SchemaResult<Object> _encodeByBranchTrial(
+    Object runtimeValue,
+    SchemaContext context,
+  ) {
     if (runtimeValue is T) {
-      final constraintFail = applyTypedConstraints(runtimeValue);
-      if (constraintFail != null) return constraintFail;
+      final constraintError = _runTypedConstraints(runtimeValue, context);
+      if (constraintError != null) return SchemaResult.fail(constraintError);
     }
 
     final errors = <SchemaError>[];
     for (final entry in schemas.entries) {
-      final branch = entry.value;
-      final branchContext = context.createChild(
-        name: 'when $discriminatorKey="${entry.key}"',
-        schema: branch,
-        value: runtimeValue,
-        pathSegment: '',
+      final result = _tryEncodeBranch(
+        entry.value,
+        runtimeValue,
+        'when $discriminatorKey="${entry.key}"',
+        context,
+        errors: errors,
       );
-      final SchemaResult<Object> result;
-      try {
-        result = branch.encodeValue(runtimeValue, branchContext);
-      } catch (e, st) {
-        errors.add(
-          SchemaEncodeError(
-            message: 'Branch encode threw: ${e.toString()}',
-            context: branchContext,
-            cause: e,
-            stackTrace: st,
-          ),
-        );
-        continue;
-      }
-      if (result.isOk) {
-        return result;
-      }
-      errors.add(result.getError());
+      if (result != null) return result;
     }
 
     return SchemaResult.fail(

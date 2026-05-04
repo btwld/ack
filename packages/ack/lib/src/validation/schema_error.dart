@@ -158,4 +158,21 @@ final class SchemaEncodeError extends SchemaError {
     super.cause,
     super.stackTrace,
   }) : super(message);
+
+  /// Encode failed because a non-nullable schema received `null`.
+  factory SchemaEncodeError.requiredNotNull(SchemaContext context) =>
+      SchemaEncodeError(
+        message: 'Value is required and cannot be null during encode.',
+        context: context,
+      );
+
+  /// Encode failed because the runtime value is the wrong type.
+  factory SchemaEncodeError.typeMismatch({
+    required Object expected,
+    required Object? actual,
+    required SchemaContext context,
+  }) => SchemaEncodeError(
+    message: 'Expected $expected during encode, got ${actual.runtimeType}.',
+    context: context,
+  );
 }

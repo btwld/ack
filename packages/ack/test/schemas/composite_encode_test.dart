@@ -11,8 +11,9 @@ void main() {
         'startsAt': Ack.datetime(),
       });
       final dt = DateTime.utc(2026, 5, 4, 10);
-      final encoded = schema.encode({'name': 'Launch', 'startsAt': dt})
-          as Map<String, Object?>;
+      final encoded =
+          schema.encode({'name': 'Launch', 'startsAt': dt})
+              as Map<String, Object?>;
       expect(encoded['name'], equals('Launch'));
       expect(encoded['startsAt'], equals('2026-05-04T10:00:00.000Z'));
     });
@@ -27,18 +28,13 @@ void main() {
     });
 
     test('fails on missing required field', () {
-      final schema = Ack.object({
-        'a': Ack.string(),
-        'b': Ack.string(),
-      });
+      final schema = Ack.object({'a': Ack.string(), 'b': Ack.string()});
       final result = schema.safeEncode({'a': 'x'});
       expect(result.isFail, isTrue);
     });
 
     test('does not synthesize default during encode', () {
-      final schema = Ack.object({
-        'a': Ack.string().withDefault('FALLBACK'),
-      });
+      final schema = Ack.object({'a': Ack.string().withDefault('FALLBACK')});
       final result = schema.safeEncode(<String, Object?>{});
       expect(result.isFail, isTrue);
     });
@@ -50,12 +46,11 @@ void main() {
     });
 
     test('passes through additional properties when allowed', () {
-      final schema = Ack.object(
-        {'a': Ack.string()},
-        additionalProperties: true,
-      );
-      final encoded = schema.encode({'a': 'x', 'b': 'y'})
-          as Map<String, Object?>;
+      final schema = Ack.object({
+        'a': Ack.string(),
+      }, additionalProperties: true);
+      final encoded =
+          schema.encode({'a': 'x', 'b': 'y'}) as Map<String, Object?>;
       expect(encoded['b'], equals('y'));
     });
 
@@ -70,13 +65,11 @@ void main() {
     });
 
     test('object-level refine runs during encode', () {
-      final schema = Ack.object({
-        'a': Ack.integer(),
-        'b': Ack.integer(),
-      }).refine(
-        (m) => (m['a'] as int) < (m['b'] as int),
-        message: 'a must be less than b',
-      );
+      final schema = Ack.object({'a': Ack.integer(), 'b': Ack.integer()})
+          .refine(
+            (m) => (m['a'] as int) < (m['b'] as int),
+            message: 'a must be less than b',
+          );
 
       expect(schema.encode({'a': 1, 'b': 2}), isA<Map<String, Object?>>());
       expect(schema.safeEncode({'a': 5, 'b': 2}).isFail, isTrue);
@@ -86,10 +79,7 @@ void main() {
   group('ListSchema encode', () {
     test('encodes nested codec items', () {
       final schema = Ack.list(Ack.datetime());
-      final dts = [
-        DateTime.utc(2026, 5, 4),
-        DateTime.utc(2026, 6, 1),
-      ];
+      final dts = [DateTime.utc(2026, 5, 4), DateTime.utc(2026, 6, 1)];
       final encoded = schema.encode(dts) as List<Object?>;
       expect(encoded[0], equals('2026-05-04T00:00:00.000Z'));
       expect(encoded[1], equals('2026-06-01T00:00:00.000Z'));
@@ -128,10 +118,7 @@ void main() {
     final schema = Ack.discriminated(
       discriminatorKey: 'type',
       schemas: {
-        'cat': Ack.object({
-          'type': Ack.literal('cat'),
-          'name': Ack.string(),
-        }),
+        'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
         'dog': Ack.object({
           'type': Ack.literal('dog'),
           'name': Ack.string(),
@@ -141,8 +128,9 @@ void main() {
     );
 
     test('Map+discriminator dispatches to matching branch', () {
-      final encoded = schema.encode({'type': 'cat', 'name': 'Fluffy'})
-          as Map<String, Object?>;
+      final encoded =
+          schema.encode({'type': 'cat', 'name': 'Fluffy'})
+              as Map<String, Object?>;
       expect(encoded['type'], equals('cat'));
       expect(encoded['name'], equals('Fluffy'));
     });

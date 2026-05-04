@@ -30,6 +30,44 @@ part 'testing/testing_schemas.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
+/// Tries to encode [runtimeValue] through [branch] under a child context that
+/// inherits the parent path (`pathSegment: ''`). Returns the result on a
+/// successful encode, or `null` when the branch fails. Failures are appended
+/// to [errors] when provided; thrown exceptions are wrapped as
+/// [SchemaEncodeError]. Used by union-style schemas to share branch-trial
+/// machinery.
+SchemaResult<Object>? _tryEncodeBranch(
+  AckSchema branch,
+  Object? runtimeValue,
+  String branchName,
+  SchemaContext context, {
+  List<SchemaError>? errors,
+}) {
+  final childContext = context.createChild(
+    name: branchName,
+    schema: branch,
+    value: runtimeValue,
+    pathSegment: '',
+  );
+  final SchemaResult<Object> result;
+  try {
+    result = branch.encodeValue(runtimeValue, childContext);
+  } catch (e, st) {
+    errors?.add(
+      SchemaEncodeError(
+        message: 'Branch encode threw: ${e.toString()}',
+        context: childContext,
+        cause: e,
+        stackTrace: st,
+      ),
+    );
+    return null;
+  }
+  if (result.isOk) return result;
+  errors?.add(result.getError());
+  return null;
+}
+
 @immutable
 sealed class AckSchema<DartType extends Object> {
   final bool isNullable;
@@ -228,12 +266,7 @@ sealed class AckSchema<DartType extends Object> {
       return SchemaResult.ok(null);
     }
 
-    return SchemaResult.fail(
-      SchemaEncodeError(
-        message: 'Value is required and cannot be null during encode.',
-        context: context,
-      ),
-    );
+    return SchemaResult.fail(SchemaEncodeError.requiredNotNull(context));
   }
 
   /// The schema type category for this schema.
@@ -325,9 +358,9 @@ sealed class AckSchema<DartType extends Object> {
 
     if (runtimeValue is! DartType) {
       return SchemaResult.fail(
-        SchemaEncodeError(
-          message:
-              'Expected $DartType during encode, got ${runtimeValue.runtimeType}.',
+        SchemaEncodeError.typeMismatch(
+          expected: DartType,
+          actual: runtimeValue,
           context: context,
         ),
       );
