@@ -90,6 +90,40 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
+
+    if (runtimeValue is! T || !values.contains(runtimeValue)) {
+      final allowed = values.map((e) => e.name).toList(growable: false);
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message:
+              'Expected one of ${allowed.map((s) => '"$s"').join(', ')} '
+              'during encode, got ${runtimeValue.runtimeType}.',
+          context: context,
+        ),
+      );
+    }
+
+    final constraintResult = applyConstraintsAndRefinements(
+      runtimeValue,
+      context,
+    );
+    if (constraintResult.isFail) {
+      return SchemaResult.fail(constraintResult.getError());
+    }
+
+    // Encode to the string boundary form (parse accepts string names; encode
+    // emits them) so JSON round-trips are stable.
+    return SchemaResult.ok(runtimeValue.name);
+  }
+
+  @override
   EnumSchema<T> copyWith({
     List<T>? values,
     bool? isNullable,

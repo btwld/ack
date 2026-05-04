@@ -3,20 +3,20 @@ import 'package:test/test.dart';
 
 /// Test to verify that transform() inherits isOptional and isNullable flags
 void main() {
-  group('TransformedSchema flag inheritance', () {
+  group('CodecSchema (.transform) flag inheritance', () {
     test('transform should inherit isOptional flag', () {
       final schema = Ack.string().optional().transform((val) => val);
 
       print(
-        'Wrapped schema isOptional: ${(schema as dynamic).schema.isOptional}',
+        'Wrapped schema isOptional: ${(schema as dynamic).inputSchema.isOptional}',
       );
-      print('TransformedSchema isOptional: ${schema.isOptional}');
+      print('CodecSchema isOptional: ${schema.isOptional}');
 
       expect(
         schema.isOptional,
         isTrue,
         reason:
-            'TransformedSchema should inherit isOptional from wrapped schema',
+            'CodecSchema should inherit isOptional from wrapped schema',
       );
     });
 
@@ -24,15 +24,15 @@ void main() {
       final schema = Ack.string().nullable().transform((val) => val);
 
       print(
-        'Wrapped schema isNullable: ${(schema as dynamic).schema.isNullable}',
+        'Wrapped schema isNullable: ${(schema as dynamic).inputSchema.isNullable}',
       );
-      print('TransformedSchema isNullable: ${schema.isNullable}');
+      print('CodecSchema isNullable: ${schema.isNullable}');
 
       expect(
         schema.isNullable,
         isTrue,
         reason:
-            'TransformedSchema should inherit isNullable from wrapped schema',
+            'CodecSchema should inherit isNullable from wrapped schema',
       );
     });
 
@@ -40,25 +40,25 @@ void main() {
       final schema = Ack.string().optional().nullable().transform((val) => val);
 
       print(
-        'Wrapped schema isOptional: ${(schema as dynamic).schema.isOptional}',
+        'Wrapped schema isOptional: ${(schema as dynamic).inputSchema.isOptional}',
       );
       print(
-        'Wrapped schema isNullable: ${(schema as dynamic).schema.isNullable}',
+        'Wrapped schema isNullable: ${(schema as dynamic).inputSchema.isNullable}',
       );
-      print('TransformedSchema isOptional: ${schema.isOptional}');
-      print('TransformedSchema isNullable: ${schema.isNullable}');
+      print('CodecSchema isOptional: ${schema.isOptional}');
+      print('CodecSchema isNullable: ${schema.isNullable}');
 
       expect(
         schema.isOptional,
         isTrue,
         reason:
-            'TransformedSchema should inherit isOptional from wrapped schema',
+            'CodecSchema should inherit isOptional from wrapped schema',
       );
       expect(
         schema.isNullable,
         isTrue,
         reason:
-            'TransformedSchema should inherit isNullable from wrapped schema',
+            'CodecSchema should inherit isNullable from wrapped schema',
       );
     });
 

@@ -1,7 +1,7 @@
 import '../../constraints/datetime_constraint.dart';
 import '../schema.dart';
 
-/// Extensions for `TransformedSchema<String, DateTime>` to add date range validation.
+/// Extensions for `CodecSchema<String, DateTime>` to add date range validation.
 ///
 /// These extensions work with schemas created by [Ack.date()] or [Ack.datetime()],
 /// which parse ISO 8601 date/datetime strings into DateTime objects.
@@ -17,7 +17,7 @@ import '../schema.dart';
 ///   .min(DateTime(2025, 1, 1))
 ///   .max(DateTime(2025, 12, 31));
 /// ```
-extension DateTimeSchemaExtensions on TransformedSchema<String, DateTime> {
+extension DateTimeSchemaExtensions on CodecSchema<String, DateTime> {
   /// Constrains the date to be on or after [minDate] (inclusive).
   ///
   /// The constraint is applied to the transformed DateTime value, after the
@@ -31,7 +31,7 @@ extension DateTimeSchemaExtensions on TransformedSchema<String, DateTime> {
   /// schema.parse("2000-01-01"); // ✓ Valid - exactly at min (inclusive)
   /// schema.parse("1999-12-31"); // ✗ Fails - before min
   /// ```
-  TransformedSchema<String, DateTime> min(DateTime minDate) {
+  CodecSchema<String, DateTime> min(DateTime minDate) {
     return copyWith(
       constraints: [...constraints, DateTimeConstraint.min(minDate)],
     );
@@ -55,7 +55,7 @@ extension DateTimeSchemaExtensions on TransformedSchema<String, DateTime> {
   /// schema.parse("2000-01-01"); // ✓ Valid if more than 18 years ago
   /// schema.parse("2020-01-01"); // ✗ Fails if less than 18 years ago
   /// ```
-  TransformedSchema<String, DateTime> max(DateTime maxDate) {
+  CodecSchema<String, DateTime> max(DateTime maxDate) {
     return copyWith(
       constraints: [...constraints, DateTimeConstraint.max(maxDate)],
     );

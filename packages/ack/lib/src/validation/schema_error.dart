@@ -143,3 +143,19 @@ final class SchemaTransformError extends SchemaError {
     super.stackTrace,
   }) : super(message);
 }
+
+/// Error raised when an `encode` operation fails.
+///
+/// Encode is the inverse of parse: it converts a runtime value back into the
+/// boundary representation the schema validates as input. Failures here usually
+/// indicate either a runtime value that does not satisfy the schema, an attempt
+/// to encode a one-way `.transform(...)`, or a mis-formatted output from a
+/// codec's `encode` function.
+final class SchemaEncodeError extends SchemaError {
+  const SchemaEncodeError({
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  }) : super(message);
+}

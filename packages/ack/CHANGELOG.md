@@ -1,3 +1,23 @@
+## Unreleased
+
+### Added
+
+* **Bidirectional codecs**: `Ack.codec<I, O>(...)` for explicit bidirectional conversion between a boundary type `I` and a runtime type `O`.
+* **Runtime instance schema**: `Ack.instance<T>()` validates `value is T` for use as the runtime side of a codec or as a standalone runtime type guard.
+* **Encode methods**: `encode(...)` and `safeEncode(...)` on every `AckSchema`. Encode is the inverse of parse — it converts a runtime value back into the boundary representation the schema validates as input.
+* **`SchemaEncodeError`**: new error type raised when an encode operation fails (type mismatch, missing required field, one-way `.transform`, encode closure throw, etc.).
+
+### Changed
+
+* **`.transform(fn)`** now returns a `CodecSchema<T, R>` (one-way: `decode = fn`, `encode = null`). Parse behavior is unchanged. Calling `encode(...)` on a transformed schema fails with `SchemaEncodeError` whose message points at `Ack.codec(...)`.
+* **Built-in transforms are now bidirectional codecs.** `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, and `Ack.duration()` round-trip cleanly through `parse` and `encode`. Boundary forms: `YYYY-MM-DD` for `date()`, UTC ISO-8601 for `datetime()`, `Uri.toString()` for `uri()`, milliseconds for `duration()`.
+* **`EnumSchema.encode(...)`** emits the enum's `.name` (string) so JSON round-trips are stable.
+* `TransformedSchema` is now an internal `CodecSchema<I, O>` — schemas previously typed `TransformedSchema<I, O>` are now `CodecSchema<I, O>`.
+
+### Deprecated
+
+* `TransformedSchema<I, O>` is preserved as a `@Deprecated` typedef for `CodecSchema<I, O>`. Use `CodecSchema` directly. The alias will be removed in a future release.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.

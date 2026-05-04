@@ -16,8 +16,8 @@ JsonSchema _convert(AckSchema schema) {
   // Use schema.isNullable directly - canonical source of truth
   final nullableFlag = schema.isNullable;
 
-  if (schema is TransformedSchema) {
-    final base = _convert(schema.schema);
+  if (schema is CodecSchema) {
+    final base = _convert(schema.inputSchema);
     return base.copyWith(
       description: schema.description ?? base.description,
       nullable: nullableFlag || base.nullable == true,

@@ -48,6 +48,39 @@ if (result.isOk) {
 
 Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
 
+## Validate and serialize (codecs)
+
+Schemas are bidirectional. `parse` validates a boundary value (JSON, wire data) and produces the runtime form. `encode` is the inverse — it validates the runtime value and produces the boundary form, using the same schema graph.
+
+```dart
+final eventSchema = Ack.object({
+  'name': Ack.string(),
+  'startsAt': Ack.datetime(),
+});
+
+final event = eventSchema.parse({
+  'name': 'Launch',
+  'startsAt': '2026-05-04T10:00:00.000Z',
+});
+// event['startsAt'] is a DateTime
+
+final payload = eventSchema.encode(event);
+// payload['startsAt'] is back to '2026-05-04T10:00:00.000Z'
+```
+
+Define your own codec with `Ack.codec`:
+
+```dart
+final hexColorCodec = Ack.codec<String, Color>(
+  Ack.string().matches(r'^#[0-9a-fA-F]{6}$'),
+  Ack.instance<Color>(),
+  decode: Color.fromHex,
+  encode: (color) => color.hex,
+);
+```
+
+`.transform(fn)` remains one-way (parse only, no inverse). Calling `encode` on a transformed schema fails clearly and points at `Ack.codec` if you need both directions. Defaults are forward-only — they apply during parse but never synthesize boundary data during encode.
+
 ## Documentation
 
 - [Full documentation](https://docs.page/btwld/ack)

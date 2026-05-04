@@ -96,6 +96,82 @@ final class AnyOfSchema extends AckSchema<Object>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    // Mirror parseAndValidate's intentional bypass of handleNullForEncode:
+    // null has special semantics for unions (a nullable member can carry
+    // null through), so handle it inline.
+    if (runtimeValue == null) {
+      // Try members first — a nullable member may accept null.
+      // If none match, fall back to AnyOfSchema's own isNullable.
+      for (final (index, schema) in schemas.indexed) {
+        final childContext = context.createChild(
+          name: 'anyOf:$index',
+          schema: schema,
+          value: null,
+          pathSegment: '',
+        );
+        final result = schema.encodeValue(null, childContext);
+        if (result.isOk) {
+          return result;
+        }
+      }
+      if (isNullable) {
+        return SchemaResult.ok(null);
+      }
+      return SchemaResult.fail(
+        SchemaEncodeError(
+          message: 'Value is required and cannot be null during encode.',
+          context: context,
+        ),
+      );
+    }
+
+    final errors = <SchemaError>[];
+
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: runtimeValue,
+        pathSegment: '',
+      );
+
+      final SchemaResult<Object> result;
+      try {
+        result = schema.encodeValue(runtimeValue, childContext);
+      } catch (e, st) {
+        errors.add(
+          SchemaEncodeError(
+            message: 'Branch encode threw: ${e.toString()}',
+            context: childContext,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+        continue;
+      }
+
+      if (result.isOk) {
+        final encoded = result.getOrNull();
+        if (encoded == null) {
+          return SchemaResult.ok(null);
+        }
+        return applyConstraintsAndRefinements(encoded, context);
+      }
+
+      errors.add(result.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  @override
   AnyOfSchema copyWith({
     bool? isNullable,
     bool? isOptional,

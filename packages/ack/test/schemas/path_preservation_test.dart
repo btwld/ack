@@ -142,15 +142,11 @@ void main() {
     });
   });
 
-  group('TransformedSchema Default Values', () {
+  group('CodecSchema (.transform) Default Values', () {
     test('should apply output default when input is null', () {
-      // Create a TransformedSchema with a default value
-      final baseSchema = Ack.string();
-      final transformedSchema = TransformedSchema<String, String>(
-        baseSchema,
-        (value) => value.toUpperCase(),
-        defaultValue: 'DEFAULT_OUTPUT',
-      );
+      final transformedSchema = Ack.string()
+          .transform<String>((value) => value.toUpperCase())
+          .copyWith(defaultValue: 'DEFAULT_OUTPUT');
 
       final result = transformedSchema.safeParse(null);
 

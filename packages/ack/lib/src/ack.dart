@@ -1,6 +1,5 @@
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
-import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
@@ -60,6 +59,54 @@ final class Ack {
   /// Useful for dynamic content or when you need maximum flexibility.
   static AnySchema any() => const AnySchema();
 
+  /// Creates a schema that validates a runtime value is an instance of [T].
+  ///
+  /// Useful as the runtime/output side of a codec for domain objects ACK
+  /// cannot structurally validate. Combine with `.refine(...)` for business
+  /// rules beyond the type check.
+  ///
+  /// Example:
+  /// ```dart
+  /// final dateCodec = Ack.codec<String, DateTime>(
+  ///   Ack.string().datetime(),
+  ///   Ack.instance<DateTime>(),
+  ///   decode: DateTime.parse,
+  ///   encode: (d) => d.toIso8601String(),
+  /// );
+  /// ```
+  static InstanceSchema<T> instance<T extends Object>() => InstanceSchema<T>();
+
+  /// Creates a bidirectional codec between a boundary type [I] and a runtime
+  /// type [O].
+  ///
+  /// `parse` validates the input via [inputSchema], runs [decode], then
+  /// validates the result via [outputSchema]. `encode` is the inverse:
+  /// validate via [outputSchema], run [encode], validate via [inputSchema].
+  ///
+  /// Use `.transform(fn)` instead when only the parse direction is needed —
+  /// it produces a one-way codec whose `encode` fails clearly.
+  ///
+  /// Example:
+  /// ```dart
+  /// final dateCodec = Ack.codec<String, DateTime>(
+  ///   Ack.string().datetime(),
+  ///   Ack.instance<DateTime>(),
+  ///   decode: DateTime.parse,
+  ///   encode: (d) => d.toIso8601String(),
+  /// );
+  /// ```
+  static CodecSchema<I, O> codec<I extends Object, O extends Object>(
+    AckSchema<I> inputSchema,
+    AckSchema<O> outputSchema, {
+    required O Function(I value) decode,
+    required I Function(O value) encode,
+  }) => CodecSchema<I, O>(
+    inputSchema: inputSchema,
+    outputSchema: outputSchema,
+    decodeFn: decode,
+    encodeFn: encode,
+  );
+
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
   ///
   /// The schema validates the string format before transformation, ensuring only valid
@@ -76,10 +123,16 @@ final class Ack {
   ///   .min(DateTime(2025, 1, 1))
   ///   .max(DateTime(2025, 12, 31));
   /// ```
-  static TransformedSchema<String, DateTime> date() {
-    return string()
-        .date() // Validates ISO 8601 date format (YYYY-MM-DD) first
-        .transform<DateTime>((s) => DateTime.parse(s));
+  static CodecSchema<String, DateTime> date() {
+    return Ack.codec<String, DateTime>(
+      string().date(), // Validates ISO 8601 date format (YYYY-MM-DD) first
+      Ack.instance<DateTime>(),
+      decode: DateTime.parse,
+      encode: (d) =>
+          '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}',
+    );
   }
 
   /// Creates a datetime schema that parses ISO 8601 datetime strings into DateTime objects.
@@ -95,10 +148,13 @@ final class Ack {
   /// // With range validation
   /// final appointmentSchema = Ack.datetime().min(DateTime.now());
   /// ```
-  static TransformedSchema<String, DateTime> datetime() {
-    return string()
-        .datetime() // Validates ISO 8601 datetime format with timezone first
-        .transform<DateTime>((s) => DateTime.parse(s));
+  static CodecSchema<String, DateTime> datetime() {
+    return Ack.codec<String, DateTime>(
+      string().datetime(), // Validates ISO 8601 datetime with timezone first
+      Ack.instance<DateTime>(),
+      decode: DateTime.parse,
+      encode: (d) => d.toUtc().toIso8601String(),
+    );
   }
 
   /// Creates a schema that parses URI strings into [Uri] objects.
@@ -112,10 +168,13 @@ final class Ack {
   /// final schema = Ack.uri();
   /// final result = schema.parse('https://example.com/path?x=1');
   /// ```
-  static TransformedSchema<String, Uri> uri() {
-    return string()
-        .uri() // Validates URI format first
-        .transform<Uri>((s) => Uri.parse(s));
+  static CodecSchema<String, Uri> uri() {
+    return Ack.codec<String, Uri>(
+      string().uri(), // Validates URI format first
+      Ack.instance<Uri>(),
+      decode: Uri.parse,
+      encode: (u) => u.toString(),
+    );
   }
 
   /// Creates a schema that parses millisecond integers into [Duration] objects.
@@ -130,7 +189,12 @@ final class Ack {
   /// // With range validation
   /// final timeout = Ack.duration().min(Duration(minutes: 1)).max(Duration(minutes: 2));
   /// ```
-  static TransformedSchema<int, Duration> duration() {
-    return integer().transform<Duration>((ms) => Duration(milliseconds: ms));
+  static CodecSchema<int, Duration> duration() {
+    return Ack.codec<int, Duration>(
+      integer(),
+      Ack.instance<Duration>(),
+      decode: (ms) => Duration(milliseconds: ms),
+      encode: (d) => d.inMilliseconds,
+    );
   }
 }

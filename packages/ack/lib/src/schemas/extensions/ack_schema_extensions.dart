@@ -61,18 +61,22 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
   /// Transforms the validated value using the provided transformer function.
   ///
   /// The [transformer] always receives a non-null `T` value. Even when this
-  /// schema is nullable, the transformer is only called for non-null values; if
-  /// the input is `null`, it passes through as `null` without invoking the
+  /// schema is nullable, the transformer is only called for non-null values;
+  /// if the input is `null`, it passes through as `null` without invoking the
   /// transformer.
   ///
-  /// This is useful for converting data types or applying business logic
-  /// transformations without defensively handling `null` inside the callback.
-  TransformedSchema<T, R> transform<R extends Object>(
+  /// This produces a one-way [CodecSchema]: parsing flows through the
+  /// transformer, but `encode` will fail with a [SchemaEncodeError] pointing
+  /// at `Ack.codec`. Use `Ack.codec(...)` directly when a bidirectional
+  /// conversion is needed.
+  CodecSchema<T, R> transform<R extends Object>(
     R Function(T value) transformer,
   ) {
-    return TransformedSchema(
-      this,
-      transformer,
+    return CodecSchema<T, R>(
+      inputSchema: this,
+      outputSchema: InstanceSchema<R>(),
+      decodeFn: transformer,
+      encodeFn: null,
       isOptional: isOptional,
       isNullable: isNullable,
     );

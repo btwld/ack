@@ -157,6 +157,106 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
+
+    if (runtimeValue is! Map) {
+      final actualType = AckSchema.getSchemaType(runtimeValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+
+    final mapValue = runtimeValue is Map<String, Object?>
+        ? runtimeValue
+        : runtimeValue.cast<String, Object?>();
+    final encodedMap = <String, Object?>{};
+    final encodeErrors = <SchemaError>[];
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+      final hasValue = mapValue.containsKey(key);
+
+      if (!hasValue) {
+        if (schema.isOptional) {
+          // Optional and absent: omit. Defaults are forward-only — never
+          // synthesized during encode.
+          continue;
+        }
+        encodeErrors.add(
+          SchemaEncodeError(
+            message: 'Required property "$key" is missing during encode.',
+            context: context.createChild(
+              name: key,
+              schema: schema,
+              value: null,
+              pathSegment: key,
+            ),
+          ),
+        );
+        continue;
+      }
+
+      final propertyValue = mapValue[key];
+      final propertyContext = context.createChild(
+        name: key,
+        schema: schema,
+        value: propertyValue,
+        pathSegment: key,
+      );
+      final result = schema.encodeValue(propertyValue, propertyContext);
+      result.match(
+        onOk: (encodedValue) {
+          encodedMap[key] = encodedValue;
+        },
+        onFail: encodeErrors.add,
+      );
+    }
+
+    final knownKeys = properties.keys.toSet();
+    for (final key in mapValue.keys) {
+      if (!knownKeys.contains(key)) {
+        if (additionalProperties) {
+          encodedMap[key] = mapValue[key];
+        } else {
+          encodeErrors.add(
+            SchemaEncodeError(
+              message:
+                  'Property "$key" is not allowed during encode '
+                  '(additionalProperties is false).',
+              context: context.createChild(
+                name: key,
+                schema: this,
+                value: mapValue[key],
+                pathSegment: key,
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    if (encodeErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: encodeErrors, context: context),
+      );
+    }
+
+    final unmodifiable = Map<String, Object?>.unmodifiable(encodedMap);
+    return applyConstraintsAndRefinements(unmodifiable, context);
+  }
+
+  @override
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
     bool? additionalProperties,

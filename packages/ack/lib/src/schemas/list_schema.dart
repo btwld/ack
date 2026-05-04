@@ -84,6 +84,66 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
+  @protected
+  SchemaResult<Object> encodeValue(
+    Object? runtimeValue,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullForEncode(runtimeValue, context);
+    if (nullResult != null) return nullResult;
+
+    if (runtimeValue is! List) {
+      final actualType = AckSchema.getSchemaType(runtimeValue);
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+
+    final encodedItems = <Object?>[];
+    final itemErrors = <SchemaError>[];
+
+    for (var i = 0; i < runtimeValue.length; i++) {
+      final itemValue = runtimeValue[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: itemValue,
+        pathSegment: '$i',
+      );
+
+      final itemResult = itemSchema.encodeValue(itemValue, itemContext);
+      itemResult.match(
+        onOk: (encoded) => encodedItems.add(encoded),
+        onFail: itemErrors.add,
+      );
+    }
+
+    if (itemErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: itemErrors, context: context),
+      );
+    }
+
+    // Apply list-level constraints/refinements on the runtime List<V> form
+    // so list-length checks remain symmetric with parse.
+    if (runtimeValue is List<V>) {
+      final constraintResult = applyConstraintsAndRefinements(
+        runtimeValue,
+        context,
+      );
+      if (constraintResult.isFail) {
+        return SchemaResult.fail(constraintResult.getError());
+      }
+    }
+
+    return SchemaResult.ok(List<Object?>.unmodifiable(encodedItems));
+  }
+
+  @override
   ListSchema<V> copyWith({
     AckSchema<V>? itemSchema,
     bool? isNullable,
