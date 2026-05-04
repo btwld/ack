@@ -16,7 +16,7 @@
 
 ### Deprecated
 
-* `TransformedSchema<I, O>` is preserved as a `@Deprecated` typedef for `CodecSchema<I, O>`. Use `CodecSchema` directly. The alias will be removed in a future release.
+* `TransformedSchema<I, O>` is now a `@Deprecated` typedef alias for `CodecSchema<I, O>`. **Type annotations** like `TransformedSchema<String, DateTime>` continue to work, but the class's previous positional constructor `TransformedSchema(schema, transformer)` and the fields `.schema` / `.transformer` are no longer available — migrate to `CodecSchema(inputSchema: ..., outputSchema: ..., decodeFn: ..., encodeFn: ...)` and `.inputSchema` / `.decodeFn`. The alias will be removed in a future release.
 
 ## 1.0.0-beta.11
 

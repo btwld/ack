@@ -123,9 +123,11 @@ final class AnyOfSchema extends AckSchema<Object>
         errors: errors,
       );
       if (result != null) {
-        final encoded = result.getOrNull();
-        if (encoded == null) return SchemaResult.ok(null);
-        return applyConstraintsAndRefinements(encoded, context);
+        // Any-of-level refinements run on the runtime input (per the README
+        // contract). The selected branch's encoded result is returned unchanged.
+        final cr = applyConstraintsAndRefinements(runtimeValue, context);
+        if (cr.isFail) return SchemaResult.fail(cr.getError());
+        return result;
       }
     }
 

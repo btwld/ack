@@ -178,6 +178,15 @@ final class ObjectSchema extends AckSchema<MapValue>
     final mapValue = runtimeValue is Map<String, Object?>
         ? runtimeValue
         : runtimeValue.cast<String, Object?>();
+
+    // Object-level constraints/refinements run on the runtime input (per the
+    // README contract: encode validates runtime values). Children are encoded
+    // only after the runtime form passes its own validation.
+    final runtimeCheck = applyConstraintsAndRefinements(mapValue, context);
+    if (runtimeCheck.isFail) {
+      return SchemaResult.fail(runtimeCheck.getError());
+    }
+
     final encodedMap = <String, Object?>{};
     final encodeErrors = <SchemaError>[];
 
@@ -250,8 +259,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final unmodifiable = Map<String, Object?>.unmodifiable(encodedMap);
-    return applyConstraintsAndRefinements(unmodifiable, context);
+    return SchemaResult.ok(Map<String, Object?>.unmodifiable(encodedMap));
   }
 
   @override

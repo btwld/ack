@@ -203,16 +203,47 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final nullResult = handleNullForEncode(runtimeValue, context);
     if (nullResult != null) return nullResult;
 
-    // Path 1: runtime value is a Map carrying the discriminator key —
-    // dispatch directly (deterministic, fast).
+    // Path 1: runtime value is a Map — dispatch by discriminator key,
+    // mirroring parse-side strictness (missing or non-string discriminators
+    // fail at the discriminator path, never falling through to branch trial).
     if (runtimeValue is Map) {
       final mapValue = runtimeValue is Map<String, Object?>
           ? runtimeValue
           : runtimeValue.cast<String, Object?>();
       final discValueRaw = mapValue[discriminatorKey];
-      if (discValueRaw is String) {
-        return _encodeViaDiscriminator(mapValue, discValueRaw, context);
+      if (discValueRaw == null) {
+        final constraintError = ObjectRequiredPropertiesConstraint(
+          missingPropertyKey: discriminatorKey,
+        ).validate(mapValue);
+        return SchemaResult.fail(
+          SchemaConstraintsError(
+            constraints: constraintError != null ? [constraintError] : [],
+            context: context.createChild(
+              name: discriminatorKey,
+              schema: const StringSchema(),
+              value: null,
+              pathSegment: discriminatorKey,
+            ),
+          ),
+        );
       }
+      if (discValueRaw is! String) {
+        final constraintError = InvalidTypeConstraint(
+          expectedType: String,
+        ).validate(discValueRaw);
+        return SchemaResult.fail(
+          SchemaConstraintsError(
+            constraints: constraintError != null ? [constraintError] : [],
+            context: context.createChild(
+              name: discriminatorKey,
+              schema: const StringSchema(),
+              value: discValueRaw,
+              pathSegment: discriminatorKey,
+            ),
+          ),
+        );
+      }
+      return _encodeViaDiscriminator(mapValue, discValueRaw, context);
     }
 
     // Path 2: runtime value is a typed domain object — best-effort branch

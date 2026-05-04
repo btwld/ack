@@ -104,6 +104,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     }
 
     final encodedItems = <Object?>[];
+    final runtimeItems = <V>[];
     final itemErrors = <SchemaError>[];
 
     for (var i = 0; i < runtimeValue.length; i++) {
@@ -117,7 +118,12 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
       final itemResult = itemSchema.encodeValue(itemValue, itemContext);
       itemResult.match(
-        onOk: (encoded) => encodedItems.add(encoded),
+        onOk: (encoded) {
+          encodedItems.add(encoded);
+          // itemSchema.encodeValue's type check guarantees itemValue is V on
+          // success, so we can safely collect it as the typed runtime item.
+          if (itemValue is V) runtimeItems.add(itemValue);
+        },
         onFail: itemErrors.add,
       );
     }
@@ -128,16 +134,15 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       );
     }
 
-    // Apply list-level constraints/refinements on the runtime List<V> form
-    // so list-length checks remain symmetric with parse.
-    if (runtimeValue is List<V>) {
-      final constraintResult = applyConstraintsAndRefinements(
-        runtimeValue,
-        context,
-      );
-      if (constraintResult.isFail) {
-        return SchemaResult.fail(constraintResult.getError());
-      }
+    // List-level constraints/refinements run on the typed runtime list,
+    // independent of the original collection's static type. This keeps
+    // length/refinement checks reliable for `<Object?>[...]` callers.
+    final constraintResult = applyConstraintsAndRefinements(
+      List<V>.unmodifiable(runtimeItems),
+      context,
+    );
+    if (constraintResult.isFail) {
+      return SchemaResult.fail(constraintResult.getError());
     }
 
     return SchemaResult.ok(List<Object?>.unmodifiable(encodedItems));
