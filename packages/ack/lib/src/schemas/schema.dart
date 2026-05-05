@@ -31,11 +31,8 @@ part 'testing/testing_schemas.dart';
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
 /// Tries to encode [runtimeValue] through [branch] under a child context that
-/// inherits the parent path (`pathSegment: ''`). Returns the result on a
-/// successful encode, or `null` when the branch fails. Failures are appended
-/// to [errors] when provided; thrown exceptions are wrapped as
-/// [SchemaEncodeError]. Used by union-style schemas to share branch-trial
-/// machinery.
+/// inherits the parent path (`pathSegment: ''`). Used by union-style schemas
+/// to share branch-trial machinery.
 SchemaResult<Object>? _tryEncodeBranch(
   AckSchema branch,
   Object? runtimeValue,

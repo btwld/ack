@@ -105,17 +105,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         missingPropertyKey: discriminatorKey,
       ).validate(mapValue);
 
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context.createChild(
-            name: discriminatorKey,
-            schema: const StringSchema(),
-            value: null,
-            pathSegment: discriminatorKey,
-          ),
-        ),
-      );
+      return _failDiscriminator(constraintError, null, context);
     }
 
     if (discValueRaw is! String) {
@@ -123,17 +113,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         expectedType: String,
       ).validate(discValueRaw);
 
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: constraintError != null ? [constraintError] : [],
-          context: context.createChild(
-            name: discriminatorKey,
-            schema: const StringSchema(),
-            value: discValueRaw,
-            pathSegment: discriminatorKey,
-          ),
-        ),
-      );
+      return _failDiscriminator(constraintError, discValueRaw, context);
     }
 
     final AckSchema<T>? selectedSubSchema = schemas[discValueRaw];
@@ -144,19 +124,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         allowed,
       ).validate(discValueRaw);
 
-      // Error context for discriminator key, but inherit parent path
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: enumError != null ? [enumError] : [],
-          context: context.createChild(
-            name: discriminatorKey,
-            schema: const StringSchema(),
-            value: discValueRaw,
-            pathSegment:
-                discriminatorKey, // Point directly to the failing field
-          ),
-        ),
-      );
+      return _failDiscriminator(enumError, discValueRaw, context);
     }
 
     // Validate the selected branch; branch name for debug only
@@ -203,9 +171,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final nullResult = handleNullForEncode(runtimeValue, context);
     if (nullResult != null) return nullResult;
 
-    // Path 1: runtime value is a Map — dispatch by discriminator key,
-    // mirroring parse-side strictness (missing or non-string discriminators
-    // fail at the discriminator path, never falling through to branch trial).
+    // Map encoding mirrors parse-side strictness for discriminator failures.
     if (runtimeValue is Map) {
       final mapValue = runtimeValue is Map<String, Object?>
           ? runtimeValue
@@ -215,33 +181,13 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         final constraintError = ObjectRequiredPropertiesConstraint(
           missingPropertyKey: discriminatorKey,
         ).validate(mapValue);
-        return SchemaResult.fail(
-          SchemaConstraintsError(
-            constraints: constraintError != null ? [constraintError] : [],
-            context: context.createChild(
-              name: discriminatorKey,
-              schema: const StringSchema(),
-              value: null,
-              pathSegment: discriminatorKey,
-            ),
-          ),
-        );
+        return _failDiscriminator(constraintError, null, context);
       }
       if (discValueRaw is! String) {
         final constraintError = InvalidTypeConstraint(
           expectedType: String,
         ).validate(discValueRaw);
-        return SchemaResult.fail(
-          SchemaConstraintsError(
-            constraints: constraintError != null ? [constraintError] : [],
-            context: context.createChild(
-              name: discriminatorKey,
-              schema: const StringSchema(),
-              value: discValueRaw,
-              pathSegment: discriminatorKey,
-            ),
-          ),
-        );
+        return _failDiscriminator(constraintError, discValueRaw, context);
       }
       return _encodeViaDiscriminator(mapValue, discValueRaw, context);
     }
@@ -251,6 +197,24 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     // branch does not poison the union. Users with side-effecting encoders
     // should pre-tag their domain object with the discriminator field.
     return _encodeByBranchTrial(runtimeValue!, context);
+  }
+
+  SchemaResult<R> _failDiscriminator<R extends Object>(
+    ConstraintError? constraint,
+    Object? value,
+    SchemaContext parent,
+  ) {
+    return SchemaResult.fail(
+      SchemaConstraintsError(
+        constraints: constraint != null ? [constraint] : const [],
+        context: parent.createChild(
+          name: discriminatorKey,
+          schema: const StringSchema(),
+          value: value,
+          pathSegment: discriminatorKey,
+        ),
+      ),
+    );
   }
 
   /// Applies discriminated-level constraints/refinements when [value] can be
@@ -273,17 +237,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       final enumError = PatternConstraint.enumString(
         allowed,
       ).validate(discValueRaw);
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: enumError != null ? [enumError] : [],
-          context: context.createChild(
-            name: discriminatorKey,
-            schema: const StringSchema(),
-            value: discValueRaw,
-            pathSegment: discriminatorKey,
-          ),
-        ),
-      );
+      return _failDiscriminator(enumError, discValueRaw, context);
     }
 
     final constraintError = _runTypedConstraints(mapValue, context);

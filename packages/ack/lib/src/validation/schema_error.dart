@@ -168,7 +168,7 @@ final class SchemaEncodeError extends SchemaError {
 
   /// Encode failed because the runtime value is the wrong type.
   factory SchemaEncodeError.typeMismatch({
-    required Object expected,
+    required Type expected,
     required Object? actual,
     required SchemaContext context,
   }) => SchemaEncodeError(

@@ -61,19 +61,8 @@ final class Ack {
 
   /// Creates a schema that validates a runtime value is an instance of [T].
   ///
-  /// Useful as the runtime/output side of a codec for domain objects ACK
-  /// cannot structurally validate. Combine with `.refine(...)` for business
-  /// rules beyond the type check.
-  ///
-  /// Example:
-  /// ```dart
-  /// final dateCodec = Ack.codec<String, DateTime>(
-  ///   Ack.string().datetime(),
-  ///   Ack.instance<DateTime>(),
-  ///   decode: DateTime.parse,
-  ///   encode: (d) => d.toIso8601String(),
-  /// );
-  /// ```
+  /// Useful as the runtime/output side of a codec for domain objects ACK does
+  /// not structurally validate.
   static InstanceSchema<T> instance<T extends Object>() => InstanceSchema<T>();
 
   /// Creates a bidirectional codec between a boundary type [I] and a runtime
@@ -103,8 +92,8 @@ final class Ack {
   }) => CodecSchema<I, O>(
     inputSchema: inputSchema,
     outputSchema: outputSchema,
-    decodeFn: decode,
-    encodeFn: encode,
+    decoder: decode,
+    encoder: encode,
   );
 
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.

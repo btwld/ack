@@ -31,6 +31,13 @@ void main() {
       final fail = schema.safeParse(const _Color('fff'));
       expect(fail.isFail, isTrue);
     });
+
+    test('checks reified generic arguments at runtime', () {
+      final schema = Ack.instance<List<int>>();
+
+      expect(schema.safeParse(<int>[1]).isOk, isTrue);
+      expect(schema.safeParse(<String>['a']).isFail, isTrue);
+    });
   });
 
   group('InstanceSchema encode', () {

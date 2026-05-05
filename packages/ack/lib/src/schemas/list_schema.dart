@@ -142,7 +142,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       context,
     );
     if (constraintResult.isFail) {
-      return SchemaResult.fail(constraintResult.getError());
+      return constraintResult.castFail();
     }
 
     return SchemaResult.ok(List<Object?>.unmodifiable(encodedItems));

@@ -6,6 +6,8 @@ part of 'schema.dart';
 /// checks the Dart type at runtime via `value is T` and applies any attached
 /// refinements. Use it when the runtime side of a codec is a domain object
 /// or value type that ACK does not structurally know how to validate.
+/// Dart's normal runtime type check includes reified generic type arguments
+/// for generic classes such as `List<int>`.
 ///
 /// ```dart
 /// final dateCodec = Ack.codec<String, DateTime>(

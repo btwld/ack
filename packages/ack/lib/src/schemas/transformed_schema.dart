@@ -16,18 +16,19 @@ part of 'schema.dart';
 /// CodecSchema<I, O>(
 ///   inputSchema: ...,
 ///   outputSchema: ...,
-///   decodeFn: ...,
-///   encodeFn: ...,
+///   decoder: ...,
+///   encoder: ...,
 /// );
 /// ```
 ///
-/// and use `.inputSchema` / `.decodeFn` (and `.outputSchema` / `.encodeFn`)
+/// and use `.inputSchema` / `.decoder` (and `.outputSchema` / `.encoder`)
 /// for field access. The alias will be removed in a future release.
 @Deprecated(
   'TransformedSchema is now a typedef alias for CodecSchema. Type annotations '
   'continue to work, but the previous positional constructor and the '
   '.schema / .transformer fields are no longer available — use CodecSchema '
-  'with named constructor parameters and .inputSchema / .decodeFn instead. '
+  'with named constructor parameters and .inputSchema / .decoder / .outputSchema '
+  '/ .encoder instead. '
   'This alias will be removed in a future release.',
 )
 typedef TransformedSchema<InputType extends Object, OutputType extends Object> =

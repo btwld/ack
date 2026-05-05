@@ -222,10 +222,11 @@ void main() {
         expect(a.hashCode, equals(b.hashCode));
       });
 
-      test('different transformers are not equal', () {
+      test('different transformers with same structure are equal', () {
         final a = Ack.string().transform((s) => s.toUpperCase());
         final b = Ack.string().transform((s) => s.toLowerCase());
-        expect(a, isNot(equals(b)));
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
       });
     });
 

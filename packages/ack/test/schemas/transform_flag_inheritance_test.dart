@@ -7,11 +7,6 @@ void main() {
     test('transform should inherit isOptional flag', () {
       final schema = Ack.string().optional().transform((val) => val);
 
-      print(
-        'Wrapped schema isOptional: ${(schema as dynamic).inputSchema.isOptional}',
-      );
-      print('CodecSchema isOptional: ${schema.isOptional}');
-
       expect(
         schema.isOptional,
         isTrue,
@@ -22,11 +17,6 @@ void main() {
     test('transform should inherit isNullable flag', () {
       final schema = Ack.string().nullable().transform((val) => val);
 
-      print(
-        'Wrapped schema isNullable: ${(schema as dynamic).inputSchema.isNullable}',
-      );
-      print('CodecSchema isNullable: ${schema.isNullable}');
-
       expect(
         schema.isNullable,
         isTrue,
@@ -36,15 +26,6 @@ void main() {
 
     test('transform should inherit both optional and nullable flags', () {
       final schema = Ack.string().optional().nullable().transform((val) => val);
-
-      print(
-        'Wrapped schema isOptional: ${(schema as dynamic).inputSchema.isOptional}',
-      );
-      print(
-        'Wrapped schema isNullable: ${(schema as dynamic).inputSchema.isNullable}',
-      );
-      print('CodecSchema isOptional: ${schema.isOptional}');
-      print('CodecSchema isNullable: ${schema.isNullable}');
 
       expect(
         schema.isOptional,
@@ -64,30 +45,10 @@ void main() {
         'nickname': Ack.string().optional().nullable().transform((val) => val),
       });
 
-      print('\nTesting object with optional+nullable+transform field:');
-
-      // Test 1: Missing field (should work if isOptional is inherited)
       final result1 = schema.safeParse({'name': 'John'});
-      print('Missing field - isOk: ${result1.isOk}');
-      if (result1.isFail) {
-        print('  Error: ${result1.getError()}');
-      }
-
-      // Test 2: Null value (should work if isNullable is inherited)
       final result2 = schema.safeParse({'name': 'John', 'nickname': null});
-      print('Null value - isOk: ${result2.isOk}');
-      if (result2.isFail) {
-        print('  Error: ${result2.getError()}');
-      }
-
-      // Test 3: Actual value
       final result3 = schema.safeParse({'name': 'John', 'nickname': 'Johnny'});
-      print('Actual value - isOk: ${result3.isOk}');
-      if (result3.isFail) {
-        print('  Error: ${result3.getError()}');
-      }
 
-      // These will fail if flags are not inherited
       expect(
         result1.isOk,
         isTrue,

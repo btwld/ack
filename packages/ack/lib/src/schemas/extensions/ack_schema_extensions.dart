@@ -75,10 +75,11 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
     return CodecSchema<T, R>(
       inputSchema: this,
       outputSchema: InstanceSchema<R>(),
-      decodeFn: transformer,
-      encodeFn: null,
+      decoder: transformer,
+      encoder: null,
       isOptional: isOptional,
       isNullable: isNullable,
+      description: description,
     );
   }
 }

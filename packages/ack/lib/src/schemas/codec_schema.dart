@@ -1,17 +1,17 @@
 part of 'schema.dart';
 
 /// Schema that bidirectionally converts between a boundary type [I] and a
-/// runtime type [O] using paired `decode` and `encode` functions.
+/// runtime type [O] using paired `decoder` and `encoder` functions.
 ///
-/// `parse` validates `I` via [inputSchema], runs [decodeFn], then validates
+/// `parse` validates `I` via [inputSchema], runs [decoder], then validates
 /// the result against [outputSchema] before applying codec-level
 /// constraints and refinements.
 ///
 /// `encode` is the inverse: it validates `O` via [outputSchema], applies
-/// codec-level constraints and refinements, runs [encodeFn], then validates
+/// codec-level constraints and refinements, runs [encoder], then validates
 /// the resulting `I` via [inputSchema].
 ///
-/// When [encodeFn] is `null` the codec is one-way: any call to `encode` (or
+/// When [encoder] is `null` the codec is one-way: any call to `encode` (or
 /// `safeEncode`) fails with a [SchemaEncodeError] that points at
 /// `Ack.codec(...)`. The fluent `.transform(fn)` extension produces such a
 /// one-way codec.
@@ -28,21 +28,21 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
   /// Error message produced when `encode` is called on a one-way schema
   /// (a `.transform(...)` with no inverse).
-  static const String oneWayEncodeMessage =
+  static const String _oneWayEncodeMessage =
       'This schema is one-way (.transform(...)) and has no encode '
       'function. Use Ack.codec(input, output, decode: ..., encode: ...) '
       'for a bidirectional codec.';
 
   final AckSchema<I> inputSchema;
   final AckSchema<O> outputSchema;
-  final O Function(I value) decodeFn;
-  final I Function(O value)? encodeFn;
+  final O Function(I value) decoder;
+  final I Function(O value)? encoder;
 
   const CodecSchema({
     required this.inputSchema,
     required this.outputSchema,
-    required this.decodeFn,
-    required this.encodeFn,
+    required this.decoder,
+    required this.encoder,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -60,23 +60,19 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   @protected
   SchemaResult<O> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Default handling: codec defaults are O-typed, so short-circuit before
-    // delegating to the input schema (which expects I).
     if (inputValue == null && defaultValue != null) {
       final cloned = cloneDefault(defaultValue!);
       final safeDefault = (cloned is O) ? cloned : defaultValue!;
-      return applyConstraintsAndRefinements(safeDefault, context);
+      return _validateDecoded(safeDefault, context);
     }
 
     final inputResult = inputSchema.parseAndValidate(inputValue, context);
     if (inputResult.isFail) {
-      return SchemaResult.fail(inputResult.getError());
+      return inputResult.castFail();
     }
 
     final validatedInput = inputResult.getOrNull();
 
-    // Outer null handling: even if the inner schema accepted null, this
-    // codec only allows null through when itself nullable.
     if (validatedInput == null) {
       if (!isNullable) {
         return failNonNullable(context);
@@ -86,7 +82,7 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
     final O decoded;
     try {
-      decoded = decodeFn(validatedInput);
+      decoded = decoder(validatedInput);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaTransformError(
@@ -98,18 +94,13 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // Validate the decoded runtime value through the output schema.
-    final outputResult = outputSchema.parseAndValidate(decoded, context);
-    if (outputResult.isFail) {
-      return SchemaResult.fail(outputResult.getError());
-    }
+    return _validateDecoded(decoded, context);
+  }
 
-    final validatedOutput = outputResult.getOrNull();
-    if (validatedOutput == null) {
-      return failNonNullable(context);
-    }
-
-    return applyConstraintsAndRefinements(validatedOutput, context);
+  SchemaResult<O> _validateDecoded(O value, SchemaContext context) {
+    final result = outputSchema.parseAndValidate(value, context);
+    if (result.isFail) return result.castFail();
+    return applyConstraintsAndRefinements(result.getOrThrow()!, context);
   }
 
   @override
@@ -121,10 +112,10 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     final nullResult = handleNullForEncode(runtimeValue, context);
     if (nullResult != null) return nullResult;
 
-    final encode = encodeFn;
+    final encode = encoder;
     if (encode == null) {
       return SchemaResult.fail(
-        SchemaEncodeError(message: oneWayEncodeMessage, context: context),
+        SchemaEncodeError(message: _oneWayEncodeMessage, context: context),
       );
     }
 
@@ -138,17 +129,18 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    final outputResult = outputSchema.encodeValue(runtimeValue, context);
-    if (outputResult.isFail) {
-      return SchemaResult.fail(outputResult.getError());
-    }
+    // Validate runtime shape against outputSchema. We call encodeValue for its
+    // validation side-effect only; the boundary-form result is irrelevant here
+    // because the codec's own `encoder` produces the boundary form below.
+    final outputCheck = outputSchema.encodeValue(runtimeValue, context);
+    if (outputCheck.isFail) return outputCheck.castFail();
 
     final constraintResult = applyConstraintsAndRefinements(
       runtimeValue,
       context,
     );
     if (constraintResult.isFail) {
-      return SchemaResult.fail(constraintResult.getError());
+      return constraintResult.castFail();
     }
 
     final I encoded;
@@ -180,8 +172,8 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     return CodecSchema<I, O>(
       inputSchema: inputSchema,
       outputSchema: outputSchema,
-      decodeFn: decodeFn,
-      encodeFn: encodeFn,
+      decoder: decoder,
+      encoder: encoder,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -213,17 +205,10 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     if (other is! CodecSchema<I, O>) return false;
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
-        outputSchema == other.outputSchema &&
-        identical(decodeFn, other.decodeFn) &&
-        identical(encodeFn, other.encodeFn);
+        outputSchema == other.outputSchema;
   }
 
   @override
-  int get hashCode => Object.hash(
-    baseFieldsHashCode,
-    inputSchema,
-    outputSchema,
-    decodeFn.hashCode,
-    encodeFn?.hashCode,
-  );
+  int get hashCode =>
+      Object.hash(baseFieldsHashCode, inputSchema, outputSchema);
 }

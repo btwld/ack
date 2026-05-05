@@ -9,14 +9,15 @@
 
 ### Changed
 
-* **`.transform(fn)`** now returns a `CodecSchema<T, R>` (one-way: `decode = fn`, `encode = null`). Parse behavior is unchanged. Calling `encode(...)` on a transformed schema fails with `SchemaEncodeError` whose message points at `Ack.codec(...)`.
+* **`.transform(fn)`** now returns a `CodecSchema<T, R>` (one-way: `decoder = fn`, `encoder = null`). Parse behavior is unchanged. Calling `encode(...)` on a transformed schema fails with `SchemaEncodeError` whose message points at `Ack.codec(...)`.
 * **Built-in transforms are now bidirectional codecs.** `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, and `Ack.duration()` round-trip cleanly through `parse` and `encode`. Boundary forms: `YYYY-MM-DD` for `date()`, UTC ISO-8601 for `datetime()`, `Uri.toString()` for `uri()`, milliseconds for `duration()`.
 * **`EnumSchema.encode(...)`** emits the enum's `.name` (string) so JSON round-trips are stable.
+* **Codec encode is strictly typed.** `encode(value)` validates `value` against the runtime side of the codec without coercion. This is intentionally stricter than `parse`, which still coerces compatible boundary types (e.g., `'42'` → `42` for an integer schema).
 * `TransformedSchema` is now an internal `CodecSchema<I, O>` — schemas previously typed `TransformedSchema<I, O>` are now `CodecSchema<I, O>`.
 
 ### Deprecated
 
-* `TransformedSchema<I, O>` is now a `@Deprecated` typedef alias for `CodecSchema<I, O>`. **Type annotations** like `TransformedSchema<String, DateTime>` continue to work, but the class's previous positional constructor `TransformedSchema(schema, transformer)` and the fields `.schema` / `.transformer` are no longer available — migrate to `CodecSchema(inputSchema: ..., outputSchema: ..., decodeFn: ..., encodeFn: ...)` and `.inputSchema` / `.decodeFn`. The alias will be removed in a future release.
+* `TransformedSchema<I, O>` is now a `@Deprecated` typedef alias for `CodecSchema<I, O>`. **Type annotations** like `TransformedSchema<String, DateTime>` continue to work, but the class's previous positional constructor `TransformedSchema(schema, transformer)` and the fields `.schema` / `.transformer` are no longer available — migrate to `CodecSchema(inputSchema: ..., outputSchema: ..., decoder: ..., encoder: ...)` and `.inputSchema` / `.decoder` / `.outputSchema` / `.encoder`. The alias will be removed in a future release.
 
 ## 1.0.0-beta.11
 

@@ -184,7 +184,7 @@ final class ObjectSchema extends AckSchema<MapValue>
     // only after the runtime form passes its own validation.
     final runtimeCheck = applyConstraintsAndRefinements(mapValue, context);
     if (runtimeCheck.isFail) {
-      return SchemaResult.fail(runtimeCheck.getError());
+      return runtimeCheck.castFail();
     }
 
     final encodedMap = <String, Object?>{};

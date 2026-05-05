@@ -126,7 +126,7 @@ final class AnyOfSchema extends AckSchema<Object>
         // Any-of-level refinements run on the runtime input (per the README
         // contract). The selected branch's encoded result is returned unchanged.
         final cr = applyConstraintsAndRefinements(runtimeValue, context);
-        if (cr.isFail) return SchemaResult.fail(cr.getError());
+        if (cr.isFail) return cr.castFail();
         return result;
       }
     }

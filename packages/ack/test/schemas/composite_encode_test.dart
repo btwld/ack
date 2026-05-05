@@ -64,6 +64,24 @@ void main() {
       expect(err.errors.first.path, equals('#/count'));
     });
 
+    test('round-trips a nested codec inside a list inside an object', () {
+      final schema = Ack.object({
+        'name': Ack.string(),
+        'milestones': Ack.list(Ack.datetime()),
+      });
+      final runtimeValue = {
+        'name': 'Launch',
+        'milestones': [
+          DateTime.utc(2026, 5, 4, 10),
+          DateTime.utc(2026, 6, 1, 14, 30),
+        ],
+      };
+
+      final encoded = schema.encode(runtimeValue);
+
+      expect(schema.parse(encoded), equals(runtimeValue));
+    });
+
     test('object-level refine runs during encode', () {
       final schema = Ack.object({'a': Ack.integer(), 'b': Ack.integer()})
           .refine(
@@ -91,6 +109,20 @@ void main() {
       expect(result.isFail, isTrue);
       final err = result.getError() as SchemaNestedError;
       expect(err.errors.first.path, equals('#/0'));
+    });
+
+    test('runs list-level refinements after encoding codec items', () {
+      final schema = Ack.list(Ack.datetime()).refine(
+        (items) => items.first.isBefore(items.last),
+        message: 'dates must be ascending',
+      );
+
+      final result = schema.safeEncode([
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 5, 4),
+      ]);
+
+      expect(result.isFail, isTrue);
     });
   });
 
@@ -140,6 +172,17 @@ void main() {
       expect(result.isFail, isTrue);
       final err = result.getError();
       expect(err.path, equals('#/type'));
+    });
+
+    test('discriminated-level refine runs for Map dispatch', () {
+      final refinedSchema = schema.refine(
+        (value) => value['name'] == 'Allowed',
+        message: 'name must be Allowed',
+      );
+
+      final result = refinedSchema.safeEncode({'type': 'cat', 'name': 'Milo'});
+
+      expect(result.isFail, isTrue);
     });
   });
 

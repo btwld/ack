@@ -1,6 +1,8 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
+enum _Status { active, inactive }
+
 void main() {
   group('CodecSchema — same-type round trip', () {
     test('identity codec encodes and decodes unchanged', () {
@@ -78,6 +80,50 @@ void main() {
       expect(result.isFail, isTrue);
       expect(encodeCalled, isFalse);
     });
+
+    test(
+      'encode passes enum output schema validation before encode closure',
+      () {
+        final schema = Ack.codec<String, _Status>(
+          Ack.string(),
+          Ack.enumValues(_Status.values),
+          decode: (s) => _Status.values.byName(s),
+          encode: (s) => s.name,
+        );
+
+        expect(schema.encode(_Status.active), equals('active'));
+      },
+    );
+
+    test('encode accepts runtime values validated by nested output codecs', () {
+      final schema = Ack.codec<String, Map<String, Object?>>(
+        Ack.string().datetime(),
+        Ack.object({'startsAt': Ack.datetime()}),
+        decode: (s) => {'startsAt': s},
+        encode: (m) => (m['startsAt'] as DateTime).toUtc().toIso8601String(),
+      );
+      final runtimeValue = {'startsAt': DateTime.utc(2026, 5, 4, 10)};
+
+      expect(schema.encode(runtimeValue), equals('2026-05-04T10:00:00.000Z'));
+    });
+
+    test('encode validation does not parse output-schema coercions', () {
+      var encodeCalled = false;
+      final schema = Ack.codec<String, Object>(
+        Ack.string(),
+        Ack.integer(),
+        decode: int.parse,
+        encode: (value) {
+          encodeCalled = true;
+          return value.toString();
+        },
+      );
+
+      final result = schema.safeEncode('42');
+
+      expect(result.isFail, isTrue);
+      expect(encodeCalled, isFalse);
+    });
   });
 
   group('CodecSchema — decode/encode throw wrapping', () {
@@ -116,6 +162,19 @@ void main() {
       ).copyWith(defaultValue: 99);
 
       expect(schema.parse(null), equals(99));
+    });
+
+    test('default must satisfy the output schema', () {
+      final schema = Ack.codec<String, String>(
+        Ack.string(),
+        Ack.string().minLength(5),
+        decode: (s) => s,
+        encode: (s) => s,
+      ).copyWith(defaultValue: 'no');
+
+      final result = schema.safeParse(null);
+
+      expect(result.isFail, isTrue);
     });
 
     test('default does NOT synthesize during encode', () {
@@ -178,32 +237,76 @@ void main() {
   });
 
   group('Built-in codecs round-trip', () {
-    test('Ack.date() encodes DateTime back to YYYY-MM-DD', () {
-      final dt = DateTime(2026, 5, 4);
-      expect(Ack.date().encode(dt), equals('2026-05-04'));
+    test('Ack.date() round-trips boundary and runtime values', () {
+      final schema = Ack.date();
+      const inputs = ['2026-05-04', '1999-12-31', '2032-01-01'];
+
+      for (final input in inputs) {
+        expect(schema.encode(schema.parse(input)), equals(input));
+      }
+
+      final values = [DateTime(2026, 5, 4), DateTime(1999, 12, 31)];
+      for (final value in values) {
+        expect(schema.parse(schema.encode(value)), equals(value));
+      }
     });
 
-    test('Ack.date() round-trips through parse', () {
-      final round = Ack.date().encode(Ack.date().parse('2026-05-04'));
-      expect(round, equals('2026-05-04'));
+    test('Ack.datetime() round-trips via canonical UTC form', () {
+      final schema = Ack.datetime();
+      const inputs = [
+        '2026-05-04T10:00:00.000Z',
+        '2026-05-04T10:00:00-04:00',
+        '1999-12-31T23:59:59.001Z',
+      ];
+
+      for (final input in inputs) {
+        final parsed = schema.parse(input);
+        final encoded = schema.encode(parsed);
+        expect(schema.parse(encoded), equals(parsed));
+      }
+
+      final values = [DateTime.utc(2026, 5, 4, 10), DateTime(2026, 5, 4, 10)];
+      for (final value in values) {
+        expect(schema.parse(schema.encode(value)), equals(value.toUtc()));
+      }
     });
 
-    test('Ack.datetime() encodes DateTime back to ISO with Z', () {
-      final dt = DateTime.utc(2026, 5, 4, 10);
-      final encoded = Ack.datetime().encode(dt);
-      expect(encoded, equals('2026-05-04T10:00:00.000Z'));
+    test('Ack.uri() round-trips boundary and runtime values', () {
+      final schema = Ack.uri();
+      const inputs = [
+        'https://example.com/path',
+        'https://example.com/path?x=1#frag',
+      ];
+
+      for (final input in inputs) {
+        expect(schema.encode(schema.parse(input)), equals(input));
+      }
+
+      final values = [
+        Uri.parse('https://example.com/path'),
+        Uri.parse('https://example.com/path?x=1#frag'),
+      ];
+      for (final value in values) {
+        expect(schema.parse(schema.encode(value)), equals(value));
+      }
     });
 
-    test('Ack.uri() encodes Uri back to its string form', () {
-      final uri = Uri.parse('https://example.com/path');
-      expect(Ack.uri().encode(uri), equals('https://example.com/path'));
-    });
+    test('Ack.duration() round-trips boundary and runtime values', () {
+      final schema = Ack.duration();
+      const inputs = [0, 1500, 60000];
 
-    test('Ack.duration() encodes Duration back to milliseconds', () {
-      expect(
-        Ack.duration().encode(const Duration(milliseconds: 1500)),
-        equals(1500),
-      );
+      for (final input in inputs) {
+        expect(schema.encode(schema.parse(input)), equals(input));
+      }
+
+      final values = [
+        Duration.zero,
+        const Duration(milliseconds: 1500),
+        const Duration(minutes: 1),
+      ];
+      for (final value in values) {
+        expect(schema.parse(schema.encode(value)), equals(value));
+      }
     });
   });
 }

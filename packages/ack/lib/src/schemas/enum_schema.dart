@@ -115,7 +115,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       context,
     );
     if (constraintResult.isFail) {
-      return SchemaResult.fail(constraintResult.getError());
+      return constraintResult.castFail();
     }
 
     // Encode to the string boundary form (parse accepts string names; encode

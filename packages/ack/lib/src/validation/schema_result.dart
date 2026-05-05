@@ -101,6 +101,16 @@ sealed class SchemaResult<T extends Object> {
   }
 }
 
+extension SchemaResultCast<T extends Object> on SchemaResult<T> {
+  /// Must only be called on `Fail`. Throws `StateError` if called on `Ok`.
+  SchemaResult<U> castFail<U extends Object>() {
+    return switch (this) {
+      Ok() => throw StateError('Cannot cast a successful Ok result.'),
+      Fail(error: final error) => SchemaResult.fail(error),
+    };
+  }
+}
+
 /// Represents a successful validation outcome, optionally wrapping a [value].
 /// The [_value] can be `null` if the schema was nullable and the input was validly null.
 class Ok<T extends Object> extends SchemaResult<T> {
