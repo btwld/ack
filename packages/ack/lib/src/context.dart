@@ -10,6 +10,7 @@ class SchemaContext {
   final AckSchema schema;
   final SchemaContext? parent;
   final String? pathSegment;
+  final SchemaOperation operation;
 
   const SchemaContext({
     required this.name,
@@ -17,6 +18,7 @@ class SchemaContext {
     required this.value,
     this.parent,
     this.pathSegment,
+    this.operation = SchemaOperation.parse,
   });
 
   /// Escapes a JSON Pointer segment per RFC 6901.
@@ -73,6 +75,7 @@ class SchemaContext {
       value: value,
       parent: this,
       pathSegment: pathSegment,
+      operation: operation,
     );
   }
 

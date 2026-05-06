@@ -1,23 +1,6 @@
 part of 'schema.dart';
 
 /// Schema for validating against a list of schemas.
-///
-/// The input is valid if it matches ANY of the provided schemas.
-/// This is useful for union types where a value can be one of several different types.
-///
-/// Example:
-/// ```dart
-/// final schema = Ack.anyOf([
-///   Ack.string(),
-///   Ack.integer(),
-///   Ack.boolean(),
-/// ]);
-///
-/// schema.safeParse('hello');  // Ok
-/// schema.safeParse(42);        // Ok
-/// schema.safeParse(true);      // Ok
-/// schema.safeParse([]);        // Fail - not matching any schema
-/// ```
 @immutable
 final class AnyOfSchema extends AckSchema<Object>
     with FluentSchema<Object, AnyOfSchema> {
@@ -28,7 +11,6 @@ final class AnyOfSchema extends AckSchema<Object>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -38,58 +20,51 @@ final class AnyOfSchema extends AckSchema<Object>
 
   @override
   @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // NOTE: AnyOfSchema intentionally does NOT use handleNullInput because
-    // null handling has special semantics for union types:
-    //
-    // 1. If a DEFAULT exists: apply it first (consistent with other schemas)
-    // 2. If NO default: try member schemas first - a nullable member can accept null
-    // 3. AnyOfSchema's own isNullable is only checked AFTER all members fail
-    //
-    // This differs from handleNullInput which checks isNullable before trying validation.
-    if (inputValue == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
-    }
+  SchemaResult<Object> validate(Object? value, SchemaContext context) =>
+      _runBranches(value, context, (schema, v, ctx) => schema.validate(v, ctx));
 
-    // Try all member schemas (including with null input for nullable members)
+  @override
+  @protected
+  SchemaResult<Object> decodeBoundary(Object? input, SchemaContext context) =>
+      _runBranches(
+        input,
+        context,
+        (schema, v, ctx) => schema.decodeBoundary(v, ctx),
+      );
+
+  SchemaResult<Object> _runBranches(
+    Object? value,
+    SchemaContext context,
+    SchemaResult<Object> Function(
+      AckSchema schema,
+      Object? v,
+      SchemaContext ctx,
+    )
+    handle,
+  ) {
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
-      // Branch name for debugging; inherit parent path (no segment pollution)
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
-        value: inputValue,
-        pathSegment: '', // Inherit parent path
+        value: value,
+        pathSegment: '',
       );
 
-      final result = schema.parseAndValidate(inputValue, childContext);
+      final result = handle(schema, value, childContext);
 
       if (result.isOk) {
-        final validatedValue = result.getOrNull();
-
-        // Nullable member returned null - pass through
-        if (validatedValue == null) {
-          return SchemaResult.ok(null);
-        }
-
-        // Apply AnyOfSchema's own constraints to non-null values
-        return applyConstraintsAndRefinements(validatedValue, context);
+        final validated = result.getOrNull();
+        if (validated == null) return SchemaResult.ok(null);
+        return applyConstraintsAndRefinements(validated, context);
       }
 
       errors.add(result.getError());
     }
 
-    // No member schema matched; check AnyOfSchema's own nullable flag
-    if (inputValue == null && isNullable) {
-      return SchemaResult.ok(null);
-    }
+    if (value == null && isNullable) return SchemaResult.ok(null);
 
-    // Return all errors for debugging
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
@@ -97,38 +72,21 @@ final class AnyOfSchema extends AckSchema<Object>
 
   @override
   @protected
-  SchemaResult<Object> encodeValue(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    // Null has special semantics for unions: try members first (a nullable
-    // member may accept null), then fall back to outer nullability via the
-    // shared helper. This mirrors parseAndValidate's intentional bypass of
-    // the centralized null helper.
-    if (runtimeValue == null) {
-      for (final (index, schema) in schemas.indexed) {
-        final result = _tryEncodeBranch(schema, null, 'anyOf:$index', context);
-        if (result != null) return result;
-      }
-      return handleNullForEncode(null, context)!;
-    }
-
+  SchemaResult<Object> encodeBoundary(Object value, SchemaContext context) {
     final errors = <SchemaError>[];
+
     for (final (index, schema) in schemas.indexed) {
-      final result = _tryEncodeBranch(
-        schema,
-        runtimeValue,
-        'anyOf:$index',
-        context,
-        errors: errors,
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: value,
+        pathSegment: '',
       );
-      if (result != null) {
-        // Any-of-level refinements run on the runtime input (per the README
-        // contract). The selected branch's encoded result is returned unchanged.
-        final cr = applyConstraintsAndRefinements(runtimeValue, context);
-        if (cr.isFail) return cr.castFail();
-        return result;
-      }
+
+      final result = _encodeWithSchema(schema, value, childContext);
+      if (result.isOk) return result;
+
+      errors.add(result.getError());
     }
 
     return SchemaResult.fail(
@@ -141,16 +99,14 @@ final class AnyOfSchema extends AckSchema<Object>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
     return AnyOfSchema(
-      schemas, // schemas are immutable once created
+      schemas,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -163,14 +119,11 @@ final class AnyOfSchema extends AckSchema<Object>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && defaultValue != null) 'default': defaultValue,
     };
 
-    // Wrap in another anyOf with null if nullable (match Zod's format)
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -187,7 +140,6 @@ final class AnyOfSchema extends AckSchema<Object>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'schemas': schemas.length,
     };

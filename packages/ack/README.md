@@ -81,6 +81,26 @@ final hexColorCodec = Ack.codec<String, Color>(
 
 `.transform(fn)` remains one-way (parse only, no inverse). Calling `encode` on a transformed schema fails clearly and points at `Ack.codec` if you need both directions. Defaults are forward-only — they apply during parse but never synthesize boundary data during encode.
 
+## No implicit coercion
+
+Primitive schemas validate runtime values as-is. Use explicit codecs when a boundary format needs conversion:
+
+```dart
+Ack.integer().safeParse('42');      // Fail
+Ack.intFromString().parse('42');    // 42
+
+Ack.boolean().safeParse('true');    // Fail
+Ack.boolFromString().parse('true'); // true
+```
+
+Defaults are expressed as a wrapper:
+
+```dart
+final roleSchema = Ack.string().withDefault('guest');
+```
+
+Migration note for pre-2.0 code: replace implicit primitive coercion such as `Ack.integer().parse('42')` with `Ack.intFromString().parse('42')`, and constructor defaults such as `Ack.string(defaultValue: 'x')` with `Ack.string().withDefault('x')`.
+
 ## Documentation
 
 - [Full documentation](https://docs.page/btwld/ack)

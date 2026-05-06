@@ -42,6 +42,11 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
     return copyWith(isOptional: value);
   }
 
+  /// Wraps the schema with a parse-side default value.
+  DefaultSchema<T> withDefault(T defaultValue) {
+    return DefaultSchema<T>(this, defaultValue);
+  }
+
   /// Adds a raw [constraint] to the schema. This is useful for composing
   /// declarative constraints in addition to the built-in helpers.
   AckSchema<T> constrain(Constraint<T> constraint, {String? message}) {

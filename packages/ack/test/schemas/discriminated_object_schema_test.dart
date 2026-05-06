@@ -207,7 +207,7 @@ void main() {
               'name': Ack.string(),
             }).transform<Object>((map) => map['name'] as Object),
           },
-        ).copyWith(defaultValue: Object());
+        ).withDefault(Object());
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -225,7 +225,7 @@ void main() {
                 'name': Ack.string(),
               }).transform<Object>((map) => map['name'] as Object),
             },
-          ).nullable().copyWith(defaultValue: Object());
+          ).nullable().withDefault(Object());
 
           final jsonSchema = schema.toJsonSchema();
 
@@ -233,6 +233,25 @@ void main() {
           expect(() => jsonEncode(jsonSchema), returnsNormally);
         },
       );
+    });
+
+    group('Typed-T runtime branch trial', () {
+      test('non-map runtime value is dispatched to per-branch validation', () {
+        final schema = Ack.discriminated<Object>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }),
+          },
+        );
+
+        final result = schema.safeEncode('not a map');
+
+        expect(result.isFail, isTrue);
+        expect(result.getError(), isA<SchemaNestedError>());
+      });
     });
   });
 }

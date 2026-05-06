@@ -146,7 +146,7 @@ void main() {
     test('should apply output default when input is null', () {
       final transformedSchema = Ack.string()
           .transform<String>((value) => value.toUpperCase())
-          .copyWith(defaultValue: 'DEFAULT_OUTPUT');
+          .withDefault('DEFAULT_OUTPUT');
 
       final result = transformedSchema.safeParse(null);
 
@@ -161,7 +161,7 @@ void main() {
     test('should apply transformation when input is not null', () {
       final schema = Ack.string()
           .transform((value) => value.toUpperCase())
-          .copyWith(defaultValue: 'DEFAULT');
+          .withDefault('DEFAULT');
 
       final result = schema.safeParse('hello');
 

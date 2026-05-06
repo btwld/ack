@@ -120,7 +120,7 @@ void main() {
       final schema = Ack.anyOf([
         Ack.string(),
         Ack.integer(),
-      ]).copyWith(defaultValue: defaultValue);
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -132,7 +132,7 @@ void main() {
       final schema = Ack.anyOf([
         Ack.string().nullable(),
         Ack.integer(),
-      ]).copyWith(defaultValue: defaultValue);
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -145,7 +145,7 @@ void main() {
       final schema = Ack.anyOf([
         Ack.integer(),
         Ack.double(),
-      ]).copyWith(defaultValue: defaultValue);
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isFail, isTrue);

@@ -21,6 +21,19 @@ void main() {
       }).refine((m) => (m['a'] as int) < (m['b'] as int), message: 'a < b');
       expect(schema.safeEncode({'a': 5, 'b': 2}).isFail, isTrue);
     });
+
+    test('invalid child values fail before object-level refinements run', () {
+      final schema = Ack.object({
+        'a': Ack.integer(),
+      }).refine((m) => (m['a'] as int) > 0, message: 'a must be positive');
+
+      final result = schema.safeEncode({'a': 'not an int'});
+
+      expect(result.isFail, isTrue);
+      final err = result.getError();
+      expect(err, isA<SchemaNestedError>());
+      expect((err as SchemaNestedError).errors.single.path, equals('#/a'));
+    });
   });
 
   group('List constraints run on type-erased lists', () {
@@ -34,6 +47,17 @@ void main() {
       final schema = Ack.list(Ack.integer()).minItems(2);
       final encoded = schema.encode(<Object?>[1, 2]) as List<Object?>;
       expect(encoded, equals([1, 2]));
+    });
+
+    test('nullable item schemas fail on null item encode like parse', () {
+      final schema = Ack.list(Ack.string().nullable());
+
+      final result = schema.safeEncode([null]);
+
+      expect(result.isFail, isTrue);
+      final err = result.getError();
+      expect(err, isA<SchemaNestedError>());
+      expect((err as SchemaNestedError).errors.single.path, equals('#/0'));
     });
   });
 

@@ -87,6 +87,21 @@ void main() {
     });
 
     test(
+      'Nullable applied after default should be reflected in JSON Schema',
+      () {
+        final nullableWithDefault = Ack.string().withDefault('x').nullable();
+        final jsonSchema = nullableWithDefault.toJsonSchema();
+
+        expect(jsonSchema['default'], equals('x'));
+        expect(jsonSchema['anyOf'], isA<List>());
+        expect(
+          (jsonSchema['anyOf'] as List).whereType<Map>(),
+          contains(predicate<Map>((branch) => branch['type'] == 'null')),
+        );
+      },
+    );
+
+    test(
       'Defaults in object properties (via Optional) should emit correctly',
       () {
         final schema = Ack.object({

@@ -24,6 +24,14 @@ JsonSchema _convert(AckSchema schema) {
     );
   }
 
+  if (schema is DefaultSchema) {
+    final base = _convert(schema.inner);
+    return base.copyWith(
+      description: schema.description ?? base.description,
+      nullable: nullableFlag || base.nullable == true,
+    );
+  }
+
   return switch (schema) {
     StringSchema() => _string(effective, nullableFlag),
     IntegerSchema() => _integer(effective, nullableFlag),

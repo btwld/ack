@@ -16,6 +16,7 @@ part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
 part 'codec_schema.dart';
+part 'default_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
@@ -23,46 +24,62 @@ part 'instance_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
-part 'schema_type.dart';
 part 'string_schema.dart';
 part 'transformed_schema.dart';
 part 'testing/testing_schemas.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
-/// Tries to encode [runtimeValue] through [branch] under a child context that
-/// inherits the parent path (`pathSegment: ''`). Used by union-style schemas
-/// to share branch-trial machinery.
-SchemaResult<Object>? _tryEncodeBranch(
-  AckSchema branch,
-  Object? runtimeValue,
-  String branchName,
-  SchemaContext context, {
-  List<SchemaError>? errors,
-}) {
-  final childContext = context.createChild(
-    name: branchName,
-    schema: branch,
-    value: runtimeValue,
-    pathSegment: '',
-  );
-  final SchemaResult<Object> result;
-  try {
-    result = branch.encodeValue(runtimeValue, childContext);
-  } catch (e, st) {
-    errors?.add(
-      SchemaEncodeError(
-        message: 'Branch encode threw: ${e.toString()}',
-        context: childContext,
-        cause: e,
-        stackTrace: st,
-      ),
-    );
-    return null;
-  }
-  if (result.isOk) return result;
-  errors?.add(result.getError());
-  return null;
+/// Operation currently using a schema.
+///
+/// Schemas have one validation primitive. The operation is carried in context
+/// only for behaviors that are intentionally directional, such as defaults
+/// applying during parse but not during encode.
+enum SchemaOperation { parse, encode }
+
+/// Schema type categories used for JSON Schema output and error messages.
+enum SchemaType {
+  string('string'),
+  integer('integer'),
+  number('number'),
+  boolean('boolean'),
+  object('object'),
+  array('array'),
+  null_('null'),
+  any('any'),
+  anyOf('anyOf'),
+  enum_('enum'),
+  discriminated('discriminated');
+
+  const SchemaType(this.typeName);
+
+  final String typeName;
+
+  static SchemaType of(Object? value) => switch (value) {
+    null => SchemaType.null_,
+    Map() => SchemaType.object,
+    List() => SchemaType.array,
+    Enum() => SchemaType.enum_,
+    String() => SchemaType.string,
+    bool() => SchemaType.boolean,
+    int() => SchemaType.integer,
+    double() || num() => SchemaType.number,
+    _ => throw ArgumentError('Unknown schema type for value: $value'),
+  };
+}
+
+SchemaResult<Object> _encodeWithSchema(
+  AckSchema schema,
+  Object? value,
+  SchemaContext context,
+) {
+  final result = schema.validate(value, context);
+  if (result.isFail) return result.castFail();
+
+  final validated = result.getOrNull();
+  if (validated == null) return SchemaResult.ok(null);
+
+  return schema.encodeBoundary(validated, context);
 }
 
 @immutable
@@ -70,7 +87,6 @@ sealed class AckSchema<DartType extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
-  final DartType? defaultValue;
   final List<Constraint<DartType>> _constraints;
   final List<Refinement<DartType>> _refinements;
 
@@ -84,21 +100,22 @@ sealed class AckSchema<DartType extends Object> {
     this.isNullable = false,
     this.isOptional = false,
     this.description,
-    this.defaultValue,
     List<Constraint<DartType>> constraints = const [],
     List<Refinement<DartType>> refinements = const [],
   }) : _constraints = constraints,
        _refinements = refinements;
 
   /// Utility method to get the schema type of any value.
-  static SchemaType getSchemaType(Object? value) {
-    return SchemaType.of(value);
-  }
+  static SchemaType getSchemaType(Object? value) => SchemaType.of(value);
+
+  /// The schema type category for this schema.
+  @protected
+  SchemaType get schemaType;
+
+  /// Human-readable type name for error messages and debugging.
+  String get schemaTypeName => schemaType.typeName;
 
   /// Applies constraints and refinements to a validated value.
-  ///
-  /// Checks constraints first, then runs refinements if all constraints pass.
-  /// Schemas call this after type validation and conversion.
   @protected
   SchemaResult<DartType> applyConstraintsAndRefinements(
     DartType value,
@@ -152,9 +169,6 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Merges constraint JSON schemas into a base schema.
-  ///
-  /// Folds constraint-specific JSON schema definitions into the base structure.
-  /// Used in toJsonSchema() implementations.
   @protected
   Map<String, Object?> mergeConstraintSchemas(Map<String, Object?> baseSchema) {
     final constraintSchemas = <Map<String, Object?>>[];
@@ -170,16 +184,6 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Builds a JSON Schema with proper nullable handling.
-  ///
-  /// This helper centralizes the nullable/non-nullable pattern used by most
-  /// schema types by combining description, defaults, nullability wrapping, and
-  /// constraint schema merging.
-  ///
-  /// [typeSchema] contains type-specific fields (e.g., `{'type': 'string'}`
-  /// or `{'type': 'array', 'items': ...}`).
-  ///
-  /// [serializedDefault] is the already-serialized default value (e.g.,
-  /// enum values should pass `defaultValue?.name`).
   @protected
   Map<String, Object?> buildJsonSchemaWithNullable({
     required Map<String, Object?> typeSchema,
@@ -221,170 +225,82 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
-  /// Handles null input for schemas using the standard null/default flow.
-  ///
-  /// Returns `null` when [inputValue] is non-null so callers can continue parsing.
-  /// For null input, returns a validated clone of [defaultValue] when present,
-  /// otherwise `Ok(null)` if nullable, else a non-nullable failure result.
   @protected
-  SchemaResult<DartType>? handleNullInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    if (inputValue != null) return null;
-
-    if (defaultValue != null) {
-      // Clone mutable defaults to avoid shared state across parse calls.
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
+  SchemaResult<DartType> failNull(SchemaContext context) {
+    if (context.operation == SchemaOperation.encode) {
+      return SchemaResult.fail(SchemaEncodeError.requiredNotNull(context));
     }
-
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
     return failNonNullable(context);
   }
 
-  /// Handles null runtime values during encode.
-  ///
-  /// Returns `null` when [runtimeValue] is non-null so callers can continue
-  /// encoding. For null input, returns `Ok(null)` if the schema is nullable,
-  /// else a [SchemaEncodeError]. Defaults are intentionally not consulted —
-  /// encode is forward-only and must not synthesize boundary data.
   @protected
-  SchemaResult<Object>? handleNullForEncode(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    if (runtimeValue != null) return null;
-
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
-    return SchemaResult.fail(SchemaEncodeError.requiredNotNull(context));
-  }
-
-  /// The schema type category for this schema.
-  ///
-  /// Subclasses must override to specify their type.
-  /// Primitives return JSON types (string, integer), composites return
-  /// schema categories (anyOf, discriminated).
-  @protected
-  SchemaType get schemaType;
-
-  /// Human-readable type name for error messages and debugging.
-  String get schemaTypeName => schemaType.typeName;
-
-  /// Whether this schema uses strict primitive parsing.
-  ///
-  /// When true, only exact type matches are allowed.
-  /// When false, compatible types can be coerced (e.g., "42" → 42).
-  ///
-  /// Subclasses that support strictPrimitiveParsing should override this.
-  @protected
-  bool get strictPrimitiveParsing => false;
-
-  @protected
-  SchemaResult<DartType> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
-
-    // After null check, inputValue is guaranteed non-null
-    final nonNullInput = inputValue!;
-    final targetType = schemaType;
-
-    // Get the actual type of the input, catching any errors to maintain
-    // the "never throws" guarantee of safeParse()
-    SchemaType actualType;
-    try {
-      actualType = AckSchema.getSchemaType(nonNullInput);
-    } catch (e) {
+  SchemaResult<DartType> failTypeMismatch(Object value, SchemaContext context) {
+    if (context.operation == SchemaOperation.encode) {
       return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Unsupported input type: ${nonNullInput.runtimeType}',
+        SchemaEncodeError.typeMismatch(
+          expected: DartType,
+          actual: value,
           context: context,
         ),
       );
     }
 
-    // Type compatibility check
-    if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
+    try {
+      final actualType = AckSchema.getSchemaType(value);
       return SchemaResult.fail(
         TypeMismatchError(
-          expectedType: targetType,
+          expectedType: schemaType,
           actualType: actualType,
           context: context,
         ),
       );
-    }
-
-    // Parse using SchemaType's parsing logic
-    final convertedResult = targetType.parse<DartType>(
-      nonNullInput,
-      actualType,
-      context,
-    );
-    if (convertedResult.isFail) return convertedResult;
-
-    final convertedValue = convertedResult.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(convertedValue, context);
-  }
-
-  /// Encodes a runtime value into its boundary representation.
-  ///
-  /// The default implementation type-checks against [DartType] and applies
-  /// constraints/refinements unchanged — suitable for plain schemas where
-  /// the boundary and runtime types are the same.
-  ///
-  /// Subclasses with asymmetric boundary/runtime types (codecs, composite
-  /// schemas, enums) override this to mirror their parse path in reverse.
-  @protected
-  SchemaResult<Object> encodeValue(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    final nullResult = handleNullForEncode(runtimeValue, context);
-    if (nullResult != null) return nullResult;
-
-    if (runtimeValue is! DartType) {
+    } catch (_) {
       return SchemaResult.fail(
-        SchemaEncodeError.typeMismatch(
-          expected: DartType,
-          actual: runtimeValue,
+        SchemaValidationError(
+          message: 'Expected $schemaTypeName, got ${value.runtimeType}.',
           context: context,
         ),
       );
     }
+  }
 
-    return applyConstraintsAndRefinements(runtimeValue, context);
+  /// The one overridable validation primitive.
+  ///
+  /// Implementations validate runtime values only. Boundary conversion belongs
+  /// to [decodeBoundary] and [encodeBoundary], which only codecs override.
+  @protected
+  SchemaResult<DartType> validate(Object? value, SchemaContext context) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNull(context);
+    }
+
+    if (value is! DartType) {
+      return failTypeMismatch(value, context);
+    }
+
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  /// Parse-side boundary hook. Non-codec schemas validate the value directly.
+  @protected
+  SchemaResult<DartType> decodeBoundary(Object? input, SchemaContext context) {
+    return validate(input, context);
+  }
+
+  /// Encode-side boundary hook. Non-codec schemas return the validated value.
+  @protected
+  SchemaResult<Object> encodeBoundary(DartType value, SchemaContext context) {
+    return SchemaResult.ok(value);
   }
 
   /// Parses and validates a value, throwing an [AckException] if validation fails.
-  ///
-  /// This is the primary method for validation when you want exceptions.
-  /// For error handling without exceptions, use [safeParse] instead.
-  ///
-  /// Example:
-  /// ```dart
-  /// final email = emailSchema.parse(input); // throws if invalid
-  /// ```
   DartType? parse(Object? value, {String? debugName}) {
     final result = safeParse(value, debugName: debugName);
     return result.getOrThrow();
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
-  ///
-  /// This method throws an [AckException] when validation fails (same as [parse]).
-  /// Mapper exceptions are wrapped into a [SchemaTransformError] and then thrown
-  /// as part of [AckException] for consistent error handling.
   TOut parseAs<TOut extends Object>(
     Object? value,
     TOut Function(DartType? validated) map, {
@@ -395,36 +311,17 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Parses and validates a value, returning a [SchemaResult].
-  ///
-  /// This method never throws exceptions. Instead, it returns a [SchemaResult]
-  /// which can be either [Ok] (success) or [Fail] (validation error).
-  ///
-  /// This is the primary method for validation when you want explicit error handling.
-  /// For throwing exceptions on error, use [parse] instead.
-  ///
-  /// Example:
-  /// ```dart
-  /// final result = emailSchema.safeParse(input);
-  /// if (result.isOk) {
-  ///   final email = result.getOrNull();
-  /// } else {
-  ///   print('Error: ${result.getError()}');
-  /// }
-  /// ```
   SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
-    final context = _createRootContext(value, debugName: debugName);
-    return parseAndValidate(value, context);
+    final context = _createRootContext(
+      value,
+      debugName: debugName,
+      operation: SchemaOperation.parse,
+    );
+    return decodeBoundary(value, context);
   }
 
   /// Encodes a runtime value back into its boundary representation, throwing
   /// an [AckException] on failure.
-  ///
-  /// This is the inverse of [parse]. For schemas where the boundary and
-  /// runtime types are the same (most primitives), encode validates the value
-  /// and returns it unchanged. For codecs, encode runs the inverse of decode.
-  ///
-  /// Encode is forward-only with respect to defaults: encoding `null` against
-  /// a non-nullable schema fails even if a [defaultValue] exists.
   Object? encode(Object? value, {String? debugName}) {
     final result = safeEncode(value, debugName: debugName);
     return result.getOrThrow();
@@ -433,16 +330,22 @@ sealed class AckSchema<DartType extends Object> {
   /// Encodes a runtime value back into its boundary representation, returning
   /// a [SchemaResult]. Never throws.
   SchemaResult<Object> safeEncode(Object? value, {String? debugName}) {
-    final context = _createRootContext(value, debugName: debugName);
-    return encodeValue(value, context);
+    final context = _createRootContext(
+      value,
+      debugName: debugName,
+      operation: SchemaOperation.encode,
+    );
+    final result = validate(value, context);
+    return switch (result) {
+      Ok(value: final typedValue) =>
+        typedValue == null
+            ? SchemaResult.ok(null)
+            : encodeBoundary(typedValue, context),
+      Fail(error: final error) => SchemaResult.fail(error),
+    };
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
-  ///
-  /// Validation failures are returned as [Fail] with the original schema error.
-  /// Mapper exceptions are caught and returned as [SchemaTransformError].
-  ///
-  /// This method never throws exceptions.
   SchemaResult<TOut> safeParseAs<TOut extends Object>(
     Object? value,
     TOut Function(DartType? validated) map, {
@@ -460,7 +363,11 @@ sealed class AckSchema<DartType extends Object> {
       return SchemaResult.fail(
         SchemaTransformError(
           message: 'Transformation failed: ${e.toString()}',
-          context: _createRootContext(value, debugName: debugName),
+          context: _createRootContext(
+            value,
+            debugName: debugName,
+            operation: SchemaOperation.parse,
+          ),
           cause: e,
           stackTrace: st,
         ),
@@ -468,20 +375,23 @@ sealed class AckSchema<DartType extends Object> {
     }
   }
 
-  SchemaContext _createRootContext(Object? value, {String? debugName}) {
-    // Use provided debugName or derive from runtime type (e.g., "StringSchema" -> "string")
+  SchemaContext _createRootContext(
+    Object? value, {
+    String? debugName,
+    required SchemaOperation operation,
+  }) {
     final typeName = runtimeType
         .toString()
         .replaceFirst(RegExp(r'Schema$'), '')
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
-    return SchemaContext(name: effectiveDebugName, schema: this, value: value);
+    return SchemaContext(
+      name: effectiveDebugName,
+      schema: this,
+      value: value,
+      operation: operation,
+    );
   }
-
-  /// Legacy alias for [safeParse].
-  @Deprecated('Use safeParse(...) instead.')
-  SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
-      safeParse(value, debugName: debugName);
 
   /// Legacy helper that returns the parsed value or `null` when validation fails.
   @Deprecated('Use safeParse(...).getOrNull() instead.')
@@ -494,18 +404,11 @@ sealed class AckSchema<DartType extends Object> {
     bool? isNullable,
     bool? isOptional,
     String? description,
-    DartType? defaultValue,
     List<Constraint<DartType>>? constraints,
     List<Refinement<DartType>>? refinements,
   });
 
   /// Converts this schema to a JSON Schema Draft-7 representation.
-  ///
-  /// Returns a Map containing the JSON Schema structure.
-  ///
-  /// Subclasses must override this to provide their specific JSON Schema structure.
-  /// The implementation should call [mergeConstraintSchemas] at the structurally
-  /// appropriate point for the schema type.
   Map<String, Object?> toJsonSchema();
 
   Map<String, Object?> toMap() {
@@ -513,36 +416,28 @@ sealed class AckSchema<DartType extends Object> {
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue?.toString(),
       'constraints': constraints.map((c) => c.toMap()).toList(),
     };
   }
 
   /// Compares base schema fields for equality.
-  ///
-  /// Subclasses should call this as part of their == implementation
-  /// after the identical() and type checks.
   @protected
   bool baseFieldsEqual(AckSchema<DartType> other) {
     const listEq = ListEquality<Object?>();
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
         description == other.description &&
-        defaultValue == other.defaultValue &&
         listEq.equals(_constraints, other._constraints) &&
         listEq.equals(_refinements, other._refinements);
   }
 
   /// Compares base schema fields while erasing generic type parameters.
-  ///
-  /// Useful when structural equality should ignore reified type arguments.
   @protected
   bool baseFieldsEqualErased(AckSchema other) {
     const listEq = ListEquality<Object?>();
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
         description == other.description &&
-        defaultValue == other.defaultValue &&
         listEq.equals(
           _constraints as List<Object?>,
           other._constraints as List<Object?>,
@@ -554,8 +449,6 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Computes hash code for base schema fields.
-  ///
-  /// Subclasses should include this in their hashCode computation.
   @protected
   int get baseFieldsHashCode {
     const listEq = ListEquality<Object?>();
@@ -563,7 +456,6 @@ sealed class AckSchema<DartType extends Object> {
       isNullable,
       isOptional,
       description,
-      defaultValue,
       listEq.hash(_constraints),
       listEq.hash(_refinements),
     );

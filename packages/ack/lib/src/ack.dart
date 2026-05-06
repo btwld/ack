@@ -1,7 +1,64 @@
+import 'dart:core';
+import 'dart:core' as core;
+
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
+
+String _encodeDateOnly(DateTime value) {
+  if (value.hour != 0 ||
+      value.minute != 0 ||
+      value.second != 0 ||
+      value.millisecond != 0 ||
+      value.microsecond != 0) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.date() can only encode DateTime values at midnight.',
+    );
+  }
+
+  return '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
+}
+
+int _encodeWholeMilliseconds(Duration value) {
+  if (value.inMicroseconds % Duration.microsecondsPerMillisecond != 0) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.duration() can only encode whole-millisecond durations.',
+    );
+  }
+
+  return value.inMilliseconds;
+}
+
+String _encodeUtcDateTime(DateTime value) {
+  if (!value.isUtc) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.datetime() can only encode UTC DateTime values.',
+    );
+  }
+
+  return value.toIso8601String();
+}
+
+String _encodeAbsoluteUri(Uri value) {
+  if (!value.hasScheme || !value.hasAuthority) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.uri() can only encode absolute URIs with a scheme and authority.',
+    );
+  }
+
+  return value.toString();
+}
 
 /// The main entry point for creating schemas with the Ack validation library.
 ///
@@ -96,6 +153,38 @@ final class Ack {
     encoder: encode,
   );
 
+  /// Creates a codec that parses integer strings into [int] values.
+  static CodecSchema<String, int> intFromString() => Ack.codec<String, int>(
+    Ack.string().matches(r'^-?\d+$'),
+    Ack.instance<int>(),
+    decode: int.parse,
+    encode: (i) => i.toString(),
+  );
+
+  /// Creates a codec that parses decimal strings into [double] values.
+  ///
+  /// The `core.double` return type is explicit because `Ack.double()` shadows
+  /// `dart:core`'s `double` inside the class body.
+  static CodecSchema<String, core.double> doubleFromString() =>
+      Ack.codec<String, core.double>(
+        Ack.string().matches(r'^-?\d+(\.\d+)?$'),
+        Ack.instance<core.double>(),
+        decode: core.double.parse,
+        encode: (d) => d.toString(),
+      );
+
+  /// Creates a codec that parses "true"/"false" strings into [bool] values.
+  static CodecSchema<String, bool> boolFromString() => Ack.codec<String, bool>(
+    Ack.string(),
+    Ack.instance<bool>(),
+    decode: (s) => switch (s.trim().toLowerCase()) {
+      'true' => true,
+      'false' => false,
+      _ => throw FormatException('not a bool: $s'),
+    },
+    encode: (b) => b.toString(),
+  );
+
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
   ///
   /// The schema validates the string format before transformation, ensuring only valid
@@ -117,10 +206,7 @@ final class Ack {
       string().date(), // Validates ISO 8601 date format (YYYY-MM-DD) first
       Ack.instance<DateTime>(),
       decode: DateTime.parse,
-      encode: (d) =>
-          '${d.year.toString().padLeft(4, '0')}-'
-          '${d.month.toString().padLeft(2, '0')}-'
-          '${d.day.toString().padLeft(2, '0')}',
+      encode: _encodeDateOnly,
     );
   }
 
@@ -142,7 +228,7 @@ final class Ack {
       string().datetime(), // Validates ISO 8601 datetime with timezone first
       Ack.instance<DateTime>(),
       decode: DateTime.parse,
-      encode: (d) => d.toUtc().toIso8601String(),
+      encode: _encodeUtcDateTime,
     );
   }
 
@@ -162,7 +248,7 @@ final class Ack {
       string().uri(), // Validates URI format first
       Ack.instance<Uri>(),
       decode: Uri.parse,
-      encode: (u) => u.toString(),
+      encode: _encodeAbsoluteUri,
     );
   }
 
@@ -183,7 +269,7 @@ final class Ack {
       integer(),
       Ack.instance<Duration>(),
       decode: (ms) => Duration(milliseconds: ms),
-      encode: (d) => d.inMilliseconds,
+      encode: _encodeWholeMilliseconds,
     );
   }
 }

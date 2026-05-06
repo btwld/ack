@@ -11,7 +11,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -19,62 +18,27 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.enum_;
 
-  /// EnumSchema uses custom parsing logic that doesn't fit the standard
-  /// primitive type conversion patterns, so it overrides parseAndValidate directly.
   @override
   @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
-
-    // Custom enum parsing logic
-    T? parsed;
-
-    // Try exact enum match first
-    if (inputValue is T && values.contains(inputValue)) {
-      parsed = inputValue;
-    }
-    // Try to match by name if input is a string
-    else if (inputValue is String) {
-      try {
-        parsed = values.firstWhere((e) => e.name == inputValue);
-      } on StateError {
-        // Expected when no match found - continue to integer check
-      } catch (e, st) {
-        // Unexpected error indicates a serious problem
-        return SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Unexpected error matching enum value: ${e.toString()}',
-            context: context,
-            cause: e,
-            stackTrace: st,
-          ),
-        );
-      }
-    }
-    // Try to match by index if input is an int
-    else if (inputValue is int &&
-        inputValue >= 0 &&
-        inputValue < values.length) {
-      parsed = values[inputValue];
+  SchemaResult<T> validate(Object? value, SchemaContext context) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNull(context);
     }
 
-    if (parsed == null) {
-      // Build helpful error message with allowed values and suggestions
+    if (value is! T || !values.contains(value)) {
       final allowed = values.map((e) => e.name).toList(growable: false);
-      final inputStr = inputValue.toString();
+      final inputStr = value.toString();
       final closest = findClosestStringMatch(inputStr, allowed);
       final suggestion = closest != null && closest != inputStr
           ? ' Did you mean "$closest"?'
           : '';
-
       final error = ConstraintError(
         constraint: _EnumValuesConstraint(allowed),
         message:
             'Invalid enum value. Allowed: ${allowed.map((s) => '"$s"').join(', ')}.$suggestion',
         context: {
-          'received': inputValue,
+          'received': value,
           'allowedValues': allowed,
           if (closest != null) 'closestMatchSuggestion': closest,
         },
@@ -85,42 +49,61 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       );
     }
 
-    // Use centralized constraints and refinements check
-    return applyConstraintsAndRefinements(parsed, context);
+    return applyConstraintsAndRefinements(value, context);
   }
 
   @override
   @protected
-  SchemaResult<Object> encodeValue(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    final nullResult = handleNullForEncode(runtimeValue, context);
-    if (nullResult != null) return nullResult;
-
-    if (runtimeValue is! T || !values.contains(runtimeValue)) {
-      final allowed = values.map((e) => '"${e.name}"').join(', ');
-      return SchemaResult.fail(
-        SchemaEncodeError(
-          message:
-              'Expected one of $allowed during encode, got '
-              '${runtimeValue.runtimeType}.',
-          context: context,
-        ),
-      );
+  SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
+    if (input == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNull(context);
     }
 
-    final constraintResult = applyConstraintsAndRefinements(
-      runtimeValue,
-      context,
+    if (input is T && values.contains(input)) {
+      return applyConstraintsAndRefinements(input, context);
+    }
+
+    if (input is String) {
+      for (final value in values) {
+        if (value.name == input) {
+          return applyConstraintsAndRefinements(value, context);
+        }
+      }
+    } else if (input is int && input >= 0 && input < values.length) {
+      return applyConstraintsAndRefinements(values[input], context);
+    }
+
+    return _failEnumValue(input, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(T value, SchemaContext context) {
+    return SchemaResult.ok(value.name);
+  }
+
+  SchemaResult<T> _failEnumValue(Object value, SchemaContext context) {
+    final allowed = values.map((e) => e.name).toList(growable: false);
+    final inputStr = value.toString();
+    final closest = findClosestStringMatch(inputStr, allowed);
+    final suggestion = closest != null && closest != inputStr
+        ? ' Did you mean "$closest"?'
+        : '';
+    final error = ConstraintError(
+      constraint: _EnumValuesConstraint(allowed),
+      message:
+          'Invalid enum value. Allowed: ${allowed.map((s) => '"$s"').join(', ')}.$suggestion',
+      context: {
+        'received': value,
+        'allowedValues': allowed,
+        if (closest != null) 'closestMatchSuggestion': closest,
+      },
     );
-    if (constraintResult.isFail) {
-      return constraintResult.castFail();
-    }
 
-    // Encode to the string boundary form (parse accepts string names; encode
-    // emits them) so JSON round-trips are stable.
-    return SchemaResult.ok(runtimeValue.name);
+    return SchemaResult.fail(
+      SchemaConstraintsError(constraints: [error], context: context),
+    );
   }
 
   @override
@@ -129,7 +112,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
@@ -138,7 +120,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -150,8 +131,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
 
     return buildJsonSchemaWithNullable(
       typeSchema: {'type': 'string', 'enum': enumNames},
-      // Serialize enum default to its name
-      serializedDefault: defaultValue?.name,
     );
   }
 
@@ -170,7 +149,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }
 }
 
-/// Internal constraint used for better error reporting in EnumSchema.
 class _EnumValuesConstraint extends Constraint<Object?> {
   final List<String> allowed;
 

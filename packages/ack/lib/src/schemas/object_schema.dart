@@ -1,5 +1,18 @@
 part of 'schema.dart';
 
+MapValue? _toMapValue(Object value) {
+  if (value is Map<String, Object?>) return value;
+  if (value is! Map) return null;
+
+  final converted = <String, Object?>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is! String) return null;
+    converted[key] = entry.value;
+  }
+  return converted;
+}
+
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
 @immutable
 final class ObjectSchema extends AckSchema<MapValue>
@@ -13,7 +26,6 @@ final class ObjectSchema extends AckSchema<MapValue>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   }) : properties = properties ?? const {};
@@ -23,107 +35,97 @@ final class ObjectSchema extends AckSchema<MapValue>
 
   @override
   @protected
-  SchemaResult<MapValue> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Use centralized null handling (including cloned default handling).
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
-
-    // Type guard
-    if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: schemaType,
-          actualType: actualType,
-          context: context,
-        ),
+  SchemaResult<MapValue> validate(Object? value, SchemaContext context) =>
+      _validateProperties(
+        value,
+        context,
+        (schema, propertyValue, ctx) => schema.validate(propertyValue, ctx),
       );
+
+  @override
+  @protected
+  SchemaResult<MapValue> decodeBoundary(Object? input, SchemaContext context) =>
+      _validateProperties(
+        input,
+        context,
+        (schema, propertyValue, ctx) =>
+            schema.decodeBoundary(propertyValue, ctx),
+      );
+
+  SchemaResult<MapValue> _validateProperties(
+    Object? value,
+    SchemaContext context,
+    SchemaResult<Object> Function(
+      AckSchema schema,
+      Object? propertyValue,
+      SchemaContext ctx,
+    )
+    handle,
+  ) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNull(context);
     }
 
-    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
-    final mapValue = inputValue is Map<String, Object?>
-        ? inputValue
-        : inputValue.cast<String, Object?>();
-    final validatedMap = <String, Object?>{};
-    final validationErrors = <SchemaError>[];
+    final mapValue = _toMapValue(value);
+    if (mapValue == null) {
+      return failTypeMismatch(value, context);
+    }
 
-    // Validate all properties defined in the schema
+    final out = <String, Object?>{};
+    final errors = <SchemaError>[];
+
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
       final hasValue = mapValue.containsKey(key);
 
+      final propertyContext = context.createChild(
+        name: key,
+        schema: schema,
+        value: hasValue ? mapValue[key] : null,
+        pathSegment: key,
+      );
+
       if (!hasValue) {
-        // Property missing from input
         if (schema.isOptional) {
-          // Optional field with default - pass null to trigger the child schema's
-          // handleNullInput, which clones and validates the default.
-          if (schema.defaultValue != null) {
-            final propertyContext = context.createChild(
-              name: key,
-              schema: schema,
-              value: null,
-              pathSegment: key,
-            );
-            final result = schema.parseAndValidate(null, propertyContext);
-            result.match(
-              onOk: (validatedValue) {
-                if (validatedValue != null) {
-                  validatedMap[key] = validatedValue;
-                }
-              },
-              onFail: validationErrors.add,
-            );
+          final result = handle(schema, null, propertyContext);
+          if (result.isOk) {
+            final validated = result.getOrNull();
+            if (validated != null) out[key] = validated;
+          } else if (schema is DefaultSchema &&
+              context.operation == SchemaOperation.parse) {
+            errors.add(result.getError());
           }
-          // Optional field without default - omit from output
-        } else {
-          // Required field missing
-          final ce = ObjectRequiredPropertiesConstraint(
-            missingPropertyKey: key,
-          ).validate(mapValue);
-          if (ce != null) {
-            validationErrors.add(
-              SchemaConstraintsError(
-                constraints: [ce],
-                context: context.createChild(
-                  name: key,
-                  schema: schema,
-                  value: null,
-                  pathSegment: key,
-                ),
-              ),
-            );
-          }
+          continue;
         }
-      } else {
-        // Property exists - validate it
-        final propertyValue = mapValue[key];
-        final propertyContext = context.createChild(
-          name: key,
-          schema: schema,
-          value: propertyValue,
-          pathSegment: key,
-        );
-        final result = schema.parseAndValidate(propertyValue, propertyContext);
-        result.match(
-          onOk: (validatedValue) {
-            validatedMap[key] = validatedValue;
-          },
-          onFail: validationErrors.add,
-        );
+
+        final ce = ObjectRequiredPropertiesConstraint(
+          missingPropertyKey: key,
+        ).validate(mapValue);
+        if (ce != null) {
+          errors.add(
+            SchemaConstraintsError(constraints: [ce], context: propertyContext),
+          );
+        }
+        continue;
       }
+
+      final result = handle(schema, mapValue[key], propertyContext);
+      result.match(
+        onOk: (validated) {
+          out[key] = validated;
+        },
+        onFail: errors.add,
+      );
     }
 
-    // Handle additional properties
     for (final key in mapValue.keys) {
       if (!properties.containsKey(key)) {
         if (additionalProperties) {
-          validatedMap[key] = mapValue[key];
+          out[key] = mapValue[key];
         } else {
-          validationErrors.add(
+          errors.add(
             SchemaConstraintsError(
               constraints: [
                 ConstraintError(
@@ -145,98 +147,61 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    if (validationErrors.isNotEmpty) {
+    if (errors.isNotEmpty) {
       return SchemaResult.fail(
-        SchemaNestedError(errors: validationErrors, context: context),
+        SchemaNestedError(errors: errors, context: context),
       );
     }
 
-    final unmodifiableMap = Map<String, Object?>.unmodifiable(validatedMap);
-    return applyConstraintsAndRefinements(unmodifiableMap, context);
+    return applyConstraintsAndRefinements(
+      Map<String, Object?>.unmodifiable(out),
+      context,
+    );
   }
 
   @override
   @protected
-  SchemaResult<Object> encodeValue(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    final nullResult = handleNullForEncode(runtimeValue, context);
-    if (nullResult != null) return nullResult;
-
-    if (runtimeValue is! Map) {
-      final actualType = AckSchema.getSchemaType(runtimeValue);
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: schemaType,
-          actualType: actualType,
-          context: context,
-        ),
-      );
-    }
-
-    final mapValue = runtimeValue is Map<String, Object?>
-        ? runtimeValue
-        : runtimeValue.cast<String, Object?>();
-
-    // Object-level constraints/refinements run on the runtime input (per the
-    // README contract: encode validates runtime values). Children are encoded
-    // only after the runtime form passes its own validation.
-    final runtimeCheck = applyConstraintsAndRefinements(mapValue, context);
-    if (runtimeCheck.isFail) {
-      return runtimeCheck.castFail();
-    }
-
+  SchemaResult<Object> encodeBoundary(MapValue value, SchemaContext context) {
     final encodedMap = <String, Object?>{};
-    final encodeErrors = <SchemaError>[];
+    final errors = <SchemaError>[];
 
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
-      final hasValue = mapValue.containsKey(key);
+      final hasValue = value.containsKey(key);
+      final propertyContext = context.createChild(
+        name: key,
+        schema: schema,
+        value: hasValue ? value[key] : null,
+        pathSegment: key,
+      );
 
       if (!hasValue) {
-        if (schema.isOptional) {
-          // Optional and absent: omit. Defaults are forward-only — never
-          // synthesized during encode.
-          continue;
-        }
-        encodeErrors.add(
+        if (schema.isOptional) continue;
+        errors.add(
           SchemaEncodeError(
             message: 'Required property "$key" is missing during encode.',
-            context: context.createChild(
-              name: key,
-              schema: schema,
-              value: null,
-              pathSegment: key,
-            ),
+            context: propertyContext,
           ),
         );
         continue;
       }
 
-      final propertyValue = mapValue[key];
-      final propertyContext = context.createChild(
-        name: key,
-        schema: schema,
-        value: propertyValue,
-        pathSegment: key,
-      );
-      final result = schema.encodeValue(propertyValue, propertyContext);
+      final result = _encodeWithSchema(schema, value[key], propertyContext);
       result.match(
         onOk: (encodedValue) {
           encodedMap[key] = encodedValue;
         },
-        onFail: encodeErrors.add,
+        onFail: errors.add,
       );
     }
 
-    for (final key in mapValue.keys) {
+    for (final key in value.keys) {
       if (!properties.containsKey(key)) {
         if (additionalProperties) {
-          encodedMap[key] = mapValue[key];
+          encodedMap[key] = value[key];
         } else {
-          encodeErrors.add(
+          errors.add(
             SchemaEncodeError(
               message:
                   'Property "$key" is not allowed during encode '
@@ -244,7 +209,7 @@ final class ObjectSchema extends AckSchema<MapValue>
               context: context.createChild(
                 name: key,
                 schema: this,
-                value: mapValue[key],
+                value: value[key],
                 pathSegment: key,
               ),
             ),
@@ -253,9 +218,9 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    if (encodeErrors.isNotEmpty) {
+    if (errors.isNotEmpty) {
       return SchemaResult.fail(
-        SchemaNestedError(errors: encodeErrors, context: context),
+        SchemaNestedError(errors: errors, context: context),
       );
     }
 
@@ -269,7 +234,6 @@ final class ObjectSchema extends AckSchema<MapValue>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    MapValue? defaultValue,
     List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
@@ -279,7 +243,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -292,13 +255,11 @@ final class ObjectSchema extends AckSchema<MapValue>
 
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
-      // All non-optional fields are required
       if (!entry.value.isOptional) {
         requiredFields.add(entry.key);
       }
     }
 
-    // Zod uses {} (empty schema) for true, false for false
     final additionalPropertiesValue = additionalProperties
         ? <String, Object?>{}
         : false;
@@ -310,7 +271,6 @@ final class ObjectSchema extends AckSchema<MapValue>
         if (requiredFields.isNotEmpty) 'required': requiredFields,
         'additionalProperties': additionalPropertiesValue,
       },
-      serializedDefault: defaultValue,
     );
   }
 
@@ -320,7 +280,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'properties': properties.length,
       'additionalProperties': additionalProperties,

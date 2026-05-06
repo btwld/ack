@@ -1,39 +1,6 @@
 part of 'schema.dart';
 
-Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
-  if (defaultValue == null) return null;
-
-  try {
-    return jsonDecode(jsonEncode(defaultValue));
-  } catch (_) {
-    return null;
-  }
-}
-
 /// Schema for validating a discriminated union of objects.
-///
-/// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
-/// `schemas` to validate the object.
-///
-/// Child schemas may be plain [ObjectSchema] branches that return
-/// `Map<String, Object?>`, or transformed schemas whose base schema is an
-/// [ObjectSchema]. All branches must produce the same output type [T].
-///
-/// ```dart
-/// final schema = Ack.discriminated<Animal>(
-///   discriminatorKey: 'type',
-///   schemas: {
-///     'cat': Ack.object({
-///       'type': Ack.literal('cat'),
-///       'name': Ack.string(),
-///     }).transform<Animal>((map) => Cat(map['name'] as String)),
-///     'dog': Ack.object({
-///       'type': Ack.literal('dog'),
-///       'name': Ack.string(),
-///     }).transform<Animal>((map) => Dog(map['name'] as String)),
-///   },
-/// );
-/// ```
 @immutable
 final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     with FluentSchema<T, DiscriminatedObjectSchema<T>> {
@@ -46,7 +13,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -56,147 +22,168 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T>? handleNullInput(Object? inputValue, SchemaContext context) {
-    if (inputValue != null) return null;
+  SchemaResult<T> validate(Object? value, SchemaContext context) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNull(context);
+    }
 
-    if (defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      if (clonedDefault is Map) {
-        return parseAndValidate(clonedDefault, context);
+    if (value is Map) {
+      final mapValue = _toMapValue(value);
+      if (mapValue == null) {
+        return failTypeMismatch(value, context);
       }
-
-      final safeDefault = clonedDefault is T ? clonedDefault : defaultValue!;
-      return applyConstraintsAndRefinements(safeDefault, context);
+      return _validateMap(mapValue, context);
     }
 
-    if (isNullable) {
-      return SchemaResult.ok(null);
+    if (value is! T) {
+      return failTypeMismatch(value, context);
     }
 
-    return failNonNullable(context);
+    return _validateByBranchTrial(value, context);
   }
 
-  @override
-  @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Use centralized null handling (including cloned default handling).
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
+  SchemaResult<T> _validateMap(MapValue mapValue, SchemaContext context) =>
+      _withBranch<T>(mapValue, context, (selected, disc) {
+        final branchCtx = _branchContext(selected, mapValue, disc, context);
+        final objectCheck = _requireObjectBackedBranch(selected, branchCtx);
+        if (objectCheck != null) return objectCheck;
 
-    // Type guard
-    if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: schemaType,
-          actualType: actualType,
-          context: context,
-        ),
-      );
-    }
-    final mapValue = inputValue is MapValue
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+        final result = selected.validate(mapValue, branchCtx);
+        if (result.isFail) return result.castFail();
+        return applyConstraintsAndRefinements(result.getOrThrow()!, context);
+      });
 
-    final Object? discValueRaw = mapValue[discriminatorKey];
+  /// Resolves the discriminator key and selects the matching branch schema,
+  /// dispatching to [onResolved] on success. Failures (missing/wrong-typed
+  /// discriminator, unknown value) short-circuit with [_failDiscriminator].
+  SchemaResult<R> _withBranch<R extends Object>(
+    MapValue mapValue,
+    SchemaContext context,
+    SchemaResult<R> Function(AckSchema<T> selected, String disc) onResolved,
+  ) {
+    final discValueRaw = mapValue[discriminatorKey];
 
     if (discValueRaw == null) {
-      final constraintError = ObjectRequiredPropertiesConstraint(
+      final ce = ObjectRequiredPropertiesConstraint(
         missingPropertyKey: discriminatorKey,
       ).validate(mapValue);
-
-      return _failDiscriminator(constraintError, null, context);
+      return _failDiscriminator<R>(ce, null, context);
     }
-
     if (discValueRaw is! String) {
-      final constraintError = InvalidTypeConstraint(
+      final ce = InvalidTypeConstraint(
         expectedType: String,
       ).validate(discValueRaw);
-
-      return _failDiscriminator(constraintError, discValueRaw, context);
+      return _failDiscriminator<R>(ce, discValueRaw, context);
     }
 
-    final AckSchema<T>? selectedSubSchema = schemas[discValueRaw];
-
-    if (selectedSubSchema == null) {
+    final selected = schemas[discValueRaw];
+    if (selected == null) {
       final allowed = schemas.keys.toList(growable: false);
-      final enumError = PatternConstraint.enumString(
-        allowed,
-      ).validate(discValueRaw);
-
-      return _failDiscriminator(enumError, discValueRaw, context);
+      final ce = PatternConstraint.enumString(allowed).validate(discValueRaw);
+      return _failDiscriminator<R>(ce, discValueRaw, context);
     }
 
-    // Validate the selected branch; branch name for debug only
-    final subSchemaContext = context.createChild(
-      name: 'when $discriminatorKey="$discValueRaw"',
-      schema: selectedSubSchema,
-      value: mapValue,
-      pathSegment: '', // Inherit parent path
+    return onResolved(selected, discValueRaw);
+  }
+
+  SchemaContext _branchContext(
+    AckSchema<T> selected,
+    Object value,
+    String discValue,
+    SchemaContext context,
+  ) {
+    return context.createChild(
+      name: 'when $discriminatorKey="$discValue"',
+      schema: selected,
+      value: value,
+      pathSegment: '',
     );
+  }
 
-    final baseSubSchema = unwrapDiscriminatedBranchSchema(selectedSubSchema);
-    if (baseSubSchema is! ObjectSchema) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Discriminated branches must be object-backed schemas',
-          context: subSchemaContext,
-        ),
-      );
-    }
-
-    final result = selectedSubSchema.parseAndValidate(
-      mapValue,
-      subSchemaContext,
+  SchemaResult<T>? _requireObjectBackedBranch(
+    AckSchema<T> selected,
+    SchemaContext branchCtx,
+  ) {
+    final base = unwrapDiscriminatedBranchSchema(selected);
+    if (base is ObjectSchema) return null;
+    return SchemaResult.fail(
+      SchemaValidationError(
+        message: 'Discriminated branches must be object-backed schemas',
+        context: branchCtx,
+      ),
     );
+  }
 
-    if (result.isFail) {
-      return result.match(
-        onOk: (_) => throw StateError('Unreachable'),
-        onFail: (error) => SchemaResult.fail(error),
-      );
+  SchemaResult<T> _validateByBranchTrial(T value, SchemaContext context) {
+    final errors = <SchemaError>[];
+
+    for (final entry in schemas.entries) {
+      final branchCtx = _branchContext(entry.value, value, entry.key, context);
+      final result = entry.value.validate(value, branchCtx);
+      if (result.isOk) {
+        return applyConstraintsAndRefinements(result.getOrThrow()!, context);
+      }
+      errors.add(result.getError());
     }
 
-    final validatedValue = result.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(validatedValue, context);
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
   }
 
   @override
   @protected
-  SchemaResult<Object> encodeValue(
-    Object? runtimeValue,
-    SchemaContext context,
-  ) {
-    final nullResult = handleNullForEncode(runtimeValue, context);
-    if (nullResult != null) return nullResult;
-
-    // Map encoding mirrors parse-side strictness for discriminator failures.
-    if (runtimeValue is Map) {
-      final mapValue = runtimeValue is Map<String, Object?>
-          ? runtimeValue
-          : runtimeValue.cast<String, Object?>();
-      final discValueRaw = mapValue[discriminatorKey];
-      if (discValueRaw == null) {
-        final constraintError = ObjectRequiredPropertiesConstraint(
-          missingPropertyKey: discriminatorKey,
-        ).validate(mapValue);
-        return _failDiscriminator(constraintError, null, context);
-      }
-      if (discValueRaw is! String) {
-        final constraintError = InvalidTypeConstraint(
-          expectedType: String,
-        ).validate(discValueRaw);
-        return _failDiscriminator(constraintError, discValueRaw, context);
-      }
-      return _encodeViaDiscriminator(mapValue, discValueRaw, context);
+  SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
+    if (input == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNull(context);
     }
 
-    // Path 2: runtime value is a typed domain object — best-effort branch
-    // trial. Each probe is wrapped in try/catch so a refinement-throwing
-    // branch does not poison the union. Users with side-effecting encoders
-    // should pre-tag their domain object with the discriminator field.
-    return _encodeByBranchTrial(runtimeValue!, context);
+    if (input is! Map) {
+      return validate(input, context);
+    }
+
+    final mapValue = _toMapValue(input);
+    if (mapValue == null) {
+      return failTypeMismatch(input, context);
+    }
+
+    return _withBranch<T>(mapValue, context, (selected, disc) {
+      final branchCtx = _branchContext(selected, mapValue, disc, context);
+      final objectCheck = _requireObjectBackedBranch(selected, branchCtx);
+      if (objectCheck != null) return objectCheck;
+
+      final result = selected.decodeBoundary(mapValue, branchCtx);
+      if (result.isFail) return result.castFail();
+      return applyConstraintsAndRefinements(result.getOrThrow()!, context);
+    });
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(T value, SchemaContext context) {
+    if (value is Map) {
+      final mapValue = _toMapValue(value);
+      if (mapValue == null) return failTypeMismatch(value, context).castFail();
+
+      return _withBranch<Object>(mapValue, context, (selected, disc) {
+        final branchCtx = _branchContext(selected, mapValue, disc, context);
+        return _encodeWithSchema(selected, mapValue, branchCtx);
+      });
+    }
+
+    final errors = <SchemaError>[];
+    for (final entry in schemas.entries) {
+      final branchCtx = _branchContext(entry.value, value, entry.key, context);
+      final result = _encodeWithSchema(entry.value, value, branchCtx);
+      if (result.isOk) return result;
+      errors.add(result.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
   }
 
   SchemaResult<R> _failDiscriminator<R extends Object>(
@@ -217,67 +204,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     );
   }
 
-  /// Applies discriminated-level constraints/refinements when [value] can be
-  /// promoted to `T`. Returns the failing error, or `null` on success or when
-  /// the value is not yet a `T` (Path 1 with branches that produce `T`).
-  SchemaError? _runTypedConstraints(Object value, SchemaContext context) {
-    if (value is! T) return null;
-    final result = applyConstraintsAndRefinements(value, context);
-    return result.isFail ? result.getError() : null;
-  }
-
-  SchemaResult<Object> _encodeViaDiscriminator(
-    Map<String, Object?> mapValue,
-    String discValueRaw,
-    SchemaContext context,
-  ) {
-    final selected = schemas[discValueRaw];
-    if (selected == null) {
-      final allowed = schemas.keys.toList(growable: false);
-      final enumError = PatternConstraint.enumString(
-        allowed,
-      ).validate(discValueRaw);
-      return _failDiscriminator(enumError, discValueRaw, context);
-    }
-
-    final constraintError = _runTypedConstraints(mapValue, context);
-    if (constraintError != null) return SchemaResult.fail(constraintError);
-
-    final branchContext = context.createChild(
-      name: 'when $discriminatorKey="$discValueRaw"',
-      schema: selected,
-      value: mapValue,
-      pathSegment: '',
-    );
-    return selected.encodeValue(mapValue, branchContext);
-  }
-
-  SchemaResult<Object> _encodeByBranchTrial(
-    Object runtimeValue,
-    SchemaContext context,
-  ) {
-    if (runtimeValue is T) {
-      final constraintError = _runTypedConstraints(runtimeValue, context);
-      if (constraintError != null) return SchemaResult.fail(constraintError);
-    }
-
-    final errors = <SchemaError>[];
-    for (final entry in schemas.entries) {
-      final result = _tryEncodeBranch(
-        entry.value,
-        runtimeValue,
-        'when $discriminatorKey="${entry.key}"',
-        context,
-        errors: errors,
-      );
-      if (result != null) return result;
-    }
-
-    return SchemaResult.fail(
-      SchemaNestedError(errors: errors, context: context),
-    );
-  }
-
   @override
   DiscriminatedObjectSchema<T> copyWith({
     String? discriminatorKey,
@@ -285,7 +211,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
@@ -295,7 +220,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -304,7 +228,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   @override
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
-    final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
     schemas.forEach((discriminatorValue, branchSchema) {
       final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
       if (baseSchema is! ObjectSchema) {
@@ -313,12 +236,10 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         );
       }
       final subSchemaJson = branchSchema.toJsonSchema();
-      // Constrain discriminator property with type and const
       subSchemaJson['properties'] = {
         ...?(subSchemaJson['properties'] as Map?),
         discriminatorKey: {'type': 'string', 'const': discriminatorValue},
       };
-      // Build required array with discriminator first
       final existingRequired =
           (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
       final requiredFields = <String>[
@@ -332,15 +253,11 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && serializedDefault != null)
-        'default': serializedDefault,
     };
 
-    // Wrap in anyOf with null if nullable
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (serializedDefault != null) 'default': serializedDefault,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -357,7 +274,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'discriminatorKey': discriminatorKey,
       'schemas': schemas.length,

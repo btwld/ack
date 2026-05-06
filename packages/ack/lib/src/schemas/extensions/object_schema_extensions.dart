@@ -50,7 +50,6 @@ extension ObjectSchemaExtensions on ObjectSchema {
     bool? additionalProperties,
     bool? isNullable,
     String? description,
-    Map<String, Object?>? defaultValue,
   }) {
     // Merge properties, with new properties taking precedence
     final mergedProperties = {...properties, ...newProperties};
@@ -60,7 +59,6 @@ extension ObjectSchemaExtensions on ObjectSchema {
       additionalProperties: additionalProperties,
       isNullable: isNullable,
       description: description,
-      defaultValue: defaultValue,
     );
   }
 

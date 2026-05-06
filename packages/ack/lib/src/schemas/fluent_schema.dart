@@ -23,9 +23,9 @@ mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
   Schema withDescription(String description) =>
       copyWith(description: description) as Schema;
 
-  /// Sets the default value for the schema.
-  Schema withDefault(DartType defaultValue) =>
-      copyWith(defaultValue: defaultValue) as Schema;
+  /// Wraps this schema with a parse-side default value.
+  DefaultSchema<DartType> withDefault(DartType defaultValue) =>
+      DefaultSchema<DartType>(this, defaultValue);
 
   /// Adds a validation constraint to the schema.
   Schema withConstraint(Constraint<DartType> constraint) =>

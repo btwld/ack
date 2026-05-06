@@ -107,6 +107,41 @@ void main() {
       expect(schema.encode(runtimeValue), equals('2026-05-04T10:00:00.000Z'));
     });
 
+    test('parse accepts decoder output validated by nested output codecs', () {
+      final schema = Ack.codec<String, Map<String, Object?>>(
+        Ack.string().datetime(),
+        Ack.object({'startsAt': Ack.datetime()}),
+        decode: (s) => {'startsAt': DateTime.parse(s)},
+        encode: (m) => (m['startsAt'] as DateTime).toUtc().toIso8601String(),
+      );
+
+      final parsed = schema.parse('2026-05-04T10:00:00.000Z');
+
+      expect(parsed, equals({'startsAt': DateTime.utc(2026, 5, 4, 10)}));
+    });
+
+    test('parse rejects non-object-backed discriminated output branches', () {
+      final outputSchema = Ack.discriminated<Object>(
+        discriminatorKey: 'type',
+        schemas: {'cat': Ack.string().transform<Object>((value) => value)},
+      );
+      final schema = Ack.codec<Map<String, Object?>, Object>(
+        Ack.object({'type': Ack.literal('cat')}),
+        outputSchema,
+        decode: (map) => map,
+        encode: (_) => <String, Object?>{'type': 'cat'},
+      );
+
+      final result = schema.safeParse({'type': 'cat'});
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaValidationError>());
+      expect(
+        result.getError().message,
+        equals('Discriminated branches must be object-backed schemas'),
+      );
+    });
+
     test('encode validation does not parse output-schema coercions', () {
       var encodeCalled = false;
       final schema = Ack.codec<String, Object>(
@@ -159,7 +194,7 @@ void main() {
         Ack.instance<int>(),
         decode: int.parse,
         encode: (i) => i.toString(),
-      ).copyWith(defaultValue: 99);
+      ).withDefault(99);
 
       expect(schema.parse(null), equals(99));
     });
@@ -170,7 +205,7 @@ void main() {
         Ack.string().minLength(5),
         decode: (s) => s,
         encode: (s) => s,
-      ).copyWith(defaultValue: 'no');
+      ).withDefault('no');
 
       final result = schema.safeParse(null);
 
@@ -183,7 +218,7 @@ void main() {
         Ack.instance<int>(),
         decode: int.parse,
         encode: (i) => i.toString(),
-      ).copyWith(defaultValue: 99);
+      ).withDefault(99);
 
       final result = schema.safeEncode(null);
       expect(result.isFail, isTrue);
@@ -229,7 +264,6 @@ void main() {
       final result = schema.safeEncode({'count': 42});
       expect(result.isFail, isTrue);
       final err = result.getError();
-      // Root error is the object's nested aggregator; child carries the path.
       expect(err, isA<SchemaNestedError>());
       final nested = (err as SchemaNestedError).errors;
       expect(nested.first.path, equals('#/count'));
@@ -249,15 +283,14 @@ void main() {
       for (final value in values) {
         expect(schema.parse(schema.encode(value)), equals(value));
       }
+
+      final result = schema.safeEncode(DateTime(2026, 5, 4, 12));
+      expect(result.isFail, isTrue);
     });
 
-    test('Ack.datetime() round-trips via canonical UTC form', () {
+    test('Ack.datetime() round-trips UTC values', () {
       final schema = Ack.datetime();
-      const inputs = [
-        '2026-05-04T10:00:00.000Z',
-        '2026-05-04T10:00:00-04:00',
-        '1999-12-31T23:59:59.001Z',
-      ];
+      const inputs = ['2026-05-04T10:00:00.000Z', '1999-12-31T23:59:59.001Z'];
 
       for (final input in inputs) {
         final parsed = schema.parse(input);
@@ -265,10 +298,16 @@ void main() {
         expect(schema.parse(encoded), equals(parsed));
       }
 
-      final values = [DateTime.utc(2026, 5, 4, 10), DateTime(2026, 5, 4, 10)];
+      final values = [
+        DateTime.utc(2026, 5, 4, 10),
+        DateTime.utc(1999, 12, 31, 23, 59, 59, 1),
+      ];
       for (final value in values) {
-        expect(schema.parse(schema.encode(value)), equals(value.toUtc()));
+        expect(schema.parse(schema.encode(value)), equals(value));
       }
+
+      final nonUtc = schema.safeEncode(DateTime(2026, 5, 4, 10));
+      expect(nonUtc.isFail, isTrue);
     });
 
     test('Ack.uri() round-trips boundary and runtime values', () {
@@ -289,6 +328,9 @@ void main() {
       for (final value in values) {
         expect(schema.parse(schema.encode(value)), equals(value));
       }
+
+      final relative = schema.safeEncode(Uri.parse('/relative/path'));
+      expect(relative.isFail, isTrue);
     });
 
     test('Ack.duration() round-trips boundary and runtime values', () {
@@ -307,6 +349,41 @@ void main() {
       for (final value in values) {
         expect(schema.parse(schema.encode(value)), equals(value));
       }
+
+      final result = schema.safeEncode(const Duration(microseconds: 1501));
+      expect(result.isFail, isTrue);
+    });
+  });
+
+  group('CodecSchema — codec-of-codec', () {
+    test('encode does not re-run inner decoder on the encoded value', () {
+      // Outer wraps a codec inputSchema (Ack.intFromString → AckSchema<int>).
+      // Outer encoder produces an int (the inner codec's runtime O). The
+      // post-encode re-validation must call validate on the inner, not
+      // decodeBoundary — otherwise the inner would try to re-decode the int
+      // as a String boundary value and fail.
+      final outer = Ack.codec<int, Duration>(
+        Ack.intFromString(),
+        Ack.instance<Duration>(),
+        decode: (ms) => Duration(milliseconds: ms),
+        encode: (d) => d.inMilliseconds,
+      );
+
+      final encoded = outer.encode(const Duration(milliseconds: 1500));
+      expect(encoded, equals(1500));
+    });
+  });
+
+  group('Ack.literal direct encode', () {
+    test('safeEncode rejects values that do not match the literal', () {
+      final schema = Ack.literal('cat');
+      final result = schema.safeEncode('dog');
+      expect(result.isFail, isTrue);
+    });
+
+    test('safeEncode accepts the exact literal value', () {
+      final schema = Ack.literal('cat');
+      expect(schema.encode('cat'), equals('cat'));
     });
   });
 }

@@ -64,5 +64,15 @@ void main() {
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaEncodeError>());
     });
+
+    test(
+      'nullable after default accepts null on encode without substituting',
+      () {
+        final schema = Ack.string().withDefault('FALLBACK').nullable();
+
+        expect(schema.parse(null), equals('FALLBACK'));
+        expect(schema.encode(null), isNull);
+      },
+    );
   });
 }

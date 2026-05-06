@@ -3,16 +3,20 @@
 ### Added
 
 * **Bidirectional codecs**: `Ack.codec<I, O>(...)` for explicit bidirectional conversion between a boundary type `I` and a runtime type `O`.
+* **Explicit primitive coercion codecs**: `Ack.intFromString()`, `Ack.doubleFromString()`, and `Ack.boolFromString()`.
 * **Runtime instance schema**: `Ack.instance<T>()` validates `value is T` for use as the runtime side of a codec or as a standalone runtime type guard.
 * **Encode methods**: `encode(...)` and `safeEncode(...)` on every `AckSchema`. Encode is the inverse of parse — it converts a runtime value back into the boundary representation the schema validates as input.
 * **`SchemaEncodeError`**: new error type raised when an encode operation fails (type mismatch, missing required field, one-way `.transform`, encode closure throw, etc.).
 
 ### Changed
 
-* **`.transform(fn)`** now returns a `CodecSchema<T, R>` (one-way: `decoder = fn`, `encoder = null`). Parse behavior is unchanged. Calling `encode(...)` on a transformed schema fails with `SchemaEncodeError` whose message points at `Ack.codec(...)`.
+* **`.transform(fn)`** now returns a `CodecSchema<T, R>` (one-way: `decoder = fn`, `encoder = null`). Calling `encode(...)` on a transformed schema fails with `SchemaEncodeError` whose message points at `Ack.codec(...)`.
+* **Transformers no longer receive `null`.** On nullable schemas, `null` short-circuits to `null` without invoking the decoder. Previously `Ack.string().nullable().transform((v) => v.toUpperCase()).parse(null)` would call the transformer with `null`; it now returns `null` directly.
 * **Built-in transforms are now bidirectional codecs.** `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, and `Ack.duration()` round-trip cleanly through `parse` and `encode`. Boundary forms: `YYYY-MM-DD` for `date()`, UTC ISO-8601 for `datetime()`, `Uri.toString()` for `uri()`, milliseconds for `duration()`.
 * **`EnumSchema.encode(...)`** emits the enum's `.name` (string) so JSON round-trips are stable.
-* **Codec encode is strictly typed.** `encode(value)` validates `value` against the runtime side of the codec without coercion. This is intentionally stricter than `parse`, which still coerces compatible boundary types (e.g., `'42'` → `42` for an integer schema).
+* **Primitive schemas no longer coerce.** `Ack.integer().parse('42')`, `Ack.double().parse('3.14')`, `Ack.boolean().parse('true')`, and `Ack.string().parse(42)` now fail. Use the explicit coercion codecs when boundary strings need conversion.
+* **Defaults are wrapper-based.** Use `schema.withDefault(value)` instead of constructor/copyWith `defaultValue` arguments.
+* **Codec encode is strictly typed.** `encode(value)` validates `value` against the runtime side of the codec without primitive coercion.
 * `TransformedSchema` is now an internal `CodecSchema<I, O>` — schemas previously typed `TransformedSchema<I, O>` are now `CodecSchema<I, O>`.
 
 ### Deprecated
