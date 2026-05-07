@@ -309,33 +309,35 @@ void main() {
         expect(jsonSchema['type'], 'string');
       });
 
-      test('includes formatMinimum when min constraint is applied', () {
+      test('date min constraint is runtime-only in JSON Schema', () {
         final schema = Ack.date().min(DateTime(2025, 1, 1));
         final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['formatMinimum'], isNotNull);
-        expect(jsonSchema['formatMinimum'], contains('2025-01-01'));
+        expect(jsonSchema['format'], 'date');
+        expect(jsonSchema.containsKey('formatMinimum'), isFalse);
       });
 
-      test('includes formatMaximum when max constraint is applied', () {
+      test('date max constraint is runtime-only in JSON Schema', () {
         final schema = Ack.date().max(DateTime(2025, 12, 31));
         final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['formatMaximum'], isNotNull);
-        expect(jsonSchema['formatMaximum'], contains('2025-12-31'));
+        expect(jsonSchema['format'], 'date');
+        expect(jsonSchema.containsKey('formatMaximum'), isFalse);
       });
 
-      test('includes both formatMinimum and formatMaximum for range', () {
-        final schema = Ack.date()
-            .min(DateTime(2025, 1, 1))
-            .max(DateTime(2025, 12, 31));
-        final jsonSchema = schema.toJsonSchema();
+      test(
+        'date range constraints do not emit non-standard JSON Schema keys',
+        () {
+          final schema = Ack.date()
+              .min(DateTime(2025, 1, 1))
+              .max(DateTime(2025, 12, 31));
+          final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['formatMinimum'], isNotNull);
-        expect(jsonSchema['formatMaximum'], isNotNull);
-        expect(jsonSchema['formatMinimum'], contains('2025-01-01'));
-        expect(jsonSchema['formatMaximum'], contains('2025-12-31'));
-      });
+          expect(jsonSchema['format'], 'date');
+          expect(jsonSchema.containsKey('formatMinimum'), isFalse);
+          expect(jsonSchema.containsKey('formatMaximum'), isFalse);
+        },
+      );
     });
 
     group('Real-World Use Cases', () {

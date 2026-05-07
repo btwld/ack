@@ -71,26 +71,31 @@ final payload = eventSchema.encode(event);
 Define your own codec with `Ack.codec`:
 
 ```dart
-final hexColorCodec = Ack.codec<String, Color>(
-  Ack.string().matches(r'^#[0-9a-fA-F]{6}$'),
-  Ack.instance<Color>(),
-  decode: Color.fromHex,
-  encode: (color) => color.hex,
+final bigIntCodec = Ack.codec<String, BigInt>(
+  Ack.string().matches(r'^-?\d+$'),
+  Ack.instance<BigInt>(),
+  decode: BigInt.parse,
+  encode: (value) => value.toString(),
 );
 ```
 
-`.transform(fn)` remains one-way (parse only, no inverse). Calling `encode` on a transformed schema fails clearly and points at `Ack.codec` if you need both directions. Defaults are forward-only — they apply during parse but never synthesize boundary data during encode.
+`.transform(fn)` remains one-way (parse only, no inverse). Calling `encode` on the one-way codec fails clearly and points at `Ack.codec` if you need both directions. Defaults are forward-only — they apply during parse but never synthesize boundary data during encode.
 
 ## No implicit coercion
 
-Primitive schemas validate runtime values as-is. Use explicit codecs when a boundary format needs conversion:
+Primitive schemas validate runtime values as-is. Define an app-local codec when
+a boundary format needs conversion:
 
 ```dart
-Ack.integer().safeParse('42');      // Fail
-Ack.intFromString().parse('42');    // 42
+final intStringCodec = Ack.codec<String, int>(
+  Ack.string(),
+  Ack.instance<int>(),
+  decode: int.parse,
+  encode: (value) => value.toString(),
+);
 
-Ack.boolean().safeParse('true');    // Fail
-Ack.boolFromString().parse('true'); // true
+Ack.integer().safeParse('42'); // Fail
+intStringCodec.parse('42');    // 42
 ```
 
 Defaults are expressed as a wrapper:
@@ -99,7 +104,10 @@ Defaults are expressed as a wrapper:
 final roleSchema = Ack.string().withDefault('guest');
 ```
 
-Migration note for pre-2.0 code: replace implicit primitive coercion such as `Ack.integer().parse('42')` with `Ack.intFromString().parse('42')`, and constructor defaults such as `Ack.string(defaultValue: 'x')` with `Ack.string().withDefault('x')`.
+Migration note for pre-2.0 code: replace implicit primitive coercion such as
+`Ack.integer().parse('42')` with a small `Ack.codec(...)` at your app boundary,
+and constructor defaults such as `Ack.string(defaultValue: 'x')` with
+`Ack.string().withDefault('x')`.
 
 ## Documentation
 

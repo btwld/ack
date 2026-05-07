@@ -14,7 +14,7 @@ enum Status { pending, active, completed }
 /// - Basic schema conversion (primitives, objects, arrays)
 /// - Edge cases and error handling
 /// - Semantic validation (behavioral equivalence)
-/// - TransformedSchema and metadata overrides
+/// - CodecSchema and metadata overrides
 /// - Dart enum support
 void main() {
   group('toFirebaseAiSchema()', () {
@@ -98,6 +98,17 @@ void main() {
         expect(result.maximum, 100);
       });
 
+      test('preserves duration codec numeric bounds', () {
+        final schema = Ack.duration()
+            .min(Duration(milliseconds: 1500))
+            .max(Duration(seconds: 2));
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.integer);
+        expect(result.minimum, 1500);
+        expect(result.maximum, 2000);
+      });
+
       test('converts double schema', () {
         final schema = Ack.double();
         final result = schema.toFirebaseAiSchema();
@@ -119,6 +130,15 @@ void main() {
         final result = schema.toFirebaseAiSchema();
 
         expect(result.type, firebase_ai.SchemaType.boolean);
+      });
+
+      test('represents string literals as a single-value enum', () {
+        final schema = Ack.literal('exact');
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.string);
+        expect(result.format, 'enum');
+        expect(result.enumValues, equals(['exact']));
       });
     });
 
@@ -331,7 +351,32 @@ void main() {
         expect(result.anyOf!.last.type, firebase_ai.SchemaType.integer);
       });
 
-      test('converts TransformedSchema using underlying definition', () {
+      test('preserves anyOf description metadata', () {
+        final schema = Ack.anyOf([
+          Ack.string(),
+          Ack.integer(),
+        ]).describe('String or integer');
+
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.anyOf);
+        expect(result.description, 'String or integer');
+      });
+
+      test('preserves scalar oneOf metadata for IP strings', () {
+        final schema = Ack.string().ip();
+
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.anyOf);
+        expect(result.anyOf, hasLength(2));
+        expect(result.anyOf![0].type, firebase_ai.SchemaType.string);
+        expect(result.anyOf![0].format, 'ipv4');
+        expect(result.anyOf![1].type, firebase_ai.SchemaType.string);
+        expect(result.anyOf![1].format, 'ipv6');
+      });
+
+      test('converts CodecSchema using input definition', () {
         final schema = Ack.date();
 
         final result = schema.toFirebaseAiSchema();
@@ -404,7 +449,7 @@ void main() {
     });
 
     group('Metadata override behavior', () {
-      test('TransformedSchema with copyWith description override', () {
+      test('CodecSchema with copyWith description override', () {
         // Create date schema with description via copyWith
         final dateSchema = Ack.date().copyWith(description: 'Birth date');
 
@@ -415,7 +460,7 @@ void main() {
         expect(result.format, 'date');
       });
 
-      test('nullable flag is forced on TransformedSchema', () {
+      test('nullable flag is forced on CodecSchema', () {
         // Create nullable date schema via copyWith
         final dateSchema = Ack.date().copyWith(isNullable: true);
 
@@ -442,7 +487,7 @@ void main() {
         expect(result.format, 'date');
       });
 
-      test('TransformedSchema preserves underlying schema format', () {
+      test('CodecSchema preserves input schema format', () {
         // Datetime has format 'date-time', add description via copyWith
         final datetimeSchema = Ack.datetime().copyWith(
           description: 'Event timestamp',
@@ -455,47 +500,38 @@ void main() {
         expect(result.description, 'Event timestamp');
       });
 
-      test(
-        'description override on TransformedSchema wins over base schema',
-        () {
-          // Test that TransformedSchema's description takes precedence
-          final withDescription = Ack.date().copyWith(
-            description: 'Overridden description',
-          );
+      test('description override on CodecSchema wins over base schema', () {
+        // Test that CodecSchema's description takes precedence
+        final withDescription = Ack.date().copyWith(
+          description: 'Overridden description',
+        );
 
-          final result = withDescription.toFirebaseAiSchema();
+        final result = withDescription.toFirebaseAiSchema();
 
-          expect(result.description, 'Overridden description');
-        },
-      );
+        expect(result.description, 'Overridden description');
+      });
     });
 
-    group('TransformedSchema support', () {
-      test(
-        'converts date schema by unwrapping to underlying string schema',
-        () {
-          final schema = Ack.date();
+    group('CodecSchema support', () {
+      test('converts date codec from input string schema', () {
+        final schema = Ack.date();
 
-          final result = schema.toFirebaseAiSchema();
+        final result = schema.toFirebaseAiSchema();
 
-          expect(result.type, firebase_ai.SchemaType.string);
-          expect(result.format, 'date');
-        },
-      );
+        expect(result.type, firebase_ai.SchemaType.string);
+        expect(result.format, 'date');
+      });
 
-      test(
-        'converts datetime schema by unwrapping to underlying string schema',
-        () {
-          final schema = Ack.datetime();
+      test('converts datetime codec from input string schema', () {
+        final schema = Ack.datetime();
 
-          final result = schema.toFirebaseAiSchema();
+        final result = schema.toFirebaseAiSchema();
 
-          expect(result.type, firebase_ai.SchemaType.string);
-          expect(result.format, 'date-time');
-        },
-      );
+        expect(result.type, firebase_ai.SchemaType.string);
+        expect(result.format, 'date-time');
+      });
 
-      test('converts transformed schema in arrays', () {
+      test('converts codec schema in arrays', () {
         final schema = Ack.list(Ack.date());
 
         final result = schema.toFirebaseAiSchema();
@@ -505,10 +541,10 @@ void main() {
         expect(result.items!.format, 'date');
       });
 
-      test('converts nested TransformedSchema properties correctly', () {
+      test('converts nested CodecSchema properties correctly', () {
         final schema = Ack.object({
           'user': Ack.object({
-            'birthdate': Ack.date(), // TransformedSchema
+            'birthdate': Ack.date(), // CodecSchema<String, DateTime>
           }),
         });
 
@@ -522,7 +558,7 @@ void main() {
         expect(birthdateProp.format, 'date');
       });
 
-      test('converts top-level TransformedSchema properties correctly', () {
+      test('converts top-level CodecSchema properties correctly', () {
         final schema = Ack.object({'timestamp': Ack.datetime()});
 
         final result = schema.toFirebaseAiSchema();
@@ -533,7 +569,7 @@ void main() {
         expect(timestampProp.format, 'date-time');
       });
 
-      test('converts deeply nested TransformedSchema properties correctly', () {
+      test('converts deeply nested CodecSchema properties correctly', () {
         final schema = Ack.object({
           'data': Ack.object({
             'metadata': Ack.object({'createdAt': Ack.date()}),
@@ -959,7 +995,7 @@ void main() {
       });
     });
 
-    group('Type coercion error paths', () {
+    group('Numeric constraint error paths', () {
       test('handles integer min/max constraints', () {
         final schema = Ack.integer().min(0).max(100);
         final result = schema.toFirebaseAiSchema();

@@ -321,7 +321,7 @@ class <Target>SchemaConverter {
       AnyOfSchema() => _convertAnyOf(schema),
       AnySchema() => _convertAny(schema),
       DiscriminatedObjectSchema() => _convertDiscriminated(schema),
-      TransformedSchema() => _handleTransformed(schema),
+      CodecSchema() => _convertCodec(schema),
       _ => throw UnsupportedError(
           'Schema type ${schema.runtimeType} is not supported '
           'for <Target> conversion.',
@@ -496,15 +496,17 @@ class <Target>SchemaConverter {
     );
   }
 
-  static <TargetSchema> _handleTransformed(TransformedSchema schema) {
-    // Option 1: Throw error (safest)
-    throw UnsupportedError(
-      'TransformedSchema cannot be converted to <Target> format. '
-      'Convert the underlying schema instead.',
+  static <TargetSchema> _convertCodec(CodecSchema schema) {
+    // Convert the boundary/input schema. This is appropriate for JSON
+    // Schema-style targets that describe serialized data rather than Dart
+    // runtime objects. If the target must describe runtime/output objects,
+    // throw UnsupportedError here instead.
+    final converted = _convertSchema(schema.inputSchema);
+    return _applyMetadata(
+      converted,
+      description: schema.description,
+      nullable: schema.isNullable,
     );
-
-    // Option 2: Extract and convert underlying schema (if target supports metadata)
-    // return _convertSchema(schema.underlyingSchema);
   }
 
   // ========================================================================
@@ -674,10 +676,10 @@ class <Target>SchemaConverter {
   }
 
   // ========================================================================
-  // Helper Methods - Type Coercion
+  // Helper Methods - Numeric Metadata
   // ========================================================================
 
-  /// Safely converts a value to int, handling num types.
+  /// Safely reads an integer metadata value.
   static int? _asInt(Object? value) {
     if (value == null) return null;
     if (value is int) return value;
@@ -685,7 +687,7 @@ class <Target>SchemaConverter {
     return null;
   }
 
-  /// Safely converts a value to double, handling num types.
+  /// Safely reads a double metadata value.
   static double? _asDouble(Object? value) {
     if (value == null) return null;
     if (value is double) return value;
@@ -712,7 +714,7 @@ class <Target>SchemaConverter {
 3. **Switch expression** - Type-safe routing
 4. **JSON Schema bridge** - Reuse Ack's `toJsonSchema()`
 5. **Helper builders** - Wrap target SDK API
-6. **Type coercion** - Handle num/int/double safely
+6. **Numeric type handling** - Handle num/int/double safely
 
 ---
 
@@ -1323,32 +1325,26 @@ static TargetSchema _convertString(StringSchema schema) {
 
 ## Common Patterns
 
-### Handling TransformedSchema
+### Handling CodecSchema
 
-**Option 1: Reject** (Recommended for most cases)
+**Option 1: Convert Boundary/Input Schema** (Recommended for JSON Schema-style targets)
 ```dart
-if (schema is TransformedSchema) {
-  throw UnsupportedError(
-    'TransformedSchema cannot be converted to <Target> format. '
-    'Convert the underlying schema instead.',
-  );
-}
-```
-
-**Option 2: Extract Underlying** (If target supports metadata overrides)
-```dart
-if (schema is TransformedSchema) {
-  // Extract underlying schema
-  final underlying = schema.underlyingSchema;
-
-  // Convert with metadata from transformed schema
-  final converted = _convertSchema(underlying);
-
-  // Apply metadata overrides
+if (schema is CodecSchema) {
+  final converted = _convertSchema(schema.inputSchema);
   return _applyMetadata(
     converted,
     description: schema.description,
     nullable: schema.isNullable,
+  );
+}
+```
+
+**Option 2: Reject** (If the target describes runtime/output objects)
+```dart
+if (schema is CodecSchema) {
+  throw UnsupportedError(
+    'CodecSchema cannot be converted to <Target> format because <Target> '
+    'describes runtime values instead of serialized boundary values.',
   );
 }
 ```
@@ -1434,10 +1430,10 @@ static TargetSchema _convertAny(AnySchema schema) {
 }
 ```
 
-### Type Coercion Helpers
+### Numeric Metadata Helpers
 
 ```dart
-/// Safely converts a value to int, handling num types.
+/// Safely reads an integer metadata value.
 static int? _asInt(Object? value) {
   if (value == null) return null;
   if (value is int) return value;
@@ -1445,7 +1441,7 @@ static int? _asInt(Object? value) {
   return null;
 }
 
-/// Safely converts a value to double, handling num types.
+/// Safely reads a double metadata value.
 static double? _asDouble(Object? value) {
   if (value == null) return null;
   if (value is double) return value;
@@ -1603,8 +1599,8 @@ class GraphQlSchemaConverter {
 - [ ] Implement main library file with documentation
 - [ ] Implement extension method
 - [ ] Implement converter with all schema types
-- [ ] Add type coercion helpers
-- [ ] Handle edge cases (TransformedSchema, AnySchema, etc.)
+- [ ] Add numeric type handling helpers
+- [ ] Handle edge cases (CodecSchema, AnySchema, etc.)
 
 ### Testing Phase
 - [ ] Write tests for all primitive types

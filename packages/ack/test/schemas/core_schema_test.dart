@@ -4,6 +4,14 @@ import 'package:test/test.dart';
 
 void main() {
   group('Core Schema Features', () {
+    test('deprecated validate alias delegates to safeParse', () {
+      // ignore: deprecated_member_use_from_same_package
+      final result = Ack.string().validate('ok');
+
+      expect(result.isOk, isTrue);
+      expect(result.getOrNull(), 'ok');
+    });
+
     group('isNullable', () {
       test('non-nullable StringSchema should fail on null', () {
         final schema = StringSchema(isNullable: false);

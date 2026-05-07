@@ -73,6 +73,33 @@ void main() {
 
         expect(result, isNotNull);
       });
+
+      test('preserves literal const metadata', () {
+        final schema = Ack.literal('exact');
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'string');
+        expect(result.value['const'], 'exact');
+      });
+
+      test('preserves default metadata', () {
+        final schema = Ack.string().withDefault('fallback');
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'string');
+        expect(result.value['default'], 'fallback');
+      });
+
+      test('preserves duration codec numeric bounds', () {
+        final schema = Ack.duration()
+            .min(Duration(milliseconds: 1500))
+            .max(Duration(seconds: 2));
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'integer');
+        expect(result.value['minimum'], 1500);
+        expect(result.value['maximum'], 2000);
+      });
     });
 
     group('Objects', () {
@@ -247,42 +274,63 @@ void main() {
         final schema = Ack.anyOf([Ack.string(), Ack.integer()]).nullable();
 
         final result = schema.toJsonSchemaBuilder();
-        final outerAnyOf = (result.value['anyOf'] as List)
+        final anyOf = (result.value['anyOf'] as List)
             .map(_schemaFrom)
             .toList(growable: false);
-        expect(outerAnyOf, hasLength(2));
-
-        final unionBranch = outerAnyOf.first;
-        final innerAnyOf = (unionBranch.value['anyOf'] as List)
-            .map(_schemaFrom)
-            .toList(growable: false);
-        expect(innerAnyOf, hasLength(2));
-        expect(outerAnyOf.last.value['type'], 'null');
+        expect(anyOf, hasLength(3));
+        expect(anyOf[0].value['type'], 'string');
+        expect(anyOf[1].value['type'], 'integer');
+        expect(anyOf[2].value['type'], 'null');
       });
 
-      test(
-        'TransformedSchema overrides are applied (description + nullable)',
-        () {
-          final schema = Ack.date().copyWith(
-            description: 'Birth date',
-            isNullable: true,
-          );
+      test('direct converter preserves composition metadata', () {
+        const jsonSchema = JsonSchema(
+          title: 'Flexible value',
+          description: 'String or integer',
+          anyOf: [
+            JsonSchema(type: JsonSchemaType.string),
+            JsonSchema(type: JsonSchemaType.integer),
+          ],
+        );
 
-          final result = schema.toJsonSchemaBuilder();
-          final anyOf = (result.value['anyOf'] as List)
-              .map(_schemaFrom)
-              .toList(growable: false);
+        final result = convertJsonSchemaToBuilder(jsonSchema);
 
-          // First branch should carry description override and date format
-          final dateBranch = anyOf.first;
-          expect(dateBranch.value['description'], 'Birth date');
-          expect(dateBranch.value['format'], 'date');
+        expect(result.value['title'], 'Flexible value');
+        expect(result.value['description'], 'String or integer');
+        expect(result.value['anyOf'], hasLength(2));
+      });
 
-          // Second branch represents nullability
-          final nullBranch = anyOf.last;
-          expect(nullBranch.value['type'], 'null');
-        },
-      );
+      test('direct converter preserves explicit null const and default', () {
+        final result = convertJsonSchemaToBuilder(
+          const JsonSchema(hasConstValue: true, hasDefaultValue: true),
+        );
+
+        expect(result.value.containsKey('const'), isTrue);
+        expect(result.value['const'], isNull);
+        expect(result.value.containsKey('default'), isTrue);
+        expect(result.value['default'], isNull);
+      });
+
+      test('CodecSchema overrides are applied (description + nullable)', () {
+        final schema = Ack.date().copyWith(
+          description: 'Birth date',
+          isNullable: true,
+        );
+
+        final result = schema.toJsonSchemaBuilder();
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
+
+        // First branch should carry description override and date format
+        final dateBranch = anyOf.first;
+        expect(dateBranch.value['description'], 'Birth date');
+        expect(dateBranch.value['format'], 'date');
+
+        // Second branch represents nullability
+        final nullBranch = anyOf.last;
+        expect(nullBranch.value['type'], 'null');
+      });
     });
 
     group('oneOf composition', () {

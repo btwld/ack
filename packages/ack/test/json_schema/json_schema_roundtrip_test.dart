@@ -628,19 +628,50 @@ void main() {
       expect(json.containsKey('nullable'), isFalse);
     });
 
-    test('oneOf + nullable without null branch adds null schema', () {
+    test('oneOf + nullable wraps composition instead of adding a branch', () {
       final schema = JsonSchema(
         oneOf: [JsonSchema(type: JsonSchemaType.string)],
         nullable: true,
       );
       final json = schema.toJson();
 
-      // Verify null branch was added to oneOf
-      final oneOf = json['oneOf'] as List;
-      expect(oneOf, hasLength(2));
-      expect(oneOf[1], equals({'type': 'null'}));
-      // Verify nullable property is NOT emitted
+      final anyOf = json['anyOf'] as List;
+      expect(anyOf, hasLength(2));
+      expect(anyOf[0], {
+        'oneOf': [
+          {'type': 'string'},
+        ],
+      });
+      expect(anyOf[1], equals({'type': 'null'}));
       expect(json.containsKey('nullable'), isFalse);
+    });
+
+    test('oneOf nullable branch is not duplicated by top-level nullable', () {
+      final schema = JsonSchema(
+        oneOf: [JsonSchema(type: JsonSchemaType.string, nullable: true)],
+        nullable: true,
+      );
+      final json = schema.toJson();
+
+      final anyOf = json['anyOf'] as List;
+      expect(anyOf, hasLength(2));
+      final nonNullSchema = anyOf[0] as Map<String, Object?>;
+      final oneOf = nonNullSchema['oneOf'] as List;
+      expect(oneOf, hasLength(1));
+      expect(anyOf[1], equals({'type': 'null'}));
+      expect(json.containsKey('nullable'), isFalse);
+    });
+
+    test('oneOf null branch is parsed as nullable', () {
+      final schema = JsonSchema.fromJson({
+        'oneOf': [
+          {'type': 'string'},
+          {'type': 'null'},
+        ],
+      });
+
+      expect(schema.nullable, isTrue);
+      expect(schema.acceptsNull, isTrue);
     });
 
     test('anyOf with existing null branch does not duplicate', () {
@@ -668,6 +699,85 @@ void main() {
       expect(anyOf, hasLength(2));
       expect(anyOf[0], equals({'type': 'string'}));
       expect(anyOf[1], equals({'type': 'null'}));
+    });
+
+    test('type with oneOf and nullable wraps the whole non-null schema', () {
+      final schema = JsonSchema(
+        type: JsonSchemaType.string,
+        oneOf: [
+          JsonSchema(format: 'ipv4'),
+          JsonSchema(format: 'ipv6'),
+        ],
+        nullable: true,
+      );
+
+      final json = schema.toJson();
+
+      final anyOf = json['anyOf'] as List;
+      expect(anyOf, hasLength(2));
+      expect(anyOf[0], {
+        'type': 'string',
+        'oneOf': [
+          {'format': 'ipv4'},
+          {'format': 'ipv6'},
+        ],
+      });
+      expect(anyOf[1], {'type': 'null'});
+    });
+  });
+
+  group('JsonSchema Round-Trip - Null-valued annotations', () {
+    test('explicit const null round-trips', () {
+      final schema = JsonSchema.fromJson({'const': null});
+
+      expect(schema.hasConstValue, isTrue);
+      expect(schema.constValue, isNull);
+      expect(schema.toJson(), equals({'const': null}));
+    });
+
+    test('explicit default null round-trips', () {
+      final schema = JsonSchema.fromJson({'default': null});
+
+      expect(schema.hasDefaultValue, isTrue);
+      expect(schema.defaultValue, isNull);
+      expect(schema.toJson(), equals({'default': null}));
+    });
+
+    test('constructor can represent explicit const null', () {
+      const schema = JsonSchema(hasConstValue: true);
+
+      expect(schema.toJson(), equals({'const': null}));
+    });
+
+    test('copyWith can set explicit null annotations', () {
+      const schema = JsonSchema(
+        type: JsonSchemaType.string,
+        constValue: 'fixed',
+        defaultValue: 'fallback',
+      );
+
+      final copy = schema.copyWith(constValue: null, defaultValue: null);
+
+      expect(copy.hasConstValue, isTrue);
+      expect(copy.hasDefaultValue, isTrue);
+      expect(copy.toJson(), {'type': 'string', 'const': null, 'default': null});
+    });
+
+    test('copyWith clears hidden annotation values when flags are false', () {
+      const schema = JsonSchema(
+        type: JsonSchemaType.string,
+        constValue: 'fixed',
+        defaultValue: 'fallback',
+      );
+
+      final copy = schema.copyWith(
+        hasConstValue: false,
+        hasDefaultValue: false,
+      );
+
+      expect(copy.constValue, isNull);
+      expect(copy.defaultValue, isNull);
+      expect(copy.toJson(), equals({'type': 'string'}));
     });
   });
 

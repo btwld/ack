@@ -18,7 +18,9 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any value.
-- `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`: Creates a discriminated union schema. Branches may be plain `ObjectSchema` or transformed schemas whose base is an `ObjectSchema`.
+- `Ack.instance<T>()`: Creates an `InstanceSchema<T>` for validating runtime objects by type.
+- `Ack.codec<I, O>(AckSchema<I> inputSchema, AckSchema<O> outputSchema, {required O Function(I) decode, required I Function(O) encode})`: Creates a bidirectional codec between boundary and runtime types.
+- `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`: Creates a discriminated union schema. Branches may be plain `ObjectSchema` or codec schemas whose input side is an `ObjectSchema`.
 
 ## `AckSchema<T>` (Base Class)
 
@@ -37,17 +39,13 @@ Base class for all schema types.
 - `AckSchema<T> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
 - `AckSchema<T> describe(String description)`: Adds a description for documentation and JSON Schema generation.
 - `AckSchema<T> withDefault(T value)`: Sets a default value when input is `null`.
-- `StringSchema strictParsing({bool value = true})`: Enables strict parsing for strings.
-- `IntegerSchema strictParsing({bool value = true})`: Enables strict parsing for integers.
-- `DoubleSchema strictParsing({bool value = true})`: Enables strict parsing for doubles.
-- `BooleanSchema strictParsing({bool value = true})`: Enables strict parsing for booleans.
 
 ### Custom Validation Methods
 
 - `AckSchema<T> constrain(Constraint<T> constraint, {String? message})`: Applies a custom validation constraint.
 - `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint (alias for `constrain`).
 - `AckSchema<T> refine(bool Function(T) validate, {String message})`: Adds custom validation logic with an optional custom error message.
-- `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values to a different type.
+- `CodecSchema<T, R> transform<R extends Object>(R Function(T) transformer)`: Creates a one-way codec that transforms validated non-null values to a different type.
 
 ### Utility Methods
 
@@ -117,7 +115,7 @@ Schemas for validating numbers. See [Number Validation](../core-concepts/validat
 
 ## `BooleanSchema`
 
-Schema for validating booleans. Validates `true` and `false` values, with optional type coercion from strings and numbers.
+Schema for validating booleans. Validates only `true` and `false` boolean values.
 
 ## `ListSchema<T>`
 
@@ -261,11 +259,12 @@ Schema that accepts any value without validation.
 - Created using `Ack.any()`
 - Useful for gradual migration or maximum flexibility
 
-### `TransformedSchema<T, R>`
+### `CodecSchema<I, O>`
 
-Schema that transforms validated values.
+Schema that converts between boundary values and runtime values.
 
-- Created using `schema.transform<R>(R Function(T?) transformer)`
+- Created as a one-way codec using `schema.transform<R>(R Function(T) transformer)`
+- Created as a bidirectional codec using `Ack.codec<I, O>(...)`
 
 ### Optional Schemas
 

@@ -17,15 +17,15 @@ JsonSchema _convert(AckSchema schema) {
   final nullableFlag = schema.isNullable;
 
   if (schema is CodecSchema) {
-    final base = _convert(schema.inputSchema);
+    final base = _copyScalarMetadata(_convert(schema.inputSchema), effective);
     return base.copyWith(
       description: schema.description ?? base.description,
-      nullable: nullableFlag || base.nullable == true,
+      nullable: nullableFlag,
     );
   }
 
   if (schema is DefaultSchema) {
-    final base = _convert(schema.inner);
+    final base = _copyScalarMetadata(_convert(schema.inner), effective);
     return base.copyWith(
       description: schema.description ?? base.description,
       nullable: nullableFlag || base.nullable == true,
@@ -40,7 +40,7 @@ JsonSchema _convert(AckSchema schema) {
     EnumSchema() => _enum(schema, effective, nullableFlag),
     ListSchema() => _array(schema, effective, nullableFlag),
     ObjectSchema() => _object(schema, effective, nullableFlag),
-    AnyOfSchema() => _anyOf(schema),
+    AnyOfSchema() => _anyOf(schema, effective),
     AnySchema() => _any(schema, effective, nullableFlag),
     DiscriminatedObjectSchema() => _discriminated(
       schema,
@@ -55,16 +55,23 @@ JsonSchema _convert(AckSchema schema) {
 
 JsonSchema _string(JsonSchema json, bool nullableFlag) {
   final isEnum = json.enumValues != null && json.enumValues!.isNotEmpty;
-  return JsonSchema(
-    type: JsonSchemaType.string,
-    format: json.format,
-    description: json.description,
-    title: json.title,
-    enumValues: isEnum ? json.enumValues : null,
-    minLength: json.minLength,
-    maxLength: json.maxLength,
-    pattern: json.pattern,
-    nullable: nullableFlag,
+  return _copyCompositionMetadata(
+    JsonSchema(
+      type: JsonSchemaType.string,
+      format: json.format,
+      description: json.description,
+      title: json.title,
+      enumValues: isEnum ? json.enumValues : null,
+      constValue: json.constValue,
+      hasConstValue: json.hasConstValue,
+      defaultValue: json.defaultValue,
+      hasDefaultValue: json.hasDefaultValue,
+      minLength: json.minLength,
+      maxLength: json.maxLength,
+      pattern: json.pattern,
+      nullable: nullableFlag,
+    ),
+    json,
   );
 }
 
@@ -78,6 +85,10 @@ JsonSchema _integer(JsonSchema json, bool nullableFlag) {
     exclusiveMinimum: json.exclusiveMinimum?.toInt(),
     exclusiveMaximum: json.exclusiveMaximum?.toInt(),
     multipleOf: json.multipleOf?.toInt(),
+    constValue: json.constValue,
+    hasConstValue: json.hasConstValue,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
@@ -92,6 +103,10 @@ JsonSchema _number(JsonSchema json, bool nullableFlag) {
     exclusiveMinimum: json.exclusiveMinimum,
     exclusiveMaximum: json.exclusiveMaximum,
     multipleOf: json.multipleOf,
+    constValue: json.constValue,
+    hasConstValue: json.hasConstValue,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
@@ -101,6 +116,10 @@ JsonSchema _boolean(JsonSchema json, bool nullableFlag) {
     type: JsonSchemaType.boolean,
     description: json.description,
     title: json.title,
+    constValue: json.constValue,
+    hasConstValue: json.hasConstValue,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
@@ -112,6 +131,8 @@ JsonSchema _enum(EnumSchema schema, JsonSchema json, bool nullableFlag) {
     description: json.description,
     title: json.title,
     enumValues: values,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
@@ -126,6 +147,8 @@ JsonSchema _array(ListSchema schema, JsonSchema json, bool nullableFlag) {
     minItems: json.minItems,
     maxItems: json.maxItems,
     uniqueItems: json.uniqueItems,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
@@ -157,16 +180,21 @@ JsonSchema _object(ObjectSchema schema, JsonSchema json, bool nullableFlag) {
     maxProperties: json.maxProperties,
     additionalPropertiesSchema: json.additionalPropertiesSchema,
     additionalPropertiesAllowed: json.additionalPropertiesAllowed,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
 
-JsonSchema _anyOf(AnyOfSchema schema) {
+JsonSchema _anyOf(AnyOfSchema schema, JsonSchema json) {
   final branches = schema.schemas.map(_convert).toList(growable: false);
   return JsonSchema(
     anyOf: branches,
     nullable: schema.isNullable,
-    description: schema.description,
+    description: schema.description ?? json.description,
+    title: json.title,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
   );
 }
 
@@ -189,6 +217,8 @@ JsonSchema _any(AnySchema schema, JsonSchema json, bool nullableFlag) {
     anyOf: [...primitives, arrayBranch],
     nullable: nullableFlag,
     description: description,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
   );
 }
 
@@ -234,6 +264,7 @@ JsonSchema _discriminated(
       discriminatorKey: JsonSchema(
         type: JsonSchemaType.string,
         enumValues: [label],
+        constValue: label,
       ),
     };
     final required = <String>[
@@ -254,6 +285,9 @@ JsonSchema _discriminated(
     oneOf: branches,
     discriminator: JsonSchemaDiscriminator(propertyName: discriminatorKey),
     description: schema.description ?? json.description,
+    title: json.title,
+    defaultValue: json.defaultValue,
+    hasDefaultValue: json.hasDefaultValue,
     nullable: nullableFlag,
   );
 }
@@ -270,7 +304,58 @@ JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
       description: base.description ?? jsonSchema.description,
       title: base.title ?? jsonSchema.title,
       format: base.format ?? jsonSchema.format,
+      constValue: base.hasConstValue ? base.constValue : jsonSchema.constValue,
+      hasConstValue: base.hasConstValue || jsonSchema.hasConstValue,
+      defaultValue: base.hasDefaultValue
+          ? base.defaultValue
+          : jsonSchema.defaultValue,
+      hasDefaultValue: base.hasDefaultValue || jsonSchema.hasDefaultValue,
     );
   }
   return jsonSchema;
+}
+
+JsonSchema _copyCompositionMetadata(JsonSchema base, JsonSchema source) {
+  return base.copyWith(
+    allOf: source.allOf ?? base.allOf,
+    anyOf: source.anyOf ?? base.anyOf,
+    oneOf: source.oneOf ?? base.oneOf,
+    discriminator: source.discriminator ?? base.discriminator,
+  );
+}
+
+JsonSchema _copyScalarMetadata(JsonSchema base, JsonSchema source) {
+  return base.copyWith(
+    format: source.format ?? base.format,
+    title: source.title ?? base.title,
+    description: source.description ?? base.description,
+    enumValues: source.enumValues ?? base.enumValues,
+    constValue: source.hasConstValue ? source.constValue : base.constValue,
+    hasConstValue: source.hasConstValue || base.hasConstValue,
+    defaultValue: source.hasDefaultValue
+        ? source.defaultValue
+        : base.defaultValue,
+    hasDefaultValue: source.hasDefaultValue || base.hasDefaultValue,
+    minItems: source.minItems ?? base.minItems,
+    maxItems: source.maxItems ?? base.maxItems,
+    minProperties: source.minProperties ?? base.minProperties,
+    maxProperties: source.maxProperties ?? base.maxProperties,
+    minLength: source.minLength ?? base.minLength,
+    maxLength: source.maxLength ?? base.maxLength,
+    pattern: source.pattern ?? base.pattern,
+    minimum: source.minimum ?? base.minimum,
+    maximum: source.maximum ?? base.maximum,
+    exclusiveMinimum: source.exclusiveMinimum ?? base.exclusiveMinimum,
+    exclusiveMaximum: source.exclusiveMaximum ?? base.exclusiveMaximum,
+    multipleOf: source.multipleOf ?? base.multipleOf,
+    uniqueItems: source.uniqueItems ?? base.uniqueItems,
+    allOf: source.allOf ?? base.allOf,
+    anyOf: source.anyOf ?? base.anyOf,
+    oneOf: source.oneOf ?? base.oneOf,
+    discriminator: source.discriminator ?? base.discriminator,
+    additionalPropertiesSchema:
+        source.additionalPropertiesSchema ?? base.additionalPropertiesSchema,
+    additionalPropertiesAllowed:
+        source.additionalPropertiesAllowed ?? base.additionalPropertiesAllowed,
+  );
 }

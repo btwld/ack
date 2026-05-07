@@ -144,11 +144,11 @@ void main() {
 
   group('CodecSchema (.transform) Default Values', () {
     test('should apply output default when input is null', () {
-      final transformedSchema = Ack.string()
+      final codecSchema = Ack.string()
           .transform<String>((value) => value.toUpperCase())
           .withDefault('DEFAULT_OUTPUT');
 
-      final result = transformedSchema.safeParse(null);
+      final result = codecSchema.safeParse(null);
 
       expect(result.isOk, isTrue);
       expect(
@@ -169,7 +169,7 @@ void main() {
       expect(result.getOrNull(), equals('HELLO'));
     });
 
-    test('nullable transformed schema with null input and no default', () {
+    test('nullable codec schema with null input and no default', () {
       final schema = Ack.string().nullable().transform(
         (value) => value.toUpperCase(),
       );

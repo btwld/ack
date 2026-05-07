@@ -68,12 +68,23 @@ enum SchemaType {
   };
 }
 
+/// Validates [value] against [schema] and then runs the schema's
+/// `encodeBoundary`. The signature uses `Object?` rather than a generic
+/// `T` because callers (object / list / anyOf / discriminated) iterate over
+/// heterogeneous schema collections where a per-call `T` adds nothing.
+///
+/// Type safety is preserved at runtime by the validate-first step:
+/// `schema._validateRuntime(value)` enforces `value is DartType` before
+/// `schema.encodeBoundary(validated)` is invoked, so the encode hook always
+/// receives the type its override expects. This is also what makes the helper
+/// the symmetric counterpart of `decodeBoundary`, whose base implementation
+/// validates the boundary input internally (schema.dart `decodeBoundary`).
 SchemaResult<Object> _encodeWithSchema(
   AckSchema schema,
   Object? value,
   SchemaContext context,
 ) {
-  final result = schema.validate(value, context);
+  final result = schema._validateRuntime(value, context);
   if (result.isFail) return result.castFail();
 
   final validated = result.getOrNull();
@@ -269,7 +280,10 @@ sealed class AckSchema<DartType extends Object> {
   /// Implementations validate runtime values only. Boundary conversion belongs
   /// to [decodeBoundary] and [encodeBoundary], which only codecs override.
   @protected
-  SchemaResult<DartType> validate(Object? value, SchemaContext context) {
+  SchemaResult<DartType> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
       return failNull(context);
@@ -285,7 +299,7 @@ sealed class AckSchema<DartType extends Object> {
   /// Parse-side boundary hook. Non-codec schemas validate the value directly.
   @protected
   SchemaResult<DartType> decodeBoundary(Object? input, SchemaContext context) {
-    return validate(input, context);
+    return _validateRuntime(input, context);
   }
 
   /// Encode-side boundary hook. Non-codec schemas return the validated value.
@@ -335,7 +349,7 @@ sealed class AckSchema<DartType extends Object> {
       debugName: debugName,
       operation: SchemaOperation.encode,
     );
-    final result = validate(value, context);
+    final result = _validateRuntime(value, context);
     return switch (result) {
       Ok(value: final typedValue) =>
         typedValue == null
@@ -374,6 +388,11 @@ sealed class AckSchema<DartType extends Object> {
       );
     }
   }
+
+  /// Legacy alias for [safeParse].
+  @Deprecated('Use safeParse(...) instead.')
+  SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
+      safeParse(value, debugName: debugName);
 
   SchemaContext _createRootContext(
     Object? value, {

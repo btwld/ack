@@ -35,12 +35,14 @@ final class ObjectSchema extends AckSchema<MapValue>
 
   @override
   @protected
-  SchemaResult<MapValue> validate(Object? value, SchemaContext context) =>
-      _validateProperties(
-        value,
-        context,
-        (schema, propertyValue, ctx) => schema.validate(propertyValue, ctx),
-      );
+  SchemaResult<MapValue> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) => _validateProperties(
+    value,
+    context,
+    (schema, propertyValue, ctx) => schema._validateRuntime(propertyValue, ctx),
+  );
 
   @override
   @protected

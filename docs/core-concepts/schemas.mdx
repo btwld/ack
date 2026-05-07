@@ -41,9 +41,6 @@ if (result.isOk) {
 // Basic string
 final nameSchema = Ack.string();
 
-// Enable strict type checking (no coercion)
-final strictNameSchema = Ack.string().strictParsing();
-
 // With constraints
 final usernameSchema = Ack.string()
   .minLength(3)
@@ -156,7 +153,7 @@ Validate against multiple possible schemas:
 ```dart
 // String or integer
 final idSchema = Ack.anyOf([
-  Ack.string().strictParsing(),
+  Ack.string(),
   Ack.integer(),
 ]);
 
@@ -439,7 +436,7 @@ final data = result.getOrElse(() => defaultValue); // default if failed
 
 Explore related topics to deepen your understanding:
 
-- **[Validation Rules](./validation.mdx)**: Master all built-in constraints and strict parsing
+- **[Validation Rules](./validation.mdx)**: Master all built-in constraints and boundary conversion patterns
 - **[Error Handling](./error-handling.mdx)**: Handle validation errors effectively
 - **[Custom Validation](../guides/custom-validation.mdx)**: Create custom constraints and refinements
 - **[JSON Serialization](./json-serialization.mdx)**: Validate and transform JSON data

@@ -34,13 +34,13 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
   @override
   @protected
-  SchemaResult<O> validate(Object? value, SchemaContext context) {
+  SchemaResult<O> _validateRuntime(Object? value, SchemaContext context) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
       return failNull(context);
     }
 
-    final outputCheck = outputSchema.validate(value, context);
+    final outputCheck = outputSchema._validateRuntime(value, context);
     if (outputCheck.isFail) return outputCheck.castFail();
 
     final outputValue = outputCheck.getOrThrow()!;
@@ -79,7 +79,7 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    final outputResult = outputSchema.validate(decoded, context);
+    final outputResult = outputSchema._validateRuntime(decoded, context);
     if (outputResult.isFail) return outputResult.castFail();
     final outputValue = outputResult.getOrThrow()!;
     return applyConstraintsAndRefinements(outputValue, context);
@@ -109,13 +109,11 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // Re-validate the encoded boundary value against inputSchema to catch
-    // encoders that produce values violating the input schema's constraints.
-    // Use validate (not decodeBoundary) so a codec-of-codec inputSchema does
-    // not re-run its decoder on the already-runtime-typed encoded value.
-    final inputCheck = inputSchema.validate(encoded, context);
-    if (inputCheck.isFail) return inputCheck.castFail();
-    return SchemaResult.ok(encoded);
+    // Recursively push the encoded value through inputSchema's encode pipeline.
+    // _encodeWithSchema runs validate + encodeBoundary, so when inputSchema is
+    // itself a codec (or contains nested codecs) the inner encoder runs and we
+    // get fully boundary-shaped output, preserving parse(encode(value)).
+    return _encodeWithSchema(inputSchema, encoded, context);
   }
 
   @override
@@ -141,7 +139,10 @@ final class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final base = inputSchema.toJsonSchema();
+    final base = _applySchemaNullability(
+      Map<String, Object?>.of(inputSchema.toJsonSchema()),
+      isNullable,
+    );
     base[jsonSchemaMarker] = true;
     if (description != null) {
       base['description'] = description;

@@ -22,7 +22,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T> validate(Object? value, SchemaContext context) {
+  SchemaResult<T> _validateRuntime(Object? value, SchemaContext context) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
       return failNull(context);
@@ -49,7 +49,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         final objectCheck = _requireObjectBackedBranch(selected, branchCtx);
         if (objectCheck != null) return objectCheck;
 
-        final result = selected.validate(mapValue, branchCtx);
+        final result = selected._validateRuntime(mapValue, branchCtx);
         if (result.isFail) return result.castFail();
         return applyConstraintsAndRefinements(result.getOrThrow()!, context);
       });
@@ -120,7 +120,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
     for (final entry in schemas.entries) {
       final branchCtx = _branchContext(entry.value, value, entry.key, context);
-      final result = entry.value.validate(value, branchCtx);
+      final result = entry.value._validateRuntime(value, branchCtx);
       if (result.isOk) {
         return applyConstraintsAndRefinements(result.getOrThrow()!, context);
       }
@@ -141,7 +141,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     }
 
     if (input is! Map) {
-      return validate(input, context);
+      return _validateRuntime(input, context);
     }
 
     final mapValue = _toMapValue(input);

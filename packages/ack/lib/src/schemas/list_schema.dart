@@ -28,12 +28,14 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
   @override
   @protected
-  SchemaResult<List<V>> validate(Object? value, SchemaContext context) =>
-      _validateChildren(
-        value,
-        context,
-        (item, ctx) => itemSchema.validate(item, ctx),
-      );
+  SchemaResult<List<V>> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) => _validateChildren(
+    value,
+    context,
+    (item, ctx) => itemSchema._validateRuntime(item, ctx),
+  );
 
   @override
   @protected

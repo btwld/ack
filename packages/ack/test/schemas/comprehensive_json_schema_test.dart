@@ -102,7 +102,13 @@ void main() {
         });
 
         test('should parse integer strings with explicit codec', () {
-          final schema = Ack.intFromString();
+          final schema = Ack.codec<String, int>(
+            Ack.string(),
+            Ack.instance<int>(),
+            decode: int.parse,
+            encode: (i) => i.toString(),
+          );
+
           expect(schema.safeParse('42').getOrNull(), equals(42));
           expect(schema.safeParse('not-a-number').isOk, isFalse);
         });
@@ -139,7 +145,13 @@ void main() {
         });
 
         test('should parse double strings with explicit codec', () {
-          final schema = Ack.doubleFromString();
+          final schema = Ack.codec<String, double>(
+            Ack.string(),
+            Ack.instance<double>(),
+            decode: double.parse,
+            encode: (d) => d.toString(),
+          );
+
           expect(schema.safeParse('3.14').getOrNull(), equals(3.14));
           expect(schema.safeParse('not-a-number').isOk, isFalse);
         });
@@ -155,84 +167,31 @@ void main() {
           expect(schema.safeParse(1).isOk, isFalse);
         });
 
-        group('Case-insensitive string parsing codec', () {
-          test('should parse uppercase strings correctly', () {
-            final schema = Ack.boolFromString();
-            expect(schema.safeParse('TRUE').isOk, isTrue);
-            expect(schema.safeParse('TRUE').getOrNull(), isTrue);
-            expect(schema.safeParse('FALSE').isOk, isTrue);
-            expect(schema.safeParse('FALSE').getOrNull(), isFalse);
+        group('Lowercase string parsing codec', () {
+          test('should parse lowercase strings correctly', () {
+            final schema = Ack.codec<String, bool>(
+              Ack.string().matches(r'^(?:true|false)$'),
+              Ack.instance<bool>(),
+              decode: bool.parse,
+              encode: (b) => b.toString(),
+            );
+
+            expect(schema.safeParse('true').getOrNull(), isTrue);
+            expect(schema.safeParse('false').getOrNull(), isFalse);
           });
-
-          test('should parse mixed case strings correctly', () {
-            final schema = Ack.boolFromString();
-            expect(schema.safeParse('True').isOk, isTrue);
-            expect(schema.safeParse('True').getOrNull(), isTrue);
-            expect(schema.safeParse('False').isOk, isTrue);
-            expect(schema.safeParse('False').getOrNull(), isFalse);
-            expect(schema.safeParse('tRuE').isOk, isTrue);
-            expect(schema.safeParse('tRuE').getOrNull(), isTrue);
-            expect(schema.safeParse('fAlSe').isOk, isTrue);
-            expect(schema.safeParse('fAlSe').getOrNull(), isFalse);
-          });
-
-          test(
-            'should maintain case-insensitive behavior after optimization',
-            () {
-              final schema = Ack.boolFromString();
-              // Test various case combinations that would break if toLowerCase() optimization fails
-              final trueCases = [
-                'true',
-                'TRUE',
-                'True',
-                'tRuE',
-                'TrUe',
-                'TRue',
-                'trUE',
-                'TRUe',
-              ];
-              final falseCases = [
-                'false',
-                'FALSE',
-                'False',
-                'fAlSe',
-                'FaLsE',
-                'FALse',
-                'falSE',
-                'FALsE',
-              ];
-
-              for (final testCase in trueCases) {
-                expect(
-                  schema.safeParse(testCase).isOk,
-                  isTrue,
-                  reason: 'Failed for: $testCase',
-                );
-                expect(
-                  schema.safeParse(testCase).getOrNull(),
-                  isTrue,
-                  reason: 'Wrong value for: $testCase',
-                );
-              }
-
-              for (final testCase in falseCases) {
-                expect(
-                  schema.safeParse(testCase).isOk,
-                  isTrue,
-                  reason: 'Failed for: $testCase',
-                );
-                expect(
-                  schema.safeParse(testCase).getOrNull(),
-                  isFalse,
-                  reason: 'Wrong value for: $testCase',
-                );
-              }
-            },
-          );
 
           test('should reject invalid string values', () {
-            final schema = Ack.boolFromString();
+            final schema = Ack.codec<String, bool>(
+              Ack.string().matches(r'^(?:true|false)$'),
+              Ack.instance<bool>(),
+              decode: bool.parse,
+              encode: (b) => b.toString(),
+            );
+
             final invalidCases = [
+              'TRUE',
+              'False',
+              ' true ',
               'yes',
               'no',
               '1',
@@ -252,19 +211,14 @@ void main() {
             }
           });
 
-          test('should handle whitespace-padded valid values', () {
-            final schema = Ack.boolFromString();
-            expect(schema.safeParse(' true').isOk, isTrue);
-            expect(schema.safeParse('true ').isOk, isTrue);
-            expect(schema.safeParse('  true  ').isOk, isTrue);
-            expect(schema.safeParse(' false').isOk, isTrue);
-            expect(schema.safeParse('false ').isOk, isTrue);
-            expect(schema.safeParse(' TRUE ').isOk, isTrue);
-            expect(schema.safeParse(' FALSE ').isOk, isTrue);
-          });
-
           test('should handle empty and whitespace-only strings', () {
-            final schema = Ack.boolFromString();
+            final schema = Ack.codec<String, bool>(
+              Ack.string().matches(r'^(?:true|false)$'),
+              Ack.instance<bool>(),
+              decode: bool.parse,
+              encode: (b) => b.toString(),
+            );
+
             expect(schema.safeParse('').isOk, isFalse);
             expect(schema.safeParse(' ').isOk, isFalse);
             expect(schema.safeParse('  ').isOk, isFalse);

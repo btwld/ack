@@ -37,22 +37,22 @@ final schema = Ack.string().refine((s) => s.startsWith('ACK_'));
 final result = schema.safeParse(data);
 ```
 
-### 2. Default Values Not Applied
+### 2. Default Values Are Metadata
 
-Defaults are ACK-only. Apply after parsing.
+Default values are emitted as JSON Schema `default` metadata when they can be serialized. JSON Schema validators treat `default` as an annotation; they do not apply it to input data. Use ACK parsing when you need defaults applied.
 
 ```dart
 final schema = Ack.string().withDefault('default');
-schema.toJsonSchemaBuilder(); // Default not included in JSON Schema
+schema.toJsonSchemaBuilder(); // Includes default metadata
 ```
 
-### 3. TransformedSchema Limitations
+### 3. Codec Schema Conversion
 
-Transformed schemas convert the underlying schema. Metadata overrides may not be fully preserved due to json_schema_builder's immutable Schema objects.
+Codec schemas convert their boundary/input schema. ACK metadata overrides such as description and nullability are preserved where they can be expressed in JSON Schema.
 
 ```dart
-final dateSchema = Ack.date(); // TransformedSchema
-final jsonSchema = dateSchema.toJsonSchemaBuilder(); // Converts underlying string schema
+final dateSchema = Ack.date(); // CodecSchema<String, DateTime>
+final jsonSchema = dateSchema.toJsonSchemaBuilder(); // Converts the input string schema
 ```
 
 ## Usage

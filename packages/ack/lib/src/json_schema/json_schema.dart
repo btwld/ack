@@ -67,8 +67,9 @@ class JsonSchemaDiscriminator {
 @immutable
 class JsonSchema {
   static const _nullSchema = <String, Object?>{'type': 'null'};
+  static const Object _unsetCopyValue = Object();
 
-  /// Serializes a composition (anyOf/oneOf) to JSON, adding null branch if needed.
+  /// Serializes a composition to JSON, adding a null branch if needed.
   static List<Map<String, Object?>>? _serializeComposition(
     List<JsonSchema>? schemas,
     bool addNullBranch,
@@ -81,6 +82,9 @@ class JsonSchema {
     return list;
   }
 
+  static bool _hasNullBranch(List<JsonSchema>? schemas) =>
+      schemas?.any((s) => s.type == JsonSchemaType.null_) ?? false;
+
   const JsonSchema({
     this.type,
     this.format,
@@ -88,6 +92,10 @@ class JsonSchema {
     this.description,
     this.nullable,
     this.enumValues,
+    Object? constValue,
+    bool? hasConstValue,
+    Object? defaultValue,
+    bool? hasDefaultValue,
     this.items,
     this.properties,
     this.required,
@@ -111,7 +119,13 @@ class JsonSchema {
     this.uniqueItems,
     this.additionalPropertiesSchema,
     this.additionalPropertiesAllowed,
-  }) : assert(
+  }) : hasConstValue = hasConstValue ?? constValue != null,
+       constValue = (hasConstValue ?? constValue != null) ? constValue : null,
+       hasDefaultValue = hasDefaultValue ?? defaultValue != null,
+       defaultValue = (hasDefaultValue ?? defaultValue != null)
+           ? defaultValue
+           : null,
+       assert(
          additionalPropertiesSchema == null ||
              additionalPropertiesAllowed == null,
          'Cannot set both schema and boolean for additionalProperties',
@@ -127,6 +141,25 @@ class JsonSchema {
   final String? description;
   final bool? nullable;
   final List<Object?>? enumValues;
+
+  /// JSON Schema `const` keyword.
+  ///
+  /// Named `constValue` because `const` is a Dart reserved word. Use
+  /// [hasConstValue] when representing an explicit JSON `const: null`.
+  final Object? constValue;
+
+  /// Whether [constValue] should be emitted even when it is `null`.
+  final bool hasConstValue;
+
+  /// JSON Schema `default` annotation keyword.
+  ///
+  /// Named `defaultValue` because `default` is a Dart reserved word. Use
+  /// [hasDefaultValue] when representing an explicit JSON `default: null`.
+  final Object? defaultValue;
+
+  /// Whether [defaultValue] should be emitted even when it is `null`.
+  final bool hasDefaultValue;
+
   final JsonSchema? items;
   final Map<String, JsonSchema>? properties;
   final List<String>? required;
@@ -166,6 +199,8 @@ class JsonSchema {
     addIfNotNull('title', title);
     addIfNotNull('description', description);
     addIfNotNull('enum', enumValues);
+    if (hasConstValue) map['const'] = constValue;
+    if (hasDefaultValue) map['default'] = defaultValue;
     addIfNotNull('items', items?.toJson());
 
     if (properties != null) {
@@ -177,11 +212,16 @@ class JsonSchema {
 
     if (allOf != null) map['allOf'] = allOf!.map((s) => s.toJson()).toList();
 
-    // Handle anyOf/oneOf with nullable - add null branch if needed (JSON Schema style)
-    final anyOfJson = _serializeComposition(anyOf, nullable == true);
+    // Handle nullable composition in JSON Schema form.
+    final needsNullableWrapper = nullable == true && _needsNullableWrapper;
+
+    final anyOfJson = _serializeComposition(
+      anyOf,
+      nullable == true && !needsNullableWrapper,
+    );
     if (anyOfJson != null) map['anyOf'] = anyOfJson;
 
-    final oneOfJson = _serializeComposition(oneOf, nullable == true);
+    final oneOfJson = _serializeComposition(oneOf, false);
     if (oneOfJson != null) map['oneOf'] = oneOfJson;
 
     addIfNotNull('minItems', minItems);
@@ -205,14 +245,11 @@ class JsonSchema {
       map['additionalProperties'] = additionalPropertiesAllowed;
     }
 
-    // Handle simple type + nullable: wrap in anyOf with null branch
-    if (nullable == true &&
-        type != null &&
-        map['anyOf'] == null &&
-        map['oneOf'] == null) {
-      final base = Map<String, Object?>.from(map);
+    if (needsNullableWrapper && !_alreadyAcceptsNullWithoutWrapper) {
+      final nonNullSchema = Map<String, Object?>.from(map)..remove('default');
       return {
-        'anyOf': [base, _nullSchema],
+        'anyOf': [nonNullSchema, _nullSchema],
+        if (hasDefaultValue) 'default': defaultValue,
       };
     }
 
@@ -286,9 +323,13 @@ class JsonSchema {
       }
     }
 
-    if (nullableFlag != true && json['anyOf'] is List) {
-      final list = json['anyOf'] as List;
-      nullableFlag = list.any((e) => e is Map && e['type'] == 'null');
+    if (nullableFlag != true) {
+      for (final key in const ['anyOf', 'oneOf']) {
+        if (json[key] case final List list) {
+          nullableFlag = list.any((e) => e is Map && e['type'] == 'null');
+          if (nullableFlag == true) break;
+        }
+      }
     }
 
     final propsRaw = json['properties'];
@@ -309,6 +350,10 @@ class JsonSchema {
       title: json['title'] as String?,
       description: json['description'] as String?,
       enumValues: parseList(json['enum']),
+      constValue: json['const'],
+      hasConstValue: json.containsKey('const'),
+      defaultValue: json['default'],
+      hasDefaultValue: json.containsKey('default'),
       items: parseSchema(json['items']),
       properties: properties,
       required: parseStringList(json['required']),
@@ -348,6 +393,36 @@ class JsonSchema {
       type == JsonSchemaType.null_ ||
       (anyOf?.any((s) => s.type == JsonSchemaType.null_) ?? false) ||
       (oneOf?.any((s) => s.type == JsonSchemaType.null_) ?? false);
+
+  bool get _alreadyAcceptsNullWithoutWrapper =>
+      type == JsonSchemaType.null_ ||
+      (type == null && (_hasNullBranch(anyOf) || _hasNullBranch(oneOf)));
+
+  bool get _needsNullableWrapper =>
+      type != null ||
+      allOf != null ||
+      oneOf != null ||
+      enumValues != null ||
+      hasConstValue ||
+      items != null ||
+      properties != null ||
+      required != null ||
+      minItems != null ||
+      maxItems != null ||
+      minProperties != null ||
+      maxProperties != null ||
+      minLength != null ||
+      maxLength != null ||
+      pattern != null ||
+      minimum != null ||
+      maximum != null ||
+      exclusiveMinimum != null ||
+      exclusiveMaximum != null ||
+      multipleOf != null ||
+      uniqueItems != null ||
+      additionalPropertiesSchema != null ||
+      additionalPropertiesAllowed != null;
+
   JsonSchemaType? get singleType => type;
   bool get isEnum => enumValues != null && enumValues!.isNotEmpty;
   bool? get additionalProperties => additionalPropertiesAllowed;
@@ -365,6 +440,10 @@ class JsonSchema {
     String? description,
     bool? nullable,
     List<Object?>? enumValues,
+    Object? constValue = _unsetCopyValue,
+    bool? hasConstValue,
+    Object? defaultValue = _unsetCopyValue,
+    bool? hasDefaultValue,
     JsonSchema? items,
     Map<String, JsonSchema>? properties,
     List<String>? required,
@@ -389,6 +468,19 @@ class JsonSchema {
     JsonSchema? additionalPropertiesSchema,
     bool? additionalPropertiesAllowed,
   }) {
+    final constValueWasSet = !identical(constValue, _unsetCopyValue);
+    final defaultValueWasSet = !identical(defaultValue, _unsetCopyValue);
+    final nextHasConstValue =
+        hasConstValue ?? (constValueWasSet ? true : this.hasConstValue);
+    final nextHasDefaultValue =
+        hasDefaultValue ?? (defaultValueWasSet ? true : this.hasDefaultValue);
+    final nextConstValue = nextHasConstValue
+        ? (constValueWasSet ? constValue : this.constValue)
+        : null;
+    final nextDefaultValue = nextHasDefaultValue
+        ? (defaultValueWasSet ? defaultValue : this.defaultValue)
+        : null;
+
     return JsonSchema(
       type: type ?? this.type,
       format: format ?? this.format,
@@ -396,6 +488,10 @@ class JsonSchema {
       description: description ?? this.description,
       nullable: nullable ?? this.nullable,
       enumValues: enumValues ?? this.enumValues,
+      constValue: nextConstValue,
+      hasConstValue: nextHasConstValue,
+      defaultValue: nextDefaultValue,
+      hasDefaultValue: nextHasDefaultValue,
       items: items ?? this.items,
       properties: properties ?? this.properties,
       required: required ?? this.required,
@@ -436,6 +532,10 @@ class JsonSchema {
         description == other.description &&
         nullable == other.nullable &&
         deepEq.equals(enumValues, other.enumValues) &&
+        deepEq.equals(constValue, other.constValue) &&
+        hasConstValue == other.hasConstValue &&
+        deepEq.equals(defaultValue, other.defaultValue) &&
+        hasDefaultValue == other.hasDefaultValue &&
         items == other.items &&
         deepEq.equals(properties, other.properties) &&
         deepEq.equals(required, other.required) &&
@@ -471,6 +571,10 @@ class JsonSchema {
       description,
       nullable,
       deepEq.hash(enumValues),
+      deepEq.hash(constValue),
+      hasConstValue,
+      deepEq.hash(defaultValue),
+      hasDefaultValue,
       items,
       deepEq.hash(properties),
       deepEq.hash(required),
@@ -497,5 +601,3 @@ class JsonSchema {
     ]);
   }
 }
-
-// Deprecated helpers removed: value-based enum covers string mapping.

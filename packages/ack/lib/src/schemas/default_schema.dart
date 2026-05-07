@@ -21,7 +21,7 @@ Object? _serializeDefaultForJsonSchema<T extends Object>(
   }
 }
 
-Map<String, Object?> _applyDefaultSchemaNullability(
+Map<String, Object?> _applySchemaNullability(
   Map<String, Object?> schema,
   bool isNullable,
 ) {
@@ -99,7 +99,7 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   SchemaResult<T> _validateDefault(SchemaContext context) {
     final cloned = cloneDefault(defaultValue);
     final safeDefault = cloned is T ? cloned : defaultValue;
-    final result = inner.validate(safeDefault, context);
+    final result = inner._validateRuntime(safeDefault, context);
     if (result.isFail) return result.castFail();
     final value = result.getOrThrow()!;
     return applyConstraintsAndRefinements(value, context);
@@ -107,7 +107,7 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T> validate(Object? value, SchemaContext context) {
+  SchemaResult<T> _validateRuntime(Object? value, SchemaContext context) {
     // Defaults only fire on the parse direction. Encode must reject null for
     // non-nullable inner schemas rather than silently substituting the default.
     if (value == null && context.operation == SchemaOperation.parse) {
@@ -119,7 +119,7 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
       return failNull(context);
     }
 
-    final result = inner.validate(value, context);
+    final result = inner._validateRuntime(value, context);
     if (result.isFail) return result.castFail();
     final validated = result.getOrNull();
     if (validated == null) return SchemaResult.ok(null);
@@ -173,7 +173,7 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final schema = _applyDefaultSchemaNullability(
+    final schema = _applySchemaNullability(
       Map<String, Object?>.of(inner.toJsonSchema()),
       isNullable,
     );

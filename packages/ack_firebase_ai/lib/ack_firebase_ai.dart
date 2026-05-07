@@ -18,6 +18,15 @@ extension FirebaseAiSchemaExtension on AckSchema {
 
 // JsonSchema (canonical) -> Firebase AI Schema
 firebase_ai.Schema _convert(JsonSchema schema) {
+  if (schema.anyOf case final branches?) {
+    return _composition(schema, branches);
+  }
+
+  if (schema.oneOf case final branches?) {
+    // Firebase has only anyOf, so oneOf is represented with anyOf branches.
+    return _composition(schema, branches);
+  }
+
   switch (schema.type) {
     case JsonSchemaType.string:
       return _string(schema);
@@ -35,29 +44,67 @@ firebase_ai.Schema _convert(JsonSchema schema) {
       break;
   }
 
-  if (schema.anyOf != null) {
-    final branches = schema.anyOf!.map(_convert).toList();
-    return _wrapNullable(
-      firebase_ai.Schema(firebase_ai.SchemaType.anyOf, anyOf: branches),
-      schema.nullable,
-    );
-  }
-
-  if (schema.oneOf != null) {
-    final branches = schema.oneOf!.map(_convert).toList();
-    // Firebase has only anyOf, reuse it
-    return _wrapNullable(
-      firebase_ai.Schema(firebase_ai.SchemaType.anyOf, anyOf: branches),
-      schema.nullable,
-    );
-  }
-
   // typeless fallback
-  return firebase_ai.Schema(firebase_ai.SchemaType.anyOf, anyOf: []);
+  return _wrapNullable(
+    firebase_ai.Schema(
+      firebase_ai.SchemaType.anyOf,
+      anyOf: [],
+      description: schema.description,
+      title: schema.title,
+    ),
+    schema.nullable,
+  );
+}
+
+firebase_ai.Schema _composition(
+  JsonSchema schema,
+  List<JsonSchema> jsonBranches,
+) {
+  var nullable = schema.nullable;
+  final branches = <firebase_ai.Schema>[];
+
+  for (final branch in jsonBranches) {
+    if (branch.type == JsonSchemaType.null_) {
+      nullable = true;
+      continue;
+    }
+    branches.add(_convert(_inheritCompositionParent(branch, schema)));
+  }
+
+  return _wrapNullable(
+    firebase_ai.Schema(
+      firebase_ai.SchemaType.anyOf,
+      anyOf: branches,
+      description: schema.description,
+      title: schema.title,
+    ),
+    nullable,
+  );
+}
+
+JsonSchema _inheritCompositionParent(JsonSchema branch, JsonSchema parent) {
+  if (branch.type != null || parent.type == null) return branch;
+
+  return branch.copyWith(
+    type: parent.type,
+    format: branch.format ?? parent.format,
+    title: branch.title ?? parent.title,
+    description: branch.description ?? parent.description,
+    enumValues: branch.enumValues ?? parent.enumValues,
+    constValue: branch.hasConstValue ? branch.constValue : parent.constValue,
+    hasConstValue: branch.hasConstValue || parent.hasConstValue,
+    minimum: branch.minimum ?? parent.minimum,
+    maximum: branch.maximum ?? parent.maximum,
+  );
 }
 
 firebase_ai.Schema _string(JsonSchema schema) {
-  final values = schema.isEnum ? schema.enum_ ?? [] : null;
+  final constValue = schema.constValue;
+  final values = schema.isEnum
+      ? schema.enum_ ?? []
+      : constValue is String
+      ? [constValue]
+      : null;
   final base = values != null
       ? firebase_ai.Schema.enumString(
           enumValues: values,

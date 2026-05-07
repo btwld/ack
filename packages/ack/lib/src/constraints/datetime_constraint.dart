@@ -10,8 +10,7 @@ enum DateTimeComparisonType { min, max }
 ///
 /// Used internally by [Ack.date()] and [Ack.datetime()] schemas when applying
 /// [.min()] or [.max()] constraints.
-class DateTimeConstraint extends Constraint<DateTime>
-    with Validator<DateTime>, JsonSchemaSpec<DateTime> {
+class DateTimeConstraint extends Constraint<DateTime> with Validator<DateTime> {
   final DateTimeComparisonType type;
   final DateTime reference;
 
@@ -80,20 +79,6 @@ class DateTimeConstraint extends Constraint<DateTime>
       'comparisonType': type.name,
     };
   }
-
-  @override
-  Map<String, Object?> toJsonSchema() =>
-      // JSON Schema Draft 2019-09 and later support formatMinimum/formatMaximum
-      // for validating string formats like dates.
-      // See: https://json-schema.org/draft/2019-09/json-schema-validation.html#rfc.section.7.3
-      switch (type) {
-        DateTimeComparisonType.min => {
-          'formatMinimum': reference.toIso8601String(),
-        },
-        DateTimeComparisonType.max => {
-          'formatMaximum': reference.toIso8601String(),
-        },
-      };
 
   @override
   bool operator ==(Object other) {

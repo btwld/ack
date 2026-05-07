@@ -237,6 +237,43 @@ void main() {
       final json = schema.toJsonSchema();
       expect(json['x-transformed'], isTrue);
     });
+
+    test('nullable codec emits null branch from codec wrapper', () {
+      final json = Ack.datetime().nullable().toJsonSchema();
+
+      expect(json['anyOf'], isA<List>());
+      final anyOf = json['anyOf']! as List;
+      expect(
+        anyOf,
+        contains(
+          allOf([
+            isA<Map>(),
+            containsPair('type', 'string'),
+            containsPair('format', 'date-time'),
+          ]),
+        ),
+      );
+      expect(
+        anyOf,
+        contains(isA<Map>().having((m) => m['type'], 'type', 'null')),
+      );
+      expect(json[CodecSchema.jsonSchemaMarker], isTrue);
+    });
+
+    test('non-null codec ignores nullable input schema in JSON Schema', () {
+      final schema = Ack.codec<String, int>(
+        Ack.string().nullable(),
+        Ack.instance<int>(),
+        decode: int.parse,
+        encode: (i) => i.toString(),
+      );
+
+      final json = schema.toJsonSchema();
+
+      expect(json['anyOf'], isNull);
+      expect(json['type'], equals('string'));
+      expect(json[CodecSchema.jsonSchemaMarker], isTrue);
+    });
   });
 
   group('.transform(fn) — one-way encode failure', () {
@@ -356,21 +393,91 @@ void main() {
   });
 
   group('CodecSchema — codec-of-codec', () {
-    test('encode does not re-run inner decoder on the encoded value', () {
-      // Outer wraps a codec inputSchema (Ack.intFromString → AckSchema<int>).
-      // Outer encoder produces an int (the inner codec's runtime O). The
-      // post-encode re-validation must call validate on the inner, not
-      // decodeBoundary — otherwise the inner would try to re-decode the int
-      // as a String boundary value and fail.
+    test('encode recursively pushes through inner codec input schema', () {
+      // Outer wraps a codec inputSchema (string boundary → int runtime).
+      // Outer encoder produces an int (the inner codec's runtime O). encode
+      // recursively runs the inner codec's encoder so the final boundary form
+      // is a string ("1500"), not an int — preserving parse(encode(value)).
       final outer = Ack.codec<int, Duration>(
-        Ack.intFromString(),
+        Ack.codec<String, int>(
+          Ack.string(),
+          Ack.instance<int>(),
+          decode: int.parse,
+          encode: (i) => i.toString(),
+        ),
         Ack.instance<Duration>(),
         decode: (ms) => Duration(milliseconds: ms),
         encode: (d) => d.inMilliseconds,
       );
 
       final encoded = outer.encode(const Duration(milliseconds: 1500));
-      expect(encoded, equals(1500));
+      expect(encoded, equals('1500'));
+
+      expect(outer.parse(encoded), equals(const Duration(milliseconds: 1500)));
+    });
+  });
+
+  group('CodecSchema — codec inside object inputSchema', () {
+    test('encode produces boundary-shaped output for nested codec field', () {
+      final schema = Ack.codec<Map<String, Object?>, ({DateTime startsAt})>(
+        Ack.object({'startsAt': Ack.datetime()}),
+        Ack.instance<({DateTime startsAt})>(),
+        decode: (m) => (startsAt: m['startsAt']! as DateTime),
+        encode: (v) => {'startsAt': v.startsAt},
+      );
+
+      final v = (startsAt: DateTime.utc(2026, 5, 6, 12));
+      final encoded = schema.encode(v);
+
+      expect(encoded, isA<Map<String, Object?>>());
+      final map = encoded as Map<String, Object?>;
+      expect(map['startsAt'], isA<String>());
+      expect(map['startsAt'], equals('2026-05-06T12:00:00.000Z'));
+
+      final roundTripped = schema.parse(encoded)!;
+      expect(roundTripped.startsAt.toUtc(), equals(v.startsAt));
+    });
+  });
+
+  group('custom bool string codec — boundary surface', () {
+    test('safeParse rejects non-bool strings before decode', () {
+      final schema = Ack.codec<String, bool>(
+        Ack.string().matches(r'^(?:true|false)$'),
+        Ack.instance<bool>(),
+        decode: bool.parse,
+        encode: (b) => b.toString(),
+      );
+
+      final result = schema.safeParse('yes');
+      expect(result.isFail, isTrue);
+    });
+
+    test('toJsonSchema publishes the bool pattern', () {
+      final schema = Ack.codec<String, bool>(
+        Ack.string().matches(r'^(?:true|false)$'),
+        Ack.instance<bool>(),
+        decode: bool.parse,
+        encode: (b) => b.toString(),
+      );
+
+      final json = schema.toJsonSchema();
+      expect(json['type'], equals('string'));
+      expect(json['pattern'], isA<String>());
+      // Sanity-check the pattern matches what decode accepts.
+      final pattern = RegExp(json['pattern']! as String);
+      expect(pattern.hasMatch('true'), isTrue);
+      expect(pattern.hasMatch('false'), isTrue);
+      expect(pattern.hasMatch('FALSE'), isFalse);
+      expect(pattern.hasMatch(' True '), isFalse);
+      expect(pattern.hasMatch('yes'), isFalse);
+    });
+  });
+
+  group('Ack.date — encode rejects UTC values', () {
+    test('safeEncode fails when given a UTC DateTime', () {
+      final schema = Ack.date();
+      final result = schema.safeEncode(DateTime.utc(2026, 5, 4));
+      expect(result.isFail, isTrue);
     });
   });
 

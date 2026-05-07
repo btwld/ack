@@ -24,6 +24,42 @@ void main() {
       expect(json.uniqueItems, isTrue);
     });
 
+    test('preserves const metadata from literals', () {
+      final json = Ack.literal('exact').toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.constValue, equals('exact'));
+      expect(json.toJson()['const'], equals('exact'));
+    });
+
+    test('preserves default metadata', () {
+      final json = Ack.string().withDefault('fallback').toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.defaultValue, equals('fallback'));
+      expect(json.toJson()['default'], equals('fallback'));
+    });
+
+    test('preserves nullable wrapper default metadata', () {
+      final json = Ack.string()
+          .nullable()
+          .withDefault('fallback')
+          .toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.nullable, isTrue);
+      expect(json.defaultValue, equals('fallback'));
+      expect(json.toJson()['default'], equals('fallback'));
+    });
+
+    test('preserves object property default metadata', () {
+      final json = Ack.object({
+        'name': Ack.string().withDefault('guest'),
+      }).toJsonSchemaModel();
+
+      expect(json.properties!['name']!.defaultValue, equals('guest'));
+    });
+
     test('keeps description on anyOf unions', () {
       final schema = Ack.anyOf([
         Ack.string(),
@@ -129,5 +165,78 @@ void main() {
         expect(catBranch.description, equals('cat branch'));
       },
     );
+
+    test('nullable codec model uses codec wrapper nullability', () {
+      final json = Ack.datetime().nullable().toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.format, equals('date-time'));
+      expect(json.nullable, isTrue);
+    });
+
+    test('non-null codec model ignores nullable input schema', () {
+      final schema = Ack.codec<String, int>(
+        Ack.string().nullable(),
+        Ack.instance<int>(),
+        decode: int.parse,
+        encode: (i) => i.toString(),
+      );
+
+      final json = schema.toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.nullable, isFalse);
+    });
+
+    test('codec model preserves wrapper numeric constraints', () {
+      final json = Ack.duration()
+          .min(Duration(milliseconds: 1500))
+          .max(Duration(seconds: 2))
+          .toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.integer);
+      expect(json.minimum, equals(1500));
+      expect(json.maximum, equals(2000));
+    });
+
+    test('date codec model omits non-standard format range keywords', () {
+      final json = Ack.date()
+          .min(DateTime(2026, 1, 1))
+          .max(DateTime(2026, 12, 31))
+          .toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.format, equals('date'));
+      expect(json.toJson().containsKey('formatMinimum'), isFalse);
+      expect(json.toJson().containsKey('formatMaximum'), isFalse);
+    });
+
+    test('string IP model preserves ipv4-or-ipv6 oneOf composition', () {
+      final json = Ack.string().ip().toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.string);
+      expect(json.oneOf, hasLength(2));
+      expect(json.oneOf!.map((schema) => schema.format), ['ipv4', 'ipv6']);
+      expect(json.toJson()['oneOf'], [
+        {'format': 'ipv4'},
+        {'format': 'ipv6'},
+      ]);
+    });
+
+    test('discriminated model keeps discriminator const metadata', () {
+      final json = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}),
+        },
+      ).toJsonSchemaModel();
+
+      final catBranch = json.oneOf!.single;
+      final discriminator = catBranch.properties!['type']!;
+
+      expect(discriminator.constValue, 'cat');
+      expect(discriminator.hasConstValue, isTrue);
+      expect(discriminator.toJson()['const'], 'cat');
+    });
   });
 }

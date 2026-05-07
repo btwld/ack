@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('TransformedSchema default handling', () {
+  group('CodecSchema default handling', () {
     test('applies default when input is null', () {
       final schema = Ack.string()
           .transform((v) => v.toUpperCase())

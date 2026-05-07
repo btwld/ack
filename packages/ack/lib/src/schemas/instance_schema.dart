@@ -17,7 +17,7 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T> validate(Object? value, SchemaContext context) {
+  SchemaResult<T> _validateRuntime(Object? value, SchemaContext context) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
       return failNull(context);

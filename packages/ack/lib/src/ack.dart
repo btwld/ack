@@ -1,12 +1,17 @@
-import 'dart:core';
-import 'dart:core' as core;
-
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
 String _encodeDateOnly(DateTime value) {
+  if (value.isUtc) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.date() cannot encode UTC DateTime values; pass a local DateTime '
+          'so encode/parse stay in the same zone.',
+    );
+  }
   if (value.hour != 0 ||
       value.minute != 0 ||
       value.second != 0 ||
@@ -153,42 +158,14 @@ final class Ack {
     encoder: encode,
   );
 
-  /// Creates a codec that parses integer strings into [int] values.
-  static CodecSchema<String, int> intFromString() => Ack.codec<String, int>(
-    Ack.string().matches(r'^-?\d+$'),
-    Ack.instance<int>(),
-    decode: int.parse,
-    encode: (i) => i.toString(),
-  );
-
-  /// Creates a codec that parses decimal strings into [double] values.
-  ///
-  /// The `core.double` return type is explicit because `Ack.double()` shadows
-  /// `dart:core`'s `double` inside the class body.
-  static CodecSchema<String, core.double> doubleFromString() =>
-      Ack.codec<String, core.double>(
-        Ack.string().matches(r'^-?\d+(\.\d+)?$'),
-        Ack.instance<core.double>(),
-        decode: core.double.parse,
-        encode: (d) => d.toString(),
-      );
-
-  /// Creates a codec that parses "true"/"false" strings into [bool] values.
-  static CodecSchema<String, bool> boolFromString() => Ack.codec<String, bool>(
-    Ack.string(),
-    Ack.instance<bool>(),
-    decode: (s) => switch (s.trim().toLowerCase()) {
-      'true' => true,
-      'false' => false,
-      _ => throw FormatException('not a bool: $s'),
-    },
-    encode: (b) => b.toString(),
-  );
-
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
   ///
   /// The schema validates the string format before transformation, ensuring only valid
   /// date strings are parsed. You can add range constraints using [.min()] and [.max()].
+  ///
+  /// Decode produces a local `DateTime` (matching `DateTime.parse('YYYY-MM-DD')`),
+  /// so encode rejects UTC values to keep parse/encode roundtrips identity-preserving.
+  /// Pass a local `DateTime` (e.g. `DateTime(2026, 5, 6)`).
   ///
   /// Example:
   /// ```dart

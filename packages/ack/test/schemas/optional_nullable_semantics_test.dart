@@ -172,25 +172,25 @@ void main() {
       test('transform should work with optional nullable', () {
         // The key issue being tested: transform must preserve isOptional and isNullable flags
         // so that ObjectSchema correctly recognizes the field as optional/nullable
-        final transformedSchema = Ack.string().optional().nullable().transform(
+        final codecSchema = Ack.string().optional().nullable().transform(
           (val) => val,
         );
 
         // Verify flags are preserved
         expect(
-          transformedSchema.isOptional,
+          codecSchema.isOptional,
           isTrue,
           reason: 'Transform must preserve isOptional flag',
         );
         expect(
-          transformedSchema.isNullable,
+          codecSchema.isNullable,
           isTrue,
           reason: 'Transform must preserve isNullable flag',
         );
 
         final objectSchema = Ack.object({
           'name': Ack.string(),
-          'nickname': transformedSchema,
+          'nickname': codecSchema,
         });
 
         // Test 1: Missing field (optional) - field should not be present in result

@@ -20,8 +20,12 @@ final class AnyOfSchema extends AckSchema<Object>
 
   @override
   @protected
-  SchemaResult<Object> validate(Object? value, SchemaContext context) =>
-      _runBranches(value, context, (schema, v, ctx) => schema.validate(v, ctx));
+  SchemaResult<Object> _validateRuntime(Object? value, SchemaContext context) =>
+      _runBranches(
+        value,
+        context,
+        (schema, v, ctx) => schema._validateRuntime(v, ctx),
+      );
 
   @override
   @protected
