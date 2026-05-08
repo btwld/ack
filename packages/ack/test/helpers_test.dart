@@ -1,7 +1,67 @@
+import 'package:ack/ack.dart';
 import 'package:ack/src/helpers.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('unwrapWrappers', () {
+    test('returns base schema unchanged when no wrappers present', () {
+      final string = Ack.string();
+      expect(unwrapWrappers(string), same(string));
+    });
+
+    test('unwraps a single DefaultSchema layer', () {
+      final wrapped = Ack.string().withDefault('x');
+      expect(unwrapWrappers(wrapped), isA<StringSchema>());
+    });
+
+    test('unwraps a single CodecSchema layer', () {
+      final codec = Ack.codec<String, int>(
+        Ack.string(),
+        Ack.instance<int>(),
+        decode: int.parse,
+        encode: (i) => i.toString(),
+      );
+      expect(unwrapWrappers(codec), isA<StringSchema>());
+    });
+
+    test('unwraps stacked DefaultSchema(CodecSchema(...))', () {
+      final stacked = Ack.codec<String, int>(
+        Ack.string(),
+        Ack.instance<int>(),
+        decode: int.parse,
+        encode: (i) => i.toString(),
+      ).withDefault(0);
+      expect(unwrapWrappers(stacked), isA<StringSchema>());
+    });
+
+    test('unwraps nested DefaultSchema(DefaultSchema(...))', () {
+      final stacked = Ack.string().withDefault('a').withDefault('b');
+      expect(unwrapWrappers(stacked), isA<StringSchema>());
+    });
+  });
+
+  group('providesParseDefault', () {
+    test('false for a plain schema', () {
+      expect(providesParseDefault(Ack.string()), isFalse);
+    });
+
+    test('true for a DefaultSchema', () {
+      expect(providesParseDefault(Ack.string().withDefault('x')), isTrue);
+    });
+
+    test('true when DefaultSchema is behind a CodecSchema', () {
+      final codecOverDefault = Ack.string()
+          .withDefault('x')
+          .transform<int>((s) => s.length);
+      expect(providesParseDefault(codecOverDefault), isTrue);
+    });
+
+    test('false for a Codec whose input is a plain schema', () {
+      final codec = Ack.string().transform<int>((s) => s.length);
+      expect(providesParseDefault(codec), isFalse);
+    });
+  });
+
   group('prettyJson', () {
     test('should format a valid map', () {
       final map = {'b': 2, 'a': 1};

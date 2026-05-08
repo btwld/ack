@@ -243,20 +243,19 @@ JsonSchema _discriminated(
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
     final originalBranchSchema = entry.value;
-    final baseBranchSchema = unwrapDiscriminatedBranchSchema(
-      originalBranchSchema,
-    );
+    final baseBranchSchema = unwrapWrappers(originalBranchSchema);
     if (baseBranchSchema is! ObjectSchema) {
       throw ArgumentError(
         'Discriminated branches must be object-backed schemas.',
       );
     }
 
-    if (baseBranchSchema.properties.containsKey(discriminatorKey)) {
-      throw ArgumentError(
-        'Discriminator key "$discriminatorKey" conflicts with existing property in branch "$label".',
-      );
-    }
+    final conflict = checkDiscriminatorBranchConflict(
+      baseBranch: baseBranchSchema,
+      discriminatorKey: discriminatorKey,
+      label: label,
+    );
+    if (conflict != null) throw conflict;
 
     final convertedBranch = _convert(originalBranchSchema);
     final properties = <String, JsonSchema>{

@@ -105,7 +105,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     AckSchema<T> selected,
     SchemaContext branchCtx,
   ) {
-    final base = unwrapDiscriminatedBranchSchema(selected);
+    final base = unwrapWrappers(selected);
     if (base is ObjectSchema) return null;
     return SchemaResult.fail(
       SchemaValidationError(
@@ -229,12 +229,18 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
     schemas.forEach((discriminatorValue, branchSchema) {
-      final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
+      final baseSchema = unwrapWrappers(branchSchema);
       if (baseSchema is! ObjectSchema) {
         throw ArgumentError(
           'Discriminated branches must be object-backed schemas.',
         );
       }
+      final conflict = checkDiscriminatorBranchConflict(
+        baseBranch: baseSchema,
+        discriminatorKey: discriminatorKey,
+        label: discriminatorValue,
+      );
+      if (conflict != null) throw conflict;
       final subSchemaJson = branchSchema.toJsonSchema();
       subSchemaJson['properties'] = {
         ...?(subSchemaJson['properties'] as Map?),

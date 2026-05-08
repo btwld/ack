@@ -26,7 +26,11 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       return failNull(context);
     }
 
-    if (value is! T || !values.contains(value)) {
+    if (value is! T) {
+      return failTypeMismatch(value, context);
+    }
+
+    if (!values.contains(value)) {
       final allowed = values.map((e) => e.name).toList(growable: false);
       final inputStr = value.toString();
       final closest = findClosestStringMatch(inputStr, allowed);

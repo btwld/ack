@@ -91,12 +91,18 @@ final class ObjectSchema extends AckSchema<MapValue>
 
       if (!hasValue) {
         if (schema.isOptional) {
+          // Encode never synthesizes defaults and never validates absent
+          // fields, so skip discardable validation work entirely. Letting it
+          // run would also silently swallow any error it produced.
+          if (context.operation == SchemaOperation.encode) continue;
+
           final result = handle(schema, null, propertyContext);
           if (result.isOk) {
             final validated = result.getOrNull();
             if (validated != null) out[key] = validated;
-          } else if (schema is DefaultSchema &&
-              context.operation == SchemaOperation.parse) {
+          } else if (providesParseDefault(schema)) {
+            // Schema supplies a default somewhere in its wrapper stack; if the
+            // default itself failed validation, surface it.
             errors.add(result.getError());
           }
           continue;

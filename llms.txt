@@ -1,10 +1,13 @@
 # Ack
 
-> A schema validation library for Dart and Flutter with a fluent runtime API and `@AckType()`-driven extension-type generation. Version 1.0.0-beta.11.
+> A schema validation library for Dart and Flutter with a fluent runtime API,
+> bidirectional codecs, and `@AckType()`-driven extension-type generation.
 
 Ack validates external data with hand-written schemas built using the `Ack`
-factory. When you want typed wrappers over validated values, annotate top-level
-schema variables or getters with `@AckType()` and run `ack_generator`.
+factory. Schemas are bidirectional: `parse` validates a boundary value and
+produces a runtime value; `encode` is the inverse. When you want typed wrappers
+over validated values, annotate top-level schema variables or getters with
+`@AckType()` and run `ack_generator`.
 
 ## Packages
 
@@ -29,6 +32,104 @@ final result = userSchema.safeParse({
   'email': 'alice@example.com',
 });
 ```
+
+## Codecs and encoding
+
+A schema's parse direction validates a boundary value, decodes it, and validates
+the runtime result. Its encode direction is the inverse: validate the runtime
+value, encode it, and validate the boundary result.
+
+`encode(value)` throws on failure; `safeEncode(value)` returns
+`SchemaResult<Object>`. Both are available on every `AckSchema`.
+
+```dart
+final eventSchema = Ack.object({
+  'name': Ack.string(),
+  'startsAt': Ack.datetime(),
+});
+
+final event = eventSchema.parse({
+  'name': 'Launch',
+  'startsAt': '2026-05-04T10:00:00.000Z',
+});
+// event['startsAt'] is a DateTime
+
+final payload = eventSchema.encode(event);
+// payload['startsAt'] is back to '2026-05-04T10:00:00.000Z'
+```
+
+Define your own codec with `Ack.codec`:
+
+```dart
+final bigIntCodec = Ack.codec<String, BigInt>(
+  Ack.string().matches(r'^-?\d+$'),
+  Ack.instance<BigInt>(),
+  decode: BigInt.parse,
+  encode: (value) => value.toString(),
+);
+```
+
+`Ack.instance<T>()` is the runtime side of a codec — it validates `value is T`
+without any boundary-side coercion. Use it (or any other schema) as the second
+argument to `Ack.codec`.
+
+`SchemaEncodeError` is raised when encode fails. Common cases:
+
+- `SchemaEncodeError.typeMismatch` — runtime value is the wrong type
+- `SchemaEncodeError.requiredNotNull` — non-nullable schema received `null`
+- one-way `.transform(...)` schemas have no encoder; calling `encode` fails
+  with a message that points at `Ack.codec(...)`
+- the user-supplied `encode` closure threw; the error is wrapped
+
+Built-in transforms are bidirectional codecs and round-trip cleanly:
+`Ack.date()` (`YYYY-MM-DD`), `Ack.datetime()` (UTC ISO-8601),
+`Ack.uri()` (`Uri.toString()`), `Ack.duration()` (milliseconds),
+enum schemas (encode emits `.name`).
+
+`.transform(fn)` is one-way (parse only). It is now a `CodecSchema<T, R>` with
+no encoder; reach for `Ack.codec(...)` when both directions are needed.
+
+## No implicit primitive coercion
+
+Primitive schemas validate runtime values as-is.
+
+```dart
+Ack.integer().safeParse('42'); // Fail — string is not int
+```
+
+Define an app-local codec at the boundary when conversion is needed:
+
+```dart
+final intStringCodec = Ack.codec<String, int>(
+  Ack.string(),
+  Ack.instance<int>(),
+  decode: int.parse,
+  encode: (value) => value.toString(),
+);
+intStringCodec.parse('42'); // 42
+```
+
+## Defaults
+
+Defaults are a parse-only wrapper applied via `.withDefault(value)`. They never
+synthesize boundary data during encode.
+
+```dart
+final roleSchema = Ack.string().withDefault('guest');
+```
+
+Pre-2.0 constructor defaults (`Ack.string(defaultValue: 'x')`) and built-in
+implicit primitive coercion are removed. Migrate to `Ack.codec(...)` at the
+boundary and `.withDefault(value)` for defaults.
+
+## Deprecations
+
+- `TransformedSchema<I, O>` is now a `@Deprecated` typedef alias for
+  `CodecSchema<I, O>`. Type annotations continue to work; the previous
+  positional constructor and `.schema` / `.transformer` fields are gone.
+  Migrate to `CodecSchema(inputSchema: ..., outputSchema: ..., decoder: ...,
+  encoder: ...)` with `.inputSchema` / `.outputSchema` / `.decoder` /
+  `.encoder`. The alias will be removed in a future release.
 
 ## AckType generation
 
@@ -77,7 +178,9 @@ Generated capabilities:
 - `Ack.literal(...)`
 - `Ack.enumString(...)`
 - `Ack.enumValues(...)`
-- explicit transforms such as `.transform<Uri>(...)`
+- bidirectional codecs (`Ack.codec<I, O>(...)`) and built-in codec helpers such
+  as `.transform<Uri>(...)`, `Ack.date()`, `Ack.datetime()`, `Ack.uri()`,
+  `Ack.duration()`
 - `Ack.discriminated(...)` with the constraints below
 
 Not supported for extension-type generation:
@@ -99,6 +202,11 @@ Not supported for extension-type generation:
 - each branch is declared in the same library as the base
 - each branch defines the discriminator field with `Ack.literal(...)`
 - the literal value matches the branch key
+
+Both JSON Schema emission paths (`toJsonSchema()` and `toJsonSchemaModel()`)
+verify the literal-discriminator pattern and throw an `ArgumentError` if a
+branch declares the discriminator with a literal whose value does not match
+the branch label.
 
 Example:
 
@@ -137,11 +245,14 @@ AckType generation is intentionally strict:
 
 ## Runtime API reminders
 
-- `schema.parse(data)` throws on invalid input
-- `schema.safeParse(data)` returns `SchemaResult<T>`
+- `schema.parse(data)` throws on invalid input; returns the runtime value
+- `schema.safeParse(data)` returns `SchemaResult<T>` (no throw)
+- `schema.encode(value)` throws on invalid runtime value; returns the boundary value
+- `schema.safeEncode(value)` returns `SchemaResult<Object>` (no throw)
 - `SchemaResult<T>.getOrThrow()` returns the validated value or throws `AckException`
 - `.optional()` allows a field to be omitted
 - `.nullable()` allows a present field to hold `null`
+- `.withDefault(value)` supplies a parse-time default; encode never synthesizes defaults
 - object schemas support `additionalProperties: true`
 
 ## Build command

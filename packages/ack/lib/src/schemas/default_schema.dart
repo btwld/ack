@@ -4,14 +4,25 @@ Object? _serializeDefaultForJsonSchema<T extends Object>(
   AckSchema<T> inner,
   T defaultValue,
 ) {
-  if (inner is EnumSchema && defaultValue is Enum) {
-    return defaultValue.name;
+  // Codec layers anywhere in the wrapper stack must run encode so the
+  // serialized default matches the boundary representation. Walk wrappers
+  // until we hit a codec or a non-wrapper schema.
+  AckSchema cursor = inner;
+  while (true) {
+    if (cursor is CodecSchema) {
+      final encoded = cursor.safeEncode(defaultValue);
+      if (encoded.isOk) return encoded.getOrNull();
+      return null;
+    }
+    if (cursor is DefaultSchema) {
+      cursor = cursor.inner;
+      continue;
+    }
+    break;
   }
 
-  if (inner is CodecSchema) {
-    final encoded = inner.safeEncode(defaultValue);
-    if (encoded.isOk) return encoded.getOrNull();
-    return null;
+  if (cursor is EnumSchema && defaultValue is Enum) {
+    return defaultValue.name;
   }
 
   try {

@@ -204,5 +204,25 @@ void main() {
       final result = schema.safeEncode('not a color');
       expect(result.isFail, isTrue);
     });
+
+    test(
+      'reports wrong runtime type as SchemaEncodeError, not constraints',
+      () {
+        final schema = Ack.enumValues(_Color.values);
+        // 'red' is the boundary string, but encode expects the runtime _Color
+        // value. The right error class is type-mismatch, not in-set failure.
+        final result = schema.safeEncode('red');
+        expect(result.isFail, isTrue);
+        expect(result.getError(), isA<SchemaEncodeError>());
+        expect(result.getError(), isNot(isA<SchemaConstraintsError>()));
+      },
+    );
+
+    test('runtime enum value outside set still reports constraints error', () {
+      final schema = Ack.enumValues(<_Color>[_Color.red, _Color.green]);
+      final result = schema.safeEncode(_Color.blue);
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaConstraintsError>());
+    });
   });
 }

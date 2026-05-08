@@ -61,7 +61,7 @@ void main() {
       final disc = Ack.discriminated(
         discriminatorKey: 'type',
         schemas: {
-          'a': Ack.object({'type': Ack.string()}),
+          'a': Ack.object({'type': Ack.literal('a')}),
         },
       );
       final discJsonSchema = disc.toJsonSchema();
@@ -137,6 +137,23 @@ void main() {
         );
       },
     );
+
+    test('Codec default serializes through the codec encoder', () {
+      final schema = Ack.uri().withDefault(Uri.parse('https://example.com'));
+      final json = schema.toJsonSchema();
+      expect(json['default'], equals('https://example.com'));
+    });
+
+    test('Default routes through codec even behind a DefaultSchema layer', () {
+      // Stacked DefaultSchema(DefaultSchema(CodecSchema)). The outer default's
+      // inner is itself a DefaultSchema, so the top-level helper must walk
+      // through default layers to find the codec for proper boundary encoding.
+      final inner = Uri.parse('https://example.com');
+      final outer = Uri.parse('https://override.example.com');
+      final schema = Ack.uri().withDefault(inner).withDefault(outer);
+      final json = schema.toJsonSchema();
+      expect(json['default'], equals('https://override.example.com'));
+    });
 
     test('Nested composites should not emit defaults at any level', () {
       // Nested list in object

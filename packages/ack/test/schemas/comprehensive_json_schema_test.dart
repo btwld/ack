@@ -391,13 +391,13 @@ void main() {
 
         setUp(() {
           carSchema = Ack.object({
-            'type': Ack.string(),
+            'type': Ack.literal('car'),
             'doors': Ack.integer(),
             'engine': Ack.string(),
           });
 
           bikeSchema = Ack.object({
-            'type': Ack.string(),
+            'type': Ack.literal('bike'),
             'wheels': Ack.integer(),
             'pedals': Ack.boolean(),
           });

@@ -235,6 +235,112 @@ void main() {
       );
     });
 
+    group('Branch literal-discriminator compatibility', () {
+      test('accepts canonical literal pattern (Map path)', () {
+        final schema = Ack.discriminated<String>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }).transform<String>((m) => m['name'] as String),
+            'dog': Ack.object({
+              'type': Ack.literal('dog'),
+              'name': Ack.string(),
+            }).transform<String>((m) => m['name'] as String),
+          },
+        );
+
+        expect(() => schema.toJsonSchema(), returnsNormally);
+      });
+
+      test('throws when branch literal does not match label (Map path)', () {
+        final schema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('dog'),
+              'name': Ack.string(),
+            }),
+          },
+        );
+
+        expect(() => schema.toJsonSchema(), throwsArgumentError);
+      });
+
+      test('accepts branch with no pre-declared discriminator (Map path)', () {
+        final schema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}),
+          },
+        );
+
+        expect(() => schema.toJsonSchema(), returnsNormally);
+      });
+    });
+
+    group('Default-wrapped object branches', () {
+      test('safeParse accepts wrapped branch and applies parse default', () {
+        final schema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }).withDefault({'type': 'cat', 'name': 'Milo'}),
+          },
+        );
+
+        final ok = schema.safeParse({'type': 'cat', 'name': 'Whiskers'});
+        expect(ok.isOk, isTrue);
+        expect((ok.getOrThrow() as Map)['name'], equals('Whiskers'));
+      });
+
+      test('safeEncode round-trips through default-wrapped branch', () {
+        final schema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }).withDefault({'type': 'cat', 'name': 'Milo'}),
+          },
+        );
+
+        final encoded = schema.safeEncode({'type': 'cat', 'name': 'Whiskers'});
+        expect(encoded.isOk, isTrue);
+      });
+
+      test('toJsonSchema does not throw "must be object-backed"', () {
+        final schema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }).withDefault({'type': 'cat', 'name': 'Milo'}),
+          },
+        );
+
+        expect(() => schema.toJsonSchema(), returnsNormally);
+      });
+
+      test('toJsonSchemaModel does not throw "must be object-backed"', () {
+        final schema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }).withDefault({'type': 'cat', 'name': 'Milo'}),
+          },
+        );
+
+        expect(() => schema.toJsonSchemaModel(), returnsNormally);
+      });
+    });
+
     group('Typed-T runtime branch trial', () {
       test('non-map runtime value is dispatched to per-branch validation', () {
         final schema = Ack.discriminated<Object>(

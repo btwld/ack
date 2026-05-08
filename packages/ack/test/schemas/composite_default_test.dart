@@ -261,10 +261,13 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
-            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
+            'square': Ack.object({
+              'type': Ack.literal('square'),
+              'side': Ack.integer(),
+            }),
           },
         ).withDefault(defaultValue);
 
@@ -281,10 +284,13 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
-            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
+            'square': Ack.object({
+              'type': Ack.literal('square'),
+              'side': Ack.integer(),
+            }),
           },
         ).withDefault(defaultValue);
 
@@ -302,7 +308,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
           },
@@ -327,10 +333,13 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
-            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
+            'square': Ack.object({
+              'type': Ack.literal('square'),
+              'side': Ack.integer(),
+            }),
           },
         ).withDefault(defaultValue);
 
@@ -348,7 +357,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
           },
@@ -357,6 +366,37 @@ void main() {
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['default'], equals(defaultValue));
+      });
+    });
+
+    group('Wrapper-aware default error surfacing', () {
+      test('codec wrapping a defaulted schema surfaces decoder failure on '
+          'missing optional field', () {
+        // CodecSchema(DefaultSchema(StringSchema)). Default provides
+        // 'not-a-number', codec's decoder int.parse fails on it. When the
+        // optional field is missing during parse, the gate must recognise
+        // that this schema "provides a default" via wrapper composition
+        // and surface the resulting decode failure.
+        final field = Ack.string()
+            .withDefault('not-a-number')
+            .transform<int>(int.parse)
+            .optional();
+        final obj = Ack.object({'count': field});
+
+        final result = obj.safeParse(<String, Object?>{});
+
+        expect(result.isFail, isTrue);
+      });
+
+      test('plain optional field without default does not surface absent-field '
+          'errors during parse', () {
+        // No default in the wrapper stack — absent optional field should
+        // remain a no-op even if the inner schema would have rejected null.
+        final obj = Ack.object({'name': Ack.string().optional()});
+
+        final result = obj.safeParse(<String, Object?>{});
+
+        expect(result.isOk, isTrue);
       });
     });
 

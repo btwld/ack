@@ -223,6 +223,50 @@ void main() {
       ]);
     });
 
+    test('accepts canonical literal-discriminator pattern (model path)', () {
+      final schema = Ack.discriminated<Map<String, Object?>>(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
+          'dog': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+        },
+      );
+
+      final json = schema.toJsonSchemaModel();
+
+      expect(json.discriminator?.propertyName, equals('type'));
+      expect(json.oneOf, hasLength(2));
+      final cat = json.oneOf!.firstWhere(
+        (b) => b.properties?['type']?.constValue == 'cat',
+      );
+      expect(cat.properties!['name']?.type, JsonSchemaType.string);
+    });
+
+    test('throws when branch literal does not match label (model path)', () {
+      final schema = Ack.discriminated<Map<String, Object?>>(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+    });
+
+    test('accepts default-wrapped object branch (model path)', () {
+      final schema = Ack.discriminated<Map<String, Object?>>(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).withDefault({'type': 'cat', 'name': 'Milo'}),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), returnsNormally);
+    });
+
     test('discriminated model keeps discriminator const metadata', () {
       final json = Ack.discriminated(
         discriminatorKey: 'type',
