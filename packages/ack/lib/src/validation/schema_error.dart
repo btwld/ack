@@ -143,3 +143,85 @@ final class SchemaTransformError extends SchemaError {
     super.stackTrace,
   }) : super(message);
 }
+
+/// An error raised by [AckSchema.encode] / [AckSchema.safeEncode] when the
+/// runtime value cannot be serialized back to the schema's boundary form.
+///
+/// Use the named constructors to produce the right shape for each failure mode.
+final class SchemaEncodeError extends SchemaError {
+  const SchemaEncodeError._({
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+  }) : super(message);
+
+  /// The runtime value's type does not match the schema's expected boundary type.
+  factory SchemaEncodeError.typeMismatch({
+    required Object? actualValue,
+    required SchemaType expectedType,
+    required SchemaContext context,
+  }) {
+    final actualType = AckSchema.getSchemaType(actualValue);
+    return SchemaEncodeError._(
+      message:
+          'Encode failed: expected ${expectedType.typeName}, got ${actualType.typeName}',
+      context: context,
+    );
+  }
+
+  /// The schema is non-nullable but the value passed in is `null`.
+  factory SchemaEncodeError.nonNullable({required SchemaContext context}) {
+    return SchemaEncodeError._(
+      message: 'Cannot encode null for a non-nullable schema',
+      context: context,
+    );
+  }
+
+  /// The schema is a one-way transform (no encoder supplied) and cannot
+  /// participate in encode. The message points users at [Ack.codec].
+  factory SchemaEncodeError.oneWayTransform({required SchemaContext context}) {
+    return SchemaEncodeError._(
+      message:
+          'Cannot encode: this schema is one-way; use Ack.codec(...) for bidirectional behaviour.',
+      context: context,
+    );
+  }
+
+  /// The user-supplied encoder threw an exception.
+  factory SchemaEncodeError.encoderThrew({
+    required Object cause,
+    StackTrace? stackTrace,
+    required SchemaContext context,
+  }) {
+    return SchemaEncodeError._(
+      message: 'Encoder threw: $cause',
+      context: context,
+      cause: cause,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// A required property is missing from the runtime map being encoded.
+  factory SchemaEncodeError.missingRequiredProperty({
+    required String key,
+    required SchemaContext context,
+  }) {
+    return SchemaEncodeError._(
+      message: 'Missing required property "$key" during encode',
+      context: context,
+    );
+  }
+
+  /// The runtime map contains a property that is not declared by the schema
+  /// (and `additionalProperties` is false).
+  factory SchemaEncodeError.unexpectedProperty({
+    required String key,
+    required SchemaContext context,
+  }) {
+    return SchemaEncodeError._(
+      message: 'Unexpected property "$key" during encode',
+      context: context,
+    );
+  }
+}
