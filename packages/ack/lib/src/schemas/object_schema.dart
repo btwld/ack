@@ -154,6 +154,115 @@ final class ObjectSchema extends AckSchema<MapValue>
     return SchemaResult.ok(Map<String, Object?>.unmodifiable(validatedMap));
   }
 
+  /// Recursively encodes the runtime [MapValue] back to its boundary form by
+  /// invoking each child schema's encode pipeline (`_validateRuntime` followed
+  /// by `encodeBoundary`).
+  ///
+  /// Per requirements §5.5 / §7.2.5, defaults are NOT synthesized on encode:
+  /// missing optional properties are simply omitted from the output.
+  ///
+  /// Per the maintainer A6 decision, when [additionalProperties] is `true`
+  /// unknown keys are copied as-is (no child schema exists to recurse into);
+  /// when `false`, unknown keys produce
+  /// [SchemaEncodeError.unexpectedProperty].
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(
+    MapValue value,
+    SchemaContext context,
+  ) {
+    final out = <String, Object?>{};
+    final encodeErrors = <SchemaError>[];
+
+    // Encode each declared property.
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final childSchema = entry.value;
+      final hasValue = value.containsKey(key);
+
+      if (!hasValue) {
+        if (childSchema.isOptional) {
+          // Missing optional → omit. Defaults are parse-only (§5.5).
+          continue;
+        }
+        encodeErrors.add(
+          SchemaEncodeError.missingRequiredProperty(
+            key: key,
+            context: context.createChild(
+              name: key,
+              schema: childSchema,
+              value: null,
+              pathSegment: key,
+            ),
+          ),
+        );
+        continue;
+      }
+
+      final childValue = value[key];
+      final childContext = context.createChild(
+        name: key,
+        schema: childSchema,
+        value: childValue,
+        pathSegment: key,
+      );
+
+      // Validate the runtime value through the child schema (operation-aware:
+      // childContext inherits operation: encode from the parent).
+      final validated =
+          childSchema._validateRuntime(childValue, childContext);
+      if (validated.isFail) {
+        encodeErrors.add(validated.getError());
+        continue;
+      }
+      final v = validated.getOrNull();
+      if (v == null) {
+        // Nullable child schema with null runtime value: emit null in boundary
+        // form. This matches the parse path's nullable handling.
+        out[key] = null;
+        continue;
+      }
+
+      // Recurse: encode runtime → boundary through this child's encoder.
+      final encoded = childSchema.encodeBoundary(v, childContext);
+      if (encoded.isFail) {
+        encodeErrors.add(encoded.getError());
+        continue;
+      }
+      out[key] = encoded.getOrNull();
+    }
+
+    // Handle keys present on the input but not declared on this schema.
+    final knownKeys = properties.keys.toSet();
+    for (final key in value.keys) {
+      if (knownKeys.contains(key)) continue;
+      if (additionalProperties) {
+        // A6 decision: pass-through unknown keys as-is when permitted.
+        out[key] = value[key];
+      } else {
+        encodeErrors.add(
+          SchemaEncodeError.unexpectedProperty(
+            key: key,
+            context: context.createChild(
+              name: key,
+              schema: this,
+              value: value[key],
+              pathSegment: key,
+            ),
+          ),
+        );
+      }
+    }
+
+    if (encodeErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: encodeErrors, context: context),
+      );
+    }
+
+    return SchemaResult.ok(Map<String, Object?>.unmodifiable(out));
+  }
+
   @override
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
