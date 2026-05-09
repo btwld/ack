@@ -19,16 +19,20 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.enum_;
 
-  /// EnumSchema uses custom parsing logic that doesn't fit the standard
-  /// primitive type conversion patterns, so it overrides parseAndValidate directly.
+  /// Stage-3 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
+  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) =>
+      _parse(inputValue, context);
 
-    // Custom enum parsing logic
+  /// Decodes a non-null boundary value into an enum [T]. Accepts the enum
+  /// itself, the enum's `.name`, or its index. Constraints/refinements are
+  /// applied by [_parse].
+  @override
+  @protected
+  SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
+    final inputValue = input!;
+
     T? parsed;
 
     // Try exact enum match first
@@ -85,8 +89,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       );
     }
 
-    // Use centralized constraints and refinements check
-    return applyConstraintsAndRefinements(parsed, context);
+    return SchemaResult.ok(parsed);
   }
 
   @override

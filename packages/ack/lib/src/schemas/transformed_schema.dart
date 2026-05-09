@@ -48,50 +48,64 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     super.refinements,
   });
 
-  // NOTE: TransformedSchema intentionally does NOT use the centralized
-  // handleNullInput pattern. This is because:
-  // 1. defaultValue is of type OutputType (post-transformation), not InputType
-  // 2. Using handleNullInput would route the default through parseAndValidate,
-  //    which would try to validate OutputType through the InputType inner schema
-  // 3. Instead, we handle null/default inline and clone the default manually
+  /// Stage-3 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
   SchemaResult<OutputType> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
+  ) =>
+      _parse(inputValue, context);
+
+  /// Custom null/default handling for a transformed schema:
+  /// `defaultValue` is of type `OutputType` (post-transformation), so the
+  /// default cannot route through the inner schema. We apply constraints
+  /// directly to the safe default; the dispatcher will not re-apply them
+  /// because [handleParseNull] returning non-null short-circuits [_parse].
+  @override
+  @protected
+  SchemaResult<OutputType>? handleParseNull(
+    Object? input,
+    SchemaContext context,
   ) {
-    // Handle defaults before delegation, since wrapped schemas may reject null.
-    // If cloning loses generic type information, fall back to the original value.
-    if (inputValue == null && defaultValue != null) {
+    if (input != null) return null;
+    if (defaultValue != null) {
       final cloned = cloneDefault(defaultValue!);
       final safeDefault = (cloned is OutputType) ? cloned : defaultValue!;
       return applyConstraintsAndRefinements(safeDefault, context);
     }
+    if (isNullable) return SchemaResult.ok(null);
+    return failNonNullable(context);
+  }
 
-    // Delegate validation/parsing to the wrapped schema for all other cases.
-    final originalResult = schema.parseAndValidate(inputValue, context);
+  /// Decodes the boundary value through the inner schema and applies the
+  /// transformer. Constraints/refinements on this transformed schema are
+  /// applied by [_parse] after a successful decode.
+  @override
+  @protected
+  SchemaResult<OutputType> decodeBoundary(
+    Object? input,
+    SchemaContext context,
+  ) {
+    final originalResult = schema.parseAndValidate(input, context);
     if (originalResult.isFail) {
       return SchemaResult.fail(originalResult.getError());
     }
 
     final validatedValue = originalResult.getOrNull();
 
-    // Null passes through without hitting the transformer when this schema
-    // itself is nullable. Outer nullability still applies even if the wrapped
-    // schema can accept null. Constraints and refinements on the transformed
-    // schema are typed OutputType (extends Object) and cannot accept null,
-    // so they must be skipped here.
+    // Defensive: outer nullability still applies even if the wrapped inner
+    // schema permits null. Returning ok(null) lets the dispatcher skip
+    // constraint application (constraints are typed OutputType extends
+    // Object and cannot accept null).
     if (validatedValue == null) {
-      if (!isNullable) {
-        return failNonNullable(context);
-      }
+      if (!isNullable) return failNonNullable(context);
       return SchemaResult.ok(null);
     }
 
     try {
       final transformedValue = transformer(validatedValue);
-
-      return applyConstraintsAndRefinements(transformedValue, context);
+      return SchemaResult.ok(transformedValue);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaTransformError(

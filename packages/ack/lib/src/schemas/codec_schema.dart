@@ -57,29 +57,45 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   bool get strictPrimitiveParsing => inputSchema.strictPrimitiveParsing;
 
+  /// Stage-3 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
   SchemaResult<O> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
-  ) {
-    // Defaults are of type O (runtime). Apply them before delegating, so the
-    // wrapped inputSchema doesn't try to validate an O value.
-    if (inputValue == null && defaultValue != null) {
+  ) =>
+      _parse(inputValue, context);
+
+  /// Custom null/default handling: defaults are of type `O` (runtime form),
+  /// so they must not route through `inputSchema` (which validates `I`).
+  @override
+  @protected
+  SchemaResult<O>? handleParseNull(Object? input, SchemaContext context) {
+    if (input != null) return null;
+    if (defaultValue != null) {
       final cloned = cloneDefault(defaultValue!);
       final safeDefault = (cloned is O) ? cloned : defaultValue!;
       return applyConstraintsAndRefinements(safeDefault, context);
     }
+    if (isNullable) return SchemaResult.ok(null);
+    return failNonNullable(context);
+  }
 
-    final inputResult = inputSchema.parseAndValidate(inputValue, context);
+  /// Decodes a non-null boundary value through `inputSchema`, runs the
+  /// `decoder`, then validates the decoded value through `outputSchema`.
+  /// Constraints/refinements on this codec are applied by [_parse].
+  @override
+  @protected
+  SchemaResult<O> decodeBoundary(Object? input, SchemaContext context) {
+    final inputResult = inputSchema.parseAndValidate(input, context);
     if (inputResult case Fail(error: final e)) {
       return SchemaResult.fail<O>(e);
     }
 
     final validatedInput = inputResult.getOrNull();
 
-    // Outer nullability still applies even if the wrapped input schema can
-    // accept null.
+    // Defensive: outer nullability still applies even if the wrapped input
+    // schema permits null.
     if (validatedInput == null) {
       if (!isNullable) return failNonNullable(context);
       return SchemaResult.ok(null);
@@ -102,19 +118,19 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     // Validate the decoded runtime value (e.g. range checks declared on the
     // output schema). Pass the *validated* value forward — once output
     // schemas canonicalize (e.g. unmodifiable maps for ObjectSchema in M6),
-    // refinements must observe the canonical form, not the raw decoder output.
+    // refinements observe the canonical form, not the raw decoder output.
     final outputResult = outputSchema._validateRuntime(decoded, context);
     if (outputResult case Fail(error: final e)) {
       return SchemaResult.fail<O>(e);
     }
     final validated = outputResult.getOrThrow();
     if (validated == null) {
-      // outputSchema is nullable and decoder produced null; this matches the
-      // nullable-codec contract.
+      // outputSchema is nullable and decoder produced null. Dispatcher will
+      // short-circuit constraint application.
       return SchemaResult.ok(null);
     }
 
-    return applyConstraintsAndRefinements(validated, context);
+    return SchemaResult.ok(validated);
   }
 
   @override
