@@ -3,17 +3,20 @@ part of 'schema.dart';
 /// Schema for bidirectional value conversion between an [inputSchema] (boundary
 /// form, type [I]) and an [outputSchema] (runtime form, type [O]).
 ///
-/// `decode(I) → O` runs during [parseAndValidate]; `encode(O) → I`, when
-/// supplied, runs during [encodeBoundary]. When `encode` is `null`, the codec
-/// is one-way and any [safeEncode] call fails with
+/// [decoder] (`I → O`) runs during [parseAndValidate]; [encoder] (`O → I`),
+/// when supplied, runs during [encodeBoundary]. When [encoder] is `null`, the
+/// codec is one-way and any [safeEncode] call fails with
 /// [SchemaEncodeError.oneWayTransform].
+///
+/// Field naming follows `dart:convert`: methods are verbs (`encode`/`decode`),
+/// the function-typed fields holding them are nouns (`encoder`/`decoder`).
 ///
 /// ```dart
 /// final intFromString = CodecSchema<String, int>(
 ///   inputSchema: Ack.string().matches(r'^-?\d+$'),
 ///   outputSchema: Ack.integer(),
-///   decode: int.parse,
-///   encode: (i) => i.toString(),
+///   decoder: int.parse,
+///   encoder: (i) => i.toString(),
 /// );
 /// intFromString.parse('42');  // → 42
 /// intFromString.encode(42);   // → '42'

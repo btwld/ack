@@ -66,7 +66,7 @@ The requirements in this document follow these implementation principles:
 
 The codec feature shall include:
 
-- `Ack.codec<I, O>(inputSchema, outputSchema, decode:, encode:)`.
+- `Ack.codec<I, O>(input:, output:, decoder:, encoder:)`.
 - `Ack.instance<T>()` for runtime type guarding.
 - `encode(...)` and `safeEncode(...)` on all `AckSchema` instances.
 - Recursive encoding for object and list schemas.
@@ -98,30 +98,33 @@ The following are not required for the initial reference release:
 ACK shall expose:
 
 ```dart
-static CodecSchema<I, O> codec<I extends Object, O extends Object>(
-  AckSchema<I> inputSchema,
-  AckSchema<O> outputSchema, {
-  required O Function(I value) decode,
-  required I Function(O value) encode,
+static CodecSchema<I, O> codec<I extends Object, O extends Object>({
+  required AckSchema<I> input,
+  required AckSchema<O> output,
+  required O Function(I value) decoder,
+  I Function(O value)? encoder,
 });
 ```
 
 Requirement details:
 
-- `inputSchema` validates the boundary/input value.
-- `outputSchema` validates the runtime/output value.
-- `decode` runs after successful input validation.
-- `encode` runs after successful output validation.
+- `input` validates the boundary/input value.
+- `output` validates the runtime/output value.
+- `decoder` runs after successful input validation.
+- `encoder`, when supplied, runs after successful output validation. Omit
+  to declare a one-way codec.
 - The returned schema parses to `O` and encodes to boundary shape `I` or a recursively encoded form of `I`.
+- Naming follows `dart:convert`: methods are verbs (`encode`/`decode`), the
+  function-typed fields holding them are nouns (`encoder`/`decoder`).
 
 Example:
 
 ```dart
 final bigIntCodec = Ack.codec<String, BigInt>(
-  Ack.string().matches(r'^-?\d+$'),
-  Ack.instance<BigInt>(),
-  decode: BigInt.parse,
-  encode: (value) => value.toString(),
+  input: Ack.string().matches(r'^-?\d+$'),
+  output: Ack.instance<BigInt>(),
+  decoder: BigInt.parse,
+  encoder: (value) => value.toString(),
 );
 ```
 
@@ -139,10 +142,10 @@ Example:
 
 ```dart
 Ack.codec<String, Uri>(
-  Ack.string().uri(),
-  Ack.instance<Uri>(),
-  decode: Uri.parse,
-  encode: (value) => value.toString(),
+  input: Ack.string().uri(),
+  output: Ack.instance<Uri>(),
+  decoder: Uri.parse,
+  encoder: (value) => value.toString(),
 );
 ```
 
@@ -279,10 +282,10 @@ Boundary conversions shall be implemented with codecs:
 
 ```dart
 final intStringCodec = Ack.codec<String, int>(
-  Ack.string().matches(r'^-?\d+$'),
-  Ack.instance<int>(),
-  decode: int.parse,
-  encode: (value) => value.toString(),
+  input: Ack.string().matches(r'^-?\d+$'),
+  output: Ack.instance<int>(),
+  decoder: int.parse,
+  encoder: (value) => value.toString(),
 );
 ```
 
@@ -559,10 +562,10 @@ New:
 
 ```dart
 final intFromString = Ack.codec<String, int>(
-  Ack.string().matches(r'^-?\d+$'),
-  Ack.instance<int>(),
-  decode: int.parse,
-  encode: (value) => value.toString(),
+  input: Ack.string().matches(r'^-?\d+$'),
+  output: Ack.instance<int>(),
+  decoder: int.parse,
+  encoder: (value) => value.toString(),
 );
 ```
 

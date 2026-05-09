@@ -72,16 +72,19 @@ final class Ack {
   /// Creates a bidirectional codec between [input] (boundary form, type [I])
   /// and [output] (runtime form, type [O]).
   ///
-  /// `decode: I → O` runs on parse; `encode: O → I` runs on encode. Omit
-  /// [encode] to declare a one-way codec (any `safeEncode` call surfaces
-  /// [SchemaEncodeError.oneWayTransform]).
+  /// [decoder] (`I → O`) runs on parse; [encoder] (`O → I`), when supplied,
+  /// runs on encode. Omit [encoder] to declare a one-way codec (any
+  /// `safeEncode` call surfaces [SchemaEncodeError.oneWayTransform]).
+  ///
+  /// Naming follows `dart:convert`: methods are verbs (`encode`/`decode`),
+  /// the function-typed fields holding them are nouns (`encoder`/`decoder`).
   ///
   /// ```dart
   /// final intFromString = Ack.codec<String, int>(
   ///   input: Ack.string().matches(r'^-?\d+$'),
   ///   output: Ack.instance<int>(),
-  ///   decode: int.parse,
-  ///   encode: (i) => i.toString(),
+  ///   decoder: int.parse,
+  ///   encoder: (i) => i.toString(),
   /// );
   /// intFromString.parse('42');  // → 42
   /// intFromString.encode(42);   // → '42'
@@ -89,14 +92,14 @@ final class Ack {
   static CodecSchema<I, O> codec<I extends Object, O extends Object>({
     required AckSchema<I> input,
     required AckSchema<O> output,
-    required O Function(I) decode,
-    I Function(O)? encode,
+    required O Function(I) decoder,
+    I Function(O)? encoder,
   }) {
     return CodecSchema<I, O>(
       inputSchema: input,
       outputSchema: output,
-      decoder: decode,
-      encoder: encode,
+      decoder: decoder,
+      encoder: encoder,
     );
   }
 

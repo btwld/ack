@@ -74,8 +74,8 @@ void main() {
       final schema = Ack.codec<String, int>(
         input: Ack.string(),
         output: Ack.instance<int>(),
-        decode: int.parse,
-        encode: (i) => i.toString(),
+        decoder: int.parse,
+        encoder: (i) => i.toString(),
       );
 
       expect(schema, isA<CodecSchema<String, int>>());
@@ -83,11 +83,11 @@ void main() {
       expect(schema.encode(42), equals('42'));
     });
 
-    test('Ack.codec produces a one-way codec when encode is omitted', () {
+    test('Ack.codec produces a one-way codec when encoder is omitted', () {
       final schema = Ack.codec<String, int>(
         input: Ack.string(),
         output: Ack.instance<int>(),
-        decode: int.parse,
+        decoder: int.parse,
       );
 
       final encodeResult = schema.safeEncode(42);
