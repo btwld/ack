@@ -15,6 +15,7 @@ import '../validation/schema_result.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
+part 'codec_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
