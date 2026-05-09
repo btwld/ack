@@ -81,6 +81,57 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     return SchemaResult.ok(List<V>.unmodifiable(validatedItems));
   }
 
+  /// Recursively encodes the runtime [List<V>] back to its boundary form by
+  /// invoking each item's encode pipeline (`_validateRuntime` followed by
+  /// `encodeBoundary`). Errors are aggregated under [SchemaNestedError] with
+  /// per-index paths preserved.
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(
+    List<V> value,
+    SchemaContext context,
+  ) {
+    final out = <Object?>[];
+    final itemErrors = <SchemaError>[];
+
+    for (var i = 0; i < value.length; i++) {
+      final itemValue = value[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: itemValue,
+        pathSegment: '$i',
+      );
+
+      final validated = itemSchema._validateRuntime(itemValue, itemContext);
+      if (validated.isFail) {
+        itemErrors.add(validated.getError());
+        continue;
+      }
+      final v = validated.getOrNull();
+      if (v == null) {
+        // Item schema accepted null (nullable); the boundary form is null.
+        out.add(null);
+        continue;
+      }
+
+      final encoded = itemSchema.encodeBoundary(v, itemContext);
+      if (encoded.isFail) {
+        itemErrors.add(encoded.getError());
+        continue;
+      }
+      out.add(encoded.getOrNull());
+    }
+
+    if (itemErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: itemErrors, context: context),
+      );
+    }
+
+    return SchemaResult.ok(List<Object?>.unmodifiable(out));
+  }
+
   @override
   ListSchema<V> copyWith({
     AckSchema<V>? itemSchema,
