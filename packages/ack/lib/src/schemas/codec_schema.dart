@@ -3,7 +3,7 @@ part of 'schema.dart';
 /// Schema for bidirectional value conversion between an [inputSchema] (boundary
 /// form, type [I]) and an [outputSchema] (runtime form, type [O]).
 ///
-/// [decoder] (`I → O`) runs during [parseAndValidate]; [encoder] (`O → I`),
+/// [decoder] (`I → O`) runs during the parse path; [encoder] (`O → I`),
 /// when supplied, runs during [encodeBoundary]. When [encoder] is `null`, the
 /// codec is one-way and any [safeEncode] call fails with
 /// [SchemaEncodeError.oneWayTransform].
@@ -57,15 +57,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   bool get strictPrimitiveParsing => inputSchema.strictPrimitiveParsing;
 
-  /// Stage-3 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<O> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) =>
-      _parse(inputValue, context);
-
   /// Custom null/default handling: defaults are of type `O` (runtime form),
   /// so they must not route through `inputSchema` (which validates `I`).
   @override
@@ -87,7 +78,7 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   @protected
   SchemaResult<O> decodeBoundary(Object? input, SchemaContext context) {
-    final inputResult = inputSchema.parseAndValidate(input, context);
+    final inputResult = inputSchema._parse(input, context);
     if (inputResult case Fail(error: final e)) {
       return SchemaResult.fail<O>(e);
     }

@@ -48,15 +48,6 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     super.refinements,
   });
 
-  /// Stage-3 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<OutputType> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) =>
-      _parse(inputValue, context);
-
   /// Custom null/default handling for a transformed schema:
   /// `defaultValue` is of type `OutputType` (post-transformation), so the
   /// default cannot route through the inner schema. We apply constraints
@@ -87,7 +78,7 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     Object? input,
     SchemaContext context,
   ) {
-    final originalResult = schema.parseAndValidate(input, context);
+    final originalResult = schema._parse(input, context);
     if (originalResult.isFail) {
       return SchemaResult.fail(originalResult.getError());
     }

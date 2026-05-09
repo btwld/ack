@@ -32,13 +32,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.any;
 
-  @override
-  @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Stage-2 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-    return _parse(inputValue, context);
-  }
-
   /// Preserves the legacy cast-safety fallback for [cloneDefault] producing
   /// a non-`T` value (e.g. cloning a `Map`-shaped default for a `Map`-typed
   /// `T`): if the clone is not `T`, fall back to the original `defaultValue`

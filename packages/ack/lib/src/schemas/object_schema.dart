@@ -21,19 +21,10 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   SchemaType get schemaType => SchemaType.object;
 
-  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<MapValue> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) =>
-      _parse(inputValue, context);
-
   /// Decodes a non-null boundary value into `MapValue`. Each property is
-  /// decoded recursively through its schema's `parseAndValidate(...)` so
-  /// child constraints still apply. The schema's own constraints are applied
-  /// by [_parse] after this returns.
+  /// decoded recursively through its schema's `_parse(...)` so child
+  /// constraints still apply. The schema's own constraints are applied by
+  /// [_parse] after this returns.
   @override
   @protected
   SchemaResult<MapValue> decodeBoundary(
@@ -76,7 +67,7 @@ final class ObjectSchema extends AckSchema<MapValue>
               value: null,
               pathSegment: key,
             );
-            final result = schema.parseAndValidate(null, propertyContext);
+            final result = schema._parse(null, propertyContext);
             result.match(
               onOk: (validatedValue) {
                 if (validatedValue != null) {
@@ -115,7 +106,7 @@ final class ObjectSchema extends AckSchema<MapValue>
           value: propertyValue,
           pathSegment: key,
         );
-        final result = schema.parseAndValidate(propertyValue, propertyContext);
+        final result = schema._parse(propertyValue, propertyContext);
         result.match(
           onOk: (validatedValue) {
             validatedMap[key] = validatedValue;

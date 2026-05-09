@@ -19,16 +19,6 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
     super.refinements,
   });
 
-  /// Stage-2 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  /// Inherits the base `decodeBoundary` (number type-detect + coerce).
-  @override
-  @protected
-  SchemaResult<T> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) =>
-      _parse(inputValue, context);
-
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
     typeSchema: {'type': 'number'},

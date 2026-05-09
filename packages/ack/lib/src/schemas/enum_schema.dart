@@ -19,12 +19,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.enum_;
 
-  /// Stage-3 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) =>
-      _parse(inputValue, context);
-
   /// Decodes a non-null boundary value into an enum [T]. Accepts the enum
   /// itself, the enum's `.name`, or its index. Constraints/refinements are
   /// applied by [_parse].

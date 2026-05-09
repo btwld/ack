@@ -19,19 +19,10 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   SchemaType get schemaType => SchemaType.array;
 
-  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<List<V>> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) =>
-      _parse(inputValue, context);
-
   /// Decodes a non-null boundary value into `List<V>`. Each item is decoded
-  /// recursively through `itemSchema.parseAndValidate(...)` so child
-  /// constraints still apply. The schema's own constraints/refinements are
-  /// applied by [_parse] after this returns.
+  /// recursively through `itemSchema._parse(...)` so child constraints still
+  /// apply. The schema's own constraints/refinements are applied by [_parse]
+  /// after this returns.
   @override
   @protected
   SchemaResult<List<V>> decodeBoundary(
@@ -61,7 +52,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         pathSegment: '$i',
       );
 
-      final itemResult = itemSchema.parseAndValidate(itemValue, itemContext);
+      final itemResult = itemSchema._parse(itemValue, itemContext);
 
       if (itemResult.isOk) {
         final validatedItemValue = itemResult.getOrNull();

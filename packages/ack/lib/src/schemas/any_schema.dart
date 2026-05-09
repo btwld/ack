@@ -20,18 +20,6 @@ final class AnySchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.any;
 
-  /// AnySchema accepts all values, so it overrides parseAndValidate directly.
-  @override
-  @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Stage-2 shim: route through the new dispatcher so `decodeBoundary`
-    // handles boundary semantics. Removed in M5.5 stage 5.
-    return _parse(inputValue, context);
-  }
-
   /// AnySchema accepts any non-null value as-is — no type detection or
   /// coercion. Constraints/refinements are applied by [_parse].
   @override

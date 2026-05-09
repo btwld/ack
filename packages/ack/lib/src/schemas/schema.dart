@@ -186,31 +186,6 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
-  /// Handles null input for schemas using the standard null/default flow.
-  ///
-  /// Returns `null` when [inputValue] is non-null so callers can continue parsing.
-  /// For null input, returns a validated clone of [defaultValue] when present,
-  /// otherwise `Ok(null)` if nullable, else a non-nullable failure result.
-  @protected
-  SchemaResult<DartType>? handleNullInput(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    if (inputValue != null) return null;
-
-    if (defaultValue != null) {
-      // Clone mutable defaults to avoid shared state across parse calls.
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
-    }
-
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
-    return failNonNullable(context);
-  }
-
   /// The schema type category for this schema.
   ///
   /// Subclasses must override to specify their type.
@@ -231,61 +206,8 @@ sealed class AckSchema<DartType extends Object> {
   @protected
   bool get strictPrimitiveParsing => false;
 
-  @protected
-  SchemaResult<DartType> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
-
-    // After null check, inputValue is guaranteed non-null
-    final nonNullInput = inputValue!;
-    final targetType = schemaType;
-
-    // Get the actual type of the input, catching any errors to maintain
-    // the "never throws" guarantee of safeParse()
-    SchemaType actualType;
-    try {
-      actualType = AckSchema.getSchemaType(nonNullInput);
-    } catch (e) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Unsupported input type: ${nonNullInput.runtimeType}',
-          context: context,
-        ),
-      );
-    }
-
-    // Type compatibility check
-    if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: targetType,
-          actualType: actualType,
-          context: context,
-        ),
-      );
-    }
-
-    // Parse using SchemaType's parsing logic
-    final convertedResult = targetType.parse<DartType>(
-      nonNullInput,
-      actualType,
-      context,
-    );
-    if (convertedResult.isFail) return convertedResult;
-
-    final convertedValue = convertedResult.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(convertedValue, context);
-  }
-
   // ---------------------------------------------------------------------------
-  // Symmetric parse-side hooks (M5.5).
-  //
-  // Three protected hooks form the parse pipeline, mirroring the encode side:
+  // Parse-side hooks. Symmetric to the encode-side hooks above:
   //
   //   _parse(input, ctx)             // dispatcher (do not override)
   //     -> handleParseNull           // null/default handling
@@ -294,14 +216,9 @@ sealed class AckSchema<DartType extends Object> {
   //
   // The dispatcher is the single owner of the lifecycle. `decodeBoundary` does
   // boundary decoding only — it must NOT apply this schema's own constraints
-  // or refinements, because the dispatcher applies them exactly once after
-  // decode. Composite schemas recurse via child `_parse(...)` calls so that
-  // child constraints still apply.
-  //
-  // In this commit (M5.5 stage 1) the hooks exist but are dormant — `safeParse`
-  // still routes through `parseAndValidate`. Subsequent commits migrate each
-  // schema's parse logic into `decodeBoundary` and ultimately route `safeParse`
-  // through `_parse`, deleting `parseAndValidate`.
+  // or refinements, because the dispatcher applies them exactly once after a
+  // successful decode. Composite schemas recurse via child `_parse(...)` calls
+  // so that child constraints still apply.
   // ---------------------------------------------------------------------------
 
   /// Parse-side dispatcher. Owns the parse lifecycle and applies this schema's
@@ -329,9 +246,9 @@ sealed class AckSchema<DartType extends Object> {
   /// Handles null input on the parse path. Returns `null` when [input] is
   /// non-null so the dispatcher proceeds with [decodeBoundary].
   ///
-  /// Default behaviour mirrors [handleNullInput]: synthesize [defaultValue]
-  /// when present, emit `Ok(null)` when the schema is nullable, otherwise
-  /// emit a non-nullable failure.
+  /// Default behaviour: synthesize [defaultValue] when present, emit
+  /// `Ok(null)` when the schema is nullable, otherwise emit a non-nullable
+  /// failure.
   @protected
   SchemaResult<DartType>? handleParseNull(
     Object? input,
@@ -355,9 +272,8 @@ sealed class AckSchema<DartType extends Object> {
   /// schema's own constraints or refinements — [_parse] applies them once
   /// after decode succeeds.
   ///
-  /// The default implementation mirrors the type-detection + coercion path
-  /// of the legacy [parseAndValidate], minus null handling and constraint
-  /// application. It is used by primitive schemas (`StringSchema`,
+  /// The default implementation performs JSON-primitive type detection and
+  /// coercion. It is used by primitive schemas (`StringSchema`,
   /// `IntegerSchema`, `DoubleSchema`, `BooleanSchema`) whose only parse
   /// concern is the JSON-primitive coerce matrix.
   @protected
@@ -551,7 +467,7 @@ sealed class AckSchema<DartType extends Object> {
   /// ```
   SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
     final context = _createRootContext(value, debugName: debugName);
-    return parseAndValidate(value, context);
+    return _parse(value, context);
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].

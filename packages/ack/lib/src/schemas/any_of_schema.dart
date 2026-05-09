@@ -36,15 +36,6 @@ final class AnyOfSchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.anyOf;
 
-  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) =>
-      _parse(inputValue, context);
-
   /// Custom null/default handling. AnyOf has special null semantics:
   ///   1. If a default exists, apply it (consistent with other schemas).
   ///   2. Otherwise return `null` to let [decodeBoundary] try member schemas
@@ -87,7 +78,7 @@ final class AnyOfSchema extends AckSchema<Object>
         pathSegment: '', // Inherit parent path
       );
 
-      final result = schema.parseAndValidate(input, childContext);
+      final result = schema._parse(input, childContext);
 
       if (result.isOk) {
         final validatedValue = result.getOrNull();

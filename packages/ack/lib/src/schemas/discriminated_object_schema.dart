@@ -77,12 +77,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     return failNonNullable(context);
   }
 
-  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
-  @override
-  @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) =>
-      _parse(inputValue, context);
-
   /// Selects a branch from `schemas` using the value at [discriminatorKey],
   /// then delegates to that branch. Constraints/refinements on this schema
   /// are applied by [_parse] after this returns.
@@ -180,7 +174,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     }
 
     final result =
-        selectedSubSchema.parseAndValidate(mapValue, subSchemaContext);
+        selectedSubSchema._parse(mapValue, subSchemaContext);
 
     if (result.isFail) {
       return result.match(

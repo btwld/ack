@@ -35,11 +35,10 @@ void main() {
       'parse-side type mismatch produces a parse-side error, '
       'not SchemaEncodeError',
       () {
-        // Regression: InstanceSchema.parseAndValidate delegates to
-        // _validateRuntime, which previously emitted SchemaEncodeError on
-        // any failure regardless of the operation. Parse failures must
-        // surface as parse-side errors so error consumers can branch on
-        // the class.
+        // Regression: InstanceSchema's parse path uses the runtime type
+        // check helpers, which previously emitted SchemaEncodeError on any
+        // failure regardless of the operation. Parse failures must surface
+        // as parse-side errors so error consumers can branch on the class.
         final schema = InstanceSchema<DateTime>();
         final result = schema.safeParse('not a date');
 
