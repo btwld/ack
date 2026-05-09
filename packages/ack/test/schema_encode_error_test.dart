@@ -16,14 +16,14 @@ void main() {
       test('produces a clear message naming actual and expected types', () {
         final ctx = makeCtx(value: 42);
         final error = SchemaEncodeError.typeMismatch(
-          actualValue: 42,
-          expectedType: SchemaType.string,
+          actual: 42,
+          expected: String,
           context: ctx,
         );
 
         expect(error, isA<SchemaError>());
         expect(error.message.toLowerCase(), contains('encode'));
-        expect(error.message, contains('string'));
+        expect(error.message.toLowerCase(), contains('string'));
         expect(error.message, contains('int'));
       });
 
@@ -37,13 +37,39 @@ void main() {
         );
 
         final error = SchemaEncodeError.typeMismatch(
-          actualValue: 5,
-          expectedType: SchemaType.string,
+          actual: 5,
+          expected: String,
           context: child,
         );
 
         expect(error.path, equals('#/name'));
       });
+
+      test(
+        'does not throw when constructing for non-JSON runtime types '
+        '(DateTime, Uri, user classes)',
+        () {
+          // Regression: the previous form went through SchemaType.of() which
+          // throws ArgumentError for any value outside the JSON primitives,
+          // making safeEncode(...) throw mid-error-construction.
+          expect(
+            () => SchemaEncodeError.typeMismatch(
+              actual: DateTime.utc(2025, 1, 1),
+              expected: String,
+              context: makeCtx(),
+            ),
+            returnsNormally,
+          );
+          expect(
+            () => SchemaEncodeError.typeMismatch(
+              actual: Uri.parse('https://example.com'),
+              expected: String,
+              context: makeCtx(),
+            ),
+            returnsNormally,
+          );
+        },
+      );
     });
 
     group('.nonNullable', () {

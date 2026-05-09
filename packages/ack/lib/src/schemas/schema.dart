@@ -285,17 +285,14 @@ sealed class AckSchema<DartType extends Object> {
   /// Validates a runtime value against this schema, applying constraints
   /// and refinements without performing any decode-side parsing.
   ///
-  /// This is the encode-side counterpart to [parseAndValidate]: it accepts a
-  /// value already in the schema's `DartType` shape and verifies it conforms
-  /// to the schema's rules. The default implementation performs a strict
-  /// runtime type check against `DartType` and then runs constraints and
-  /// refinements. Schemas with extra invariants (e.g. `ObjectSchema`'s map
-  /// shape, or per-property recursion) override this.
+  /// Used both as the encode-side type guard and as the parse-side runtime
+  /// check after a codec decoder produces a value. The error class emitted
+  /// for null/type mismatches branches on `context.operation`: encode-mode
+  /// failures surface as [SchemaEncodeError]; parse-mode failures surface
+  /// as the standard parse-side errors so callers can branch by class.
   ///
-  /// Returns `Ok(null)` for a `null` input on a nullable schema, and a
-  /// [SchemaEncodeError.nonNullable] failure when the schema does not allow
-  /// null. Defaults are deliberately **not** synthesized on encode (per
-  /// requirements §5.5).
+  /// Returns `Ok(null)` for a `null` input on a nullable schema. Defaults
+  /// are deliberately **not** synthesized here (per requirements §5.5).
   @protected
   SchemaResult<DartType> _validateRuntime(
     Object? value,
@@ -303,20 +300,52 @@ sealed class AckSchema<DartType extends Object> {
   ) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
-      return SchemaResult.fail(
-        SchemaEncodeError.nonNullable(context: context),
-      );
+      return SchemaResult.fail(_failNullForRuntime(context));
     }
     if (value is! DartType) {
-      return SchemaResult.fail(
-        SchemaEncodeError.typeMismatch(
-          actualValue: value,
-          expectedType: schemaType,
-          context: context,
-        ),
-      );
+      return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
     }
     return applyConstraintsAndRefinements(value, context);
+  }
+
+  /// Builds the appropriate null-rejection error for a runtime check, choosing
+  /// between encode-side ([SchemaEncodeError]) and parse-side
+  /// ([SchemaConstraintsError] over [NonNullableConstraint]) based on
+  /// `context.operation`.
+  SchemaError _failNullForRuntime(SchemaContext context) {
+    if (context.operation == SchemaOperation.encode) {
+      return SchemaEncodeError.nonNullable(context: context);
+    }
+    final c = NonNullableConstraint().validate(null);
+    return SchemaConstraintsError(
+      constraints: c != null ? [c] : const [],
+      context: context,
+    );
+  }
+
+  /// Builds the appropriate type-mismatch error for a runtime check, choosing
+  /// between encode-side ([SchemaEncodeError]) and parse-side
+  /// ([SchemaConstraintsError] over [InvalidTypeConstraint]) based on
+  /// `context.operation`.
+  SchemaError _failTypeMismatchForRuntime(
+    Object value,
+    SchemaContext context,
+  ) {
+    if (context.operation == SchemaOperation.encode) {
+      return SchemaEncodeError.typeMismatch(
+        expected: DartType,
+        actual: value,
+        context: context,
+      );
+    }
+    final c = InvalidTypeConstraint(
+      expectedType: DartType,
+      inputValue: value,
+    ).validate(value);
+    return SchemaConstraintsError(
+      constraints: c != null ? [c] : const [],
+      context: context,
+    );
   }
 
   /// Encodes a validated runtime value back to its boundary representation.

@@ -27,9 +27,29 @@ void main() {
       expect(result.isFail, isTrue);
       final error = result.getError();
       expect(error, isA<SchemaEncodeError>());
-      expect(error.message, contains('string'));
+      expect(error.message.toLowerCase(), contains('string'));
       expect(error.message, contains('int'));
     });
+
+    test(
+      'safeEncode does not throw when actual value is a non-JSON runtime '
+      'type like DateTime',
+      () {
+        // Regression: previously the typeMismatch error constructor went
+        // through SchemaType.of(value), which throws ArgumentError for
+        // DateTime, Uri, and user classes. safeEncode promised "never throws".
+        final schema = Ack.string();
+
+        late SchemaResult<Object> result;
+        expect(
+          () => result = schema.safeEncode(DateTime.utc(2025, 1, 1)),
+          returnsNormally,
+        );
+
+        expect(result.isFail, isTrue);
+        expect(result.getError(), isA<SchemaEncodeError>());
+      },
+    );
 
     test('error context is in encode direction', () {
       final schema = Ack.string();

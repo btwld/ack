@@ -156,16 +156,21 @@ final class SchemaEncodeError extends SchemaError {
     super.stackTrace,
   }) : super(message);
 
-  /// The runtime value's type does not match the schema's expected boundary type.
+  /// The runtime value's type does not match the schema's expected runtime type.
+  ///
+  /// [expected] is the Dart type the schema requires (e.g. `String`,
+  /// `DateTime`, a user class). [actual] is the offending value; the message
+  /// reports `actual.runtimeType` directly so this constructor never throws,
+  /// even for values outside the JSON primitives (`DateTime`, `Uri`, user
+  /// classes). This preserves `safeEncode`'s "never throws" guarantee.
   factory SchemaEncodeError.typeMismatch({
-    required Object? actualValue,
-    required SchemaType expectedType,
+    required Type expected,
+    required Object? actual,
     required SchemaContext context,
   }) {
-    final actualType = AckSchema.getSchemaType(actualValue);
+    final actualLabel = actual == null ? 'null' : '${actual.runtimeType}';
     return SchemaEncodeError._(
-      message:
-          'Encode failed: expected ${expectedType.typeName}, got ${actualType.typeName}',
+      message: 'Encode failed: expected $expected, got $actualLabel.',
       context: context,
     );
   }

@@ -31,6 +31,44 @@ void main() {
       expect(encodeResult.isFail, isTrue);
     });
 
+    test(
+      'parse-side type mismatch produces a parse-side error, '
+      'not SchemaEncodeError',
+      () {
+        // Regression: InstanceSchema.parseAndValidate delegates to
+        // _validateRuntime, which previously emitted SchemaEncodeError on
+        // any failure regardless of the operation. Parse failures must
+        // surface as parse-side errors so error consumers can branch on
+        // the class.
+        final schema = InstanceSchema<DateTime>();
+        final result = schema.safeParse('not a date');
+
+        expect(result.isFail, isTrue);
+        expect(
+          result.getError(),
+          isNot(isA<SchemaEncodeError>()),
+          reason:
+              'parse failures from _validateRuntime must not be reported as encode errors',
+        );
+        expect(
+          result.getError().context.operation,
+          equals(SchemaOperation.parse),
+        );
+      },
+    );
+
+    test(
+      'parse-side null on a non-nullable schema produces a parse-side error, '
+      'not SchemaEncodeError',
+      () {
+        final schema = InstanceSchema<DateTime>();
+        final result = schema.safeParse(null);
+
+        expect(result.isFail, isTrue);
+        expect(result.getError(), isNot(isA<SchemaEncodeError>()));
+      },
+    );
+
     test('runs constraints/refinements on the runtime value', () {
       final schema = InstanceSchema<DateTime>().refine(
         (dt) => dt.isUtc,

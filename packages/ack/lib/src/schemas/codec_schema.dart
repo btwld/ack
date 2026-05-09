@@ -100,13 +100,21 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     }
 
     // Validate the decoded runtime value (e.g. range checks declared on the
-    // output schema).
+    // output schema). Pass the *validated* value forward — once output
+    // schemas canonicalize (e.g. unmodifiable maps for ObjectSchema in M6),
+    // refinements must observe the canonical form, not the raw decoder output.
     final outputResult = outputSchema._validateRuntime(decoded, context);
     if (outputResult case Fail(error: final e)) {
       return SchemaResult.fail<O>(e);
     }
+    final validated = outputResult.getOrThrow();
+    if (validated == null) {
+      // outputSchema is nullable and decoder produced null; this matches the
+      // nullable-codec contract.
+      return SchemaResult.ok(null);
+    }
 
-    return applyConstraintsAndRefinements(decoded, context);
+    return applyConstraintsAndRefinements(validated, context);
   }
 
   @override
