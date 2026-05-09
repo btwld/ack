@@ -217,11 +217,14 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! CodecSchema<I, O>) return false;
+    // Closure identity is intentionally ignored (codec-open-questions §B3,
+    // decision (a)): equality is structural over schemas. The presence vs.
+    // absence of an encoder is observably different (one-way vs two-way), so
+    // it remains part of equality even though the closure value itself is not.
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
-        identical(decoder, other.decoder) &&
-        identical(encoder, other.encoder);
+        (encoder == null) == (other.encoder == null);
   }
 
   @override
@@ -229,7 +232,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
         baseFieldsHashCode,
         inputSchema,
         outputSchema,
-        identityHashCode(decoder),
-        identityHashCode(encoder),
+        encoder == null,
       );
 }

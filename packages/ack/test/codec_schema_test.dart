@@ -162,6 +162,48 @@ void main() {
 
         expect(a, isNot(equals(b)));
       });
+
+      test(
+        'two codecs with the same schemas but distinct closures compare equal',
+        () {
+          // Distinct closure literals — `identical(...)` would return false.
+          final a = CodecSchema<String, int>(
+            inputSchema: Ack.string(),
+            outputSchema: Ack.integer(),
+            decoder: (s) => int.parse(s),
+            encoder: (i) => i.toString(),
+          );
+          final b = CodecSchema<String, int>(
+            inputSchema: Ack.string(),
+            outputSchema: Ack.integer(),
+            decoder: (s) => int.parse(s),
+            encoder: (i) => i.toString(),
+          );
+
+          expect(a, equals(b));
+          expect(a.hashCode, equals(b.hashCode));
+        },
+      );
+
+      test('one-way and two-way codecs with same schemas compare unequal',
+          () {
+        // Closure identity is ignored, but the presence vs. absence of an
+        // encoder is a structural distinction: one-way fails on encode,
+        // two-way succeeds. They are observably different.
+        final oneWay = CodecSchema<String, int>(
+          inputSchema: Ack.string(),
+          outputSchema: Ack.integer(),
+          decoder: int.parse,
+        );
+        final twoWay = CodecSchema<String, int>(
+          inputSchema: Ack.string(),
+          outputSchema: Ack.integer(),
+          decoder: int.parse,
+          encoder: (i) => i.toString(),
+        );
+
+        expect(oneWay, isNot(equals(twoWay)));
+      });
     });
   });
 }
