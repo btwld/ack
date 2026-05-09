@@ -60,6 +60,46 @@ final class Ack {
   /// Useful for dynamic content or when you need maximum flexibility.
   static AnySchema any() => const AnySchema();
 
+  /// Creates a schema describing a runtime value of type [T].
+  ///
+  /// Most useful as the `output` of [Ack.codec], where the runtime form is
+  /// a non-JSON Dart class (e.g. `DateTime`, `Uri`, `Duration`, or a user
+  /// class). Standalone, it accepts any [T] on parse/encode and has no
+  /// meaningful JSON Schema form.
+  static InstanceSchema<T> instance<T extends Object>() =>
+      InstanceSchema<T>();
+
+  /// Creates a bidirectional codec between [input] (boundary form, type [I])
+  /// and [output] (runtime form, type [O]).
+  ///
+  /// `decode: I → O` runs on parse; `encode: O → I` runs on encode. Omit
+  /// [encode] to declare a one-way codec (any `safeEncode` call surfaces
+  /// [SchemaEncodeError.oneWayTransform]).
+  ///
+  /// ```dart
+  /// final intFromString = Ack.codec<String, int>(
+  ///   input: Ack.string().matches(r'^-?\d+$'),
+  ///   output: Ack.instance<int>(),
+  ///   decode: int.parse,
+  ///   encode: (i) => i.toString(),
+  /// );
+  /// intFromString.parse('42');  // → 42
+  /// intFromString.encode(42);   // → '42'
+  /// ```
+  static CodecSchema<I, O> codec<I extends Object, O extends Object>({
+    required AckSchema<I> input,
+    required AckSchema<O> output,
+    required O Function(I) decode,
+    I Function(O)? encode,
+  }) {
+    return CodecSchema<I, O>(
+      inputSchema: input,
+      outputSchema: output,
+      decoder: decode,
+      encoder: encode,
+    );
+  }
+
   /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
   ///
   /// The schema validates the string format before transformation, ensuring only valid
