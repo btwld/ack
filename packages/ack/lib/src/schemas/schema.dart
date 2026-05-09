@@ -280,6 +280,88 @@ sealed class AckSchema<DartType extends Object> {
     return applyConstraintsAndRefinements(convertedValue, context);
   }
 
+  /// Validates a runtime value against this schema, applying constraints
+  /// and refinements without performing any decode-side parsing.
+  ///
+  /// This is the encode-side counterpart to [parseAndValidate]: it accepts a
+  /// value already in the schema's `DartType` shape and verifies it conforms
+  /// to the schema's rules. The default implementation performs a strict
+  /// runtime type check against `DartType` and then runs constraints and
+  /// refinements. Schemas with extra invariants (e.g. `ObjectSchema`'s map
+  /// shape, or per-property recursion) override this.
+  ///
+  /// Returns `Ok(null)` for a `null` input on a nullable schema, and a
+  /// [SchemaEncodeError.nonNullable] failure when the schema does not allow
+  /// null. Defaults are deliberately **not** synthesized on encode (per
+  /// requirements §5.5).
+  @protected
+  SchemaResult<DartType> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return SchemaResult.fail(
+        SchemaEncodeError.nonNullable(context: context),
+      );
+    }
+    if (value is! DartType) {
+      return SchemaResult.fail(
+        SchemaEncodeError.typeMismatch(
+          actualValue: value,
+          expectedType: schemaType,
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  /// Encodes a validated runtime value back to its boundary representation.
+  ///
+  /// The default implementation is identity (returns the value unchanged),
+  /// which is correct for primitive schemas whose runtime and boundary types
+  /// coincide. Codec-style schemas (e.g. `CodecSchema`, `EnumSchema`) and
+  /// composite schemas (`ObjectSchema`, `ListSchema`) override this to
+  /// recurse into children or run the user-supplied encoder.
+  @protected
+  SchemaResult<Object> encodeBoundary(DartType value, SchemaContext context) {
+    return SchemaResult.ok(value);
+  }
+
+  /// Encodes [value] back to the schema's boundary representation.
+  ///
+  /// Throws an [AckException] on failure. Use [safeEncode] for explicit
+  /// error handling.
+  Object? encode(Object? value, {String? debugName}) {
+    return safeEncode(value, debugName: debugName).getOrThrow();
+  }
+
+  /// Encodes [value] back to the schema's boundary representation, never
+  /// throwing.
+  ///
+  /// On success returns `Ok(boundaryValue)`; on failure returns a `Fail`
+  /// wrapping a [SchemaEncodeError] (or a constraint/refinement error if a
+  /// runtime invariant is violated).
+  SchemaResult<Object> safeEncode(Object? value, {String? debugName}) {
+    final ctx = _createRootContext(value, debugName: debugName)
+        .withOperation(SchemaOperation.encode);
+
+    final validated = _validateRuntime(value, ctx);
+    if (validated case Fail(error: final e)) {
+      return SchemaResult.fail<Object>(e);
+    }
+
+    final inner = validated.getOrNull();
+    if (inner == null) {
+      // _validateRuntime already enforced nullability, so null here means the
+      // schema is nullable and the input was null.
+      return SchemaResult.ok<Object>(null);
+    }
+
+    return encodeBoundary(inner, ctx);
+  }
+
   /// Parses and validates a value, throwing an [AckException] if validation fails.
   ///
   /// This is the primary method for validation when you want exceptions.
