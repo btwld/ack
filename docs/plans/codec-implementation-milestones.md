@@ -9,6 +9,16 @@
 
 **YES, with conditions.** All file areas in §15 of the requirements doc exist except three new files (`codec_schema.dart`, `default_schema.dart`, `instance_schema.dart`). The base `AckSchema` already has the right hooks (`parseAndValidate`, `applyConstraintsAndRefinements`, `handleNullInput`) to extend; `SchemaContext` already tracks JSON-Pointer paths; `SchemaError` is extensible.
 
+## Locked Decisions (from `codec-open-questions.md`)
+
+All blocking and non-blocking questions are resolved. Three decisions diverge from the original recommendations and change scope or strictness:
+
+1. **A1 (b) — `Ack.double()` strict everywhere.** Parse no longer accepts `int` as `double`. Affects M11 (primitive encode) **and** parse-side behaviour: `IntegerSchema`/`DoubleSchema` `_validateRuntime` and `parseAndValidate` both require exact runtime type. Adds two coercion-removal entries to the CHANGELOG (`Ack.double().parse(42)` no longer succeeds). Existing `strictPrimitiveParsing` flag becomes effectively a no-op for the int↔double case.
+2. **A3 (b) — `Ack.datetime()` rejects non-UTC.** Encode error message must explicitly point at `.toUtc()`. Affects M14. Adds a CHANGELOG entry that callers must call `.toUtc()` before encoding.
+3. **B4 (b) — Ship `Ack.intFromString()`, `Ack.doubleFromString()`, `Ack.boolFromString()` with the MVP.** Adds a new milestone **M14a** between M14 and M15 (see updated table below).
+
+All other decisions match the original recommendations. The `parseAndValidate` shared-helper warning in §D of the open-questions doc is unchanged: M6 must add a separate `encodeBoundary` traversal, not a shared helper.
+
 ## Critical Structural Finding
 
 Every schema file (`object_schema.dart`, `transformed_schema.dart`, etc.) is `part of 'schema.dart'`, not a standalone library. The §15 file-area table reads as if each is independent — it isn't. New files (`codec_schema.dart`, `default_schema.dart`, `instance_schema.dart`) must use the same `part`/`part of` convention so the sealed `AckSchema` hierarchy stays compileable.
@@ -64,6 +74,7 @@ M2  SchemaEncodeError              ─┴─→ M3 base hooks (encode/safeEncode
 | M12 | `DefaultSchema<T>` wrapper + `.withDefault` | new `default_schema.dart`, `fluent_schema.dart`, `object_schema.dart`, `converters/ack_to_json_schema_model.dart` | AC-11 |
 | M13 | `.transform(...)` becomes one-way `CodecSchema<T, R>`; `TransformedSchema` becomes typedef | `transformed_schema.dart`, `extensions/ack_schema_extensions.dart`, datetime/duration extensions | AC-12 |
 | M14 | Built-in codecs: `Ack.date()/datetime()/uri()/duration()` as `CodecSchema` | `ack.dart`, datetime/duration extensions | AC-18, AC-07, AC-08 |
+| M14a | Convenience coercion codecs: `Ack.intFromString()`, `Ack.doubleFromString()`, `Ack.boolFromString()` (per B4 decision) | `ack.dart`, new `extensions/coercion_codecs.dart` or inline in `ack.dart` | AC-19 migration examples |
 | M15 | Converter + downstream package updates | `converters/ack_to_json_schema_model.dart`, downstream tests | AC-16, AC-20 |
 | M16 | Deprecation polish, CHANGELOG, README, llms.txt | `CHANGELOG.md`, `README.md`, `transformed_schema.dart` | AC-20 |
 | M17 | New test files matching §14 | `packages/ack/test/schemas/...` | AC-01..AC-20 sweep |
@@ -87,6 +98,8 @@ M2  SchemaEncodeError              ─┴─→ M3 base hooks (encode/safeEncode
 1. `Ack.integer().parse('42')` no longer succeeds (AC-19).
 2. `Ack.boolean().parse('true')` no longer succeeds.
 3. `Ack.string().parse(42)` no longer succeeds.
+3a. `Ack.double().parse(42)` (int input) no longer succeeds — strict per A1 (b).
+3b. `Ack.datetime().encode(localDateTime)` no longer succeeds — must pass `value.toUtc()` per A3 (b). Error message points at `.toUtc()`.
 4. `copyWith(defaultValue: x)` deprecated; use `.withDefault(x)`.
 5. `AckSchema.defaultValue` field deprecated; defaults move to `DefaultSchema` wrapper.
 6. `Ack.date()/datetime()/uri()/duration()` return `CodecSchema<…>` instead of `TransformedSchema<…>`. Source-compatible via typedef; JSON Schema marker may differ.

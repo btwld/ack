@@ -24,7 +24,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M11.
 
-**Decision:**
+**Decision:** **(b)** Strict everywhere. `Ack.double()` only accepts `double`; conversions must use codecs.
 
 ---
 
@@ -43,7 +43,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M14.
 
-**Decision:**
+**Decision:** **(a)** `Ack.date()` rejects UTC values and rejects non-midnight time components.
 
 ---
 
@@ -62,7 +62,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M14.
 
-**Decision:**
+**Decision:** **(b)** `Ack.datetime()` rejects non-UTC `DateTime` values; callers must pass `value.toUtc()` explicitly. The encode error message must mention `.toUtc()`.
 
 ---
 
@@ -81,7 +81,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M8.
 
-**Decision:**
+**Decision:** **(a)** `EnumSchema` keeps integer-index parsing for legacy boundary input; encode and `_validateRuntime` require enum values.
 
 ---
 
@@ -99,7 +99,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M9.
 
-**Decision:**
+**Decision:** **(a)** AnyOf encode chooses the first branch whose full encode pipeline (`_validateRuntime` + `encodeBoundary`) succeeds end-to-end.
 
 ---
 
@@ -118,7 +118,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M6.
 
-**Decision:**
+**Decision:** **(a)** Object encode copies additional properties as-is when `additionalProperties` is true.
 
 ---
 
@@ -137,7 +137,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Blocks:** M12.
 
-**Decision:**
+**Decision:** **(a)** `DefaultSchema(nullableInner).encode(null)` returns `null`; defaults are parse-only.
 
 ---
 
@@ -154,7 +154,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Recommendation:** (a). Zero-breakage transition; downstream packages can migrate at their own pace.
 
-**Decision:**
+**Decision:** **(a)** Emit both `x-transformed` and `x-ack-codec` for one beta cycle.
 
 ---
 
@@ -168,7 +168,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Recommendation:** (a). Symmetry is cosmetic; failure paths are still distinguishable today. File a follow-up issue.
 
-**Decision:**
+**Decision:** **(a)** Defer `SchemaDecodeError`; keep `SchemaTransformError` for decode failures.
 
 ---
 
@@ -182,7 +182,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Recommendation:** (a). Closures aren't stably hashable; (b) produces non-deterministic equality.
 
-**Decision:**
+**Decision:** **(a)** Codec equality ignores `decode`/`encode` closure identity.
 
 ---
 
@@ -196,7 +196,7 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Recommendation:** (a). Cosmetic; users can build them with `Ack.codec`. Avoids locking API names too early.
 
-**Decision:**
+**Decision:** **(b)** Ship `Ack.intFromString()`, `Ack.doubleFromString()`, and `Ack.boolFromString()` with the codec MVP. *(Expands scope — see milestones doc M14a.)*
 
 ---
 
@@ -210,24 +210,22 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Recommendation:** (a). Already in `1.0.0-beta.x` per CHANGELOG. The migration is large but bounded; staying in beta gives a transition window.
 
-**Decision:**
+**Decision:** **(a)** Release as `1.0.0-beta.12` with `BREAKING:` callouts.
 
 ---
 
-## C. Non-Blocking Items (resolve inline as milestones land)
+## C. Non-Blocking Items — Decisions
 
-These don't block the start of any milestone; the implementer will pick a default and flag it for review in the relevant PR.
-
-| # | Item | Default the implementer will use unless told otherwise |
+| # | Item | Decision |
 |---|---|---|
-| C1 | JSON Schema marker scope on nested codecs (§10.2) | Field level only, not at root. |
-| C2 | Default serialization through codec encode (§10.3) when codec is one-way | Skip the boundary-encoded default; emit nothing; log a debug warning. |
-| C3 | `parseAs` / `safeParseAs` retention | Keep them. They're orthogonal to codec/encode. |
-| C4 | `SchemaResult` generic-erasure helper (§9.1) | Add a static `SchemaResult.castFail<U>(SchemaError)` helper. |
-| C5 | `Ack.instance<T>` constraints surface (§7.8) | `.constrain` and `.refine` only; no structural constraints. |
-| C6 | Equality regression test specifics (§11) | Two codecs with equal input/output but different closures → `==` is true. |
-| C7 | `is TransformedSchema` audit | Replace every site with `is CodecSchema` once the typedef lands; verify exhaustiveness. |
-| C8 | `Ack.list(Ack.instance<Foo>())` produces a non-JSON-serializable boundary | Document in `InstanceSchema` doc comment; do not block. |
+| C1 | JSON Schema marker scope on nested codecs (§10.2) | Emit codec markers at the codec schema node only; root marker only when the root schema itself is a codec. |
+| C2 | Default serialization through codec encode (§10.3) when codec is one-way | If a default cannot be encoded through a one-way codec, omit the JSON Schema default silently and document the behaviour. |
+| C3 | `parseAs` / `safeParseAs` retention | Keep them. |
+| C4 | `SchemaResult` generic-erasure helper (§9.1) | Use the `SchemaResult.castFail` extension helper. |
+| C5 | `Ack.instance<T>` constraints surface (§7.8) | `Ack.instance<T>()` supports `constrain`/`refine` only. |
+| C6 | Equality regression test specifics (§11) | Equal input/output schemas imply codec equality, regardless of closure identity. |
+| C7 | `is TransformedSchema` audit | Replace runtime `TransformedSchema` checks with `CodecSchema` checks. |
+| C8 | `Ack.list(Ack.instance<Foo>())` produces a non-JSON-serializable boundary | Document that `Ack.instance<T>()` is not structurally JSON-serializable. |
 
 ---
 
