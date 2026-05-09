@@ -31,6 +31,19 @@ final class StringSchema extends AckSchema<String>
   @override
   SchemaType get schemaType => SchemaType.string;
 
+  /// Stage-2 shim: route through the new dispatcher so the schema participates
+  /// in the symmetric [decodeBoundary]/[encodeBoundary] hook model. Removed
+  /// in M5.5 stage 5 (when `parseAndValidate` itself is deleted). Behaviour is
+  /// unchanged — the base default `decodeBoundary` reproduces the prior
+  /// type-detection + coercion path.
+  @override
+  @protected
+  SchemaResult<String> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) =>
+      _parse(inputValue, context);
+
   /// Creates a new [StringSchema] that enforces strict parsing.
   StringSchema strictParsing({bool value = true}) =>
       copyWith(strictPrimitiveParsing: value);

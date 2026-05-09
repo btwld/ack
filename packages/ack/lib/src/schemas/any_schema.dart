@@ -27,13 +27,20 @@ final class AnySchema extends AckSchema<Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
+    // Stage-2 shim: route through the new dispatcher so `decodeBoundary`
+    // handles boundary semantics. Removed in M5.5 stage 5.
+    return _parse(inputValue, context);
+  }
 
-    // After null check, inputValue is guaranteed non-null
-    // Accept any non-null value as-is, then use centralized constraints and refinements check
-    return applyConstraintsAndRefinements(inputValue!, context);
+  /// AnySchema accepts any non-null value as-is — no type detection or
+  /// coercion. Constraints/refinements are applied by [_parse].
+  @override
+  @protected
+  SchemaResult<Object> decodeBoundary(
+    Object? input,
+    SchemaContext context,
+  ) {
+    return SchemaResult.ok(input!);
   }
 
   @override

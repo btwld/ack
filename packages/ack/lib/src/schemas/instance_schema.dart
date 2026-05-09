@@ -35,13 +35,38 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
   @override
   @protected
   SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    if (inputValue == null && defaultValue != null) {
+    // Stage-2 shim: route through the new dispatcher. Removed in M5.5 stage 5.
+    return _parse(inputValue, context);
+  }
+
+  /// Preserves the legacy cast-safety fallback for [cloneDefault] producing
+  /// a non-`T` value (e.g. cloning a `Map`-shaped default for a `Map`-typed
+  /// `T`): if the clone is not `T`, fall back to the original `defaultValue`
+  /// (which is `T` by the field's static type).
+  @override
+  @protected
+  SchemaResult<T>? handleParseNull(Object? input, SchemaContext context) {
+    if (input != null) return null;
+    if (defaultValue != null) {
       final cloned = cloneDefault(defaultValue!);
       final safeDefault = (cloned is T) ? cloned : defaultValue!;
-      return applyConstraintsAndRefinements(safeDefault, context);
+      return _parse(safeDefault, context);
     }
-    // Both parse and encode reduce to a runtime type check + constraints.
-    return _validateRuntime(inputValue, context);
+    if (isNullable) return SchemaResult.ok(null);
+    return failNonNullable(context);
+  }
+
+  /// InstanceSchema's boundary form is the runtime form — no separate decode
+  /// step. Validate the runtime type. Constraints/refinements are applied by
+  /// [_parse].
+  @override
+  @protected
+  SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
+    final value = input!;
+    if (value is! T) {
+      return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
+    }
+    return SchemaResult.ok(value);
   }
 
   @override

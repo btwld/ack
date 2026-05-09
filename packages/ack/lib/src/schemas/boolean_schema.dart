@@ -31,6 +31,16 @@ final class BooleanSchema extends AckSchema<bool>
   @override
   SchemaType get schemaType => SchemaType.boolean;
 
+  /// Stage-2 shim: route through the new dispatcher. Removed in M5.5 stage 5.
+  /// Inherits the base `decodeBoundary` (boolean type-detect + coerce).
+  @override
+  @protected
+  SchemaResult<bool> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) =>
+      _parse(inputValue, context);
+
   /// Creates a new BooleanSchema with strict parsing enabled/disabled
   BooleanSchema strictParsing({bool value = true}) =>
       copyWith(strictPrimitiveParsing: value);
