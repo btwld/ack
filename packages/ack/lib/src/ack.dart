@@ -72,9 +72,10 @@ final class Ack {
   /// Creates a bidirectional codec between [input] (boundary form, type [I])
   /// and [output] (runtime form, type [O]).
   ///
-  /// [decoder] (`I → O`) runs on parse; [encoder] (`O → I`), when supplied,
-  /// runs on encode. Omit [encoder] to declare a one-way codec (any
-  /// `safeEncode` call surfaces [SchemaEncodeError.oneWayTransform]).
+  /// [decoder] (`I → O`) runs on parse; [encoder] (`O → I`) runs on encode.
+  /// Both are required: `Ack.codec` is the bidirectional construction.
+  /// For one-way conversions, use [.transform] or construct
+  /// [CodecSchema] directly with `encoder: null`.
   ///
   /// Naming follows `dart:convert`: methods are verbs (`encode`/`decode`),
   /// the function-typed fields holding them are nouns (`encoder`/`decoder`).
@@ -93,7 +94,7 @@ final class Ack {
     required AckSchema<I> input,
     required AckSchema<O> output,
     required O Function(I) decoder,
-    I Function(O)? encoder,
+    required I Function(O) encoder,
   }) {
     return CodecSchema<I, O>(
       inputSchema: input,

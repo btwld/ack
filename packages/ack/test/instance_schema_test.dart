@@ -83,16 +83,24 @@ void main() {
       expect(schema.encode(42), equals('42'));
     });
 
-    test('Ack.codec produces a one-way codec when encoder is omitted', () {
-      final schema = Ack.codec<String, int>(
-        input: Ack.string(),
-        output: Ack.instance<int>(),
-        decoder: int.parse,
-      );
+    test(
+      'Ack.codec requires an encoder; one-way construction goes through '
+      'CodecSchema(...) directly',
+      () {
+        // Public Ack.codec(...) cannot omit `encoder` — that would not type-check.
+        // One-way codecs are constructed via the internal CodecSchema(...)
+        // constructor (used by .transform(...) and built-ins).
+        final schema = CodecSchema<String, int>(
+          inputSchema: Ack.string(),
+          outputSchema: Ack.instance<int>(),
+          decoder: int.parse,
+          // encoder: null  — implicit, one-way.
+        );
 
-      final encodeResult = schema.safeEncode(42);
-      expect(encodeResult.isFail, isTrue);
-      expect(encodeResult.getError(), isA<SchemaEncodeError>());
-    });
+        final encodeResult = schema.safeEncode(42);
+        expect(encodeResult.isFail, isTrue);
+        expect(encodeResult.getError(), isA<SchemaEncodeError>());
+      },
+    );
   });
 }
