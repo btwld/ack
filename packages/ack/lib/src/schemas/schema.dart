@@ -282,6 +282,117 @@ sealed class AckSchema<DartType extends Object> {
     return applyConstraintsAndRefinements(convertedValue, context);
   }
 
+  // ---------------------------------------------------------------------------
+  // Symmetric parse-side hooks (M5.5).
+  //
+  // Three protected hooks form the parse pipeline, mirroring the encode side:
+  //
+  //   _parse(input, ctx)             // dispatcher (do not override)
+  //     -> handleParseNull           // null/default handling
+  //     -> decodeBoundary            // boundary -> runtime
+  //     -> applyConstraintsAndRefinements   // schema-level constraints, once
+  //
+  // The dispatcher is the single owner of the lifecycle. `decodeBoundary` does
+  // boundary decoding only — it must NOT apply this schema's own constraints
+  // or refinements, because the dispatcher applies them exactly once after
+  // decode. Composite schemas recurse via child `_parse(...)` calls so that
+  // child constraints still apply.
+  //
+  // In this commit (M5.5 stage 1) the hooks exist but are dormant — `safeParse`
+  // still routes through `parseAndValidate`. Subsequent commits migrate each
+  // schema's parse logic into `decodeBoundary` and ultimately route `safeParse`
+  // through `_parse`, deleting `parseAndValidate`.
+  // ---------------------------------------------------------------------------
+
+  /// Parse-side dispatcher. Owns the parse lifecycle and applies this schema's
+  /// constraints/refinements exactly once after [decodeBoundary] succeeds.
+  ///
+  /// Subclasses must not override `_parse`; customise [handleParseNull] for
+  /// null/default behaviour and [decodeBoundary] for boundary decoding.
+  SchemaResult<DartType> _parse(Object? inputValue, SchemaContext context) {
+    final nullResult = handleParseNull(inputValue, context);
+    if (nullResult != null) return nullResult;
+
+    final decoded = decodeBoundary(inputValue, context);
+    if (decoded.isFail) return decoded;
+
+    final decodedValue = decoded.getOrThrow();
+    if (decodedValue == null) {
+      // A nullable child schema may legitimately decode to null; the
+      // dispatcher's null handling above only fires for the input value.
+      return SchemaResult.ok(null);
+    }
+
+    return applyConstraintsAndRefinements(decodedValue, context);
+  }
+
+  /// Handles null input on the parse path. Returns `null` when [input] is
+  /// non-null so the dispatcher proceeds with [decodeBoundary].
+  ///
+  /// Default behaviour mirrors [handleNullInput]: synthesize [defaultValue]
+  /// when present, emit `Ok(null)` when the schema is nullable, otherwise
+  /// emit a non-nullable failure.
+  @protected
+  SchemaResult<DartType>? handleParseNull(
+    Object? input,
+    SchemaContext context,
+  ) {
+    if (input != null) return null;
+
+    if (defaultValue != null) {
+      final clonedDefault = cloneDefault(defaultValue!);
+      return _parse(clonedDefault, context);
+    }
+
+    if (isNullable) return SchemaResult.ok(null);
+    return failNonNullable(context);
+  }
+
+  /// Decodes a non-null boundary value into [DartType].
+  ///
+  /// Override to provide schema-specific boundary decoding (type detection,
+  /// coercion, recursion, codec invocation, etc.). MUST NOT apply this
+  /// schema's own constraints or refinements — [_parse] applies them once
+  /// after decode succeeds.
+  ///
+  /// The default implementation mirrors the type-detection + coercion path
+  /// of the legacy [parseAndValidate], minus null handling and constraint
+  /// application. It is used by primitive schemas (`StringSchema`,
+  /// `IntegerSchema`, `DoubleSchema`, `BooleanSchema`) whose only parse
+  /// concern is the JSON-primitive coerce matrix.
+  @protected
+  SchemaResult<DartType> decodeBoundary(
+    Object? input,
+    SchemaContext context,
+  ) {
+    final nonNullInput = input!;
+    final targetType = schemaType;
+
+    SchemaType actualType;
+    try {
+      actualType = AckSchema.getSchemaType(nonNullInput);
+    } catch (_) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Unsupported input type: ${nonNullInput.runtimeType}',
+          context: context,
+        ),
+      );
+    }
+
+    if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: targetType,
+          actualType: actualType,
+          context: context,
+        ),
+      );
+    }
+
+    return targetType.parse<DartType>(nonNullInput, actualType, context);
+  }
+
   /// Validates a runtime value against this schema, applying constraints
   /// and refinements without performing any decode-side parsing.
   ///
