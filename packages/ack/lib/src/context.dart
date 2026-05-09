@@ -2,6 +2,12 @@ import 'package:meta/meta.dart';
 
 import 'schemas/schema.dart';
 
+/// The direction of a schema operation.
+///
+/// `parse` decodes boundary input (e.g. JSON) into runtime values.
+/// `encode` serializes runtime values back to boundary form.
+enum SchemaOperation { parse, encode }
+
 /// Represents the context in which a schema validation is occurring.
 @immutable
 class SchemaContext {
@@ -10,6 +16,7 @@ class SchemaContext {
   final AckSchema schema;
   final SchemaContext? parent;
   final String? pathSegment;
+  final SchemaOperation operation;
 
   const SchemaContext({
     required this.name,
@@ -17,6 +24,7 @@ class SchemaContext {
     required this.value,
     this.parent,
     this.pathSegment,
+    this.operation = SchemaOperation.parse,
   });
 
   /// Escapes a JSON Pointer segment per RFC 6901.
@@ -66,6 +74,7 @@ class SchemaContext {
     required AckSchema schema,
     required Object? value,
     String? pathSegment,
+    SchemaOperation? operation,
   }) {
     return SchemaContext(
       name: name,
@@ -73,6 +82,23 @@ class SchemaContext {
       value: value,
       parent: this,
       pathSegment: pathSegment,
+      operation: operation ?? this.operation,
+    );
+  }
+
+  /// Returns a copy of this context with the given [operation].
+  ///
+  /// Used to flip the direction at the root of an `encode` call without
+  /// rebuilding the entire context graph.
+  SchemaContext withOperation(SchemaOperation operation) {
+    if (operation == this.operation) return this;
+    return SchemaContext(
+      name: name,
+      schema: schema,
+      value: value,
+      parent: parent,
+      pathSegment: pathSegment,
+      operation: operation,
     );
   }
 
@@ -81,6 +107,6 @@ class SchemaContext {
     final schemaTypeString = schema.schemaTypeName;
     final valueString = value?.toString() ?? 'null';
 
-    return 'SchemaContext(name: "$name", path: "$path", schema: $schemaTypeString, value: "$valueString")';
+    return 'SchemaContext(name: "$name", path: "$path", schema: $schemaTypeString, value: "$valueString", operation: ${operation.name})';
   }
 }
