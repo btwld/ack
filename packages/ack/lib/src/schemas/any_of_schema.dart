@@ -36,60 +36,77 @@ final class AnyOfSchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.anyOf;
 
+  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
   SchemaResult<Object> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
-  ) {
-    // NOTE: AnyOfSchema intentionally does NOT use handleNullInput because
-    // null handling has special semantics for union types:
-    //
-    // 1. If a DEFAULT exists: apply it first (consistent with other schemas)
-    // 2. If NO default: try member schemas first - a nullable member can accept null
-    // 3. AnyOfSchema's own isNullable is only checked AFTER all members fail
-    //
-    // This differs from handleNullInput which checks isNullable before trying validation.
-    if (inputValue == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
-    }
+  ) =>
+      _parse(inputValue, context);
 
-    // Try all member schemas (including with null input for nullable members)
+  /// Custom null/default handling. AnyOf has special null semantics:
+  ///   1. If a default exists, apply it (consistent with other schemas).
+  ///   2. Otherwise return `null` to let [decodeBoundary] try member schemas
+  ///      against `null` — a nullable branch can accept null before this
+  ///      schema's own [isNullable] flag is consulted.
+  @override
+  @protected
+  SchemaResult<Object>? handleParseNull(
+    Object? input,
+    SchemaContext context,
+  ) {
+    if (input == null && defaultValue != null) {
+      final clonedDefault = cloneDefault(defaultValue!);
+      return _parse(clonedDefault, context);
+    }
+    // Returning null routes the dispatcher into decodeBoundary even for a
+    // null input; required to give nullable members a chance.
+    return null;
+  }
+
+  /// Tries every member schema in order. The first branch whose parse
+  /// succeeds wins. A successful parse returning a null value (nullable
+  /// branch matched null) short-circuits to `Ok(null)`. If all branches
+  /// fail, this schema's own `isNullable` flag is consulted for null input.
+  /// Constraints/refinements are applied by [_parse] for non-null branch
+  /// values.
+  @override
+  @protected
+  SchemaResult<Object> decodeBoundary(
+    Object? input,
+    SchemaContext context,
+  ) {
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
-      // Branch name for debugging; inherit parent path (no segment pollution)
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
-        value: inputValue,
+        value: input,
         pathSegment: '', // Inherit parent path
       );
 
-      final result = schema.parseAndValidate(inputValue, childContext);
+      final result = schema.parseAndValidate(input, childContext);
 
       if (result.isOk) {
         final validatedValue = result.getOrNull();
-
-        // Nullable member returned null - pass through
         if (validatedValue == null) {
+          // Nullable branch matched null. Dispatcher will short-circuit
+          // constraint application.
           return SchemaResult.ok(null);
         }
-
-        // Apply AnyOfSchema's own constraints to non-null values
-        return applyConstraintsAndRefinements(validatedValue, context);
+        return SchemaResult.ok(validatedValue);
       }
 
       errors.add(result.getError());
     }
 
-    // No member schema matched; check AnyOfSchema's own nullable flag
-    if (inputValue == null && isNullable) {
+    // No member schema matched; check this schema's own nullable flag.
+    if (input == null && isNullable) {
       return SchemaResult.ok(null);
     }
 
-    // Return all errors for debugging
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );

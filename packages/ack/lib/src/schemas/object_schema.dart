@@ -21,19 +21,27 @@ final class ObjectSchema extends AckSchema<MapValue>
   @override
   SchemaType get schemaType => SchemaType.object;
 
+  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
   SchemaResult<MapValue> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
-  ) {
-    // Use centralized null handling (including cloned default handling).
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
+  ) =>
+      _parse(inputValue, context);
 
-    // Type guard
-    if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
+  /// Decodes a non-null boundary value into `MapValue`. Each property is
+  /// decoded recursively through its schema's `parseAndValidate(...)` so
+  /// child constraints still apply. The schema's own constraints are applied
+  /// by [_parse] after this returns.
+  @override
+  @protected
+  SchemaResult<MapValue> decodeBoundary(
+    Object? input,
+    SchemaContext context,
+  ) {
+    if (input is! Map) {
+      final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
@@ -44,9 +52,9 @@ final class ObjectSchema extends AckSchema<MapValue>
     }
 
     // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
-    final mapValue = inputValue is Map<String, Object?>
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+    final mapValue = input is Map<String, Object?>
+        ? input
+        : input.cast<String, Object?>();
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
@@ -60,7 +68,7 @@ final class ObjectSchema extends AckSchema<MapValue>
         // Property missing from input
         if (schema.isOptional) {
           // Optional field with default - pass null to trigger the child schema's
-          // handleNullInput, which clones and validates the default.
+          // null/default handling.
           if (schema.defaultValue != null) {
             final propertyContext = context.createChild(
               name: key,
@@ -152,8 +160,7 @@ final class ObjectSchema extends AckSchema<MapValue>
       );
     }
 
-    final unmodifiableMap = Map<String, Object?>.unmodifiable(validatedMap);
-    return applyConstraintsAndRefinements(unmodifiableMap, context);
+    return SchemaResult.ok(Map<String, Object?>.unmodifiable(validatedMap));
   }
 
   @override

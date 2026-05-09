@@ -54,38 +54,43 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.discriminated;
 
+  /// Custom null/default handling. The default may be a `Map` (boundary form)
+  /// that must route through the discriminator pipeline, or a `T` value
+  /// (already-decoded runtime form) that bypasses the dispatch entirely.
   @override
   @protected
-  SchemaResult<T>? handleNullInput(Object? inputValue, SchemaContext context) {
-    if (inputValue != null) return null;
+  SchemaResult<T>? handleParseNull(Object? input, SchemaContext context) {
+    if (input != null) return null;
 
     if (defaultValue != null) {
       final clonedDefault = cloneDefault(defaultValue!);
       if (clonedDefault is Map) {
-        return parseAndValidate(clonedDefault, context);
+        return _parse(clonedDefault, context);
       }
-
+      // Already a decoded runtime value: cast-safety fallback (matches the
+      // legacy behaviour where cloning produced a non-T value).
       final safeDefault = clonedDefault is T ? clonedDefault : defaultValue!;
       return applyConstraintsAndRefinements(safeDefault, context);
     }
 
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
+    if (isNullable) return SchemaResult.ok(null);
     return failNonNullable(context);
   }
 
+  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Use centralized null handling (including cloned default handling).
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
+  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) =>
+      _parse(inputValue, context);
 
-    // Type guard
-    if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
+  /// Selects a branch from `schemas` using the value at [discriminatorKey],
+  /// then delegates to that branch. Constraints/refinements on this schema
+  /// are applied by [_parse] after this returns.
+  @override
+  @protected
+  SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
+    if (input is! Map) {
+      final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
@@ -94,9 +99,8 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         ),
       );
     }
-    final mapValue = inputValue is MapValue
-        ? inputValue
-        : inputValue.cast<String, Object?>();
+    final mapValue =
+        input is MapValue ? input : input.cast<String, Object?>();
 
     final Object? discValueRaw = mapValue[discriminatorKey];
 
@@ -144,7 +148,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         allowed,
       ).validate(discValueRaw);
 
-      // Error context for discriminator key, but inherit parent path
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: enumError != null ? [enumError] : [],
@@ -152,8 +155,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
             name: discriminatorKey,
             schema: const StringSchema(),
             value: discValueRaw,
-            pathSegment:
-                discriminatorKey, // Point directly to the failing field
+            pathSegment: discriminatorKey,
           ),
         ),
       );
@@ -177,10 +179,8 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       );
     }
 
-    final result = selectedSubSchema.parseAndValidate(
-      mapValue,
-      subSchemaContext,
-    );
+    final result =
+        selectedSubSchema.parseAndValidate(mapValue, subSchemaContext);
 
     if (result.isFail) {
       return result.match(
@@ -189,9 +189,14 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       );
     }
 
-    final validatedValue = result.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(validatedValue, context);
+    final validated = result.getOrThrow();
+    if (validated == null) {
+      // Defensive: branches must produce a non-null value. The dispatcher
+      // would short-circuit constraint application on `Ok(null)` anyway.
+      if (!isNullable) return failNonNullable(context);
+      return SchemaResult.ok(null);
+    }
+    return SchemaResult.ok(validated);
   }
 
   @override

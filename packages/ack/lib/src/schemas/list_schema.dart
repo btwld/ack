@@ -19,19 +19,27 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   SchemaType get schemaType => SchemaType.array;
 
+  /// Stage-4 shim: route through the new dispatcher. Removed in M5.5 stage 5.
   @override
   @protected
   SchemaResult<List<V>> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
-  ) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
+  ) =>
+      _parse(inputValue, context);
 
-    // Type guard
-    if (inputValue is! List) {
-      final actualType = AckSchema.getSchemaType(inputValue);
+  /// Decodes a non-null boundary value into `List<V>`. Each item is decoded
+  /// recursively through `itemSchema.parseAndValidate(...)` so child
+  /// constraints still apply. The schema's own constraints/refinements are
+  /// applied by [_parse] after this returns.
+  @override
+  @protected
+  SchemaResult<List<V>> decodeBoundary(
+    Object? input,
+    SchemaContext context,
+  ) {
+    if (input is! List) {
+      final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
@@ -40,7 +48,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         ),
       );
     }
-    final inputList = inputValue;
+    final inputList = input;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
@@ -79,8 +87,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       );
     }
 
-    final unmodifiableList = List<V>.unmodifiable(validatedItems);
-    return applyConstraintsAndRefinements(unmodifiableList, context);
+    return SchemaResult.ok(List<V>.unmodifiable(validatedItems));
   }
 
   @override
