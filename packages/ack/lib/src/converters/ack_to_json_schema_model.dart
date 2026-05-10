@@ -16,6 +16,20 @@ JsonSchema _convert(AckSchema schema) {
   // Use schema.isNullable directly - canonical source of truth
   final nullableFlag = schema.isNullable;
 
+  if (schema is DefaultSchema) {
+    // M15: a DefaultSchema wrapper is not a boundary-shape semantic. The
+    // canonical model schema mirrors the inner schema's shape; the
+    // wrapper only contributes its own description/nullability and (if
+    // ever needed) its parse-time default. The current JsonSchema model
+    // doesn't expose a `default` field, so raw toJsonSchema() remains
+    // the source of truth for the actual JSON Schema `default` keyword.
+    final base = _convert(schema.inner);
+    return base.copyWith(
+      description: schema.description ?? base.description,
+      nullable: nullableFlag || base.nullable == true,
+    );
+  }
+
   if (schema is CodecSchema) {
     // M13: transforms are unified under CodecSchema. The boundary form lives
     // on `inputSchema`, so the canonical JSON Schema is built from there.

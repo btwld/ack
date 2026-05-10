@@ -129,5 +129,49 @@ void main() {
         expect(catBranch.description, equals('cat branch'));
       },
     );
+
+    group('DefaultSchema (M15)', () {
+      test('uses the inner boundary shape for the converter model', () {
+        final model = Ack.string().withDefault('guest').toJsonSchemaModel();
+        expect(model.type, equals(JsonSchemaType.string));
+      });
+
+      test('preserves wrapper nullability', () {
+        final model = Ack.string()
+            .withDefault('guest')
+            .nullable()
+            .toJsonSchemaModel();
+        expect(model.nullable, isTrue);
+      });
+
+      test('wrapping a CodecSchema uses the codec input shape', () {
+        // Ack.datetime() is a CodecSchema<String, DateTime>. Wrapping it
+        // with DefaultSchema must still surface the boundary shape
+        // (string), not the runtime shape.
+        final model = Ack.datetime()
+            .withDefault(DateTime.utc(2026, 1, 1))
+            .toJsonSchemaModel();
+        expect(model.type, equals(JsonSchemaType.string));
+      });
+
+      test('wrapping a primitive forwards constraints from the inner', () {
+        final model =
+            Ack.integer().min(0).max(120).withDefault(0).toJsonSchemaModel();
+        expect(model.type, equals(JsonSchemaType.integer));
+        expect(model.minimum, equals(0));
+        expect(model.maximum, equals(120));
+      });
+    });
+
+    group('Codec marker emission (M15)', () {
+      test('CodecSchema raw JSON emits both x-ack-codec and x-transformed', () {
+        // Per B1 (codec-open-questions.md), the legacy `x-transformed`
+        // marker is retained for one beta cycle alongside the canonical
+        // `x-ack-codec`. Verify both are present on a real built-in codec.
+        final json = Ack.datetime().toJsonSchema();
+        expect(json['x-ack-codec'], isTrue);
+        expect(json['x-transformed'], isTrue);
+      });
+    });
   });
 }
