@@ -86,6 +86,53 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     return SchemaResult.ok(parsed);
   }
 
+  /// Validates that the runtime value is the enum type [T] AND a member of
+  /// this schema's allowed [values] subset.
+  ///
+  /// Per the A4 decision (codec-open-questions.md:84), the encode side is
+  /// strict: only enum values are accepted. Strings and integer indices are
+  /// rejected even though [decodeBoundary] still accepts them on parse.
+  /// Membership outside the allowed subset surfaces as a
+  /// [SchemaConstraintsError] over [_EnumValuesConstraint], not as a type
+  /// mismatch.
+  @override
+  @protected
+  SchemaResult<T> _validateRuntime(Object? value, SchemaContext context) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return SchemaResult.fail(_failNullForRuntime(context));
+    }
+    if (value is! T) {
+      return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
+    }
+    if (!values.contains(value)) {
+      final allowed = values.map((e) => e.name).toList(growable: false);
+      final error = ConstraintError(
+        constraint: _EnumValuesConstraint(allowed),
+        message:
+            'Enum value "${value.name}" is not in the allowed subset: '
+            '${allowed.map((s) => '"$s"').join(', ')}.',
+        context: {
+          'received': value.name,
+          'allowedValues': allowed,
+        },
+      );
+      return SchemaResult.fail(
+        SchemaConstraintsError(constraints: [error], context: context),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  /// Encodes an enum runtime value to its `.name` string — the canonical
+  /// boundary form. Membership and type are already enforced by
+  /// [_validateRuntime] before this is called.
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(T value, SchemaContext context) {
+    return SchemaResult.ok(value.name);
+  }
+
   @override
   EnumSchema<T> copyWith({
     List<T>? values,
