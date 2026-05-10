@@ -103,6 +103,93 @@ final class AnyOfSchema extends AckSchema<Object>
     );
   }
 
+  /// Validates a runtime value against the union: tries each member's
+  /// `_validateRuntime` in declaration order; the first branch whose runtime
+  /// validation succeeds wins. AnyOf-level constraints/refinements are
+  /// applied here (exactly once) so [encodeBoundary] does not re-apply them.
+  @override
+  @protected
+  SchemaResult<Object> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final errors = <SchemaError>[];
+
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: value,
+        pathSegment: '', // Inherit parent path
+      );
+
+      final result = schema._validateRuntime(value, childContext);
+      if (result.isOk) {
+        final validated = result.getOrNull();
+        if (validated == null) {
+          return SchemaResult.ok(null);
+        }
+        return applyConstraintsAndRefinements(validated, context);
+      }
+      errors.add(result.getError());
+    }
+
+    if (value == null && isNullable) {
+      return SchemaResult.ok(null);
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  /// Encodes a runtime value through the first branch whose **full** encode
+  /// pipeline succeeds end-to-end (`_validateRuntime` + `encodeBoundary`),
+  /// per A5. A branch that validates but fails encoding does NOT short-
+  /// circuit — encoding falls through to the next branch.
+  ///
+  /// AnyOf-level constraints/refinements are NOT re-applied here; they
+  /// already ran in [_validateRuntime] before this method was invoked.
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(
+    Object value,
+    SchemaContext context,
+  ) {
+    final errors = <SchemaError>[];
+
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: value,
+        pathSegment: '', // Inherit parent path
+      );
+
+      final validated = schema._validateRuntime(value, childContext);
+      if (validated.isFail) {
+        errors.add(validated.getError());
+        continue;
+      }
+
+      final branchValue = validated.getOrNull();
+      if (branchValue == null) {
+        // Nullable branch accepted null at runtime → null in boundary form.
+        return SchemaResult.ok(null);
+      }
+
+      final encoded = schema.encodeBoundary(branchValue, childContext);
+      if (encoded.isOk) {
+        return encoded;
+      }
+      errors.add(encoded.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
   @override
   AnyOfSchema copyWith({
     bool? isNullable,
