@@ -259,5 +259,30 @@ void main() {
       );
       expect(result.isFail, isTrue);
     });
+
+    test('safeParse does not throw on a non-map non-primitive value', () {
+      // Regression: AckSchema.getSchemaType throws ArgumentError for values
+      // outside the JSON primitives (DateTime, Uri, user classes). Composite
+      // schemas must catch that and return a Fail rather than letting the
+      // ArgumentError escape `safeParse`.
+      final schema = Ack.object({'name': Ack.string()});
+      late SchemaResult<Map<String, Object?>> result;
+      expect(
+        () => result = schema.safeParse(DateTime.utc(2025, 1, 1)),
+        returnsNormally,
+      );
+      expect(result.isFail, isTrue);
+    });
+
+    test('safeEncode does not throw on a non-map non-primitive value', () {
+      final schema = Ack.object({'name': Ack.string()});
+      late SchemaResult<Object> result;
+      expect(
+        () => result = schema.safeEncode(Uri.parse('https://example.com')),
+        returnsNormally,
+      );
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaEncodeError>());
+    });
   });
 }

@@ -30,11 +30,10 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     SchemaContext context,
   ) {
     if (input is! List) {
-      final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
-        TypeMismatchError(
+        AckSchema.parseTypeMismatch(
           expectedType: schemaType,
-          actualType: actualType,
+          actualValue: input,
           context: context,
         ),
       );

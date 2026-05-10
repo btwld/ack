@@ -50,11 +50,10 @@ final class ObjectSchema extends AckSchema<MapValue>
   ) {
     final mapValue = _asStringKeyedMap(input);
     if (mapValue == null) {
-      final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
-        TypeMismatchError(
+        AckSchema.parseTypeMismatch(
           expectedType: schemaType,
-          actualType: actualType,
+          actualValue: input,
           context: context,
         ),
       );

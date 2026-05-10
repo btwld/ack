@@ -60,6 +60,36 @@ sealed class AckSchema<DartType extends Object> {
     return SchemaType.of(value);
   }
 
+  /// Builds a parse-side type-mismatch error without ever throwing.
+  ///
+  /// `SchemaType.of(...)` throws `ArgumentError` for values outside the JSON
+  /// primitives (`DateTime`, `Uri`, user classes). This helper catches that
+  /// case and falls back to a [SchemaValidationError] reporting the runtime
+  /// `Type`, preserving the "safeParse never throws" guarantee for
+  /// composite schemas (`ObjectSchema`, `ListSchema`,
+  /// `DiscriminatedObjectSchema`).
+  @protected
+  static SchemaError parseTypeMismatch({
+    required SchemaType expectedType,
+    required Object? actualValue,
+    required SchemaContext context,
+  }) {
+    try {
+      final actualType = SchemaType.of(actualValue);
+      return TypeMismatchError(
+        expectedType: expectedType,
+        actualType: actualType,
+        context: context,
+      );
+    } catch (_) {
+      return SchemaValidationError(
+        message:
+            'Expected ${expectedType.typeName}, got ${actualValue?.runtimeType ?? 'null'}',
+        context: context,
+      );
+    }
+  }
+
   /// Applies constraints and refinements to a validated value.
   ///
   /// Checks constraints first, then runs refinements if all constraints pass.

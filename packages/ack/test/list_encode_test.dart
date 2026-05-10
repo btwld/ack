@@ -165,5 +165,29 @@ void main() {
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), equals([1, 2]));
     });
+
+    test('safeParse does not throw on a non-list non-primitive value', () {
+      // Regression: AckSchema.getSchemaType throws ArgumentError for values
+      // outside the JSON primitives (DateTime, Uri, user classes). ListSchema
+      // must catch that and return a Fail.
+      final schema = Ack.list(Ack.string());
+      late SchemaResult<List<String>> result;
+      expect(
+        () => result = schema.safeParse(DateTime.utc(2025, 1, 1)),
+        returnsNormally,
+      );
+      expect(result.isFail, isTrue);
+    });
+
+    test('safeEncode does not throw on a non-list non-primitive value', () {
+      final schema = Ack.list(Ack.string());
+      late SchemaResult<Object> result;
+      expect(
+        () => result = schema.safeEncode(Uri.parse('https://example.com')),
+        returnsNormally,
+      );
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaEncodeError>());
+    });
   });
 }

@@ -85,11 +85,10 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
     final mapValue = _asStringKeyedMap(input);
     if (mapValue == null) {
-      final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
-        TypeMismatchError(
+        AckSchema.parseTypeMismatch(
           expectedType: schemaType,
-          actualType: actualType,
+          actualValue: input,
           context: context,
         ),
       );
