@@ -93,7 +93,7 @@ void main() {
       final animalSchema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
         schemas: {'cat': catSchema},
-      ).copyWith(defaultValue: Cat('Default Cat'));
+      ).withDefault(Cat('Default Cat'));
 
       final result = animalSchema.safeParse(null);
 

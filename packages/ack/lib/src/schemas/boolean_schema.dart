@@ -23,7 +23,6 @@ final class BooleanSchema extends AckSchema<bool>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -41,7 +40,6 @@ final class BooleanSchema extends AckSchema<bool>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    bool? defaultValue,
     List<Constraint<bool>>? constraints,
     List<Refinement<bool>>? refinements,
   }) {
@@ -49,7 +47,6 @@ final class BooleanSchema extends AckSchema<bool>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
@@ -58,10 +55,8 @@ final class BooleanSchema extends AckSchema<bool>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'boolean'},
-    serializedDefault: defaultValue,
-  );
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'boolean'});
 
   @override
   bool operator ==(Object other) {

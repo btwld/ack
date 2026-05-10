@@ -208,7 +208,7 @@ void main() {
               'name': Ack.string(),
             }).transform<Object>((map) => map['name'] as Object),
           },
-        ).copyWith(defaultValue: Object());
+        ).withDefault(Object());
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -226,7 +226,7 @@ void main() {
                 'name': Ack.string(),
               }).transform<Object>((map) => map['name'] as Object),
             },
-          ).nullable().copyWith(defaultValue: Object());
+          ).nullable().withDefault(Object());
 
           final jsonSchema = schema.toJsonSchema();
 

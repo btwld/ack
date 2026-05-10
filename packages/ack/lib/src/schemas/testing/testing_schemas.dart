@@ -11,7 +11,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object> {
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -24,7 +23,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object> {
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
@@ -32,7 +30,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object> {
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

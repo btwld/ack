@@ -74,9 +74,17 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   /// default.
   final AckSchema<T> inner;
 
+  /// Parse-time default. Synthesized only when parse input is `null`; never
+  /// injected on encode (per requirements §5.5 / decision A7).
+  ///
+  /// Owned by [DefaultSchema]; the legacy `AckSchema.defaultValue` field was
+  /// removed in 1.0.0-beta.12. Cloned on every parse via [cloneDefault] so
+  /// shared mutable defaults (Maps / Lists) cannot drift across calls.
+  final T defaultValue;
+
   DefaultSchema({
     required this.inner,
-    required T super.defaultValue,
+    required this.defaultValue,
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -108,10 +116,11 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   SchemaResult<T>? handleParseNull(Object? input, SchemaContext context) {
     if (input != null) return null;
 
-    // Cast-safety fallback for cloneDefault returning a non-T value (mirrors
-    // the legacy InstanceSchema/DiscriminatedObjectSchema patterns).
-    final cloned = cloneDefault(defaultValue!);
-    final safeDefault = cloned is T ? cloned : defaultValue!;
+    // Cast-safety fallback for cloneDefault returning a non-T value (e.g.
+    // cloneDefault produces Map<String, Object?> for a Map-shaped default
+    // typed as a more specific subtype). Prefer the original.
+    final cloned = cloneDefault(defaultValue);
+    final safeDefault = cloned is T ? cloned : defaultValue;
 
     final innerResult = inner._validateRuntime(safeDefault, context);
     if (innerResult.isFail) return innerResult;
@@ -167,7 +176,7 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   }) {
     return DefaultSchema<T>(
       inner: inner ?? this.inner,
-      defaultValue: defaultValue ?? this.defaultValue!,
+      defaultValue: defaultValue ?? this.defaultValue,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -220,9 +229,16 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DefaultSchema<T>) return false;
-    return baseFieldsEqual(other) && inner == other.inner;
+    return baseFieldsEqual(other) &&
+        inner == other.inner &&
+        defaultValue == other.defaultValue;
   }
 
   @override
-  int get hashCode => Object.hash(DefaultSchema<T>, baseFieldsHashCode, inner);
+  int get hashCode => Object.hash(
+        DefaultSchema<T>,
+        baseFieldsHashCode,
+        inner,
+        defaultValue,
+      );
 }

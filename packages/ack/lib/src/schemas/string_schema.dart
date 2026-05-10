@@ -22,7 +22,6 @@ final class StringSchema extends AckSchema<String>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
     this.strictPrimitiveParsing = false,
@@ -40,7 +39,6 @@ final class StringSchema extends AckSchema<String>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    String? defaultValue,
     List<Constraint<String>>? constraints,
     List<Refinement<String>>? refinements,
     bool? strictPrimitiveParsing,
@@ -49,7 +47,6 @@ final class StringSchema extends AckSchema<String>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
@@ -58,10 +55,8 @@ final class StringSchema extends AckSchema<String>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'string'},
-    serializedDefault: defaultValue,
-  );
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'string'});
 
   @override
   bool operator ==(Object other) {

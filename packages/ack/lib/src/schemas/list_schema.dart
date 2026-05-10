@@ -11,7 +11,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -193,7 +192,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    List<V>? defaultValue,
     List<Constraint<List<V>>>? constraints,
     List<Refinement<List<V>>>? refinements,
   }) {
@@ -202,7 +200,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -211,7 +208,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
     typeSchema: {'type': 'array', 'items': itemSchema.toJsonSchema()},
-    serializedDefault: defaultValue,
   );
 
   @override
@@ -220,7 +216,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'itemSchema': itemSchema.schemaType.typeName,
     };

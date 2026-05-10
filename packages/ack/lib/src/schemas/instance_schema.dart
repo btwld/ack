@@ -24,7 +24,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -32,26 +31,9 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.any;
 
-  /// Preserves the legacy cast-safety fallback for [cloneDefault] producing
-  /// a non-`T` value (e.g. cloning a `Map`-shaped default for a `Map`-typed
-  /// `T`): if the clone is not `T`, fall back to the original `defaultValue`
-  /// (which is `T` by the field's static type).
-  @override
-  @protected
-  SchemaResult<T>? handleParseNull(Object? input, SchemaContext context) {
-    if (input != null) return null;
-    if (defaultValue != null) {
-      final cloned = cloneDefault(defaultValue!);
-      final safeDefault = (cloned is T) ? cloned : defaultValue!;
-      return _parse(safeDefault, context);
-    }
-    if (isNullable) return SchemaResult.ok(null);
-    return failNonNullable(context);
-  }
-
   /// InstanceSchema's boundary form is the runtime form — no separate decode
   /// step. Validate the runtime type. Constraints/refinements are applied by
-  /// [_parse].
+  /// [_parse]. Defaults are owned by [DefaultSchema] (use `.withDefault(...)`).
   @override
   @protected
   SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
@@ -67,7 +49,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
@@ -75,7 +56,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

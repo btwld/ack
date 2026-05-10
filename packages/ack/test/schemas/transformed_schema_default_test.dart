@@ -6,7 +6,7 @@ void main() {
     test('applies default when input is null', () {
       final schema = Ack.string()
           .transform((v) => v.toUpperCase())
-          .copyWith(defaultValue: 'DEF');
+          .withDefault('DEF');
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -17,7 +17,7 @@ void main() {
       final schema = Ack.string()
           .transform((v) => v.toUpperCase())
           .refine((out) => out.length >= 3, message: 'Too short')
-          .copyWith(defaultValue: 'X');
+          .withDefault('X');
 
       final result = schema.safeParse(null);
       expect(result.isFail, isTrue);
@@ -28,7 +28,7 @@ void main() {
       // Primitive types (String, int, bool) are immutable, so cloning is safe
       final schema = Ack.string()
           .transform((v) => v)
-          .copyWith(defaultValue: 'hello');
+          .withDefault('hello');
 
       final result1 = schema.safeParse(null);
       final result2 = schema.safeParse(null);
@@ -42,7 +42,7 @@ void main() {
       // which is assignable to List<Object>
       final schema = Ack.string()
           .transform((v) => <Object>[v])
-          .copyWith(defaultValue: <Object>['a', 'b']);
+          .withDefault(<Object>['a', 'b']);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -59,7 +59,7 @@ void main() {
       // Now it falls back to the original default (accepts mutation risk).
       final schema = Ack.string()
           .transform((v) => v.split(','))
-          .copyWith(defaultValue: <String>['a', 'b', 'c']);
+          .withDefault(<String>['a', 'b', 'c']);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);

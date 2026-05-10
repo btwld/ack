@@ -168,12 +168,12 @@ void main() {
       });
     });
 
-    group('legacy compatibility', () {
-      test('legacy copyWith(defaultValue:) still synthesizes default on null',
-          () {
-        // For one beta cycle the legacy default field stays. Existing code
-        // using copyWith(defaultValue:) keeps working.
-        final schema = const StringSchema().copyWith(defaultValue: 'legacy');
+    group('default value identity', () {
+      test('withDefault is the only API for parse-time defaults', () {
+        // C2: AckSchema.defaultValue field and copyWith(defaultValue:) were
+        // removed. DefaultSchema is the sole owner of parse-time defaults.
+        final schema = const StringSchema().withDefault('legacy');
+        expect(schema, isA<DefaultSchema<String>>());
         expect(schema.parse(null), equals('legacy'));
       });
     });

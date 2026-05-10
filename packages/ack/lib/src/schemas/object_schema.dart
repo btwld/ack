@@ -17,6 +17,14 @@ MapValue? _asStringKeyedMap(Object? value) {
   return out;
 }
 
+/// True when [schema] supplies a parse-time default — i.e. its
+/// `handleParseNull` would synthesize a value rather than fall through to
+/// the dispatcher's nullable / non-nullable handling. As of M12 the only
+/// owner of parse-time defaults is [DefaultSchema].
+bool _providesParseDefault(AckSchema schema) {
+  return schema is DefaultSchema;
+}
+
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
 @immutable
 final class ObjectSchema extends AckSchema<MapValue>
@@ -30,7 +38,6 @@ final class ObjectSchema extends AckSchema<MapValue>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   }) : properties = properties ?? const {};
@@ -70,9 +77,11 @@ final class ObjectSchema extends AckSchema<MapValue>
       if (!hasValue) {
         // Property missing from input
         if (schema.isOptional) {
-          // Optional field with default - pass null to trigger the child schema's
-          // null/default handling.
-          if (schema.defaultValue != null) {
+          // Optional field with a parse-time default — pass null to trigger
+          // the child's `handleParseNull`, which synthesizes the default.
+          // Defaults are owned by `DefaultSchema` (M12) — `schema is
+          // DefaultSchema` is the canonical "this child has a default" check.
+          if (_providesParseDefault(schema)) {
             final propertyContext = context.createChild(
               name: key,
               schema: schema,
@@ -382,7 +391,6 @@ final class ObjectSchema extends AckSchema<MapValue>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    MapValue? defaultValue,
     List<Constraint<MapValue>>? constraints,
     List<Refinement<MapValue>>? refinements,
   }) {
@@ -392,7 +400,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -423,7 +430,6 @@ final class ObjectSchema extends AckSchema<MapValue>
         if (requiredFields.isNotEmpty) 'required': requiredFields,
         'additionalProperties': additionalPropertiesValue,
       },
-      serializedDefault: defaultValue,
     );
   }
 
@@ -433,7 +439,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'properties': properties.length,
       'additionalProperties': additionalProperties,

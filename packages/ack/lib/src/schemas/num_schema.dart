@@ -14,16 +14,13 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'number'},
-    serializedDefault: defaultValue,
-  );
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'number'});
 }
 
 // --- IntegerSchema ---
@@ -45,7 +42,6 @@ final class IntegerSchema extends NumSchema<int>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -62,7 +58,6 @@ final class IntegerSchema extends NumSchema<int>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    int? defaultValue,
     List<Constraint<int>>? constraints,
     List<Refinement<int>>? refinements,
     bool? strictPrimitiveParsing,
@@ -71,7 +66,6 @@ final class IntegerSchema extends NumSchema<int>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:
@@ -80,10 +74,8 @@ final class IntegerSchema extends NumSchema<int>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'integer'},
-    serializedDefault: defaultValue,
-  );
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'integer'});
 
   @override
   bool operator ==(Object other) {
@@ -116,7 +108,6 @@ final class DoubleSchema extends NumSchema<double>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -133,7 +124,6 @@ final class DoubleSchema extends NumSchema<double>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    double? defaultValue,
     List<Constraint<double>>? constraints,
     List<Refinement<double>>? refinements,
     bool? strictPrimitiveParsing,
@@ -142,7 +132,6 @@ final class DoubleSchema extends NumSchema<double>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
       strictPrimitiveParsing:

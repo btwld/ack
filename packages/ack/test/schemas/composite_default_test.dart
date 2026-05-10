@@ -9,7 +9,7 @@ void main() {
         final schema = Ack.object({
           'name': Ack.string(),
           'age': Ack.integer(),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result = schema.safeParse(null);
 
@@ -23,7 +23,7 @@ void main() {
         final schema = Ack.object({
           'name': Ack.string(),
           'age': Ack.integer(),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -44,7 +44,7 @@ void main() {
         final schema = Ack.object({
           'name': Ack.string(),
           'age': Ack.integer(),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result = schema.safeParse(null);
 
@@ -59,7 +59,7 @@ void main() {
         final schema = Ack.object({
           'name': Ack.string(),
           'age': Ack.integer(),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result = schema.safeParse({'name': 'Alice', 'age': 30});
 
@@ -74,7 +74,7 @@ void main() {
         final schema = Ack.object({
           'name': Ack.string(),
           'age': Ack.integer(),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -93,7 +93,7 @@ void main() {
             'name': Ack.string(),
             'settings': Ack.object({'theme': Ack.string()}),
           }),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result = schema.safeParse(null);
 
@@ -108,7 +108,7 @@ void main() {
         final defaultList = ['a', 'b', 'c'];
         final schema = Ack.list(
           Ack.string(),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final result = schema.safeParse(null);
 
@@ -121,7 +121,7 @@ void main() {
         final defaultList = ['a', 'b', 'c'];
         final schema = Ack.list(
           Ack.string(),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -141,7 +141,7 @@ void main() {
         final defaultList = [1, 2, 3];
         final schema = Ack.list(
           Ack.integer(),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final result = schema.safeParse(null);
 
@@ -154,7 +154,7 @@ void main() {
         final defaultList = ['a', 'b', 'c'];
         final schema = Ack.list(
           Ack.string(),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final result = schema.safeParse(['x', 'y', 'z']);
 
@@ -167,7 +167,7 @@ void main() {
         final defaultList = ['a', 'b', 'c'];
         final schema = Ack.list(
           Ack.string(),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -181,7 +181,7 @@ void main() {
         ];
         final schema = Ack.list(
           Ack.object({'id': Ack.integer(), 'name': Ack.string()}),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final result = schema.safeParse(null);
 
@@ -197,7 +197,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.string(),
           Ack.integer(),
-        ]).copyWith(defaultValue: defaultValue);
+        ]).withDefault(defaultValue);
 
         final result = schema.safeParse(null);
 
@@ -210,7 +210,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.integer(),
           Ack.string(),
-        ]).copyWith(defaultValue: defaultValue);
+        ]).withDefault(defaultValue);
 
         final result = schema.safeParse(null);
 
@@ -223,7 +223,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.object({'type': Ack.string()}),
           Ack.string(),
-        ]).copyWith(defaultValue: defaultValue);
+        ]).withDefault(defaultValue);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -243,7 +243,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.integer(),
           Ack.string(),
-        ]).copyWith(defaultValue: defaultValue);
+        ]).withDefault(defaultValue);
 
         final result = schema.safeParse(100);
 
@@ -256,7 +256,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.integer(),
           Ack.string(),
-        ]).copyWith(defaultValue: defaultValue);
+        ]).withDefault(defaultValue);
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -276,7 +276,7 @@ void main() {
             }),
             'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
           },
-        ).copyWith(defaultValue: defaultValue);
+        ).withDefault(defaultValue);
 
         final result = schema.safeParse(null);
 
@@ -296,7 +296,7 @@ void main() {
             }),
             'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
           },
-        ).copyWith(defaultValue: defaultValue);
+        ).withDefault(defaultValue);
 
         final result = schema.safeParse(null);
 
@@ -316,7 +316,7 @@ void main() {
               'radius': Ack.integer(),
             }),
           },
-        ).copyWith(defaultValue: defaultValue);
+        ).withDefault(defaultValue);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -342,7 +342,7 @@ void main() {
             }),
             'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
           },
-        ).copyWith(defaultValue: defaultValue);
+        ).withDefault(defaultValue);
 
         final result = schema.safeParse({'type': 'square', 'side': 20});
 
@@ -362,7 +362,7 @@ void main() {
               'radius': Ack.integer(),
             }),
           },
-        ).copyWith(defaultValue: defaultValue);
+        ).withDefault(defaultValue);
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -378,7 +378,7 @@ void main() {
         ];
         final schema = Ack.list(
           Ack.object({'name': Ack.string(), 'count': Ack.integer()}),
-        ).copyWith(defaultValue: defaultList);
+        ).withDefault(defaultList);
 
         final result = schema.safeParse(null);
 
@@ -397,7 +397,7 @@ void main() {
         final schema = Ack.object({
           'tags': Ack.list(Ack.string()),
           'items': Ack.list(Ack.integer()),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result = schema.safeParse(null);
 
@@ -421,7 +421,7 @@ void main() {
               'level3': Ack.object({'value': Ack.string()}),
             }),
           }),
-        }).copyWith(defaultValue: defaultObj);
+        }).withDefault(defaultObj);
 
         final result = schema.safeParse(null);
 

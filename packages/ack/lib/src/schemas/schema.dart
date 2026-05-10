@@ -37,15 +37,6 @@ sealed class AckSchema<DartType extends Object> {
   final bool isOptional;
   final String? description;
 
-  /// Parse-time default value.
-  ///
-  /// **Soft-deprecated as of M12.** The preferred API is
-  /// [FluentSchema.withDefault], which wraps the schema in a [DefaultSchema]
-  /// rather than mutating an inherited field. The field is retained for one
-  /// beta cycle so existing `copyWith(defaultValue: ...)` call sites and
-  /// downstream packages keep working unchanged.
-  final DartType? defaultValue;
-
   final List<Constraint<DartType>> _constraints;
   final List<Refinement<DartType>> _refinements;
 
@@ -59,7 +50,6 @@ sealed class AckSchema<DartType extends Object> {
     this.isNullable = false,
     this.isOptional = false,
     this.description,
-    this.defaultValue,
     List<Constraint<DartType>> constraints = const [],
     List<Refinement<DartType>> refinements = const [],
   }) : _constraints = constraints,
@@ -177,18 +167,18 @@ sealed class AckSchema<DartType extends Object> {
   /// Builds a JSON Schema with proper nullable handling.
   ///
   /// This helper centralizes the nullable/non-nullable pattern used by most
-  /// schema types by combining description, defaults, nullability wrapping, and
+  /// schema types by combining description, nullability wrapping, and
   /// constraint schema merging.
   ///
   /// [typeSchema] contains type-specific fields (e.g., `{'type': 'string'}`
   /// or `{'type': 'array', 'items': ...}`).
   ///
-  /// [serializedDefault] is the already-serialized default value (e.g.,
-  /// enum values should pass `defaultValue?.name`).
+  /// JSON Schema `default` values are emitted only by [DefaultSchema], which
+  /// owns the parse-only default semantics; primitive schemas no longer
+  /// embed defaults at this layer.
   @protected
   Map<String, Object?> buildJsonSchemaWithNullable({
     required Map<String, Object?> typeSchema,
-    Object? serializedDefault,
   }) {
     if (isNullable) {
       final baseSchema = {
@@ -197,7 +187,6 @@ sealed class AckSchema<DartType extends Object> {
       };
       final mergedSchema = mergeConstraintSchemas(baseSchema);
       return {
-        if (serializedDefault != null) 'default': serializedDefault,
         'anyOf': [
           mergedSchema,
           {'type': 'null'},
@@ -208,7 +197,6 @@ sealed class AckSchema<DartType extends Object> {
     final schema = {
       ...typeSchema,
       if (description != null) 'description': description,
-      if (serializedDefault != null) 'default': serializedDefault,
     };
 
     return mergeConstraintSchemas(schema);
@@ -286,21 +274,16 @@ sealed class AckSchema<DartType extends Object> {
   /// Handles null input on the parse path. Returns `null` when [input] is
   /// non-null so the dispatcher proceeds with [decodeBoundary].
   ///
-  /// Default behaviour: synthesize [defaultValue] when present, emit
-  /// `Ok(null)` when the schema is nullable, otherwise emit a non-nullable
-  /// failure.
+  /// Default behaviour: emit `Ok(null)` when the schema is nullable,
+  /// otherwise emit a non-nullable failure. Defaults are owned by
+  /// [DefaultSchema] (M12) — primitive schemas no longer carry a
+  /// `defaultValue` field.
   @protected
   SchemaResult<DartType>? handleParseNull(
     Object? input,
     SchemaContext context,
   ) {
     if (input != null) return null;
-
-    if (defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      return _parse(clonedDefault, context);
-    }
-
     if (isNullable) return SchemaResult.ok(null);
     return failNonNullable(context);
   }
@@ -567,7 +550,6 @@ sealed class AckSchema<DartType extends Object> {
     bool? isNullable,
     bool? isOptional,
     String? description,
-    DartType? defaultValue,
     List<Constraint<DartType>>? constraints,
     List<Refinement<DartType>>? refinements,
   });
@@ -586,7 +568,6 @@ sealed class AckSchema<DartType extends Object> {
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue?.toString(),
       'constraints': constraints.map((c) => c.toMap()).toList(),
     };
   }
@@ -601,7 +582,6 @@ sealed class AckSchema<DartType extends Object> {
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
         description == other.description &&
-        defaultValue == other.defaultValue &&
         listEq.equals(_constraints, other._constraints) &&
         listEq.equals(_refinements, other._refinements);
   }
@@ -615,7 +595,6 @@ sealed class AckSchema<DartType extends Object> {
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
         description == other.description &&
-        defaultValue == other.defaultValue &&
         listEq.equals(
           _constraints as List<Object?>,
           other._constraints as List<Object?>,
@@ -636,7 +615,6 @@ sealed class AckSchema<DartType extends Object> {
       isNullable,
       isOptional,
       description,
-      defaultValue,
       listEq.hash(_constraints),
       listEq.hash(_refinements),
     );

@@ -37,28 +37,31 @@ void main() {
       });
     });
 
-    group('defaultValue', () {
+    group('defaultValue (DefaultSchema)', () {
       test('should apply default value for null input', () {
-        final schema = StringSchema(defaultValue: 'default');
+        // C2: legacy `StringSchema(defaultValue: ...)` plumbing was removed.
+        // Defaults are now exclusively expressed via `.withDefault(...)`.
+        final schema = const StringSchema().withDefault('default');
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), 'default');
       });
 
       test('should not apply default value for non-null input', () {
-        final schema = StringSchema(defaultValue: 'default');
+        final schema = const StringSchema().withDefault('default');
         final result = schema.safeParse('actual');
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), 'actual');
       });
 
       test('default value is still validated against constraints', () {
-        final schema = StringSchema(defaultValue: 'short').minLength(10);
+        // Apply the constraint on the inner schema first, then wrap with
+        // the default — type-specific fluent methods must come before
+        // `.withDefault(...)`.
+        final schema = Ack.string().minLength(10).withDefault('short');
         final result = schema.safeParse(null);
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
-        // The default value should be validated against constraints.
-        // This was fixed in the refactor - now default values are properly validated.
         expect(
           error.constraints.first.message,
           'Too short. Minimum 10 characters, got 5.',

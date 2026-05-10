@@ -46,7 +46,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -57,24 +56,10 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   bool get strictPrimitiveParsing => inputSchema.strictPrimitiveParsing;
 
-  /// Custom null/default handling: defaults are of type `O` (runtime form),
-  /// so they must not route through `inputSchema` (which validates `I`).
-  @override
-  @protected
-  SchemaResult<O>? handleParseNull(Object? input, SchemaContext context) {
-    if (input != null) return null;
-    if (defaultValue != null) {
-      final cloned = cloneDefault(defaultValue!);
-      final safeDefault = (cloned is O) ? cloned : defaultValue!;
-      return applyConstraintsAndRefinements(safeDefault, context);
-    }
-    if (isNullable) return SchemaResult.ok(null);
-    return failNonNullable(context);
-  }
-
   /// Decodes a non-null boundary value through `inputSchema`, runs the
   /// `decoder`, then validates the decoded value through `outputSchema`.
   /// Constraints/refinements on this codec are applied by [_parse].
+  /// Defaults are owned by [DefaultSchema] (use `.withDefault(...)`).
   @override
   @protected
   SchemaResult<O> decodeBoundary(Object? input, SchemaContext context) {
@@ -192,7 +177,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    O? defaultValue,
     List<Constraint<O>>? constraints,
     List<Refinement<O>>? refinements,
   }) {
@@ -204,7 +188,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

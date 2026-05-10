@@ -58,6 +58,17 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
     return copyWith(constraints: [...constraints, effectiveConstraint]);
   }
 
+  /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue]
+  /// when the parse-side input is `null`.
+  ///
+  /// This mirrors [FluentSchema.withDefault] but is also available on the
+  /// type-erased [AckSchema<T>] (e.g. after `.refine(...)` / `.constrain(...)`,
+  /// which return `AckSchema<T>` rather than the fluent-typed schema).
+  /// Defaults are parse-only — they are never injected on encode.
+  DefaultSchema<T> withDefault(T defaultValue) {
+    return DefaultSchema<T>(inner: this, defaultValue: defaultValue);
+  }
+
   /// Transforms the validated value using the provided transformer function.
   ///
   /// The [transformer] always receives a non-null `T` value. Even when this

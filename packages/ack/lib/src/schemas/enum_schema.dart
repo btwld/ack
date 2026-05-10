@@ -11,7 +11,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -139,7 +138,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
@@ -148,7 +146,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -160,8 +157,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
 
     return buildJsonSchemaWithNullable(
       typeSchema: {'type': 'string', 'enum': enumNames},
-      // Serialize enum default to its name
-      serializedDefault: defaultValue?.name,
     );
   }
 

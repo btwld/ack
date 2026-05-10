@@ -1,15 +1,5 @@
 part of 'schema.dart';
 
-Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
-  if (defaultValue == null) return null;
-
-  try {
-    return jsonDecode(jsonEncode(defaultValue));
-  } catch (_) {
-    return null;
-  }
-}
-
 /// Schema for validating a discriminated union of objects.
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
@@ -46,36 +36,12 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
 
   @override
   SchemaType get schemaType => SchemaType.discriminated;
-
-  /// Custom null/default handling. The default may be a `Map` (boundary form)
-  /// that must route through the discriminator pipeline, or a `T` value
-  /// (already-decoded runtime form) that bypasses the dispatch entirely.
-  @override
-  @protected
-  SchemaResult<T>? handleParseNull(Object? input, SchemaContext context) {
-    if (input != null) return null;
-
-    if (defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      if (clonedDefault is Map) {
-        return _parse(clonedDefault, context);
-      }
-      // Already a decoded runtime value: cast-safety fallback (matches the
-      // legacy behaviour where cloning produced a non-T value).
-      final safeDefault = clonedDefault is T ? clonedDefault : defaultValue!;
-      return applyConstraintsAndRefinements(safeDefault, context);
-    }
-
-    if (isNullable) return SchemaResult.ok(null);
-    return failNonNullable(context);
-  }
 
   /// Selects a branch from `schemas` using the value at [discriminatorKey],
   /// then delegates to that branch. Constraints/refinements on this schema
@@ -484,7 +450,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
@@ -494,7 +459,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -503,7 +467,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   @override
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
-    final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
     schemas.forEach((discriminatorValue, branchSchema) {
       final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
       if (baseSchema is! ObjectSchema) {
@@ -531,15 +494,12 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && serializedDefault != null)
-        'default': serializedDefault,
     };
 
     // Wrap in anyOf with null if nullable
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (serializedDefault != null) 'default': serializedDefault,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -556,7 +516,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'discriminatorKey': discriminatorKey,
       'schemas': schemas.length,

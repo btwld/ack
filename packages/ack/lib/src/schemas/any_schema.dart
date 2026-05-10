@@ -3,8 +3,7 @@ part of 'schema.dart';
 /// Schema that accepts any value without type conversion or validation.
 /// Useful for dynamic content or when you need maximum flexibility.
 ///
-/// Unlike composite schemas (List, Object, AnyOf, Discriminated), AnySchema
-/// supports default values and will emit them in JSON Schema output.
+/// Defaults are owned by [DefaultSchema] (use `.withDefault(...)`).
 @immutable
 final class AnySchema extends AckSchema<Object>
     with FluentSchema<Object, AnySchema> {
@@ -12,7 +11,6 @@ final class AnySchema extends AckSchema<Object>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -36,7 +34,6 @@ final class AnySchema extends AckSchema<Object>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
@@ -44,7 +41,6 @@ final class AnySchema extends AckSchema<Object>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -54,7 +50,6 @@ final class AnySchema extends AckSchema<Object>
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
     // Empty typeSchema means "accepts any value" per JSON Schema standard
     typeSchema: {},
-    serializedDefault: defaultValue,
   );
 
   @override

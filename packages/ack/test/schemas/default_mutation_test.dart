@@ -6,7 +6,7 @@ void main() {
     group('Map defaults', () {
       test('should clone map defaults to prevent mutation', () {
         final originalDefault = {'name': 'Guest', 'role': 'user'};
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         // Parse twice with null input to get defaults
         final result1 = schema.safeParse(null);
@@ -37,7 +37,7 @@ void main() {
             'settings': {'theme': 'dark', 'notifications': true},
           },
         };
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -64,7 +64,7 @@ void main() {
 
       test('should return unmodifiable map', () {
         final originalDefault = {'name': 'Guest'};
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -81,7 +81,7 @@ void main() {
     group('List defaults', () {
       test('should clone list defaults to prevent mutation', () {
         final originalDefault = ['item1', 'item2', 'item3'];
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         // Parse twice with null input to get defaults
         final result1 = schema.safeParse(null);
@@ -113,7 +113,7 @@ void main() {
             'nested': ['deeply', 'nested', 'items'],
           },
         ];
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -129,7 +129,7 @@ void main() {
 
       test('should return unmodifiable list', () {
         final originalDefault = ['item1', 'item2'];
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -146,7 +146,7 @@ void main() {
     group('Primitive defaults', () {
       test('string defaults are immutable by nature', () {
         const originalDefault = 'default value';
-        final schema = Ack.string().copyWith(defaultValue: originalDefault);
+        final schema = Ack.string().withDefault(originalDefault);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -169,7 +169,7 @@ void main() {
 
       test('number defaults are immutable by nature', () {
         const originalDefault = 42;
-        final schema = Ack.integer().copyWith(defaultValue: originalDefault);
+        final schema = Ack.integer().withDefault(originalDefault);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -186,7 +186,7 @@ void main() {
 
       test('boolean defaults are immutable by nature', () {
         const originalDefault = true;
-        final schema = Ack.boolean().copyWith(defaultValue: originalDefault);
+        final schema = Ack.boolean().withDefault(originalDefault);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -208,7 +208,7 @@ void main() {
           'tags': ['tag1', 'tag2'],
           'counts': [1, 2, 3],
         };
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -227,7 +227,7 @@ void main() {
           {'id': 1, 'name': 'first'},
           {'id': 2, 'name': 'second'},
         ];
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -244,8 +244,12 @@ void main() {
     });
 
     group('Edge cases', () {
-      test('should handle null default value', () {
-        final schema = Ack.any().nullable().copyWith(defaultValue: null);
+      test('nullable schema without default returns Ok(null) on null input',
+          () {
+        // Pre-C2 this test went through `copyWith(defaultValue: null)` to
+        // explicitly clear a default. After C2 the legacy field is gone;
+        // a schema simply has no default unless wrapped in DefaultSchema.
+        final schema = Ack.any().nullable();
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -254,7 +258,7 @@ void main() {
 
       test('should handle empty map default', () {
         final originalDefault = <String, Object?>{};
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -266,7 +270,7 @@ void main() {
 
       test('should handle empty list default', () {
         final originalDefault = <Object?>[];
-        final schema = Ack.any().copyWith(defaultValue: originalDefault);
+        final schema = Ack.any().withDefault(originalDefault);
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);

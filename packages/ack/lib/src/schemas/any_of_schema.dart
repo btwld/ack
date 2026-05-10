@@ -28,7 +28,6 @@ final class AnyOfSchema extends AckSchema<Object>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -36,23 +35,17 @@ final class AnyOfSchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.anyOf;
 
-  /// Custom null/default handling. AnyOf has special null semantics:
-  ///   1. If a default exists, apply it (consistent with other schemas).
-  ///   2. Otherwise return `null` to let [decodeBoundary] try member schemas
-  ///      against `null` — a nullable branch can accept null before this
-  ///      schema's own [isNullable] flag is consulted.
+  /// AnyOf has special null semantics: returning `null` from
+  /// `handleParseNull` routes the dispatcher into [decodeBoundary] even for
+  /// a null input, so a nullable branch member can accept null before this
+  /// schema's own [isNullable] flag is consulted. Defaults are owned by
+  /// [DefaultSchema] (use `.withDefault(...)`).
   @override
   @protected
   SchemaResult<Object>? handleParseNull(
     Object? input,
     SchemaContext context,
   ) {
-    if (input == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      return _parse(clonedDefault, context);
-    }
-    // Returning null routes the dispatcher into decodeBoundary even for a
-    // null input; required to give nullable members a chance.
     return null;
   }
 
@@ -195,7 +188,6 @@ final class AnyOfSchema extends AckSchema<Object>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
@@ -204,7 +196,6 @@ final class AnyOfSchema extends AckSchema<Object>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -217,14 +208,12 @@ final class AnyOfSchema extends AckSchema<Object>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && defaultValue != null) 'default': defaultValue,
     };
 
     // Wrap in another anyOf with null if nullable (match Zod's format)
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -241,7 +230,6 @@ final class AnyOfSchema extends AckSchema<Object>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'schemas': schemas.length,
     };
