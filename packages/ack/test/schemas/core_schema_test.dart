@@ -104,17 +104,16 @@ void main() {
     });
 
     group('Type Conversion', () {
-      test(
-        'StringSchema should fail for non-string input with strict parsing',
-        () {
-          final schema = StringSchema().strictParsing();
-          final result = schema.safeParse(123);
-          expect(result.isOk, isFalse);
-          final error = result.getError() as TypeMismatchError;
-          expect(error.expectedType, equals('string'));
-          expect(error.actualType, equals('integer'));
-        },
-      );
+      test('StringSchema is strict by definition (C3)', () {
+        // strictParsing(...) / strictPrimitiveParsing were removed in C4.
+        // All primitive schemas are strict by definition.
+        final schema = const StringSchema();
+        final result = schema.safeParse(123);
+        expect(result.isOk, isFalse);
+        final error = result.getError() as TypeMismatchError;
+        expect(error.expectedType, equals('string'));
+        expect(error.actualType, equals('integer'));
+      });
 
       test('IntegerSchema is strict (C3) — strings are not coerced', () {
         // After C3, all primitive schemas are strict. Strings never coerce
@@ -139,18 +138,14 @@ void main() {
       });
 
       test(
-        'DoubleSchema rejects int input regardless of strictPrimitiveParsing '
-        '(M11 / A1: Ack.double() runtime form is double, not num)',
+        'DoubleSchema rejects int input '
+        '(A1: Ack.double() runtime form is double, not num)',
         () {
           // Pre-A1 this test asserted that int → double coercion succeeded.
-          // A1 makes the conversion explicit: callers must build a codec
-          // with Ack.codec(...). Migration recipes:
-          // test/migration_recipes_test.dart.
+          // A1 (M11) made `Ack.double()` strict; C4 removed the
+          // `strictPrimitiveParsing` toggle entirely. Use Ack.codec(...)
+          // for explicit conversion — see test/migration_recipes_test.dart.
           expect(const DoubleSchema().safeParse(42).isFail, isTrue);
-          expect(
-            const DoubleSchema(strictPrimitiveParsing: true).safeParse(42).isFail,
-            isTrue,
-          );
         },
       );
     });
@@ -179,7 +174,9 @@ void main() {
       });
 
       test('safeParseAs keeps validation failures and does not run mapper', () {
-        final schema = Ack.string().strictParsing();
+        // (C3/C4) Ack.string() is strict by definition; no .strictParsing()
+        // toggle is needed.
+        final schema = Ack.string();
         var mapperCalled = false;
 
         final result = schema.safeParseAs(123, (validated) {

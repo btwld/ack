@@ -130,10 +130,9 @@ void main() {
 
     group('Union type examples', () {
       test('anyOf accepts strings or integers', () {
-        final idSchema = Ack.anyOf([
-          Ack.string().strictParsing(),
-          Ack.integer(),
-        ]);
+        // (C3/C4) Primitives are strict by definition; no .strictParsing()
+        // toggle.
+        final idSchema = Ack.anyOf([Ack.string(), Ack.integer()]);
         expect(idSchema.safeParse('A123').isOk, isTrue);
         expect(idSchema.safeParse(99).isOk, isTrue);
         expect(idSchema.safeParse(true).isFail, isTrue);

@@ -50,11 +50,7 @@ enum SchemaType {
   ///
   /// All primitive schemas are strict — only exact-type matches are
   /// accepted. Conversions belong in [CodecSchema] (`Ack.codec(...)`).
-  ///
-  /// The [strict] parameter is retained for source compatibility but
-  /// is no longer load-bearing; the result is the same regardless of
-  /// the flag.
-  bool canAcceptFrom(SchemaType sourceType, {bool strict = true}) {
+  bool canAcceptFrom(SchemaType sourceType) {
     return this == sourceType;
   }
 

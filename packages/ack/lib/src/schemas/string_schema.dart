@@ -11,28 +11,25 @@ part of 'schema.dart';
 /// final result = emailSchema.safeParse('user@example.com'); // Ok
 /// ```
 ///
+/// `Ack.string()` is strict: only `String` values are accepted (no
+/// coercion from `int` / `bool` / `num`). For explicit boundary
+/// conversion use `Ack.codec(...)` — see
+/// `test/migration_recipes_test.dart`.
+///
 /// See also: [StringSchemaExtensions] for available validation methods.
 @immutable
 final class StringSchema extends AckSchema<String>
     with FluentSchema<String, StringSchema> {
-  @override
-  final bool strictPrimitiveParsing;
-
   const StringSchema({
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
-    this.strictPrimitiveParsing = false,
   });
 
   @override
   SchemaType get schemaType => SchemaType.string;
-
-  /// Creates a new [StringSchema] that enforces strict parsing.
-  StringSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
 
   @override
   StringSchema copyWith({
@@ -41,7 +38,6 @@ final class StringSchema extends AckSchema<String>
     String? description,
     List<Constraint<String>>? constraints,
     List<Refinement<String>>? refinements,
-    bool? strictPrimitiveParsing,
   }) {
     return StringSchema(
       isNullable: isNullable ?? this.isNullable,
@@ -49,8 +45,6 @@ final class StringSchema extends AckSchema<String>
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
 
@@ -62,10 +56,9 @@ final class StringSchema extends AckSchema<String>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! StringSchema) return false;
-    return baseFieldsEqual(other) &&
-        strictPrimitiveParsing == other.strictPrimitiveParsing;
+    return baseFieldsEqual(other);
   }
 
   @override
-  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
+  int get hashCode => baseFieldsHashCode;
 }

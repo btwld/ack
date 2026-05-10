@@ -103,9 +103,6 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   @override
   SchemaType get schemaType => inner.schemaType;
 
-  @override
-  bool get strictPrimitiveParsing => inner.strictPrimitiveParsing;
-
   /// Synthesizes [defaultValue] when the parse input is `null`, then
   /// validates it through the inner runtime path (NOT the inner boundary
   /// path — for codecs the default is a runtime `T`, not a boundary value).

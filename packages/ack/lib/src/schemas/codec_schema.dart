@@ -53,9 +53,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   SchemaType get schemaType => inputSchema.schemaType;
 
-  @override
-  bool get strictPrimitiveParsing => inputSchema.strictPrimitiveParsing;
-
   /// Decodes a non-null boundary value through `inputSchema`, runs the
   /// `decoder`, then validates the decoded value through `outputSchema`.
   /// Constraints/refinements on this codec are applied by [_parse].

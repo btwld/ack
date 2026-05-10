@@ -25,11 +25,9 @@ void main() {
         expect(a, isNot(equals(b)));
       });
 
-      test('different strictParsing are not equal', () {
-        final a = Ack.string().strictParsing();
-        final b = Ack.string();
-        expect(a, isNot(equals(b)));
-      });
+      // (C4) `strictParsing(...)` / `strictPrimitiveParsing` were removed
+      // alongside the primitive-strictness sweep. There is no toggle to
+      // assert distinct equality classes against.
 
       test('copyWith preserves equality', () {
         final original = Ack.string().minLength(5).describe('test');

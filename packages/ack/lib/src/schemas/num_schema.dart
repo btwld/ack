@@ -6,11 +6,7 @@ part of 'schema.dart';
 /// or [DoubleSchema] for type-specific validation.
 @immutable
 sealed class NumSchema<T extends num> extends AckSchema<T> {
-  @override
-  final bool strictPrimitiveParsing;
-
   const NumSchema({
-    this.strictPrimitiveParsing = false,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -27,6 +23,10 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 
 /// Schema for validating integer values.
 ///
+/// Strict: only `int` values are accepted (no implicit conversion from
+/// `String`, `double`, etc.). For explicit boundary conversion use
+/// `Ack.codec(...)` — see `test/migration_recipes_test.dart`.
+///
 /// Supports validation for whole numbers with constraints like min/max,
 /// positive/negative, and multipleOf.
 ///
@@ -38,7 +38,6 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 final class IntegerSchema extends NumSchema<int>
     with FluentSchema<int, IntegerSchema> {
   const IntegerSchema({
-    super.strictPrimitiveParsing,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -49,10 +48,6 @@ final class IntegerSchema extends NumSchema<int>
   @override
   SchemaType get schemaType => SchemaType.integer;
 
-  /// Creates a new [IntegerSchema] that enforces strict parsing.
-  IntegerSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
-
   @override
   IntegerSchema copyWith({
     bool? isNullable,
@@ -60,7 +55,6 @@ final class IntegerSchema extends NumSchema<int>
     String? description,
     List<Constraint<int>>? constraints,
     List<Refinement<int>>? refinements,
-    bool? strictPrimitiveParsing,
   }) {
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
@@ -68,8 +62,6 @@ final class IntegerSchema extends NumSchema<int>
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
 
@@ -81,17 +73,20 @@ final class IntegerSchema extends NumSchema<int>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! IntegerSchema) return false;
-    return baseFieldsEqual(other) &&
-        strictPrimitiveParsing == other.strictPrimitiveParsing;
+    return baseFieldsEqual(other);
   }
 
   @override
-  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
+  int get hashCode => baseFieldsHashCode;
 }
 
 // --- DoubleSchema ---
 
 /// Schema for validating double/floating-point values.
+///
+/// Strict: only `double` values are accepted (no implicit conversion
+/// from `int` or `String`). For explicit boundary conversion use
+/// `Ack.codec(...)` — see `test/migration_recipes_test.dart`.
 ///
 /// Supports validation for decimal numbers with constraints like min/max,
 /// finite checks, and precision requirements.
@@ -104,7 +99,6 @@ final class IntegerSchema extends NumSchema<int>
 final class DoubleSchema extends NumSchema<double>
     with FluentSchema<double, DoubleSchema> {
   const DoubleSchema({
-    super.strictPrimitiveParsing,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -115,10 +109,6 @@ final class DoubleSchema extends NumSchema<double>
   @override
   SchemaType get schemaType => SchemaType.number;
 
-  /// Creates a new [DoubleSchema] that enforces strict parsing.
-  DoubleSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
-
   @override
   DoubleSchema copyWith({
     bool? isNullable,
@@ -126,7 +116,6 @@ final class DoubleSchema extends NumSchema<double>
     String? description,
     List<Constraint<double>>? constraints,
     List<Refinement<double>>? refinements,
-    bool? strictPrimitiveParsing,
   }) {
     return DoubleSchema(
       isNullable: isNullable ?? this.isNullable,
@@ -134,8 +123,6 @@ final class DoubleSchema extends NumSchema<double>
       description: description ?? this.description,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
 
@@ -146,10 +133,9 @@ final class DoubleSchema extends NumSchema<double>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DoubleSchema) return false;
-    return baseFieldsEqual(other) &&
-        strictPrimitiveParsing == other.strictPrimitiveParsing;
+    return baseFieldsEqual(other);
   }
 
   @override
-  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
+  int get hashCode => baseFieldsHashCode;
 }

@@ -225,15 +225,6 @@ sealed class AckSchema<DartType extends Object> {
   /// Human-readable type name for error messages and debugging.
   String get schemaTypeName => schemaType.typeName;
 
-  /// Whether this schema uses strict primitive parsing.
-  ///
-  /// When true, only exact type matches are allowed.
-  /// When false, compatible types can be coerced (e.g., "42" → 42).
-  ///
-  /// Subclasses that support strictPrimitiveParsing should override this.
-  @protected
-  bool get strictPrimitiveParsing => false;
-
   // ---------------------------------------------------------------------------
   // Parse-side hooks. Symmetric to the encode-side hooks above:
   //
@@ -319,7 +310,7 @@ sealed class AckSchema<DartType extends Object> {
       );
     }
 
-    if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
+    if (!targetType.canAcceptFrom(actualType)) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: targetType,

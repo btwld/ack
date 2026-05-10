@@ -28,15 +28,9 @@ void main() {
         expect(Ack.double().safeParse('not-a-number').isFail, isTrue);
       });
 
-      test('strictParsing flag does not change A1 strict double policy', () {
-        // strictPrimitiveParsing was historically the toggle for the int /
-        // string coercions. Under A1 those coercions are gone; the flag is
-        // effectively a no-op for double parsing. Both modes reject non-double.
-        expect(Ack.double().strictParsing(value: false).safeParse(42).isFail,
-            isTrue);
-        expect(Ack.double().strictParsing(value: true).safeParse(42).isFail,
-            isTrue);
-      });
+      // (C4) strictParsing(...) / strictPrimitiveParsing were removed in
+      // 1.0.0-beta.12 — primitive schemas are strict by definition, so the
+      // toggle was dead API. No toggle test needed.
     });
 
     group('encode', () {

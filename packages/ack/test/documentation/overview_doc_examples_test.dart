@@ -131,10 +131,8 @@ void main() {
     });
 
     test('union examples accept multiple data shapes', () {
-      final stringOrNumber = Ack.anyOf([
-        Ack.string().strictParsing(),
-        Ack.integer(),
-      ]);
+      // (C3/C4) Primitives are strict by definition.
+      final stringOrNumber = Ack.anyOf([Ack.string(), Ack.integer()]);
 
       expect(stringOrNumber.safeParse('hello').isOk, isTrue);
       expect(stringOrNumber.safeParse(42).isOk, isTrue);
