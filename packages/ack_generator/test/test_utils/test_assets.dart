@@ -59,10 +59,10 @@ class Ack {
   static NumberSchema number() => const NumberSchema();
   static BooleanSchema boolean() => const BooleanSchema();
   static AnySchema any() => const AnySchema();
-  static TransformedSchema<String, Uri> uri() => TransformedSchema<String, Uri>(const StringSchema());
-  static TransformedSchema<String, DateTime> date() => TransformedSchema<String, DateTime>(const StringSchema());
-  static TransformedSchema<String, DateTime> datetime() => TransformedSchema<String, DateTime>(const StringSchema());
-  static TransformedSchema<int, Duration> duration() => TransformedSchema<int, Duration>(const IntegerSchema());
+  static CodecSchema<String, Uri> uri() => CodecSchema<String, Uri>(const StringSchema());
+  static CodecSchema<String, DateTime> date() => CodecSchema<String, DateTime>(const StringSchema());
+  static CodecSchema<String, DateTime> datetime() => CodecSchema<String, DateTime>(const StringSchema());
+  static CodecSchema<int, Duration> duration() => CodecSchema<int, Duration>(const IntegerSchema());
 
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
@@ -92,19 +92,22 @@ class Ack {
 }
 
 abstract class AckSchema<T> {
-  TransformedSchema<T, R> transform<R extends Object>(R Function(T value) transformer) =>
-      TransformedSchema<T, R>(this);
+  CodecSchema<T, R> transform<R extends Object>(R Function(T value) decoder) =>
+      CodecSchema<T, R>(this);
   Map<String, Object?> toJsonSchema();
 }
-class TransformedSchema<Input, Output> extends AckSchema<Output> {
-  final AckSchema<Input> schema;
-  TransformedSchema(this.schema);
-  TransformedSchema<Input, Output> nullable() => this;
-  TransformedSchema<Input, Output> optional() => this;
-  TransformedSchema<Input, Output> describe(String description) => this;
+// Minimal mock of the real CodecSchema<I, O>. The generator only inspects
+// .transform(...) invocations and their output types via AST, so this
+// fixture stays intentionally tiny.
+class CodecSchema<Input, Output> extends AckSchema<Output> {
+  final AckSchema<Input> inputSchema;
+  CodecSchema(this.inputSchema);
+  CodecSchema<Input, Output> nullable() => this;
+  CodecSchema<Input, Output> optional() => this;
+  CodecSchema<Input, Output> describe(String description) => this;
 
   @override
-  Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
+  Map<String, Object?> toJsonSchema() => inputSchema.toJsonSchema();
 }
 class StringSchema extends AckSchema<String> {
   const StringSchema();
