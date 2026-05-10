@@ -22,9 +22,9 @@ void main() {
       expect(schema, isA<CodecSchema<String, int>>());
     });
 
-    test('TransformedSchema<I, O> typedef annotation compiles and runs', () {
+    test('CodecSchema<I, O> typedef annotation compiles and runs', () {
       // ignore: deprecated_member_use_from_same_package
-      final TransformedSchema<String, int> schema =
+      final CodecSchema<String, int> schema =
           Ack.string().transform<int>(int.parse);
       expect(schema.parse('1'), equals(1));
       expect(schema, isA<CodecSchema<String, int>>());
@@ -74,7 +74,7 @@ void main() {
 
   group('TransformedSchema-as-typedef (M13)', () {
     test('extension typed for TransformedSchema applies to CodecSchema', () {
-      // DateTimeSchemaExtensions is on `TransformedSchema<String, DateTime>`.
+      // DateTimeSchemaExtensions is on `CodecSchema<String, DateTime>`.
       // After M13 the typedef is CodecSchema<String, DateTime>, so the
       // extension still resolves on the codec returned by Ack.datetime().
       final schema = Ack.datetime().min(DateTime.utc(2020));

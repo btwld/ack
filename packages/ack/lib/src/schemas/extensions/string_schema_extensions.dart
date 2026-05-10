@@ -141,19 +141,19 @@ extension StringSchemaExtensions on StringSchema {
 
   /// Trims leading and trailing whitespace from the string before validation.
   /// Returns a transformed schema that applies String.trim() to the input.
-  TransformedSchema<String, String> trim() {
+  CodecSchema<String, String> trim() {
     return transform((s) => s.trim());
   }
 
   /// Converts the string to lowercase after validation.
   /// Returns a transformed schema that applies String.toLowerCase() to the input.
-  TransformedSchema<String, String> toLowerCase() {
+  CodecSchema<String, String> toLowerCase() {
     return transform((s) => s.toLowerCase());
   }
 
   /// Converts the string to uppercase after validation.
   /// Returns a transformed schema that applies String.toUpperCase() to the input.
-  TransformedSchema<String, String> toUpperCase() {
+  CodecSchema<String, String> toUpperCase() {
     return transform((s) => s.toUpperCase());
   }
 }

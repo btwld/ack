@@ -26,7 +26,6 @@ part 'num_schema.dart';
 part 'object_schema.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
-part 'transformed_schema.dart';
 part 'testing/testing_schemas.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});

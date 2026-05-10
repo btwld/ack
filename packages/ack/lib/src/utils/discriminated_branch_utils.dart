@@ -6,8 +6,8 @@ import '../schemas/schema.dart';
 /// Discriminated branches may be wrapped in [CodecSchema] or [DefaultSchema]
 /// while still being object-backed at their core. For [CodecSchema], the
 /// boundary form (`inputSchema`) is what carries the discriminator field,
-/// so we follow that side. (Since M13, `TransformedSchema` is a typedef
-/// alias for `CodecSchema`, so the codec arm covers transforms too.)
+/// so we follow that side. (`.transform(...)` returns a one-way
+/// `CodecSchema`, so the codec arm covers transforms too.)
 AckSchema unwrapDiscriminatedBranchSchema(AckSchema schema) {
   var current = schema;
   while (true) {
