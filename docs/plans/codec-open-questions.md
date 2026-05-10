@@ -196,7 +196,24 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Recommendation:** (a). Cosmetic; users can build them with `Ack.codec`. Avoids locking API names too early.
 
-**Decision:** **(b)** Ship `Ack.intFromString()`, `Ack.doubleFromString()`, and `Ack.boolFromString()` with the codec MVP. *(Expands scope — see milestones doc M14a.)*
+**Decision:** **(a)** _(revised during M14a)._ Do NOT add
+`Ack.intFromString()`, `Ack.doubleFromString()`, or `Ack.boolFromString()`
+to the `Ack` namespace in the MVP. They are migration recipes, not core
+schema concepts. The reference design's primitive for explicit
+conversion is `Ack.codec(...)`; expanding the `Ack` namespace with
+recipe shortcuts (`Ack.intFromHexString()`, `Ack.boolFromYesNo()`,
+`Ack.dateFromTimestamp()` …) would turn it into an open-ended
+coercion catalog and undermine the "abstractions must protect an
+invariant" principle. Migration support lives in tested documentation
+recipes (see milestones doc M14a). If repeated user demand surfaces
+post-beta, reconsider via a separate namespace such as `AckCoercions`,
+not `Ack`.
+
+The earlier (b) decision is superseded.
+
+**M14a scope** (revised): docs / tested examples only. No new public
+API. The recipes file is `packages/ack/test/migration_recipes_test.dart`
+— each recipe is runnable code so copy-paste into user projects works.
 
 ---
 

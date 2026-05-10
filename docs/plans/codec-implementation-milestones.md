@@ -15,7 +15,7 @@ All blocking and non-blocking questions are resolved. Three decisions diverge fr
 
 1. **A1 (b) — `Ack.double()` strict everywhere.** Parse no longer accepts `int` as `double`. Affects M11 (primitive encode) **and** parse-side behaviour: `IntegerSchema`/`DoubleSchema` `_validateRuntime` and `parseAndValidate` both require exact runtime type. Adds two coercion-removal entries to the CHANGELOG (`Ack.double().parse(42)` no longer succeeds). Existing `strictPrimitiveParsing` flag becomes effectively a no-op for the int↔double case.
 2. **A3 (b) — `Ack.datetime()` rejects non-UTC.** Encode error message must explicitly point at `.toUtc()`. Affects M14. Adds a CHANGELOG entry that callers must call `.toUtc()` before encoding.
-3. **B4 (b) — Ship `Ack.intFromString()`, `Ack.doubleFromString()`, `Ack.boolFromString()` with the MVP.** Adds a new milestone **M14a** between M14 and M15 (see updated table below).
+3. ~~**B4 (b) — Ship `Ack.intFromString()`, `Ack.doubleFromString()`, `Ack.boolFromString()` with the MVP.**~~ Superseded during M14a — see the revised B4 (a) decision in `codec-open-questions.md`. Recipes stay; public-API factories do not. M14a is now a docs/tests milestone (`test/migration_recipes_test.dart`) and adds no new entries to `Ack`.
 
 All other decisions match the original recommendations. The `parseAndValidate` shared-helper warning in §D of the open-questions doc is unchanged: M6 must add a separate `encodeBoundary` traversal, not a shared helper.
 
@@ -74,7 +74,7 @@ M2  SchemaEncodeError              ─┴─→ M3 base hooks (encode/safeEncode
 | M12 | `DefaultSchema<T>` wrapper + `.withDefault` | new `default_schema.dart`, `fluent_schema.dart`, `object_schema.dart`, `converters/ack_to_json_schema_model.dart` | AC-11 |
 | M13 | `.transform(...)` becomes one-way `CodecSchema<T, R>`; `TransformedSchema` becomes typedef | `transformed_schema.dart`, `extensions/ack_schema_extensions.dart`, datetime/duration extensions | AC-12 |
 | M14 | Built-in codecs: `Ack.date()/datetime()/uri()/duration()` as `CodecSchema` | `ack.dart`, datetime/duration extensions | AC-18, AC-07, AC-08 |
-| M14a | Convenience coercion codecs: `Ack.intFromString()`, `Ack.doubleFromString()`, `Ack.boolFromString()` (per B4 decision) | `ack.dart`, new `extensions/coercion_codecs.dart` or inline in `ack.dart` | AC-19 migration examples |
+| M14a | _Revised:_ migration recipes for `string ↔ int / double / bool` codecs as tested documentation. **No new public API** (per the revised B4 decision in `codec-open-questions.md`). | `test/migration_recipes_test.dart` | AC-19 migration examples |
 | M15 | Converter + downstream package updates | `converters/ack_to_json_schema_model.dart`, downstream tests | AC-16, AC-20 |
 | M16 | Deprecation polish, CHANGELOG, README, llms.txt | `CHANGELOG.md`, `README.md`, `transformed_schema.dart` | AC-20 |
 | M17 | New test files matching §14 | `packages/ack/test/schemas/...` | AC-01..AC-20 sweep |
