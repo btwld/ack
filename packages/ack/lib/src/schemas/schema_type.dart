@@ -63,7 +63,7 @@ enum SchemaType {
 
   /// Determines if this type can accept/parse values from [sourceType].
   ///
-  /// When [strict] is true, only exact type matches are allowed (except number ← integer).
+  /// When [strict] is true, only exact type matches are allowed.
   /// When [strict] is false, primitive types can parse from compatible types.
   bool canAcceptFrom(SchemaType sourceType, {required bool strict}) {
     if (this == sourceType) return true;
@@ -107,17 +107,11 @@ enum SchemaType {
       (SchemaType.integer, SchemaType.string, String s) =>
         _parseIntFromString(s, context) as SchemaResult<T>,
 
-      // number conversions: unreachable under A1 / M11 strict double policy
-      // (canAcceptFrom now returns false for non-self number sources).
-      // Kept for now; scheduled for removal in the broader primitive
-      // strictness sweep. Do not rely on this branch for new code — use
-      // `Ack.codec(...)` for explicit conversion (recipes in
-      // test/migration_recipes_test.dart).
-      (SchemaType.number, SchemaType.integer, int i) => SchemaResult.ok(
-        i.toDouble() as T,
-      ),
-      (SchemaType.number, SchemaType.string, String s) =>
-        _parseDoubleFromString(s, context) as SchemaResult<T>,
+      // (number conversions removed: A1/M11 made `Ack.double()` strict;
+      //  `canAcceptFrom` returns `false` for non-self number sources, so
+      //  the integer→number and string→number arms were unreachable.
+      //  Use `Ack.codec(...)` for explicit conversion — see recipes in
+      //  test/migration_recipes_test.dart.)
 
       // boolean conversions
       (SchemaType.boolean, SchemaType.string, String s) =>
@@ -173,20 +167,6 @@ enum SchemaType {
     return SchemaResult.fail(
       SchemaValidationError(
         message: 'Cannot convert "$value" to integer.',
-        context: context,
-      ),
-    );
-  }
-
-  static SchemaResult<double> _parseDoubleFromString(
-    String value,
-    SchemaContext context,
-  ) {
-    final parsed = double.tryParse(value);
-    if (parsed != null) return SchemaResult.ok(parsed);
-    return SchemaResult.fail(
-      SchemaValidationError(
-        message: 'Cannot convert "$value" to number.',
         context: context,
       ),
     );
