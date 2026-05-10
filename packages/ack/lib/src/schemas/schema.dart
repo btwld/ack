@@ -16,6 +16,7 @@ part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
 part 'codec_schema.dart';
+part 'default_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
@@ -35,7 +36,16 @@ sealed class AckSchema<DartType extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
+
+  /// Parse-time default value.
+  ///
+  /// **Soft-deprecated as of M12.** The preferred API is
+  /// [FluentSchema.withDefault], which wraps the schema in a [DefaultSchema]
+  /// rather than mutating an inherited field. The field is retained for one
+  /// beta cycle so existing `copyWith(defaultValue: ...)` call sites and
+  /// downstream packages keep working unchanged.
   final DartType? defaultValue;
+
   final List<Constraint<DartType>> _constraints;
   final List<Refinement<DartType>> _refinements;
 

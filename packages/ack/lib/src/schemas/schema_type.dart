@@ -40,7 +40,9 @@ part of 'schema.dart';
 enum SchemaType {
   string('string', supportsCoercion: true),
   integer('integer', supportsCoercion: true),
-  number('number', supportsCoercion: true),
+  // A1 (M11): `number` is strict — no coercion from int / string. Self-match
+  // only; see `canAcceptFrom` below.
+  number('number'),
   boolean('boolean', supportsCoercion: true),
   object('object'),
   array('array'),

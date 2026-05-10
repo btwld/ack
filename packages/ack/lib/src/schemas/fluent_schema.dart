@@ -23,9 +23,31 @@ mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
   Schema withDescription(String description) =>
       copyWith(description: description) as Schema;
 
-  /// Sets the default value for the schema.
-  Schema withDefault(DartType defaultValue) =>
-      copyWith(defaultValue: defaultValue) as Schema;
+  /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue]
+  /// when the parse-side input is `null`.
+  ///
+  /// **Breaking change (M12):** previously `withDefault` returned a copy of
+  /// the same schema type with `defaultValue` set. It now returns a
+  /// [DefaultSchema] wrapper. This means type-specific fluent methods
+  /// (e.g. `.minLength`, `.matches` on `StringSchema`) must be applied
+  /// **before** `.withDefault(...)`:
+  ///
+  /// ```dart
+  /// // Preferred
+  /// Ack.string().minLength(3).withDefault('guest');
+  ///
+  /// // Won't type-check — DefaultSchema<String> has no .minLength(...)
+  /// // Ack.string().withDefault('guest').minLength(3);
+  /// ```
+  ///
+  /// Defaults are parse-only per requirements §5.5: they are synthesized
+  /// when parse input is `null`, but never injected on encode.
+  DefaultSchema<DartType> withDefault(DartType defaultValue) {
+    return DefaultSchema<DartType>(
+      inner: this,
+      defaultValue: defaultValue,
+    );
+  }
 
   /// Adds a validation constraint to the schema.
   Schema withConstraint(Constraint<DartType> constraint) =>
