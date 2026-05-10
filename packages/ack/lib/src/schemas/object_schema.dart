@@ -1,5 +1,22 @@
 part of 'schema.dart';
 
+/// Eagerly normalizes [value] into a `Map<String, Object?>` if every key is a
+/// String. Returns `null` otherwise. Unlike `Map.cast<String, Object?>()`,
+/// which is a lazy view that throws `TypeError` on iteration when keys do not
+/// match, this helper walks once and cannot throw — preserving the
+/// "safeParse / safeEncode never throws" guarantee for malformed input.
+MapValue? _asStringKeyedMap(Object? value) {
+  if (value is Map<String, Object?>) return value;
+  if (value is! Map) return null;
+  final out = <String, Object?>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is! String) return null;
+    out[key] = entry.value;
+  }
+  return out;
+}
+
 /// Schema for validating maps (`Map<String, Object?>`), often used for objects.
 @immutable
 final class ObjectSchema extends AckSchema<MapValue>
@@ -31,7 +48,8 @@ final class ObjectSchema extends AckSchema<MapValue>
     Object? input,
     SchemaContext context,
   ) {
-    if (input is! Map) {
+    final mapValue = _asStringKeyedMap(input);
+    if (mapValue == null) {
       final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
         TypeMismatchError(
@@ -41,11 +59,6 @@ final class ObjectSchema extends AckSchema<MapValue>
         ),
       );
     }
-
-    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
-    final mapValue = input is Map<String, Object?>
-        ? input
-        : input.cast<String, Object?>();
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
@@ -178,12 +191,10 @@ final class ObjectSchema extends AckSchema<MapValue>
       if (isNullable) return SchemaResult.ok(null);
       return SchemaResult.fail(_failNullForRuntime(context));
     }
-    if (value is! Map) {
+    final mapValue = _asStringKeyedMap(value);
+    if (mapValue == null) {
       return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
     }
-
-    final mapValue =
-        value is Map<String, Object?> ? value : value.cast<String, Object?>();
     final validated = <String, Object?>{};
     final errors = <SchemaError>[];
     final isEncode = context.operation == SchemaOperation.encode;
@@ -303,17 +314,12 @@ final class ObjectSchema extends AckSchema<MapValue>
     return applyConstraintsAndRefinements(canonical, context);
   }
 
-  /// Recursively encodes the runtime [MapValue] back to its boundary form by
-  /// invoking each child schema's encode pipeline (`_validateRuntime` followed
-  /// by `encodeBoundary`).
-  ///
-  /// Per requirements §5.5 / §7.2.5, defaults are NOT synthesized on encode:
-  /// missing optional properties are simply omitted from the output.
-  ///
-  /// Per the maintainer A6 decision, when [additionalProperties] is `true`
-  /// unknown keys are copied as-is (no child schema exists to recurse into);
-  /// when `false`, unknown keys produce
-  /// [SchemaEncodeError.unexpectedProperty].
+  /// Translates a canonical runtime [MapValue] into its boundary form by
+  /// invoking each child schema's `encodeBoundary`. The dispatcher's
+  /// [_validateRuntime] has already validated children, omitted missing
+  /// optionals, and rejected missing-required / disallowed-additional keys
+  /// — so this method only needs to translate runtime → boundary, never
+  /// re-validate.
   @override
   @protected
   SchemaResult<Object> encodeBoundary(
@@ -323,31 +329,12 @@ final class ObjectSchema extends AckSchema<MapValue>
     final out = <String, Object?>{};
     final encodeErrors = <SchemaError>[];
 
-    // Encode each declared property.
     for (final entry in properties.entries) {
       final key = entry.key;
+      // Optional properties omitted by _validateRuntime are absent here.
+      if (!value.containsKey(key)) continue;
+
       final childSchema = entry.value;
-      final hasValue = value.containsKey(key);
-
-      if (!hasValue) {
-        if (childSchema.isOptional) {
-          // Missing optional → omit. Defaults are parse-only (§5.5).
-          continue;
-        }
-        encodeErrors.add(
-          SchemaEncodeError.missingRequiredProperty(
-            key: key,
-            context: context.createChild(
-              name: key,
-              schema: childSchema,
-              value: null,
-              pathSegment: key,
-            ),
-          ),
-        );
-        continue;
-      }
-
       final childValue = value[key];
       final childContext = context.createChild(
         name: key,
@@ -356,24 +343,13 @@ final class ObjectSchema extends AckSchema<MapValue>
         pathSegment: key,
       );
 
-      // Validate the runtime value through the child schema (operation-aware:
-      // childContext inherits operation: encode from the parent).
-      final validated =
-          childSchema._validateRuntime(childValue, childContext);
-      if (validated.isFail) {
-        encodeErrors.add(validated.getError());
-        continue;
-      }
-      final v = validated.getOrNull();
-      if (v == null) {
-        // Nullable child schema with null runtime value: emit null in boundary
-        // form. This matches the parse path's nullable handling.
+      if (childValue == null) {
+        // Nullable child schema held null at runtime → null in boundary form.
         out[key] = null;
         continue;
       }
 
-      // Recurse: encode runtime → boundary through this child's encoder.
-      final encoded = childSchema.encodeBoundary(v, childContext);
+      final encoded = childSchema.encodeBoundary(childValue, childContext);
       if (encoded.isFail) {
         encodeErrors.add(encoded.getError());
         continue;
@@ -381,25 +357,13 @@ final class ObjectSchema extends AckSchema<MapValue>
       out[key] = encoded.getOrNull();
     }
 
-    // Handle keys present on the input but not declared on this schema.
+    // Pass through additional keys present in the canonical map. They are
+    // only present when `additionalProperties: true`; otherwise
+    // _validateRuntime already rejected them.
     final knownKeys = properties.keys.toSet();
     for (final key in value.keys) {
-      if (knownKeys.contains(key)) continue;
-      if (additionalProperties) {
-        // A6 decision: pass-through unknown keys as-is when permitted.
+      if (!knownKeys.contains(key)) {
         out[key] = value[key];
-      } else {
-        encodeErrors.add(
-          SchemaEncodeError.unexpectedProperty(
-            key: key,
-            context: context.createChild(
-              name: key,
-              schema: this,
-              value: value[key],
-              pathSegment: key,
-            ),
-          ),
-        );
       }
     }
 

@@ -83,7 +83,8 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   @override
   @protected
   SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {
-    if (input is! Map) {
+    final mapValue = _asStringKeyedMap(input);
+    if (mapValue == null) {
       final actualType = AckSchema.getSchemaType(input);
       return SchemaResult.fail(
         TypeMismatchError(
@@ -93,8 +94,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         ),
       );
     }
-    final mapValue =
-        input is MapValue ? input : input.cast<String, Object?>();
 
     final Object? discValueRaw = mapValue[discriminatorKey];
 

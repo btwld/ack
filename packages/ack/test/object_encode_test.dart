@@ -216,5 +216,48 @@ void main() {
         );
       },
     );
+
+    test(
+      'child validation runs exactly once during encode',
+      () {
+        // Regression: previously ObjectSchema.encodeBoundary re-ran
+        // child._validateRuntime, double-applying child refinements.
+        // The dispatcher's _validateRuntime owns child runtime validation;
+        // encodeBoundary should only translate runtime → boundary.
+        var calls = 0;
+        final schema = Ack.object({
+          'a': Ack.integer().refine((value) {
+            calls++;
+            return true;
+          }),
+        });
+        final result = schema.safeEncode({'a': 1});
+        expect(result.isOk, isTrue);
+        expect(calls, equals(1));
+      },
+    );
+
+    test('safeEncode does not throw on a map with non-String keys', () {
+      // Regression: previously _validateRuntime used Map.cast<String, Object?>(),
+      // which is a lazy view that throws TypeError when iterated over a map
+      // with non-String keys. safeEncode must never throw.
+      final schema = Ack.object({'name': Ack.string()});
+      late SchemaResult<Object> result;
+      expect(
+        () => result = schema.safeEncode({1: 'bad'}),
+        returnsNormally,
+      );
+      expect(result.isFail, isTrue);
+    });
+
+    test('safeParse does not throw on a map with non-String keys', () {
+      final schema = Ack.object({'name': Ack.string()});
+      late SchemaResult<Map<String, Object?>> result;
+      expect(
+        () => result = schema.safeParse({1: 'bad'}),
+        returnsNormally,
+      );
+      expect(result.isFail, isTrue);
+    });
   });
 }
