@@ -130,8 +130,8 @@ void main() {
         test('should validate basic double', () {
           final schema = Ack.double();
           expect(schema.safeParse(3.14).isOk, isTrue);
-          // M11/A1: int → double coercion removed. Use Ack.codec (or the
-          // future Ack.doubleFromString) for explicit conversion.
+          // M11/A1: int → double coercion removed. Use Ack.codec for
+          // explicit conversion (see test/migration_recipes_test.dart).
           expect(schema.safeParse(42).isOk, isFalse);
           expect(schema.safeParse('not-a-number').isOk, isFalse);
         });

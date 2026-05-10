@@ -146,8 +146,9 @@ void main() {
         '(M11 / A1: Ack.double() runtime form is double, not num)',
         () {
           // Pre-A1 this test asserted that int → double coercion succeeded.
-          // A1 makes the conversion explicit: callers must use a codec
-          // (Ack.codec or M14a Ack.intFromString-style helpers) to convert.
+          // A1 makes the conversion explicit: callers must build a codec
+          // with Ack.codec(...). Migration recipes:
+          // test/migration_recipes_test.dart.
           expect(const DoubleSchema().safeParse(42).isFail, isTrue);
           expect(
             const DoubleSchema(strictPrimitiveParsing: true).safeParse(42).isFail,

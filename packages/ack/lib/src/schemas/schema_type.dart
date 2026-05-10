@@ -29,8 +29,9 @@ part of 'schema.dart';
 /// | *        | exact type only | all conversions disabled                  |
 ///
 /// `Ack.double()` is always strict regardless of `strictPrimitiveParsing`
-/// (per A1 / M11). For explicit conversion use `Ack.codec(...)` or one of
-/// the M14a convenience factories (e.g. `Ack.doubleFromString()`).
+/// (per A1 / M11). For explicit conversion build a codec with
+/// `Ack.codec(...)` — see the runnable recipes in
+/// `packages/ack/test/migration_recipes_test.dart`.
 ///
 /// Example:
 /// ```dart
@@ -79,9 +80,9 @@ enum SchemaType {
                 sourceType == SchemaType.boolean),
       SchemaType.boolean => !strict && sourceType == SchemaType.string,
       // A1 (M11): `Ack.double()` is strict — no implicit int → double or
-      // string → double conversion. Use `Ack.codec(...)` (or one of the
-      // M14a convenience factories such as `Ack.doubleFromString()`) for
-      // explicit conversion. Self-match handled above.
+      // string → double conversion. Use `Ack.codec(...)` for explicit
+      // conversion (see test/migration_recipes_test.dart). Self-match is
+      // handled above.
       SchemaType.number => false,
       _ => false,
     };
@@ -110,7 +111,8 @@ enum SchemaType {
       // (canAcceptFrom now returns false for non-self number sources).
       // Kept for now; scheduled for removal in the broader primitive
       // strictness sweep. Do not rely on this branch for new code — use
-      // `Ack.doubleFromString()` etc. (M14a) for explicit conversion.
+      // `Ack.codec(...)` for explicit conversion (recipes in
+      // test/migration_recipes_test.dart).
       (SchemaType.number, SchemaType.integer, int i) => SchemaResult.ok(
         i.toDouble() as T,
       ),
