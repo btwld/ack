@@ -576,15 +576,20 @@ Migration guidance shall state:
 
 ### 12.2 Primitive Coercion
 
-Migration guidance shall replace implicit coercion with explicit codecs.
+Migration guidance: long-term, replace implicit coercion with explicit
+codecs. **Status in 1.0.0-beta.12 (staged):** only `Ack.double()` is
+strict (decision A1, applied in M11). `Ack.integer()`, `Ack.boolean()`,
+and `Ack.string()` retain their existing legacy primitive coercion in
+this beta — `Ack.integer().parse('42')` still succeeds for now. Plan
+to migrate before the broader strictness sweep lands.
 
-Old:
+Future migration target (will fail post-sweep, fine in beta.12):
 
 ```dart
 Ack.integer().parse('42');
 ```
 
-New:
+Replacement (works today and survives the sweep):
 
 ```dart
 final intFromString = Ack.codec<String, int>(
@@ -629,7 +634,7 @@ Docs shall clearly state that defaults are parse-only.
 | AC-16 | JSON Schema boundary output | Codec JSON Schema describes input schema, not runtime schema. |
 | AC-17 | Path preservation | Nested encode/decode failures retain precise JSON Pointer paths. |
 | AC-18 | Built-in round-trip | Date, datetime, URI, duration codecs round-trip valid canonical values. |
-| AC-19 | No implicit coercion | Primitive schemas reject boundary strings that require conversion. |
+| AC-19 | Explicit primitive coercion (staged) | `Ack.double()` rejects boundary strings/ints that require conversion (A1, shipped in M11). `Ack.integer()` / `Ack.boolean()` / `Ack.string()` still permit legacy coercion in beta.12; tested migration recipes in `test/migration_recipes_test.dart` show how to build `string ↔ int / double / bool` codecs explicitly with `Ack.codec(...)`. The full primitive-strictness sweep is deferred past 1.0.0-beta.12. |
 | AC-20 | Test suite | Package tests pass; converter packages updated for `CodecSchema`. |
 
 ---
@@ -695,7 +700,12 @@ Docs shall clearly state that defaults are parse-only.
 - `TransformedSchema<I, O>` typedef annotations still compile.
 - `.transform(...)` parse still works.
 - `.transform(...)` encode fails clearly.
-- Primitive string-to-int coercion now fails without explicit codec.
+- `Ack.double()` rejects int and string inputs (A1 / M11). The other
+  primitives (`Ack.integer()`, `Ack.boolean()`, `Ack.string()`) still
+  permit legacy coercion in 1.0.0-beta.12; the broader strictness
+  sweep is deferred. Tested migration recipes in
+  `test/migration_recipes_test.dart` show how to build `string ↔ int`
+  / `double` / `bool` codecs explicitly with `Ack.codec(...)`.
 
 ---
 

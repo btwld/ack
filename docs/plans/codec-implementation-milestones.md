@@ -1,7 +1,27 @@
 # ACK Bidirectional Codec — Implementation Milestones & Executability Report
 
-**Companion to:** `codec-bidirectional-requirements.md`
-**Status:** Synthesized from a planning agent and a codebase-validation agent. Both agents agree the plan is executable; this document records the milestone breakdown, the gaps that need maintainer decision, and the breaking-change checklist.
+**Companion to:** `codec-bidirectional-requirements.md`, `codec-open-questions.md`
+**Status:** **Historical planning artifact.** Implementation through
+M1–M16 is complete and shipped on `claude/install-dart-7RrSY`. The
+authoritative state lives in:
+
+- `codec-bidirectional-requirements.md` — the spec, with the §18
+  "Resolved Decisions" summary and the §18a traceability table.
+- `codec-open-questions.md` — every A1–A7 / B1–B5 decision with its
+  `Decision:` line.
+- `codec-mid-implementation-decisions.md` — DEC-A / DEC-B / DEC-C /
+  DEC-C2 mid-flight decisions.
+- `packages/ack/CHANGELOG.md` (1.0.0-beta.12 entry) — final
+  user-facing breaking changes.
+
+This file is preserved for historical context but should not be
+treated as a live specification. The "Ambiguities to Resolve" and
+"Before kicking off M1" sections were resolved during implementation
+— see `codec-open-questions.md`. The breaking-change checklist below
+includes some entries that were intentionally NOT applied in
+1.0.0-beta.12 (e.g. only `Ack.double()` was tightened in M11; the
+other primitives kept legacy coercion). See the staged note at the
+top of "Breaking Changes — CHANGELOG Checklist" below.
 
 ---
 
@@ -95,47 +115,70 @@ M2  SchemaEncodeError              ─┴─→ M3 base hooks (encode/safeEncode
 
 ## Breaking Changes — CHANGELOG Checklist
 
-1. `Ack.integer().parse('42')` no longer succeeds (AC-19).
-2. `Ack.boolean().parse('true')` no longer succeeds.
-3. `Ack.string().parse(42)` no longer succeeds.
-3a. `Ack.double().parse(42)` (int input) no longer succeeds — strict per A1 (b).
-3b. `Ack.datetime().encode(localDateTime)` no longer succeeds — must pass `value.toUtc()` per A3 (b). Error message points at `.toUtc()`.
-4. `copyWith(defaultValue: x)` deprecated; use `.withDefault(x)`.
-5. `AckSchema.defaultValue` field deprecated; defaults move to `DefaultSchema` wrapper.
-6. `Ack.date()/datetime()/uri()/duration()` return `CodecSchema<…>` instead of `TransformedSchema<…>`. Source-compatible via typedef; JSON Schema marker may differ.
-7. `TransformedSchema<I,O>(schema, transformer, …)` positional constructor removed. The typedef `TransformedSchema = CodecSchema` remains.
-8. `TransformedSchema.schema` and `TransformedSchema.transformer` removed. Replaced by `inputSchema`, `outputSchema`, `decoder`, `encoder`.
-9. `.transform(...).safeEncode(...)` now fails with `SchemaEncodeError`.
-10. JSON Schema marker may add `x-ack-codec: true` alongside `x-transformed: true`.
-11. `DiscriminatedObjectSchema` branch unwrap now drills through `CodecSchema` and `DefaultSchema`. Manual inspectors should use `unwrapDiscriminatedBranchSchema`.
-12. New `SchemaEncodeError` class — `switch (error)` exhaustiveness on `SchemaError` may break.
-13. `SchemaContext` gains a non-default field `operation` (default `SchemaOperation.parse`).
-14. `Ack.instance<T>()` and `Ack.codec<I,O>(...)` are new public API (not breaking but ship-blocking).
+> **Note (M16.1).** This list is the original planning checklist.
+> The actual breaking changes shipped in `1.0.0-beta.12` are a subset
+> — entries 1, 2, and 3 below were _planned_ as part of full primitive-
+> coercion removal but were **deliberately staged out** of this beta
+> per A1's staged note. Only `Ack.double()` was tightened in M11. The
+> live, user-facing breaking-change list lives in
+> `packages/ack/CHANGELOG.md` (1.0.0-beta.12 entry); use that as the
+> authoritative reference. Strikethrough below marks the checklist
+> entries that did NOT ship in beta.12.
+
+1. ~~`Ack.integer().parse('42')` no longer succeeds (AC-19).~~ — _Deferred. Legacy coercion still permitted in beta.12._
+2. ~~`Ack.boolean().parse('true')` no longer succeeds.~~ — _Deferred. Legacy coercion still permitted in beta.12._
+3. ~~`Ack.string().parse(42)` no longer succeeds.~~ — _Deferred. Legacy coercion still permitted in beta.12._
+3a. `Ack.double().parse(42)` (int input) no longer succeeds — strict per A1. **Shipped in M11.**
+3b. `Ack.datetime().encode(localDateTime)` no longer succeeds — must pass `value.toUtc()` per A3 (b). Error message points at `.toUtc()`. **Shipped in M14.**
+3c. `Ack.date().encode(...)` rejects UTC `DateTime` and non-midnight values per A2 (a). Error does NOT advise `.toUtc()` (date is a calendar date, not an instant). **Shipped in M14.**
+3d. `Ack.duration().encode(subMillisecondDuration)` now fails — sub-millisecond microseconds are no longer silently truncated. **Shipped in M14.**
+3e. `Ack.uri().encode(relativeOrSchemeOnly)` now fails — encode requires scheme + authority. **Shipped in M14.**
+4. ~~`copyWith(defaultValue: x)` deprecated; use `.withDefault(x)`.~~ — _Soft-deprecated only. `copyWith(defaultValue:)` continues to work in beta.12 with a doc note._
+5. ~~`AckSchema.defaultValue` field deprecated; defaults move to `DefaultSchema` wrapper.~~ — _Soft-deprecated only (doc-note, no `@Deprecated` annotation to avoid analyzer noise across internal compatibility uses)._
+6. `Ack.date()/datetime()/uri()/duration()` return `CodecSchema<…>` instead of `TransformedSchema<…>`. Source-compatible via typedef. **Shipped in M14.**
+7. `TransformedSchema<I,O>(schema, transformer, …)` positional constructor removed. The typedef `TransformedSchema = CodecSchema` remains. **Shipped in M13.**
+8. `TransformedSchema.schema` and `TransformedSchema.transformer` removed. Replaced by `inputSchema`, `outputSchema`, `decoder`, `encoder`. **Shipped in M13.**
+9. `.transform(...).safeEncode(...)` now fails with `SchemaEncodeError`. **Shipped in M13.**
+10. `CodecSchema.toJsonSchema` adds `x-ack-codec: true` alongside `x-transformed: true` (legacy compat for one beta cycle, per B1). **Shipped in M4.**
+11. `DiscriminatedObjectSchema` branch unwrap now drills through `CodecSchema` and `DefaultSchema`. Manual inspectors should use `unwrapDiscriminatedBranchSchema`. **Shipped in M10/M12.**
+12. New `SchemaEncodeError` class — `switch (error)` exhaustiveness on `SchemaError` may break. **Shipped in M2.**
+13. `SchemaContext` gains a non-default field `operation` (default `SchemaOperation.parse`). **Shipped in M1.**
+14. `Ack.instance<T>()` and `Ack.codec<I,O>(...)` are new public API (not breaking but ship-blocking). **Shipped in M5.**
+15. `Ack.codec(...)` requires `encoder` (DEC-C2). One-way construction goes through `.transform(...)` or direct `CodecSchema(..., encoder: null)`. **Shipped post-M5.**
+16. `withDefault(...)` returns `DefaultSchema<T>` instead of a type-specific schema; type-specific fluent methods must be applied before `.withDefault(...)`. **Shipped in M12.**
 
 ---
 
 ## Ambiguities to Resolve Before / During Implementation
 
-Blocking (resolve before starting the affected milestone):
+> **Status (M16.1):** all blocking and non-blocking items below are
+> resolved. The locked decisions live in `codec-open-questions.md`
+> (A1–A7 / B1–B5) and `codec-mid-implementation-decisions.md` (DEC-A
+> / DEC-B / DEC-C / DEC-C2). The list is preserved here for historical
+> traceability — do not treat any item as still open. For `(1)` in
+> particular, the decision is staged: `Ack.double()` is strict in
+> beta.12; the other primitives keep legacy coercion.
 
-1. **`Ack.double()` runtime policy (§7.1).** Is `42` (int) an acceptable runtime double for encode? Recommend strict-double on `_validateRuntime`/encode; lenient on parse if compatible with `strictPrimitiveParsing`.
-2. **`Ack.date()` UTC/local rule (§8.1).** Pin unconditionally: encode rejects UTC and rejects non-midnight components.
-3. **`Ack.datetime()` UTC requirement (§8.2).** Choose: (a) encode `value.toUtc().toIso8601String()` (lossless) and accept non-UTC inputs, or (b) strictly reject non-UTC. Recommend (a).
-4. **EnumSchema integer index (§7.6).** Keep for parse, reject for `_validateRuntime`/encode.
-5. **AnyOf encode determinism (§7.4.2).** First branch where the **full** encode pipeline succeeds end-to-end. Document.
-6. **Object encode pass-through of additional properties (§7.2.7).** Pass through unchanged (no child schema available). Document.
-7. **`DefaultSchema` + nullable inner.** `encode(null)` returns `null` via the inner nullable encode; the default is irrelevant on encode.
+Blocking (resolve before starting the affected milestone) — _all resolved_:
 
-Non-blocking (resolve inline as each milestone lands):
+1. ~~**`Ack.double()` runtime policy (§7.1).**~~ → A1 (a). Implemented in M11. Strict on parse and encode; legacy `strictPrimitiveParsing` flag is effectively a no-op for the int↔double case.
+2. ~~**`Ack.date()` UTC/local rule (§8.1).**~~ → A2 (a). Implemented in M14. Encode rejects UTC and non-midnight; error does NOT advise `.toUtc()`.
+3. ~~**`Ack.datetime()` UTC requirement (§8.2).**~~ → A3 (b). Implemented in M14. Strictly rejects non-UTC; error advises `value.toUtc()`.
+4. ~~**EnumSchema integer index (§7.6).**~~ → A4. Implemented in M8. Parse keeps integer-index; `_validateRuntime`/encode require enum values.
+5. ~~**AnyOf encode determinism (§7.4.2).**~~ → A5. Implemented in M9. First branch whose full `_validateRuntime` + `encodeBoundary` pipeline succeeds end-to-end wins.
+6. ~~**Object encode pass-through of additional properties (§7.2.7).**~~ → A6. Implemented in M6. `additionalProperties: true` passes unknown keys through as-is.
+7. ~~**`DefaultSchema` + nullable inner.**~~ → A7. Implemented in M12. `DefaultSchema(nullableInner).encode(null)` returns `null` via inner nullability; default never synthesized on encode.
 
-8. JSON Schema marker scope on nested codecs (§10.2): emit at field level only, not at root.
-9. Default serialization through codec encode (§10.3) when codec is one-way: skip boundary-encoded default; emit nothing or runtime value as fallback with a debug warning.
-10. `parseAs` / `safeParseAs` retention (§5.4 implicitly drops them — confirm).
-11. `SchemaResult` generic-erasure helper (§9.1): add a static `SchemaResult.castFail<U>(SchemaError)` helper.
-12. `Ack.instance<T>` constraints surface (§7.8): just `.constrain` / `.refine`.
-13. Equality test specifics (§11): add a regression test asserting two codecs with equal input/output schemas but different closures compare equal.
-14. Sealed-class hierarchy: every `switch (schema)` and `is TransformedSchema` site needs an audit (notably in `ack_to_json_schema_model.dart` and `ack_generator/lib/src/analyzer/schema_ast_analyzer.dart`).
-15. `Ack.list(Ack.instance<Foo>())` produces a non-JSON-serializable boundary — document.
+Non-blocking — _all resolved_:
+
+8. ~~JSON Schema marker scope on nested codecs (§10.2)~~ → emitted on every codec level (input-shape based per M15 converter rule).
+9. ~~Default serialization through codec encode (§10.3) when codec is one-way~~ → omit `default` silently when `inner.safeEncode` fails (M12 patch).
+10. ~~`parseAs` / `safeParseAs` retention~~ → retained (no migration required).
+11. ~~`SchemaResult` generic-erasure helper~~ → `castFail` is in place.
+12. ~~`Ack.instance<T>` constraints surface (§7.8)~~ → `.constrain` / `.refine` on `FluentSchema` mixin.
+13. ~~Equality test specifics (§11)~~ → DEC-A applied; closure identity ignored, one-way vs bidirectional kept distinct. Regression test in `codec_schema_test.dart`.
+14. ~~Sealed-class hierarchy audit~~ → `is TransformedSchema` is now `is CodecSchema` in production code (M13/M15); downstream packages re-tested clean in M15.
+15. ~~`Ack.list(Ack.instance<Foo>())` non-JSON-serializable boundary~~ → documented at the `Ack.instance` factory and in the JSON-safety check inside `DefaultSchema.toJsonSchema`.
 
 ---
 
@@ -156,4 +199,18 @@ Non-blocking (resolve inline as each milestone lands):
 
 ## Next Step
 
-Before kicking off M1, the maintainer should resolve the seven blocking ambiguities listed above. Each is small but materially changes encode behaviour or error semantics in a way that's painful to revisit later.
+_(Historical — see the doc header for live status.)_
+
+Implementation through M1–M16 is complete. The seven blocking
+ambiguities listed above were resolved before / during the milestones
+they affected; see `codec-open-questions.md` for the locked
+decisions and the cross-references back to the milestone where each
+landed. Outstanding work tracked elsewhere:
+
+- The full primitive-coercion sweep (entries 1–3 in the breaking-
+  changes checklist) is intentionally deferred past 1.0.0-beta.12.
+- `ack_generator` does not yet emit typed wrappers for `Ack.codec`,
+  `Ack.instance`, or `DefaultSchema`. This is documented in
+  `llms.txt` under "Supported AckType schema shapes".
+- The legacy `x-transformed` JSON Schema marker is scheduled for
+  removal in the release after 1.0.0-beta.12 (per B1).

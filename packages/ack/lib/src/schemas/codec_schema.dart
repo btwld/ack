@@ -129,9 +129,7 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   SchemaResult<O> _validateRuntime(Object? value, SchemaContext context) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
-      return SchemaResult.fail(
-        SchemaEncodeError.nonNullable(context: context),
-      );
+      return SchemaResult.fail(_failNullForRuntime(context));
     }
 
     final outputResult = outputSchema._validateRuntime(value, context);
@@ -142,9 +140,7 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
     final validatedValue = outputResult.getOrNull();
     if (validatedValue == null) {
       // Should not happen: outputSchema accepted null for a non-null value.
-      return SchemaResult.fail(
-        SchemaEncodeError.nonNullable(context: context),
-      );
+      return SchemaResult.fail(_failNullForRuntime(context));
     }
 
     return applyConstraintsAndRefinements(validatedValue, context);
