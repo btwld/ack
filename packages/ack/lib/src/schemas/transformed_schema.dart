@@ -115,6 +115,23 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   @override
   bool get strictPrimitiveParsing => schema.strictPrimitiveParsing;
 
+  /// `.transform(...)` is one-way: there is no inverse function. Any encode
+  /// attempt must surface a [SchemaEncodeError.oneWayTransform] rather than
+  /// silently round-tripping the runtime value through the inherited base
+  /// identity encode. M13 will replace this whole class with a typedef over
+  /// `CodecSchema` (which has equivalent built-in handling); this override
+  /// keeps the invariant honest in the meantime.
+  @override
+  @protected
+  SchemaResult<Object> encodeBoundary(
+    OutputType value,
+    SchemaContext context,
+  ) {
+    return SchemaResult.fail(
+      SchemaEncodeError.oneWayTransform(context: context),
+    );
+  }
+
   @override
   TransformedSchema<InputType, OutputType> copyWith({
     bool? isNullable,
