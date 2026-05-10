@@ -265,34 +265,27 @@ The operation shall be preserved across child contexts. Direction-sensitive beha
 
 ### 7.1 Primitive Schemas
 
-Primitive schemas shall validate exact runtime primitive types:
+All primitive schemas validate exact runtime primitive types:
 
 | Schema | Runtime type accepted |
 | --- | --- |
 | `Ack.string()` | `String` |
 | `Ack.integer()` | `int` |
-| `Ack.double()` | `double` (strict — see staged note below) |
+| `Ack.double()` | `double` |
 | `Ack.boolean()` | `bool` |
 
-**Final policy:** primitive conversions should be explicit through
-codecs. Implicit primitive coercion is not part of the long-term
-public surface.
-
-**Current 1.0.0-beta.12 implementation (staged):**
-
-- `Ack.double()` is strict on parse and encode.
-  `Ack.double().parse(42)` (int) and `Ack.double().parse('42.0')`
-  (string) both fail (decision A1, applied in M11).
-- `Ack.integer()`, `Ack.boolean()`, and `Ack.string()` retain their
-  existing legacy primitive coercion in this beta. The broader
-  strictness sweep is scheduled for a follow-up release; no callers
-  should rely on the legacy behaviour going forward.
+Implicit primitive coercion is not part of the public surface. For
+explicit boundary conversion use `Ack.codec(...)`.
 
 ```dart
-Ack.double().safeParse(42);    // fail (M11 / A1)
-Ack.double().safeParse(42.0);  // ok
-Ack.integer().safeParse('42'); // ok in beta.12 (legacy coercion)
-                               // — will fail post-sweep
+Ack.string().safeParse('hi'); // ok
+Ack.string().safeParse(42);   // fail
+Ack.integer().safeParse(42);  // ok
+Ack.integer().safeParse('42');// fail
+Ack.double().safeParse(3.14); // ok
+Ack.double().safeParse(42);   // fail
+Ack.boolean().safeParse(true);   // ok
+Ack.boolean().safeParse('true'); // fail
 ```
 
 Boundary conversions should be implemented with codecs:
@@ -513,24 +506,14 @@ shall describe a string datetime, not a Dart `DateTime` instance.
 
 ### 10.2 Codec Marker
 
-Codec JSON Schema output shall include an extension marker.
-
-Current compatibility marker:
-
-```json
-{"x-transformed": true}
-```
-
-Preferred future marker:
+Codec JSON Schema output shall include exactly one extension marker:
 
 ```json
 {"x-ack-codec": true}
 ```
 
-Requirement:
-
-- If `x-transformed` is retained, document it as backward compatibility naming.
-- If renamed, provide migration guidance for downstream converter packages.
+The legacy `x-transformed` marker is gone. Downstream converters MUST
+key off `x-ack-codec`.
 
 ### 10.3 Default Serialization
 
@@ -565,31 +548,37 @@ Closure identity for `decode` / `encode` may be intentionally ignored to avoid u
 
 ### 12.1 `TransformedSchema`
 
-`TransformedSchema<I, O>` shall remain available as a deprecated typedef alias for `CodecSchema<I, O>` for source-level type annotations.
+`TransformedSchema<I, O>` is removed (the deprecated typedef alias is
+gone). Use `CodecSchema<I, O>` directly.
 
-Migration guidance shall state:
+Migration guidance:
 
 - The old positional constructor is no longer available.
 - Old `.schema` and `.transformer` fields are no longer available.
-- Use `.inputSchema`, `.outputSchema`, `.decoder`, and `.encoder` instead.
-- Use `Ack.codec(...)` when a reverse direction is required.
+- Use `CodecSchema.inputSchema`, `CodecSchema.outputSchema`,
+  `CodecSchema.decoder`, and `CodecSchema.encoder` instead.
+- Use `Ack.codec(...)` for bidirectional conversion;
+  `schema.transform(...)` (returns one-way `CodecSchema`) for
+  parse-only.
 
 ### 12.2 Primitive Coercion
 
-Migration guidance: long-term, replace implicit coercion with explicit
-codecs. **Status in 1.0.0-beta.12 (staged):** only `Ack.double()` is
-strict (decision A1, applied in M11). `Ack.integer()`, `Ack.boolean()`,
-and `Ack.string()` retain their existing legacy primitive coercion in
-this beta — `Ack.integer().parse('42')` still succeeds for now. Plan
-to migrate before the broader strictness sweep lands.
+All primitive schemas are strict. Implicit conversions are not part of
+the public surface — use `Ack.codec(...)` for explicit boundary
+conversion.
 
-Future migration target (will fail post-sweep, fine in beta.12):
+The following all now fail; build a codec to migrate:
 
 ```dart
-Ack.integer().parse('42');
+Ack.string().parse(42);       // fail
+Ack.integer().parse('42');    // fail
+Ack.integer().parse(42.0);    // fail
+Ack.boolean().parse('true');  // fail
+Ack.double().parse(42);       // fail
 ```
 
-Replacement (works today and survives the sweep):
+Replacement codec (works today, and the same recipe scales to the
+other primitives — see `packages/ack/test/migration_recipes_test.dart`):
 
 ```dart
 final intFromString = Ack.codec<String, int>(
@@ -634,7 +623,7 @@ Docs shall clearly state that defaults are parse-only.
 | AC-16 | JSON Schema boundary output | Codec JSON Schema describes input schema, not runtime schema. |
 | AC-17 | Path preservation | Nested encode/decode failures retain precise JSON Pointer paths. |
 | AC-18 | Built-in round-trip | Date, datetime, URI, duration codecs round-trip valid canonical values. |
-| AC-19 | Explicit primitive coercion (staged) | `Ack.double()` rejects boundary strings/ints that require conversion (A1, shipped in M11). `Ack.integer()` / `Ack.boolean()` / `Ack.string()` still permit legacy coercion in beta.12; tested migration recipes in `test/migration_recipes_test.dart` show how to build `string ↔ int / double / bool` codecs explicitly with `Ack.codec(...)`. The full primitive-strictness sweep is deferred past 1.0.0-beta.12. |
+| AC-19 | Strict primitive schemas | All primitive schemas reject boundary values that require conversion. `Ack.string().parse(42)`, `Ack.integer().parse('42')`, `Ack.integer().parse(42.0)`, `Ack.boolean().parse('true')`, `Ack.double().parse(42)`, and `Ack.double().parse('42.0')` all fail. Use `Ack.codec(...)` for explicit conversion; migration recipes live in `test/migration_recipes_test.dart`. |
 | AC-20 | Test suite | Package tests pass; converter packages updated for `CodecSchema`. |
 
 ---
@@ -697,13 +686,13 @@ Docs shall clearly state that defaults are parse-only.
 
 ### 14.7 Migration Tests
 
-- `TransformedSchema<I, O>` typedef annotations still compile.
 - `.transform(...)` parse still works.
-- `.transform(...)` encode fails clearly.
-- `Ack.double()` rejects int and string inputs (A1 / M11). The other
-  primitives (`Ack.integer()`, `Ack.boolean()`, `Ack.string()`) still
-  permit legacy coercion in 1.0.0-beta.12; the broader strictness
-  sweep is deferred. Tested migration recipes in
+- `.transform(...)` encode fails clearly with
+  `SchemaEncodeError.oneWayTransform`.
+- All primitives are strict: `Ack.string().parse(42)`,
+  `Ack.integer().parse('42')`, `Ack.integer().parse(42.0)`,
+  `Ack.boolean().parse('true')`, and `Ack.double().parse(42)` all
+  fail. Tested migration recipes in
   `test/migration_recipes_test.dart` show how to build `string ↔ int`
   / `double` / `bool` codecs explicitly with `Ack.codec(...)`.
 
@@ -764,7 +753,6 @@ Docs shall clearly state that defaults are parse-only.
 | --- | --- | --- |
 | Large breaking change | Existing beta users may need code updates. | Provide migration docs and examples; version as a major beta transition. |
 | Codec equality ignores closures | Different behavior may compare equal. | Document structural equality policy and test it intentionally. |
-| `x-transformed` marker name is semantically stale | Downstream confusion. | Rename to `x-ack-codec` or document as compatibility marker. |
 | Built-in date/time canonicalization surprises users | Encode may reject non-UTC or non-midnight values. | Document canonical runtime requirements clearly. |
 | AnyOf branch order ambiguity | First valid branch wins may surprise users. | Document branch order as deterministic and intentional. |
 | Discriminated domain object branch trial may be expensive | Multiple branch validations during encode. | Accept as union semantics; advise discriminator maps or object-backed codecs for performance-sensitive paths. |
@@ -777,11 +765,12 @@ All open decisions are resolved. The full list — with the original
 question, options considered, and the locked decision — lives in
 `codec-open-questions.md`. Summary:
 
-- **A1.** `Ack.double()` is strict on parse and encode. _Staged
-  implementation:_ only `Ack.double()` was tightened in the M11 sweep.
-  `Ack.integer()`, `Ack.boolean()`, and `Ack.string()` still permit
-  legacy primitive coercion in this beta; the broader strictness sweep
-  is scheduled for a follow-up release.
+- **A1 (extended by C3).** All primitive schemas are strict on parse
+  and encode: `Ack.string()`, `Ack.integer()`, `Ack.double()`, and
+  `Ack.boolean()` reject implicit conversions. The original A1
+  decision tightened only `Ack.double()` in the M11 sweep; the C3
+  cleanup extended the rule to every primitive before any beta.12
+  release.
 - **A2 (a).** `Ack.date()` is a calendar date — local midnight
   `DateTime`. Encode rejects UTC values and any value with non-zero
   hour/minute/second/millisecond/microsecond. The error message does
@@ -800,10 +789,10 @@ question, options considered, and the locked decision — lives in
 - **A7.** Defaults are parse-only.
   `DefaultSchema(nullableInner).encode(null)` returns `null` via inner
   nullability — defaults are never synthesized on encode.
-- **B1.** `CodecSchema.toJsonSchema` emits both
-  `x-ack-codec: true` (canonical) and `x-transformed: true` (legacy
-  compat) for one beta cycle. The legacy marker will be removed in the
-  release after 1.0.0-beta.12.
+- **B1 (revised by C1).** `CodecSchema.toJsonSchema` emits
+  `x-ack-codec: true` only. The original B1 dual-emission compat
+  window was scoped to one beta cycle and was removed before any
+  beta.12 release shipped.
 - **B2.** Decode failures keep using `SchemaTransformError`; no
   separate `SchemaDecodeError` class.
 - **B3.** Codec equality ignores decoder/encoder closure identity but

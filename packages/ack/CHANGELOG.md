@@ -30,29 +30,39 @@
 
 - `Ack.codec(...)` requires both `decoder` and `encoder`. The factory
   is bidirectional by definition; for one-way decoding use
-  `schema.transform(...)` (or construct `CodecSchema` directly with
-  `encoder: null` for advanced cases).
-- `.transform<R>(...)` now returns a one-way `CodecSchema<T, R>`.
-  Encoding through a transformed schema fails with
+  `schema.transform(...)`.
+- `.transform<R>(...)` returns a one-way `CodecSchema<T, R>`. Encoding
+  through a transformed schema fails with
   `SchemaEncodeError.oneWayTransform`; the message points at
-  `Ack.codec` for bidirectional behaviour.
-- `TransformedSchema<I, O>` is now a deprecated `typedef` alias for
-  `CodecSchema<I, O>`. The legacy positional constructor
-  (`TransformedSchema(schema, transformer, ...)`) and the `.schema` /
-  `.transformer` fields are removed; use `.inputSchema` and `.decoder`
-  on `CodecSchema`.
-- `.withDefault(...)` now returns `DefaultSchema<T>` rather than a
-  type-specific schema. Apply type-specific fluent methods **before**
-  `.withDefault(...)`:
+  `Ack.codec(...)` for bidirectional behaviour.
+- **`TransformedSchema<I, O>` is removed.** The deprecated typedef
+  alias is gone; use `CodecSchema<I, O>` directly. The legacy
+  positional constructor (`TransformedSchema(schema, transformer,
+  ...)`) and the `.schema` / `.transformer` fields are gone — use
+  `CodecSchema.inputSchema` and `CodecSchema.decoder`.
+- **Codec JSON Schema marker is `x-ack-codec` only.** The legacy
+  `x-transformed: true` marker is no longer emitted.
+- **`AckSchema.defaultValue` and `copyWith(defaultValue: ...)` are
+  removed.** Defaults are owned exclusively by `DefaultSchema<T>` via
+  `.withDefault(value)`. Type-specific fluent methods (`.minLength`,
+  `.matches`, `.min`, …) must be applied **before** `.withDefault(...)`:
   ```dart
   Ack.string().minLength(3).withDefault('guest'); // ok
   // Ack.string().withDefault('guest').minLength(3); // won't type-check
   ```
-- `Ack.double()` is strict. `Ack.double().parse(42)` (int) and
-  `Ack.double().parse('42.0')` (string) now fail. `Ack.integer()`,
-  `Ack.boolean()`, and `Ack.string()` retain their existing legacy
-  primitive coercion in this beta — the broader strictness sweep is
-  scheduled for a follow-up release.
+- **All primitive schemas are strict.** Implicit conversions are gone:
+  - `Ack.integer().parse('42')` now fails (use `Ack.codec(...)`).
+  - `Ack.integer().parse(42.0)` now fails.
+  - `Ack.boolean().parse('true')` now fails (no case-insensitive /
+    whitespace-padded `"true"`/`"false"` handling).
+  - `Ack.string().parse(42)` now fails (no `toString()` coercion).
+  - `Ack.double().parse(42)` and `Ack.double().parse('42.0')` continue
+    to fail.
+- **`strictPrimitiveParsing` / `strictParsing(...)` removed.**
+  Primitive schemas are strict by definition; the toggle was dead API
+  and has been removed from `StringSchema`, `IntegerSchema`,
+  `DoubleSchema`, `BooleanSchema`, and the `SchemaType.canAcceptFrom`
+  call signature.
 - `Ack.date()` rejects UTC `DateTime` and any value with non-zero
   hour/minute/second/millisecond/microsecond. Date is a calendar date,
   not an instant — for instants/timestamps use `Ack.datetime()`.
@@ -68,7 +78,8 @@
 The full decision list is in `docs/plans/codec-open-questions.md`
 (every entry now has a recorded `Decision:` line). Highlights:
 
-- A1: `Ack.double()` strict parse + encode.
+- A1: `Ack.double()` strict parse + encode. (Generalized to all
+  primitives via C3.)
 - A2 (a): `Ack.date()` is local midnight DateTime; rejects UTC.
 - A3 (b): `Ack.datetime()` is UTC instant; rejects non-UTC.
 - A4: enum parse keeps legacy integer-index input; encode requires the
@@ -79,8 +90,8 @@ The full decision list is in `docs/plans/codec-open-questions.md`
   keys through as-is.
 - A7: defaults are parse-only — `DefaultSchema(nullableInner).encode(
   null)` returns `null` via the inner nullability, not the default.
-- B1: `CodecSchema.toJsonSchema` emits both `x-ack-codec` (canonical)
-  and `x-transformed` (legacy compat) for one beta cycle.
+- B1: `CodecSchema.toJsonSchema` emits `x-ack-codec: true` only. The
+  legacy `x-transformed` marker is gone.
 - B3: codec equality ignores decoder/encoder closure identity but
   distinguishes one-way from bidirectional codecs.
 - B4 (a): no `Ack.intFromString()` / `Ack.doubleFromString()` /
@@ -89,15 +100,18 @@ The full decision list is in `docs/plans/codec-open-questions.md`
 
 ### Migration notes
 
-- **Custom string→int/double/bool conversion:** there is no
-  `Ack.intFromString()` API. Build a codec with `Ack.codec(...)`. See
-  the runnable recipes in `packages/ack/test/migration_recipes_test.dart`.
-- **Defaults:** `schema.withDefault(value)` is the preferred API.
-  `copyWith(defaultValue: ...)` continues to work for one beta cycle
-  but is soft-deprecated.
+- **String/int/double/bool conversion:** build a codec with
+  `Ack.codec(...)`. There are no `Ack.*FromString` APIs. See the
+  runnable recipes in
+  `packages/ack/test/migration_recipes_test.dart`.
+- **Defaults:** use `schema.withDefault(value)` exclusively. The
+  legacy `copyWith(defaultValue: ...)` and `AckSchema.defaultValue`
+  field are removed.
 - **Existing transforms** (`schema.transform<R>(...)`) keep parsing as
-  before. They now fail on encode — wrap with `Ack.codec(...)` if
-  you need bidirectional behaviour.
+  before. They fail on encode — wrap with `Ack.codec(...)` if you
+  need bidirectional behaviour.
+- **`TransformedSchema<I, O>` type annotations:** rewrite to
+  `CodecSchema<I, O>`.
 
 ## 1.0.0-beta.11
 

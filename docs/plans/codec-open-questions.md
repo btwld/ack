@@ -26,6 +26,12 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Decision:** **(b)** Strict everywhere. `Ack.double()` only accepts `double`; conversions must use codecs.
 
+**Update (C3 cleanup, pre-beta.12):** generalised to **all primitive
+schemas**. `Ack.string()`, `Ack.integer()`, `Ack.double()`, and
+`Ack.boolean()` are strict on parse and encode. The
+`strictPrimitiveParsing` toggle is gone (C4) and there is no path that
+implicitly coerces primitives.
+
 ---
 
 ### A2. `Ack.date()` UTC and time-component handling on encode
@@ -156,6 +162,13 @@ Maintainer: please reply inline (`Decision:` line per item). Once resolved, this
 
 **Decision:** **(a)** Emit both `x-transformed` and `x-ack-codec` for one beta cycle.
 
+**Update (C1 cleanup, pre-beta.12):** the dual-emission window
+expired before any beta.12 release shipped. `CodecSchema.toJsonSchema`
+now emits **`x-ack-codec: true` only**; the legacy `x-transformed`
+marker is gone. The recommendation rationale ("zero-breakage
+transition") no longer applies because no consumer had a beta.12 in
+hand keying off `x-transformed`.
+
 ---
 
 ### B2. Decode-specific error class
@@ -241,7 +254,7 @@ API. The recipes file is `packages/ack/test/migration_recipes_test.dart`
 | C4 | `SchemaResult` generic-erasure helper (§9.1) | Use the `SchemaResult.castFail` extension helper. |
 | C5 | `Ack.instance<T>` constraints surface (§7.8) | `Ack.instance<T>()` supports `constrain`/`refine` only. |
 | C6 | Equality regression test specifics (§11) | Equal input/output schemas imply codec equality, regardless of closure identity. |
-| C7 | `is TransformedSchema` audit | Replace runtime `TransformedSchema` checks with `CodecSchema` checks. |
+| C7 | `is TransformedSchema` audit | Done — `TransformedSchema` is gone (C5 cleanup). Use `CodecSchema` directly. |
 | C8 | `Ack.list(Ack.instance<Foo>())` produces a non-JSON-serializable boundary | Document that `Ack.instance<T>()` is not structurally JSON-serializable. |
 
 ---

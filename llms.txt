@@ -49,13 +49,19 @@ final result = userSchema.safeParse({
   - `Ack.uri()` rejects URIs without scheme + authority on encode.
   - `Ack.duration()` rejects sub-millisecond durations on encode.
 - `schema.withDefault(value)` returns `DefaultSchema<T>`. Defaults are
-  parse-only — encode never synthesizes a default.
-- `Ack.double()` is strict on both parse and encode (no implicit int /
-  string coercion). `Ack.integer()`, `Ack.boolean()`, and `Ack.string()`
-  retain their existing legacy primitive coercion in this beta.
+  parse-only — encode never synthesizes a default. `DefaultSchema` is
+  the sole owner of parse-time defaults; there is no legacy
+  `AckSchema.defaultValue` field and no `copyWith(defaultValue: ...)`.
+- **All primitive schemas are strict.** `Ack.string()` accepts only
+  String, `Ack.integer()` only int, `Ack.double()` only double,
+  `Ack.boolean()` only bool. Implicit conversions are not part of the
+  public surface.
 - For explicit string↔int / double / bool conversion, build a codec
   with `Ack.codec(...)`; there are no `Ack.*FromString` APIs. Tested
   recipes live in `packages/ack/test/migration_recipes_test.dart`.
+- Codec schemas emit `x-ack-codec: true` in JSON Schema. The legacy
+  `x-transformed` marker is gone.
+- `TransformedSchema<I, O>` is gone; use `CodecSchema<I, O>` directly.
 
 ## AckType generation
 
