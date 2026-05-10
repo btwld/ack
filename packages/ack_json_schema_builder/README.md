@@ -46,12 +46,15 @@ final schema = Ack.string().withDefault('default');
 schema.toJsonSchemaBuilder(); // Default not included in JSON Schema
 ```
 
-### 3. TransformedSchema Limitations
+### 3. CodecSchema Limitations
 
-Transformed schemas convert the underlying schema. Metadata overrides may not be fully preserved due to json_schema_builder's immutable Schema objects.
+Codec schemas (e.g. `Ack.date()`, `Ack.datetime()`, `Ack.uri()`,
+`Ack.duration()`) convert through the codec's input schema. Metadata
+overrides may not be fully preserved due to json_schema_builder's
+immutable Schema objects.
 
 ```dart
-final dateSchema = Ack.date(); // TransformedSchema
+final dateSchema = Ack.date(); // CodecSchema<String, DateTime>
 final jsonSchema = dateSchema.toJsonSchemaBuilder(); // Converts underlying string schema
 ```
 

@@ -261,7 +261,7 @@ void main() {
       });
 
       test(
-        'TransformedSchema overrides are applied (description + nullable)',
+        'CodecSchema overrides are applied (description + nullable)',
         () {
           final schema = Ack.date().copyWith(
             description: 'Birth date',

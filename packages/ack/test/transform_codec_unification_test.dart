@@ -72,11 +72,11 @@ void main() {
     });
   });
 
-  group('TransformedSchema-as-typedef (M13)', () {
-    test('extension typed for TransformedSchema applies to CodecSchema', () {
+  group('Built-in codec extension typing (M13 + C5)', () {
+    test('extension applies to the CodecSchema returned by Ack.datetime()', () {
       // DateTimeSchemaExtensions is on `CodecSchema<String, DateTime>`.
-      // After M13 the typedef is CodecSchema<String, DateTime>, so the
-      // extension still resolves on the codec returned by Ack.datetime().
+      // Ack.datetime() returns that codec directly (the TransformedSchema
+      // alias was removed in C5).
       final schema = Ack.datetime().min(DateTime.utc(2020));
       expect(schema, isA<CodecSchema<String, DateTime>>());
     });

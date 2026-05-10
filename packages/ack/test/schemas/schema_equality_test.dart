@@ -211,7 +211,7 @@ void main() {
       });
     });
 
-    group('TransformedSchema', () {
+    group('CodecSchema (from .transform)', () {
       test('same transformer are equal', () {
         String transform(String? s) => s?.toUpperCase() ?? '';
         final a = Ack.string().transform(transform);

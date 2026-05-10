@@ -142,12 +142,11 @@ void main() {
     });
   });
 
-  group('TransformedSchema Default Values', () {
+  group('Transform + DefaultSchema path preservation', () {
     test('should apply output default when input is null', () {
-      // C2 migration: legacy positional `TransformedSchema(...)` and
-      // `copyWith(defaultValue: …)` are gone. `.transform(...)` returns a
-      // one-way `CodecSchema`; `.withDefault(...)` wraps it in
-      // `DefaultSchema` as the parse-only default owner.
+      // `.transform(...)` returns a one-way `CodecSchema`;
+      // `.withDefault(...)` wraps it in `DefaultSchema` as the
+      // parse-only default owner.
       final transformedSchema = Ack.string()
           .transform<String>((value) => value.toUpperCase())
           .withDefault('DEFAULT_OUTPUT');

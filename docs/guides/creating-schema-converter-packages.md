@@ -321,7 +321,9 @@ class <Target>SchemaConverter {
       AnyOfSchema() => _convertAnyOf(schema),
       AnySchema() => _convertAny(schema),
       DiscriminatedObjectSchema() => _convertDiscriminated(schema),
-      TransformedSchema() => _handleTransformed(schema),
+      CodecSchema() => _handleCodec(schema),
+      DefaultSchema() => _handleDefault(schema),
+      InstanceSchema() => _handleInstance(schema),
       _ => throw UnsupportedError(
           'Schema type ${schema.runtimeType} is not supported '
           'for <Target> conversion.',
@@ -496,15 +498,33 @@ class <Target>SchemaConverter {
     );
   }
 
-  static <TargetSchema> _handleTransformed(TransformedSchema schema) {
-    // Option 1: Throw error (safest)
-    throw UnsupportedError(
-      'TransformedSchema cannot be converted to <Target> format. '
-      'Convert the underlying schema instead.',
-    );
+  static <TargetSchema> _handleCodec(CodecSchema schema) {
+    // Most targets care about the boundary shape (input), not the
+    // runtime type (output). Convert through the codec's input schema.
+    return _convertSchema(schema.inputSchema);
 
-    // Option 2: Extract and convert underlying schema (if target supports metadata)
-    // return _convertSchema(schema.underlyingSchema);
+    // Alternative: throw if the target cannot represent codecs.
+    // throw UnsupportedError(
+    //   'CodecSchema cannot be converted to <Target> format. '
+    //   'Convert the underlying input schema instead.',
+    // );
+  }
+
+  static <TargetSchema> _handleDefault(DefaultSchema schema) {
+    // DefaultSchema wraps an inner schema with a parse-only default.
+    // Convert through the inner; targets that support defaults can
+    // additionally read schema.defaultValue.
+    return _convertSchema(schema.inner);
+  }
+
+  static <TargetSchema> _handleInstance(InstanceSchema schema) {
+    // Ack.instance<T>() is a runtime-side type guard with no JSON shape.
+    // Most targets should reject it or treat it as `any`.
+    throw UnsupportedError(
+      'InstanceSchema<${schema.runtimeType}> has no boundary form and '
+      'cannot be converted to <Target>. Wrap it in Ack.codec(...) with '
+      'an explicit input schema.',
+    );
   }
 
   // ========================================================================
@@ -1323,28 +1343,30 @@ static TargetSchema _convertString(StringSchema schema) {
 
 ## Common Patterns
 
-### Handling TransformedSchema
+### Handling CodecSchema
 
-**Option 1: Reject** (Recommended for most cases)
+**Option 1: Convert through the input shape** (Recommended)
 ```dart
-if (schema is TransformedSchema) {
+if (schema is CodecSchema) {
+  // Most targets care about the boundary shape, not the runtime type.
+  return _convertSchema(schema.inputSchema);
+}
+```
+
+**Option 2: Reject** (If the target cannot represent codecs)
+```dart
+if (schema is CodecSchema) {
   throw UnsupportedError(
-    'TransformedSchema cannot be converted to <Target> format. '
-    'Convert the underlying schema instead.',
+    'CodecSchema cannot be converted to <Target> format. '
+    'Convert the underlying input schema instead.',
   );
 }
 ```
 
-**Option 2: Extract Underlying** (If target supports metadata overrides)
+**Option 3: Convert + Apply Metadata** (If target supports overrides)
 ```dart
-if (schema is TransformedSchema) {
-  // Extract underlying schema
-  final underlying = schema.underlyingSchema;
-
-  // Convert with metadata from transformed schema
-  final converted = _convertSchema(underlying);
-
-  // Apply metadata overrides
+if (schema is CodecSchema) {
+  final converted = _convertSchema(schema.inputSchema);
   return _applyMetadata(
     converted,
     description: schema.description,
@@ -1604,7 +1626,7 @@ class GraphQlSchemaConverter {
 - [ ] Implement extension method
 - [ ] Implement converter with all schema types
 - [ ] Add type coercion helpers
-- [ ] Handle edge cases (TransformedSchema, AnySchema, etc.)
+- [ ] Handle edge cases (CodecSchema, DefaultSchema, InstanceSchema, AnySchema, etc.)
 
 ### Testing Phase
 - [ ] Write tests for all primitive types

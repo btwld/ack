@@ -119,12 +119,14 @@ final geminiSchema = schema.toFirebaseAiSchema();
 // Always validate with ACK to ensure single branch match
 ```
 
-### 7. Transformed Schemas
+### 7. Codec Schemas
 
-Supported - metadata overrides (description, title, nullable) work correctly.
+Supported — metadata overrides (description, title, nullable) work
+correctly on codec-backed schemas such as `Ack.date()`,
+`Ack.datetime()`, `Ack.uri()`, and `Ack.duration()`.
 
 ```dart
-final dateSchema = Ack.date(); // TransformedSchema
+final dateSchema = Ack.date(); // CodecSchema<String, DateTime>
 final geminiSchema = dateSchema.toFirebaseAiSchema(); // Works
 ```
 

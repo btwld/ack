@@ -289,89 +289,46 @@ Requires all items to be unique. Uses deep structural equality, so nested maps/l
 Ack.list(Ack.string()).unique()
 ```
 
-## Strict Parsing
+## Strict Primitive Parsing
 
-By default, Ack performs type coercion for primitive types. Use `.strictParsing()` to disable coercion and require exact type matches.
-
-### Default Behavior (Type Coercion Enabled)
-
-Without strict parsing, Ack accepts compatible types and converts them:
+All primitive schemas are strict by definition. There is no implicit
+type coercion and no `.strictParsing()` toggle — primitives accept
+exactly one runtime type:
 
 ```dart
-// String schema accepts numbers and converts them
-final stringSchema = Ack.string();
-stringSchema.safeParse(123);      // ✅ OK: converts to "123"
-stringSchema.safeParse(true);     // ✅ OK: converts to "true"
-stringSchema.safeParse('hello');  // ✅ OK: already a string
+Ack.string().safeParse('hello'); // ✅ OK
+Ack.string().safeParse(123);     // ❌ FAIL: TypeMismatchError
 
-// Integer schema accepts numeric strings and converts them
-final intSchema = Ack.integer();
-intSchema.safeParse('42');   // ✅ OK: converts to 42
-intSchema.safeParse(42);     // ✅ OK: already an integer
-intSchema.safeParse(42.0);   // ✅ OK: converts to 42
+Ack.integer().safeParse(42);     // ✅ OK
+Ack.integer().safeParse('42');   // ❌ FAIL: TypeMismatchError
+Ack.integer().safeParse(42.0);   // ❌ FAIL: TypeMismatchError
+
+Ack.double().safeParse(3.14);    // ✅ OK
+Ack.double().safeParse(42);      // ❌ FAIL: TypeMismatchError
+
+Ack.boolean().safeParse(true);   // ✅ OK
+Ack.boolean().safeParse('true'); // ❌ FAIL: TypeMismatchError
 ```
 
-### Strict Parsing Behavior
+### Explicit Boundary Conversion
 
-With strict parsing enabled, only exact type matches are accepted:
+When boundary data needs to be converted before validation, build a
+codec with `Ack.codec(...)` instead of relying on implicit coercion:
 
 ```dart
-// String schema rejects non-strings
-final strictStringSchema = Ack.string().strictParsing();
-strictStringSchema.safeParse('hello');  // ✅ OK: exact match
-strictStringSchema.safeParse(123);      // ❌ FAIL: TypeMismatchError
-strictStringSchema.safeParse(true);     // ❌ FAIL: TypeMismatchError
+final intFromString = Ack.codec<String, int>(
+  input: Ack.string().matches(r'^-?\d+$'),
+  output: Ack.instance<int>(),
+  decoder: int.parse,
+  encoder: (value) => value.toString(),
+);
 
-// Integer schema rejects strings and doubles
-final strictIntSchema = Ack.integer().strictParsing();
-strictIntSchema.safeParse(42);     // ✅ OK: exact match
-strictIntSchema.safeParse('42');   // ❌ FAIL: TypeMismatchError
-strictIntSchema.safeParse(42.0);   // ❌ FAIL: TypeMismatchError
+intFromString.parse('42');  // → 42
+intFromString.encode(42);   // → '42'
 ```
 
-### When to Use Strict Parsing
-
-Use strict parsing when you need to:
-
-- **Validate API requests** where types must match exactly
-- **Distinguish between types** in union schemas (e.g., string "123" vs integer 123)
-- **Enforce type discipline** in strongly typed contexts
-- **Prevent unexpected conversions** that might hide bugs
-
-```dart
-// Union type that distinguishes strings from numbers
-final stringOrNumber = Ack.anyOf([
-  Ack.string().strictParsing(),  // Only accepts actual strings
-  Ack.integer(),                  // Only accepts integers
-]);
-
-stringOrNumber.safeParse('42');  // ✅ Matches string schema
-stringOrNumber.safeParse(42);    // ✅ Matches integer schema
-```
-
-### Type Coercion Rules
-
-When strict parsing is disabled (default), Ack applies these coercion rules:
-
-**String Schema:**
-- Numbers → string representation (`123` → `"123"`)
-- Booleans → string representation (`true` → `"true"`)
-- Strings → no conversion
-
-**Integer Schema:**
-- Numeric strings → parsed integer (`"42"` → `42`)
-- Doubles without decimals → converted (`42.0` → `42`)
-- Integers → no conversion
-
-**Double Schema:**
-- Numeric strings → parsed double (`"3.14"` → `3.14`)
-- Integers → converted to double (`42` → `42.0`)
-- Doubles → no conversion
-
-**Boolean Schema:**
-- Strings "true"/"false" → corresponding boolean
-- Numbers 1/0 → true/false
-- Booleans → no conversion
+Tested migration recipes for the common string ↔ int / double / bool
+conversions live in `packages/ack/test/migration_recipes_test.dart`.
 
 ## Combining Constraints
 

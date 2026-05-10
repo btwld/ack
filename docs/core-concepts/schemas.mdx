@@ -38,11 +38,8 @@ if (result.isOk) {
 ### String
 
 ```dart
-// Basic string
+// Basic string — strict by definition; only accepts String.
 final nameSchema = Ack.string();
-
-// Enable strict type checking (no coercion)
-final strictNameSchema = Ack.string().strictParsing();
 
 // With constraints
 final usernameSchema = Ack.string()
@@ -154,9 +151,9 @@ if (result.isOk) {
 Validate against multiple possible schemas:
 
 ```dart
-// String or integer
+// String or integer — primitives are strict by default.
 final idSchema = Ack.anyOf([
-  Ack.string().strictParsing(),
+  Ack.string(),
   Ack.integer(),
 ]);
 

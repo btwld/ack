@@ -36,18 +36,19 @@ Base class for all schema types.
 - `AckSchema<T> nullable()`: Returns a new schema that also accepts `null` values.
 - `AckSchema<T> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
 - `AckSchema<T> describe(String description)`: Adds a description for documentation and JSON Schema generation.
-- `AckSchema<T> withDefault(T value)`: Sets a default value when input is `null`.
-- `StringSchema strictParsing({bool value = true})`: Enables strict parsing for strings.
-- `IntegerSchema strictParsing({bool value = true})`: Enables strict parsing for integers.
-- `DoubleSchema strictParsing({bool value = true})`: Enables strict parsing for doubles.
-- `BooleanSchema strictParsing({bool value = true})`: Enables strict parsing for booleans.
+- `DefaultSchema<T> withDefault(T value)`: Wraps the schema with a parse-only default. Apply type-specific fluent methods before `.withDefault(...)`.
+
+All primitive schemas (`Ack.string()`, `Ack.integer()`, `Ack.double()`,
+`Ack.boolean()`) are **strict by definition** — they reject implicit
+type coercion. Use `Ack.codec(...)` to build explicit boundary
+conversions.
 
 ### Custom Validation Methods
 
 - `AckSchema<T> constrain(Constraint<T> constraint, {String? message})`: Applies a custom validation constraint.
 - `AckSchema<T> withConstraint(Constraint<T> constraint)`: Applies a custom validation constraint (alias for `constrain`).
 - `AckSchema<T> refine(bool Function(T) validate, {String message})`: Adds custom validation logic with an optional custom error message.
-- `TransformedSchema<T, R> transform<R>(R Function(T?) transformer)`: Transforms validated values to a different type.
+- `CodecSchema<T, R> transform<R>(R Function(T) transformer)`: Returns a one-way codec; `.encode(...)` fails with `SchemaEncodeError.oneWayTransform`. Use `Ack.codec(...)` for bidirectional conversion.
 
 ### Utility Methods
 
@@ -261,11 +262,28 @@ Schema that accepts any value without validation.
 - Created using `Ack.any()`
 - Useful for gradual migration or maximum flexibility
 
-### `TransformedSchema<T, R>`
+### `CodecSchema<I, O>`
 
-Schema that transforms validated values.
+Bidirectional codec — pairs an `input` boundary schema with an
+`output` runtime schema plus `decoder` / `encoder` functions.
 
-- Created using `schema.transform<R>(R Function(T?) transformer)`
+- Bidirectional: `Ack.codec<I, O>(input:, output:, decoder:, encoder:)`.
+- One-way (parse-only): `schema.transform<R>(R Function(T) decoder)`
+  returns a `CodecSchema<T, R>` with a null encoder; `.encode(...)`
+  fails with `SchemaEncodeError.oneWayTransform`.
+- Built-in codecs: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`,
+  `Ack.duration()`.
+
+### `DefaultSchema<T>`
+
+Parse-only default wrapper produced by `schema.withDefault(value)`.
+Defaults are synthesized only on parse and are never injected on
+encode.
+
+### `InstanceSchema<T>`
+
+Runtime-side schema for non-JSON Dart types (e.g. `DateTime`, `Uri`,
+user classes). Most useful as the `output` of an `Ack.codec(...)`.
 
 ### Optional Schemas
 

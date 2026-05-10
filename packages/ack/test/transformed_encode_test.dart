@@ -2,10 +2,10 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('TransformedSchema encode (one-way safety)', () {
+  group('One-way transform encode safety', () {
     test('safeEncode fails with SchemaEncodeError.oneWayTransform', () {
-      // .transform(...) is documented as one-way. Until M13 unifies it with
-      // CodecSchema, an explicit encodeBoundary override must surface a
+      // .transform(...) is one-way: it returns a CodecSchema with a null
+      // encoder. encodeBoundary must surface a
       // SchemaEncodeError.oneWayTransform — otherwise the base default's
       // identity encode would silently round-trip the runtime value back to
       // the boundary form.
