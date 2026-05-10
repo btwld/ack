@@ -114,6 +114,36 @@ void main() {
         expect(json['default'], equals('hello'));
         expect(json['type'], equals('string'));
       });
+
+      test('omits JSON Schema default for non-JSON runtime defaults', () {
+        // InstanceSchema.encodeBoundary is identity, so a DateTime would
+        // leak through unless toJsonSchema applies a JSON-safety check.
+        final schema =
+            Ack.instance<DateTime>().withDefault(DateTime.utc(2026, 1, 1));
+        final json = schema.toJsonSchema();
+        expect(json.containsKey('default'), isFalse);
+      });
+
+      test('omits JSON Schema default when default fails inner validation', () {
+        // Per M12 review (Ack stricter than Zod here): a default that would
+        // fail inner runtime validation is not emitted in JSON Schema.
+        final schema = Ack.string().minLength(5).withDefault('x');
+        final json = schema.toJsonSchema();
+        expect(json.containsKey('default'), isFalse);
+      });
+
+      test('nullable wrapper adds a null branch to the JSON Schema', () {
+        // The wrapper's isNullable can differ from the inner's. When the
+        // wrapper is nullable but the inner isn't, the JSON Schema must
+        // include the null branch.
+        final json =
+            Ack.string().withDefault('guest').nullable().toJsonSchema();
+        expect(json['anyOf'], isA<List>());
+        expect(
+          json['anyOf'] as List,
+          contains(isA<Map>().having((m) => m['type'], 'type', 'null')),
+        );
+      });
     });
 
     group('discriminated unwrap', () {

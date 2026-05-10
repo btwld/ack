@@ -261,11 +261,23 @@ void main() {
       expect(ackOutput, equals(zodReference));
     });
 
-    test('double-price-example', () {
+    test('double-price-example (intentional Zod divergence under M12)', () {
+      // Ack's M12 DefaultSchema.toJsonSchema validates the default through
+      // the inner runtime path before emitting it. Zod emits defaults
+      // unconditionally — even ones that violate the inner constraints.
+      // For Ack.double().min(0.01).max(999999.99).withDefault(0.0), the
+      // default 0.0 fails inner.min(0.01), so Ack omits the `default` key
+      // while Zod emits `default: 0`. Assert Ack's stricter behaviour
+      // explicitly here.
       final ackSchema = Ack.double().min(0.01).max(999999.99).withDefault(0.0);
       final ackOutput = ackSchema.toJsonSchema();
+
+      // No default key (would have failed inner validation).
+      expect(ackOutput.containsKey('default'), isFalse);
+      // Everything else must still match Zod.
       final zodReference = loadReferenceFixture('double-price-example');
-      expect(ackOutput, equals(zodReference));
+      final zodWithoutDefault = Map.of(zodReference)..remove('default');
+      expect(ackOutput, equals(zodWithoutDefault));
     });
   });
 

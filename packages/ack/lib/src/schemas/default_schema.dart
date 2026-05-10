@@ -1,5 +1,46 @@
 part of 'schema.dart';
 
+/// Eagerly checks that [value] survives a JSON round-trip and returns the
+/// (possibly normalized) JSON-safe form, or `null` if it cannot be encoded.
+///
+/// Used by [DefaultSchema.toJsonSchema] to ensure runtime objects that the
+/// inner encoder leaks through (e.g. a `DateTime` from
+/// `Ack.instance<DateTime>().encodeBoundary`) never appear as JSON Schema
+/// defaults.
+Object? _jsonSerializableOrNull(Object? value) {
+  try {
+    return jsonDecode(jsonEncode(value));
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Wraps [schema] in an `anyOf [..., {type: null}]` form when [isNullable]
+/// is true and the schema does not already include a null branch. Hoists
+/// any existing `default` to the top so the null wrapper does not bury it.
+Map<String, Object?> _applyNullableWrapper(
+  Map<String, Object?> schema,
+  bool isNullable,
+) {
+  if (!isNullable) return schema;
+  final anyOf = schema['anyOf'];
+  if (anyOf is List &&
+      anyOf.any((entry) => entry is Map && entry['type'] == 'null')) {
+    return schema;
+  }
+  final defaultValue = schema['default'];
+  return {
+    if (defaultValue != null) 'default': defaultValue,
+    'anyOf': [
+      {
+        for (final entry in schema.entries)
+          if (entry.key != 'default') entry.key: entry.value,
+      },
+      {'type': 'null'},
+    ],
+  };
+}
+
 /// Schema wrapper that supplies a parse-time default value.
 ///
 /// `DefaultSchema<T>` wraps an inner [AckSchema<T>] and synthesizes
@@ -140,22 +181,31 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
     // Start from the inner schema's JSON form (preserves nullable / anyOf
     // wrapping, type, format, additionalProperties, etc.). Defensive copy
     // so we don't mutate any shared map the inner returned.
-    final base = Map<String, Object?>.of(inner.toJsonSchema());
+    var base = Map<String, Object?>.of(inner.toJsonSchema());
 
-    // Translate the runtime default to its boundary form via the inner's
-    // `encodeBoundary` directly — bypassing `_validateRuntime` so that a
-    // default which technically violates a runtime constraint
-    // (e.g. `Ack.double().min(0.01).withDefault(0.0)`) still serializes,
-    // matching Zod's behaviour where the default is metadata-only at the
-    // JSON Schema level. If the boundary translation itself fails (e.g.
-    // a one-way transform), omit `default` silently — JSON Schema cannot
-    // represent a runtime-only default.
-    final encodeContext = _createRootContext(defaultValue)
-        .withOperation(SchemaOperation.encode);
-    final encoded = inner.encodeBoundary(defaultValue!, encodeContext);
+    // Run the default through the inner's full encode pipeline:
+    //   1. Validate as runtime T via inner._validateRuntime — defaults that
+    //      would fail parse-time validation are NOT emitted as JSON Schema
+    //      metadata. This is stricter than Zod (which emits unconditionally).
+    //   2. Translate to boundary form via inner.encodeBoundary — handles
+    //      codec encoders (e.g. DateTime → ISO-8601 string). One-way
+    //      transforms surface SchemaEncodeError; the default is omitted.
+    //   3. Round-trip through jsonEncode/jsonDecode to ensure the value is
+    //      JSON-safe — catches runtime objects that an identity encode
+    //      (e.g. InstanceSchema<DateTime>.encodeBoundary) would otherwise
+    //      leak through.
+    final encoded = inner.safeEncode(defaultValue);
     if (encoded.isOk) {
-      base['default'] = encoded.getOrNull();
+      final jsonSafe = _jsonSerializableOrNull(encoded.getOrNull());
+      if (jsonSafe != null) {
+        base['default'] = jsonSafe;
+      }
     }
+
+    // Wrapper-level nullability: if the wrapper was made nullable
+    // (e.g. `.nullable()` after `.withDefault(...)`), surface a null branch
+    // in JSON Schema even when the inner is non-nullable.
+    base = _applyNullableWrapper(base, isNullable);
 
     // Wrapper-level description overrides inner's only if explicitly set
     // on this wrapper (constructor inherits inner.description by default).
