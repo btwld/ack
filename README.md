@@ -114,6 +114,49 @@ if (result.isOk) {
 }
 ```
 
+### Bidirectional codecs (1.0.0-beta.12+)
+
+Schemas are bidirectional: `parse` / `safeParse` map boundary input to
+runtime values; `encode` / `safeEncode` map runtime values back to
+boundary form. Built-in codecs cover the common cases:
+
+```dart
+final isoDateTime = Ack.datetime();
+
+isoDateTime.parse('2026-05-10T12:00:00Z');
+// → DateTime.utc(2026, 5, 10, 12)
+
+isoDateTime.encode(DateTime.utc(2026, 5, 10, 12));
+// → '2026-05-10T12:00:00.000Z'
+```
+
+`Ack.codec(...)` is the primitive for explicit boundary↔runtime
+conversion. It requires both `decoder` and `encoder`; for one-way
+decoders use `schema.transform<R>(...)`.
+
+```dart
+final intFromString = Ack.codec<String, int>(
+  input: Ack.string().refine(
+    (value) => int.tryParse(value) != null,
+    message: 'Expected an integer string.',
+  ),
+  output: Ack.integer(),
+  decoder: int.parse,
+  encoder: (value) => value.toString(),
+);
+
+intFromString.encode(42); // → '42'
+```
+
+`schema.withDefault(value)` wraps a schema with a parse-only default —
+the default is synthesized when parse input is `null` and is never
+injected on encode. Apply type-specific fluent methods (`minLength`,
+`matches`, `min`, …) **before** `.withDefault(...)`.
+
+See `packages/ack/test/migration_recipes_test.dart` for runnable
+recipes covering string↔int (with radix), string↔double, and
+string↔bool.
+
 ## Documentation
 
 Documentation endpoints:

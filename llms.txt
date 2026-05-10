@@ -1,10 +1,12 @@
 # Ack
 
-> A schema validation library for Dart and Flutter with a fluent runtime API and `@AckType()`-driven extension-type generation. Version 1.0.0-beta.11.
+> A bidirectional schema validation library for Dart and Flutter with a fluent runtime API, explicit boundary↔runtime codecs, and `@AckType()`-driven extension-type generation. Version 1.0.0-beta.12.
 
 Ack validates external data with hand-written schemas built using the `Ack`
-factory. When you want typed wrappers over validated values, annotate top-level
-schema variables or getters with `@AckType()` and run `ack_generator`.
+factory and converts validated runtime values back to boundary form via
+`encode` / `safeEncode`. When you want typed wrappers over validated values,
+annotate top-level schema variables or getters with `@AckType()` and run
+`ack_generator`.
 
 ## Packages
 
@@ -29,6 +31,31 @@ final result = userSchema.safeParse({
   'email': 'alice@example.com',
 });
 ```
+
+## Codec / encode model (beta.12+)
+
+- Every schema supports `parse` / `safeParse` (boundary → runtime) and
+  `encode` / `safeEncode` (runtime → boundary).
+- `Ack.codec(input:, output:, decoder:, encoder:)` is the bidirectional
+  primitive. Both `decoder` and `encoder` are required.
+- `schema.transform<R>(...)` is one-way: encoding through a transform
+  fails with `SchemaEncodeError.oneWayTransform`.
+- `Ack.instance<T>()` is a runtime-side schema for non-JSON Dart types
+  (DateTime, Uri, user classes); use it as the `output` of a codec.
+- `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()` are
+  bidirectional codecs.
+  - `Ack.date()` is local midnight DateTime; rejects UTC and non-midnight.
+  - `Ack.datetime()` is UTC instant; rejects non-UTC; advises `.toUtc()`.
+  - `Ack.uri()` rejects URIs without scheme + authority on encode.
+  - `Ack.duration()` rejects sub-millisecond durations on encode.
+- `schema.withDefault(value)` returns `DefaultSchema<T>`. Defaults are
+  parse-only — encode never synthesizes a default.
+- `Ack.double()` is strict on both parse and encode (no implicit int /
+  string coercion). `Ack.integer()`, `Ack.boolean()`, and `Ack.string()`
+  retain their existing legacy primitive coercion in this beta.
+- For explicit string↔int / double / bool conversion, build a codec
+  with `Ack.codec(...)`; there are no `Ack.*FromString` APIs. Tested
+  recipes live in `packages/ack/test/migration_recipes_test.dart`.
 
 ## AckType generation
 
@@ -77,15 +104,26 @@ Generated capabilities:
 - `Ack.literal(...)`
 - `Ack.enumString(...)`
 - `Ack.enumValues(...)`
-- explicit transforms such as `.transform<Uri>(...)`
+- explicit transforms such as `.transform<Uri>(...)` (one-way codecs)
 - `Ack.discriminated(...)` with the constraints below
 
-Not supported for extension-type generation:
+Not currently supported for extension-type generation (subject to
+follow-up work in `ack_generator`):
 
 - `Ack.any()`
 - `Ack.anyOf()`
+- `Ack.codec(...)` — bidirectional codecs work at runtime but the
+  generator does not yet emit typed wrappers for arbitrary codec
+  output types.
+- `Ack.instance<T>()` standalone — same caveat.
+- `DefaultSchema` wrappers (i.e. `schema.withDefault(...)`) — the
+  generator does not yet flow defaults into typed wrappers.
 - transformed object schemas
 - transformed discriminated schemas
+
+Use `Ack.codec(...)` / `Ack.instance<T>()` / `.withDefault(...)` at
+runtime; the schema graph parses, encodes, and validates correctly,
+but extension-type generation skips them for now.
 
 ## Discriminated AckType schemas
 
@@ -139,9 +177,14 @@ AckType generation is intentionally strict:
 
 - `schema.parse(data)` throws on invalid input
 - `schema.safeParse(data)` returns `SchemaResult<T>`
+- `schema.encode(value)` throws on invalid runtime input
+- `schema.safeEncode(value)` returns `SchemaResult<Object>` and never throws
 - `SchemaResult<T>.getOrThrow()` returns the validated value or throws `AckException`
 - `.optional()` allows a field to be omitted
 - `.nullable()` allows a present field to hold `null`
+- `.withDefault(value)` returns `DefaultSchema<T>` — apply type-specific
+  fluent methods (`.minLength`, `.matches`, `.min`, …) **before**
+  `.withDefault(...)`
 - object schemas support `additionalProperties: true`
 
 ## Build command

@@ -102,7 +102,7 @@ static CodecSchema<I, O> codec<I extends Object, O extends Object>({
   required AckSchema<I> input,
   required AckSchema<O> output,
   required O Function(I value) decoder,
-  I Function(O value)? encoder,
+  required I Function(O value) encoder,
 });
 ```
 
@@ -111,11 +111,16 @@ Requirement details:
 - `input` validates the boundary/input value.
 - `output` validates the runtime/output value.
 - `decoder` runs after successful input validation.
-- `encoder`, when supplied, runs after successful output validation. Omit
-  to declare a one-way codec.
+- `encoder` runs after successful output validation.
 - The returned schema parses to `O` and encodes to boundary shape `I` or a recursively encoded form of `I`.
 - Naming follows `dart:convert`: methods are verbs (`encode`/`decode`), the
   function-typed fields holding them are nouns (`encoder`/`decoder`).
+- **`Ack.codec(...)` is bidirectional by definition.** Both `decoder`
+  and `encoder` are required (DEC-C2). For one-way conversions use
+  `schema.transform<R>(...)`, which constructs a one-way `CodecSchema`
+  (`encoder: null`) internally. Direct `CodecSchema(..., encoder: null)`
+  construction is reserved for advanced/internal use (e.g. the
+  `.transform` extension's implementation).
 
 Example:
 
@@ -266,19 +271,31 @@ Primitive schemas shall validate exact runtime primitive types:
 | --- | --- |
 | `Ack.string()` | `String` |
 | `Ack.integer()` | `int` |
-| `Ack.double()` | `double` or selected numeric policy defined by the implementation |
+| `Ack.double()` | `double` (strict — see staged note below) |
 | `Ack.boolean()` | `bool` |
 
-Implicit primitive coercion shall not be used for general parsing.
+**Final policy:** primitive conversions should be explicit through
+codecs. Implicit primitive coercion is not part of the long-term
+public surface.
 
-Examples:
+**Current 1.0.0-beta.12 implementation (staged):**
+
+- `Ack.double()` is strict on parse and encode.
+  `Ack.double().parse(42)` (int) and `Ack.double().parse('42.0')`
+  (string) both fail (decision A1, applied in M11).
+- `Ack.integer()`, `Ack.boolean()`, and `Ack.string()` retain their
+  existing legacy primitive coercion in this beta. The broader
+  strictness sweep is scheduled for a follow-up release; no callers
+  should rely on the legacy behaviour going forward.
 
 ```dart
-Ack.integer().safeParse('42'); // fail
-Ack.integer().safeParse(42);   // ok
+Ack.double().safeParse(42);    // fail (M11 / A1)
+Ack.double().safeParse(42.0);  // ok
+Ack.integer().safeParse('42'); // ok in beta.12 (legacy coercion)
+                               // — will fail post-sweep
 ```
 
-Boundary conversions shall be implemented with codecs:
+Boundary conversions should be implemented with codecs:
 
 ```dart
 final intStringCodec = Ack.codec<String, int>(
@@ -288,6 +305,9 @@ final intStringCodec = Ack.codec<String, int>(
   encoder: (value) => value.toString(),
 );
 ```
+
+Tested recipes for `string ↔ int / double / bool` (including a radix
+example) live in `packages/ack/test/migration_recipes_test.dart`.
 
 ### 7.2 ObjectSchema
 
@@ -369,34 +389,40 @@ Encode shall return the runtime value unchanged.
 
 ## 8. Built-In Codec Requirements
 
-### 8.1 `Ack.date()`
+### 8.1 `Ack.date()` _(decision A2 (a))_
 
 `Ack.date()` shall be a codec between:
 
 ```text
 String boundary: YYYY-MM-DD
-DateTime runtime: local date at midnight
+DateTime runtime: local DateTime at midnight
 ```
 
 Encode requirements:
 
-- Reject UTC `DateTime` values if the parse side produces local values and round-trip identity depends on local dates.
-- Reject values with non-midnight time components.
-- Output `YYYY-MM-DD`.
+- **Reject UTC `DateTime`.** A date is a calendar date, not an
+  instant; for instants/timestamps callers should use `Ack.datetime()`.
+  The encode error message must NOT advise `.toUtc()` (that would push
+  callers in the wrong direction).
+- **Reject any value with non-zero time components**
+  (hour/minute/second/millisecond/microsecond).
+- **Output `YYYY-MM-DD`** built from the local `year`/`month`/`day`
+  fields, with month and day zero-padded to two digits.
 
-### 8.2 `Ack.datetime()`
+### 8.2 `Ack.datetime()` _(decision A3 (b))_
 
 `Ack.datetime()` shall be a codec between:
 
 ```text
 String boundary: ISO-8601 datetime with timezone
-DateTime runtime: DateTime
+DateTime runtime: UTC DateTime
 ```
 
 Encode requirements:
 
-- Encode UTC `DateTime` values using `toIso8601String()`.
-- Reject non-UTC values if the reference implementation requires UTC-only canonical encoding.
+- **Encode UTC `DateTime` values using `toIso8601String()`.**
+- **Reject non-UTC values.** The encode error message shall advise
+  `value.toUtc()` so callers can canonicalize before encoding.
 
 ### 8.3 `Ack.uri()`
 
@@ -735,13 +761,78 @@ Docs shall clearly state that defaults are parse-only.
 
 ---
 
-## 18. Open Decisions
+## 18. Resolved Decisions
 
-1. **Codec JSON Schema marker:** keep `x-transformed` for compatibility or introduce `x-ack-codec`.
-2. **Decode-specific error class:** keep using `SchemaTransformError` or add `SchemaDecodeError` for symmetry with `SchemaEncodeError`.
-3. **Structural equality policy:** explicitly decide whether codec functions are ignored in equality.
-4. **Built-in coercion codecs:** decide whether to expose convenience factories such as `Ack.intFromString()`, `Ack.doubleFromString()`, and `Ack.boolFromString()`.
-5. **Release versioning:** decide whether this lands as `1.0.0-beta.x` with breaking migration notes or a larger pre-2.0 marker.
+All open decisions are resolved. The full list — with the original
+question, options considered, and the locked decision — lives in
+`codec-open-questions.md`. Summary:
+
+- **A1.** `Ack.double()` is strict on parse and encode. _Staged
+  implementation:_ only `Ack.double()` was tightened in the M11 sweep.
+  `Ack.integer()`, `Ack.boolean()`, and `Ack.string()` still permit
+  legacy primitive coercion in this beta; the broader strictness sweep
+  is scheduled for a follow-up release.
+- **A2 (a).** `Ack.date()` is a calendar date — local midnight
+  `DateTime`. Encode rejects UTC values and any value with non-zero
+  hour/minute/second/millisecond/microsecond. The error message does
+  NOT advise `.toUtc()`; date is not an instant.
+- **A3 (b).** `Ack.datetime()` is a UTC instant. Encode rejects non-UTC
+  `DateTime`; the error advises `value.toUtc()`.
+- **A4.** `EnumSchema` parse continues to accept the enum value, the
+  `.name` string, and the legacy integer index. Encode requires the
+  enum value and emits `.name`.
+- **A5.** AnyOf encode chooses the first branch whose **full** encode
+  pipeline (`_validateRuntime` + `encodeBoundary`) succeeds end-to-end.
+  A branch whose runtime validation passes but whose boundary encode
+  then fails is NOT a winner.
+- **A6.** `ObjectSchema(additionalProperties: true)` passes unknown
+  keys through as-is.
+- **A7.** Defaults are parse-only.
+  `DefaultSchema(nullableInner).encode(null)` returns `null` via inner
+  nullability — defaults are never synthesized on encode.
+- **B1.** `CodecSchema.toJsonSchema` emits both
+  `x-ack-codec: true` (canonical) and `x-transformed: true` (legacy
+  compat) for one beta cycle. The legacy marker will be removed in the
+  release after 1.0.0-beta.12.
+- **B2.** Decode failures keep using `SchemaTransformError`; no
+  separate `SchemaDecodeError` class.
+- **B3.** Codec equality ignores decoder/encoder closure identity but
+  distinguishes one-way (`encoder == null`) from bidirectional
+  (`encoder != null`) codecs.
+- **B4 (a).** No `Ack.intFromString()` / `Ack.doubleFromString()` /
+  `Ack.boolFromString()` in the public namespace. Migration recipes
+  using `Ack.codec(...)` ship as runnable documentation in
+  `packages/ack/test/migration_recipes_test.dart`. Reconsider a
+  separate `AckCoercions` namespace post-beta only if user demand
+  surfaces.
+- **B5.** Released as `1.0.0-beta.12` with explicit breaking-change
+  notes (see `packages/ack/CHANGELOG.md`).
+
+---
+
+## 18a. Traceability — Rule → Owner → Tests
+
+Each semantic rule has a single code owner and a single test file. If
+behaviour drifts, this table is the place to start.
+
+| Semantic rule                                      | Code owner                                     | Tests                                                  |
+| -------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| Boundary ↔ runtime conversion                      | `CodecSchema<I, O>`                            | `test/codec_schema_test.dart`                          |
+| Bidirectional public codec factory                 | `Ack.codec(...)`                               | `test/codec_schema_test.dart`, `test/instance_schema_test.dart` |
+| One-way `.transform(...)`                          | `AckSchemaExtensions.transform`                | `test/transform_codec_unification_test.dart`, `test/transformed_encode_test.dart` |
+| Encode pipeline (validate → encode)                | `AckSchema.safeEncode` + `_validateRuntime` + `encodeBoundary` | `test/encode_base_hooks_test.dart`           |
+| Object recursive encode                            | `ObjectSchema._validateRuntime` + `encodeBoundary` | `test/object_encode_test.dart`                      |
+| List recursive encode                              | `ListSchema._validateRuntime` + `encodeBoundary` | `test/list_encode_test.dart`                          |
+| Enum runtime/boundary split                        | `EnumSchema._validateRuntime` + `encodeBoundary` | `test/enum_encode_test.dart`                          |
+| AnyOf full-pipeline branch trial                   | `AnyOfSchema._validateRuntime` + `encodeBoundary` | `test/any_of_encode_test.dart`                       |
+| Discriminated map dispatch + domain-object trial   | `DiscriminatedObjectSchema._validateRuntime` + `encodeBoundary` | `test/discriminated_encode_test.dart`        |
+| Parse-only defaults                                | `DefaultSchema<T>`                             | `test/default_schema_test.dart`                        |
+| Built-in semantic codecs                           | `Ack.date/datetime/uri/duration` + private encoders | `test/builtin_codecs_test.dart`                   |
+| `Ack.double()` strict (A1)                         | `SchemaType.number` + `DoubleSchema`           | `test/double_strict_test.dart`                         |
+| Migration recipes (string ↔ int/double/bool)       | `Ack.codec(...)` examples                      | `test/migration_recipes_test.dart`                     |
+| Operation-aware errors                             | `_failNullForRuntime` / `_failTypeMismatchForRuntime` + `SchemaEncodeError` | `test/schema_encode_error_test.dart`, `test/instance_schema_test.dart` |
+| Discriminated branch unwrapping                    | `unwrapDiscriminatedBranchSchema`              | `test/discriminated_encode_test.dart`, `test/default_schema_test.dart` |
+| JSON Schema model conversion                       | `ack_to_json_schema_model.dart`                | `test/converters/ack_to_json_schema_model_test.dart`   |
 
 ---
 
