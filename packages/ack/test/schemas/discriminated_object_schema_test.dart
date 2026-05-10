@@ -176,7 +176,8 @@ void main() {
         final properties = (branch['properties'] as Map)
             .cast<String, Object?>();
 
-        expect(branch['x-transformed'], isTrue);
+        expect(branch['x-ack-codec'], isTrue);
+        expect(branch.containsKey('x-transformed'), isFalse);
         expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
         expect(branch['required'], equals(['type', 'name']));
       });

@@ -214,10 +214,6 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   Map<String, Object?> toJsonSchema() {
     final base = inputSchema.toJsonSchema();
     base['x-ack-codec'] = true;
-    // Legacy marker, retained for one beta cycle so existing consumers keep
-    // working. Will be removed once downstream packages migrate to
-    // `x-ack-codec`.
-    base['x-transformed'] = true;
     if (description != null) {
       base['description'] = description;
     }

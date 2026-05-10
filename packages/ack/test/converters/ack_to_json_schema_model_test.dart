@@ -163,15 +163,21 @@ void main() {
       });
     });
 
-    group('Codec marker emission (M15)', () {
-      test('CodecSchema raw JSON emits both x-ack-codec and x-transformed', () {
-        // Per B1 (codec-open-questions.md), the legacy `x-transformed`
-        // marker is retained for one beta cycle alongside the canonical
-        // `x-ack-codec`. Verify both are present on a real built-in codec.
-        final json = Ack.datetime().toJsonSchema();
-        expect(json['x-ack-codec'], isTrue);
-        expect(json['x-transformed'], isTrue);
-      });
+    group('Codec marker emission', () {
+      test(
+        'CodecSchema raw JSON emits x-ack-codec only (legacy x-transformed '
+        'removed in C1 cleanup)',
+        () {
+          // The legacy compatibility marker `x-transformed` is gone;
+          // `x-ack-codec` is the sole codec JSON Schema marker. The
+          // earlier B1 dual-emission decision was for one beta cycle
+          // and ended before any beta release, so no consumers rely
+          // on the legacy marker.
+          final json = Ack.datetime().toJsonSchema();
+          expect(json['x-ack-codec'], isTrue);
+          expect(json.containsKey('x-transformed'), isFalse);
+        },
+      );
     });
   });
 }

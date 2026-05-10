@@ -182,12 +182,13 @@ void main() {
     });
 
     group('JSON Schema', () {
-      test('emits type integer and x-transformed', () {
+      test('emits type integer and x-ack-codec', () {
         final schema = Ack.duration();
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['type'], 'integer');
-        expect(jsonSchema['x-transformed'], isTrue);
+        expect(jsonSchema['x-ack-codec'], isTrue);
+        expect(jsonSchema.containsKey('x-transformed'), isFalse);
       });
 
       test('emits minimum with milliseconds value', () {
