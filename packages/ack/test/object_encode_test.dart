@@ -192,5 +192,29 @@ void main() {
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), isNull);
     });
+
+    test(
+      'child validation runs before object-level refinement during encode',
+      () {
+        // Regression: object-level refinements must observe a structurally-
+        // valid map. Children are validated first so a bad child type does
+        // not crash a refinement that downcasts.
+        var refinementCalled = false;
+        final schema = Ack.object({'a': Ack.integer()}).refine((m) {
+          refinementCalled = true;
+          return (m['a'] as int) > 0;
+        });
+        final result = schema.safeEncode({'a': 'bad'});
+        expect(result.isFail, isTrue);
+        expect(refinementCalled, isFalse,
+            reason: 'refinement must not run when a child fails validation');
+        final err = result.getError();
+        expect(err, isA<SchemaNestedError>());
+        expect(
+          (err as SchemaNestedError).errors.single.path,
+          equals('#/a'),
+        );
+      },
+    );
   });
 }

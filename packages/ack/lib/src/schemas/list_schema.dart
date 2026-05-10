@@ -81,10 +81,78 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
     return SchemaResult.ok(List<V>.unmodifiable(validatedItems));
   }
 
+  /// Validates a runtime list and its items.
+  ///
+  /// Runs item validation through each child's `_validateRuntime` before the
+  /// list-level constraints/refinements, so refinements observe a
+  /// structurally-valid list. Accepts any [List] (including type-erased
+  /// `List<Object?>`); the returned list is a fresh `List<V>.unmodifiable`.
+  ///
+  /// Null items are rejected even when [itemSchema] is nullable, because
+  /// `V extends Object` and the list's runtime form is `List<V>` — matching
+  /// parse semantics where null items fail the `is V` check.
+  @override
+  @protected
+  SchemaResult<List<V>> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return SchemaResult.fail(_failNullForRuntime(context));
+    }
+    if (value is! List) {
+      return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
+    }
+
+    final validatedItems = <V>[];
+    final itemErrors = <SchemaError>[];
+
+    for (var i = 0; i < value.length; i++) {
+      final itemValue = value[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: itemValue,
+        pathSegment: '$i',
+      );
+
+      final validated = itemSchema._validateRuntime(itemValue, itemContext);
+      if (validated.isFail) {
+        itemErrors.add(validated.getError());
+        continue;
+      }
+      final v = validated.getOrNull();
+      if (v is V) {
+        validatedItems.add(v);
+        continue;
+      }
+      // null (item schema is nullable) or wrong runtime type: list items are
+      // typed `V extends Object` and must be non-null. This matches parse
+      // semantics on Ack.list.
+      itemErrors.add(
+        SchemaValidationError(
+          message:
+              'List item $i resolved to null. Use non-nullable item schemas for Ack.list.',
+          context: itemContext,
+        ),
+      );
+    }
+
+    if (itemErrors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: itemErrors, context: context),
+      );
+    }
+
+    final canonical = List<V>.unmodifiable(validatedItems);
+    return applyConstraintsAndRefinements(canonical, context);
+  }
+
   /// Recursively encodes the runtime [List<V>] back to its boundary form by
-  /// invoking each item's encode pipeline (`_validateRuntime` followed by
-  /// `encodeBoundary`). Errors are aggregated under [SchemaNestedError] with
-  /// per-index paths preserved.
+  /// invoking each item's `encodeBoundary`. List-level validation has already
+  /// run in [_validateRuntime]; here we only translate runtime → boundary.
+  /// Errors propagate under [SchemaNestedError] with per-index paths.
   @override
   @protected
   SchemaResult<Object> encodeBoundary(
@@ -103,19 +171,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         pathSegment: '$i',
       );
 
-      final validated = itemSchema._validateRuntime(itemValue, itemContext);
-      if (validated.isFail) {
-        itemErrors.add(validated.getError());
-        continue;
-      }
-      final v = validated.getOrNull();
-      if (v == null) {
-        // Item schema accepted null (nullable); the boundary form is null.
-        out.add(null);
-        continue;
-      }
-
-      final encoded = itemSchema.encodeBoundary(v, itemContext);
+      final encoded = itemSchema.encodeBoundary(itemValue, itemContext);
       if (encoded.isFail) {
         itemErrors.add(encoded.getError());
         continue;

@@ -154,6 +154,155 @@ final class ObjectSchema extends AckSchema<MapValue>
     return SchemaResult.ok(Map<String, Object?>.unmodifiable(validatedMap));
   }
 
+  /// Validates a runtime map shape against the declared properties.
+  ///
+  /// Runs child runtime validation BEFORE applying object-level
+  /// constraints/refinements, so refinements that downcast (e.g.
+  /// `(m['a'] as int) > 0`) observe a structurally-valid map.
+  ///
+  /// Operation-aware error production:
+  /// - Missing required key: encode → [SchemaEncodeError.missingRequiredProperty];
+  ///   parse → [ObjectRequiredPropertiesConstraint].
+  /// - Unknown key with `additionalProperties: false`: encode →
+  ///   [SchemaEncodeError.unexpectedProperty]; parse →
+  ///   [ObjectNoAdditionalPropertiesConstraint].
+  ///
+  /// Returns an unmodifiable canonical `Map<String, Object?>`.
+  @override
+  @protected
+  SchemaResult<MapValue> _validateRuntime(
+    Object? value,
+    SchemaContext context,
+  ) {
+    if (value == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return SchemaResult.fail(_failNullForRuntime(context));
+    }
+    if (value is! Map) {
+      return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
+    }
+
+    final mapValue =
+        value is Map<String, Object?> ? value : value.cast<String, Object?>();
+    final validated = <String, Object?>{};
+    final errors = <SchemaError>[];
+    final isEncode = context.operation == SchemaOperation.encode;
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final childSchema = entry.value;
+      final present = mapValue.containsKey(key);
+
+      if (!present) {
+        if (childSchema.isOptional) {
+          // Defaults are parse-only; on encode we never synthesize. On the
+          // parse side, decodeBoundary handles default synthesis explicitly,
+          // so _validateRuntime here can omit missing optionals uniformly.
+          continue;
+        }
+        // Missing required key.
+        if (isEncode) {
+          errors.add(
+            SchemaEncodeError.missingRequiredProperty(
+              key: key,
+              context: context.createChild(
+                name: key,
+                schema: childSchema,
+                value: null,
+                pathSegment: key,
+              ),
+            ),
+          );
+        } else {
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
+          if (ce != null) {
+            errors.add(
+              SchemaConstraintsError(
+                constraints: [ce],
+                context: context.createChild(
+                  name: key,
+                  schema: childSchema,
+                  value: null,
+                  pathSegment: key,
+                ),
+              ),
+            );
+          }
+        }
+        continue;
+      }
+
+      final propertyValue = mapValue[key];
+      final propertyContext = context.createChild(
+        name: key,
+        schema: childSchema,
+        value: propertyValue,
+        pathSegment: key,
+      );
+      final result =
+          childSchema._validateRuntime(propertyValue, propertyContext);
+      result.match(
+        onOk: (v) {
+          validated[key] = v;
+        },
+        onFail: errors.add,
+      );
+    }
+
+    // Handle unknown keys.
+    final knownKeys = properties.keys.toSet();
+    for (final key in mapValue.keys) {
+      if (knownKeys.contains(key)) continue;
+      if (additionalProperties) {
+        validated[key] = mapValue[key];
+        continue;
+      }
+      if (isEncode) {
+        errors.add(
+          SchemaEncodeError.unexpectedProperty(
+            key: key,
+            context: context.createChild(
+              name: key,
+              schema: this,
+              value: mapValue[key],
+              pathSegment: key,
+            ),
+          ),
+        );
+      } else {
+        errors.add(
+          SchemaConstraintsError(
+            constraints: [
+              ConstraintError(
+                constraint: ObjectNoAdditionalPropertiesConstraint(
+                  unexpectedPropertyKey: key,
+                ),
+                message: 'Property "$key" is not allowed.',
+              ),
+            ],
+            context: context.createChild(
+              name: key,
+              schema: this,
+              value: mapValue[key],
+              pathSegment: key,
+            ),
+          ),
+        );
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    final canonical = Map<String, Object?>.unmodifiable(validated);
+    return applyConstraintsAndRefinements(canonical, context);
+  }
+
   /// Recursively encodes the runtime [MapValue] back to its boundary form by
   /// invoking each child schema's encode pipeline (`_validateRuntime` followed
   /// by `encodeBoundary`).

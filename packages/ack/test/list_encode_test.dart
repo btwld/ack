@@ -120,5 +120,50 @@ void main() {
       expect(result.isOk, isTrue);
       expect(result.getOrNull(), equals([]));
     });
+
+    test(
+      'item validation runs before list-level refinement during encode',
+      () {
+        // Regression: list-level refinements must observe a structurally-valid
+        // list. Items must be validated first so that bad item types do not
+        // crash the refinement.
+        var refinementCalled = false;
+        final schema = Ack.list(Ack.integer()).refine((xs) {
+          refinementCalled = true;
+          return xs.first > 0;
+        });
+        final result = schema.safeEncode(<Object?>['bad']);
+        expect(result.isFail, isTrue);
+        expect(refinementCalled, isFalse,
+            reason: 'refinement must not run when items fail validation');
+        final err = result.getError();
+        expect(err, isA<SchemaNestedError>());
+        expect(
+          (err as SchemaNestedError).errors.single.path,
+          equals('#/0'),
+        );
+      },
+    );
+
+    test('encode rejects null item even when item schema is nullable', () {
+      // Regression: list items must be non-null on encode (V extends Object),
+      // matching parse behaviour. A nullable item schema accepting null should
+      // still produce a per-index error on encode.
+      final schema = Ack.list(Ack.string().nullable());
+      final result = schema.safeEncode(<Object?>[null]);
+      expect(result.isFail, isTrue);
+      final err = result.getError();
+      expect(err, isA<SchemaNestedError>());
+      expect((err as SchemaNestedError).errors.single.path, equals('#/0'));
+    });
+
+    test('encode accepts type-erased valid runtime lists', () {
+      // List<Object?> with valid item types (e.g. all int) should encode
+      // successfully — the override accepts any List, not strictly List<V>.
+      final schema = Ack.list(Ack.integer());
+      final result = schema.safeEncode(<Object?>[1, 2]);
+      expect(result.isOk, isTrue);
+      expect(result.getOrNull(), equals([1, 2]));
+    });
   });
 }
