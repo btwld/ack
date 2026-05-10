@@ -714,7 +714,7 @@ Docs shall clearly state that defaults are parse-only.
 | Area | Required work |
 | --- | --- |
 | `schemas/schema.dart` | Introduce operation direction, runtime validation, boundary decode, boundary encode, `safeEncode`, `encode`, and generic failure casting. |
-| `schemas/codec_schema.dart` | Implement `CodecSchema<I, O>` with input/output schemas, decoder, optional encoder, JSON Schema marker, and equality. |
+| `schemas/codec_schema.dart` | Implement `CodecSchema<I, O>` with input/output schemas, decoder, encoder (nullable on the internal constructor only — supports `.transform(...)`'s one-way path; the public `Ack.codec(...)` factory requires encoder per DEC-C2), JSON Schema marker, and equality. |
 | `schemas/default_schema.dart` | Implement parse-only default wrapper and boundary default serialization. |
 | `schemas/instance_schema.dart` | Implement runtime type guard schema. |
 | `schemas/object_schema.dart` | Refactor validation/decode and implement recursive encode. |
