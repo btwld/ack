@@ -16,7 +16,7 @@ part of 'schema.dart';
 /// | Target   | Accepts From                    | Notes                                      |
 /// |----------|----------------------------------|---------------------------------------------|
 /// | integer  | integer, number, string         | number→integer: lossless only (42.0→42)    |
-/// | number   | number, integer, string         | integer→number: always allowed (42→42.0)   |
+/// | number   | number                          | A1 (M11): strict — no int / string coercion|
 /// | boolean  | boolean, string                 | string: "true"/"false" (case-insensitive)  |
 /// | string   | string, integer, number, boolean| via .toString()                            |
 /// | object   | object                          | no coercion                                |
@@ -26,8 +26,11 @@ part of 'schema.dart';
 /// ### Strict Mode (strict: true)
 /// | Target   | Accepts From    | Notes                                     |
 /// |----------|-----------------|-------------------------------------------|
-/// | number   | number, integer | integer→number per JSON Schema semantics |
-/// | *        | exact type only | all other conversions disabled            |
+/// | *        | exact type only | all conversions disabled                  |
+///
+/// `Ack.double()` is always strict regardless of `strictPrimitiveParsing`
+/// (per A1 / M11). For explicit conversion use `Ack.codec(...)` or one of
+/// the M14a convenience factories (e.g. `Ack.doubleFromString()`).
 ///
 /// Example:
 /// ```dart
@@ -73,9 +76,11 @@ enum SchemaType {
                 sourceType == SchemaType.number ||
                 sourceType == SchemaType.boolean),
       SchemaType.boolean => !strict && sourceType == SchemaType.string,
-      SchemaType.number =>
-        sourceType == SchemaType.integer ||
-            (!strict && sourceType == SchemaType.string),
+      // A1 (M11): `Ack.double()` is strict — no implicit int → double or
+      // string → double conversion. Use `Ack.codec(...)` (or one of the
+      // M14a convenience factories such as `Ack.doubleFromString()`) for
+      // explicit conversion. Self-match handled above.
+      SchemaType.number => false,
       _ => false,
     };
   }
@@ -99,7 +104,11 @@ enum SchemaType {
       (SchemaType.integer, SchemaType.string, String s) =>
         _parseIntFromString(s, context) as SchemaResult<T>,
 
-      // number conversions
+      // number conversions: unreachable under A1 / M11 strict double policy
+      // (canAcceptFrom now returns false for non-self number sources).
+      // Kept for now; scheduled for removal in the broader primitive
+      // strictness sweep. Do not rely on this branch for new code — use
+      // `Ack.doubleFromString()` etc. (M14a) for explicit conversion.
       (SchemaType.number, SchemaType.integer, int i) => SchemaResult.ok(
         i.toDouble() as T,
       ),

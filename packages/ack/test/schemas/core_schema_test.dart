@@ -142,15 +142,17 @@ void main() {
       });
 
       test(
-        'DoubleSchema should accept ints even in strict mode (integers are numbers)',
+        'DoubleSchema rejects int input regardless of strictPrimitiveParsing '
+        '(M11 / A1: Ack.double() runtime form is double, not num)',
         () {
-          const schema = DoubleSchema(strictPrimitiveParsing: true);
-          final result = schema.safeParse(42);
-
-          // Integers ARE numbers in JSON Schema semantics, so this should pass
-          // Strict mode only prevents string→number coercion
-          expect(result.isOk, isTrue);
-          expect(result.getOrThrow(), equals(42.0));
+          // Pre-A1 this test asserted that int → double coercion succeeded.
+          // A1 makes the conversion explicit: callers must use a codec
+          // (Ack.codec or M14a Ack.intFromString-style helpers) to convert.
+          expect(const DoubleSchema().safeParse(42).isFail, isTrue);
+          expect(
+            const DoubleSchema(strictPrimitiveParsing: true).safeParse(42).isFail,
+            isTrue,
+          );
         },
       );
     });

@@ -130,7 +130,9 @@ void main() {
         test('should validate basic double', () {
           final schema = Ack.double();
           expect(schema.safeParse(3.14).isOk, isTrue);
-          expect(schema.safeParse(42).isOk, isTrue); // int to double coercion
+          // M11/A1: int → double coercion removed. Use Ack.codec (or the
+          // future Ack.doubleFromString) for explicit conversion.
+          expect(schema.safeParse(42).isOk, isFalse);
           expect(schema.safeParse('not-a-number').isOk, isFalse);
         });
 
@@ -141,10 +143,11 @@ void main() {
           expect(schema.safeParse(101.0).isOk, isFalse);
         });
 
-        test('should handle type coercion from string', () {
+        test('M11/A1: rejects string input — explicit codec required', () {
+          // Pre-A1 this asserted '3.14' coerced to 3.14. Removed.
           final schema = Ack.double();
-          expect(schema.safeParse('3.14').getOrNull(), equals(3.14));
-          expect(schema.safeParse('not-a-number').isOk, isFalse);
+          expect(schema.safeParse('3.14').isFail, isTrue);
+          expect(schema.safeParse('not-a-number').isFail, isTrue);
         });
       });
 

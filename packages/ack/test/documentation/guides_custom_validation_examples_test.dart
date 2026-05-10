@@ -61,7 +61,9 @@ void main() {
         message: 'Price must be greater than zero.',
       );
 
-      final result = schema.safeParse(-10);
+      // M11/A1: Ack.double() no longer coerces int → double. Pass a double
+      // so the constraint (not the type guard) is what fires.
+      final result = schema.safeParse(-10.0);
       expect(result.isFail, isTrue);
       expect(result.getError().message, contains('greater than zero'));
     });
