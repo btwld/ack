@@ -65,14 +65,16 @@ void main() {
       });
     });
 
-    group('integer is independent', () {
-      test('Ack.integer() coercion behaviour is unchanged in this milestone',
+    group('all primitives are strict (C3)', () {
+      test('Ack.integer() is now strict — no coercion from string or double',
           () {
-        // M11 is narrowly scoped to `Ack.double()`. Integer string coercion
-        // remains as it was; future work will revisit broader primitive
-        // strictness.
-        expect(Ack.integer().safeParse('42').isOk, isTrue);
-        expect(Ack.integer().safeParse(42.0).isOk, isTrue);
+        // C3 completed the primitive strictness sweep. `Ack.integer()` no
+        // longer accepts boundary strings or doubles; build a codec with
+        // `Ack.codec(...)` for explicit conversion (see
+        // test/migration_recipes_test.dart).
+        expect(Ack.integer().safeParse('42').isFail, isTrue);
+        expect(Ack.integer().safeParse(42.0).isFail, isTrue);
+        expect(Ack.integer().safeParse(42).isOk, isTrue);
       });
     });
   });

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -10,13 +12,13 @@ void main() {
   group('Comprehensive JSON Schema Tests', () {
     group('Basic Schema Types', () {
       group('StringSchema', () {
-        test('should validate basic string', () {
+        test('should validate basic string (strict — C3)', () {
+          // C3 made all primitives strict. Ack.string() no longer coerces
+          // int/bool/etc. via toString(); pass an explicit codec when you
+          // need that.
           final schema = Ack.string();
           expect(schema.safeParse('hello').isOk, isTrue);
-          expect(
-            schema.safeParse(123).isOk,
-            isTrue,
-          ); // Type coercion: 123 -> "123"
+          expect(schema.safeParse(123).isFail, isTrue);
         });
 
         test('should validate with constraints', () {
@@ -104,16 +106,18 @@ void main() {
           expect(schema.safeParse(-5).isOk, isFalse);
         });
 
-        test('should handle type coercion from string', () {
+        test('is strict — strings are not coerced (C3)', () {
           final schema = Ack.integer();
-          expect(schema.safeParse('42').getOrNull(), equals(42));
-          expect(schema.safeParse('not-a-number').isOk, isFalse);
+          expect(schema.safeParse('42').isFail, isTrue);
+          expect(schema.safeParse('not-a-number').isFail, isTrue);
         });
 
-        test('should handle type coercion from double', () {
+        test('is strict — doubles are not coerced (C3)', () {
+          // Even lossless 42.0 → 42 is rejected; use Ack.codec(...) for
+          // explicit conversion (see test/migration_recipes_test.dart).
           final schema = Ack.integer();
-          expect(schema.safeParse(42.0).getOrNull(), equals(42));
-          expect(schema.safeParse(42.5).isOk, isFalse);
+          expect(schema.safeParse(42.0).isFail, isTrue);
+          expect(schema.safeParse(42.5).isFail, isTrue);
         });
 
         test('should generate correct JSON schema', () {
@@ -151,159 +155,46 @@ void main() {
         });
       });
 
-      group('BooleanSchema', () {
+      group('BooleanSchema (strict — C3)', () {
+        // C3 made all primitives strict. Ack.boolean() accepts only `bool`
+        // — no string coercion in any case (uppercase, mixed-case,
+        // whitespace-padded, etc.). For boundary "true"/"false" strings,
+        // build a codec — see test/migration_recipes_test.dart for the
+        // canonical `string ↔ bool` recipe.
+
         test('should validate basic boolean', () {
           final schema = Ack.boolean();
           expect(schema.safeParse(true).isOk, isTrue);
           expect(schema.safeParse(false).isOk, isTrue);
-          expect(schema.safeParse('true').isOk, isTrue);
-          expect(schema.safeParse('false').isOk, isTrue);
-          expect(schema.safeParse(1).isOk, isFalse);
+          expect(schema.safeParse('true').isFail, isTrue);
+          expect(schema.safeParse('false').isFail, isTrue);
+          expect(schema.safeParse(1).isFail, isTrue);
         });
 
-        test('should handle strict parsing', () {
-          final schema = Ack.boolean().strictParsing();
-          expect(schema.safeParse(true).isOk, isTrue);
-          expect(schema.safeParse('true').isOk, isFalse);
-        });
-
-        group('Case-insensitive string parsing', () {
-          test('should parse uppercase strings correctly', () {
-            final schema = Ack.boolean();
-            expect(schema.safeParse('TRUE').isOk, isTrue);
-            expect(schema.safeParse('TRUE').getOrNull(), isTrue);
-            expect(schema.safeParse('FALSE').isOk, isTrue);
-            expect(schema.safeParse('FALSE').getOrNull(), isFalse);
-          });
-
-          test('should parse mixed case strings correctly', () {
-            final schema = Ack.boolean();
-            expect(schema.safeParse('True').isOk, isTrue);
-            expect(schema.safeParse('True').getOrNull(), isTrue);
-            expect(schema.safeParse('False').isOk, isTrue);
-            expect(schema.safeParse('False').getOrNull(), isFalse);
-            expect(schema.safeParse('tRuE').isOk, isTrue);
-            expect(schema.safeParse('tRuE').getOrNull(), isTrue);
-            expect(schema.safeParse('fAlSe').isOk, isTrue);
-            expect(schema.safeParse('fAlSe').getOrNull(), isFalse);
-          });
-
-          test(
-            'should maintain case-insensitive behavior after optimization',
-            () {
-              final schema = Ack.boolean();
-              // Test various case combinations that would break if toLowerCase() optimization fails
-              final trueCases = [
-                'true',
-                'TRUE',
-                'True',
-                'tRuE',
-                'TrUe',
-                'TRue',
-                'trUE',
-                'TRUe',
-              ];
-              final falseCases = [
-                'false',
-                'FALSE',
-                'False',
-                'fAlSe',
-                'FaLsE',
-                'FALse',
-                'falSE',
-                'FALsE',
-              ];
-
-              for (final testCase in trueCases) {
-                expect(
-                  schema.safeParse(testCase).isOk,
-                  isTrue,
-                  reason: 'Failed for: $testCase',
-                );
-                expect(
-                  schema.safeParse(testCase).getOrNull(),
-                  isTrue,
-                  reason: 'Wrong value for: $testCase',
-                );
-              }
-
-              for (final testCase in falseCases) {
-                expect(
-                  schema.safeParse(testCase).isOk,
-                  isTrue,
-                  reason: 'Failed for: $testCase',
-                );
-                expect(
-                  schema.safeParse(testCase).getOrNull(),
-                  isFalse,
-                  reason: 'Wrong value for: $testCase',
-                );
-              }
-            },
-          );
-
-          test('should reject invalid string values', () {
-            final schema = Ack.boolean();
-            final invalidCases = [
-              'yes',
-              'no',
-              '1',
-              '0',
-              'on',
-              'off',
-              'truee',
-              'fals',
-            ];
-
-            for (final testCase in invalidCases) {
-              expect(
-                schema.safeParse(testCase).isOk,
-                isFalse,
-                reason: 'Should reject: $testCase',
-              );
-            }
-          });
-
-          test('should handle whitespace-padded valid values', () {
-            final schema = Ack.boolean();
-            // These should pass after trimming
-            expect(schema.safeParse(' true').isOk, isTrue);
-            expect(schema.safeParse('true ').isOk, isTrue);
-            expect(schema.safeParse('  true  ').isOk, isTrue);
-            expect(schema.safeParse(' false').isOk, isTrue);
-            expect(schema.safeParse('false ').isOk, isTrue);
-            expect(schema.safeParse(' TRUE ').isOk, isTrue);
-            expect(schema.safeParse(' FALSE ').isOk, isTrue);
-          });
-
-          test('should handle empty and whitespace-only strings', () {
-            final schema = Ack.boolean();
-            expect(schema.safeParse('').isOk, isFalse);
-            expect(schema.safeParse(' ').isOk, isFalse);
-            expect(schema.safeParse('  ').isOk, isFalse);
-            expect(schema.safeParse('\t').isOk, isFalse);
-            expect(schema.safeParse('\n').isOk, isFalse);
-          });
-
-          test('should not parse strings with strict parsing enabled', () {
-            final schema = Ack.boolean().strictParsing();
-            final stringCases = [
-              'true',
-              'false',
-              'TRUE',
-              'FALSE',
-              'True',
-              'False',
-            ];
-
-            for (final testCase in stringCases) {
-              expect(
-                schema.safeParse(testCase).isOk,
-                isFalse,
-                reason: 'Should reject with strict parsing: $testCase',
-              );
-            }
-          });
+        test('rejects all string boundary values', () {
+          final schema = Ack.boolean();
+          for (final s in const [
+            'true',
+            'false',
+            'TRUE',
+            'FALSE',
+            'True',
+            'False',
+            'tRuE',
+            ' true ',
+            '',
+            '\t',
+            'yes',
+            'no',
+            '1',
+            '0',
+          ]) {
+            expect(
+              schema.safeParse(s).isFail,
+              isTrue,
+              reason: 'Strict Ack.boolean must reject: ${jsonEncode(s)}',
+            );
+          }
         });
       });
 
@@ -338,13 +229,11 @@ void main() {
 
     group('Complex Schema Types', () {
       group('ListSchema', () {
-        test('should validate basic list', () {
+        test('should validate basic list (strict items — C3)', () {
           final schema = Ack.list(Ack.string());
           expect(schema.safeParse(['hello', 'world']).isOk, isTrue);
-          expect(
-            schema.safeParse([1, 2, 3]).isOk,
-            isTrue,
-          ); // Type coercion: numbers -> strings
+          // Numbers no longer coerce to strings under C3.
+          expect(schema.safeParse([1, 2, 3]).isFail, isTrue);
         });
 
         test('should validate with list constraints', () {
@@ -523,15 +412,13 @@ void main() {
       });
 
       group('AnyOfSchema', () {
-        test('should validate string or integer', () {
+        test('should validate string or integer (strict members — C3)', () {
           final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
 
           expect(schema.safeParse('hello').isOk, isTrue);
           expect(schema.safeParse(42).isOk, isTrue);
-          expect(
-            schema.safeParse(true).isOk,
-            isTrue,
-          ); // Type coercion: true -> "true"
+          // No string ← bool coercion under C3: bool fits neither branch.
+          expect(schema.safeParse(true).isFail, isTrue);
         });
 
         test('should validate complex anyOf schemas', () {
@@ -582,10 +469,9 @@ void main() {
             }).isOk,
             isTrue,
           );
-          expect(
-            schema.safeParse({'value': true}).isOk,
-            isTrue,
-          ); // Type coercion: true -> "true"
+          // No string ← bool coercion under C3: bool fits none of the
+          // string / integer / list-of-string branches.
+          expect(schema.safeParse({'value': true}).isFail, isTrue);
         });
 
         test('should generate correct JSON schema', () {

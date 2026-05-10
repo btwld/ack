@@ -116,19 +116,13 @@ void main() {
         },
       );
 
-      test('IntegerSchema should fail for non-integer input', () {
+      test('IntegerSchema is strict (C3) — strings are not coerced', () {
+        // After C3, all primitive schemas are strict. Strings never coerce
+        // to int; the error is a TypeMismatchError, not a conversion-side
+        // SchemaValidationError. Use Ack.codec(...) for explicit boundary
+        // conversion — see test/migration_recipes_test.dart.
         final schema = IntegerSchema();
         final result = schema.safeParse('not-a-number');
-        expect(result.isOk, isFalse);
-        // IntegerSchema accepts strings for coercion, so this fails during conversion, not type checking
-        final error = result.getError() as SchemaValidationError;
-        expect(error.message, contains('not-a-number'));
-      });
-
-      test('IntegerSchema should enforce strict parsing when enabled', () {
-        const schema = IntegerSchema(strictPrimitiveParsing: true);
-        final result = schema.safeParse('123');
-
         expect(result.isOk, isFalse);
         final error = result.getError() as TypeMismatchError;
         expect(error.expectedType, equals('integer'));
