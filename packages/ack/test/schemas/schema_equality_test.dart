@@ -222,10 +222,15 @@ void main() {
         expect(a.hashCode, equals(b.hashCode));
       });
 
-      test('different transformers are not equal', () {
+      test('different transformers are equal — closure identity ignored '
+          '(M13 + DEC-A)', () {
+        // After M13, `.transform(...)` returns a one-way CodecSchema.
+        // Per DEC-A (codec-open-questions.md §B3), CodecSchema equality
+        // ignores decoder/encoder closure identity — equality is structural
+        // over schemas plus the one-way / bidirectional capability.
         final a = Ack.string().transform((s) => s.toUpperCase());
         final b = Ack.string().transform((s) => s.toLowerCase());
-        expect(a, isNot(equals(b)));
+        expect(a, equals(b));
       });
     });
 

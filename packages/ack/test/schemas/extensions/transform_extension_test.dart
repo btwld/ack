@@ -93,9 +93,13 @@ void main() {
 
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaTransformError>());
+      // M13: .transform(...) is now a one-way CodecSchema. Decoder failures
+      // surface with the codec's "Decode failed:" prefix rather than the
+      // legacy "Transformation failed:" prefix. The underlying cause string
+      // is still embedded.
       expect(
         result.getError().message,
-        contains('Transformation failed: Exception: Intentional failure'),
+        contains('Exception: Intentional failure'),
       );
     });
 

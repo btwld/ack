@@ -65,16 +65,20 @@ extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
   /// the input is `null`, it passes through as `null` without invoking the
   /// transformer.
   ///
-  /// This is useful for converting data types or applying business logic
-  /// transformations without defensively handling `null` inside the callback.
-  TransformedSchema<T, R> transform<R extends Object>(
+  /// Returns a one-way [CodecSchema<T, R>] (encoder unset). Encoding through
+  /// a transformed schema fails with [SchemaEncodeError.oneWayTransform];
+  /// for bidirectional behaviour use [Ack.codec].
+  CodecSchema<T, R> transform<R extends Object>(
     R Function(T value) transformer,
   ) {
-    return TransformedSchema(
-      this,
-      transformer,
+    return CodecSchema<T, R>(
+      inputSchema: this,
+      outputSchema: InstanceSchema<R>(),
+      decoder: transformer,
+      // encoder: null  — explicit one-way.
       isOptional: isOptional,
       isNullable: isNullable,
+      description: description,
     );
   }
 }

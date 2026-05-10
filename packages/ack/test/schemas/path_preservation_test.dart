@@ -144,13 +144,12 @@ void main() {
 
   group('TransformedSchema Default Values', () {
     test('should apply output default when input is null', () {
-      // Create a TransformedSchema with a default value
-      final baseSchema = Ack.string();
-      final transformedSchema = TransformedSchema<String, String>(
-        baseSchema,
-        (value) => value.toUpperCase(),
-        defaultValue: 'DEFAULT_OUTPUT',
-      );
+      // M13 migration: the legacy positional `TransformedSchema(...)`
+      // constructor is gone — `.transform(...)` returns `CodecSchema`.
+      // Use `.copyWith(defaultValue:)` to set the legacy default field.
+      final transformedSchema = Ack.string()
+          .transform<String>((value) => value.toUpperCase())
+          .copyWith(defaultValue: 'DEFAULT_OUTPUT');
 
       final result = transformedSchema.safeParse(null);
 

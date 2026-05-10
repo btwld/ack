@@ -8,7 +8,7 @@ void main() {
       final schema = Ack.string().optional().transform((val) => val);
 
       print(
-        'Wrapped schema isOptional: ${(schema as dynamic).schema.isOptional}',
+        'Wrapped schema isOptional: ${(schema as dynamic).inputSchema.isOptional}',
       );
       print('TransformedSchema isOptional: ${schema.isOptional}');
 
@@ -24,7 +24,7 @@ void main() {
       final schema = Ack.string().nullable().transform((val) => val);
 
       print(
-        'Wrapped schema isNullable: ${(schema as dynamic).schema.isNullable}',
+        'Wrapped schema isNullable: ${(schema as dynamic).inputSchema.isNullable}',
       );
       print('TransformedSchema isNullable: ${schema.isNullable}');
 
@@ -40,10 +40,10 @@ void main() {
       final schema = Ack.string().optional().nullable().transform((val) => val);
 
       print(
-        'Wrapped schema isOptional: ${(schema as dynamic).schema.isOptional}',
+        'Wrapped schema isOptional: ${(schema as dynamic).inputSchema.isOptional}',
       );
       print(
-        'Wrapped schema isNullable: ${(schema as dynamic).schema.isNullable}',
+        'Wrapped schema isNullable: ${(schema as dynamic).inputSchema.isNullable}',
       );
       print('TransformedSchema isOptional: ${schema.isOptional}');
       print('TransformedSchema isNullable: ${schema.isNullable}');
