@@ -1,6 +1,5 @@
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
-import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
@@ -104,77 +103,180 @@ final class Ack {
     );
   }
 
-  /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
+  /// Creates a calendar-date codec.
   ///
-  /// The schema validates the string format before transformation, ensuring only valid
-  /// date strings are parsed. You can add range constraints using [.min()] and [.max()].
+  /// **Boundary form:** ISO 8601 date string `YYYY-MM-DD`.
+  /// **Runtime form:** local midnight `DateTime` (per A2 (a) decision).
   ///
-  /// Example:
+  /// On encode the value must be a **local** `DateTime` at midnight —
+  /// dates are calendar dates, not instants. A UTC `DateTime` or a value
+  /// with non-zero hour/minute/second/millisecond/microsecond is rejected
+  /// with `SchemaEncodeError`. The error message intentionally does not
+  /// suggest `.toUtc()` — for instants/timestamps use [datetime] instead.
+  ///
+  /// You can add range constraints using `.min()` and `.max()`.
+  ///
   /// ```dart
   /// final schema = Ack.date();
-  /// final result = schema.parse("2025-06-15"); // Returns DateTime(2025, 6, 15)
-  ///
-  /// // With range validation
-  /// final futureDate = Ack.date().min(DateTime.now());
-  /// final year2025 = Ack.date()
-  ///   .min(DateTime(2025, 1, 1))
-  ///   .max(DateTime(2025, 12, 31));
+  /// schema.parse('2025-06-15');                 // → DateTime(2025, 6, 15)
+  /// schema.encode(DateTime(2025, 6, 15));       // → '2025-06-15'
+  /// schema.encode(DateTime.utc(2025, 6, 15));   // → SchemaEncodeError
   /// ```
-  static TransformedSchema<String, DateTime> date() {
-    return string()
-        .date() // Validates ISO 8601 date format (YYYY-MM-DD) first
-        .transform<DateTime>((s) => DateTime.parse(s));
+  static CodecSchema<String, DateTime> date() {
+    return Ack.codec<String, DateTime>(
+      input: string().date(), // Validates ISO 8601 date format (YYYY-MM-DD).
+      output: Ack.instance<DateTime>(),
+      decoder: DateTime.parse,
+      encoder: _encodeDateOnly,
+    );
   }
 
-  /// Creates a datetime schema that parses ISO 8601 datetime strings into DateTime objects.
+  /// Creates an instant/timestamp codec.
   ///
-  /// The schema validates the string format (including timezone) before transformation.
-  /// You can add range constraints using [.min()] and [.max()].
+  /// **Boundary form:** ISO 8601 datetime string with timezone.
+  /// **Runtime form:** UTC `DateTime` (per A3 (b) decision).
   ///
-  /// Example:
+  /// On encode the value must be UTC. Non-UTC `DateTime` is rejected;
+  /// the error message advises calling `value.toUtc()` to canonicalize.
+  /// You can add range constraints using `.min()` and `.max()`.
+  ///
   /// ```dart
   /// final schema = Ack.datetime();
-  /// final result = schema.parse("2025-06-15T10:30:00Z"); // Returns DateTime
-  ///
-  /// // With range validation
-  /// final appointmentSchema = Ack.datetime().min(DateTime.now());
+  /// schema.parse('2025-06-15T10:30:00Z');     // → DateTime.utc(...)
+  /// schema.encode(DateTime.utc(2025, 6, 15)); // → '2025-06-15T00:00:00.000Z'
+  /// schema.encode(DateTime(2025, 6, 15));     // → SchemaEncodeError
   /// ```
-  static TransformedSchema<String, DateTime> datetime() {
-    return string()
-        .datetime() // Validates ISO 8601 datetime format with timezone first
-        .transform<DateTime>((s) => DateTime.parse(s));
+  static CodecSchema<String, DateTime> datetime() {
+    return Ack.codec<String, DateTime>(
+      input: string().datetime(), // ISO 8601 datetime with timezone.
+      output: Ack.instance<DateTime>(),
+      decoder: DateTime.parse,
+      encoder: _encodeUtcDateTime,
+    );
   }
 
-  /// Creates a schema that parses URI strings into [Uri] objects.
+  /// Creates a codec for absolute URIs.
   ///
-  /// The schema validates that the string is an absolute URI with a scheme
-  /// and host (e.g., `https://example.com`) before transformation. URIs
-  /// without an authority component (e.g., `mailto:` or `urn:`) are rejected.
+  /// **Boundary form:** absolute URI string with scheme and authority
+  /// (e.g. `https://example.com/path`). URIs without an authority
+  /// component (e.g. `mailto:` or `urn:`) are rejected on both parse
+  /// and encode.
+  /// **Runtime form:** [Uri].
   ///
-  /// Example:
   /// ```dart
   /// final schema = Ack.uri();
-  /// final result = schema.parse('https://example.com/path?x=1');
+  /// schema.parse('https://example.com/path?x=1'); // → Uri
+  /// schema.encode(Uri.parse('https://example.com')); // → 'https://example.com'
+  /// schema.encode(Uri.parse('/relative')); // → SchemaEncodeError
   /// ```
-  static TransformedSchema<String, Uri> uri() {
-    return string()
-        .uri() // Validates URI format first
-        .transform<Uri>((s) => Uri.parse(s));
+  static CodecSchema<String, Uri> uri() {
+    return Ack.codec<String, Uri>(
+      input: string().uri(), // Validates URI format on parse.
+      output: Ack.instance<Uri>(),
+      decoder: Uri.parse,
+      encoder: _encodeAbsoluteUri,
+    );
   }
 
-  /// Creates a schema that parses millisecond integers into [Duration] objects.
+  /// Creates a codec for [Duration] values represented as integer
+  /// milliseconds at the boundary.
   ///
-  /// You can add range constraints using [.min()] and [.max()].
+  /// **Boundary form:** `int` (milliseconds).
+  /// **Runtime form:** [Duration].
   ///
-  /// Example:
+  /// On encode the duration must be representable as a whole number of
+  /// milliseconds — sub-millisecond components (microseconds) are
+  /// rejected rather than silently truncated, so encoded round-trips are
+  /// honest. You can add range constraints using `.min()` and `.max()`.
+  ///
   /// ```dart
-  /// final schema = Ack.duration();
-  /// final result = schema.parse(1500); // Returns Duration(milliseconds: 1500)
-  ///
-  /// // With range validation
-  /// final timeout = Ack.duration().min(Duration(minutes: 1)).max(Duration(minutes: 2));
+  /// Ack.duration().encode(const Duration(milliseconds: 1500)); // → 1500
+  /// Ack.duration().encode(const Duration(microseconds: 1501)); // → SchemaEncodeError
   /// ```
-  static TransformedSchema<int, Duration> duration() {
-    return integer().transform<Duration>((ms) => Duration(milliseconds: ms));
+  static CodecSchema<int, Duration> duration() {
+    return Ack.codec<int, Duration>(
+      input: integer(),
+      output: Ack.instance<Duration>(),
+      decoder: (ms) => Duration(milliseconds: ms),
+      encoder: _encodeWholeMilliseconds,
+    );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Built-in codec encoders (M14).
+//
+// Encoders throw ArgumentError on policy violations; CodecSchema's
+// encodeBoundary catches the throw and wraps it in
+// SchemaEncodeError.encoderThrew, preserving the "safeEncode never throws"
+// guarantee.
+// ---------------------------------------------------------------------------
+
+/// Encodes a local-midnight [DateTime] into a `YYYY-MM-DD` string.
+/// Rejects UTC values (use [Ack.datetime] for instants) and any value
+/// with non-zero time components.
+String _encodeDateOnly(DateTime value) {
+  if (value.isUtc) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.date() can only encode local DateTime values. '
+          'Use Ack.datetime() for UTC instants/timestamps.',
+    );
+  }
+  if (value.hour != 0 ||
+      value.minute != 0 ||
+      value.second != 0 ||
+      value.millisecond != 0 ||
+      value.microsecond != 0) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.date() can only encode DateTime values at midnight.',
+    );
+  }
+  final y = value.year.toString().padLeft(4, '0');
+  final m = value.month.toString().padLeft(2, '0');
+  final d = value.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
+/// Encodes a UTC [DateTime] to its canonical ISO 8601 string. Rejects
+/// non-UTC values; the error message advises calling `.toUtc()`.
+String _encodeUtcDateTime(DateTime value) {
+  if (!value.isUtc) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.datetime() can only encode UTC DateTime values. '
+          'Call value.toUtc() to canonicalize.',
+    );
+  }
+  return value.toIso8601String();
+}
+
+/// Encodes an absolute [Uri] to its string form. Rejects URIs that are
+/// missing scheme or authority (e.g. relative URIs, `mailto:`, `urn:`).
+String _encodeAbsoluteUri(Uri value) {
+  if (!value.hasScheme || !value.hasAuthority) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.uri() can only encode absolute URIs with scheme and authority.',
+    );
+  }
+  return value.toString();
+}
+
+/// Encodes a [Duration] as whole milliseconds. Rejects durations with
+/// sub-millisecond precision rather than silently truncating microseconds.
+int _encodeWholeMilliseconds(Duration value) {
+  if (value.inMicroseconds % Duration.microsecondsPerMillisecond != 0) {
+    throw ArgumentError.value(
+      value,
+      'value',
+      'Ack.duration() can only encode whole-millisecond durations.',
+    );
+  }
+  return value.inMilliseconds;
 }
