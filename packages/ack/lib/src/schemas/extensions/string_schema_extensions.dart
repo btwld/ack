@@ -138,20 +138,31 @@ extension StringSchemaExtensions on StringSchema {
     return withConstraint(StringLiteralConstraint(value));
   }
 
-  /// Trims leading and trailing whitespace from the string before validation.
-  /// Returns a transformed schema that applies String.trim() to the input.
+  /// Trims leading and trailing whitespace from the string after validation.
+  ///
+  /// Returns a one-way [CodecSchema] whose decoder applies [String.trim].
+  /// Encoding fails with [SchemaEncodeError.oneWayTransform]; use
+  /// [Ack.codec] if you need a bidirectional transformation.
   CodecSchema<String, String> trim() {
     return transform((s) => s.trim());
   }
 
   /// Converts the string to lowercase after validation.
-  /// Returns a transformed schema that applies String.toLowerCase() to the input.
+  ///
+  /// Returns a one-way [CodecSchema] whose decoder applies
+  /// [String.toLowerCase]. Encoding fails with
+  /// [SchemaEncodeError.oneWayTransform]; use [Ack.codec] for a
+  /// bidirectional transformation.
   CodecSchema<String, String> toLowerCase() {
     return transform((s) => s.toLowerCase());
   }
 
   /// Converts the string to uppercase after validation.
-  /// Returns a transformed schema that applies String.toUpperCase() to the input.
+  ///
+  /// Returns a one-way [CodecSchema] whose decoder applies
+  /// [String.toUpperCase]. Encoding fails with
+  /// [SchemaEncodeError.oneWayTransform]; use [Ack.codec] for a
+  /// bidirectional transformation.
   CodecSchema<String, String> toUpperCase() {
     return transform((s) => s.toUpperCase());
   }

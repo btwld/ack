@@ -116,9 +116,9 @@ final class Ack {
   ///
   /// ```dart
   /// final schema = Ack.date();
-  /// schema.parse('2025-06-15');                 // → DateTime(2025, 6, 15)
-  /// schema.encode(DateTime(2025, 6, 15));       // → '2025-06-15'
-  /// schema.encode(DateTime.utc(2025, 6, 15));   // → SchemaEncodeError
+  /// schema.parse('2025-06-15');                       // → DateTime(2025, 6, 15)
+  /// schema.encode(DateTime(2025, 6, 15));             // → '2025-06-15'
+  /// schema.safeEncode(DateTime.utc(2025, 6, 15));     // → Fail(SchemaEncodeError)
   /// ```
   static CodecSchema<String, DateTime> date() {
     return Ack.codec<String, DateTime>(
@@ -141,9 +141,9 @@ final class Ack {
   ///
   /// ```dart
   /// final schema = Ack.datetime();
-  /// schema.parse('2025-06-15T10:30:00Z');     // → DateTime.utc(...)
-  /// schema.encode(DateTime.utc(2025, 6, 15)); // → '2025-06-15T00:00:00.000Z'
-  /// schema.encode(DateTime(2025, 6, 15));     // → SchemaEncodeError
+  /// schema.parse('2025-06-15T10:30:00Z');         // → DateTime.utc(...)
+  /// schema.encode(DateTime.utc(2025, 6, 15));     // → '2025-06-15T00:00:00.000Z'
+  /// schema.safeEncode(DateTime(2025, 6, 15));     // → Fail(SchemaEncodeError)
   /// ```
   static CodecSchema<String, DateTime> datetime() {
     return Ack.codec<String, DateTime>(
@@ -164,9 +164,9 @@ final class Ack {
   ///
   /// ```dart
   /// final schema = Ack.uri();
-  /// schema.parse('https://example.com/path?x=1'); // → Uri
-  /// schema.encode(Uri.parse('https://example.com')); // → 'https://example.com'
-  /// schema.encode(Uri.parse('/relative')); // → SchemaEncodeError
+  /// schema.parse('https://example.com/path?x=1');        // → Uri
+  /// schema.encode(Uri.parse('https://example.com'));     // → 'https://example.com'
+  /// schema.safeEncode(Uri.parse('/relative'));           // → Fail(SchemaEncodeError)
   /// ```
   static CodecSchema<String, Uri> uri() {
     return Ack.codec<String, Uri>(
@@ -189,8 +189,8 @@ final class Ack {
   /// honest. You can add range constraints using `.min()` and `.max()`.
   ///
   /// ```dart
-  /// Ack.duration().encode(const Duration(milliseconds: 1500)); // → 1500
-  /// Ack.duration().encode(const Duration(microseconds: 1501)); // → SchemaEncodeError
+  /// Ack.duration().encode(const Duration(milliseconds: 1500));     // → 1500
+  /// Ack.duration().safeEncode(const Duration(microseconds: 1501)); // → Fail(SchemaEncodeError)
   /// ```
   static CodecSchema<int, Duration> duration() {
     return Ack.codec<int, Duration>(

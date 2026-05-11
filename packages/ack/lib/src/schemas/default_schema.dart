@@ -47,8 +47,8 @@ Map<String, Object?> _applyNullableWrapper(
 /// Wraps an inner [AckSchema] of type [T] and returns [defaultValue] when the
 /// parse input is `null`. The default is a runtime `T`, so codec defaults use
 /// the decoded form (e.g. a `DateTime`, not its ISO-8601 string). The default
-/// is validated through [AckSchema._validateRuntime] on the inner schema, so
-/// any runtime-side constraints declared on the inner still apply.
+/// is validated against the inner schema, so runtime-side constraints
+/// declared on the inner still apply.
 ///
 /// Encoding never synthesizes [defaultValue]; null handling on the encode
 /// path is controlled by this wrapper's nullability, which by default mirrors
@@ -69,9 +69,8 @@ Map<String, Object?> _applyNullableWrapper(
 final class DefaultSchema<T extends Object> extends AckSchema<T>
     with FluentSchema<T, DefaultSchema<T>> {
   /// The wrapped inner schema. Treated as the canonical owner of runtime
-  /// validation: [defaultValue] is checked through [AckSchema._validateRuntime]
-  /// on this schema, and encoding delegates straight to its
-  /// [AckSchema.encodeBoundary].
+  /// validation: [defaultValue] is validated against this schema, and
+  /// encoding delegates straight to it.
   final AckSchema<T> inner;
 
   /// Parse-time default. Synthesized only when parse input is `null`; never
@@ -186,16 +185,14 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
     // so we don't mutate any shared map the inner returned.
     var base = Map<String, Object?>.of(inner.toJsonSchema());
 
-    // Run the default through the inner's full encode pipeline:
-    //   1. Validate as runtime [T] via [AckSchema._validateRuntime] on inner.
-    //      Defaults that would fail validation are not emitted as JSON Schema
-    //      metadata.
-    //   2. Translate to boundary form via [AckSchema.encodeBoundary] so codec
-    //      encoders run (e.g. DateTime → ISO-8601). One-way transforms surface
-    //      [SchemaEncodeError]; the default is omitted in that case.
-    //   3. Round-trip through jsonEncode/jsonDecode so runtime objects an
-    //      identity encoder leaks through (e.g. an [InstanceSchema] value)
-    //      never appear as JSON Schema defaults.
+    // Run the default through the inner schema's encode pipeline so the
+    // JSON Schema `default` is the boundary form:
+    //   1. Defaults that fail runtime validation are not emitted.
+    //   2. Codec encoders run (e.g. DateTime → ISO-8601). One-way transforms
+    //      surface [SchemaEncodeError]; the default is omitted in that case.
+    //   3. The value is round-tripped through jsonEncode/jsonDecode so
+    //      non-JSON runtime objects (e.g. an [InstanceSchema] value passed
+    //      through identity encode) never appear as JSON Schema defaults.
     final encoded = inner.safeEncode(defaultValue);
     if (encoded.isOk) {
       final jsonSafe = _jsonSerializableOrNull(encoded.getOrNull());
