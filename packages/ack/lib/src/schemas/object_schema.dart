@@ -6,13 +6,16 @@ part of 'schema.dart';
 /// match, this helper walks once and cannot throw — preserving the
 /// "safeParse / safeEncode never throws" guarantee for malformed input.
 MapValue? _asStringKeyedMap(Object? value) {
-  if (value is Map<String, Object?>) return value;
   if (value is! Map) return null;
   final out = <String, Object?>{};
-  for (final entry in value.entries) {
-    final key = entry.key;
-    if (key is! String) return null;
-    out[key] = entry.value;
+  try {
+    for (final entry in value.entries) {
+      final key = entry.key;
+      if (key is! String) return null;
+      out[key] = entry.value;
+    }
+  } on TypeError {
+    return null;
   }
   return out;
 }

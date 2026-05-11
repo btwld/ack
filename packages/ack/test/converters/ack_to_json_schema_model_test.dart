@@ -155,8 +155,11 @@ void main() {
       });
 
       test('wrapping a primitive forwards constraints from the inner', () {
-        final model =
-            Ack.integer().min(0).max(120).withDefault(0).toJsonSchemaModel();
+        final model = Ack.integer()
+            .min(0)
+            .max(120)
+            .withDefault(0)
+            .toJsonSchemaModel();
         expect(model.type, equals(JsonSchemaType.integer));
         expect(model.minimum, equals(0));
         expect(model.maximum, equals(120));
@@ -164,20 +167,55 @@ void main() {
     });
 
     group('Codec marker emission', () {
-      test(
-        'CodecSchema raw JSON emits x-ack-codec only (legacy x-transformed '
-        'removed in C1 cleanup)',
-        () {
-          // The legacy compatibility marker `x-transformed` is gone;
-          // `x-ack-codec` is the sole codec JSON Schema marker. The
-          // earlier B1 dual-emission decision was for one beta cycle
-          // and ended before any beta release, so no consumers rely
-          // on the legacy marker.
-          final json = Ack.datetime().toJsonSchema();
-          expect(json['x-ack-codec'], isTrue);
-          expect(json.containsKey('x-transformed'), isFalse);
-        },
-      );
+      Map<String, Object?> intCodecJson({AckSchema<String>? input}) {
+        return Ack.codec<String, int>(
+          input: input ?? Ack.string(),
+          output: Ack.instance<int>(),
+          decoder: int.parse,
+          encoder: (value) => value.toString(),
+        ).nullable().toJsonSchema();
+      }
+
+      bool hasNullBranch(Map<String, Object?> json) {
+        final anyOf = json['anyOf'];
+        return anyOf is List &&
+            anyOf.any((entry) => entry is Map && entry['type'] == 'null');
+      }
+
+      int nullBranchCount(Map<String, Object?> json) {
+        final anyOf = json['anyOf'];
+        if (anyOf is! List) return 0;
+        return anyOf
+            .where((entry) => entry is Map && entry['type'] == 'null')
+            .length;
+      }
+
+      test('CodecSchema raw JSON emits x-ack-codec only (legacy x-transformed '
+          'removed in C1 cleanup)', () {
+        // The legacy compatibility marker `x-transformed` is gone;
+        // `x-ack-codec` is the sole codec JSON Schema marker. The
+        // earlier B1 dual-emission decision was for one beta cycle
+        // and ended before any beta release, so no consumers rely
+        // on the legacy marker.
+        final json = Ack.datetime().toJsonSchema();
+        expect(json['x-ack-codec'], isTrue);
+        expect(json.containsKey('x-transformed'), isFalse);
+      });
+
+      test('nullable CodecSchema raw JSON includes null branch', () {
+        final json = intCodecJson();
+
+        expect(hasNullBranch(json), isTrue);
+        expect(json['x-ack-codec'], isTrue);
+        expect(json.containsKey('x-transformed'), isFalse);
+      });
+
+      test('nullable CodecSchema does not duplicate input null branch', () {
+        final json = intCodecJson(input: Ack.string().nullable());
+
+        expect(json['x-ack-codec'], isTrue);
+        expect(nullBranchCount(json), equals(1));
+      });
     });
   });
 }

@@ -3,11 +3,11 @@ import 'package:test/test.dart';
 
 void main() {
   CodecSchema<String, int> intString() => Ack.codec<String, int>(
-        input: Ack.string(),
-        output: Ack.instance<int>(),
-        decoder: int.parse,
-        encoder: (i) => i.toString(),
-      );
+    input: Ack.string(),
+    output: Ack.instance<int>(),
+    decoder: int.parse,
+    encoder: (i) => i.toString(),
+  );
 
   group('ListSchema.encode (M7)', () {
     test('identity encode for a list of primitives', () {
@@ -99,8 +99,7 @@ void main() {
       expect(reparsed, equals(original));
     });
 
-    test('null on a non-nullable list schema fails with SchemaEncodeError',
-        () {
+    test('null on a non-nullable list schema fails with SchemaEncodeError', () {
       final schema = Ack.list(Ack.string());
       final result = schema.safeEncode(null);
       expect(result.isFail, isTrue);
@@ -121,29 +120,26 @@ void main() {
       expect(result.getOrNull(), equals([]));
     });
 
-    test(
-      'item validation runs before list-level refinement during encode',
-      () {
-        // Regression: list-level refinements must observe a structurally-valid
-        // list. Items must be validated first so that bad item types do not
-        // crash the refinement.
-        var refinementCalled = false;
-        final schema = Ack.list(Ack.integer()).refine((xs) {
-          refinementCalled = true;
-          return xs.first > 0;
-        });
-        final result = schema.safeEncode(<Object?>['bad']);
-        expect(result.isFail, isTrue);
-        expect(refinementCalled, isFalse,
-            reason: 'refinement must not run when items fail validation');
-        final err = result.getError();
-        expect(err, isA<SchemaNestedError>());
-        expect(
-          (err as SchemaNestedError).errors.single.path,
-          equals('#/0'),
-        );
-      },
-    );
+    test('item validation runs before list-level refinement during encode', () {
+      // Regression: list-level refinements must observe a structurally-valid
+      // list. Items must be validated first so that bad item types do not
+      // crash the refinement.
+      var refinementCalled = false;
+      final schema = Ack.list(Ack.integer()).refine((xs) {
+        refinementCalled = true;
+        return xs.first > 0;
+      });
+      final result = schema.safeEncode(<Object?>['bad']);
+      expect(result.isFail, isTrue);
+      expect(
+        refinementCalled,
+        isFalse,
+        reason: 'refinement must not run when items fail validation',
+      );
+      final err = result.getError();
+      expect(err, isA<SchemaNestedError>());
+      expect((err as SchemaNestedError).errors.single.path, equals('#/0'));
+    });
 
     test('encode rejects null item even when item schema is nullable', () {
       // Regression: list items must be non-null on encode (V extends Object),
@@ -179,6 +175,15 @@ void main() {
       expect(result.isFail, isTrue);
     });
 
+    test('safeParse does not throw on a lazy cast list view', () {
+      final schema = Ack.list(Ack.string());
+      final value = ([1] as List).cast<String>();
+      late SchemaResult<List<String>> result;
+
+      expect(() => result = schema.safeParse(value), returnsNormally);
+      expect(result.isFail, isTrue);
+    });
+
     test('safeEncode does not throw on a non-list non-primitive value', () {
       final schema = Ack.list(Ack.string());
       late SchemaResult<Object> result;
@@ -188,6 +193,15 @@ void main() {
       );
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaEncodeError>());
+    });
+
+    test('safeEncode does not throw on a lazy cast list view', () {
+      final schema = Ack.list(Ack.string());
+      final value = ([1] as List).cast<String>();
+      late SchemaResult<Object> result;
+
+      expect(() => result = schema.safeEncode(value), returnsNormally);
+      expect(result.isFail, isTrue);
     });
   });
 }

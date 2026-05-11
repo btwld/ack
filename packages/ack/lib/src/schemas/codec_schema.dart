@@ -197,12 +197,14 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final base = inputSchema.toJsonSchema();
-    base['x-ack-codec'] = true;
-    if (description != null) {
-      base['description'] = description;
+    final base = Map<String, Object?>.of(inputSchema.toJsonSchema());
+    final body = _applyNullableWrapper(base, isNullable);
+    body['x-ack-codec'] = true;
+    final codecDescription = description;
+    if (codecDescription != null) {
+      body['description'] = codecDescription;
     }
-    return mergeConstraintSchemas(base);
+    return mergeConstraintSchemas(body);
   }
 
   @override

@@ -1,5 +1,23 @@
 part of 'schema.dart';
 
+/// Eagerly normalizes [value] into a safe `List<Object?>`.
+///
+/// Lazy list cast views can pass an `is List` check but throw [TypeError] when
+/// read. Copying before validation keeps `safeParse` / `safeEncode`
+/// non-throwing for malformed inputs.
+List<Object?>? _asSafeList(Object? value) {
+  if (value is! List) return null;
+  final out = <Object?>[];
+  try {
+    for (final item in value) {
+      out.add(item);
+    }
+  } on TypeError {
+    return null;
+  }
+  return out;
+}
+
 /// Schema for validating lists (`List<V>`) where each item conforms to `itemSchema`.
 @immutable
 final class ListSchema<V extends Object> extends AckSchema<List<V>>
@@ -25,7 +43,8 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   @protected
   SchemaResult<List<V>> decodeBoundary(Object? input, SchemaContext context) {
-    if (input is! List) {
+    final inputList = _asSafeList(input);
+    if (inputList == null) {
       return SchemaResult.fail(
         AckSchema.parseTypeMismatch(
           expectedType: schemaType,
@@ -34,7 +53,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
         ),
       );
     }
-    final inputList = input;
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
@@ -93,15 +111,16 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       if (isNullable) return SchemaResult.ok(null);
       return SchemaResult.fail(_failNullForRuntime(context));
     }
-    if (value is! List) {
+    final inputList = _asSafeList(value);
+    if (inputList == null) {
       return SchemaResult.fail(_failTypeMismatchForRuntime(value, context));
     }
 
     final validatedItems = <V>[];
     final itemErrors = <SchemaError>[];
 
-    for (var i = 0; i < value.length; i++) {
-      final itemValue = value[i];
+    for (var i = 0; i < inputList.length; i++) {
+      final itemValue = inputList[i];
       final itemContext = context.createChild(
         name: '$i',
         schema: itemSchema,
