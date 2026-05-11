@@ -313,7 +313,8 @@ class PatternConstraint extends Constraint<String>
     PatternType.regex => () {
       final standardFormat = _keyToFormat[constraintKey];
       if (standardFormat != null) {
-        // For email and uuid, include BOTH format and pattern (match Zod)
+        // For email and uuid, emit BOTH `format` and `pattern` so consumers
+        // that only honour one of the two still validate strictly.
         return {'format': standardFormat, 'pattern': pattern!.pattern};
       }
 

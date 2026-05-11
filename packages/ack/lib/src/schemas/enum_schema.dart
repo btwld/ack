@@ -85,15 +85,13 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     return SchemaResult.ok(parsed);
   }
 
-  /// Validates that the runtime value is the enum type [T] AND a member of
-  /// this schema's allowed [values] subset.
+  /// Validates that the runtime value is an enum of type [T] **and** a member
+  /// of this schema's allowed [values] subset.
   ///
-  /// Per the A4 decision (codec-open-questions.md:84), the encode side is
-  /// strict: only enum values are accepted. Strings and integer indices are
-  /// rejected even though [decodeBoundary] still accepts them on parse.
-  /// Membership outside the allowed subset surfaces as a
-  /// [SchemaConstraintsError] over [_EnumValuesConstraint], not as a type
-  /// mismatch.
+  /// The runtime / encode side is strict: only enum values are accepted.
+  /// String names and integer indices are accepted by [decodeBoundary] on the
+  /// parse side but rejected here. Membership outside the allowed subset
+  /// surfaces as a [SchemaConstraintsError], not a type mismatch.
   @override
   @protected
   SchemaResult<T> _validateRuntime(Object? value, SchemaContext context) {
@@ -111,10 +109,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
         message:
             'Enum value "${value.name}" is not in the allowed subset: '
             '${allowed.map((s) => '"$s"').join(', ')}.',
-        context: {
-          'received': value.name,
-          'allowedValues': allowed,
-        },
+        context: {'received': value.name, 'allowedValues': allowed},
       );
       return SchemaResult.fail(
         SchemaConstraintsError(constraints: [error], context: context),

@@ -1,7 +1,7 @@
-/// ACK - A validation library for Dart
+/// ACK — a bidirectional schema validation library for Dart.
 ///
-/// Inspired by Zod (TypeScript), provides type-safe schema validation
-/// with a fluent API for runtime data validation and transformation.
+/// Provides type-safe schema validation with a fluent API and explicit
+/// boundary↔runtime conversion through [CodecSchema].
 library;
 
 // Main API

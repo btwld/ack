@@ -133,7 +133,6 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must be exactly equal to [value].
-  /// Similar to Zod's `z.literal("value")`.
   @Deprecated('Use Ack.literal() instead.')
   StringSchema literal(String value) {
     return withConstraint(StringLiteralConstraint(value));

@@ -22,10 +22,7 @@ final class AnySchema extends AckSchema<Object>
   /// coercion. Constraints/refinements are applied by [_parse].
   @override
   @protected
-  SchemaResult<Object> decodeBoundary(
-    Object? input,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> decodeBoundary(Object? input, SchemaContext context) {
     return SchemaResult.ok(input!);
   }
 

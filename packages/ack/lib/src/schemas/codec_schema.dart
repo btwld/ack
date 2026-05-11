@@ -1,22 +1,27 @@
 part of 'schema.dart';
 
-/// Schema for bidirectional value conversion between an [inputSchema] (boundary
-/// form, type [I]) and an [outputSchema] (runtime form, type [O]).
+/// A schema that converts between boundary values of type [I] and runtime
+/// values of type [O].
 ///
-/// [decoder] (`I → O`) runs during the parse path; [encoder] (`O → I`),
-/// when supplied, runs during [encodeBoundary]. When [encoder] is `null`, the
-/// codec is one-way and any [safeEncode] call fails with
-/// [SchemaEncodeError.oneWayTransform].
+/// Parsing validates the input with [inputSchema], runs [decoder], and
+/// validates the decoded value with [outputSchema]. Encoding validates the
+/// runtime value with [outputSchema], runs [encoder], and feeds the result
+/// back through [inputSchema] so nested codecs compose.
 ///
-/// Field naming follows `dart:convert`: methods are verbs (`encode`/`decode`),
-/// the function-typed fields holding them are nouns (`encoder`/`decoder`).
+/// When [encoder] is `null`, the codec is one-way and [safeEncode] fails with
+/// [SchemaEncodeError.oneWayTransform]. Prefer the [Ack.codec] factory for
+/// public construction — it requires both [decoder] and [encoder].
+///
+/// Field naming follows `dart:convert`: methods are verbs (`encode` /
+/// `decode`), the function-typed fields holding them are nouns ([encoder] /
+/// [decoder]).
 ///
 /// ```dart
-/// final intFromString = CodecSchema<String, int>(
-///   inputSchema: Ack.string().matches(r'^-?\d+$'),
-///   outputSchema: Ack.integer(),
+/// final intFromString = Ack.codec<String, int>(
+///   input: Ack.string().matches(r'^-?\d+$'),
+///   output: Ack.integer(),
 ///   decoder: int.parse,
-///   encoder: (i) => i.toString(),
+///   encoder: (value) => value.toString(),
 /// );
 /// intFromString.parse('42');  // → 42
 /// intFromString.encode(42);   // → '42'
@@ -34,8 +39,9 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   /// Boundary → runtime converter.
   final O Function(I) decoder;
 
-  /// Runtime → boundary converter. `null` for one-way codecs (e.g. legacy
-  /// `.transform(...)` chains that did not specify an inverse).
+  /// Runtime → boundary converter. `null` for one-way codecs produced by
+  /// `schema.transform(...)`; [safeEncode] then fails with
+  /// [SchemaEncodeError.oneWayTransform].
   final I Function(O)? encoder;
 
   const CodecSchema({
@@ -53,10 +59,10 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   SchemaType get schemaType => inputSchema.schemaType;
 
-  /// Decodes a non-null boundary value through `inputSchema`, runs the
-  /// `decoder`, then validates the decoded value through `outputSchema`.
-  /// Constraints/refinements on this codec are applied by [_parse].
-  /// Defaults are owned by [DefaultSchema] (use `.withDefault(...)`).
+  /// Decodes a non-null boundary value through [inputSchema], runs [decoder],
+  /// then validates the decoded value through [outputSchema]. Constraints and
+  /// refinements declared on this codec itself are applied by the dispatcher
+  /// after decode succeeds.
   @override
   @protected
   SchemaResult<O> decodeBoundary(Object? input, SchemaContext context) {
@@ -88,10 +94,9 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // Validate the decoded runtime value (e.g. range checks declared on the
-    // output schema). Pass the *validated* value forward — once output
-    // schemas canonicalize (e.g. unmodifiable maps for ObjectSchema in M6),
-    // refinements observe the canonical form, not the raw decoder output.
+    // Validate the decoded runtime value through [outputSchema] and pass the
+    // validated value forward, so refinements observe the canonical form
+    // produced by [outputSchema] rather than the raw decoder output.
     final outputResult = outputSchema._validateRuntime(decoded, context);
     if (outputResult case Fail(error: final e)) {
       return SchemaResult.fail<O>(e);
@@ -151,9 +156,9 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
       );
     }
 
-    // Run the encoded value through the inputSchema's encode pipeline so
-    // nested codecs compose correctly. We use the protected hooks directly
-    // (rather than safeEncode) so the existing context / path are preserved.
+    // Run the encoded value through [inputSchema]'s encode pipeline so nested
+    // codecs compose. Calls the protected hooks directly to preserve the
+    // existing context and JSON-pointer path.
     final innerValidation = inputSchema._validateRuntime(encoded, context);
     if (innerValidation case Fail(error: final e)) {
       return SchemaResult.fail<Object>(e);
@@ -204,10 +209,9 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! CodecSchema<I, O>) return false;
-    // Closure identity is intentionally ignored (codec-open-questions §B3,
-    // decision (a)): equality is structural over schemas. The presence vs.
-    // absence of an encoder is observably different (one-way vs two-way), so
-    // it remains part of equality even though the closure value itself is not.
+    // Closure identity is intentionally ignored: equality is structural over
+    // schemas. The presence or absence of an encoder is observably different
+    // (one-way vs bidirectional) and remains part of equality.
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
@@ -216,9 +220,9 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
 
   @override
   int get hashCode => Object.hash(
-        baseFieldsHashCode,
-        inputSchema,
-        outputSchema,
-        encoder == null,
-      );
+    baseFieldsHashCode,
+    inputSchema,
+    outputSchema,
+    encoder == null,
+  );
 }

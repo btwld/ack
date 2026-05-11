@@ -24,29 +24,24 @@ mixin FluentSchema<DartType extends Object, Schema extends AckSchema<DartType>>
       copyWith(description: description) as Schema;
 
   /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue]
-  /// when the parse-side input is `null`.
+  /// when the parse input is `null`.
   ///
-  /// **Breaking change (M12):** previously `withDefault` returned a copy of
-  /// the same schema type with `defaultValue` set. It now returns a
-  /// [DefaultSchema] wrapper. This means type-specific fluent methods
-  /// (e.g. `.minLength`, `.matches` on `StringSchema`) must be applied
-  /// **before** `.withDefault(...)`:
+  /// The returned wrapper is a [DefaultSchema], so type-specific fluent
+  /// methods (e.g. `.minLength`, `.matches` on [StringSchema]) must be
+  /// applied to the inner schema **before** `.withDefault(...)`:
   ///
   /// ```dart
-  /// // Preferred
+  /// // Ok — fluent methods apply to the inner StringSchema first.
   /// Ack.string().minLength(3).withDefault('guest');
   ///
-  /// // Won't type-check — DefaultSchema<String> has no .minLength(...)
+  /// // Won't type-check — DefaultSchema<String> has no .minLength(...).
   /// // Ack.string().withDefault('guest').minLength(3);
   /// ```
   ///
-  /// Defaults are parse-only per requirements §5.5: they are synthesized
-  /// when parse input is `null`, but never injected on encode.
+  /// Defaults are parse-only: synthesized when parse input is `null`, never
+  /// injected on encode.
   DefaultSchema<DartType> withDefault(DartType defaultValue) {
-    return DefaultSchema<DartType>(
-      inner: this,
-      defaultValue: defaultValue,
-    );
+    return DefaultSchema<DartType>(inner: this, defaultValue: defaultValue);
   }
 
   /// Adds a validation constraint to the schema.

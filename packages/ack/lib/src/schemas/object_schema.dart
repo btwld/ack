@@ -18,9 +18,9 @@ MapValue? _asStringKeyedMap(Object? value) {
 }
 
 /// True when [schema] supplies a parse-time default — i.e. its
-/// `handleParseNull` would synthesize a value rather than fall through to
-/// the dispatcher's nullable / non-nullable handling. As of M12 the only
-/// owner of parse-time defaults is [DefaultSchema].
+/// [AckSchema.handleParseNull] would synthesize a value rather than fall
+/// through to the dispatcher's nullable / non-nullable handling.
+/// [DefaultSchema] is the sole owner of parse-time defaults.
 bool _providesParseDefault(AckSchema schema) {
   return schema is DefaultSchema;
 }
@@ -51,10 +51,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   /// [_parse] after this returns.
   @override
   @protected
-  SchemaResult<MapValue> decodeBoundary(
-    Object? input,
-    SchemaContext context,
-  ) {
+  SchemaResult<MapValue> decodeBoundary(Object? input, SchemaContext context) {
     final mapValue = _asStringKeyedMap(input);
     if (mapValue == null) {
       return SchemaResult.fail(
@@ -75,12 +72,12 @@ final class ObjectSchema extends AckSchema<MapValue>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        // Property missing from input
+        // Property missing from input.
         if (schema.isOptional) {
-          // Optional field with a parse-time default — pass null to trigger
-          // the child's `handleParseNull`, which synthesizes the default.
-          // Defaults are owned by `DefaultSchema` (M12) — `schema is
-          // DefaultSchema` is the canonical "this child has a default" check.
+          // Optional field with a parse-time default — pass `null` to trigger
+          // the child's [AckSchema.handleParseNull], which synthesizes the
+          // default. [_providesParseDefault] is the canonical
+          // "this child supplies a default" check.
           if (_providesParseDefault(schema)) {
             final propertyContext = context.createChild(
               name: key,
@@ -260,8 +257,10 @@ final class ObjectSchema extends AckSchema<MapValue>
         value: propertyValue,
         pathSegment: key,
       );
-      final result =
-          childSchema._validateRuntime(propertyValue, propertyContext);
+      final result = childSchema._validateRuntime(
+        propertyValue,
+        propertyContext,
+      );
       result.match(
         onOk: (v) {
           validated[key] = v;
@@ -330,10 +329,7 @@ final class ObjectSchema extends AckSchema<MapValue>
   /// re-validate.
   @override
   @protected
-  SchemaResult<Object> encodeBoundary(
-    MapValue value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> encodeBoundary(MapValue value, SchemaContext context) {
     final out = <String, Object?>{};
     final encodeErrors = <SchemaError>[];
 
@@ -418,7 +414,9 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    // Zod uses {} (empty schema) for true, false for false
+    // `additionalProperties: true` is emitted as `{}` (the always-true schema)
+    // for compatibility with JSON Schema Draft-7 consumers that prefer the
+    // schema form over the boolean form.
     final additionalPropertiesValue = additionalProperties
         ? <String, Object?>{}
         : false;

@@ -228,11 +228,11 @@ sealed class AckSchema<DartType extends Object> {
   // Parse-side hooks. Symmetric to the encode-side hooks above:
   //
   //   _parse(input, ctx)             // dispatcher (do not override)
-  //     -> handleParseNull           // null/default handling
+  //     -> handleParseNull           // null handling
   //     -> decodeBoundary            // boundary -> runtime
   //     -> applyConstraintsAndRefinements   // schema-level constraints, once
   //
-  // The dispatcher is the single owner of the lifecycle. `decodeBoundary` does
+  // The dispatcher is the single owner of the lifecycle. [decodeBoundary] does
   // boundary decoding only — it must NOT apply this schema's own constraints
   // or refinements, because the dispatcher applies them exactly once after a
   // successful decode. Composite schemas recurse via child `_parse(...)` calls
@@ -264,10 +264,9 @@ sealed class AckSchema<DartType extends Object> {
   /// Handles null input on the parse path. Returns `null` when [input] is
   /// non-null so the dispatcher proceeds with [decodeBoundary].
   ///
-  /// Default behaviour: emit `Ok(null)` when the schema is nullable,
-  /// otherwise emit a non-nullable failure. Defaults are owned by
-  /// [DefaultSchema] (M12) — primitive schemas no longer carry a
-  /// `defaultValue` field.
+  /// Default behaviour: emit `Ok(null)` when the schema is nullable, otherwise
+  /// emit a non-nullable failure. Parse-time default substitution is owned
+  /// by [DefaultSchema]; it is not part of the base parse path.
   @protected
   SchemaResult<DartType>? handleParseNull(
     Object? input,
@@ -281,19 +280,17 @@ sealed class AckSchema<DartType extends Object> {
   /// Decodes a non-null boundary value into [DartType].
   ///
   /// Override to provide schema-specific boundary decoding (type detection,
-  /// coercion, recursion, codec invocation, etc.). MUST NOT apply this
+  /// recursion into children, codec invocation, etc.). MUST NOT apply this
   /// schema's own constraints or refinements — [_parse] applies them once
   /// after decode succeeds.
   ///
   /// The default implementation performs JSON-primitive type detection and
-  /// coercion. It is used by primitive schemas (`StringSchema`,
-  /// `IntegerSchema`, `DoubleSchema`, `BooleanSchema`) whose only parse
-  /// concern is the JSON-primitive coerce matrix.
+  /// strict primitive validation. It is used by [StringSchema],
+  /// [IntegerSchema], [DoubleSchema], and [BooleanSchema], which accept only
+  /// their exact runtime type; explicit boundary conversion belongs in
+  /// [CodecSchema].
   @protected
-  SchemaResult<DartType> decodeBoundary(
-    Object? input,
-    SchemaContext context,
-  ) {
+  SchemaResult<DartType> decodeBoundary(Object? input, SchemaContext context) {
     final nonNullInput = input!;
     final targetType = schemaType;
 
@@ -332,7 +329,8 @@ sealed class AckSchema<DartType extends Object> {
   /// as the standard parse-side errors so callers can branch by class.
   ///
   /// Returns `Ok(null)` for a `null` input on a nullable schema. Defaults
-  /// are deliberately **not** synthesized here (per requirements §5.5).
+  /// are deliberately **not** synthesized here; encoding never injects a
+  /// [DefaultSchema] default.
   @protected
   SchemaResult<DartType> _validateRuntime(
     Object? value,
@@ -367,10 +365,7 @@ sealed class AckSchema<DartType extends Object> {
   /// between encode-side ([SchemaEncodeError]) and parse-side
   /// ([SchemaConstraintsError] over [InvalidTypeConstraint]) based on
   /// `context.operation`.
-  SchemaError _failTypeMismatchForRuntime(
-    Object value,
-    SchemaContext context,
-  ) {
+  SchemaError _failTypeMismatchForRuntime(Object value, SchemaContext context) {
     if (context.operation == SchemaOperation.encode) {
       return SchemaEncodeError.typeMismatch(
         expected: DartType,
@@ -415,8 +410,10 @@ sealed class AckSchema<DartType extends Object> {
   /// wrapping a [SchemaEncodeError] (or a constraint/refinement error if a
   /// runtime invariant is violated).
   SchemaResult<Object> safeEncode(Object? value, {String? debugName}) {
-    final ctx = _createRootContext(value, debugName: debugName)
-        .withOperation(SchemaOperation.encode);
+    final ctx = _createRootContext(
+      value,
+      debugName: debugName,
+    ).withOperation(SchemaOperation.encode);
 
     final validated = _validateRuntime(value, ctx);
     if (validated case Fail(error: final e)) {

@@ -24,10 +24,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   /// after this returns.
   @override
   @protected
-  SchemaResult<List<V>> decodeBoundary(
-    Object? input,
-    SchemaContext context,
-  ) {
+  SchemaResult<List<V>> decodeBoundary(Object? input, SchemaContext context) {
     if (input is! List) {
       return SchemaResult.fail(
         AckSchema.parseTypeMismatch(
@@ -91,10 +88,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   /// parse semantics where null items fail the `is V` check.
   @override
   @protected
-  SchemaResult<List<V>> _validateRuntime(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<List<V>> _validateRuntime(Object? value, SchemaContext context) {
     if (value == null) {
       if (isNullable) return SchemaResult.ok(null);
       return SchemaResult.fail(_failNullForRuntime(context));
@@ -153,10 +147,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   /// Errors propagate under [SchemaNestedError] with per-index paths.
   @override
   @protected
-  SchemaResult<Object> encodeBoundary(
-    List<V> value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> encodeBoundary(List<V> value, SchemaContext context) {
     final out = <Object?>[];
     final itemErrors = <SchemaError>[];
 

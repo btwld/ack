@@ -1,16 +1,15 @@
 part of 'schema.dart';
 
-/// Schema describing a runtime Dart value of type [T].
+/// A runtime type guard for values of type [T].
 ///
-/// `InstanceSchema` is most often used as the `output` schema of a
-/// [CodecSchema], where the boundary form is described by a JSON schema and
-/// the runtime form is a non-JSON Dart class (e.g. `DateTime`, `Uri`,
-/// `Duration`, or a user class).
+/// Most often supplied as the `output` schema of a [CodecSchema] when the
+/// runtime form is a non-JSON Dart class (e.g. `DateTime`, `Uri`, `Duration`,
+/// or a user class) and the boundary form is described by another schema.
 ///
-/// Used standalone, it accepts any value of type [T] on parse and on encode
-/// without performing conversion. It does not have a meaningful JSON Schema
-/// representation; codec wrappers are responsible for emitting JSON Schema
-/// for the boundary form.
+/// Used standalone, accepts any value of type [T] on parse and on encode
+/// without performing conversion. It has no boundary representation;
+/// codec wrappers are responsible for emitting JSON Schema for the
+/// boundary form.
 ///
 /// ```dart
 /// final dt = Ack.instance<DateTime>();
@@ -31,9 +30,9 @@ final class InstanceSchema<T extends Object> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.any;
 
-  /// InstanceSchema's boundary form is the runtime form — no separate decode
-  /// step. Validate the runtime type. Constraints/refinements are applied by
-  /// [_parse]. Defaults are owned by [DefaultSchema] (use `.withDefault(...)`).
+  /// The boundary form is the runtime form — no separate decode step.
+  /// Validates the runtime type only; constraints and refinements are applied
+  /// by the dispatcher.
   @override
   @protected
   SchemaResult<T> decodeBoundary(Object? input, SchemaContext context) {

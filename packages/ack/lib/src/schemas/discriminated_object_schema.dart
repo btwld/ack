@@ -2,12 +2,12 @@ part of 'schema.dart';
 
 /// Schema for validating a discriminated union of objects.
 ///
-/// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
-/// `schemas` to validate the object.
+/// Selects a branch from [schemas] using the value at [discriminatorKey]
+/// (typically `'type'`) and validates the input against that branch.
 ///
-/// Child schemas may be plain [ObjectSchema] branches that return
-/// `Map<String, Object?>`, or transformed schemas whose base schema is an
-/// [ObjectSchema]. All branches must produce the same output type [T].
+/// Each branch must be backed by an [ObjectSchema] — either directly or
+/// wrapped in a [CodecSchema] / [DefaultSchema] — and all branches must
+/// produce the same runtime type [T].
 ///
 /// ```dart
 /// final schema = Ack.discriminated<Animal>(
@@ -137,8 +137,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       );
     }
 
-    final result =
-        selectedSubSchema._parse(mapValue, subSchemaContext);
+    final result = selectedSubSchema._parse(mapValue, subSchemaContext);
 
     if (result.isFail) {
       return result.match(
@@ -211,10 +210,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   // -- Case A helpers ---------------------------------------------------------
 
-  SchemaContext _discriminatorChild(
-    SchemaContext parent,
-    Object? discValue,
-  ) =>
+  SchemaContext _discriminatorChild(SchemaContext parent, Object? discValue) =>
       parent.createChild(
         name: discriminatorKey,
         schema: const StringSchema(),
@@ -227,13 +223,12 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     String discValue,
     AckSchema branch,
     Object? value,
-  ) =>
-      parent.createChild(
-        name: 'when $discriminatorKey="$discValue"',
-        schema: branch,
-        value: value,
-        pathSegment: '', // inherit parent path; branch name is debug-only
-      );
+  ) => parent.createChild(
+    name: 'when $discriminatorKey="$discValue"',
+    schema: branch,
+    value: value,
+    pathSegment: '', // inherit parent path; branch name is debug-only
+  );
 
   /// Resolves the discriminator-selected branch for [mapValue], or returns
   /// a discriminator-positioned failure (missing / non-string / unknown).
@@ -258,9 +253,9 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     }
 
     if (discValueRaw is! String) {
-      final ce = InvalidTypeConstraint(expectedType: String).validate(
-        discValueRaw,
-      );
+      final ce = InvalidTypeConstraint(
+        expectedType: String,
+      ).validate(discValueRaw);
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: ce != null ? [ce] : const [],
@@ -302,8 +297,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     if (resolved.isFail) return SchemaResult.fail(resolved.getError());
     final selected = resolved.getOrThrow()!;
     final discValue = mapValue[discriminatorKey] as String;
-    final branchContext =
-        _branchChild(context, discValue, selected, mapValue);
+    final branchContext = _branchChild(context, discValue, selected, mapValue);
 
     final branchResult = selected._validateRuntime(mapValue, branchContext);
     if (branchResult.isFail) return branchResult;
@@ -326,8 +320,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     if (resolved.isFail) return SchemaResult.fail(resolved.getError());
     final selected = resolved.getOrThrow()!;
     final discValue = mapValue[discriminatorKey] as String;
-    final branchContext =
-        _branchChild(context, discValue, selected, mapValue);
+    final branchContext = _branchChild(context, discValue, selected, mapValue);
 
     // Per discriminated semantics, a matched branch's encode failure fails
     // the whole schema — no fallthrough to other branches.
@@ -339,8 +332,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     if (encodedMap == null) {
       return SchemaResult.fail(
         SchemaValidationError(
-          message:
-              'Discriminated branch "$discValue" encoded to non-map value',
+          message: 'Discriminated branch "$discValue" encoded to non-map value',
           context: branchContext,
         ),
       );
@@ -356,25 +348,26 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     String discValue,
     AckSchema branch,
     Object? value,
-  ) =>
-      parent.createChild(
-        name: 'discriminated:$discValue',
-        schema: branch,
-        value: value,
-        pathSegment: '', // inherit parent path
-      );
+  ) => parent.createChild(
+    name: 'discriminated:$discValue',
+    schema: branch,
+    value: value,
+    pathSegment: '', // inherit parent path
+  );
 
-  SchemaResult<T> _validateDomainObject(
-    Object value,
-    SchemaContext context,
-  ) {
+  SchemaResult<T> _validateDomainObject(Object value, SchemaContext context) {
     final errors = <SchemaError>[];
     var index = 0;
     for (final entry in schemas.entries) {
       final discValue = entry.key;
       final branch = entry.value;
-      final branchContext =
-          _domainBranchChild(context, index++, discValue, branch, value);
+      final branchContext = _domainBranchChild(
+        context,
+        index++,
+        discValue,
+        branch,
+        value,
+      );
       final result = branch._validateRuntime(value, branchContext);
       if (result.isOk) {
         final validated = result.getOrNull();
@@ -402,8 +395,13 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     for (final entry in schemas.entries) {
       final discValue = entry.key;
       final branch = entry.value;
-      final branchContext =
-          _domainBranchChild(context, index++, discValue, branch, value);
+      final branchContext = _domainBranchChild(
+        context,
+        index++,
+        discValue,
+        branch,
+        value,
+      );
 
       final validated = branch._validateRuntime(value, branchContext);
       if (validated.isFail) {

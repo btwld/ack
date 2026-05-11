@@ -42,10 +42,7 @@ final class AnyOfSchema extends AckSchema<Object>
   /// [DefaultSchema] (use `.withDefault(...)`).
   @override
   @protected
-  SchemaResult<Object>? handleParseNull(
-    Object? input,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object>? handleParseNull(Object? input, SchemaContext context) {
     return null;
   }
 
@@ -57,10 +54,7 @@ final class AnyOfSchema extends AckSchema<Object>
   /// values.
   @override
   @protected
-  SchemaResult<Object> decodeBoundary(
-    Object? input,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> decodeBoundary(Object? input, SchemaContext context) {
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
@@ -102,10 +96,7 @@ final class AnyOfSchema extends AckSchema<Object>
   /// applied here (exactly once) so [encodeBoundary] does not re-apply them.
   @override
   @protected
-  SchemaResult<Object> _validateRuntime(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> _validateRuntime(Object? value, SchemaContext context) {
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
@@ -145,10 +136,7 @@ final class AnyOfSchema extends AckSchema<Object>
   /// already ran in [_validateRuntime] before this method was invoked.
   @override
   @protected
-  SchemaResult<Object> encodeBoundary(
-    Object value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> encodeBoundary(Object value, SchemaContext context) {
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
@@ -210,7 +198,7 @@ final class AnyOfSchema extends AckSchema<Object>
       if (!isNullable && description != null) 'description': description,
     };
 
-    // Wrap in another anyOf with null if nullable (match Zod's format)
+    // Wrap in another anyOf with an explicit null branch when nullable.
     if (isNullable) {
       return {
         if (description != null) 'description': description,

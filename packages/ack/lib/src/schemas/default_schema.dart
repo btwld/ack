@@ -1,10 +1,9 @@
 part of 'schema.dart';
 
-/// Eagerly checks that [value] survives a JSON round-trip and returns the
-/// (possibly normalized) JSON-safe form, or `null` if it cannot be encoded.
+/// Returns a JSON-safe form of [value], or `null` if it cannot be encoded.
 ///
-/// Used by [DefaultSchema.toJsonSchema] to ensure runtime objects that the
-/// inner encoder leaks through (e.g. a `DateTime` from
+/// Used by [DefaultSchema.toJsonSchema] so runtime objects that an identity
+/// encoder may pass through (e.g. a `DateTime` returned by
 /// `Ack.instance<DateTime>().encodeBoundary`) never appear as JSON Schema
 /// defaults.
 Object? _jsonSerializableOrNull(Object? value) {
@@ -15,9 +14,11 @@ Object? _jsonSerializableOrNull(Object? value) {
   }
 }
 
-/// Wraps [schema] in an `anyOf [..., {type: null}]` form when [isNullable]
-/// is true and the schema does not already include a null branch. Hoists
-/// any existing `default` to the top so the null wrapper does not bury it.
+/// Adds a JSON Schema null branch when wrapper nullability requires it.
+///
+/// Wraps [schema] in an `anyOf [..., {type: null}]` form when [isNullable] is
+/// true and the schema does not already include a null branch. Hoists any
+/// existing `default` to the top so the null wrapper does not bury it.
 Map<String, Object?> _applyNullableWrapper(
   Map<String, Object?> schema,
   bool isNullable,
@@ -41,45 +42,43 @@ Map<String, Object?> _applyNullableWrapper(
   };
 }
 
-/// Schema wrapper that supplies a parse-time default value.
+/// A schema wrapper that supplies a parse-time default value.
 ///
-/// `DefaultSchema<T>` wraps an inner [AckSchema<T>] and synthesizes
-/// [defaultValue] when the parse-side input is `null`. Per requirements
-/// §5.5 / decision A7 (codec-open-questions.md:140), defaults are
-/// **parse-only** — the encode pipeline never injects the default and
-/// always defers null-handling to the inner schema's nullability.
+/// Wraps an inner [AckSchema] of type [T] and returns [defaultValue] when the
+/// parse input is `null`. The default is a runtime `T`, so codec defaults use
+/// the decoded form (e.g. a `DateTime`, not its ISO-8601 string). The default
+/// is validated through [AckSchema._validateRuntime] on the inner schema, so
+/// any runtime-side constraints declared on the inner still apply.
+///
+/// Encoding never synthesizes [defaultValue]; null handling on the encode
+/// path is controlled by this wrapper's nullability, which by default mirrors
+/// the inner schema's.
 ///
 /// ```dart
-/// // Boundary `null` → runtime 'guest'
+/// // Boundary `null` → runtime 'guest'.
 /// final schema = Ack.string().withDefault('guest');
 /// schema.parse(null);  // → 'guest'
 ///
-/// // Encode does NOT inject the default; nullable inner controls null:
-/// schema.safeEncode(null);                       // Fail (non-nullable inner)
+/// // Encode does NOT inject the default; nullability of the inner controls null:
+/// schema.safeEncode(null);                                    // Fail
 /// Ack.string().nullable().withDefault('x').safeEncode(null);  // → null
 /// ```
 ///
-/// `DefaultSchema` is created by [FluentSchema.withDefault]. The inner
-/// [defaultValue] is a runtime value (`T`), not a boundary value — for
-/// codecs this means the default is the decoded form (e.g. `DateTime`,
-/// not the ISO-8601 string). The default is validated through the inner
-/// schema's runtime path (`_validateRuntime`), so any runtime-side
-/// constraints declared on the inner apply to the default.
+/// Instances are created by [FluentSchema.withDefault].
 @immutable
 final class DefaultSchema<T extends Object> extends AckSchema<T>
     with FluentSchema<T, DefaultSchema<T>> {
-  /// The wrapped inner schema. The default value is treated as a runtime `T`
-  /// validated through `inner._validateRuntime`. On encode this wrapper
-  /// delegates straight to `inner.encodeBoundary`, never synthesizing the
-  /// default.
+  /// The wrapped inner schema. Treated as the canonical owner of runtime
+  /// validation: [defaultValue] is checked through [AckSchema._validateRuntime]
+  /// on this schema, and encoding delegates straight to its
+  /// [AckSchema.encodeBoundary].
   final AckSchema<T> inner;
 
   /// Parse-time default. Synthesized only when parse input is `null`; never
-  /// injected on encode (per requirements §5.5 / decision A7).
+  /// injected on encode.
   ///
-  /// Owned by [DefaultSchema]; the legacy `AckSchema.defaultValue` field was
-  /// removed in 1.0.0-beta.12. Cloned on every parse via [cloneDefault] so
-  /// shared mutable defaults (Maps / Lists) cannot drift across calls.
+  /// Cloned on every parse via [cloneDefault] so shared mutable defaults
+  /// (Maps / Lists) cannot drift across calls.
   final T defaultValue;
 
   DefaultSchema({
@@ -91,23 +90,22 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
     super.constraints,
     super.refinements,
   }) : super(
-          // Wrapper's nullability/optional/description default to the inner's
-          // — so that `Ack.string().nullable().withDefault('x').encode(null)`
-          // behaves per A7 (returns null via inner nullability, default is
-          // ignored on encode).
-          isNullable: isNullable ?? inner.isNullable,
-          isOptional: isOptional ?? inner.isOptional,
-          description: description ?? inner.description,
-        );
+         // Wrapper nullability/optional/description default to the inner's,
+         // so `nullableInner.withDefault(x).encode(null)` returns `null` via
+         // the inner's nullability — the default is never injected on encode.
+         isNullable: isNullable ?? inner.isNullable,
+         isOptional: isOptional ?? inner.isOptional,
+         description: description ?? inner.description,
+       );
 
   @override
   SchemaType get schemaType => inner.schemaType;
 
-  /// Synthesizes [defaultValue] when the parse input is `null`, then
-  /// validates it through the inner runtime path (NOT the inner boundary
-  /// path — for codecs the default is a runtime `T`, not a boundary value).
-  /// `handleParseNull` short-circuits the dispatcher, so wrapper
-  /// constraints/refinements are applied here.
+  /// Synthesizes [defaultValue] when the parse input is `null`, then validates
+  /// it through the inner runtime path — not the inner boundary path, since
+  /// the default is a runtime [T], not a boundary value. Short-circuits the
+  /// dispatcher, so wrapper-level constraints and refinements are applied
+  /// here.
   @override
   @protected
   SchemaResult<T>? handleParseNull(Object? input, SchemaContext context) {
@@ -135,10 +133,9 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
     return inner._parse(input, context);
   }
 
-  /// Runtime validation: delegate to the inner schema, then apply wrapper
-  /// constraints/refinements once. Encode-side null handling is determined
-  /// by the wrapper's `isNullable` (which by default mirrors `inner.isNullable`
-  /// — preserving A7 for `nullableInner.withDefault(x).encode(null) == null`).
+  /// Runtime validation: delegates to the inner schema, then applies wrapper
+  /// constraints and refinements once. Encode-side null handling is determined
+  /// by this wrapper's [isNullable], which by default mirrors [inner]'s.
   @override
   @protected
   SchemaResult<T> _validateRuntime(Object? value, SchemaContext context) {
@@ -153,8 +150,8 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
     return applyConstraintsAndRefinements(validated, context);
   }
 
-  /// Encode delegates to the inner schema. Defaults are never synthesized
-  /// on encode (§5.5).
+  /// Encode delegates to the inner schema. [defaultValue] is never injected
+  /// on encode.
   @override
   @protected
   SchemaResult<Object> encodeBoundary(T value, SchemaContext context) {
@@ -190,16 +187,15 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
     var base = Map<String, Object?>.of(inner.toJsonSchema());
 
     // Run the default through the inner's full encode pipeline:
-    //   1. Validate as runtime T via inner._validateRuntime — defaults that
-    //      would fail parse-time validation are NOT emitted as JSON Schema
-    //      metadata. This is stricter than Zod (which emits unconditionally).
-    //   2. Translate to boundary form via inner.encodeBoundary — handles
-    //      codec encoders (e.g. DateTime → ISO-8601 string). One-way
-    //      transforms surface SchemaEncodeError; the default is omitted.
-    //   3. Round-trip through jsonEncode/jsonDecode to ensure the value is
-    //      JSON-safe — catches runtime objects that an identity encode
-    //      (e.g. InstanceSchema<DateTime>.encodeBoundary) would otherwise
-    //      leak through.
+    //   1. Validate as runtime [T] via [AckSchema._validateRuntime] on inner.
+    //      Defaults that would fail validation are not emitted as JSON Schema
+    //      metadata.
+    //   2. Translate to boundary form via [AckSchema.encodeBoundary] so codec
+    //      encoders run (e.g. DateTime → ISO-8601). One-way transforms surface
+    //      [SchemaEncodeError]; the default is omitted in that case.
+    //   3. Round-trip through jsonEncode/jsonDecode so runtime objects an
+    //      identity encoder leaks through (e.g. an [InstanceSchema] value)
+    //      never appear as JSON Schema defaults.
     final encoded = inner.safeEncode(defaultValue);
     if (encoded.isOk) {
       final jsonSafe = _jsonSerializableOrNull(encoded.getOrNull());
@@ -232,10 +228,6 @@ final class DefaultSchema<T extends Object> extends AckSchema<T>
   }
 
   @override
-  int get hashCode => Object.hash(
-        DefaultSchema<T>,
-        baseFieldsHashCode,
-        inner,
-        defaultValue,
-      );
+  int get hashCode =>
+      Object.hash(DefaultSchema<T>, baseFieldsHashCode, inner, defaultValue);
 }

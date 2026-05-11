@@ -10,8 +10,7 @@ final class Ack {
   /// Creates a string schema.
   static StringSchema string() => const StringSchema();
 
-  /// Creates a literal string schema that only accepts the exact [value].
-  /// Similar to Zod's `z.literal("value")`.
+  /// Creates a string schema that only accepts the exact [value].
   static StringSchema literal(String value) =>
       string().withConstraint(StringLiteralConstraint(value));
 
@@ -65,26 +64,25 @@ final class Ack {
   /// a non-JSON Dart class (e.g. `DateTime`, `Uri`, `Duration`, or a user
   /// class). Standalone, it accepts any [T] on parse/encode and has no
   /// meaningful JSON Schema form.
-  static InstanceSchema<T> instance<T extends Object>() =>
-      InstanceSchema<T>();
+  static InstanceSchema<T> instance<T extends Object>() => InstanceSchema<T>();
 
   /// Creates a bidirectional codec between [input] (boundary form, type [I])
   /// and [output] (runtime form, type [O]).
   ///
   /// [decoder] (`I → O`) runs on parse; [encoder] (`O → I`) runs on encode.
-  /// Both are required: `Ack.codec` is the bidirectional construction.
-  /// For one-way conversions, use [.transform] or construct
-  /// [CodecSchema] directly with `encoder: null`.
+  /// Both are required; this factory is the bidirectional construction. For
+  /// parse-only conversion, call `schema.transform(...)` on a schema instead.
   ///
-  /// Naming follows `dart:convert`: methods are verbs (`encode`/`decode`),
-  /// the function-typed fields holding them are nouns (`encoder`/`decoder`).
+  /// Naming follows `dart:convert`: methods are verbs (`encode` / `decode`),
+  /// the function-typed fields holding them are nouns ([encoder] /
+  /// [decoder]).
   ///
   /// ```dart
   /// final intFromString = Ack.codec<String, int>(
   ///   input: Ack.string().matches(r'^-?\d+$'),
   ///   output: Ack.instance<int>(),
   ///   decoder: int.parse,
-  ///   encoder: (i) => i.toString(),
+  ///   encoder: (value) => value.toString(),
   /// );
   /// intFromString.parse('42');  // → 42
   /// intFromString.encode(42);   // → '42'
@@ -106,13 +104,13 @@ final class Ack {
   /// Creates a calendar-date codec.
   ///
   /// **Boundary form:** ISO 8601 date string `YYYY-MM-DD`.
-  /// **Runtime form:** local midnight `DateTime` (per A2 (a) decision).
+  /// **Runtime form:** local-midnight [DateTime].
   ///
-  /// On encode the value must be a **local** `DateTime` at midnight —
-  /// dates are calendar dates, not instants. A UTC `DateTime` or a value
-  /// with non-zero hour/minute/second/millisecond/microsecond is rejected
-  /// with `SchemaEncodeError`. The error message intentionally does not
-  /// suggest `.toUtc()` — for instants/timestamps use [datetime] instead.
+  /// On encode the value must be a **local** [DateTime] at midnight — dates
+  /// are calendar dates, not instants. A UTC [DateTime] or a value with any
+  /// non-zero time component is rejected with [SchemaEncodeError]. The error
+  /// does not suggest `.toUtc()`; for instants/timestamps use [datetime]
+  /// instead.
   ///
   /// You can add range constraints using `.min()` and `.max()`.
   ///
@@ -134,11 +132,12 @@ final class Ack {
   /// Creates an instant/timestamp codec.
   ///
   /// **Boundary form:** ISO 8601 datetime string with timezone.
-  /// **Runtime form:** UTC `DateTime` (per A3 (b) decision).
+  /// **Runtime form:** UTC [DateTime].
   ///
-  /// On encode the value must be UTC. Non-UTC `DateTime` is rejected;
-  /// the error message advises calling `value.toUtc()` to canonicalize.
-  /// You can add range constraints using `.min()` and `.max()`.
+  /// On encode the value must be UTC. A non-UTC [DateTime] is rejected with
+  /// [SchemaEncodeError]; the error advises calling `value.toUtc()` to
+  /// canonicalize. Range constraints can be applied with `.min()` and
+  /// `.max()`.
   ///
   /// ```dart
   /// final schema = Ack.datetime();
@@ -204,11 +203,11 @@ final class Ack {
 }
 
 // ---------------------------------------------------------------------------
-// Built-in codec encoders (M14).
+// Built-in codec encoders.
 //
-// Encoders throw ArgumentError on policy violations; CodecSchema's
-// encodeBoundary catches the throw and wraps it in
-// SchemaEncodeError.encoderThrew, preserving the "safeEncode never throws"
+// Encoders throw [ArgumentError] on policy violations.
+// [CodecSchema.encodeBoundary] catches the throw and wraps it in
+// [SchemaEncodeError.encoderThrew], preserving the "safeEncode never throws"
 // guarantee.
 // ---------------------------------------------------------------------------
 
