@@ -18,8 +18,8 @@ void main() {
       });
 
       test('accepts a legacy integer index (per A4 decision)', () {
-        // Decision A4 (codec-open-questions.md:84) keeps integer-index parsing
-        // for legacy boundary input on the parse side.
+        // Decision A4 keeps integer-index parsing for legacy boundary input
+        // on the parse side.
         final schema = Ack.enumValues(_Status.values);
         expect(schema.parse(0), equals(_Status.active));
         expect(schema.parse(2), equals(_Status.archived));
@@ -76,9 +76,7 @@ void main() {
 
     group('integration', () {
       test('ObjectSchema with EnumSchema child encodes enum to .name', () {
-        final schema = Ack.object({
-          'status': Ack.enumValues(_Status.values),
-        });
+        final schema = Ack.object({'status': Ack.enumValues(_Status.values)});
         final encoded = schema.encode({'status': _Status.archived});
         expect(encoded, equals({'status': 'archived'}));
       });

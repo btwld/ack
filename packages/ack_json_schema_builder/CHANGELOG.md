@@ -1,3 +1,9 @@
+## 1.0.0-beta.12
+
+### Changed
+
+- Updated dependency on `ack` to `^1.0.0-beta.12`.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.

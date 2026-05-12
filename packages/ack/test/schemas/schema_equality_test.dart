@@ -213,7 +213,7 @@ void main() {
 
     group('CodecSchema (from .transform)', () {
       test('same transformer are equal', () {
-        String transform(String? s) => s?.toUpperCase() ?? '';
+        String transform(String s) => s.toUpperCase();
         final a = Ack.string().transform(transform);
         final b = Ack.string().transform(transform);
         expect(a, equals(b));
@@ -223,9 +223,9 @@ void main() {
       test('different transformers are equal — closure identity ignored '
           '(M13 + DEC-A)', () {
         // After M13, `.transform(...)` returns a one-way CodecSchema.
-        // Per DEC-A (codec-open-questions.md §B3), CodecSchema equality
-        // ignores decoder/encoder closure identity — equality is structural
-        // over schemas plus the one-way / bidirectional capability.
+        // Per DEC-A, CodecSchema equality ignores decoder/encoder closure
+        // identity — equality is structural over schemas plus the one-way /
+        // bidirectional capability.
         final a = Ack.string().transform((s) => s.toUpperCase());
         final b = Ack.string().transform((s) => s.toLowerCase());
         expect(a, equals(b));

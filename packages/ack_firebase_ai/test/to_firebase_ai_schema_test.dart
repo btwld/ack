@@ -427,6 +427,20 @@ void main() {
         expect(result.format, 'date');
       });
 
+      test('non-nullable CodecSchema ignores nullable input schema', () {
+        final schema = Ack.codec<String, int>(
+          input: Ack.string().nullable(),
+          output: Ack.instance<int>(),
+          decoder: int.parse,
+          encoder: (value) => value.toString(),
+        );
+
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.string);
+        expect(result.nullable, isNull);
+      });
+
       test('multiple overrides work together via copyWith', () {
         // Create a date schema with description and nullable
         final transformed = Ack.date().copyWith(
@@ -455,19 +469,16 @@ void main() {
         expect(result.description, 'Event timestamp');
       });
 
-      test(
-        'description override on CodecSchema wins over base schema',
-        () {
-          // Test that the codec wrapper's description takes precedence
-          final withDescription = Ack.date().copyWith(
-            description: 'Overridden description',
-          );
+      test('description override on CodecSchema wins over base schema', () {
+        // Test that the codec wrapper's description takes precedence
+        final withDescription = Ack.date().copyWith(
+          description: 'Overridden description',
+        );
 
-          final result = withDescription.toFirebaseAiSchema();
+        final result = withDescription.toFirebaseAiSchema();
 
-          expect(result.description, 'Overridden description');
-        },
-      );
+        expect(result.description, 'Overridden description');
+      });
     });
 
     group('CodecSchema support', () {
@@ -967,6 +978,17 @@ void main() {
         expect(result.type, firebase_ai.SchemaType.integer);
         expect(result.minimum, 0);
         expect(result.maximum, 100);
+      });
+
+      test('handles CodecSchema duration min/max constraints', () {
+        final schema = Ack.duration()
+            .min(const Duration(seconds: 1))
+            .max(const Duration(seconds: 10));
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.integer);
+        expect(result.minimum, 1000);
+        expect(result.maximum, 10000);
       });
 
       test('handles double min/max constraints', () {

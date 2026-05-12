@@ -390,14 +390,14 @@ Transform validated data:
 
 ```dart
 // Transform to uppercase
-final upperSchema = Ack.string().transform((s) => s?.toUpperCase() ?? '');
+final upperSchema = Ack.string().transform((s) => s.toUpperCase());
 
 // Add computed fields
 final userWithAgeSchema = Ack.object({
   'name': Ack.string(),
   'birthYear': Ack.integer(),
 }).transform((data) {
-  final birthYear = data!['birthYear'] as int;
+  final birthYear = data['birthYear'] as int;
   final age = DateTime.now().year - birthYear;
   return {...data, 'age': age};
 });
@@ -405,7 +405,7 @@ final userWithAgeSchema = Ack.object({
 // Type transformation
 final dateSchema = Ack.string()
   .matches(r'\d{4}-\d{2}-\d{2}')
-  .transform<DateTime>((s) => DateTime.parse(s!));
+  .transform<DateTime>(DateTime.parse);
 ```
 
 ## Validation Result

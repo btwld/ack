@@ -260,29 +260,52 @@ void main() {
         expect(outerAnyOf.last.value['type'], 'null');
       });
 
-      test(
-        'CodecSchema overrides are applied (description + nullable)',
-        () {
-          final schema = Ack.date().copyWith(
-            description: 'Birth date',
-            isNullable: true,
-          );
+      test('CodecSchema overrides are applied (description + nullable)', () {
+        final schema = Ack.date().copyWith(
+          description: 'Birth date',
+          isNullable: true,
+        );
 
-          final result = schema.toJsonSchemaBuilder();
-          final anyOf = (result.value['anyOf'] as List)
-              .map(_schemaFrom)
-              .toList(growable: false);
+        final result = schema.toJsonSchemaBuilder();
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
 
-          // First branch should carry description override and date format
-          final dateBranch = anyOf.first;
-          expect(dateBranch.value['description'], 'Birth date');
-          expect(dateBranch.value['format'], 'date');
+        // First branch should carry description override and date format
+        final dateBranch = anyOf.first;
+        expect(dateBranch.value['description'], 'Birth date');
+        expect(dateBranch.value['format'], 'date');
 
-          // Second branch represents nullability
-          final nullBranch = anyOf.last;
-          expect(nullBranch.value['type'], 'null');
-        },
-      );
+        // Second branch represents nullability
+        final nullBranch = anyOf.last;
+        expect(nullBranch.value['type'], 'null');
+      });
+
+      test('non-nullable CodecSchema ignores nullable input schema', () {
+        final schema = Ack.codec<String, int>(
+          input: Ack.string().nullable(),
+          output: Ack.instance<int>(),
+          decoder: int.parse,
+          encoder: (value) => value.toString(),
+        );
+
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'string');
+        expect(result.value.containsKey('anyOf'), isFalse);
+      });
+
+      test('CodecSchema preserves duration bounds', () {
+        final schema = Ack.duration()
+            .min(const Duration(seconds: 1))
+            .max(const Duration(seconds: 10));
+
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'integer');
+        expect(result.value['minimum'], 1000);
+        expect(result.value['maximum'], 10000);
+      });
     });
 
     group('oneOf composition', () {

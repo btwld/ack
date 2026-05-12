@@ -75,8 +75,8 @@
 
 ### Decisions resolved
 
-The full decision list is in `docs/plans/codec-open-questions.md`
-(every entry now has a recorded `Decision:` line). Highlights:
+The decision summary is captured here so release notes remain self-contained.
+Highlights:
 
 - A1: `Ack.double()` strict parse + encode. (Generalized to all
   primitives via C3.)

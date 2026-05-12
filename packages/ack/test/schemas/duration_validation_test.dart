@@ -204,6 +204,16 @@ void main() {
 
         expect(jsonSchema['maximum'], 2000);
       });
+
+      test('emits range bounds with milliseconds values', () {
+        final schema = Ack.duration()
+            .min(const Duration(seconds: 1))
+            .max(const Duration(seconds: 10));
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema['minimum'], 1000);
+        expect(jsonSchema['maximum'], 10000);
+      });
     });
 
     group('Real-world use cases', () {

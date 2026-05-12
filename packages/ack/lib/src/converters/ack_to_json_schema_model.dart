@@ -31,11 +31,14 @@ JsonSchema _convert(AckSchema schema) {
 
   if (schema is CodecSchema) {
     // A [CodecSchema]'s boundary form lives on [CodecSchema.inputSchema], so
-    // the canonical JSON Schema is built from there.
+    // the canonical JSON Schema is built from there. Codec-level metadata and
+    // constraints come from this wrapper's raw JSON Schema.
     final base = _convert(schema.inputSchema);
-    return base.copyWith(
-      description: schema.description ?? base.description,
-      nullable: nullableFlag || base.nullable == true,
+    return _overlayMetadata(
+      base,
+      effective,
+      description: schema.description ?? effective.description,
+      nullable: nullableFlag,
     );
   }
 
@@ -277,7 +280,48 @@ JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
       description: base.description ?? jsonSchema.description,
       title: base.title ?? jsonSchema.title,
       format: base.format ?? jsonSchema.format,
+      minItems: base.minItems ?? jsonSchema.minItems,
+      maxItems: base.maxItems ?? jsonSchema.maxItems,
+      minProperties: base.minProperties ?? jsonSchema.minProperties,
+      maxProperties: base.maxProperties ?? jsonSchema.maxProperties,
+      minLength: base.minLength ?? jsonSchema.minLength,
+      maxLength: base.maxLength ?? jsonSchema.maxLength,
+      pattern: base.pattern ?? jsonSchema.pattern,
+      minimum: base.minimum ?? jsonSchema.minimum,
+      maximum: base.maximum ?? jsonSchema.maximum,
+      exclusiveMinimum: base.exclusiveMinimum ?? jsonSchema.exclusiveMinimum,
+      exclusiveMaximum: base.exclusiveMaximum ?? jsonSchema.exclusiveMaximum,
+      multipleOf: base.multipleOf ?? jsonSchema.multipleOf,
+      uniqueItems: base.uniqueItems ?? jsonSchema.uniqueItems,
     );
   }
   return jsonSchema;
+}
+
+JsonSchema _overlayMetadata(
+  JsonSchema base,
+  JsonSchema metadata, {
+  String? description,
+  bool? nullable,
+}) {
+  return base.copyWith(
+    format: metadata.format ?? base.format,
+    title: metadata.title ?? base.title,
+    description: description ?? base.description,
+    enumValues: metadata.enumValues ?? base.enumValues,
+    minItems: metadata.minItems ?? base.minItems,
+    maxItems: metadata.maxItems ?? base.maxItems,
+    minProperties: metadata.minProperties ?? base.minProperties,
+    maxProperties: metadata.maxProperties ?? base.maxProperties,
+    minLength: metadata.minLength ?? base.minLength,
+    maxLength: metadata.maxLength ?? base.maxLength,
+    pattern: metadata.pattern ?? base.pattern,
+    minimum: metadata.minimum ?? base.minimum,
+    maximum: metadata.maximum ?? base.maximum,
+    exclusiveMinimum: metadata.exclusiveMinimum ?? base.exclusiveMinimum,
+    exclusiveMaximum: metadata.exclusiveMaximum ?? base.exclusiveMaximum,
+    multipleOf: metadata.multipleOf ?? base.multipleOf,
+    uniqueItems: metadata.uniqueItems ?? base.uniqueItems,
+    nullable: nullable ?? base.nullable,
+  );
 }

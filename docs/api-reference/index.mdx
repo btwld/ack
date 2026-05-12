@@ -18,7 +18,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any value.
-- `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`: Creates a discriminated union schema. Branches may be plain `ObjectSchema` or transformed schemas whose base is an `ObjectSchema`.
+- `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`: Creates a discriminated union schema. Branches may be direct `ObjectSchema` instances or object-backed `CodecSchema` / `DefaultSchema` wrappers.
 
 ## `AckSchema<T>` (Base Class)
 
@@ -118,7 +118,7 @@ Schemas for validating numbers. See [Number Validation](../core-concepts/validat
 
 ## `BooleanSchema`
 
-Schema for validating booleans. Validates `true` and `false` values, with optional type coercion from strings and numbers.
+Schema for validating booleans. Validates only `true` and `false` boolean values.
 
 ## `ListSchema<T>`
 

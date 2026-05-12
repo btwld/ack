@@ -167,13 +167,17 @@ void main() {
     });
 
     group('Codec marker emission', () {
-      Map<String, Object?> intCodecJson({AckSchema<String>? input}) {
+      CodecSchema<String, int> intCodec({AckSchema<String>? input}) {
         return Ack.codec<String, int>(
           input: input ?? Ack.string(),
           output: Ack.instance<int>(),
           decoder: int.parse,
           encoder: (value) => value.toString(),
-        ).nullable().toJsonSchema();
+        );
+      }
+
+      Map<String, Object?> intCodecJson({AckSchema<String>? input}) {
+        return intCodec(input: input).nullable().toJsonSchema();
       }
 
       bool hasNullBranch(Map<String, Object?> json) {
@@ -215,6 +219,35 @@ void main() {
 
         expect(json['x-ack-codec'], isTrue);
         expect(nullBranchCount(json), equals(1));
+      });
+
+      test('non-nullable CodecSchema strips nullable input null branch', () {
+        final schema = intCodec(input: Ack.string().nullable());
+        final json = schema.toJsonSchema();
+
+        expect(schema.safeParse(null).isFail, isTrue);
+        expect(hasNullBranch(json), isFalse);
+        expect(json['x-ack-codec'], isTrue);
+      });
+
+      test('non-nullable CodecSchema model ignores input nullability', () {
+        final model = intCodec(
+          input: Ack.string().nullable(),
+        ).toJsonSchemaModel();
+
+        expect(model.type, equals(JsonSchemaType.string));
+        expect(model.nullable, isFalse);
+      });
+
+      test('CodecSchema model preserves codec-level duration bounds', () {
+        final model = Ack.duration()
+            .min(const Duration(seconds: 1))
+            .max(const Duration(seconds: 10))
+            .toJsonSchemaModel();
+
+        expect(model.type, equals(JsonSchemaType.integer));
+        expect(model.minimum, equals(1000));
+        expect(model.maximum, equals(10000));
       });
     });
   });

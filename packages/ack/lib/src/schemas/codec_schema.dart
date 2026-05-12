@@ -1,5 +1,66 @@
 part of 'schema.dart';
 
+bool _isNullJsonSchemaBranch(Object? value) {
+  return value is Map && value['type'] == 'null';
+}
+
+Map<String, Object?> _stripNullableJsonSchema(Map<String, Object?> schema) {
+  final anyOf = schema['anyOf'];
+  if (anyOf is List && anyOf.any(_isNullJsonSchemaBranch)) {
+    final nonNullBranches = [
+      for (final branch in anyOf)
+        if (!_isNullJsonSchemaBranch(branch)) branch,
+    ];
+
+    if (nonNullBranches.length == 1 && nonNullBranches.single is Map) {
+      final branch = Map<String, Object?>.from(nonNullBranches.single as Map);
+      for (final entry in schema.entries) {
+        if (entry.key == 'anyOf' || entry.key == 'nullable') continue;
+        branch.putIfAbsent(entry.key, () => entry.value);
+      }
+      return branch;
+    }
+
+    return {
+      for (final entry in schema.entries)
+        if (entry.key != 'nullable')
+          entry.key: entry.key == 'anyOf' ? nonNullBranches : entry.value,
+    };
+  }
+
+  final type = schema['type'];
+  if (type is List && type.contains('null')) {
+    final nonNullTypes = [
+      for (final entry in type)
+        if (entry != 'null') entry,
+    ];
+    return {
+      for (final entry in schema.entries)
+        if (entry.key != 'nullable' && entry.key != 'type')
+          entry.key: entry.value,
+      if (nonNullTypes.length == 1) 'type': nonNullTypes.single,
+      if (nonNullTypes.length > 1) 'type': nonNullTypes,
+    };
+  }
+
+  if (schema['nullable'] == true) {
+    return {
+      for (final entry in schema.entries)
+        if (entry.key != 'nullable') entry.key: entry.value,
+    };
+  }
+
+  return schema;
+}
+
+Map<String, Object?> _applyCodecNullability(
+  Map<String, Object?> schema,
+  bool isNullable,
+) {
+  if (isNullable) return _applyNullableWrapper(schema, true);
+  return _stripNullableJsonSchema(schema);
+}
+
 /// A schema that converts between boundary values of type [I] and runtime
 /// values of type [O].
 ///
@@ -198,7 +259,7 @@ class CodecSchema<I extends Object, O extends Object> extends AckSchema<O>
   @override
   Map<String, Object?> toJsonSchema() {
     final base = Map<String, Object?>.of(inputSchema.toJsonSchema());
-    final body = _applyNullableWrapper(base, isNullable);
+    final body = _applyCodecNullability(base, isNullable);
     body['x-ack-codec'] = true;
     final codecDescription = description;
     if (codecDescription != null) {

@@ -1,6 +1,6 @@
 /// Migration recipes for explicit primitive coercion (M14a).
 ///
-/// Per the M14a B4 decision (codec-open-questions.md), `Ack` does NOT
+/// Per the M14a B4 decision, `Ack` does NOT
 /// expose `Ack.intFromString()`, `Ack.doubleFromString()`, or
 /// `Ack.boolFromString()`. The reference design's primitive for explicit
 /// conversion is [Ack.codec], and these recipes are runnable
@@ -73,33 +73,35 @@ void main() {
   });
 
   group('Migration recipe — string ↔ bool', () {
-    test('strict "true" / "false" parsing, case- and whitespace-insensitive',
-        () {
-      bool? parseBool(String value) {
-        return switch (value.trim().toLowerCase()) {
-          'true' => true,
-          'false' => false,
-          _ => null,
-        };
-      }
+    test(
+      'strict "true" / "false" parsing, case- and whitespace-insensitive',
+      () {
+        bool? parseBool(String value) {
+          return switch (value.trim().toLowerCase()) {
+            'true' => true,
+            'false' => false,
+            _ => null,
+          };
+        }
 
-      final boolFromString = Ack.codec<String, bool>(
-        input: Ack.string().refine(
-          (value) => parseBool(value) != null,
-          message: 'Expected "true" or "false".',
-        ),
-        output: Ack.boolean(),
-        decoder: (value) => parseBool(value)!,
-        encoder: (value) => value.toString(),
-      );
+        final boolFromString = Ack.codec<String, bool>(
+          input: Ack.string().refine(
+            (value) => parseBool(value) != null,
+            message: 'Expected "true" or "false".',
+          ),
+          output: Ack.boolean(),
+          decoder: (value) => parseBool(value)!,
+          encoder: (value) => value.toString(),
+        );
 
-      expect(boolFromString.parse('true'), isTrue);
-      expect(boolFromString.parse('FALSE'), isFalse);
-      expect(boolFromString.parse(' true '), isTrue);
-      expect(boolFromString.encode(true), equals('true'));
-      expect(boolFromString.encode(false), equals('false'));
-      expect(boolFromString.safeParse('yes').isFail, isTrue);
-    });
+        expect(boolFromString.parse('true'), isTrue);
+        expect(boolFromString.parse('FALSE'), isFalse);
+        expect(boolFromString.parse(' true '), isTrue);
+        expect(boolFromString.encode(true), equals('true'));
+        expect(boolFromString.encode(false), equals('false'));
+        expect(boolFromString.safeParse('yes').isFail, isTrue);
+      },
+    );
   });
 
   group('Composability', () {
