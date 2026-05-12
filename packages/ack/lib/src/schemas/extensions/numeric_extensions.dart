@@ -89,3 +89,46 @@ extension DoubleSchemaExtensions on DoubleSchema {
     return withConstraint(NumberFiniteConstraint());
   }
 }
+
+/// Adds fluent validation methods to [NumberSchema].
+///
+/// `NumberSchema` accepts both `int` and `double`, so its constraints are
+/// parameterized on `num`. `.finite()` and `.safe()` are intentionally
+/// omitted — they belong to the IEEE-float and JS-safe-int domains
+/// respectively, and live on [DoubleSchemaExtensions] / [IntegerSchemaExtensions].
+extension NumberSchemaExtensions on NumberSchema {
+  /// Adds a constraint that the value must be greater than [n].
+  NumberSchema greaterThan(num n) {
+    return withConstraint(ComparisonConstraint.numberExclusiveMin<num>(n));
+  }
+
+  /// Adds a constraint that the value must be greater than or equal to [n].
+  NumberSchema min(num n) {
+    return withConstraint(ComparisonConstraint.numberMin<num>(n));
+  }
+
+  /// Adds a constraint that the value must be less than [n].
+  NumberSchema lessThan(num n) {
+    return withConstraint(ComparisonConstraint.numberExclusiveMax<num>(n));
+  }
+
+  /// Adds a constraint that the value must be less than or equal to [n].
+  NumberSchema max(num n) {
+    return withConstraint(ComparisonConstraint.numberMax<num>(n));
+  }
+
+  /// Adds a constraint that the value must be positive (> 0).
+  NumberSchema positive() {
+    return withConstraint(ComparisonConstraint.numberPositive<num>());
+  }
+
+  /// Adds a constraint that the value must be negative (< 0).
+  NumberSchema negative() {
+    return withConstraint(ComparisonConstraint.numberNegative<num>());
+  }
+
+  /// Adds a constraint that the value must be a multiple of [n].
+  NumberSchema multipleOf(num n) {
+    return withConstraint(ComparisonConstraint.numberMultipleOf<num>(n));
+  }
+}

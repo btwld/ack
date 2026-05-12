@@ -153,6 +153,37 @@ ObjectSchema get userSchema => Ack.object({
       );
     });
 
+    test('maps Ack.number() to a num getter', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+ObjectSchema get readingSchema => Ack.object({
+  'value': Ack.number(),
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains(
+                'extension type ReadingType(Map<String, Object?> _data)',
+              ),
+              contains('num get value'),
+              contains("_data['value'] as num"),
+            ]),
+          ),
+        },
+      );
+    });
+
     test('documents nullable list element type inference loss', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

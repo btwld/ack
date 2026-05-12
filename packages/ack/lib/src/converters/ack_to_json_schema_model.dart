@@ -45,7 +45,7 @@ JsonSchema _convert(AckSchema schema) {
   return switch (schema) {
     StringSchema() => _string(effective, nullableFlag),
     IntegerSchema() => _integer(effective, nullableFlag),
-    DoubleSchema() => _number(effective, nullableFlag),
+    DoubleSchema() || NumberSchema() => _number(effective, nullableFlag),
     BooleanSchema() => _boolean(effective, nullableFlag),
     EnumSchema() => _enum(schema, effective, nullableFlag),
     ListSchema() => _array(schema, effective, nullableFlag),

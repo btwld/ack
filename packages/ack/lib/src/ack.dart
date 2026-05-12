@@ -20,6 +20,14 @@ final class Ack {
   /// Creates a double schema.
   static DoubleSchema double() => const DoubleSchema();
 
+  /// Creates a non-strict numeric schema accepting any `num` value
+  /// (both `int` and `double`).
+  ///
+  /// Mirrors JSON Schema's `"type": "number"` semantics. Use [Ack.integer]
+  /// or [Ack.double] for strict per-type validation; use [Ack.codec] when
+  /// you need cross-type conversion (e.g. `String → num`).
+  static NumberSchema number() => const NumberSchema();
+
   /// Creates a boolean schema.
   static BooleanSchema boolean() => const BooleanSchema();
 

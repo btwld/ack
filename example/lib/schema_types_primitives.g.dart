@@ -55,6 +55,23 @@ extension type PriceType(double _value) implements double {
   }
 }
 
+/// Extension type for Quantity
+extension type QuantityType(num _value) implements num {
+  static QuantityType parse(Object? data) {
+    return quantitySchema.parseAs(
+      data,
+      (validated) => QuantityType(validated as num),
+    );
+  }
+
+  static SchemaResult<QuantityType> safeParse(Object? data) {
+    return quantitySchema.safeParseAs(
+      data,
+      (validated) => QuantityType(validated as num),
+    );
+  }
+}
+
 /// Extension type for Active
 extension type ActiveType(bool _value) implements bool {
   static ActiveType parse(Object? data) {

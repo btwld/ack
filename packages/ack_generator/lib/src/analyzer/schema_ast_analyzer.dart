@@ -410,6 +410,15 @@ class SchemaAstAnalyzer {
           customTypeName: customTypeName,
         );
         break;
+      case 'number':
+        model = _parseNumberSchema(
+          variableName,
+          baseInvocation,
+          element,
+          isNullable: isNullable,
+          customTypeName: customTypeName,
+        );
+        break;
       case 'boolean':
         model = _parseBooleanSchema(
           variableName,
@@ -510,7 +519,7 @@ class SchemaAstAnalyzer {
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema type for @AckType: Ack.$methodName(). '
-          'Supported types: object, string, integer, double, boolean, list, literal, enumString, enumValues, uri, date, datetime, duration, discriminated',
+          'Supported types: object, string, integer, double, number, boolean, list, literal, enumString, enumValues, uri, date, datetime, duration, discriminated',
           element: element,
         );
     }
@@ -1508,6 +1517,16 @@ class SchemaAstAnalyzer {
       case 'double':
         return (
           dartType: typeProvider.doubleType,
+          listElementSchemaRef: null,
+          listElementDisplayTypeOverride: null,
+          listElementCastTypeOverride: null,
+          listElementIsCustomType: false,
+        );
+      case 'number':
+        // Ack.number() is the non-strict numeric primitive accepting any
+        // `num` (int or double). Fields declared `num` route here.
+        return (
+          dartType: typeProvider.numType,
           listElementSchemaRef: null,
           listElementDisplayTypeOverride: null,
           listElementCastTypeOverride: null,
@@ -3194,6 +3213,30 @@ class SchemaAstAnalyzer {
       schemaClassName: variableName,
       fields: [],
       representationType: 'double',
+      isNullableSchema: isNullable,
+    );
+  }
+
+  /// Parses Ack.number() schema — non-strict numeric primitive that accepts
+  /// any `num` (both `int` and `double`).
+  ModelInfo _parseNumberSchema(
+    String variableName,
+    MethodInvocation invocation,
+    Element2 element, {
+    required bool isNullable,
+    String? customTypeName,
+  }) {
+    final typeName = _resolveModelClassName(
+      variableName,
+      element,
+      customTypeName: customTypeName,
+    );
+
+    return ModelInfo(
+      className: typeName,
+      schemaClassName: variableName,
+      fields: [],
+      representationType: 'num',
       isNullableSchema: isNullable,
     );
   }

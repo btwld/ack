@@ -2,6 +2,11 @@
 
 ### Features
 
+- **`Ack.number()`** — non-strict numeric primitive that accepts any
+  `num` value (both `int` and `double`), mirroring JSON Schema's
+  `"type": "number"` union. `Ack.integer()` and `Ack.double()` remain
+  strict; reach for `Ack.number()` when a field is allowed to be either
+  subtype without a codec.
 - **Bidirectional codecs.** New `CodecSchema<I, O>` is the core
   abstraction for explicit boundary↔runtime conversion. Use
   `Ack.codec(input:, output:, decoder:, encoder:)` for bidirectional

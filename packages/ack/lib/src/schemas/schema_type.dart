@@ -28,6 +28,11 @@ part of 'schema.dart';
 /// Ack.string().parse('hi');   // ok
 /// Ack.string().parse(42);     // fail
 /// ```
+///
+/// `Ack.number()` is the one deliberate exception: it mirrors JSON Schema's
+/// `"type": "number"` union and accepts both `int` and `double` runtime
+/// values. This is not a strictness relaxation of [Ack.integer] or
+/// [Ack.double] — it is a separate, explicitly non-strict factory.
 enum SchemaType {
   string('string'),
   integer('integer'),

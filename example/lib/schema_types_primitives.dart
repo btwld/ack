@@ -25,6 +25,10 @@ final ageSchema = Ack.integer().min(0).max(150);
 @AckType()
 final priceSchema = Ack.double().min(0);
 
+// Number schema (non-strict; accepts both int and double)
+@AckType()
+final quantitySchema = Ack.number().min(0);
+
 // Boolean schema
 @AckType()
 final activeSchema = Ack.boolean();

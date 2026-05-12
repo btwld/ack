@@ -50,6 +50,18 @@ void main() {
       expect(priceSchema.safeParse(-1.0).isFail, true);
     });
 
+    test('quantitySchema accepts both int and double', () {
+      expect(quantitySchema.safeParse(10).isOk, true);
+      expect(quantitySchema.safeParse(10.5).isOk, true);
+      final result = quantitySchema.safeParse(10);
+      expect(result.getOrNull(), isA<num>());
+    });
+
+    test('quantitySchema validates min value', () {
+      expect(quantitySchema.safeParse(-1).isFail, true);
+      expect(quantitySchema.safeParse(-0.5).isFail, true);
+    });
+
     test('activeSchema validates and returns bool', () {
       final result = activeSchema.safeParse(true);
 

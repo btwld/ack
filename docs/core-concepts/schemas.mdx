@@ -64,19 +64,32 @@ final roleSchema = Ack.enumValues(Role.values);
 
 ### Number
 
+Ack ships three numeric factories. `Ack.integer()` and `Ack.double()`
+are strict per Dart subtype — `Ack.integer().parse(1.0)` fails, and
+`Ack.double().parse(1)` fails. `Ack.number()` mirrors JSON Schema's
+`"type": "number"` union and accepts any `num` (both `int` and
+`double`). Reach for `Ack.number()` when a field is allowed to be
+either subtype; use the strict variants when only one is valid; use
+`Ack.codec(...)` when you need to convert across types (e.g. `String`
+→ `int`).
+
 ```dart
-// Integer validation
+// Integer validation — strict, rejects 1.0
 final ageSchema = Ack.integer()
   .min(0)
   .max(120);
 
-// Double validation
+// Double validation — strict, rejects 1
 final priceSchema = Ack.double()
   .positive()
   .multipleOf(0.5); // Use factors that avoid floating point rounding issues
 
+// Number validation — accepts both int and double
+final temperatureSchema = Ack.number().min(-273.15);
+temperatureSchema.parse(20);    // ok — int
+temperatureSchema.parse(20.5);  // ok — double
+
 // Negative/positive
-final temperatureSchema = Ack.integer(); // Any integer
 final scoreSchema = Ack.double().positive(); // > 0
 final debtSchema = Ack.double().negative(); // < 0
 ```

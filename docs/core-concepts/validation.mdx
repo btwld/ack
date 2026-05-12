@@ -190,9 +190,13 @@ Ack.string().toUpperCase()
 // "hello" → "HELLO"
 ```
 
-## Number Constraints (Int and Double)
+## Number Constraints (Int, Double, and Number)
 
-Apply these to [`Ack.integer()`](./schemas.mdx#number) and [`Ack.double()`](./schemas.mdx#number) schemas.
+Apply these to [`Ack.integer()`](./schemas.mdx#number), [`Ack.double()`](./schemas.mdx#number),
+and [`Ack.number()`](./schemas.mdx#number) schemas. The constraints below are
+shared across all three; `safe()` is `Ack.integer()`-only and `finite()` is
+`Ack.double()`-only. `Ack.number()` accepts both `int` and `double` runtime
+values, so the same constraint applies to either subtype without conversion.
 
 ### `min(num limit)`
 Requires a value `>= limit` (inclusive).
