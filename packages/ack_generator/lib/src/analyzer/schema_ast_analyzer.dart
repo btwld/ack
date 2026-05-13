@@ -3444,6 +3444,7 @@ class SchemaAstAnalyzer {
       'string' || 'enumString' || 'literal' => 'String',
       'integer' => 'int',
       'double' => 'double',
+      'number' => 'num',
       'boolean' => 'bool',
       'uri' => 'Uri',
       'date' || 'datetime' => 'DateTime',

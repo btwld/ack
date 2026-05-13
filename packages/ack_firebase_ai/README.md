@@ -179,6 +179,7 @@ if (result.isOk) {
 | `Ack.string()` | `string` | Full support |
 | `Ack.integer()` | `integer` | Full support |
 | `Ack.double()` | `number` | Full support |
+| `Ack.number()` | `number` | Full support for `num` (`int` or `double`) |
 | `Ack.boolean()` | `boolean` | Full support |
 | `Ack.object({...})` | `object` | Full support |
 | `Ack.list(...)` | `array` | Full support |

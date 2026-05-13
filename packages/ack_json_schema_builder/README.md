@@ -92,6 +92,7 @@ if (errors.isEmpty) {
 | `Ack.string()` | `Schema.string()` | Full support with minLength/maxLength |
 | `Ack.integer()` | `Schema.integer()` | Full support |
 | `Ack.double()` | `Schema.number()` | Full support |
+| `Ack.number()` | `Schema.number()` | Full support for `num` (`int` or `double`) |
 | `Ack.boolean()` | `Schema.boolean()` | Full support |
 | `Ack.object({...})` | `Schema.object()` | Full support |
 | `Ack.list(...)` | `Schema.list()` | Full support |

@@ -184,6 +184,33 @@ ObjectSchema get readingSchema => Ack.object({
       );
     });
 
+    test('maps top-level Ack.list(Ack.number()) to List<num>', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+ListSchema<num> get readingsSchema => Ack.list(Ack.number());
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('extension type ReadingsType(List<num> _value)'),
+              contains('(validated) => ReadingsType(validated as List<num>)'),
+              isNot(contains('ReadingsType(List<dynamic> _value)')),
+            ]),
+          ),
+        },
+      );
+    });
+
     test('documents nullable list element type inference loss', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

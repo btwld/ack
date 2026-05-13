@@ -56,6 +56,9 @@ final result = userSchema.safeParse({
   String, `Ack.integer()` only int, `Ack.double()` only double,
   `Ack.boolean()` only bool. Implicit conversions are not part of the
   public surface.
+- `Ack.number()` is the deliberate numeric exception: it accepts any
+  Dart `num` (`int` or `double`) while still rejecting strings and
+  other non-numeric input.
 - For explicit string↔int / double / bool conversion, build a codec
   with `Ack.codec(...)`; there are no `Ack.*FromString` APIs. Tested
   recipes live in `packages/ack/test/migration_recipes_test.dart`.
@@ -105,6 +108,7 @@ Generated capabilities:
 - `Ack.string()`
 - `Ack.integer()`
 - `Ack.double()`
+- `Ack.number()`
 - `Ack.boolean()`
 - `Ack.list(...)`
 - `Ack.literal(...)`

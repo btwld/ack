@@ -297,7 +297,9 @@ Ack.list(Ack.string()).unique()
 
 All primitive schemas are strict by definition. There is no implicit
 type coercion and no `.strictParsing()` toggle — primitives accept
-exactly one runtime type:
+their exact runtime type. `Ack.number()` is the deliberate exception:
+it accepts either `int` or `double` because both are Dart `num` values,
+but it still rejects strings and other non-numeric input:
 
 ```dart
 Ack.string().safeParse('hello'); // ✅ OK
@@ -309,6 +311,10 @@ Ack.integer().safeParse(42.0);   // ❌ FAIL: TypeMismatchError
 
 Ack.double().safeParse(3.14);    // ✅ OK
 Ack.double().safeParse(42);      // ❌ FAIL: TypeMismatchError
+
+Ack.number().safeParse(42);      // ✅ OK
+Ack.number().safeParse(3.14);    // ✅ OK
+Ack.number().safeParse('42');    // ❌ FAIL: TypeMismatchError
 
 Ack.boolean().safeParse(true);   // ✅ OK
 Ack.boolean().safeParse('true'); // ❌ FAIL: TypeMismatchError

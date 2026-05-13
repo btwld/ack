@@ -56,7 +56,7 @@ dev_dependencies:
 ## Supported schema shapes
 
 - `Ack.object(...)`
-- Primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
+- Primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`
 - `Ack.list(...)` and `Set`-like list wrappers
 - `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
 - Non-object transforms with explicit output types
