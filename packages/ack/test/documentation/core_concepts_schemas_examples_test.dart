@@ -40,16 +40,41 @@ void main() {
         final websiteSchema = Ack.string().url();
         expect(websiteSchema.safeParse('https://example.com').isOk, isTrue);
 
-        final dateSchema = Ack.string().date();
-        expect(dateSchema.safeParse('2024-01-01').isOk, isTrue);
-        expect(dateSchema.safeParse('01-01-2024').isFail, isTrue);
+        final dateStringSchema = Ack.string().date();
+        final parsedDateString = dateStringSchema
+            .safeParse('2024-01-01')
+            .getOrThrow();
+        expect(parsedDateString, equals('2024-01-01'));
+        expect(parsedDateString, isA<String>());
+        expect(dateStringSchema.safeParse('01-01-2024').isFail, isTrue);
 
-        final datetimeSchema = Ack.string().datetime();
-        expect(datetimeSchema.safeParse('2024-01-01T12:00:00Z').isOk, isTrue);
+        final datetimeStringSchema = Ack.string().datetime();
+        final parsedDatetimeString = datetimeStringSchema
+            .safeParse('2024-01-01T12:00:00Z')
+            .getOrThrow();
+        expect(parsedDatetimeString, equals('2024-01-01T12:00:00Z'));
+        expect(parsedDatetimeString, isA<String>());
 
         final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
         expect(roleSchema.safeParse('user').isOk, isTrue);
         expect(roleSchema.safeParse('unknown').isFail, isTrue);
+      });
+    });
+
+    group('Built-in codec examples', () {
+      test('decode boundary values to runtime objects and encode back', () {
+        final rawDateString = Ack.string().date();
+        expect(rawDateString.parse('2026-05-10'), equals('2026-05-10'));
+
+        final dateObject = Ack.date();
+        expect(dateObject.parse('2026-05-10'), equals(DateTime(2026, 5, 10)));
+        expect(dateObject.encode(DateTime(2026, 5, 10)), equals('2026-05-10'));
+
+        final homepage = Ack.uri();
+        expect(
+          homepage.parse('https://example.com'),
+          equals(Uri.parse('https://example.com')),
+        );
       });
     });
 
@@ -426,6 +451,26 @@ void main() {
         final parsedDate =
             dateSchema.safeParse('2024-01-01').getOrThrow() as DateTime;
         expect(parsedDate.year, equals(2024));
+
+        final encodeResult = dateSchema.safeEncode(DateTime(2024, 1, 1));
+        expect(encodeResult.isFail, isTrue);
+        expect(
+          encodeResult.getError(),
+          isA<SchemaEncodeError>().having(
+            (error) => error.message,
+            'message',
+            contains('one-way'),
+          ),
+        );
+
+        final intFromString = Ack.codec<String, int>(
+          input: Ack.string().matches(r'^-?\d+$'),
+          output: Ack.integer(),
+          decoder: int.parse,
+          encoder: (value) => value.toString(),
+        );
+        expect(intFromString.parse('42'), equals(42));
+        expect(intFromString.encode(42), equals('42'));
       });
     });
   });

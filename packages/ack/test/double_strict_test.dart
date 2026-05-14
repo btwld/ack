@@ -12,16 +12,21 @@ void main() {
       test('rejects int — no implicit int → double coercion', () {
         final schema = Ack.double();
         final result = schema.safeParse(42);
-        expect(result.isFail, isTrue,
-            reason: 'A1: int → double conversion must be explicit (codec)');
+        expect(
+          result.isFail,
+          isTrue,
+          reason: 'A1: int → double conversion must be explicit (codec)',
+        );
       });
 
-      test('rejects numeric string — no implicit string → double coercion',
-          () {
+      test('rejects numeric string — no implicit string → double coercion', () {
         final schema = Ack.double();
         final result = schema.safeParse('42.0');
-        expect(result.isFail, isTrue,
-            reason: 'A1: string → double conversion must be explicit (codec)');
+        expect(
+          result.isFail,
+          isTrue,
+          reason: 'A1: string → double conversion must be explicit (codec)',
+        );
       });
 
       test('rejects non-numeric string', () {
@@ -60,16 +65,18 @@ void main() {
     });
 
     group('all primitives are strict (C3)', () {
-      test('Ack.integer() is now strict — no coercion from string or double',
-          () {
-        // C3 completed the primitive strictness sweep. `Ack.integer()` no
-        // longer accepts boundary strings or doubles; build a codec with
-        // `Ack.codec(...)` for explicit conversion (see
-        // test/migration_recipes_test.dart).
-        expect(Ack.integer().safeParse('42').isFail, isTrue);
-        expect(Ack.integer().safeParse(42.0).isFail, isTrue);
-        expect(Ack.integer().safeParse(42).isOk, isTrue);
-      });
+      test(
+        'Ack.integer() is now strict — no coercion from string or double',
+        () {
+          // C3 completed the primitive strictness sweep. `Ack.integer()` no
+          // longer accepts boundary strings or doubles; build a codec with
+          // `Ack.codec(...)` for explicit conversion (see
+          // test/migration_recipes_test.dart).
+          expect(Ack.integer().safeParse('42').isFail, isTrue);
+          expect(Ack.integer().safeParse(42.0).isFail, isTrue);
+          expect(Ack.integer().safeParse(42).isOk, isTrue);
+        },
+      );
     });
   });
 }

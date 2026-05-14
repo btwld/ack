@@ -50,10 +50,13 @@ The generated part file contains:
 - primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`
 - `Ack.list(...)`
 - `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
+- built-in codec schemas: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()`
 - non-object transforms with explicit output types
 - `Ack.discriminated(...)` with the constraints below
 
-Unsupported helpers include `Ack.any()` and `Ack.anyOf()`.
+Unsupported helpers include `Ack.any()`, `Ack.anyOf()`, and arbitrary
+`Ack.codec(...)` schemas. Built-in codec schemas are handled
+separately.
 
 ## Discriminated schemas
 

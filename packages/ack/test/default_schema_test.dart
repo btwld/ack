@@ -17,8 +17,11 @@ void main() {
       test('default must satisfy inner constraints', () {
         final schema = Ack.string().minLength(5).withDefault('x');
         final result = schema.safeParse(null);
-        expect(result.isFail, isTrue,
-            reason: 'default validates through inner runtime path');
+        expect(
+          result.isFail,
+          isTrue,
+          reason: 'default validates through inner runtime path',
+        );
       });
 
       test('codec default is treated as runtime value, not boundary', () {
@@ -118,8 +121,9 @@ void main() {
       test('omits JSON Schema default for non-JSON runtime defaults', () {
         // InstanceSchema.encodeBoundary is identity, so a DateTime would
         // leak through unless toJsonSchema applies a JSON-safety check.
-        final schema =
-            Ack.instance<DateTime>().withDefault(DateTime.utc(2026, 1, 1));
+        final schema = Ack.instance<DateTime>().withDefault(
+          DateTime.utc(2026, 1, 1),
+        );
         final json = schema.toJsonSchema();
         expect(json.containsKey('default'), isFalse);
       });
@@ -136,8 +140,10 @@ void main() {
         // The wrapper's isNullable can differ from the inner's. When the
         // wrapper is nullable but the inner isn't, the JSON Schema must
         // include the null branch.
-        final json =
-            Ack.string().withDefault('guest').nullable().toJsonSchema();
+        final json = Ack.string()
+            .withDefault('guest')
+            .nullable()
+            .toJsonSchema();
         expect(json['anyOf'], isA<List>());
         expect(
           json['anyOf'] as List,

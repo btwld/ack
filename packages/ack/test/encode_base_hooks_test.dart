@@ -19,44 +19,46 @@ void main() {
       expect(result.getOrNull(), equals(42));
     });
 
-    test('returns SchemaEncodeError.typeMismatch when runtime type is wrong',
-        () {
-      final schema = Ack.string();
-      final result = schema.safeEncode(42);
-
-      expect(result.isFail, isTrue);
-      final error = result.getError();
-      expect(error, isA<SchemaEncodeError>());
-      expect(error.message.toLowerCase(), contains('string'));
-      expect(error.message, contains('int'));
-    });
-
     test(
-      'safeEncode does not throw when actual value is a non-JSON runtime '
-      'type like DateTime',
+      'returns SchemaEncodeError.typeMismatch when runtime type is wrong',
       () {
-        // Regression: previously the typeMismatch error constructor went
-        // through SchemaType.of(value), which throws ArgumentError for
-        // DateTime, Uri, and user classes. safeEncode promised "never throws".
         final schema = Ack.string();
-
-        late SchemaResult<Object> result;
-        expect(
-          () => result = schema.safeEncode(DateTime.utc(2025, 1, 1)),
-          returnsNormally,
-        );
+        final result = schema.safeEncode(42);
 
         expect(result.isFail, isTrue);
-        expect(result.getError(), isA<SchemaEncodeError>());
+        final error = result.getError();
+        expect(error, isA<SchemaEncodeError>());
+        expect(error.message.toLowerCase(), contains('string'));
+        expect(error.message, contains('int'));
       },
     );
+
+    test('safeEncode does not throw when actual value is a non-JSON runtime '
+        'type like DateTime', () {
+      // Regression: previously the typeMismatch error constructor went
+      // through SchemaType.of(value), which throws ArgumentError for
+      // DateTime, Uri, and user classes. safeEncode promised "never throws".
+      final schema = Ack.string();
+
+      late SchemaResult<Object> result;
+      expect(
+        () => result = schema.safeEncode(DateTime.utc(2025, 1, 1)),
+        returnsNormally,
+      );
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isA<SchemaEncodeError>());
+    });
 
     test('error context is in encode direction', () {
       final schema = Ack.string();
       final result = schema.safeEncode(42);
 
       expect(result.isFail, isTrue);
-      expect(result.getError().context.operation, equals(SchemaOperation.encode));
+      expect(
+        result.getError().context.operation,
+        equals(SchemaOperation.encode),
+      );
     });
 
     test('returns Ok(null) when input is null on a nullable schema', () {

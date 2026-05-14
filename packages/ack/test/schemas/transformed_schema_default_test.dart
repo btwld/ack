@@ -26,9 +26,7 @@ void main() {
 
     test('clones primitive defaults to prevent mutation', () {
       // Primitive types (String, int, bool) are immutable, so cloning is safe
-      final schema = Ack.string()
-          .transform((v) => v)
-          .withDefault('hello');
+      final schema = Ack.string().transform((v) => v).withDefault('hello');
 
       final result1 = schema.safeParse(null);
       final result2 = schema.safeParse(null);
@@ -40,9 +38,9 @@ void main() {
     test('handles List<Object> defaults with cloning', () {
       // List<Object> can be cloned because cloneDefault returns List<Object?>
       // which is assignable to List<Object>
-      final schema = Ack.string()
-          .transform((v) => <Object>[v])
-          .withDefault(<Object>['a', 'b']);
+      final schema = Ack.string().transform((v) => <Object>[v]).withDefault(
+        <Object>['a', 'b'],
+      );
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -57,9 +55,9 @@ void main() {
       // This would previously crash with a TypeError because cloneDefault
       // returns List<Object?> which cannot cast to List<String>.
       // Now it falls back to the original default (accepts mutation risk).
-      final schema = Ack.string()
-          .transform((v) => v.split(','))
-          .withDefault(<String>['a', 'b', 'c']);
+      final schema = Ack.string().transform((v) => v.split(',')).withDefault(
+        <String>['a', 'b', 'c'],
+      );
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);

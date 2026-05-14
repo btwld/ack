@@ -53,14 +53,39 @@ final emailSchema = Ack.string().email();
 // URL validation
 final websiteSchema = Ack.string().url();
 
-// Date/datetime strings
-final dateSchema = Ack.string().date(); // YYYY-MM-DD
-final datetimeSchema = Ack.string().datetime(); // ISO 8601
+// Date/datetime string format validators — parse returns String.
+final dateStringSchema = Ack.string().date(); // YYYY-MM-DD
+final datetimeStringSchema = Ack.string().datetime(); // ISO 8601
 
 // Enum values
 enum Role { admin, user, guest }
 final roleSchema = Ack.enumValues(Role.values);
 ```
+
+### Built-in Codecs
+
+Every schema can parse boundary input and encode runtime values back to
+boundary form. Most schemas use the same type on both sides, such as
+`String` for `Ack.string()`. When the types differ, Ack uses
+`CodecSchema<I, O>` where `I` is the boundary type and `O` is the
+runtime type.
+
+```dart
+final rawDateString = Ack.string().date();
+rawDateString.parse('2026-05-10'); // String
+
+final dateObject = Ack.date();
+dateObject.parse('2026-05-10'); // DateTime(2026, 5, 10)
+dateObject.encode(DateTime(2026, 5, 10)); // '2026-05-10'
+
+final homepage = Ack.uri();
+homepage.parse('https://example.com'); // Uri
+```
+
+`Ack.date()`, `Ack.datetime()`, `Ack.uri()`, and `Ack.duration()` are
+built-in codec schemas. They validate their JSON-friendly boundary
+shape, decode into Dart runtime objects, and encode those runtime
+objects back to the boundary shape.
 
 ### Number
 
@@ -399,7 +424,10 @@ final orderSchema = Ack.object({
 
 ### Transformations
 
-Transform validated data:
+Transform validated data on the parse path. `schema.transform(...)`
+returns a one-way codec with no encoder, so encoding through that
+schema fails with `SchemaEncodeError.oneWayTransform`. Use
+`Ack.codec(...)` when the conversion must be bidirectional.
 
 ```dart
 // Transform to uppercase
@@ -419,6 +447,14 @@ final userWithAgeSchema = Ack.object({
 final dateSchema = Ack.string()
   .matches(r'\d{4}-\d{2}-\d{2}')
   .transform<DateTime>(DateTime.parse);
+
+// Bidirectional conversion
+final intFromString = Ack.codec<String, int>(
+  input: Ack.string().matches(r'^-?\d+$'),
+  output: Ack.integer(),
+  decoder: int.parse,
+  encoder: (value) => value.toString(),
+);
 ```
 
 ## Validation Result

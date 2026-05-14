@@ -106,9 +106,7 @@ void main() {
     group('ListSchema defaults', () {
       test('should apply list default when input is null', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema = Ack.list(
-          Ack.string(),
-        ).withDefault(defaultList);
+        final schema = Ack.list(Ack.string()).withDefault(defaultList);
 
         final result = schema.safeParse(null);
 
@@ -119,9 +117,7 @@ void main() {
 
       test('should clone list defaults to prevent mutation', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema = Ack.list(
-          Ack.string(),
-        ).withDefault(defaultList);
+        final schema = Ack.list(Ack.string()).withDefault(defaultList);
 
         final result1 = schema.safeParse(null);
         final result2 = schema.safeParse(null);
@@ -139,9 +135,7 @@ void main() {
 
       test('should validate list default items against item schema', () {
         final defaultList = [1, 2, 3];
-        final schema = Ack.list(
-          Ack.integer(),
-        ).withDefault(defaultList);
+        final schema = Ack.list(Ack.integer()).withDefault(defaultList);
 
         final result = schema.safeParse(null);
 
@@ -152,9 +146,7 @@ void main() {
 
       test('should not apply default when input is provided', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema = Ack.list(
-          Ack.string(),
-        ).withDefault(defaultList);
+        final schema = Ack.list(Ack.string()).withDefault(defaultList);
 
         final result = schema.safeParse(['x', 'y', 'z']);
 
@@ -165,9 +157,7 @@ void main() {
 
       test('should emit default in toJsonSchema', () {
         final defaultList = ['a', 'b', 'c'];
-        final schema = Ack.list(
-          Ack.string(),
-        ).withDefault(defaultList);
+        final schema = Ack.list(Ack.string()).withDefault(defaultList);
 
         final jsonSchema = schema.toJsonSchema();
 

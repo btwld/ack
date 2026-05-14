@@ -244,17 +244,19 @@ void main() {
     });
 
     group('Edge cases', () {
-      test('nullable schema without default returns Ok(null) on null input',
-          () {
-        // Pre-C2 this test went through `copyWith(defaultValue: null)` to
-        // explicitly clear a default. After C2 the legacy field is gone;
-        // a schema simply has no default unless wrapped in DefaultSchema.
-        final schema = Ack.any().nullable();
+      test(
+        'nullable schema without default returns Ok(null) on null input',
+        () {
+          // Pre-C2 this test went through `copyWith(defaultValue: null)` to
+          // explicitly clear a default. After C2 the legacy field is gone;
+          // a schema simply has no default unless wrapped in DefaultSchema.
+          final schema = Ack.any().nullable();
 
-        final result = schema.safeParse(null);
-        expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), isNull);
-      });
+          final result = schema.safeParse(null);
+          expect(result.isOk, isTrue);
+          expect(result.getOrThrow(), isNull);
+        },
+      );
 
       test('should handle empty map default', () {
         final originalDefault = <String, Object?>{};

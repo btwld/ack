@@ -119,7 +119,9 @@ if (result.isOk) {
 
 Schemas are bidirectional: `parse` / `safeParse` map boundary input to
 runtime values; `encode` / `safeEncode` map runtime values back to
-boundary form. Built-in codecs cover the common cases:
+boundary form. Most schemas use the same Dart type on both sides.
+Built-in codec schemas cover the common cases where the boundary type
+differs from the runtime type:
 
 ```dart
 final isoDateTime = Ack.datetime();
@@ -130,6 +132,11 @@ isoDateTime.parse('2026-05-10T12:00:00Z');
 isoDateTime.encode(DateTime.utc(2026, 5, 10, 12));
 // → '2026-05-10T12:00:00.000Z'
 ```
+
+String format helpers stay string-shaped. For example,
+`Ack.string().date()` validates a `YYYY-MM-DD` string and returns a
+`String`; `Ack.date()` validates the same boundary format, parses it
+to `DateTime`, and encodes `DateTime` back to a date string.
 
 `Ack.codec(...)` is the primitive for explicit boundary↔runtime
 conversion. It requires both `decoder` and `encoder`; for one-way

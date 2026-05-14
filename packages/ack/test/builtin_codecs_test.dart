@@ -64,15 +64,13 @@ void main() {
     });
 
     test('encode rejects non-UTC DateTime', () {
-      final result =
-          Ack.datetime().safeEncode(DateTime(2026, 5, 10, 12, 30));
+      final result = Ack.datetime().safeEncode(DateTime(2026, 5, 10, 12, 30));
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaEncodeError>());
     });
 
     test('encode error mentions toUtc() (A3 (b))', () {
-      final result =
-          Ack.datetime().safeEncode(DateTime(2026, 5, 10, 12, 30));
+      final result = Ack.datetime().safeEncode(DateTime(2026, 5, 10, 12, 30));
       expect(result.isFail, isTrue);
       expect(result.getError().message, contains('toUtc'));
     });
@@ -115,8 +113,9 @@ void main() {
     test('encode rejects sub-millisecond durations', () {
       // 1501 microseconds = 1ms + 501us. inMilliseconds would silently
       // truncate to 1; encode must reject so the round-trip is honest.
-      final result =
-          Ack.duration().safeEncode(const Duration(microseconds: 1501));
+      final result = Ack.duration().safeEncode(
+        const Duration(microseconds: 1501),
+      );
       expect(result.isFail, isTrue);
       expect(result.getError(), isA<SchemaEncodeError>());
     });
@@ -129,12 +128,8 @@ void main() {
   group('Composite integration', () {
     test('object with Ack.datetime child encodes DateTime to string', () {
       final schema = Ack.object({'createdAt': Ack.datetime()});
-      final encoded =
-          schema.encode({'createdAt': DateTime.utc(2026, 5, 10)});
-      expect(
-        encoded,
-        equals({'createdAt': '2026-05-10T00:00:00.000Z'}),
-      );
+      final encoded = schema.encode({'createdAt': DateTime.utc(2026, 5, 10)});
+      expect(encoded, equals({'createdAt': '2026-05-10T00:00:00.000Z'}));
     });
 
     test('list with Ack.duration items encodes durations to integers', () {
@@ -154,8 +149,7 @@ void main() {
 
     test('object with Ack.uri child encodes Uri to string', () {
       final schema = Ack.object({'home': Ack.uri()});
-      final encoded =
-          schema.encode({'home': Uri.parse('https://example.com')});
+      final encoded = schema.encode({'home': Uri.parse('https://example.com')});
       expect(encoded, equals({'home': 'https://example.com'}));
     });
   });

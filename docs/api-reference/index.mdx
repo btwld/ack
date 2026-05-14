@@ -20,6 +20,10 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any value.
 - `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`: Creates a discriminated union schema. Branches may be direct `ObjectSchema` instances or object-backed `CodecSchema` / `DefaultSchema` wrappers.
+- `Ack.date()`: Creates a built-in `CodecSchema<String, DateTime>` for `YYYY-MM-DD` boundary strings and local-midnight `DateTime` runtime values.
+- `Ack.datetime()`: Creates a built-in `CodecSchema<String, DateTime>` for ISO 8601 datetime boundary strings and UTC `DateTime` runtime values.
+- `Ack.uri()`: Creates a built-in `CodecSchema<String, Uri>` for absolute URI boundary strings and `Uri` runtime values.
+- `Ack.duration()`: Creates a built-in `CodecSchema<int, Duration>` for integer millisecond boundary values and `Duration` runtime values.
 
 ## `AckSchema<T>` (Base Class)
 
@@ -82,7 +86,7 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 - `email()`: Must be valid email format
 - `url()`: Must be valid URL format (alias for `uri()`)
-- `uri()`: Must be valid URI according to RFC 3986
+- `uri()`: Must be valid URI according to RFC 3986; this validates and returns `String`. Use `Ack.uri()` for a `Uri` runtime value.
 - `uuid()`: Must be valid UUID format
 - `ip({int? version})`: Must be valid IP address (version 4 or 6)
 - `ipv4()`: Must be valid IPv4 address
@@ -90,8 +94,8 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Date and Time
 
-- `date()`: Must be valid ISO 8601 date (YYYY-MM-DD)
-- `datetime()`: Must be valid ISO 8601 datetime
+- `date()`: Must be valid ISO 8601 date (YYYY-MM-DD); this validates and returns `String`. Use `Ack.date()` for a `DateTime` runtime value.
+- `datetime()`: Must be valid ISO 8601 datetime; this validates and returns `String`. Use `Ack.datetime()` for a UTC `DateTime` runtime value.
 - `time()`: Must be valid time format (HH:MM:SS)
 
 ### Value Restrictions
@@ -101,9 +105,9 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Transformations
 
-- `trim()`: Removes leading and trailing whitespace
-- `toLowerCase()`: Converts to lowercase
-- `toUpperCase()`: Converts to uppercase
+- `trim()`: One-way parse transformation that removes leading and trailing whitespace
+- `toLowerCase()`: One-way parse transformation that converts to lowercase
+- `toUpperCase()`: One-way parse transformation that converts to uppercase
 
 ## `IntegerSchema` / `DoubleSchema` / `NumberSchema` (Number Schemas)
 
@@ -283,6 +287,8 @@ Bidirectional codec — pairs an `input` boundary schema with an
   fails with `SchemaEncodeError.oneWayTransform`.
 - Built-in codecs: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`,
   `Ack.duration()`.
+- JSON Schema and converter output follows the codec `input` boundary
+  schema, not the runtime `output` schema.
 
 ### `DefaultSchema<T>`
 

@@ -121,10 +121,10 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`maxLength(n)`](../core-concepts/validation.mdx#string-constraints) | `maxLength: n` | String |
 | [`matches(p)`](../core-concepts/validation.mdx#string-constraints) | `pattern: p` | String |
 | [`email()`](../core-concepts/validation.mdx#string-constraints) | `format: email` | String |
-| [`date()`](../core-concepts/validation.mdx#string-constraints) | `format: date` | String |
-| [`datetime()`](../core-concepts/validation.mdx#string-constraints) | `format: date-time` | String |
+| [`Ack.string().date()`](../core-concepts/validation.mdx#string-constraints) | `format: date` | String format validator |
+| [`Ack.string().datetime()`](../core-concepts/validation.mdx#string-constraints) | `format: date-time` | String format validator |
 | [`time()`](../core-concepts/validation.mdx#string-constraints) | `format: time` | String |
-| [`uri()`](../core-concepts/validation.mdx#string-constraints) | `format: uri` | String |
+| [`Ack.string().uri()`](../core-concepts/validation.mdx#string-constraints) | `format: uri` | String format validator |
 | [`uuid()`](../core-concepts/validation.mdx#string-constraints) | `format: uuid` | String |
 | [`ipv4()`](../core-concepts/validation.mdx#string-constraints) | `format: ipv4` | String |
 | [`ipv6()`](../core-concepts/validation.mdx#string-constraints) | `format: ipv6` | String |
@@ -146,6 +146,10 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`Ack.boolean`](../core-concepts/schemas.mdx#boolean) | `type: boolean` | Type |
 | [`Ack.list(...)`](../core-concepts/schemas.mdx#list) | `type: array`, `items: {...}` | Type |
 | [`Ack.object(...)`](../core-concepts/schemas.mdx#object) | `type: object`, `properties: {...}`, `required: [...]` | Type |
+| [`Ack.date()`](../core-concepts/schemas.mdx#built-in-codecs) | `type: string`, `format: date` | Codec boundary shape |
+| [`Ack.datetime()`](../core-concepts/schemas.mdx#built-in-codecs) | `type: string`, `format: date-time` | Codec boundary shape |
+| [`Ack.uri()`](../core-concepts/schemas.mdx#built-in-codecs) | `type: string`, `format: uri` | Codec boundary shape |
+| [`Ack.duration()`](../core-concepts/schemas.mdx#built-in-codecs) | `type: integer` | Codec boundary shape in milliseconds |
 
 ## Shape Stability Notes
 

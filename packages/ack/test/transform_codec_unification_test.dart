@@ -24,17 +24,15 @@ void main() {
 
     test('CodecSchema<I, O> typedef annotation compiles and runs', () {
       // ignore: deprecated_member_use_from_same_package
-      final CodecSchema<String, int> schema =
-          Ack.string().transform<int>(int.parse);
+      final CodecSchema<String, int> schema = Ack.string().transform<int>(
+        int.parse,
+      );
       expect(schema.parse('1'), equals(1));
       expect(schema, isA<CodecSchema<String, int>>());
     });
 
     test('transform inherits isOptional / isNullable / description', () {
-      final base = Ack.string()
-          .nullable()
-          .optional()
-          .describe('numeric input');
+      final base = Ack.string().nullable().optional().describe('numeric input');
       final schema = base.transform<int>(int.parse);
       expect(schema.isOptional, isTrue);
       expect(schema.isNullable, isTrue);
@@ -43,9 +41,7 @@ void main() {
 
     test('transform composes with .withDefault for parse-time defaults', () {
       // .transform → CodecSchema; .withDefault → DefaultSchema wrapping it.
-      final schema = Ack.string()
-          .transform<int>(int.parse)
-          .withDefault(42);
+      final schema = Ack.string().transform<int>(int.parse).withDefault(42);
       expect(schema.parse(null), equals(42));
     });
 
@@ -53,10 +49,7 @@ void main() {
       // Branch is CodecSchema<MapValue, _Animal>. The unwrap util follows
       // CodecSchema.inputSchema to find the ObjectSchema.
       final branch = Ack.codec<Map<String, Object?>, _Animal>(
-        input: Ack.object({
-          'type': Ack.literal('cat'),
-          'name': Ack.string(),
-        }),
+        input: Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
         output: Ack.instance<_Animal>(),
         decoder: (m) => _Cat(m['name']! as String),
         encoder: (a) => {'type': 'cat', 'name': a.name},
@@ -65,10 +58,7 @@ void main() {
         discriminatorKey: 'type',
         schemas: {'cat': branch},
       );
-      expect(
-        schema.parse({'type': 'cat', 'name': 'Milo'}),
-        isA<_Cat>(),
-      );
+      expect(schema.parse({'type': 'cat', 'name': 'Milo'}), isA<_Cat>());
     });
   });
 

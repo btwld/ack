@@ -37,6 +37,9 @@ final result = userSchema.safeParse({
 
 - Every schema supports `parse` / `safeParse` (boundary → runtime) and
   `encode` / `safeEncode` (runtime → boundary).
+- Most schemas have matching boundary and runtime types. When the
+  types differ, Ack uses `CodecSchema<I, O>` where `I` is the boundary
+  type and `O` is the runtime type.
 - `Ack.codec(input:, output:, decoder:, encoder:)` is the bidirectional
   primitive. Both `decoder` and `encoder` are required.
 - `schema.transform<R>(...)` is one-way: encoding through a transform
@@ -44,11 +47,15 @@ final result = userSchema.safeParse({
 - `Ack.instance<T>()` is a runtime-side schema for non-JSON Dart types
   (DateTime, Uri, user classes); use it as the `output` of a codec.
 - `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()` are
-  bidirectional codecs.
+  built-in bidirectional codec schemas.
   - `Ack.date()` is local midnight DateTime; rejects UTC and non-midnight.
   - `Ack.datetime()` is UTC instant; rejects non-UTC; advises `.toUtc()`.
   - `Ack.uri()` rejects URIs without scheme + authority on encode.
   - `Ack.duration()` rejects sub-millisecond durations on encode.
+- `Ack.string().date()`, `Ack.string().datetime()`, and
+  `Ack.string().uri()` are format validators: they validate strings and
+  return strings. Use the built-in codecs when you want `DateTime` or
+  `Uri` runtime values.
 - `schema.withDefault(value)` returns `DefaultSchema<T>`. Defaults are
   parse-only — encode never synthesizes a default. `DefaultSchema` is
   the sole owner of parse-time defaults; there is no legacy

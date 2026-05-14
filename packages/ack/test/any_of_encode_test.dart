@@ -3,33 +3,30 @@ import 'package:test/test.dart';
 
 void main() {
   CodecSchema<String, int> intString() => Ack.codec<String, int>(
-        input: Ack.string(),
-        output: Ack.instance<int>(),
-        decoder: int.parse,
-        encoder: (i) => i.toString(),
-      );
+    input: Ack.string(),
+    output: Ack.instance<int>(),
+    decoder: int.parse,
+    encoder: (i) => i.toString(),
+  );
 
   group('AnyOfSchema encode (M9)', () {
-    test(
-      'falls through when first branch validates but cannot encode',
-      () {
-        // First branch is a one-way CodecSchema (encoder: null). Its
-        // _validateRuntime succeeds for any int, but encodeBoundary fails
-        // with SchemaEncodeError.oneWayTransform. Per A5, encode must fall
-        // through to the next fully-successful branch.
-        final oneWay = CodecSchema<String, int>(
-          inputSchema: Ack.string(),
-          outputSchema: Ack.instance<int>(),
-          decoder: int.parse,
-          // encoder: null
-        );
-        final twoWay = intString();
-        final schema = Ack.anyOf([oneWay, twoWay]);
-        final result = schema.safeEncode(42);
-        expect(result.isOk, isTrue);
-        expect(result.getOrNull(), equals('42'));
-      },
-    );
+    test('falls through when first branch validates but cannot encode', () {
+      // First branch is a one-way CodecSchema (encoder: null). Its
+      // _validateRuntime succeeds for any int, but encodeBoundary fails
+      // with SchemaEncodeError.oneWayTransform. Per A5, encode must fall
+      // through to the next fully-successful branch.
+      final oneWay = CodecSchema<String, int>(
+        inputSchema: Ack.string(),
+        outputSchema: Ack.instance<int>(),
+        decoder: int.parse,
+        // encoder: null
+      );
+      final twoWay = intString();
+      final schema = Ack.anyOf([oneWay, twoWay]);
+      final result = schema.safeEncode(42);
+      expect(result.isOk, isTrue);
+      expect(result.getOrNull(), equals('42'));
+    });
 
     test('uses the first fully successful branch (deterministic order)', () {
       final schema = Ack.anyOf([
@@ -76,20 +73,22 @@ void main() {
       expect(calls, equals(1));
     });
 
-    test('preserves parent path for branch failures (no synthetic segments)',
-        () {
-      // Branch contexts use pathSegment: '' so user-facing paths stay at
-      // the parent value path, not '#/anyOf:0'.
-      final schema = Ack.object({
-        'value': Ack.anyOf([Ack.string(), Ack.integer()]),
-      });
-      final result = schema.safeEncode({'value': true});
-      expect(result.isFail, isTrue);
-      final objectError = result.getError();
-      expect(objectError, isA<SchemaNestedError>());
-      final valueError = (objectError as SchemaNestedError).errors.single;
-      expect(valueError.path, equals('#/value'));
-    });
+    test(
+      'preserves parent path for branch failures (no synthetic segments)',
+      () {
+        // Branch contexts use pathSegment: '' so user-facing paths stay at
+        // the parent value path, not '#/anyOf:0'.
+        final schema = Ack.object({
+          'value': Ack.anyOf([Ack.string(), Ack.integer()]),
+        });
+        final result = schema.safeEncode({'value': true});
+        expect(result.isFail, isTrue);
+        final objectError = result.getError();
+        expect(objectError, isA<SchemaNestedError>());
+        final valueError = (objectError as SchemaNestedError).errors.single;
+        expect(valueError.path, equals('#/value'));
+      },
+    );
 
     test('encode is identity for a primitive branch matching the value', () {
       // No codec children: each branch is a primitive. The boundary form

@@ -45,31 +45,28 @@ void main() {
         expect(error.path, equals('#/name'));
       });
 
-      test(
-        'does not throw when constructing for non-JSON runtime types '
-        '(DateTime, Uri, user classes)',
-        () {
-          // Regression: the previous form went through SchemaType.of() which
-          // throws ArgumentError for any value outside the JSON primitives,
-          // making safeEncode(...) throw mid-error-construction.
-          expect(
-            () => SchemaEncodeError.typeMismatch(
-              actual: DateTime.utc(2025, 1, 1),
-              expected: String,
-              context: makeCtx(),
-            ),
-            returnsNormally,
-          );
-          expect(
-            () => SchemaEncodeError.typeMismatch(
-              actual: Uri.parse('https://example.com'),
-              expected: String,
-              context: makeCtx(),
-            ),
-            returnsNormally,
-          );
-        },
-      );
+      test('does not throw when constructing for non-JSON runtime types '
+          '(DateTime, Uri, user classes)', () {
+        // Regression: the previous form went through SchemaType.of() which
+        // throws ArgumentError for any value outside the JSON primitives,
+        // making safeEncode(...) throw mid-error-construction.
+        expect(
+          () => SchemaEncodeError.typeMismatch(
+            actual: DateTime.utc(2025, 1, 1),
+            expected: String,
+            context: makeCtx(),
+          ),
+          returnsNormally,
+        );
+        expect(
+          () => SchemaEncodeError.typeMismatch(
+            actual: Uri.parse('https://example.com'),
+            expected: String,
+            context: makeCtx(),
+          ),
+          returnsNormally,
+        );
+      });
     });
 
     group('.nonNullable', () {

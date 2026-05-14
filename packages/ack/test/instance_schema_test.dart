@@ -31,30 +31,27 @@ void main() {
       expect(encodeResult.isFail, isTrue);
     });
 
-    test(
-      'parse-side type mismatch produces a parse-side error, '
-      'not SchemaEncodeError',
-      () {
-        // Regression: InstanceSchema's parse path uses the runtime type
-        // check helpers, which previously emitted SchemaEncodeError on any
-        // failure regardless of the operation. Parse failures must surface
-        // as parse-side errors so error consumers can branch on the class.
-        final schema = InstanceSchema<DateTime>();
-        final result = schema.safeParse('not a date');
+    test('parse-side type mismatch produces a parse-side error, '
+        'not SchemaEncodeError', () {
+      // Regression: InstanceSchema's parse path uses the runtime type
+      // check helpers, which previously emitted SchemaEncodeError on any
+      // failure regardless of the operation. Parse failures must surface
+      // as parse-side errors so error consumers can branch on the class.
+      final schema = InstanceSchema<DateTime>();
+      final result = schema.safeParse('not a date');
 
-        expect(result.isFail, isTrue);
-        expect(
-          result.getError(),
-          isNot(isA<SchemaEncodeError>()),
-          reason:
-              'parse failures from _validateRuntime must not be reported as encode errors',
-        );
-        expect(
-          result.getError().context.operation,
-          equals(SchemaOperation.parse),
-        );
-      },
-    );
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError(),
+        isNot(isA<SchemaEncodeError>()),
+        reason:
+            'parse failures from _validateRuntime must not be reported as encode errors',
+      );
+      expect(
+        result.getError().context.operation,
+        equals(SchemaOperation.parse),
+      );
+    });
 
     test(
       'parse-side null on a non-nullable schema produces a parse-side error, '
@@ -120,24 +117,21 @@ void main() {
       expect(schema.encode(42), equals('42'));
     });
 
-    test(
-      'Ack.codec requires an encoder; one-way construction goes through '
-      'CodecSchema(...) directly',
-      () {
-        // Public Ack.codec(...) cannot omit `encoder` — that would not type-check.
-        // One-way codecs are constructed via the internal CodecSchema(...)
-        // constructor (used by .transform(...) and built-ins).
-        final schema = CodecSchema<String, int>(
-          inputSchema: Ack.string(),
-          outputSchema: Ack.instance<int>(),
-          decoder: int.parse,
-          // encoder: null  — implicit, one-way.
-        );
+    test('Ack.codec requires an encoder; one-way construction goes through '
+        'CodecSchema(...) directly', () {
+      // Public Ack.codec(...) cannot omit `encoder` — that would not type-check.
+      // One-way codecs are constructed via the internal CodecSchema(...)
+      // constructor (used by .transform(...) and built-ins).
+      final schema = CodecSchema<String, int>(
+        inputSchema: Ack.string(),
+        outputSchema: Ack.instance<int>(),
+        decoder: int.parse,
+        // encoder: null  — implicit, one-way.
+      );
 
-        final encodeResult = schema.safeEncode(42);
-        expect(encodeResult.isFail, isTrue);
-        expect(encodeResult.getError(), isA<SchemaEncodeError>());
-      },
-    );
+      final encodeResult = schema.safeEncode(42);
+      expect(encodeResult.isFail, isTrue);
+      expect(encodeResult.getError(), isA<SchemaEncodeError>());
+    });
   });
 }

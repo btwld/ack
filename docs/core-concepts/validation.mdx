@@ -84,13 +84,19 @@ Ack.string().email()
 
 
 ### `date()`
-Requires a valid date string in `YYYY-MM-DD` format.
+Requires a valid date string in `YYYY-MM-DD` format. This is a string
+format validator: parsing returns `String`. Use `Ack.date()` when you
+want a built-in codec that parses the same boundary format into a
+`DateTime` and encodes `DateTime` back to a date string.
 ```dart
 Ack.string().date()
 ```
 
 ### `datetime()`
-Requires a valid ISO 8601 date-time string.
+Requires a valid ISO 8601 date-time string. This is a string format
+validator: parsing returns `String`. Use `Ack.datetime()` when you want
+a built-in codec that parses to a UTC `DateTime` and encodes UTC
+`DateTime` values back to strings.
 ```dart
 Ack.string().datetime()
 ```
@@ -102,7 +108,9 @@ Ack.string().time()
 ```
 
 ### `uri()`
-Requires a valid URI per RFC 3986.
+Requires a valid URI per RFC 3986. This is a string format validator:
+parsing returns `String`. Use `Ack.uri()` when you want a built-in
+codec that parses to `Uri` and encodes `Uri` values back to strings.
 ```dart
 Ack.string().uri()
 ```
@@ -167,7 +175,11 @@ Ack.string().ip(version: 6) // IPv6 only
 
 ## String Transformations
 
-These methods transform the string value during parsing. They don't add validation constraints but modify the output value.
+These methods transform the string value during parsing. They don't add
+validation constraints but modify the output value. They are one-way
+parse transformations; encoding through the returned schema fails with
+`SchemaEncodeError.oneWayTransform`. Use `Ack.codec(...)` for
+bidirectional conversion.
 
 ### `trim()`
 Removes leading and trailing whitespace from the string.

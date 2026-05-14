@@ -59,17 +59,22 @@ void main() {
         expect(Ack.string().email().safeParse('user@example.com').isOk, isTrue);
         expect(Ack.string().email().safeParse('invalid').isFail, isTrue);
 
-        expect(Ack.string().date().safeParse('2024-01-01').isOk, isTrue);
+        final dateString = Ack.string().date().safeParse('2024-01-01');
+        expect(dateString.getOrThrow(), equals('2024-01-01'));
+        expect(dateString.getOrThrow(), isA<String>());
         expect(Ack.string().date().safeParse('01/01/2024').isFail, isTrue);
 
         expect(
-          Ack.string().datetime().safeParse('2024-01-01T12:00:00Z').isOk,
-          isTrue,
+          Ack.string()
+              .datetime()
+              .safeParse('2024-01-01T12:00:00Z')
+              .getOrThrow(),
+          equals('2024-01-01T12:00:00Z'),
         );
         expect(Ack.string().time().safeParse('12:30:45').isOk, isTrue);
         expect(
-          Ack.string().uri().safeParse('https://example.com').isOk,
-          isTrue,
+          Ack.string().uri().safeParse('https://example.com').getOrThrow(),
+          equals('https://example.com'),
         );
         expect(
           Ack.string()

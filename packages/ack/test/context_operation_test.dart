@@ -39,11 +39,7 @@ void main() {
     });
 
     test('child can override operation explicitly', () {
-      final parent = SchemaContext(
-        name: 'root',
-        schema: schema,
-        value: 'hi',
-      );
+      final parent = SchemaContext(name: 'root', schema: schema, value: 'hi');
 
       final child = parent.createChild(
         name: 'inner',

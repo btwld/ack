@@ -6,18 +6,18 @@ void main() {
     // Sample codec: zero-padded integer string (e.g. "007" <-> 7).
     // Unrealistic but keeps the test self-contained.
     CodecSchema<String, int> paddedIntCodec() => CodecSchema(
-          inputSchema: Ack.string(),
-          outputSchema: Ack.integer(),
-          decoder: int.parse,
-          encoder: (i) => i.toString().padLeft(3, '0'),
-        );
+      inputSchema: Ack.string(),
+      outputSchema: Ack.integer(),
+      decoder: int.parse,
+      encoder: (i) => i.toString().padLeft(3, '0'),
+    );
 
     CodecSchema<String, int> paddedIntCodecOneWay() => CodecSchema(
-          inputSchema: Ack.string(),
-          outputSchema: Ack.integer(),
-          decoder: int.parse,
-          encoder: null,
-        );
+      inputSchema: Ack.string(),
+      outputSchema: Ack.integer(),
+      decoder: int.parse,
+      encoder: null,
+    );
 
     group('parse', () {
       test('runs inputSchema → decode → outputSchema', () {
@@ -45,8 +45,10 @@ void main() {
       });
 
       test("runs the codec's own refinements on the decoded value", () {
-        final schema =
-            paddedIntCodec().refine((v) => v >= 0, message: 'non-negative');
+        final schema = paddedIntCodec().refine(
+          (v) => v >= 0,
+          message: 'non-negative',
+        );
 
         final ok = schema.safeParse('007');
         expect(ok.isOk, isTrue);
@@ -62,14 +64,16 @@ void main() {
         expect(result.getOrNull(), equals('007'));
       });
 
-      test('fails with SchemaEncodeError.typeMismatch when value is wrong type',
-          () {
-        final schema = paddedIntCodec();
-        final result = schema.safeEncode('not an int');
+      test(
+        'fails with SchemaEncodeError.typeMismatch when value is wrong type',
+        () {
+          final schema = paddedIntCodec();
+          final result = schema.safeEncode('not an int');
 
-        expect(result.isFail, isTrue);
-        expect(result.getError(), isA<SchemaEncodeError>());
-      });
+          expect(result.isFail, isTrue);
+          expect(result.getError(), isA<SchemaEncodeError>());
+        },
+      );
 
       test('fails with SchemaEncodeError.oneWayTransform when no encoder', () {
         final schema = paddedIntCodecOneWay();
@@ -124,39 +128,35 @@ void main() {
     });
 
     group('runtime null on parse side (operation-aware)', () {
-      test(
-        '_validateRuntime null failure is parse-side when invoked on parse '
-        '(M16.1)',
-        () {
-          // Construct a parse-side context manually — when the dispatcher
-          // calls outputSchema._validateRuntime on the parse path, a null
-          // failure must surface as a parse-side error (NOT
-          // SchemaEncodeError.nonNullable). Previously CodecSchema bypassed
-          // the operation-aware helper and emitted SchemaEncodeError
-          // unconditionally.
-          final codec = CodecSchema<String, int>(
-            inputSchema: Ack.string(),
-            outputSchema: Ack.instance<int>(),
-            decoder: int.parse,
-            encoder: (i) => i.toString(),
-          );
+      test('_validateRuntime null failure is parse-side when invoked on parse '
+          '(M16.1)', () {
+        // Construct a parse-side context manually — when the dispatcher
+        // calls outputSchema._validateRuntime on the parse path, a null
+        // failure must surface as a parse-side error (NOT
+        // SchemaEncodeError.nonNullable). Previously CodecSchema bypassed
+        // the operation-aware helper and emitted SchemaEncodeError
+        // unconditionally.
+        final codec = CodecSchema<String, int>(
+          inputSchema: Ack.string(),
+          outputSchema: Ack.instance<int>(),
+          decoder: int.parse,
+          encoder: (i) => i.toString(),
+        );
 
-          // We can't easily reach _validateRuntime with null on a
-          // parse-context from public API — the dispatcher's null
-          // handling intercepts first. Instead, exercise the documented
-          // safeParse path that does propagate operation: parse downstream
-          // and assert the error class is NOT SchemaEncodeError when the
-          // failure is a parse-side outcome.
-          final result = codec.safeParse('not-an-integer');
-          expect(result.isFail, isTrue);
-          expect(
-            result.getError(),
-            isNot(isA<SchemaEncodeError>()),
-            reason:
-                'parse failures must not be reported as SchemaEncodeError',
-          );
-        },
-      );
+        // We can't easily reach _validateRuntime with null on a
+        // parse-context from public API — the dispatcher's null
+        // handling intercepts first. Instead, exercise the documented
+        // safeParse path that does propagate operation: parse downstream
+        // and assert the error class is NOT SchemaEncodeError when the
+        // failure is a parse-side outcome.
+        final result = codec.safeParse('not-an-integer');
+        expect(result.isFail, isTrue);
+        expect(
+          result.getError(),
+          isNot(isA<SchemaEncodeError>()),
+          reason: 'parse failures must not be reported as SchemaEncodeError',
+        );
+      });
     });
 
     group('equality', () {
@@ -221,8 +221,7 @@ void main() {
         },
       );
 
-      test('one-way and two-way codecs with same schemas compare unequal',
-          () {
+      test('one-way and two-way codecs with same schemas compare unequal', () {
         // Closure identity is ignored, but the presence vs. absence of an
         // encoder is a structural distinction: one-way fails on encode,
         // two-way succeeds. They are observably different.

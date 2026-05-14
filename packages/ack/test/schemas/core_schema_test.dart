@@ -137,17 +137,14 @@ void main() {
         expect(error.actualType, equals('integer'));
       });
 
-      test(
-        'DoubleSchema rejects int input '
-        '(A1: Ack.double() runtime form is double, not num)',
-        () {
-          // Pre-A1 this test asserted that int → double coercion succeeded.
-          // A1 (M11) made `Ack.double()` strict; C4 removed the
-          // `strictPrimitiveParsing` toggle entirely. Use Ack.codec(...)
-          // for explicit conversion — see test/migration_recipes_test.dart.
-          expect(const DoubleSchema().safeParse(42).isFail, isTrue);
-        },
-      );
+      test('DoubleSchema rejects int input '
+          '(A1: Ack.double() runtime form is double, not num)', () {
+        // Pre-A1 this test asserted that int → double coercion succeeded.
+        // A1 (M11) made `Ack.double()` strict; C4 removed the
+        // `strictPrimitiveParsing` toggle entirely. Use Ack.codec(...)
+        // for explicit conversion — see test/migration_recipes_test.dart.
+        expect(const DoubleSchema().safeParse(42).isFail, isTrue);
+      });
     });
 
     group('parseAs / safeParseAs', () {

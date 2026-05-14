@@ -34,7 +34,9 @@ extension StringSchemaExtensions on StringSchema {
 
   /// Adds a constraint that the string must be a valid URI.
   ///
-  /// This is an alias for [uri]. Validates absolute URIs with a scheme and host.
+  /// This is an alias for [uri]. Validates absolute URIs with a scheme and
+  /// host while keeping the parsed value as a [String]. Use [Ack.uri] when
+  /// you need a [Uri] runtime value.
   StringSchema url() {
     return withConstraint(PatternConstraint.uri());
   }
@@ -85,11 +87,18 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must be a valid ISO 8601 date-time.
+  ///
+  /// This is a string format validator: parsing returns [String]. Use
+  /// [Ack.datetime] when you need a [DateTime] runtime value.
   StringSchema datetime() {
     return withConstraint(PatternConstraint.dateTimeIso8601());
   }
 
-  /// Adds a constraint that the string must be a valid ISO 8601 date (YYYY-MM-DD).
+  /// Adds a constraint that the string must be a valid ISO 8601 date
+  /// (`YYYY-MM-DD`).
+  ///
+  /// This is a string format validator: parsing returns [String]. Use
+  /// [Ack.date] when you need a [DateTime] runtime value.
   StringSchema date() {
     return withConstraint(PatternConstraint.dateIso8601());
   }
@@ -110,6 +119,9 @@ extension StringSchemaExtensions on StringSchema {
   }
 
   /// Adds a constraint that the string must be a valid URI.
+  ///
+  /// This is a string format validator: parsing returns [String]. Use
+  /// [Ack.uri] when you need a [Uri] runtime value.
   StringSchema uri() {
     return withConstraint(PatternConstraint.uri());
   }
