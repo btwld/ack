@@ -67,6 +67,15 @@ void main() {
         expect(result, isNotNull);
       });
 
+      test('converts number with range', () {
+        final schema = Ack.number().min(0.5).max(10);
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'number');
+        expect(result.value['minimum'], 0.5);
+        expect(result.value['maximum'], 10);
+      });
+
       test('converts boolean schema', () {
         final schema = Ack.boolean();
         final result = schema.toJsonSchemaBuilder();

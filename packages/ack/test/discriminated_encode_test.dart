@@ -44,7 +44,9 @@ void main() {
         );
         final result = schema.safeEncode(<String, Object?>{});
         expect(result.isFail, isTrue);
-        expect(result.getError().path, equals('#/type'));
+        final error = result.getError();
+        expect(error, isA<SchemaEncodeError>());
+        expect(error.path, equals('#/type'));
       });
 
       test('non-string discriminator fails at the discriminator path', () {
@@ -56,7 +58,9 @@ void main() {
         );
         final result = schema.safeEncode({'type': 1});
         expect(result.isFail, isTrue);
-        expect(result.getError().path, equals('#/type'));
+        final error = result.getError();
+        expect(error, isA<SchemaEncodeError>());
+        expect(error.path, equals('#/type'));
       });
 
       test('unknown discriminator fails at the discriminator path', () {
@@ -68,7 +72,9 @@ void main() {
         );
         final result = schema.safeEncode({'type': 'dog'});
         expect(result.isFail, isTrue);
-        expect(result.getError().path, equals('#/type'));
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(error.path, equals('#/type'));
       });
 
       test('does NOT fall through to other branches when dispatch matches '
@@ -119,42 +125,33 @@ void main() {
     group('non-map domain runtime values (Case B — full pipeline trial)', () {
       // Cat / Dog runtime values, codec branches that produce maps.
       CodecSchema<Map<String, Object?>, _Animal> catBranch() => Ack.codec(
-            input: Ack.object({
-              'type': Ack.literal('cat'),
-              'name': Ack.string(),
-            }),
-            output: Ack.instance<_Animal>(),
-            decoder: (m) => _Cat(m['name']! as String),
-            encoder: (animal) {
-              if (animal is! _Cat) {
-                throw StateError('not a cat: ${animal.runtimeType}');
-              }
-              return {'type': 'cat', 'name': animal.name};
-            },
-          );
+        input: Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
+        output: Ack.instance<_Animal>(),
+        decoder: (m) => _Cat(m['name']! as String),
+        encoder: (animal) {
+          if (animal is! _Cat) {
+            throw StateError('not a cat: ${animal.runtimeType}');
+          }
+          return {'type': 'cat', 'name': animal.name};
+        },
+      );
 
       CodecSchema<Map<String, Object?>, _Animal> dogBranch() => Ack.codec(
-            input: Ack.object({
-              'type': Ack.literal('dog'),
-              'name': Ack.string(),
-            }),
-            output: Ack.instance<_Animal>(),
-            decoder: (m) => _Dog(m['name']! as String),
-            encoder: (animal) {
-              if (animal is! _Dog) {
-                throw StateError('not a dog: ${animal.runtimeType}');
-              }
-              return {'type': 'dog', 'name': animal.name};
-            },
-          );
+        input: Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+        output: Ack.instance<_Animal>(),
+        decoder: (m) => _Dog(m['name']! as String),
+        encoder: (animal) {
+          if (animal is! _Dog) {
+            throw StateError('not a dog: ${animal.runtimeType}');
+          }
+          return {'type': 'dog', 'name': animal.name};
+        },
+      );
 
       test('falls through branches until full encode pipeline succeeds', () {
         final schema = Ack.discriminated<_Animal>(
           discriminatorKey: 'type',
-          schemas: {
-            'cat': catBranch(),
-            'dog': dogBranch(),
-          },
+          schemas: {'cat': catBranch(), 'dog': dogBranch()},
         );
         final encoded = schema.encode(const _Dog('Rex'));
         expect(encoded, equals({'type': 'dog', 'name': 'Rex'}));
@@ -163,17 +160,13 @@ void main() {
       test('encodes Cat through the cat branch', () {
         final schema = Ack.discriminated<_Animal>(
           discriminatorKey: 'type',
-          schemas: {
-            'cat': catBranch(),
-            'dog': dogBranch(),
-          },
+          schemas: {'cat': catBranch(), 'dog': dogBranch()},
         );
         final encoded = schema.encode(const _Cat('Milo'));
         expect(encoded, equals({'type': 'cat', 'name': 'Milo'}));
       });
 
-      test(
-          'codec branch is treated as object-backed via unwrap util '
+      test('codec branch is treated as object-backed via unwrap util '
           '(parse path uses inputSchema)', () {
         final schema = Ack.discriminated<_Animal>(
           discriminatorKey: 'type',
@@ -186,14 +179,10 @@ void main() {
         expect(parsed!.name, equals('Milo'));
       });
 
-      test('aggregates branch errors when no domain-object branch matches',
-          () {
+      test('aggregates branch errors when no domain-object branch matches', () {
         final schema = Ack.discriminated<_Animal>(
           discriminatorKey: 'type',
-          schemas: {
-            'cat': catBranch(),
-            'dog': dogBranch(),
-          },
+          schemas: {'cat': catBranch(), 'dog': dogBranch()},
         );
         // A bare _Animal that's neither Cat nor Dog: every branch fails.
         final result = schema.safeEncode(const _Animal('Mystery'));
@@ -205,7 +194,9 @@ void main() {
       test('null on a non-nullable discriminated schema fails on encode', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
-          schemas: {'cat': Ack.object({'type': Ack.literal('cat')})},
+          schemas: {
+            'cat': Ack.object({'type': Ack.literal('cat')}),
+          },
         );
         final result = schema.safeEncode(null);
         expect(result.isFail, isTrue);
@@ -214,7 +205,9 @@ void main() {
       test('null on a nullable discriminated schema returns Ok(null)', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
-          schemas: {'cat': Ack.object({'type': Ack.literal('cat')})},
+          schemas: {
+            'cat': Ack.object({'type': Ack.literal('cat')}),
+          },
         ).nullable();
         final result = schema.safeEncode(null);
         expect(result.isOk, isTrue);

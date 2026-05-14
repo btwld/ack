@@ -59,12 +59,16 @@ dev_dependencies:
 - Primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`
 - `Ack.list(...)` and `Set`-like list wrappers
 - `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
+- Built-in codec schemas: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()`
 - Non-object transforms with explicit output types
 - `Ack.discriminated(...)` when branches are top-level `@AckType` object schemas in the same library
 
 ## Important limitations
 
 - `Ack.any()` and `Ack.anyOf()` do not generate extension types.
+- Arbitrary `Ack.codec(...)` schemas do not generate extension types. Use the
+  supported built-in codec helpers listed above when you need date, datetime,
+  URI, or duration representations.
 - Inline anonymous object branches are rejected for typed generation. Extract them to a named top-level schema first.
 - Nullable top-level schemas do not emit extension types.
 - `@AckType()` requires static schema resolution for nested object references.

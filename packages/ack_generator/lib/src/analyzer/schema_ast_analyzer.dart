@@ -516,6 +516,14 @@ class SchemaAstAnalyzer {
           customTypeName: customTypeName,
         );
         break;
+      case 'codec':
+        throw InvalidGenerationSourceError(
+          'Ack.codec(...) is not supported by @AckType extension-type generation. '
+          'Built-in codec schemas Ack.date(), Ack.datetime(), Ack.uri(), and Ack.duration() remain supported.',
+          element: element,
+          todo:
+              'Use one of the supported built-in codec schemas or expose a supported Ack schema for @AckType.',
+        );
       default:
         throw InvalidGenerationSourceError(
           'Unsupported schema type for @AckType: Ack.$methodName(). '

@@ -244,10 +244,19 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       final ce = ObjectRequiredPropertiesConstraint(
         missingPropertyKey: discriminatorKey,
       ).validate(mapValue);
+      final childContext = _discriminatorChild(context, null);
+      if (context.operation == SchemaOperation.encode) {
+        return SchemaResult.fail(
+          SchemaEncodeError.missingRequiredProperty(
+            key: discriminatorKey,
+            context: childContext,
+          ),
+        );
+      }
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: ce != null ? [ce] : const [],
-          context: _discriminatorChild(context, null),
+          context: childContext,
         ),
       );
     }
@@ -256,10 +265,20 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       final ce = InvalidTypeConstraint(
         expectedType: String,
       ).validate(discValueRaw);
+      final childContext = _discriminatorChild(context, discValueRaw);
+      if (context.operation == SchemaOperation.encode) {
+        return SchemaResult.fail(
+          SchemaEncodeError.typeMismatch(
+            expected: String,
+            actual: discValueRaw,
+            context: childContext,
+          ),
+        );
+      }
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: ce != null ? [ce] : const [],
-          context: _discriminatorChild(context, discValueRaw),
+          context: childContext,
         ),
       );
     }

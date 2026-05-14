@@ -12,8 +12,8 @@ Converts ACK schemas to Firebase AI Schema format via `.toFirebaseAiSchema()`. A
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_firebase_ai: ^1.0.0
+  ack: ^1.0.0-beta.12
+  ack_firebase_ai: ^1.0.0-beta.12
   firebase_ai: ^3.4.0  # Required peer dependency
 ```
 

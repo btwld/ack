@@ -19,11 +19,13 @@ JsonSchema _convert(AckSchema schema) {
   if (schema is DefaultSchema) {
     // A [DefaultSchema] wrapper is not a boundary-shape semantic: the model
     // mirrors the inner schema's shape, and the wrapper only contributes its
-    // own description and nullability. The current [JsonSchema] model does
-    // not expose a `default` field, so the raw `toJsonSchema()` map remains
-    // the source of truth for the JSON Schema `default` keyword.
+    // own metadata. The current [JsonSchema] model does not expose a
+    // `default` field, so the raw `toJsonSchema()` map remains the source of
+    // truth for the JSON Schema `default` keyword.
     final base = _convert(schema.inner);
-    return base.copyWith(
+    return _overlayMetadata(
+      base,
+      effective,
       description: schema.description ?? base.description,
       nullable: nullableFlag || base.nullable == true,
     );

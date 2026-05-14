@@ -126,7 +126,7 @@ environment:
   # flutter: '>=3.16.0'
 
 dependencies:
-  ack: ^1.0.0
+  ack: ^1.0.0-beta.12
   # Add target SDK dependency if needed
   # <target_sdk>: ^x.y.z
   meta: ^1.15.0
@@ -314,6 +314,7 @@ class <Target>SchemaConverter {
       StringSchema() => _convertString(schema),
       IntegerSchema() => _convertInteger(schema),
       DoubleSchema() => _convertDouble(schema),
+      NumberSchema() => _convertNumber(schema),
       BooleanSchema() => _convertBoolean(schema),
       ObjectSchema() => _convertObject(schema),
       ListSchema() => _convertArray(schema),
@@ -370,6 +371,17 @@ class <Target>SchemaConverter {
   }
 
   static <TargetSchema> _convertDouble(DoubleSchema schema) {
+    final jsonSchema = schema.toJsonSchema();
+
+    return _buildNumberSchema(
+      description: schema.description,
+      nullable: schema.isNullable,
+      minimum: jsonSchema['minimum'] as num?,
+      maximum: jsonSchema['maximum'] as num?,
+    );
+  }
+
+  static <TargetSchema> _convertNumber(NumberSchema schema) {
     final jsonSchema = schema.toJsonSchema();
 
     return _buildNumberSchema(
@@ -1113,8 +1125,8 @@ Converts Ack schemas to <Target> format for [use case]. Assumes familiarity with
 
 \`\`\`yaml
 dependencies:
-  ack: ^1.0.0
-  ack_<target>: ^1.0.0
+  ack: ^1.0.0-beta.12
+  ack_<target>: ^1.0.0-beta.12
   <target_sdk>: ^x.y.z  # Required peer dependency
 \`\`\`
 
@@ -1184,6 +1196,7 @@ if (result.isOk) {
 | `Ack.string()` | [target type] | [Notes] |
 | `Ack.integer()` | [target type] | [Notes] |
 | `Ack.double()` | [target type] | [Notes] |
+| `Ack.number()` | [target type] | [Notes] |
 | `Ack.boolean()` | [target type] | [Notes] |
 | `Ack.object({...})` | [target type] | [Notes] |
 | `Ack.list(...)` | [target type] | [Notes] |
@@ -1519,6 +1532,7 @@ class OpenApiSchemaConverter {
       StringSchema() => _convertString(schema, jsonSchema),
       IntegerSchema() => _convertInteger(schema, jsonSchema),
       DoubleSchema() => _convertNumber(schema, jsonSchema),
+      NumberSchema() => _convertNumber(schema, jsonSchema),
       BooleanSchema() => _convertBoolean(schema, jsonSchema),
       ObjectSchema() => _convertObject(schema, jsonSchema),
       ListSchema() => _convertArray(schema, jsonSchema),
@@ -1601,6 +1615,7 @@ class GraphQlSchemaConverter {
       StringSchema() => 'String',
       IntegerSchema() => 'Int',
       DoubleSchema() => 'Float',
+      NumberSchema() => 'Float',
       BooleanSchema() => 'Boolean',
       ListSchema(:final itemSchema) => '[${_getGraphQLType(itemSchema)}]',
       EnumSchema() => _generateEnumType(schema),

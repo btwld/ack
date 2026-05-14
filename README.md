@@ -25,6 +25,7 @@ This repository is a monorepo containing:
 - **[ack](./packages/ack)**: Core validation library with fluent schema building API
 - **[ack_generator](./packages/ack_generator)**: Code generator for `@AckType()` extension-type wrappers
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured output generation
+- **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: JSON Schema Builder converter for Ack schemas
 - **[example](./example)**: Example projects demonstrating usage of all packages
 
 ## Quick Start

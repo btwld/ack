@@ -14,6 +14,7 @@ annotate top-level schema variables or getters with `@AckType()` and run
 2. `ack_annotations`: exposes `@AckType()`
 3. `ack_generator`: generates extension types for annotated top-level schemas
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
+5. `ack_json_schema_builder`: converts Ack schemas to json_schema_builder schemas
 
 ## Core runtime usage
 

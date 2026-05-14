@@ -39,7 +39,7 @@ environment:
   # flutter: '>=3.16.0'  # Uncomment if needed
 
 dependencies:
-  ack: ^1.0.0
+  ack: ^1.0.0-beta.12
   # <target_sdk>: ^x.y.z  # Add if needed
   meta: ^1.15.0
 
@@ -298,8 +298,8 @@ void main() {
 
 \`\`\`yaml
 dependencies:
-  ack: ^1.0.0
-  ack_<target>: ^1.0.0
+  ack: ^1.0.0-beta.12
+  ack_<target>: ^1.0.0-beta.12
 \`\`\`
 
 ## Usage

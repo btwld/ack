@@ -184,6 +184,66 @@ ObjectSchema get readingSchema => Ack.object({
       );
     });
 
+    test('maps chained Ack.number().min(...) to a num getter', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+ObjectSchema get readingSchema => Ack.object({
+  'value': Ack.number().min(0),
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains(
+                'extension type ReadingType(Map<String, Object?> _data)',
+              ),
+              contains('num get value'),
+              contains("_data['value'] as num"),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test(
+      'rejects top-level Ack.codec(...) extension-type generation',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        final result = await testBuilder(builder, {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+CodecSchema<String, int> get countSchema => Ack.codec<String, int>(
+  input: Ack.string(),
+  output: Ack.integer(),
+  decoder: int.parse,
+  encoder: (value) => value.toString(),
+);
+''',
+        });
+
+        expect(result.succeeded, isFalse);
+        expect(
+          result.errors.join('\n'),
+          contains('Ack.codec(...) is not supported by @AckType'),
+        );
+      },
+    );
+
     test('maps top-level Ack.list(Ack.number()) to List<num>', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

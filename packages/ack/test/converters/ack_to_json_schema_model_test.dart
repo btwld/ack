@@ -1,4 +1,5 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/comparison_constraint.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -163,6 +164,16 @@ void main() {
         expect(model.type, equals(JsonSchemaType.integer));
         expect(model.minimum, equals(0));
         expect(model.maximum, equals(120));
+      });
+
+      test('preserves wrapper constraints added after withDefault', () {
+        final model = Ack.string()
+            .withDefault('guest')
+            .withConstraint(ComparisonConstraint.stringMinLength(3))
+            .toJsonSchemaModel();
+
+        expect(model.type, equals(JsonSchemaType.string));
+        expect(model.minLength, equals(3));
       });
     });
 

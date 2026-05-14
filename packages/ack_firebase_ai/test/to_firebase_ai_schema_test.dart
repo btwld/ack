@@ -114,6 +114,15 @@ void main() {
         expect(result.maximum, closeTo(1.0, 1e-8));
       });
 
+      test('converts number with range', () {
+        final schema = Ack.number().min(0.5).max(10);
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.number);
+        expect(result.minimum, 0.5);
+        expect(result.maximum, 10);
+      });
+
       test('converts boolean schema', () {
         final schema = Ack.boolean();
         final result = schema.toFirebaseAiSchema();

@@ -59,10 +59,43 @@ class Ack {
   static NumberSchema number() => const NumberSchema();
   static BooleanSchema boolean() => const BooleanSchema();
   static AnySchema any() => const AnySchema();
-  static CodecSchema<String, Uri> uri() => CodecSchema<String, Uri>(const StringSchema());
-  static CodecSchema<String, DateTime> date() => CodecSchema<String, DateTime>(const StringSchema());
-  static CodecSchema<String, DateTime> datetime() => CodecSchema<String, DateTime>(const StringSchema());
-  static CodecSchema<int, Duration> duration() => CodecSchema<int, Duration>(const IntegerSchema());
+  static CodecSchema<String, Uri> uri() => CodecSchema<String, Uri>(
+    inputSchema: const StringSchema(),
+    outputSchema: InstanceSchema<Uri>(),
+    decoder: Uri.parse,
+    encoder: (value) => value.toString(),
+  );
+  static CodecSchema<String, DateTime> date() => CodecSchema<String, DateTime>(
+    inputSchema: const StringSchema(),
+    outputSchema: InstanceSchema<DateTime>(),
+    decoder: DateTime.parse,
+    encoder: (value) => value.toIso8601String(),
+  );
+  static CodecSchema<String, DateTime> datetime() => CodecSchema<String, DateTime>(
+    inputSchema: const StringSchema(),
+    outputSchema: InstanceSchema<DateTime>(),
+    decoder: DateTime.parse,
+    encoder: (value) => value.toIso8601String(),
+  );
+  static CodecSchema<int, Duration> duration() => CodecSchema<int, Duration>(
+    inputSchema: const IntegerSchema(),
+    outputSchema: InstanceSchema<Duration>(),
+    decoder: (value) => Duration(milliseconds: value),
+    encoder: (value) => value.inMilliseconds,
+  );
+
+  static CodecSchema<I, O> codec<I extends Object, O extends Object>({
+    required AckSchema<I> input,
+    required AckSchema<O> output,
+    required O Function(I) decoder,
+    required I Function(O) encoder,
+  }) =>
+      CodecSchema<I, O>(
+        inputSchema: input,
+        outputSchema: output,
+        decoder: decoder,
+        encoder: encoder,
+      );
 
   static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
   static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
@@ -93,15 +126,26 @@ class Ack {
 
 abstract class AckSchema<T> {
   CodecSchema<T, R> transform<R extends Object>(R Function(T value) decoder) =>
-      CodecSchema<T, R>(this);
+      CodecSchema<T, R>(
+        inputSchema: this,
+        outputSchema: InstanceSchema<R>(),
+        decoder: decoder,
+      );
   Map<String, Object?> toJsonSchema();
 }
-// Minimal mock of the real CodecSchema<I, O>. The generator only inspects
-// .transform(...) invocations and their output types via AST, so this
-// fixture stays intentionally tiny.
+// Minimal mock of the real CodecSchema<I, O>. The generator only needs enough
+// API surface for source snippets to resolve during build tests.
 class CodecSchema<Input, Output> extends AckSchema<Output> {
   final AckSchema<Input> inputSchema;
-  CodecSchema(this.inputSchema);
+  final AckSchema<Output> outputSchema;
+  final Output Function(Input) decoder;
+  final Input Function(Output)? encoder;
+  CodecSchema({
+    required this.inputSchema,
+    required this.outputSchema,
+    required this.decoder,
+    this.encoder,
+  });
   CodecSchema<Input, Output> nullable() => this;
   CodecSchema<Input, Output> optional() => this;
   CodecSchema<Input, Output> describe(String description) => this;
@@ -150,6 +194,13 @@ class DoubleSchema extends AckSchema<double> {
 }
 class NumberSchema extends AckSchema<num> {
   const NumberSchema();
+  NumberSchema greaterThan(num value) => this;
+  NumberSchema min(num value) => this;
+  NumberSchema lessThan(num value) => this;
+  NumberSchema max(num value) => this;
+  NumberSchema positive() => this;
+  NumberSchema negative() => this;
+  NumberSchema multipleOf(num value) => this;
   NumberSchema nullable() => this;
   NumberSchema optional() => this;
   NumberSchema describe(String description) => this;
@@ -170,6 +221,14 @@ class AnySchema extends AckSchema<dynamic> {
   const AnySchema();
   AnySchema nullable() => this;
   AnySchema optional() => this;
+
+  @override
+  Map<String, Object?> toJsonSchema() => {};
+}
+class InstanceSchema<T> extends AckSchema<T> {
+  InstanceSchema();
+  InstanceSchema<T> nullable() => this;
+  InstanceSchema<T> optional() => this;
 
   @override
   Map<String, Object?> toJsonSchema() => {};
