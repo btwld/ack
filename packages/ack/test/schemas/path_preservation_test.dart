@@ -339,13 +339,17 @@ void main() {
       final nullableJson = nullableSchema.toJsonSchema();
       final nonNullableJson = nonNullableSchema.toJsonSchema();
 
-      // Nullable AnySchema uses anyOf pattern with null
+      // Nullable AnySchema uses an anyOf pattern with null.
       expect(nullableJson.containsKey('anyOf'), isTrue);
+      expect(nullableJson['anyOf'], anyElement(equals({'type': 'null'})));
 
-      // Non-nullable AnySchema uses empty schema {} (no type field)
-      // which accepts any type except null
+      // Non-nullable AnySchema lists every non-null JSON type explicitly.
       expect(nonNullableJson.containsKey('type'), isFalse);
-      expect(nonNullableJson.containsKey('anyOf'), isFalse);
+      expect(nonNullableJson['anyOf'], isA<List>());
+      expect(
+        nonNullableJson['anyOf'],
+        isNot(anyElement(equals({'type': 'null'}))),
+      );
     });
 
     test('AnyOfSchema should include null type when nullable', () {

@@ -201,13 +201,28 @@ void main() {
   });
 
   group('JsonSchema ACK Integration - Any Schemas', () {
-    test('parses any schema as empty', () {
+    test('parses any schema as non-null anyOf', () {
       final ackSchema = Ack.any();
       final jsonMap = ackSchema.toJsonSchema();
       final jsonSchema = JsonSchema.fromJson(jsonMap);
 
-      // AnySchema produces empty schema
       expect(jsonSchema.singleType, isNull);
+      expect(jsonSchema.anyOf, hasLength(6));
+      expect(
+        jsonSchema.anyOf!.map((schema) => schema.singleType),
+        containsAll([
+          JsonSchemaType.string,
+          JsonSchemaType.number,
+          JsonSchemaType.integer,
+          JsonSchemaType.boolean,
+          JsonSchemaType.object,
+          JsonSchemaType.array,
+        ]),
+      );
+      expect(
+        jsonSchema.anyOf!.map((schema) => schema.singleType),
+        isNot(contains(JsonSchemaType.null_)),
+      );
     });
 
     test('parses nullable any schema', () {
@@ -215,8 +230,11 @@ void main() {
       final jsonMap = ackSchema.toJsonSchema();
       final jsonSchema = JsonSchema.fromJson(jsonMap);
 
-      // Nullable AnySchema uses anyOf
       expect(jsonSchema.anyOf, isNotNull);
+      expect(
+        jsonSchema.anyOf!.map((schema) => schema.singleType),
+        contains(JsonSchemaType.null_),
+      );
     });
 
     test('parses any with description', () {

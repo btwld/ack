@@ -200,6 +200,80 @@ void main() {
         expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
       });
 
+      test('accepts matching discriminator literal in toJsonSchema', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('cat'),
+              'name': Ack.string(),
+            }),
+          },
+        );
+
+        final jsonSchema = schema.toJsonSchema();
+        final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
+            .cast<String, Object?>();
+        final properties = (branch['properties'] as Map)
+            .cast<String, Object?>();
+
+        expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
+      });
+
+      test(
+        'accepts matching single-value discriminator enum in toJsonSchema',
+        () {
+          final schema = Ack.discriminated(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({
+                'type': Ack.enumString(['cat']),
+                'name': Ack.string(),
+              }),
+            },
+          );
+
+          final jsonSchema = schema.toJsonSchema();
+          final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
+              .cast<String, Object?>();
+          final properties = (branch['properties'] as Map)
+              .cast<String, Object?>();
+
+          expect(
+            properties['type'],
+            equals({'type': 'string', 'const': 'cat'}),
+          );
+        },
+      );
+
+      test('rejects mismatched discriminator literal in toJsonSchema', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('dog'),
+              'name': Ack.string(),
+            }),
+          },
+        );
+
+        expect(() => schema.toJsonSchema(), throwsArgumentError);
+      });
+
+      test('rejects multi-value discriminator enum in toJsonSchema', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.enumString(['cat', 'dog']),
+              'name': Ack.string(),
+            }),
+          },
+        );
+
+        expect(() => schema.toJsonSchema(), throwsArgumentError);
+      });
+
       test('omits non-JSON defaults for transformed discriminated schemas', () {
         final schema = Ack.discriminated<Object>(
           discriminatorKey: 'type',

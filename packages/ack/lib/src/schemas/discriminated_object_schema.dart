@@ -492,9 +492,15 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         );
       }
       final subSchemaJson = branchSchema.toJsonSchema();
+      final rawProperties = subSchemaJson['properties'] as Map?;
+      assertCompatibleDiscriminatorProperty(
+        discriminatorKey: discriminatorKey,
+        label: discriminatorValue,
+        rawPropertySchema: rawProperties?[discriminatorKey],
+      );
       // Constrain discriminator property with type and const
       subSchemaJson['properties'] = {
-        ...?(subSchemaJson['properties'] as Map?),
+        ...?rawProperties,
         discriminatorKey: {'type': 'string', 'const': discriminatorValue},
       };
       // Build required array with discriminator first

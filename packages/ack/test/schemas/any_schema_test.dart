@@ -58,12 +58,29 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      // AnySchema generates an empty schema {} (which accepts any type except null)
-      // with description and default fields
+      // AnySchema emits explicit non-null JSON types because an empty schema {}
+      // would also permit null.
       expect(jsonSchema['description'], equals('Accepts any value'));
       expect(jsonSchema['default'], equals('fallback'));
-      // Empty schema (no 'type' field) accepts any value
-      expect(jsonSchema.containsKey('type'), isFalse);
+      expect(jsonSchema['anyOf'], [
+        {'type': 'string'},
+        {'type': 'number'},
+        {'type': 'integer'},
+        {'type': 'boolean'},
+        {'type': 'object'},
+        {'type': 'array'},
+      ]);
+    });
+
+    test('JSON schema includes null only when nullable', () {
+      final nonNullableJson = Ack.any().toJsonSchema();
+      final nullableJson = Ack.any().nullable().toJsonSchema();
+
+      final nonNullableAnyOf = nonNullableJson['anyOf'] as List<Object?>;
+      final nullableAnyOf = nullableJson['anyOf'] as List<Object?>;
+
+      expect(nonNullableAnyOf, isNot(anyElement(equals({'type': 'null'}))));
+      expect(nullableAnyOf, anyElement(equals({'type': 'null'})));
     });
 
     test('should support fluent API', () {

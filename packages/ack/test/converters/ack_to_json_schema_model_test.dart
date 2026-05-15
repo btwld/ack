@@ -131,6 +131,77 @@ void main() {
       },
     );
 
+    test('accepts matching discriminator literal in branch properties', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
+        },
+      );
+
+      final json = schema.toJsonSchemaModel();
+
+      final catBranch = json.oneOf!.single;
+      expect(catBranch.properties!['type']!.enumValues, equals(['cat']));
+      expect(catBranch.required, equals(['type', 'name']));
+    });
+
+    test(
+      'accepts matching single-value discriminator enum in branch properties',
+      () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.enumString(['cat']),
+              'name': Ack.string(),
+            }),
+          },
+        );
+
+        final json = schema.toJsonSchemaModel();
+
+        final catBranch = json.oneOf!.single;
+        expect(catBranch.properties!['type']!.enumValues, equals(['cat']));
+      },
+    );
+
+    test('rejects mismatched discriminator literal in branch properties', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+    });
+
+    test('rejects multi-value discriminator enum in branch properties', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({
+            'type': Ack.enumString(['cat', 'dog']),
+            'name': Ack.string(),
+          }),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+    });
+
+    test('rejects loose discriminator schema in branch properties', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.string(), 'name': Ack.string()}),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+    });
+
     group('DefaultSchema (M15)', () {
       test('uses the inner boundary shape for the converter model', () {
         final model = Ack.string().withDefault('guest').toJsonSchemaModel();

@@ -234,11 +234,12 @@ JsonSchema _discriminated(
       );
     }
 
-    if (baseBranchSchema.properties.containsKey(discriminatorKey)) {
-      throw ArgumentError(
-        'Discriminator key "$discriminatorKey" conflicts with existing property in branch "$label".',
-      );
-    }
+    final discriminatorProperty = baseBranchSchema.properties[discriminatorKey];
+    assertCompatibleDiscriminatorProperty(
+      discriminatorKey: discriminatorKey,
+      label: label,
+      rawPropertySchema: discriminatorProperty?.toJsonSchema(),
+    );
 
     final convertedBranch = _convert(originalBranchSchema);
     final properties = <String, JsonSchema>{

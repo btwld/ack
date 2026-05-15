@@ -35,8 +35,8 @@ extension StringSchemaExtensions on StringSchema {
   /// Adds a constraint that the string must be a valid URI.
   ///
   /// This is an alias for [uri]. Validates absolute URIs with a scheme and
-  /// host while keeping the parsed value as a [String]. Use [Ack.uri] when
-  /// you need a [Uri] runtime value.
+  /// authority while keeping the parsed value as a [String]. Use [Ack.uri]
+  /// when you need a [Uri] runtime value.
   StringSchema url() {
     return withConstraint(PatternConstraint.uri());
   }

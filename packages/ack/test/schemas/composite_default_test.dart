@@ -302,7 +302,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
           },
@@ -348,7 +348,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(),
+              'type': Ack.literal('circle'),
               'radius': Ack.integer(),
             }),
           },

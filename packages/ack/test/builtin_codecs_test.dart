@@ -25,11 +25,10 @@ void main() {
     });
 
     test('encode rejects UTC DateTime values (A2 (a))', () {
-      // Per A2 (a), Ack.date() rejects UTC values — date is a calendar
+      // Per A2 (a), Ack.date() rejects UTC values: date is a calendar
       // date, not an instant. The error should NOT advise .toUtc().
       final result = Ack.date().safeEncode(DateTime.utc(2026, 5, 10));
       expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaEncodeError>());
       expect(
         result.getError().message,
         isNot(contains('toUtc')),
@@ -40,11 +39,28 @@ void main() {
     test('encode rejects non-midnight time components', () {
       final result = Ack.date().safeEncode(DateTime(2026, 5, 10, 12));
       expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaEncodeError>());
     });
 
     test('encode pads month/day to two digits', () {
       expect(Ack.date().encode(DateTime(2026, 1, 5)), equals('2026-01-05'));
+    });
+
+    test('default rejects UTC DateTime values before encode', () {
+      final result = Ack.date()
+          .withDefault(DateTime.utc(2026, 5, 10))
+          .safeParse(null);
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isNot(isA<SchemaEncodeError>()));
+    });
+
+    test('default rejects non-midnight DateTime values before encode', () {
+      final result = Ack.date()
+          .withDefault(DateTime(2026, 5, 10, 12))
+          .safeParse(null);
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isNot(isA<SchemaEncodeError>()));
     });
   });
 
@@ -66,13 +82,21 @@ void main() {
     test('encode rejects non-UTC DateTime', () {
       final result = Ack.datetime().safeEncode(DateTime(2026, 5, 10, 12, 30));
       expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaEncodeError>());
     });
 
     test('encode error mentions toUtc() (A3 (b))', () {
       final result = Ack.datetime().safeEncode(DateTime(2026, 5, 10, 12, 30));
       expect(result.isFail, isTrue);
       expect(result.getError().message, contains('toUtc'));
+    });
+
+    test('default rejects local DateTime values before encode', () {
+      final result = Ack.datetime()
+          .withDefault(DateTime(2026, 5, 10, 12, 30))
+          .safeParse(null);
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isNot(isA<SchemaEncodeError>()));
     });
   });
 
@@ -87,12 +111,38 @@ void main() {
     test('encode rejects a relative URI', () {
       final result = Ack.uri().safeEncode(Uri.parse('/relative'));
       expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaEncodeError>());
     });
 
     test('encode rejects a scheme-only URI without authority', () {
       final result = Ack.uri().safeEncode(Uri.parse('mailto:a@example.com'));
       expect(result.isFail, isTrue);
+    });
+
+    test('parse and encode both accept absolute URI with authority', () {
+      final schema = Ack.uri();
+      final uri = Uri.parse('file:///tmp/report.txt');
+
+      expect(schema.safeParse('file:///tmp/report.txt').isOk, isTrue);
+      expect(schema.safeEncode(uri).isOk, isTrue);
+    });
+
+    test('parse and encode both reject absolute URI without authority', () {
+      final schema = Ack.uri();
+
+      expect(schema.safeParse('mailto:a@example.com').isFail, isTrue);
+      expect(
+        schema.safeEncode(Uri.parse('mailto:a@example.com')).isFail,
+        isTrue,
+      );
+    });
+
+    test('default rejects relative URI values before encode', () {
+      final result = Ack.uri()
+          .withDefault(Uri.parse('/relative'))
+          .safeParse(null);
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isNot(isA<SchemaEncodeError>()));
     });
   });
 
@@ -117,11 +167,19 @@ void main() {
         const Duration(microseconds: 1501),
       );
       expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaEncodeError>());
     });
 
     test('encode accepts zero', () {
       expect(Ack.duration().encode(Duration.zero), equals(0));
+    });
+
+    test('default rejects sub-millisecond durations before encode', () {
+      final result = Ack.duration()
+          .withDefault(const Duration(microseconds: 1501))
+          .safeParse(null);
+
+      expect(result.isFail, isTrue);
+      expect(result.getError(), isNot(isA<SchemaEncodeError>()));
     });
   });
 

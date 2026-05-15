@@ -768,6 +768,25 @@ void main() {
     });
 
     group('DiscriminatedObjectSchema conversion', () {
+      test('accepts matching discriminator literal property', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'circle': Ack.object({
+              'type': Ack.literal('circle'),
+              'radius': Ack.double(),
+            }),
+          },
+        );
+
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.anyOf, hasLength(1));
+        expect(result.anyOf!.single.properties!['type']!.enumValues, [
+          'circle',
+        ]);
+      });
+
       test('throws when branch property conflicts with discriminator key', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',

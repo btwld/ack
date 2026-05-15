@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 
 import '../helpers.dart';
+import '../utils/uri_utils.dart';
 import 'constraint.dart';
 
 /// Type of pattern matching operation.
@@ -122,10 +123,10 @@ class PatternConstraint extends Constraint<String>
     type: PatternType.format,
     formatValidator: (v) {
       final u = Uri.tryParse(v);
-      return u != null && u.hasScheme && u.host.isNotEmpty;
+      return u != null && isAbsoluteUriWithAuthority(u);
     },
     constraintKey: 'string_format_uri',
-    description: 'Must be a valid absolute URI with a scheme and host.',
+    description: 'Must be a valid absolute URI with a scheme and authority.',
     customMessageBuilder: (v) => 'Invalid URI format, got "$v".',
   );
 

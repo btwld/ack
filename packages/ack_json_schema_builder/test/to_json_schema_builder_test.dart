@@ -435,6 +435,26 @@ void main() {
     });
 
     group('Discriminated + error wrapping', () {
+      test('accepts matching discriminator literal property', () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'circle': Ack.object({
+              'type': Ack.literal('circle'),
+              'radius': Ack.double(),
+            }),
+          },
+        );
+
+        final result = schema.toJsonSchemaBuilder();
+        final branch = _schemaFrom((result.value['oneOf'] as List).single);
+        final properties = (branch.value['properties'] as Map).map(
+          (key, value) => MapEntry(key as String, _schemaFrom(value)),
+        );
+
+        expect(properties['type']!.value['enum'], ['circle']);
+      });
+
       test('throws on discriminator/property conflict', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',

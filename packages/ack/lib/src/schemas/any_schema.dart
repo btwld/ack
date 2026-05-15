@@ -44,10 +44,22 @@ final class AnySchema extends AckSchema<Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    // Empty typeSchema means "accepts any value" per JSON Schema standard
-    typeSchema: {},
-  );
+  Map<String, Object?> toJsonSchema() {
+    final schema = <String, Object?>{
+      'anyOf': [
+        {'type': 'string'},
+        {'type': 'number'},
+        {'type': 'integer'},
+        {'type': 'boolean'},
+        {'type': 'object'},
+        {'type': 'array'},
+        if (isNullable) {'type': 'null'},
+      ],
+      if (description != null) 'description': description,
+    };
+
+    return mergeConstraintSchemas(schema);
+  }
 
   @override
   bool operator ==(Object other) {

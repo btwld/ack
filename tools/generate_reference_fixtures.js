@@ -31,6 +31,70 @@ if (!fs.existsSync(outputDir)) {
 const ajv = new Ajv({ strict: false, draft: "07" });
 addFormats(ajv);
 
+const ackAnyBranches = [
+  { type: "string" },
+  { type: "number" },
+  { type: "integer" },
+  { type: "boolean" },
+  { type: "object" },
+  { type: "array" },
+];
+
+function ackAnyJsonSchema({ nullable = false, defaultValue, description } = {}) {
+  const schema = {
+    anyOf: [...ackAnyBranches.map((branch) => ({ ...branch }))],
+  };
+  if (nullable) {
+    schema.anyOf.push({ type: "null" });
+  }
+  if (defaultValue !== undefined) {
+    schema.default = defaultValue;
+  }
+  if (description !== undefined) {
+    schema.description = description;
+  }
+  return schema;
+}
+
+function withSchemaHeader(source, body) {
+  return {
+    ...(source.$schema ? { $schema: source.$schema } : {}),
+    ...body,
+  };
+}
+
+function applyAckSpecificFixtureOverrides(name, jsonSchema) {
+  // ACK's raw AnySchema intentionally differs from Zod's {} output: non-null
+  // Ack.any() must not permit JSON null, so fixtures model every non-null JSON
+  // type explicitly.
+  switch (name) {
+    case "any-basic":
+      return withSchemaHeader(jsonSchema, ackAnyJsonSchema());
+    case "any-nullable":
+      return withSchemaHeader(jsonSchema, ackAnyJsonSchema({ nullable: true }));
+    case "any-with-default":
+      return withSchemaHeader(
+        jsonSchema,
+        ackAnyJsonSchema({ defaultValue: "default-any-value" })
+      );
+    case "any-with-description":
+      return withSchemaHeader(
+        jsonSchema,
+        ackAnyJsonSchema({ description: "Accepts any value type" })
+      );
+    case "object-comprehensive":
+      return {
+        ...jsonSchema,
+        properties: {
+          ...jsonSchema.properties,
+          metadata: ackAnyJsonSchema(),
+        },
+      };
+    default:
+      return jsonSchema;
+  }
+}
+
 // Reference schemas using Zod - mirrors Ack's schema types
 const referenceSchemas = {
   // ==================== String Schemas ====================
@@ -238,12 +302,13 @@ const generatedFiles = [];
 for (const [name, zodSchema] of Object.entries(referenceSchemas)) {
   try {
     // Use Zod v4's NATIVE toJSONSchema - no external package needed!
-    const jsonSchema = z.toJSONSchema(zodSchema, {
+    const zodJsonSchema = z.toJSONSchema(zodSchema, {
       target: "draft-7", // JSON Schema Draft 7
       unrepresentable: "any", // Convert unrepresentable types to {}
       cycles: "ref", // Use $ref for cycles
       reused: "inline", // Inline reused schemas
     });
+    const jsonSchema = applyAckSpecificFixtureOverrides(name, zodJsonSchema);
 
     // Validate with AJV
     ajv.compile(jsonSchema);
