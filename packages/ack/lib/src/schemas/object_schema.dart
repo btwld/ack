@@ -26,28 +26,26 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
   @override
   @protected
-  SchemaResult<JsonMap> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<JsonMap> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! Map) {
+    final mapValue = coerceJsonMap(value);
+    if (mapValue == null) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
 
-    final mapValue = inputValue is JsonMap
-        ? inputValue
-        : inputValue.cast<String, Object?>();
     final validatedMap = <String, Object?>{};
-    final validationErrors = <SchemaError>[];
+    final errors = <SchemaError>[];
 
     for (final entry in properties.entries) {
       final key = entry.key;
@@ -55,32 +53,26 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional) {
-          // Optional + DefaultSchema injection: invoke schema with null so it
-          // can supply its default.
-          if (schema is DefaultSchema) {
-            final propertyContext = context.createChild(
-              name: key,
-              schema: schema,
-              value: null,
-              pathSegment: key,
-            );
-            final result = schema.parseAndValidate(null, propertyContext);
-            result.match(
-              onOk: (validatedValue) {
-                if (validatedValue != null) {
-                  validatedMap[key] = validatedValue;
-                }
-              },
-              onFail: validationErrors.add,
-            );
-          }
-        } else {
+        if (schema is DefaultSchema) {
+          // Default-wrapped schemas resolve their default on parse(null).
+          final childCtx = context.createChild(
+            name: key,
+            schema: schema,
+            value: null,
+            pathSegment: key,
+          );
+          schema.parseWithContext(null, childCtx).match(
+                onOk: (v) {
+                  if (v != null) validatedMap[key] = v;
+                },
+                onFail: errors.add,
+              );
+        } else if (!schema.isOptional) {
           final ce = ObjectRequiredPropertiesConstraint(
             missingPropertyKey: key,
           ).validate(mapValue);
           if (ce != null) {
-            validationErrors.add(
+            errors.add(
               SchemaConstraintsError(
                 constraints: [ce],
                 context: context.createChild(
@@ -93,137 +85,45 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
             );
           }
         }
-      } else {
-        final propertyValue = mapValue[key];
-        final propertyContext = context.createChild(
-          name: key,
-          schema: schema,
-          value: propertyValue,
-          pathSegment: key,
-        );
-        final result = schema.parseAndValidate(propertyValue, propertyContext);
-        result.match(
-          onOk: (validatedValue) {
-            validatedMap[key] = validatedValue;
-          },
-          onFail: validationErrors.add,
-        );
-      }
-    }
-
-    final knownKeys = properties.keys.toSet();
-    for (final key in mapValue.keys) {
-      if (!knownKeys.contains(key)) {
-        if (additionalProperties) {
-          validatedMap[key] = mapValue[key];
-        } else {
-          validationErrors.add(
-            SchemaConstraintsError(
-              constraints: [
-                ConstraintError(
-                  constraint: ObjectNoAdditionalPropertiesConstraint(
-                    unexpectedPropertyKey: key,
-                  ),
-                  message: 'Property "$key" is not allowed.',
-                ),
-              ],
-              context: context.createChild(
-                name: key,
-                schema: this,
-                value: mapValue[key],
-                pathSegment: key,
-              ),
-            ),
-          );
-        }
-      }
-    }
-
-    if (validationErrors.isNotEmpty) {
-      return SchemaResult.fail(
-        SchemaNestedError(errors: validationErrors, context: context),
-      );
-    }
-
-    final unmodifiableMap = Map<String, Object?>.unmodifiable(validatedMap);
-    return applyConstraintsAndRefinements(unmodifiableMap, context);
-  }
-
-  @override
-  @protected
-  SchemaResult<JsonMap> encodeRuntime(
-    JsonMap value,
-    SchemaContext context,
-  ) {
-    final encodedMap = <String, Object?>{};
-    final errors = <SchemaError>[];
-    final knownKeys = properties.keys.toSet();
-
-    for (final entry in properties.entries) {
-      final key = entry.key;
-      final schema = entry.value;
-      final hasValue = value.containsKey(key);
-
-      if (!hasValue) {
-        if (!schema.isOptional) {
-          errors.add(
-            SchemaEncodeError.missingRequiredProperty(
-              propertyKey: key,
-              context: context.createChild(
-                name: key,
-                schema: schema,
-                value: null,
-                pathSegment: key,
-                operation: SchemaOperation.encode,
-              ),
-            ),
-          );
-        }
         continue;
       }
 
-      final propertyValue = value[key];
-      final propertyContext = context.createChild(
+      final propertyValue = mapValue[key];
+      final propertyCtx = context.createChild(
         name: key,
         schema: schema,
         value: propertyValue,
         pathSegment: key,
-        operation: SchemaOperation.encode,
       );
-
-      if (propertyValue == null) {
-        if (schema.isNullable) {
-          encodedMap[key] = null;
-        } else if (!schema.isOptional) {
-          errors.add(
-            SchemaEncodeError.nonNullable(context: propertyContext),
+      schema.parseWithContext(propertyValue, propertyCtx).match(
+            onOk: (v) {
+              validatedMap[key] = v;
+            },
+            onFail: errors.add,
           );
-        }
-        continue;
-      }
-
-      final encoded = schema.safeEncode(propertyValue);
-      if (encoded.isFail) {
-        errors.add(encoded.getError());
-        continue;
-      }
-      encodedMap[key] = encoded.getOrNull();
     }
 
-    for (final key in value.keys) {
+    final knownKeys = properties.keys.toSet();
+    for (final key in mapValue.keys) {
       if (knownKeys.contains(key)) continue;
       if (additionalProperties) {
-        encodedMap[key] = value[key];
+        validatedMap[key] = mapValue[key];
       } else {
         errors.add(
-          SchemaEncodeError.unexpectedProperty(
-            propertyKey: key,
+          SchemaConstraintsError(
+            constraints: [
+              ConstraintError(
+                constraint: ObjectNoAdditionalPropertiesConstraint(
+                  unexpectedPropertyKey: key,
+                ),
+                message: 'Property "$key" is not allowed.',
+              ),
+            ],
             context: context.createChild(
               name: key,
               schema: this,
-              value: value[key],
+              value: mapValue[key],
               pathSegment: key,
-              operation: SchemaOperation.encode,
             ),
           ),
         );
@@ -236,7 +136,207 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
-    return SchemaResult.ok(Map<String, Object?>.unmodifiable(encodedMap));
+    return applyConstraintsAndRefinements(
+      Map<String, Object?>.unmodifiable(validatedMap),
+      context,
+    );
+  }
+
+  @override
+  @protected
+  SchemaResult<JsonMap> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
+    final mapValue = coerceJsonMap(value);
+    if (mapValue == null) {
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: AckSchema.getSchemaType(value),
+          context: context,
+        ),
+      );
+    }
+
+    final errors = <SchemaError>[];
+    final isEncode = context.operation == SchemaOperation.encode;
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+      final hasValue = mapValue.containsKey(key);
+
+      if (!hasValue) {
+        if (schema.isOptional) continue;
+        final propertyCtx = context.createChild(
+          name: key,
+          schema: schema,
+          value: null,
+          pathSegment: key,
+        );
+        if (isEncode) {
+          errors.add(
+            SchemaEncodeError.missingRequiredProperty(
+              propertyKey: key,
+              context: propertyCtx,
+            ),
+          );
+        } else {
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
+          if (ce != null) {
+            errors.add(
+              SchemaConstraintsError(
+                constraints: [ce],
+                context: propertyCtx,
+              ),
+            );
+          }
+        }
+        continue;
+      }
+
+      final propertyValue = mapValue[key];
+      final propertyCtx = context.createChild(
+        name: key,
+        schema: schema,
+        value: propertyValue,
+        pathSegment: key,
+      );
+
+      if (propertyValue == null) {
+        if (schema.isNullable || schema.isOptional) continue;
+        if (isEncode) {
+          errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
+        } else {
+          final ce = NonNullableConstraint().validate(null);
+          if (ce != null) {
+            errors.add(
+              SchemaConstraintsError(
+                constraints: [ce],
+                context: propertyCtx,
+              ),
+            );
+          }
+        }
+        continue;
+      }
+
+      final r = schema.validateRuntimeWithContext(propertyValue, propertyCtx);
+      if (r.isFail) errors.add(r.getError());
+    }
+
+    final knownKeys = properties.keys.toSet();
+    for (final key in mapValue.keys) {
+      if (knownKeys.contains(key)) continue;
+      if (additionalProperties) continue;
+      final extraCtx = context.createChild(
+        name: key,
+        schema: this,
+        value: mapValue[key],
+        pathSegment: key,
+      );
+      if (isEncode) {
+        errors.add(
+          SchemaEncodeError.unexpectedProperty(
+            propertyKey: key,
+            context: extraCtx,
+          ),
+        );
+      } else {
+        errors.add(
+          SchemaConstraintsError(
+            constraints: [
+              ConstraintError(
+                constraint: ObjectNoAdditionalPropertiesConstraint(
+                  unexpectedPropertyKey: key,
+                ),
+                message: 'Property "$key" is not allowed.',
+              ),
+            ],
+            context: extraCtx,
+          ),
+        );
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    return applyConstraintsAndRefinements(mapValue, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<JsonMap> encodeWithContext(
+    JsonMap value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+
+    final encoded = <String, Object?>{};
+    final errors = <SchemaError>[];
+    final knownKeys = properties.keys.toSet();
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+      if (!value.containsKey(key)) continue;
+      final propertyValue = value[key];
+      if (propertyValue == null) {
+        if (schema.isNullable) encoded[key] = null;
+        continue;
+      }
+      final propertyCtx = context.createChild(
+        name: key,
+        schema: schema,
+        value: propertyValue,
+        pathSegment: key,
+        operation: SchemaOperation.encode,
+      );
+      try {
+        final r = schema.encodeWithContext(propertyValue, propertyCtx);
+        if (r.isFail) {
+          errors.add(r.getError());
+        } else {
+          encoded[key] = r.getOrNull();
+        }
+      } catch (e, st) {
+        errors.add(
+          SchemaEncodeError.encoderThrew(
+            message: 'Property "$key" encoder threw: $e',
+            context: propertyCtx,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+      }
+    }
+
+    if (additionalProperties) {
+      for (final key in value.keys) {
+        if (!knownKeys.contains(key)) {
+          encoded[key] = value[key];
+        }
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    return SchemaResult.ok(Map<String, Object?>.unmodifiable(encoded));
   }
 
   @override

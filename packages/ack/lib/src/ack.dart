@@ -1,12 +1,11 @@
 import 'common_types.dart';
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
+import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
 /// The main entry point for creating schemas with the Ack validation library.
-///
-/// Provides a fluent API for creating various schema types.
 final class Ack {
   /// Creates a string schema. Boundary and runtime are both `String`.
   static StringSchema string() => const StringSchema();
@@ -61,13 +60,14 @@ final class Ack {
   /// Creates a schema that accepts any non-null value.
   static AnySchema any() => const AnySchema();
 
-  /// Creates a schema for a specific Dart instance type [T], with [T] as both
-  /// boundary and runtime type.
+  /// Creates a schema for a specific Dart instance type [T], with [T] as
+  /// both boundary and runtime type.
   static InstanceSchema<T> instance<T extends Object>() =>
       InstanceSchema<T>();
 
   /// Creates a universal codec from an [input] schema, with a [decode]
-  /// function and an [encode] function.
+  /// function and an [encode] function. The optional [output] schema
+  /// applies runtime-side invariants.
   static CodecSchema<Boundary, Runtime> codec<
     Boundary extends Object,
     InputRuntime extends Object,
@@ -86,50 +86,83 @@ final class Ack {
     );
   }
 
-  /// Creates a bidirectional date schema that parses ISO 8601 date strings
-  /// (YYYY-MM-DD) into [DateTime] objects (local midnight) and encodes
-  /// [DateTime] back to the YYYY-MM-DD form.
+  /// Bidirectional date codec: ISO 8601 `YYYY-MM-DD` strings ↔ local
+  /// midnight `DateTime` runtime values.
+  ///
+  /// Runtime invariant: the encoded `DateTime` must be local midnight
+  /// (year/month/day only). Values with non-zero time-of-day fail
+  /// `safeEncode` and `validateRuntimeWithContext`.
   static CodecSchema<String, DateTime> date() {
     return CodecSchemaImpl<String, String, DateTime>(
       inputSchema: string().date(),
-      outputSchema: InstanceSchema<DateTime>(),
+      outputSchema: InstanceSchema<DateTime>().refine(
+        _isLocalMidnightDate,
+        message: 'Expected a local DateTime at midnight (00:00:00.000).',
+      ),
       decoder: DateTime.parse,
       encoder: _encodeIsoDate,
     );
   }
 
-  /// Creates a bidirectional datetime schema that parses ISO 8601 datetime
-  /// strings into [DateTime] objects (UTC) and encodes [DateTime] back to
-  /// ISO 8601 form.
+  /// Bidirectional datetime codec: ISO 8601 datetime strings ↔ UTC
+  /// `DateTime` runtime values.
+  ///
+  /// Runtime invariant: the encoded `DateTime` must be UTC. Local-time
+  /// values fail validation; convert with `.toUtc()` before encoding.
   static CodecSchema<String, DateTime> datetime() {
     return CodecSchemaImpl<String, String, DateTime>(
       inputSchema: string().datetime(),
-      outputSchema: InstanceSchema<DateTime>(),
+      outputSchema: InstanceSchema<DateTime>().refine(
+        (value) => value.isUtc,
+        message: 'Expected a UTC DateTime.',
+      ),
       decoder: DateTime.parse,
       encoder: _encodeIsoDateTime,
     );
   }
 
-  /// Creates a bidirectional URI schema.
+  /// Bidirectional URI codec.
+  ///
+  /// Runtime invariant: the `Uri` must have both a scheme and a host
+  /// (matching the parse-side predicate).
   static CodecSchema<String, Uri> uri() {
     return CodecSchemaImpl<String, String, Uri>(
       inputSchema: string().uri(),
-      outputSchema: InstanceSchema<Uri>(),
+      outputSchema: InstanceSchema<Uri>().refine(
+        (u) => u.hasScheme && u.host.isNotEmpty,
+        message: 'Expected an absolute URI with scheme and host.',
+      ),
       decoder: Uri.parse,
       encoder: (value) => value.toString(),
     );
   }
 
-  /// Creates a bidirectional duration schema that parses milliseconds into
-  /// [Duration] objects.
+  /// Bidirectional duration codec: milliseconds ↔ `Duration`.
+  ///
+  /// Runtime invariant: the `Duration` must be a whole number of
+  /// milliseconds (sub-millisecond precision is rejected to avoid silent
+  /// truncation on encode).
   static CodecSchema<int, Duration> duration() {
     return CodecSchemaImpl<int, int, Duration>(
       inputSchema: integer(),
-      outputSchema: InstanceSchema<Duration>(),
+      outputSchema: InstanceSchema<Duration>().refine(
+        (value) =>
+            value.inMicroseconds % Duration.microsecondsPerMillisecond == 0,
+        message: 'Expected a whole-millisecond Duration.',
+      ),
       decoder: (ms) => Duration(milliseconds: ms),
       encoder: (value) => value.inMilliseconds,
     );
   }
+}
+
+bool _isLocalMidnightDate(DateTime value) {
+  if (value.isUtc) return false;
+  return value.hour == 0 &&
+      value.minute == 0 &&
+      value.second == 0 &&
+      value.millisecond == 0 &&
+      value.microsecond == 0;
 }
 
 String _encodeIsoDate(DateTime value) {

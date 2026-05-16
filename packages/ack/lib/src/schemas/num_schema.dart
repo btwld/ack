@@ -31,28 +31,37 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   @protected
-  SchemaResult<int> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<int> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<int> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! int) {
+    if (value is! int) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
-    return applyConstraintsAndRefinements(inputValue, context);
+    return applyConstraintsAndRefinements(value, context);
   }
 
   @override
   @protected
-  SchemaResult<int> encodeRuntime(int value, SchemaContext context) {
+  SchemaResult<int> encodeWithContext(int value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 
@@ -107,32 +116,49 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   @protected
-  SchemaResult<double> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<double> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    // Per JSON Schema, an integer is a valid number — widen to double.
-    if (inputValue is int) {
-      return applyConstraintsAndRefinements(inputValue.toDouble(), context);
+    // Per JSON Schema, an integer is a valid number — widen to double on parse.
+    if (value is int) {
+      return applyConstraintsAndRefinements(value.toDouble(), context);
     }
-    if (inputValue is! double) {
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
-          context: context,
-        ),
-      );
-    }
-    return applyConstraintsAndRefinements(inputValue, context);
+    return validateRuntimeWithContext(value, context);
   }
 
   @override
   @protected
-  SchemaResult<double> encodeRuntime(double value, SchemaContext context) {
+  SchemaResult<double> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
+    if (value is! double) {
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: AckSchema.getSchemaType(value),
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<double> encodeWithContext(
+    double value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 
@@ -187,27 +213,36 @@ final class NumberSchema extends NumSchema<num>
 
   @override
   @protected
-  SchemaResult<num> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<num> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<num> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-    if (inputValue is! num) {
+    if (value is! num) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
-    return applyConstraintsAndRefinements(inputValue, context);
+    return applyConstraintsAndRefinements(value, context);
   }
 
   @override
   @protected
-  SchemaResult<num> encodeRuntime(num value, SchemaContext context) {
+  SchemaResult<num> encodeWithContext(num value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 

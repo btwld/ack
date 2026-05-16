@@ -30,94 +30,168 @@ final class ListSchema<
 
   @override
   @protected
-  SchemaResult<List<ItemRuntime>> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<List<ItemRuntime>> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! List) {
+    if (value is! List) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
-    final inputList = inputValue;
-    final validatedItems = <ItemRuntime>[];
-    final itemErrors = <SchemaError>[];
+    final validated = <ItemRuntime>[];
+    final errors = <SchemaError>[];
 
-    for (var i = 0; i < inputList.length; i++) {
-      final itemValue = inputList[i];
-      final itemContext = context.createChild(
+    for (var i = 0; i < value.length; i++) {
+      final item = value[i];
+      final itemCtx = context.createChild(
         name: '$i',
         schema: itemSchema,
-        value: itemValue,
+        value: item,
         pathSegment: '$i',
       );
-
-      final itemResult = itemSchema.parseAndValidate(itemValue, itemContext);
-
-      if (itemResult.isOk) {
-        final validatedItemValue = itemResult.getOrNull();
-        if (validatedItemValue is ItemRuntime) {
-          validatedItems.add(validatedItemValue);
+      final r = itemSchema.parseWithContext(item, itemCtx);
+      if (r.isOk) {
+        final v = r.getOrNull();
+        if (v is ItemRuntime) {
+          validated.add(v);
         } else {
-          itemErrors.add(
+          errors.add(
             SchemaValidationError(
               message:
-                  'List item ${itemContext.name} resolved to null. Use non-nullable item schemas for Ack.list.',
-              context: itemContext,
+                  'List item $i resolved to null. Use non-nullable item schemas for Ack.list.',
+              context: itemCtx,
             ),
           );
         }
       } else {
-        itemErrors.add(itemResult.getError());
+        errors.add(r.getError());
       }
     }
 
-    if (itemErrors.isNotEmpty) {
+    if (errors.isNotEmpty) {
       return SchemaResult.fail(
-        SchemaNestedError(errors: itemErrors, context: context),
+        SchemaNestedError(errors: errors, context: context),
       );
     }
 
-    final unmodifiableList = List<ItemRuntime>.unmodifiable(validatedItems);
-    return applyConstraintsAndRefinements(unmodifiableList, context);
+    return applyConstraintsAndRefinements(
+      List<ItemRuntime>.unmodifiable(validated),
+      context,
+    );
   }
 
   @override
   @protected
-  SchemaResult<List<ItemBoundary>> encodeRuntime(
+  SchemaResult<List<ItemRuntime>> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
+    if (value is! List) {
+      return SchemaResult.fail(
+        TypeMismatchError(
+          expectedType: schemaType,
+          actualType: AckSchema.getSchemaType(value),
+          context: context,
+        ),
+      );
+    }
+
+    final typed = <ItemRuntime>[];
+    final errors = <SchemaError>[];
+    for (var i = 0; i < value.length; i++) {
+      final item = value[i];
+      final itemCtx = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: item,
+        pathSegment: '$i',
+      );
+      final r = itemSchema.validateRuntimeWithContext(item, itemCtx);
+      if (r.isOk) {
+        final v = r.getOrNull();
+        if (v is ItemRuntime) {
+          typed.add(v);
+        } else {
+          errors.add(
+            SchemaValidationError(
+              message:
+                  'List item $i resolved to null. Use non-nullable item schemas for Ack.list.',
+              context: itemCtx,
+            ),
+          );
+        }
+      } else {
+        errors.add(r.getError());
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    return applyConstraintsAndRefinements(
+      List<ItemRuntime>.unmodifiable(typed),
+      context,
+    );
+  }
+
+  @override
+  @protected
+  SchemaResult<List<ItemBoundary>> encodeWithContext(
     List<ItemRuntime> value,
     SchemaContext context,
   ) {
-    final encodedItems = <ItemBoundary>[];
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+
+    final encoded = <ItemBoundary>[];
     final errors = <SchemaError>[];
     for (var i = 0; i < value.length; i++) {
-      final itemValue = value[i];
-      final itemContext = context.createChild(
+      final item = value[i];
+      final itemCtx = context.createChild(
         name: '$i',
         schema: itemSchema,
-        value: itemValue,
+        value: item,
         pathSegment: '$i',
+        operation: SchemaOperation.encode,
       );
-      final encoded = itemSchema.safeEncode(itemValue, debugName: '$i');
-      if (encoded.isFail) {
-        errors.add(encoded.getError());
-        continue;
-      }
-      final boundary = encoded.getOrNull();
-      if (boundary is ItemBoundary) {
-        encodedItems.add(boundary);
-      } else {
+      try {
+        final r = itemSchema.encodeWithContext(item, itemCtx);
+        if (r.isFail) {
+          errors.add(r.getError());
+          continue;
+        }
+        final boundary = r.getOrNull();
+        if (boundary is ItemBoundary) {
+          encoded.add(boundary);
+        } else {
+          errors.add(
+            SchemaEncodeError.typeMismatch(
+              message: 'List item $i encoded to an unexpected type.',
+              context: itemCtx,
+            ),
+          );
+        }
+      } catch (e, st) {
         errors.add(
-          SchemaEncodeError.typeMismatch(
-            message: 'List item $i encoded to an unexpected type.',
-            context: itemContext,
+          SchemaEncodeError.encoderThrew(
+            message: 'List item $i encoder threw: $e',
+            context: itemCtx,
+            cause: e,
+            stackTrace: st,
           ),
         );
       }
@@ -127,7 +201,7 @@ final class ListSchema<
         SchemaNestedError(errors: errors, context: context),
       );
     }
-    return SchemaResult.ok(List<ItemBoundary>.unmodifiable(encodedItems));
+    return SchemaResult.ok(List<ItemBoundary>.unmodifiable(encoded));
   }
 
   @override

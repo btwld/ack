@@ -1,6 +1,6 @@
 part of 'schema.dart';
 
-/// Schema that accepts any value without type conversion or validation.
+/// Schema that accepts any non-null value.
 @immutable
 final class AnySchema extends AckSchema<Object, Object>
     with FluentSchema<Object, Object, AnySchema> {
@@ -17,18 +17,30 @@ final class AnySchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Object> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<Object> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-    return applyConstraintsAndRefinements(inputValue!, context);
+    return applyConstraintsAndRefinements(value!, context);
   }
 
   @override
   @protected
-  SchemaResult<Object> encodeRuntime(Object value, SchemaContext context) {
+  SchemaResult<Object> encodeWithContext(
+    Object value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 

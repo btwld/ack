@@ -17,29 +17,38 @@ final class BooleanSchema extends AckSchema<bool, bool>
 
   @override
   @protected
-  SchemaResult<bool> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<bool> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<bool> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! bool) {
+    if (value is! bool) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
 
-    return applyConstraintsAndRefinements(inputValue, context);
+    return applyConstraintsAndRefinements(value, context);
   }
 
   @override
   @protected
-  SchemaResult<bool> encodeRuntime(bool value, SchemaContext context) {
+  SchemaResult<bool> encodeWithContext(bool value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 

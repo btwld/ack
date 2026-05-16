@@ -4,7 +4,8 @@ part of 'schema.dart';
 /// null on parse. Encoding does not inject defaults.
 @immutable
 final class DefaultSchema<Boundary extends Object, Runtime extends Object>
-    extends AckSchema<Boundary, Runtime> {
+    extends AckSchema<Boundary, Runtime>
+    implements ConfigurableSchema<Boundary, Runtime> {
   final AckSchema<Boundary, Runtime> inner;
   final Runtime defaultValue;
 
@@ -19,6 +20,8 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @override
   SchemaType get schemaType => inner.schemaType;
 
+  // DefaultSchema is treated as optional/nullable based on inner so callers
+  // can use it as a property without further annotation.
   @override
   bool get isNullable => super.isNullable || inner.isNullable;
 
@@ -27,45 +30,53 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
 
   @override
   @protected
-  SchemaResult<Runtime> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Runtime> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    if (inputValue == null) {
+    if (value == null) {
       final cloned = cloneDefault(defaultValue);
       final effective = (cloned is Runtime) ? cloned : defaultValue;
-      // Validate the default through the inner schema (in case it has
-      // constraints/refinements that should apply).
-      return inner.parseAndValidate(effective, context);
+      // Validate the runtime default through the inner schema's runtime
+      // path — defaults are runtime values, not boundary values.
+      return inner.validateRuntimeWithContext(effective, context);
     }
-    return inner.parseAndValidate(inputValue, context);
+    return inner.parseWithContext(value, context);
   }
 
   @override
   @protected
-  SchemaResult<Boundary> encodeRuntime(
+  SchemaResult<Runtime> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    return inner.validateRuntimeWithContext(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Boundary> encodeWithContext(
     Runtime value,
     SchemaContext context,
   ) {
-    return inner.safeEncode(value);
+    return inner.encodeWithContext(value, context);
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
     final base = Map<String, Object?>.from(inner.toJsonSchema());
-    // Best-effort: attempt to encode the default to boundary for export.
+    // Best-effort: emit default only if it round-trips cleanly to boundary.
+    // If encoding fails (e.g. the runtime value cannot be serialised), omit
+    // the default rather than leaking a non-JSON runtime object.
     final encoded = inner.safeEncode(defaultValue);
     if (encoded.isOk) {
       base['default'] = encoded.getOrNull();
-    } else {
-      base['default'] = defaultValue;
     }
     return base;
   }
 
   /// Returns a copy of this default-wrapped schema with the given fields
-  /// replaced. Provided so chained fluent calls (e.g.
-  /// `.withDefault(x).describe(...)`) keep working.
+  /// replaced.
   DefaultSchema<Boundary, Runtime> copyWith({
     AckSchema<Boundary, Runtime>? inner,
     Runtime? defaultValue,
@@ -79,6 +90,39 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
       isNullable: isNullable ?? super.isNullable,
       isOptional: isOptional ?? super.isOptional,
       description: description ?? this.description,
+    );
+  }
+
+  @override
+  AckSchema<Boundary, Runtime> withRuntimeConfig({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<Runtime>>? constraints,
+    List<Refinement<Runtime>>? refinements,
+  }) {
+    // Constraints/refinements are forwarded onto the inner schema if it is
+    // configurable; the default wrapper itself only owns description,
+    // isNullable and isOptional.
+    if ((constraints != null || refinements != null) &&
+        inner is ConfigurableSchema<Boundary, Runtime>) {
+      final updated =
+          (inner as ConfigurableSchema<Boundary, Runtime>).withRuntimeConfig(
+        constraints: constraints,
+        refinements: refinements,
+      );
+      return DefaultSchema<Boundary, Runtime>(
+        inner: updated,
+        defaultValue: defaultValue,
+        isNullable: isNullable ?? super.isNullable,
+        isOptional: isOptional ?? super.isOptional,
+        description: description ?? this.description,
+      );
+    }
+    return copyWith(
+      isNullable: isNullable,
+      isOptional: isOptional,
+      description: description,
     );
   }
 

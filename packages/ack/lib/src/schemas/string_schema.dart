@@ -1,9 +1,6 @@
 part of 'schema.dart';
 
 /// Schema for validating string values.
-///
-/// `StringSchema` is a primitive schema where boundary and runtime types both
-/// equal `String`.
 @immutable
 final class StringSchema extends AckSchema<String, String>
     with FluentSchema<String, String, StringSchema> {
@@ -20,29 +17,41 @@ final class StringSchema extends AckSchema<String, String>
 
   @override
   @protected
-  SchemaResult<String> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<String> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<String> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! String) {
+    if (value is! String) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
 
-    return applyConstraintsAndRefinements(inputValue, context);
+    return applyConstraintsAndRefinements(value, context);
   }
 
   @override
   @protected
-  SchemaResult<String> encodeRuntime(String value, SchemaContext context) {
+  SchemaResult<String> encodeWithContext(
+    String value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 

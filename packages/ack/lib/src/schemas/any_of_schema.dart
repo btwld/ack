@@ -2,8 +2,11 @@ part of 'schema.dart';
 
 /// Schema for validating against a list of schemas (union).
 ///
-/// `AnyOfSchema` keeps broad typing in the first redesign (`Object`/`Object`)
-/// because Dart does not have first-class union types.
+/// Keeps broad typing in the first redesign (`Object`/`Object`) because
+/// Dart does not have first-class union types.
+///
+/// Nullable semantics are symmetric: an `AnyOfSchema` allows null on both
+/// parse and encode if [isNullable] is true OR any branch is itself nullable.
 @immutable
 final class AnyOfSchema extends AckSchema<Object, Object>
     with FluentSchema<Object, Object, AnyOfSchema> {
@@ -21,41 +24,35 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   @override
   SchemaType get schemaType => SchemaType.anyOf;
 
+  bool get _anyBranchNullable => schemas.any((s) => s.isNullable);
+
   @override
   @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Object> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final errors = <SchemaError>[];
+    if (value == null) {
+      if (isNullable || _anyBranchNullable) return SchemaResult.ok(null);
+      return failNonNullable(context);
+    }
 
+    final errors = <SchemaError>[];
     for (final (index, schema) in schemas.indexed) {
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
-        value: inputValue,
+        value: value,
         pathSegment: '',
       );
-
-      final result = schema.parseAndValidate(inputValue, childContext);
-
+      final result = schema.parseWithContext(value, childContext);
       if (result.isOk) {
-        final validatedValue = result.getOrNull();
-
-        if (validatedValue == null) {
-          return SchemaResult.ok(null);
-        }
-
-        return applyConstraintsAndRefinements(validatedValue, context);
+        final v = result.getOrNull();
+        if (v == null) return SchemaResult.ok(null);
+        return applyConstraintsAndRefinements(v, context);
       }
-
       errors.add(result.getError());
     }
-
-    if (inputValue == null && isNullable) {
-      return SchemaResult.ok(null);
-    }
-
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
@@ -63,7 +60,41 @@ final class AnyOfSchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> encodeRuntime(Object value, SchemaContext context) {
+  SchemaResult<Object> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    if (value == null) {
+      if (isNullable || _anyBranchNullable) return SchemaResult.ok(null);
+      return failNonNullable(context);
+    }
+    final errors = <SchemaError>[];
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: value,
+        pathSegment: '',
+      );
+      final result = schema.validateRuntimeWithContext(value, childContext);
+      if (result.isOk) {
+        final v = result.getOrNull();
+        if (v == null) return SchemaResult.ok(null);
+        return applyConstraintsAndRefinements(v, context);
+      }
+      errors.add(result.getError());
+    }
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> encodeWithContext(
+    Object value,
+    SchemaContext context,
+  ) {
     final errors = <SchemaError>[];
     for (final (index, schema) in schemas.indexed) {
       final childContext = context.createChild(
@@ -74,7 +105,15 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         operation: SchemaOperation.encode,
       );
       try {
-        final encoded = schema.safeEncode(value);
+        // Validate against the branch's runtime first; only attempt encode
+        // when the value plausibly fits this branch.
+        final branchValidation =
+            schema.validateRuntimeWithContext(value, childContext);
+        if (branchValidation.isFail) {
+          errors.add(branchValidation.getError());
+          continue;
+        }
+        final encoded = schema.encodeWithContext(value, childContext);
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {
@@ -97,6 +136,17 @@ final class AnyOfSchema extends AckSchema<Object, Object>
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
+  }
+
+  // Override base safeEncode so the "any branch nullable" rule applies to
+  // the null gate that the base class would otherwise check against this
+  // schema's own [isNullable] alone.
+  @override
+  SchemaResult<Object> safeEncode(Object? value, {String? debugName}) {
+    if (value == null && _anyBranchNullable) {
+      return SchemaResult.ok(null);
+    }
+    return super.safeEncode(value, debugName: debugName);
   }
 
   @override

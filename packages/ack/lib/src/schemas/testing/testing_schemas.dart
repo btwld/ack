@@ -1,6 +1,7 @@
 part of 'package:ack/src/schemas/schema.dart';
 
-/// Testing-only schema used to simulate unsupported conversions in integration packages.
+/// Testing-only schema used to simulate unsupported conversions in
+/// integration packages.
 @visibleForTesting
 final class TestUnsupportedAckSchema extends AckSchema<Object, Object> {
   const TestUnsupportedAckSchema({
@@ -16,18 +17,30 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object> {
 
   @override
   @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Object> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<Object> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-    return applyConstraintsAndRefinements(inputValue!, context);
+    return applyConstraintsAndRefinements(value!, context);
   }
 
   @override
   @protected
-  SchemaResult<Object> encodeRuntime(Object value, SchemaContext context) {
+  SchemaResult<Object> encodeWithContext(
+    Object value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 

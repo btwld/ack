@@ -1,10 +1,9 @@
 part of 'schema.dart';
 
 /// Schema that accepts a specific runtime [T] instance, with [T] as both
-/// boundary and runtime type.
-///
-/// Used primarily as the `output` schema of a [CodecSchema] to attach typed
-/// refinements (e.g. requiring a `DateTime` to be UTC).
+/// boundary and runtime type. Used as the default `output` schema of a
+/// [CodecSchema] so codec authors can attach typed refinements (e.g.
+/// requiring a `DateTime` to be UTC) on the runtime side.
 @immutable
 final class InstanceSchema<T extends Object> extends AckSchema<T, T>
     with FluentSchema<T, T, InstanceSchema<T>> {
@@ -21,27 +20,35 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
 
   @override
   @protected
-  SchemaResult<T> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<T> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<T> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-
-    if (inputValue is! T) {
+    if (value is! T) {
       return SchemaResult.fail(
         SchemaValidationError(
-          message: 'Expected instance of $T, got ${inputValue.runtimeType}',
+          message: 'Expected instance of $T, got ${value.runtimeType}',
           context: context,
         ),
       );
     }
-    return applyConstraintsAndRefinements(inputValue, context);
+    return applyConstraintsAndRefinements(value, context);
   }
 
   @override
   @protected
-  SchemaResult<T> encodeRuntime(T value, SchemaContext context) {
+  SchemaResult<T> encodeWithContext(T value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value);
   }
 

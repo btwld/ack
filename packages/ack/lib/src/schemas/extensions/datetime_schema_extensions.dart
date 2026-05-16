@@ -1,31 +1,26 @@
+import '../../constraints/constraint.dart';
 import '../../constraints/datetime_constraint.dart';
 import '../schema.dart';
 
-/// Extensions for `CodecSchema<String, DateTime>` to add date range validation.
+/// Extensions for `CodecSchema<String, DateTime>` to add date range
+/// validation. Works against the [ConfigurableSchema] surface, not the
+/// concrete `CodecSchemaImpl`, so user-provided codec subclasses also
+/// benefit.
 extension DateTimeSchemaExtensions on CodecSchema<String, DateTime> {
   /// Constrains the date to be on or after [minDate] (inclusive).
-  CodecSchema<String, DateTime> min(DateTime minDate) {
-    final self = this;
-    if (self is CodecSchemaImpl<String, dynamic, DateTime>) {
-      return self.copyWith(
-        constraints: [...self.constraints, DateTimeConstraint.min(minDate)],
-      );
-    }
-    throw StateError(
-      'min() requires CodecSchemaImpl, got ${self.runtimeType}',
-    );
-  }
+  CodecSchema<String, DateTime> min(DateTime minDate) =>
+      _addConstraint(DateTimeConstraint.min(minDate));
 
   /// Constrains the date to be on or before [maxDate] (inclusive).
-  CodecSchema<String, DateTime> max(DateTime maxDate) {
-    final self = this;
-    if (self is CodecSchemaImpl<String, dynamic, DateTime>) {
-      return self.copyWith(
-        constraints: [...self.constraints, DateTimeConstraint.max(maxDate)],
-      );
-    }
-    throw StateError(
-      'max() requires CodecSchemaImpl, got ${self.runtimeType}',
-    );
+  CodecSchema<String, DateTime> max(DateTime maxDate) =>
+      _addConstraint(DateTimeConstraint.max(maxDate));
+
+  CodecSchema<String, DateTime> _addConstraint(
+    Constraint<DateTime> constraint,
+  ) {
+    final configurable = this as ConfigurableSchema<String, DateTime>;
+    return configurable.withRuntimeConfig(
+      constraints: [...constraints, constraint],
+    ) as CodecSchema<String, DateTime>;
   }
 }

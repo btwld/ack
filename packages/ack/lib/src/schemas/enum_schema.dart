@@ -21,15 +21,18 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 
   @override
   @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    final nullResult = handleNullInput(inputValue, context);
+  SchemaResult<T> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! String) {
+    if (value is! String) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: SchemaType.string,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
@@ -37,7 +40,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 
     T? parsed;
     try {
-      parsed = values.firstWhere((e) => e.name == inputValue);
+      parsed = values.firstWhere((e) => e.name == value);
     } on StateError {
       parsed = null;
     } catch (e, st) {
@@ -53,8 +56,8 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 
     if (parsed == null) {
       final allowed = values.map((e) => e.name).toList(growable: false);
-      final closest = findClosestStringMatch(inputValue, allowed);
-      final suggestion = closest != null && closest != inputValue
+      final closest = findClosestStringMatch(value, allowed);
+      final suggestion = closest != null && closest != value
           ? ' Did you mean "$closest"?'
           : '';
 
@@ -63,7 +66,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
         message:
             'Invalid enum value. Allowed: ${allowed.map((s) => '"$s"').join(', ')}.$suggestion',
         context: {
-          'received': inputValue,
+          'received': value,
           'allowedValues': allowed,
           if (closest != null) 'closestMatchSuggestion': closest,
         },
@@ -79,15 +82,36 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 
   @override
   @protected
-  SchemaResult<String> encodeRuntime(T value, SchemaContext context) {
+  SchemaResult<T> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    if (value is! T) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Expected instance of $T, got ${value.runtimeType}',
+          context: context,
+        ),
+      );
+    }
     if (!values.contains(value)) {
       return SchemaResult.fail(
-        SchemaEncodeError.typeMismatch(
+        SchemaValidationError(
           message: 'Enum value $value is not part of the schema values.',
           context: context,
         ),
       );
     }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<String> encodeWithContext(T value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(value.name);
   }
 

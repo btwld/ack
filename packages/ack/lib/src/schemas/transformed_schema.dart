@@ -10,7 +10,8 @@ class TransformedSchema<
   Boundary extends Object,
   InputRuntime extends Object,
   Runtime extends Object
-> extends AckSchema<Boundary, Runtime> {
+> extends AckSchema<Boundary, Runtime>
+    implements ConfigurableSchema<Boundary, Runtime> {
   final AckSchema<Boundary, InputRuntime> schema;
   final Runtime Function(InputRuntime) transformer;
 
@@ -26,27 +27,24 @@ class TransformedSchema<
 
   @override
   @protected
-  SchemaResult<Runtime> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Runtime> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    final originalResult = schema.parseAndValidate(inputValue, context);
-    if (originalResult.isFail) {
-      return SchemaResult.fail(originalResult.getError());
+    final innerResult = schema.parseWithContext(value, context);
+    if (innerResult.isFail) {
+      return SchemaResult.fail(innerResult.getError());
     }
 
-    final validatedValue = originalResult.getOrNull();
-
-    if (validatedValue == null) {
-      if (!isNullable) {
-        return failNonNullable(context);
-      }
-      return SchemaResult.ok(null);
+    final inner = innerResult.getOrNull();
+    if (inner == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNonNullable(context);
     }
 
+    final Runtime transformed;
     try {
-      final transformedValue = transformer(validatedValue);
-      return applyConstraintsAndRefinements(transformedValue, context);
+      transformed = transformer(inner);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaTransformError(
@@ -57,11 +55,36 @@ class TransformedSchema<
         ),
       );
     }
+
+    return validateRuntimeWithContext(transformed, context);
   }
 
   @override
   @protected
-  SchemaResult<Boundary> encodeRuntime(Runtime value, SchemaContext context) {
+  SchemaResult<Runtime> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    if (value is! Runtime) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Transformed runtime is ${value.runtimeType}, expected $Runtime.',
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Boundary> encodeWithContext(
+    Runtime value,
+    SchemaContext context,
+  ) {
     return SchemaResult.fail(
       SchemaEncodeError.oneWayTransform(context: context),
     );
@@ -88,6 +111,23 @@ class TransformedSchema<
     );
   }
 
+  @override
+  TransformedSchema<Boundary, InputRuntime, Runtime> withRuntimeConfig({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<Runtime>>? constraints,
+    List<Refinement<Runtime>>? refinements,
+  }) {
+    return copyWith(
+      isNullable: isNullable,
+      isOptional: isOptional,
+      description: description,
+      constraints: constraints,
+      refinements: refinements,
+    );
+  }
+
   TransformedSchema<Boundary, InputRuntime, Runtime> nullable({
     bool value = true,
   }) {
@@ -98,6 +138,12 @@ class TransformedSchema<
     bool value = true,
   }) {
     return copyWith(isOptional: value);
+  }
+
+  TransformedSchema<Boundary, InputRuntime, Runtime> describe(
+    String description,
+  ) {
+    return copyWith(description: description);
   }
 
   @override

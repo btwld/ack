@@ -3,7 +3,8 @@ part of 'schema.dart';
 /// Schema for validating a discriminated union of objects.
 ///
 /// Branches must produce the same runtime type [T]. Boundary type is
-/// [JsonMap]. Encoding selects the first branch whose encode succeeds.
+/// [JsonMap]. Encoding selects the first branch whose runtime validation
+/// AND encode succeed, then re-inserts the discriminator key.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
@@ -26,24 +27,25 @@ final class DiscriminatedObjectSchema<T extends Object>
 
   @override
   @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    final nullResult = handleNullInput(inputValue, context);
+  SchemaResult<T> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! Map) {
+    final mapValue = coerceJsonMap(value);
+    if (mapValue == null) {
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+          actualType: AckSchema.getSchemaType(value),
           context: context,
         ),
       );
     }
-    final mapValue = inputValue is JsonMap
-        ? inputValue
-        : inputValue.cast<String, Object?>();
 
-    final Object? discValueRaw = mapValue[discriminatorKey];
+    final discValueRaw = mapValue[discriminatorKey];
 
     if (discValueRaw == null) {
       final constraintError = ObjectRequiredPropertiesConstraint(
@@ -81,7 +83,7 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    final AckSchema<JsonMap, T>? selectedSubSchema = schemas[discValueRaw];
+    final selectedSubSchema = schemas[discValueRaw];
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
@@ -119,32 +121,56 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    final result = selectedSubSchema.parseAndValidate(
-      mapValue,
-      subSchemaContext,
-    );
-
+    final result =
+        selectedSubSchema.parseWithContext(mapValue, subSchemaContext);
     if (result.isFail) {
-      return result.match(
-        onOk: (_) => throw StateError('Unreachable'),
-        onFail: (error) => SchemaResult.fail(error),
-      );
+      return SchemaResult.fail(result.getError());
     }
-
-    final validatedValue = result.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(validatedValue, context);
+    return applyConstraintsAndRefinements(result.getOrThrow()!, context);
   }
 
   @override
   @protected
-  SchemaResult<JsonMap> encodeRuntime(T value, SchemaContext context) {
+  SchemaResult<T> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    if (value is! T) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Discriminated runtime is ${value.runtimeType}, expected $T.',
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<JsonMap> encodeWithContext(T value, SchemaContext context) {
     final errors = <SchemaError>[];
     for (final entry in schemas.entries) {
       final discValue = entry.key;
       final branchSchema = entry.value;
+      final branchCtx = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: branchSchema,
+        value: value,
+        pathSegment: '',
+        operation: SchemaOperation.encode,
+      );
       try {
-        final encoded = branchSchema.safeEncode(value);
+        final branchValidation =
+            branchSchema.validateRuntimeWithContext(value, branchCtx);
+        if (branchValidation.isFail) {
+          errors.add(branchValidation.getError());
+          continue;
+        }
+        final encoded = branchSchema.encodeWithContext(value, branchCtx);
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {
@@ -159,7 +185,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         errors.add(
           SchemaEncodeError.encoderThrew(
             message: 'Discriminated branch "$discValue" threw: $e',
-            context: context,
+            context: branchCtx,
             cause: e,
             stackTrace: st,
           ),
@@ -265,4 +291,3 @@ final class DiscriminatedObjectSchema<T extends Object>
     );
   }
 }
-

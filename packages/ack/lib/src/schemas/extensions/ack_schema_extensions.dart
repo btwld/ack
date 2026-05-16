@@ -4,74 +4,39 @@ import '../../schemas/schema.dart';
 /// Core extensions for all AckSchema types.
 extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
     on AckSchema<Boundary, Runtime> {
-  /// Adds a custom validation check that runs after all other validations have
-  /// passed for this schema.
+  /// Adds a custom validation check that runs after all other validations
+  /// have passed for this schema.
   AckSchema<Boundary, Runtime> refine(
     bool Function(Runtime value) validate, {
     String message = 'The value did not pass the custom validation.',
   }) {
     final newRefinement = (validate: validate, message: message);
-    final self = this;
-    if (self is FluentSchema) {
-      return (self as dynamic).copyWith(
-        refinements: [...refinements, newRefinement],
-      ) as AckSchema<Boundary, Runtime>;
-    }
-    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
-      return self.copyWith(
+    if (this is ConfigurableSchema<Boundary, Runtime>) {
+      return (this as ConfigurableSchema<Boundary, Runtime>).withRuntimeConfig(
         refinements: [...refinements, newRefinement],
       );
     }
-    throw StateError(
-      'refine() is not supported on ${self.runtimeType}. '
-      'Use a schema produced by Ack or a CodecSchema.',
-    );
+    throw StateError('refine() is not supported on $runtimeType.');
   }
 
   /// Marks the schema as optional - the field can be omitted from an object.
-  ///
-  /// See FluentSchema.optional for details.
   AckSchema<Boundary, Runtime> optional({bool value = true}) {
     if (isOptional == value) return this;
-    final self = this;
-    if (self is FluentSchema) {
-      return (self as dynamic).optional(value: value)
-          as AckSchema<Boundary, Runtime>;
+    if (this is ConfigurableSchema<Boundary, Runtime>) {
+      return (this as ConfigurableSchema<Boundary, Runtime>)
+          .withRuntimeConfig(isOptional: value);
     }
-    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
-      return self.optional(value: value);
-    }
-    if (self is DefaultSchema<Boundary, Runtime>) {
-      return self.optional(value: value);
-    }
-    if (self is TransformedSchema<Boundary, dynamic, Runtime>) {
-      return self.optional(value: value);
-    }
-    throw StateError(
-      'optional() is not supported on ${self.runtimeType}.',
-    );
+    throw StateError('optional() is not supported on $runtimeType.');
   }
 
   /// Marks the schema as nullable.
   AckSchema<Boundary, Runtime> nullable({bool value = true}) {
     if (isNullable == value) return this;
-    final self = this;
-    if (self is FluentSchema) {
-      return (self as dynamic).nullable(value: value)
-          as AckSchema<Boundary, Runtime>;
+    if (this is ConfigurableSchema<Boundary, Runtime>) {
+      return (this as ConfigurableSchema<Boundary, Runtime>)
+          .withRuntimeConfig(isNullable: value);
     }
-    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
-      return self.nullable(value: value);
-    }
-    if (self is DefaultSchema<Boundary, Runtime>) {
-      return self.nullable(value: value);
-    }
-    if (self is TransformedSchema<Boundary, dynamic, Runtime>) {
-      return self.nullable(value: value);
-    }
-    throw StateError(
-      'nullable() is not supported on ${self.runtimeType}.',
-    );
+    throw StateError('nullable() is not supported on $runtimeType.');
   }
 
   /// Adds a raw [constraint] to the schema.
@@ -84,25 +49,15 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
         'Constraint ${constraint.runtimeType} must implement Validator<Runtime>.',
       );
     }
-
     final effectiveConstraint = message == null
         ? constraint
         : _ConstraintMessageOverride<Runtime>(constraint, message);
-
-    final self = this;
-    if (self is FluentSchema) {
-      return (self as dynamic).copyWith(
-        constraints: [...constraints, effectiveConstraint],
-      ) as AckSchema<Boundary, Runtime>;
-    }
-    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
-      return self.copyWith(
+    if (this is ConfigurableSchema<Boundary, Runtime>) {
+      return (this as ConfigurableSchema<Boundary, Runtime>).withRuntimeConfig(
         constraints: [...constraints, effectiveConstraint],
       );
     }
-    throw StateError(
-      'constrain() is not supported on ${self.runtimeType}.',
-    );
+    throw StateError('constrain() is not supported on $runtimeType.');
   }
 
   /// Maps the validated runtime value to a new runtime type [R] in a
@@ -119,8 +74,7 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
     );
   }
 
-  /// Builds a bidirectional codec on top of this schema. Encoding is
-  /// supported when both [decode] and [encode] are provided.
+  /// Builds a bidirectional codec on top of this schema.
   CodecSchema<Boundary, R> codec<R extends Object>({
     required R Function(Runtime value) decode,
     required Runtime Function(R value) encode,
@@ -131,6 +85,15 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
       outputSchema: output ?? InstanceSchema<R>(),
       decoder: decode,
       encoder: encode,
+    );
+  }
+
+  /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue]
+  /// when the parse input is null. Encoding does not inject the default.
+  DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
+    return DefaultSchema<Boundary, Runtime>(
+      inner: this,
+      defaultValue: defaultValue,
     );
   }
 }

@@ -4,7 +4,9 @@ part of 'schema.dart';
 abstract interface class CodecSchema<
   Boundary extends Object,
   Runtime extends Object
-> implements AckSchema<Boundary, Runtime> {
+> implements
+        AckSchema<Boundary, Runtime>,
+        ConfigurableSchema<Boundary, Runtime> {
   /// The input/boundary schema that this codec wraps.
   AckSchema<Boundary, dynamic> get inputSchema;
 
@@ -49,29 +51,27 @@ final class CodecSchemaImpl<
 
   @override
   @protected
-  SchemaResult<Runtime> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Runtime> parseWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    if (inputValue == null) {
-      if (isNullable) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
 
-    final inputResult = inputSchema.parseAndValidate(inputValue, context);
+    final inputResult = inputSchema.parseWithContext(value, context);
     if (inputResult.isFail) {
       return SchemaResult.fail(inputResult.getError());
     }
 
-    final decodedInput = inputResult.getOrNull();
-    if (decodedInput == null) {
+    final intermediate = inputResult.getOrNull();
+    if (intermediate == null) {
       if (isNullable) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
 
     final Runtime runtime;
     try {
-      runtime = decoder(decodedInput);
+      runtime = decoder(intermediate);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaTransformError(
@@ -83,37 +83,47 @@ final class CodecSchemaImpl<
       );
     }
 
-    // Run the runtime value through the output schema so refinements/
-    // constraints attached to the typed runtime apply.
-    final outputResult = outputSchema.parseAndValidate(runtime, context);
-    if (outputResult.isFail) {
-      return SchemaResult.fail(outputResult.getError());
-    }
-
-    final validatedRuntime = outputResult.getOrNull();
-    if (validatedRuntime == null) {
-      if (isNullable) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
-
-    return applyConstraintsAndRefinements(validatedRuntime, context);
+    return validateRuntimeWithContext(runtime, context);
   }
 
   @override
   @protected
-  SchemaResult<Boundary> encodeRuntime(
+  SchemaResult<Runtime> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
+    final outputResult =
+        outputSchema.validateRuntimeWithContext(value, context);
+    if (outputResult.isFail) {
+      return SchemaResult.fail(outputResult.getError());
+    }
+
+    final validated = outputResult.getOrNull();
+    if (validated == null) {
+      if (isNullable) return SchemaResult.ok(null);
+      return failNonNullable(context);
+    }
+
+    return applyConstraintsAndRefinements(validated, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Boundary> encodeWithContext(
     Runtime value,
     SchemaContext context,
   ) {
-    // Validate runtime through the output schema first.
-    final outputCheck = outputSchema.safeEncode(value);
-    if (outputCheck.isFail) {
-      return SchemaResult.fail(outputCheck.getError());
-    }
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+    final runtime = validated.getOrNull();
+    if (runtime == null) return failNonNullableEncode(context);
 
     final InputRuntime intermediate;
     try {
-      intermediate = encoder(value);
+      intermediate = encoder(runtime);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
@@ -125,12 +135,21 @@ final class CodecSchemaImpl<
       );
     }
 
-    return inputSchema.safeEncode(intermediate);
+    // Ensure the intermediate matches the input schema's runtime shape
+    // before encoding to boundary. The intermediate context inherits the
+    // path so nested errors stay grouped under the codec's location.
+    final inputValidation =
+        inputSchema.validateRuntimeWithContext(intermediate, context);
+    if (inputValidation.isFail) {
+      return SchemaResult.fail(inputValidation.getError());
+    }
+
+    return inputSchema.encodeWithContext(intermediate, context);
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final base = inputSchema.toJsonSchema();
+    final base = Map<String, Object?>.from(inputSchema.toJsonSchema());
     if (description != null) {
       base['description'] = description;
     }
@@ -158,37 +177,29 @@ final class CodecSchemaImpl<
     );
   }
 
-  CodecSchemaImpl<Boundary, InputRuntime, Runtime> nullable({
-    bool value = true,
+  @override
+  CodecSchemaImpl<Boundary, InputRuntime, Runtime> withRuntimeConfig({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<Runtime>>? constraints,
+    List<Refinement<Runtime>>? refinements,
   }) {
-    return copyWith(isNullable: value);
+    return copyWith(
+      isNullable: isNullable,
+      isOptional: isOptional,
+      description: description,
+      constraints: constraints,
+      refinements: refinements,
+    );
   }
 
-  CodecSchemaImpl<Boundary, InputRuntime, Runtime> optional({
-    bool value = true,
-  }) {
-    return copyWith(isOptional: value);
-  }
-
+  /// Wraps this codec in a [DefaultSchema] that supplies [defaultValue]
+  /// when the input is null on parse.
   DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
     return DefaultSchema<Boundary, Runtime>(
       inner: this,
       defaultValue: defaultValue,
-    );
-  }
-
-  CodecSchemaImpl<Boundary, InputRuntime, Runtime> describe(
-    String description,
-  ) {
-    return copyWith(description: description);
-  }
-
-  CodecSchemaImpl<Boundary, InputRuntime, Runtime> refine(
-    bool Function(Runtime value) validate, {
-    String message = 'The value did not pass the custom validation.',
-  }) {
-    return copyWith(
-      refinements: [...refinements, (validate: validate, message: message)],
     );
   }
 

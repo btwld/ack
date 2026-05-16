@@ -14,6 +14,7 @@ part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
 part 'codec_schema.dart';
+part 'configurable_schema.dart';
 part 'default_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
@@ -40,8 +41,16 @@ enum SchemaOperation { parse, encode }
 /// * [Boundary] is the encoded / wire / JSON-facing value type.
 /// * [Runtime] is the parsed Dart application value type.
 ///
-/// Parsing converts [Object?] input into [Runtime]; encoding converts
-/// [Runtime] into [Boundary].
+/// All schemas implement three internal operations:
+///
+/// * [parseWithContext]:  Boundary → Runtime decoding (plus boundary validation).
+/// * [validateRuntimeWithContext]: runtime type/invariant validation.
+/// * [encodeWithContext]: Runtime → Boundary encoding.
+///
+/// The public [parse]/[safeParse] and [encode]/[safeEncode] APIs are thin
+/// wrappers that build a root [SchemaContext] and delegate to these three
+/// methods. Subclasses override the three methods; they should not override
+/// the public wrappers.
 @immutable
 abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   final bool isNullable;
@@ -70,7 +79,48 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return SchemaType.of(value);
   }
 
-  /// Applies constraints and refinements to a validated value.
+  // ---------------------------------------------------------------------------
+  // Subclass-facing internal lifecycle
+  // ---------------------------------------------------------------------------
+
+  /// Decodes a boundary value into a runtime value.
+  ///
+  /// Subclasses MUST implement this. The context passed in carries operation
+  /// information and JSON Pointer path state.
+  @protected
+  SchemaResult<Runtime> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  );
+
+  /// Validates that [value] is a valid runtime value for this schema.
+  ///
+  /// This is the single source of truth for runtime invariants. Subclasses
+  /// MUST implement it; codecs call it on their output to validate decoded /
+  /// pre-encode runtime values, and [encodeWithContext] uses it as a
+  /// precondition.
+  @protected
+  SchemaResult<Runtime> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  );
+
+  /// Encodes a runtime value into a boundary value. The base class strips
+  /// `null` before calling this; subclasses receive a non-null [value].
+  ///
+  /// Implementations should call [validateRuntimeWithContext] first so the
+  /// runtime is checked before encoding.
+  @protected
+  SchemaResult<Boundary> encodeWithContext(
+    Runtime value,
+    SchemaContext context,
+  );
+
+  // ---------------------------------------------------------------------------
+  // Shared helpers used by subclasses
+  // ---------------------------------------------------------------------------
+
+  /// Applies constraints and refinements to a runtime value.
   @protected
   SchemaResult<Runtime> applyConstraintsAndRefinements(
     Runtime value,
@@ -167,7 +217,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return mergeConstraintSchemas(schema);
   }
 
-  /// Creates a non-nullable constraint error result for the runtime channel.
+  /// Runtime-side non-nullable failure.
   @protected
   SchemaResult<Runtime> failNonNullable(SchemaContext context) {
     final constraintError = NonNullableConstraint().validate(null);
@@ -179,7 +229,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Encode-side null failure.
+  /// Encode-side non-nullable failure.
   @protected
   SchemaResult<Boundary> failNonNullableEncode(SchemaContext context) {
     return SchemaResult.fail(
@@ -187,11 +237,9 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Handles null input for parse operations.
-  ///
-  /// Returns `null` when input is non-null so callers can continue parsing.
-  /// For null input, returns `Ok(null)` if nullable, else a non-nullable
-  /// failure result. Defaults are handled at the [DefaultSchema] wrapper layer.
+  /// Centralized null gate for the parse/validate paths. Returns null when
+  /// [inputValue] is non-null; otherwise returns Ok(null) if nullable or a
+  /// non-nullable failure.
   @protected
   SchemaResult<Runtime>? handleNullInput(
     Object? inputValue,
@@ -214,19 +262,10 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   String get schemaTypeName => schemaType.typeName;
 
   // ---------------------------------------------------------------------------
-  // Parsing
+  // Public API (thin wrappers around the internal lifecycle)
   // ---------------------------------------------------------------------------
 
-  /// Parses [inputValue] and produces a [Runtime] value, or returns a
-  /// failure. Subclasses override to implement boundary decoding plus
-  /// runtime validation.
-  @protected
-  SchemaResult<Runtime> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  );
-
-  /// Parses and validates a value, throwing an [AckException] if validation fails.
+  /// Parses and validates a value, throwing an [AckException] if it fails.
   Runtime? parse(Object? value, {String? debugName}) {
     final result = safeParse(value, debugName: debugName);
     return result.getOrThrow();
@@ -249,7 +288,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       debugName: debugName,
       operation: SchemaOperation.parse,
     );
-    return parseAndValidate(value, context);
+    return parseWithContext(value, context);
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
@@ -282,55 +321,22 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Encoding
-  // ---------------------------------------------------------------------------
-
-  /// Encodes a [Runtime] value back into a [Boundary] value.
-  ///
-  /// Subclasses override to implement runtime → boundary conversion.
-  @protected
-  SchemaResult<Boundary> encodeRuntime(
-    Runtime value,
-    SchemaContext context,
-  );
-
   /// Encodes a runtime value to a boundary value, returning a [SchemaResult].
+  ///
+  /// Null handling lives here so subclass [encodeWithContext] receives
+  /// non-null values.
   SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName}) {
     final context = _createRootContext(
       value,
       debugName: debugName,
       operation: SchemaOperation.encode,
     );
-
     if (value == null) {
-      if (isNullable) {
-        return SchemaResult.ok(null);
-      }
+      if (isNullable) return SchemaResult.ok(null);
       return failNonNullableEncode(context);
     }
-
-    // Apply runtime constraints/refinements before encoding so we don't
-    // emit a boundary value that the schema would reject on parse.
-    final constraintViolations = _checkConstraints(value, context);
-    if (constraintViolations.isNotEmpty) {
-      return SchemaResult.fail(
-        SchemaConstraintsError(
-          constraints: constraintViolations,
-          context: context,
-        ),
-      );
-    }
-    for (final refinement in _refinements) {
-      if (!refinement.validate(value)) {
-        return SchemaResult.fail(
-          SchemaValidationError(message: refinement.message, context: context),
-        );
-      }
-    }
-
     try {
-      return encodeRuntime(value, context);
+      return encodeWithContext(value, context);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
@@ -420,4 +426,20 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       listEq.hash(_refinements),
     );
   }
+}
+
+/// Safely converts a value into a [JsonMap]. Returns `null` if the value is
+/// not map-shaped or contains non-string keys. This eager check replaces
+/// `cast<String, Object?>()`, whose lazy semantics can throw at access time
+/// when a non-string key is hit.
+JsonMap? coerceJsonMap(Object? value) {
+  if (value == null) return null;
+  if (value is JsonMap) return value;
+  if (value is! Map) return null;
+  final result = <String, Object?>{};
+  for (final entry in value.entries) {
+    if (entry.key is! String) return null;
+    result[entry.key as String] = entry.value;
+  }
+  return result;
 }
