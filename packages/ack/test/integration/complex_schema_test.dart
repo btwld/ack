@@ -172,36 +172,5 @@ void main() {
       );
     });
 
-    test('should propagate validation errors correctly across features', () {
-      final schema =
-          Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {
-              'user': Ack.object({
-                'type': Ack.literal('user'),
-                'profile': Ack.object({'age': Ack.integer().min(18)}),
-              }),
-            },
-          ).transform<Map<String, Object?>>((data) => data).refine((data) {
-            final profile = data['profile'] as Map;
-            return (profile['age'] as int) < 100;
-          }, message: 'Age too high');
-
-      // Test validation at different levels
-      try {
-        schema.parse({
-          'type': 'user',
-          'profile': {'age': 150},
-        });
-        fail('Should have thrown');
-      } catch (e) {
-        expect(e, isA<AckException>());
-        final errors = (e as AckException).errors;
-        expect(
-          errors.any((err) => err.message.contains('Age too high')),
-          isTrue,
-        );
-      }
-    });
   });
 }

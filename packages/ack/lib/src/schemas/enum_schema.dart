@@ -92,7 +92,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
   }
 
   @override
-  EnumSchema<T> copyWithBase({
+  EnumSchema<T> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

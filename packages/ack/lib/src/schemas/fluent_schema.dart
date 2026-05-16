@@ -10,7 +10,7 @@ mixin FluentSchema<
   ///
   /// Subclasses implement this so the fluent helpers can preserve concrete
   /// types.
-  Schema copyWithBase({
+  Schema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -19,19 +19,19 @@ mixin FluentSchema<
   });
 
   /// Marks the schema as nullable.
-  Schema nullable({bool value = true}) => copyWithBase(isNullable: value);
+  Schema nullable({bool value = true}) => copyWith(isNullable: value);
 
   /// Marks the schema as optional so the field can be omitted from an object.
-  Schema optional({bool value = true}) => copyWithBase(isOptional: value);
+  Schema optional({bool value = true}) => copyWith(isOptional: value);
 
   /// Sets the description for the schema.
   Schema describe(String description) =>
-      copyWithBase(description: description);
+      copyWith(description: description);
 
   /// Alias for describe() for backward compatibility.
   @Deprecated('Use describe() instead. Will be removed in a future version.')
   Schema withDescription(String description) =>
-      copyWithBase(description: description);
+      copyWith(description: description);
 
   /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
   /// the input is null.
@@ -44,9 +44,9 @@ mixin FluentSchema<
 
   /// Adds a validation constraint to the schema.
   Schema withConstraint(Constraint<Runtime> constraint) =>
-      copyWithBase(constraints: [...constraints, constraint]);
+      copyWith(constraints: [...constraints, constraint]);
 
   /// Adds a list of validation constraints to the schema.
   Schema withConstraints(List<Constraint<Runtime>> newConstraints) =>
-      copyWithBase(constraints: [...constraints, ...newConstraints]);
+      copyWith(constraints: [...constraints, ...newConstraints]);
 }

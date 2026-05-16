@@ -46,7 +46,7 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
   }
 
   @override
-  InstanceSchema<T> copyWithBase({
+  InstanceSchema<T> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

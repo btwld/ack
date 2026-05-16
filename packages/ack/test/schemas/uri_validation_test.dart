@@ -81,13 +81,12 @@ void main() {
     });
 
     group('JSON Schema', () {
-      test('emits type string, format uri, and x-transformed', () {
+      test('emits type string and format uri', () {
         final schema = Ack.uri();
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['type'], 'string');
         expect(jsonSchema['format'], 'uri');
-        expect(jsonSchema['x-transformed'], isTrue);
       });
     });
   });

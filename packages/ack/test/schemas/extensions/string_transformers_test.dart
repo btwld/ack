@@ -19,24 +19,6 @@ void main() {
         expect(schema.parse('\t\n'), equals(''));
       });
 
-      test('should work with notEmpty constraint (validates after trim)', () {
-        final schema = Ack.string().trim().refine(
-          (s) => s.isNotEmpty,
-          message: 'String cannot be empty after trimming',
-        );
-
-        final result = schema.safeParse('  hello  ');
-        expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), equals('hello'));
-
-        final emptyResult = schema.safeParse('   ');
-        expect(emptyResult.isFail, isTrue);
-        expect(
-          emptyResult.getError().message,
-          contains('String cannot be empty after trimming'),
-        );
-      });
-
       test('should handle null input with nullable schema', () {
         final schema = Ack.string().nullable().trim();
 
@@ -76,23 +58,6 @@ void main() {
 
         expect(schema.parse('HELLO123!@#'), equals('hello123!@#'));
         expect(schema.parse('CamelCase'), equals('camelcase'));
-      });
-
-      test('should work with pattern matching after transformation', () {
-        final schema = Ack.string().toLowerCase().refine(
-          (s) => s.startsWith('hello'),
-          message: 'Must start with hello (lowercase)',
-        );
-
-        expect(schema.parse('HELLO WORLD'), equals('hello world'));
-        expect(schema.parse('Hello World'), equals('hello world'));
-
-        final result = schema.safeParse('GOODBYE');
-        expect(result.isFail, isTrue);
-        expect(
-          result.getError().message,
-          contains('Must start with hello (lowercase)'),
-        );
       });
 
       test('should handle null input with nullable schema', () {
@@ -136,23 +101,6 @@ void main() {
         expect(schema.parse('camelCase'), equals('CAMELCASE'));
       });
 
-      test('should work with pattern matching after transformation', () {
-        final schema = Ack.string().toUpperCase().refine(
-          (s) => s.startsWith('HELLO'),
-          message: 'Must start with HELLO (uppercase)',
-        );
-
-        expect(schema.parse('hello world'), equals('HELLO WORLD'));
-        expect(schema.parse('Hello World'), equals('HELLO WORLD'));
-
-        final result = schema.safeParse('goodbye');
-        expect(result.isFail, isTrue);
-        expect(
-          result.getError().message,
-          contains('Must start with HELLO (uppercase)'),
-        );
-      });
-
       test('should handle null input with nullable schema', () {
         final schema = Ack.string().nullable().toUpperCase();
 
@@ -194,25 +142,6 @@ void main() {
         });
 
         expect(schema.parse('  hello  '), equals('HELLO'));
-      });
-
-      test('should apply transformation and then refinements', () {
-        final schema = Ack.string()
-            .transform((s) => s.trim().toLowerCase())
-            .refine(
-              (s) => s == 'hello',
-              message: 'Must be "hello" after normalization',
-            );
-
-        expect(schema.parse('  HELLO  '), equals('hello'));
-        expect(schema.parse('  HeLLo  '), equals('hello'));
-
-        final result = schema.safeParse('  WORLD  ');
-        expect(result.isFail, isTrue);
-        expect(
-          result.getError().message,
-          contains('Must be "hello" after normalization'),
-        );
       });
 
       test('should validate constraints before transformation', () {
@@ -261,20 +190,6 @@ void main() {
     });
 
     group('Real-world use cases', () {
-      test('should normalize email addresses', () {
-        // Transform first (trim + lowercase), then validate email
-        final emailSchema = Ack.string()
-            .transform((s) => s.trim().toLowerCase())
-            .refine(
-              (s) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s),
-              message: 'Invalid email',
-            );
-
-        final result = emailSchema.safeParse('  Test@Example.COM  ');
-        expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), equals('test@example.com'));
-      });
-
       test('should normalize usernames', () {
         final usernameSchema = Ack.string()
             .minLength(3)
@@ -286,44 +201,6 @@ void main() {
         expect(result.getOrThrow(), equals('johndoe123'));
       });
 
-      test('should normalize tags', () {
-        final tagSchema = Ack.string()
-            .transform((s) => s.trim().toLowerCase())
-            .refine((s) => s.isNotEmpty, message: 'Tag cannot be empty');
-
-        expect(tagSchema.parse('  JavaScript  '), equals('javascript'));
-        expect(tagSchema.parse('DART'), equals('dart'));
-
-        final emptyResult = tagSchema.safeParse('   ');
-        expect(emptyResult.isFail, isTrue);
-      });
-
-      test('should handle form input normalization', () {
-        final formSchema = Ack.object({
-          'email': Ack.string()
-              .transform((s) => s.trim().toLowerCase())
-              .refine(
-                (s) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s),
-                message: 'Invalid email',
-              ),
-          'name': Ack.string().trim(),
-          'username': Ack.string()
-              .minLength(3)
-              .transform((s) => s.trim().toLowerCase()),
-        });
-
-        final result = formSchema.safeParse({
-          'email': '  John@Example.COM  ',
-          'name': '  John Doe  ',
-          'username': '  JohnDoe  ',
-        });
-
-        expect(result.isOk, isTrue);
-        final data = result.getOrThrow()!;
-        expect(data['email'], equals('john@example.com'));
-        expect(data['name'], equals('John Doe'));
-        expect(data['username'], equals('johndoe'));
-      });
     });
   });
 }

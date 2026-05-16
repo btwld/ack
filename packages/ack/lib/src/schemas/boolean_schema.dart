@@ -44,7 +44,7 @@ final class BooleanSchema extends AckSchema<bool, bool>
   }
 
   @override
-  BooleanSchema copyWithBase({
+  BooleanSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

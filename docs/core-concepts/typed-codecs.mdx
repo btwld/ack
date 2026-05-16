@@ -1,0 +1,123 @@
+---
+title: Typed Codecs
+---
+
+## Boundary vs Runtime
+
+ACK schemas are bidirectional. Every schema declares two types:
+
+| Type      | Meaning                                              |
+|-----------|------------------------------------------------------|
+| Boundary  | the encoded / wire / JSON-facing value               |
+| Runtime   | the parsed Dart application value                    |
+
+The base contract is:
+
+```dart
+AckSchema<Boundary, Runtime>
+
+parse:  Object? input    -> Runtime
+encode: Runtime  value   -> Boundary
+```
+
+Examples:
+
+```dart
+Ack.string();              // AckSchema<String, String>
+Ack.integer();             // AckSchema<int, int>
+Ack.date();                // AckSchema<String, DateTime>
+Ack.duration();            // AckSchema<int, Duration>
+Ack.list(Ack.date());      // AckSchema<List<String>, List<DateTime>>
+Ack.object({...});         // AckSchema<JsonMap, JsonMap>
+Ack.object({...}).model<User>(...);  // CodecSchema<JsonMap, User>
+```
+
+Primitives have identical boundary and runtime. Built-in codecs (`date`,
+`datetime`, `uri`, `duration`) have differing boundary and runtime.
+
+## Codecs
+
+A codec is any schema that maps one runtime shape to another while preserving
+a typed boundary:
+
+```dart
+final intFromString = Ack.string().codec<int>(
+  decode: int.parse,
+  encode: (value) => value.toString(),
+);
+
+int? parsed = intFromString.parse('42');     // 42
+String? encoded = intFromString.encode(42);  // '42'
+```
+
+The fluent extension lives on every `AckSchema<Boundary, Runtime>`. `decode`
+takes the runtime of the underlying schema; `encode` returns it.
+
+## Object models
+
+To turn a `JsonMap` shape into a typed Dart object, use the `.model<T>()`
+extension on an `ObjectSchema`:
+
+```dart
+final eventSchema = Ack.object({
+  'createdAt': Ack.datetime(),
+}).model<Event>(
+  decode: (data) => Event(createdAt: data['createdAt'] as DateTime),
+  encode: (event) => {'createdAt': event.createdAt},
+);
+
+final Event? parsed = eventSchema.parse({
+  'createdAt': '2026-05-10T00:00:00.000Z',
+});
+
+final JsonMap? encoded = eventSchema.encode(parsed);
+// {'createdAt': '2026-05-10T00:00:00.000Z'}
+```
+
+Nested codecs compose: when the model encoder returns a `DateTime` for
+`createdAt`, the object schema feeds it back through `Ack.datetime()` which
+encodes it to an ISO 8601 string.
+
+## Differences from one-way `.transform()`
+
+`schema.transform<R>(fn)` is still available, but is **parse-only**. Calling
+`encode` on a transformed schema returns a
+`SchemaEncodeError.oneWayTransform` failure. Use `.codec<T>()` when you need
+encoding too.
+
+## Defaults
+
+`schema.withDefault(value)` returns a `DefaultSchema` wrapper:
+
+```dart
+final schema = Ack.string().withDefault('fallback');
+
+schema.parse(null);   // 'fallback'
+schema.encode(null);  // null — encode does not inject defaults
+```
+
+The default value is a runtime value; encoding does not substitute it.
+
+## Strictness
+
+Primitives are strict by default in this release. `Ack.integer().parse('42')`
+no longer coerces the string to `42`. Express coercions explicitly as
+codecs:
+
+```dart
+final intFromStringSchema = Ack.string().codec<int>(
+  decode: int.parse,
+  encode: (i) => i.toString(),
+);
+```
+
+## Encode-side validation
+
+`safeEncode` validates the runtime value through constraints/refinements and
+returns a `SchemaResult<Boundary>`. Object schemas additionally check:
+
+* missing required keys → `SchemaEncodeError.missingRequiredProperty`
+* unexpected keys → `SchemaEncodeError.unexpectedProperty`
+
+`SchemaContext.operation` is `SchemaOperation.encode` during encode so
+custom constraints can branch on direction.

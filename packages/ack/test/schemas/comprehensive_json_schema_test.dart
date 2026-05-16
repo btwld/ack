@@ -13,10 +13,6 @@ void main() {
         test('should validate basic string', () {
           final schema = Ack.string();
           expect(schema.safeParse('hello').isOk, isTrue);
-          expect(
-            schema.safeParse(123).isOk,
-            isTrue,
-          ); // Type coercion: 123 -> "123"
         });
 
         test('should validate with constraints', () {
@@ -104,18 +100,6 @@ void main() {
           expect(schema.safeParse(-5).isOk, isFalse);
         });
 
-        test('should handle type coercion from string', () {
-          final schema = Ack.integer();
-          expect(schema.safeParse('42').getOrNull(), equals(42));
-          expect(schema.safeParse('not-a-number').isOk, isFalse);
-        });
-
-        test('should handle type coercion from double', () {
-          final schema = Ack.integer();
-          expect(schema.safeParse(42.0).getOrNull(), equals(42));
-          expect(schema.safeParse(42.5).isOk, isFalse);
-        });
-
         test('should generate correct JSON schema', () {
           final schema = Ack.integer().min(0).max(100);
           final jsonSchema = schema.toJsonSchema();
@@ -131,7 +115,6 @@ void main() {
           final schema = Ack.double();
           expect(schema.safeParse(3.14).isOk, isTrue);
           expect(schema.safeParse(42).isOk, isTrue); // int to double coercion
-          expect(schema.safeParse('not-a-number').isOk, isFalse);
         });
 
         test('should validate with numeric constraints', () {
@@ -141,11 +124,6 @@ void main() {
           expect(schema.safeParse(101.0).isOk, isFalse);
         });
 
-        test('should handle type coercion from string', () {
-          final schema = Ack.double();
-          expect(schema.safeParse('3.14').getOrNull(), equals(3.14));
-          expect(schema.safeParse('not-a-number').isOk, isFalse);
-        });
       });
 
       group('BooleanSchema', () {
@@ -153,174 +131,14 @@ void main() {
           final schema = Ack.boolean();
           expect(schema.safeParse(true).isOk, isTrue);
           expect(schema.safeParse(false).isOk, isTrue);
-          expect(schema.safeParse('true').isOk, isTrue);
-          expect(schema.safeParse('false').isOk, isTrue);
           expect(schema.safeParse(1).isOk, isFalse);
-        });
-
-        test('should handle strict parsing', () {
-          final schema = Ack.boolean().strictParsing();
-          expect(schema.safeParse(true).isOk, isTrue);
-          expect(schema.safeParse('true').isOk, isFalse);
-        });
-
-        group('Case-insensitive string parsing', () {
-          test('should parse uppercase strings correctly', () {
-            final schema = Ack.boolean();
-            expect(schema.safeParse('TRUE').isOk, isTrue);
-            expect(schema.safeParse('TRUE').getOrNull(), isTrue);
-            expect(schema.safeParse('FALSE').isOk, isTrue);
-            expect(schema.safeParse('FALSE').getOrNull(), isFalse);
-          });
-
-          test('should parse mixed case strings correctly', () {
-            final schema = Ack.boolean();
-            expect(schema.safeParse('True').isOk, isTrue);
-            expect(schema.safeParse('True').getOrNull(), isTrue);
-            expect(schema.safeParse('False').isOk, isTrue);
-            expect(schema.safeParse('False').getOrNull(), isFalse);
-            expect(schema.safeParse('tRuE').isOk, isTrue);
-            expect(schema.safeParse('tRuE').getOrNull(), isTrue);
-            expect(schema.safeParse('fAlSe').isOk, isTrue);
-            expect(schema.safeParse('fAlSe').getOrNull(), isFalse);
-          });
-
-          test(
-            'should maintain case-insensitive behavior after optimization',
-            () {
-              final schema = Ack.boolean();
-              // Test various case combinations that would break if toLowerCase() optimization fails
-              final trueCases = [
-                'true',
-                'TRUE',
-                'True',
-                'tRuE',
-                'TrUe',
-                'TRue',
-                'trUE',
-                'TRUe',
-              ];
-              final falseCases = [
-                'false',
-                'FALSE',
-                'False',
-                'fAlSe',
-                'FaLsE',
-                'FALse',
-                'falSE',
-                'FALsE',
-              ];
-
-              for (final testCase in trueCases) {
-                expect(
-                  schema.safeParse(testCase).isOk,
-                  isTrue,
-                  reason: 'Failed for: $testCase',
-                );
-                expect(
-                  schema.safeParse(testCase).getOrNull(),
-                  isTrue,
-                  reason: 'Wrong value for: $testCase',
-                );
-              }
-
-              for (final testCase in falseCases) {
-                expect(
-                  schema.safeParse(testCase).isOk,
-                  isTrue,
-                  reason: 'Failed for: $testCase',
-                );
-                expect(
-                  schema.safeParse(testCase).getOrNull(),
-                  isFalse,
-                  reason: 'Wrong value for: $testCase',
-                );
-              }
-            },
-          );
-
-          test('should reject invalid string values', () {
-            final schema = Ack.boolean();
-            final invalidCases = [
-              'yes',
-              'no',
-              '1',
-              '0',
-              'on',
-              'off',
-              'truee',
-              'fals',
-            ];
-
-            for (final testCase in invalidCases) {
-              expect(
-                schema.safeParse(testCase).isOk,
-                isFalse,
-                reason: 'Should reject: $testCase',
-              );
-            }
-          });
-
-          test('should handle whitespace-padded valid values', () {
-            final schema = Ack.boolean();
-            // These should pass after trimming
-            expect(schema.safeParse(' true').isOk, isTrue);
-            expect(schema.safeParse('true ').isOk, isTrue);
-            expect(schema.safeParse('  true  ').isOk, isTrue);
-            expect(schema.safeParse(' false').isOk, isTrue);
-            expect(schema.safeParse('false ').isOk, isTrue);
-            expect(schema.safeParse(' TRUE ').isOk, isTrue);
-            expect(schema.safeParse(' FALSE ').isOk, isTrue);
-          });
-
-          test('should handle empty and whitespace-only strings', () {
-            final schema = Ack.boolean();
-            expect(schema.safeParse('').isOk, isFalse);
-            expect(schema.safeParse(' ').isOk, isFalse);
-            expect(schema.safeParse('  ').isOk, isFalse);
-            expect(schema.safeParse('\t').isOk, isFalse);
-            expect(schema.safeParse('\n').isOk, isFalse);
-          });
-
-          test('should not parse strings with strict parsing enabled', () {
-            final schema = Ack.boolean().strictParsing();
-            final stringCases = [
-              'true',
-              'false',
-              'TRUE',
-              'FALSE',
-              'True',
-              'False',
-            ];
-
-            for (final testCase in stringCases) {
-              expect(
-                schema.safeParse(testCase).isOk,
-                isFalse,
-                reason: 'Should reject with strict parsing: $testCase',
-              );
-            }
-          });
         });
       });
 
       group('EnumSchema', () {
-        test('should validate enum values', () {
-          final schema = Ack.enumValues(Color.values);
-          expect(schema.safeParse(Color.red).isOk, isTrue);
-          expect(schema.safeParse('red').isOk, isTrue);
-          expect(schema.safeParse(0).isOk, isTrue); // index
-          expect(schema.safeParse('purple').isOk, isFalse);
-        });
-
         test('should validate by name', () {
           final schema = Ack.enumValues(Color.values);
           expect(schema.safeParse('green').getOrNull(), equals(Color.green));
-        });
-
-        test('should validate by index', () {
-          final schema = Ack.enumValues(Color.values);
-          expect(schema.safeParse(2).getOrNull(), equals(Color.blue));
         });
 
         test('should generate correct JSON schema', () {
@@ -338,10 +156,6 @@ void main() {
         test('should validate basic list', () {
           final schema = Ack.list(Ack.string());
           expect(schema.safeParse(['hello', 'world']).isOk, isTrue);
-          expect(
-            schema.safeParse([1, 2, 3]).isOk,
-            isTrue,
-          ); // Type coercion: numbers -> strings
         });
 
         test('should validate with list constraints', () {
@@ -525,10 +339,6 @@ void main() {
 
           expect(schema.safeParse('hello').isOk, isTrue);
           expect(schema.safeParse(42).isOk, isTrue);
-          expect(
-            schema.safeParse(true).isOk,
-            isTrue,
-          ); // Type coercion: true -> "true"
         });
 
         test('should validate complex anyOf schemas', () {
@@ -579,10 +389,6 @@ void main() {
             }).isOk,
             isTrue,
           );
-          expect(
-            schema.safeParse({'value': true}).isOk,
-            isTrue,
-          ); // Type coercion: true -> "true"
         });
 
         test('should generate correct JSON schema', () {

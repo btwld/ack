@@ -240,24 +240,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
   }
 
   @override
-  ObjectSchema copyWithBase({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    List<Constraint<JsonMap>>? constraints,
-    List<Refinement<JsonMap>>? refinements,
-  }) {
-    return ObjectSchema(
-      properties,
-      additionalProperties: additionalProperties,
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
-  }
-
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
     bool? additionalProperties,

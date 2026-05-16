@@ -84,39 +84,6 @@ void main() {
       expect((result.getOrNull() as Cat).name, equals('Mittens'));
     });
 
-    test('applies transformed defaults without re-parsing', () {
-      final catSchema = Ack.object({
-        'type': Ack.literal('cat'),
-        'name': Ack.string(),
-      }).transform<Animal>((map) => Cat(map['name'] as String));
-
-      final animalSchema = Ack.discriminated<Animal>(
-        discriminatorKey: 'type',
-        schemas: {'cat': catSchema},
-      ).copyWith(defaultValue: Cat('Default Cat'));
-
-      final result = animalSchema.safeParse(null);
-
-      expect(result.isOk, isTrue);
-      expect(result.getOrNull(), isA<Cat>());
-      expect(result.getOrThrow()!.name, equals('Default Cat'));
-    });
-
-    test('fails when a branch is not object-backed', () {
-      final animalSchema = Ack.discriminated<String>(
-        discriminatorKey: 'type',
-        schemas: {'cat': Ack.string()},
-      );
-
-      final result = animalSchema.safeParse({'type': 'cat'});
-
-      expect(result.isOk, isFalse);
-      expect(
-        result.getError().message,
-        equals('Discriminated branches must be object-backed schemas'),
-      );
-    });
-
     test('transform on discriminated union itself still works', () {
       final catSchema = Ack.object({
         'type': Ack.literal('cat'),

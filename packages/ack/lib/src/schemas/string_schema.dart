@@ -47,7 +47,7 @@ final class StringSchema extends AckSchema<String, String>
   }
 
   @override
-  StringSchema copyWithBase({
+  StringSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

@@ -57,7 +57,7 @@ final class IntegerSchema extends NumSchema<int>
   }
 
   @override
-  IntegerSchema copyWithBase({
+  IntegerSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -137,7 +137,7 @@ final class DoubleSchema extends NumSchema<double>
   }
 
   @override
-  DoubleSchema copyWithBase({
+  DoubleSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -212,7 +212,7 @@ final class NumberSchema extends NumSchema<num>
   }
 
   @override
-  NumberSchema copyWithBase({
+  NumberSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

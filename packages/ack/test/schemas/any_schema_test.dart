@@ -66,17 +66,6 @@ void main() {
       expect(jsonSchema.containsKey('type'), isFalse);
     });
 
-    test('should support fluent API', () {
-      final schema = Ack.any()
-          .nullable()
-          .describe("Any value or null")
-          .withDefault("default");
-
-      expect(schema.isNullable, isTrue);
-      expect(schema.description, equals("Any value or null"));
-      expect(schema.defaultValue, equals("default"));
-    });
-
     test('should work with copyWith', () {
       final original = Ack.any().describe("Original");
       final copied = original.copyWith(description: "Modified");

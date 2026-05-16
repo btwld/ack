@@ -132,7 +132,7 @@ void main() {
 
     test('union examples accept multiple data shapes', () {
       final stringOrNumber = Ack.anyOf([
-        Ack.string().strictParsing(),
+        Ack.string(),
         Ack.integer(),
       ]);
 

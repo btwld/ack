@@ -8,7 +8,7 @@ enum UserRole { admin, user, guest }
 /// Tests for code snippets in docs/guides/json-schema-integration.mdx.
 void main() {
   group('Docs /guides/json-schema-integration.mdx', () {
-    AckSchema<Map<String, Object?>> buildUserSchema() {
+    AckSchema<Map<String, Object?>, Map<String, Object?>> buildUserSchema() {
       return Ack.object({
         'id': Ack.integer().positive().describe('Unique user identifier'),
         'name': Ack.string()

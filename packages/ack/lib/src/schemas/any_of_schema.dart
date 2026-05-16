@@ -100,7 +100,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   }
 
   @override
-  AnyOfSchema copyWithBase({
+  AnyOfSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

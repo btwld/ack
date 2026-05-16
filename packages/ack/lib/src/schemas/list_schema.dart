@@ -131,7 +131,7 @@ final class ListSchema<
   }
 
   @override
-  ListSchema<ItemBoundary, ItemRuntime> copyWithBase({
+  ListSchema<ItemBoundary, ItemRuntime> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

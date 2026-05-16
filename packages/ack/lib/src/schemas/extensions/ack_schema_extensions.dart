@@ -13,7 +13,7 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
     final newRefinement = (validate: validate, message: message);
     final self = this;
     if (self is FluentSchema) {
-      return (self as dynamic).copyWithBase(
+      return (self as dynamic).copyWith(
         refinements: [...refinements, newRefinement],
       ) as AckSchema<Boundary, Runtime>;
     }
@@ -91,7 +91,7 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
 
     final self = this;
     if (self is FluentSchema) {
-      return (self as dynamic).copyWithBase(
+      return (self as dynamic).copyWith(
         constraints: [...constraints, effectiveConstraint],
       ) as AckSchema<Boundary, Runtime>;
     }

@@ -286,12 +286,11 @@ void main() {
     });
 
     group('JSON Schema', () {
-      test('emits format: date and x-transformed', () {
+      test('emits format: date', () {
         final schema = Ack.date();
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['format'], 'date');
-        expect(jsonSchema['x-transformed'], isTrue);
       });
 
       test('datetime emits format: date-time', () {
@@ -299,7 +298,6 @@ void main() {
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['format'], 'date-time');
-        expect(jsonSchema['x-transformed'], isTrue);
       });
 
       test('base schema includes type: string', () {

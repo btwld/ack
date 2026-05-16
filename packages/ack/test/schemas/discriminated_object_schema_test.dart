@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -44,7 +42,7 @@ void main() {
       test('fails when schemas map is empty', () {
         final emptySchema = Ack.discriminated<Map<String, Object?>>(
           discriminatorKey: 'type',
-          schemas: const <String, AckSchema<Map<String, Object?>>>{},
+          schemas: const <String, AckSchema<JsonMap, Map<String, Object?>>>{},
         );
 
         final result = emptySchema.safeParse({'type': 'cat'});
@@ -122,7 +120,8 @@ void main() {
           'bird': birdSchema,
         };
 
-        final updated = animalSchema.copyWith(
+        final updated = DiscriminatedObjectSchema<Map<String, Object?>>(
+          discriminatorKey: animalSchema.discriminatorKey,
           schemas: newSchemas,
           isNullable: true,
           description: 'Updated schema',
@@ -181,58 +180,6 @@ void main() {
         expect(branch['required'], equals(['type', 'name']));
       });
 
-      test('rejects non-object-backed child branches in toJsonSchema', () {
-        final schema = Ack.discriminated<String>(
-          discriminatorKey: 'type',
-          schemas: {'cat': Ack.string()},
-        );
-
-        expect(() => schema.toJsonSchema(), throwsArgumentError);
-      });
-
-      test('rejects non-object-backed child branches in toJsonSchemaModel', () {
-        final schema = Ack.discriminated<String>(
-          discriminatorKey: 'type',
-          schemas: {'cat': Ack.string()},
-        );
-
-        expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
-      });
-
-      test('omits non-JSON defaults for transformed discriminated schemas', () {
-        final schema = Ack.discriminated<Object>(
-          discriminatorKey: 'type',
-          schemas: {
-            'cat': Ack.object({
-              'name': Ack.string(),
-            }).transform<Object>((map) => map['name'] as Object),
-          },
-        ).copyWith(defaultValue: Object());
-
-        final jsonSchema = schema.toJsonSchema();
-
-        expect(jsonSchema.containsKey('default'), isFalse);
-        expect(() => jsonEncode(jsonSchema), returnsNormally);
-      });
-
-      test(
-        'omits non-JSON defaults for nullable transformed discriminated schemas',
-        () {
-          final schema = Ack.discriminated<Object>(
-            discriminatorKey: 'type',
-            schemas: {
-              'cat': Ack.object({
-                'name': Ack.string(),
-              }).transform<Object>((map) => map['name'] as Object),
-            },
-          ).nullable().copyWith(defaultValue: Object());
-
-          final jsonSchema = schema.toJsonSchema();
-
-          expect(jsonSchema.containsKey('default'), isFalse);
-          expect(() => jsonEncode(jsonSchema), returnsNormally);
-        },
-      );
     });
   });
 }

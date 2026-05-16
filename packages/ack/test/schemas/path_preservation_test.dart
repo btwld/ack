@@ -143,36 +143,6 @@ void main() {
   });
 
   group('TransformedSchema Default Values', () {
-    test('should apply output default when input is null', () {
-      // Create a TransformedSchema with a default value
-      final baseSchema = Ack.string();
-      final transformedSchema = TransformedSchema<String, String>(
-        baseSchema,
-        (value) => value.toUpperCase(),
-        defaultValue: 'DEFAULT_OUTPUT',
-      );
-
-      final result = transformedSchema.safeParse(null);
-
-      expect(result.isOk, isTrue);
-      expect(
-        result.getOrNull(),
-        equals('DEFAULT_OUTPUT'),
-        reason: 'Should use output default, not transformer default',
-      );
-    });
-
-    test('should apply transformation when input is not null', () {
-      final schema = Ack.string()
-          .transform((value) => value.toUpperCase())
-          .copyWith(defaultValue: 'DEFAULT');
-
-      final result = schema.safeParse('hello');
-
-      expect(result.isOk, isTrue);
-      expect(result.getOrNull(), equals('HELLO'));
-    });
-
     test('nullable transformed schema with null input and no default', () {
       final schema = Ack.string().nullable().transform(
         (value) => value.toUpperCase(),

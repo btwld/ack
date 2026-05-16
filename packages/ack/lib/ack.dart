@@ -6,6 +6,8 @@ library;
 
 // Main API
 export 'src/ack.dart';
+// Shared types
+export 'src/common_types.dart';
 // Constraints
 export 'src/constraints/constraint.dart';
 export 'src/constraints/datetime_constraint.dart';

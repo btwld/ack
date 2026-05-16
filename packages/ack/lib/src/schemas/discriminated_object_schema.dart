@@ -172,7 +172,7 @@ final class DiscriminatedObjectSchema<T extends Object>
   }
 
   @override
-  DiscriminatedObjectSchema<T> copyWithBase({
+  DiscriminatedObjectSchema<T> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
