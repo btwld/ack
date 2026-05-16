@@ -27,13 +27,19 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   bool get _anyBranchNullable => schemas.any((s) => s.isNullable);
 
   @override
+  bool get acceptsParseNull => super.acceptsParseNull || _anyBranchNullable;
+
+  @override
+  bool get acceptsEncodeNull => super.acceptsEncodeNull || _anyBranchNullable;
+
+  @override
   @protected
   SchemaResult<Object> parseWithContext(
     Object? value,
     SchemaContext context,
   ) {
     if (value == null) {
-      if (isNullable || _anyBranchNullable) return SchemaResult.ok(null);
+      if (acceptsParseNull) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
 
@@ -65,7 +71,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
     SchemaContext context,
   ) {
     if (value == null) {
-      if (isNullable || _anyBranchNullable) return SchemaResult.ok(null);
+      if (acceptsParseNull) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
     final errors = <SchemaError>[];
@@ -136,17 +142,6 @@ final class AnyOfSchema extends AckSchema<Object, Object>
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
-  }
-
-  // Override base safeEncode so the "any branch nullable" rule applies to
-  // the null gate that the base class would otherwise check against this
-  // schema's own [isNullable] alone.
-  @override
-  SchemaResult<Object> safeEncode(Object? value, {String? debugName}) {
-    if (value == null && _anyBranchNullable) {
-      return SchemaResult.ok(null);
-    }
-    return super.safeEncode(value, debugName: debugName);
   }
 
   @override

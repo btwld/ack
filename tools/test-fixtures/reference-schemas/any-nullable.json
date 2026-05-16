@@ -1,9 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "anyOf": [
-    {},
-    {
-      "type": "null"
-    }
+    {"type": "string"},
+    {"type": "number"},
+    {"type": "integer"},
+    {"type": "boolean"},
+    {"type": "object"},
+    {"type": "array"},
+    {"type": "null"}
   ]
 }

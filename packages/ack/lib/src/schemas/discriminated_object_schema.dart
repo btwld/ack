@@ -174,8 +174,27 @@ final class DiscriminatedObjectSchema<T extends Object>
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {
-            final merged = Map<String, Object?>.from(boundary);
-            merged[discriminatorKey] = discValue;
+            // Policy A: if the branch already emitted the discriminator key,
+            // require it to match this branch's discriminator value. Until
+            // discriminator-key ownership lands, this catches branches that
+            // disagree with the union routing.
+            if (boundary.containsKey(discriminatorKey) &&
+                boundary[discriminatorKey] != discValue) {
+              errors.add(
+                SchemaEncodeError.typeMismatch(
+                  message:
+                      'Discriminated branch "$discValue" emitted a '
+                      'conflicting "$discriminatorKey" value: '
+                      '${boundary[discriminatorKey]}.',
+                  context: branchCtx,
+                ),
+              );
+              continue;
+            }
+            final merged = boundary.containsKey(discriminatorKey)
+                ? boundary
+                : (Map<String, Object?>.from(boundary)
+                  ..[discriminatorKey] = discValue);
             return SchemaResult.ok(Map<String, Object?>.unmodifiable(merged));
           }
         } else {

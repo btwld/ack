@@ -65,12 +65,20 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @override
   Map<String, Object?> toJsonSchema() {
     final base = Map<String, Object?>.from(inner.toJsonSchema());
-    // Best-effort: emit default only if it round-trips cleanly to boundary.
-    // If encoding fails (e.g. the runtime value cannot be serialised), omit
-    // the default rather than leaking a non-JSON runtime object.
+    // Best-effort: emit default only if it round-trips cleanly to boundary
+    // AND the boundary value is JSON-safe. Schemas like `Ack.instance<T>()`
+    // happily round-trip non-JSON Dart objects through their identity
+    // encode path; emitting those would leak runtime-only types into the
+    // schema output.
     final encoded = inner.safeEncode(defaultValue);
     if (encoded.isOk) {
-      base['default'] = encoded.getOrNull();
+      final value = encoded.getOrNull();
+      if (value != null) {
+        final safe = jsonSafeOrNull(value);
+        if (safe != null) {
+          base['default'] = safe;
+        }
+      }
     }
     return base;
   }

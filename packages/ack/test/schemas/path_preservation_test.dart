@@ -310,13 +310,25 @@ void main() {
       final nullableJson = nullableSchema.toJsonSchema();
       final nonNullableJson = nonNullableSchema.toJsonSchema();
 
-      // Nullable AnySchema uses anyOf pattern with null
+      // Both nullable and non-nullable AnySchema use anyOf with explicit
+      // type branches so the emitted JSON Schema matches ACK's runtime
+      // semantics (non-null unless explicitly marked nullable). The
+      // nullable variant additionally includes a {"type": "null"} branch.
       expect(nullableJson.containsKey('anyOf'), isTrue);
-
-      // Non-nullable AnySchema uses empty schema {} (no type field)
-      // which accepts any type except null
+      expect(nonNullableJson.containsKey('anyOf'), isTrue);
       expect(nonNullableJson.containsKey('type'), isFalse);
-      expect(nonNullableJson.containsKey('anyOf'), isFalse);
+
+      final nullableBranches = nullableJson['anyOf'] as List;
+      expect(
+        nullableBranches.any((b) => b is Map && b['type'] == 'null'),
+        isTrue,
+      );
+
+      final nonNullBranches = nonNullableJson['anyOf'] as List;
+      expect(
+        nonNullBranches.any((b) => b is Map && b['type'] == 'null'),
+        isFalse,
+      );
     });
 
     test('AnyOfSchema should include null type when nullable', () {

@@ -62,8 +62,36 @@ final class AnySchema extends AckSchema<Object, Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: const {});
+  Map<String, Object?> toJsonSchema() {
+    // `Ack.any()` accepts any non-null Dart value at runtime, so the
+    // emitted JSON Schema must NOT accept null unless the schema is
+    // explicitly marked nullable. Raw `{}` would accept null, so we
+    // enumerate the non-null JSON types explicitly.
+    final nonNullBranches = <Map<String, Object?>>[
+      {'type': 'string'},
+      {'type': 'number'},
+      {'type': 'integer'},
+      {'type': 'boolean'},
+      {'type': 'object'},
+      {'type': 'array'},
+    ];
+
+    if (isNullable) {
+      return {
+        if (description != null) 'description': description,
+        'anyOf': [
+          ...nonNullBranches,
+          {'type': 'null'},
+        ],
+      };
+    }
+
+    final base = {
+      'anyOf': nonNullBranches,
+      if (description != null) 'description': description,
+    };
+    return mergeConstraintSchemas(base);
+  }
 
   @override
   bool operator ==(Object other) {

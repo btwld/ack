@@ -238,8 +238,8 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   }
 
   /// Centralized null gate for the parse/validate paths. Returns null when
-  /// [inputValue] is non-null; otherwise returns Ok(null) if nullable or a
-  /// non-nullable failure.
+  /// [inputValue] is non-null; otherwise returns Ok(null) if [acceptsParseNull]
+  /// is true or a non-nullable failure.
   @protected
   SchemaResult<Runtime>? handleNullInput(
     Object? inputValue,
@@ -247,12 +247,25 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   ) {
     if (inputValue != null) return null;
 
-    if (isNullable) {
+    if (acceptsParseNull) {
       return SchemaResult.ok(null);
     }
 
     return failNonNullable(context);
   }
+
+  /// Whether `parse(null)` (and the parse-side null gate inside
+  /// [handleNullInput]) should accept null without raising a non-nullable
+  /// failure. Defaults to [isNullable]; subclasses with branch-level null
+  /// policies (e.g. [AnyOfSchema]) override this hook.
+  @protected
+  bool get acceptsParseNull => isNullable;
+
+  /// Whether `encode(null)` should produce `Ok(null)` rather than a
+  /// non-nullable encode failure. Defaults to [isNullable]; subclasses with
+  /// branch-level null policies override this hook.
+  @protected
+  bool get acceptsEncodeNull => isNullable;
 
   /// The schema type category for this schema.
   @protected
@@ -324,7 +337,9 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Encodes a runtime value to a boundary value, returning a [SchemaResult].
   ///
   /// Null handling lives here so subclass [encodeWithContext] receives
-  /// non-null values.
+  /// non-null values. The null gate consults [acceptsEncodeNull] so
+  /// subclasses with branch-level null policies (e.g. [AnyOfSchema]) can
+  /// participate without overriding this public wrapper.
   SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName}) {
     final context = _createRootContext(
       value,
@@ -332,7 +347,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       operation: SchemaOperation.encode,
     );
     if (value == null) {
-      if (isNullable) return SchemaResult.ok(null);
+      if (acceptsEncodeNull) return SchemaResult.ok(null);
       return failNonNullableEncode(context);
     }
     try {
@@ -426,6 +441,44 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       listEq.hash(_refinements),
     );
   }
+}
+
+/// Returns [value] if it is composed entirely of JSON-safe primitives
+/// (`null`, `num`, `bool`, `String`, `List`, string-keyed `Map`), recursively.
+/// Returns `null` if any nested value is not JSON-safe. Used by
+/// [DefaultSchema] to avoid emitting runtime-only objects (e.g. raw
+/// `DateTime` instances) as JSON Schema defaults.
+Object? jsonSafeOrNull(Object? value) {
+  if (value == null) return null;
+  if (value is num || value is bool || value is String) return value;
+  if (value is List) {
+    final result = <Object?>[];
+    for (final item in value) {
+      if (item == null) {
+        result.add(null);
+        continue;
+      }
+      final converted = jsonSafeOrNull(item);
+      if (converted == null) return null;
+      result.add(converted);
+    }
+    return result;
+  }
+  if (value is Map) {
+    final result = <String, Object?>{};
+    for (final entry in value.entries) {
+      if (entry.key is! String) return null;
+      if (entry.value == null) {
+        result[entry.key as String] = null;
+        continue;
+      }
+      final converted = jsonSafeOrNull(entry.value);
+      if (converted == null) return null;
+      result[entry.key as String] = converted;
+    }
+    return result;
+  }
+  return null;
 }
 
 /// Safely converts a value into a [JsonMap]. Returns `null` if the value is

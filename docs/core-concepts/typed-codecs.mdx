@@ -121,3 +121,17 @@ returns a `SchemaResult<Boundary>`. Object schemas additionally check:
 
 `SchemaContext.operation` is `SchemaOperation.encode` during encode so
 custom constraints can branch on direction.
+
+## Optional vs nullable on encode
+
+Parse and encode treat present-null differently:
+
+* **Parse**: `optional` means the key may be absent. If the key IS present
+  with a null value, the property schema must also be `nullable` or parse
+  fails with a non-nullable error.
+* **Encode**: a key whose value is `null` and whose schema is `optional`
+  (but not `nullable`) is omitted from the encoded output rather than
+  emitted as `null`. Model encoders can write `'color': value.color`
+  and let optional nulls disappear.
+
+If you need to emit an explicit `null`, mark the property `nullable`.

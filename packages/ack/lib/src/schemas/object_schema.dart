@@ -5,6 +5,20 @@ part of 'schema.dart';
 /// `ObjectSchema` has identical boundary and runtime types
 /// (`AckSchema<JsonMap, JsonMap>`). Use [ObjectSchemaModelExtension.model] to
 /// map an object shape to a typed Dart model.
+///
+/// ## Optional / nullable semantics
+///
+/// The parse and encode paths treat present-null differently from absence:
+///
+/// * **Parse**: `optional` means the key may be absent. If the key IS
+///   present with a null value, the property schema must also be
+///   `nullable` or the parse fails with a non-nullable constraint error.
+/// * **Encode**: a key present with `null` whose schema is `optional`
+///   (but not `nullable`) is omitted from the encoded output rather than
+///   emitted as `null`. This is so a model encoder can simply write
+///   `'color': value.color` and let optional nulls disappear.
+///
+/// If you need to emit an explicit `null`, mark the property `nullable`.
 @immutable
 final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
