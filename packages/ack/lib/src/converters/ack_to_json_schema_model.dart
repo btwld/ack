@@ -10,11 +10,26 @@ extension AckToJsonSchemaModel on AckSchema {
 }
 
 JsonSchema _convert(AckSchema schema) {
-  // Parse JSON Schema for constraint metadata (minLength, format, etc.)
   final parsed = JsonSchema.fromJson(schema.toJsonSchema());
   final effective = _unwrapNullable(parsed);
-  // Use schema.isNullable directly - canonical source of truth
   final nullableFlag = schema.isNullable;
+
+  // Codec schemas export their boundary (input) shape.
+  if (schema is CodecSchema) {
+    final base = _convert(schema.inputSchema as AckSchema);
+    return base.copyWith(
+      description: schema.description ?? base.description,
+      nullable: nullableFlag || base.nullable == true,
+    );
+  }
+
+  if (schema is DefaultSchema) {
+    final base = _convert(schema.inner);
+    return base.copyWith(
+      description: schema.description ?? base.description,
+      nullable: nullableFlag || base.nullable == true,
+    );
+  }
 
   if (schema is TransformedSchema) {
     final base = _convert(schema.schema);
@@ -28,12 +43,14 @@ JsonSchema _convert(AckSchema schema) {
     StringSchema() => _string(effective, nullableFlag),
     IntegerSchema() => _integer(effective, nullableFlag),
     DoubleSchema() => _number(effective, nullableFlag),
+    NumberSchema() => _number(effective, nullableFlag),
     BooleanSchema() => _boolean(effective, nullableFlag),
     EnumSchema() => _enum(schema, effective, nullableFlag),
     ListSchema() => _array(schema, effective, nullableFlag),
     ObjectSchema() => _object(schema, effective, nullableFlag),
     AnyOfSchema() => _anyOf(schema),
     AnySchema() => _any(schema, effective, nullableFlag),
+    InstanceSchema() => _any(schema, effective, nullableFlag),
     DiscriminatedObjectSchema() => _discriminated(
       schema,
       effective,
@@ -162,7 +179,7 @@ JsonSchema _anyOf(AnyOfSchema schema) {
   );
 }
 
-JsonSchema _any(AnySchema schema, JsonSchema json, bool nullableFlag) {
+JsonSchema _any(AckSchema schema, JsonSchema json, bool nullableFlag) {
   final description = json.description ?? schema.description;
   final primitives = [
     JsonSchema(type: JsonSchemaType.string, description: description),
@@ -258,7 +275,6 @@ JsonSchema _unwrapNullable(JsonSchema jsonSchema) {
     final base = nonNull.first;
     return base.copyWith(
       nullable: jsonSchema.nullable ?? true,
-      // Preserve wrapper metadata if the inner schema didn’t set it.
       description: base.description ?? jsonSchema.description,
       title: base.title ?? jsonSchema.title,
       format: base.format ?? jsonSchema.format,

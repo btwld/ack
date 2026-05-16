@@ -1,17 +1,12 @@
 part of 'package:ack/src/schemas/schema.dart';
 
 /// Testing-only schema used to simulate unsupported conversions in integration packages.
-///
-/// This lives alongside the core schema types so it can extend [AckSchema], which is
-/// sealed and therefore only extensible within this library. Marked as
-/// `@visibleForTesting` to discourage production use.
 @visibleForTesting
-final class TestUnsupportedAckSchema extends AckSchema<Object> {
+final class TestUnsupportedAckSchema extends AckSchema<Object, Object> {
   const TestUnsupportedAckSchema({
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -20,11 +15,26 @@ final class TestUnsupportedAckSchema extends AckSchema<Object> {
   SchemaType get schemaType => SchemaType.any;
 
   @override
+  @protected
+  SchemaResult<Object> parseAndValidate(
+    Object? inputValue,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(inputValue, context);
+    if (nullResult != null) return nullResult;
+    return applyConstraintsAndRefinements(inputValue!, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> encodeRuntime(Object value, SchemaContext context) {
+    return SchemaResult.ok(value);
+  }
+
   TestUnsupportedAckSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
@@ -32,7 +42,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object> {
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

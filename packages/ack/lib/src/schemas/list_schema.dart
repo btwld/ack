@@ -1,17 +1,26 @@
 part of 'schema.dart';
 
-/// Schema for validating lists (`List<V>`) where each item conforms to `itemSchema`.
+/// Schema for validating `List<ItemRuntime>` whose items conform to
+/// [itemSchema], with boundary type `List<ItemBoundary>`.
 @immutable
-final class ListSchema<V extends Object> extends AckSchema<List<V>>
-    with FluentSchema<List<V>, ListSchema<V>> {
-  final AckSchema<V> itemSchema;
+final class ListSchema<
+  ItemBoundary extends Object,
+  ItemRuntime extends Object
+>
+    extends AckSchema<List<ItemBoundary>, List<ItemRuntime>>
+    with
+        FluentSchema<
+          List<ItemBoundary>,
+          List<ItemRuntime>,
+          ListSchema<ItemBoundary, ItemRuntime>
+        > {
+  final AckSchema<ItemBoundary, ItemRuntime> itemSchema;
 
   const ListSchema(
     this.itemSchema, {
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -21,27 +30,24 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
   @override
   @protected
-  SchemaResult<List<V>> parseAndValidate(
+  SchemaResult<List<ItemRuntime>> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 
-    // Type guard
     if (inputValue is! List) {
-      final actualType = AckSchema.getSchemaType(inputValue);
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: actualType,
+          actualType: AckSchema.getSchemaType(inputValue),
           context: context,
         ),
       );
     }
     final inputList = inputValue;
-    final validatedItems = <V>[];
+    final validatedItems = <ItemRuntime>[];
     final itemErrors = <SchemaError>[];
 
     for (var i = 0; i < inputList.length; i++) {
@@ -57,7 +63,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
 
       if (itemResult.isOk) {
         final validatedItemValue = itemResult.getOrNull();
-        if (validatedItemValue is V) {
+        if (validatedItemValue is ItemRuntime) {
           validatedItems.add(validatedItemValue);
         } else {
           itemErrors.add(
@@ -79,26 +85,64 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       );
     }
 
-    final unmodifiableList = List<V>.unmodifiable(validatedItems);
+    final unmodifiableList = List<ItemRuntime>.unmodifiable(validatedItems);
     return applyConstraintsAndRefinements(unmodifiableList, context);
   }
 
   @override
-  ListSchema<V> copyWith({
-    AckSchema<V>? itemSchema,
+  @protected
+  SchemaResult<List<ItemBoundary>> encodeRuntime(
+    List<ItemRuntime> value,
+    SchemaContext context,
+  ) {
+    final encodedItems = <ItemBoundary>[];
+    final errors = <SchemaError>[];
+    for (var i = 0; i < value.length; i++) {
+      final itemValue = value[i];
+      final itemContext = context.createChild(
+        name: '$i',
+        schema: itemSchema,
+        value: itemValue,
+        pathSegment: '$i',
+      );
+      final encoded = itemSchema.safeEncode(itemValue, debugName: '$i');
+      if (encoded.isFail) {
+        errors.add(encoded.getError());
+        continue;
+      }
+      final boundary = encoded.getOrNull();
+      if (boundary is ItemBoundary) {
+        encodedItems.add(boundary);
+      } else {
+        errors.add(
+          SchemaEncodeError.typeMismatch(
+            message: 'List item $i encoded to an unexpected type.',
+            context: itemContext,
+          ),
+        );
+      }
+    }
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+    return SchemaResult.ok(List<ItemBoundary>.unmodifiable(encodedItems));
+  }
+
+  @override
+  ListSchema<ItemBoundary, ItemRuntime> copyWithBase({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    List<V>? defaultValue,
-    List<Constraint<List<V>>>? constraints,
-    List<Refinement<List<V>>>? refinements,
+    List<Constraint<List<ItemRuntime>>>? constraints,
+    List<Refinement<List<ItemRuntime>>>? refinements,
   }) {
-    return ListSchema(
-      itemSchema ?? this.itemSchema,
+    return ListSchema<ItemBoundary, ItemRuntime>(
+      itemSchema,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -107,7 +151,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
     typeSchema: {'type': 'array', 'items': itemSchema.toJsonSchema()},
-    serializedDefault: defaultValue,
   );
 
   @override
@@ -116,7 +159,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'itemSchema': itemSchema.schemaType.typeName,
     };
@@ -125,7 +167,7 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! ListSchema<V>) return false;
+    if (other is! ListSchema<ItemBoundary, ItemRuntime>) return false;
     return baseFieldsEqual(other) && itemSchema == other.itemSchema;
   }
 

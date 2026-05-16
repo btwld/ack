@@ -2,79 +2,135 @@ import '../../constraints/constraint.dart';
 import '../../schemas/schema.dart';
 
 /// Core extensions for all AckSchema types.
-/// Provides common functionality like refinement, transformation, and optional marking.
-extension AckSchemaExtensions<T extends Object> on AckSchema<T> {
-  /// Adds a custom validation check that runs after all other validations for this schema have passed.
-  ///
-  /// [validate] is a function that receives the parsed value of type [T] and must return `true` if the validation passes, and `false` otherwise.
-  ///
-  /// [message] is the custom error message to be used if the validation fails.
-  AckSchema<T> refine(
-    bool Function(T value) validate, {
+extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
+    on AckSchema<Boundary, Runtime> {
+  /// Adds a custom validation check that runs after all other validations have
+  /// passed for this schema.
+  AckSchema<Boundary, Runtime> refine(
+    bool Function(Runtime value) validate, {
     String message = 'The value did not pass the custom validation.',
   }) {
     final newRefinement = (validate: validate, message: message);
-
-    // Create a new schema instance with the new refinement added to the list.
-    return copyWith(refinements: [...refinements, newRefinement]);
+    final self = this;
+    if (self is FluentSchema) {
+      return (self as dynamic).copyWithBase(
+        refinements: [...refinements, newRefinement],
+      ) as AckSchema<Boundary, Runtime>;
+    }
+    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
+      return self.copyWith(
+        refinements: [...refinements, newRefinement],
+      );
+    }
+    throw StateError(
+      'refine() is not supported on ${self.runtimeType}. '
+      'Use a schema produced by Ack or a CodecSchema.',
+    );
   }
 
-  /// Makes the schema optional - the field can be omitted from an object.
+  /// Marks the schema as optional - the field can be omitted from an object.
   ///
-  /// This is different from `nullable()`:
-  /// - `optional()`: Field can be absent from object, but if present, must not be null
-  /// - `nullable()`: Field must be present in object, but can be null
-  /// - Both: Field can be absent OR present as null
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.object({
-  ///   'required': Ack.string(),           // Must be present and non-null
-  ///   'optional': Ack.string().optional(), // Can be absent, but if present must be non-null
-  ///   'nullable': Ack.string().nullable(), // Must be present, can be null
-  ///   'both': Ack.string().optional().nullable(), // Can be absent or null
-  /// });
-  /// ```
-  ///
-  /// This method is idempotent - calling it multiple times returns the same schema if already optional.
-  AckSchema<T> optional({bool value = true}) {
+  /// See FluentSchema.optional for details.
+  AckSchema<Boundary, Runtime> optional({bool value = true}) {
     if (isOptional == value) return this;
-    return copyWith(isOptional: value);
+    final self = this;
+    if (self is FluentSchema) {
+      return (self as dynamic).optional(value: value)
+          as AckSchema<Boundary, Runtime>;
+    }
+    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
+      return self.optional(value: value);
+    }
+    if (self is DefaultSchema<Boundary, Runtime>) {
+      return self.optional(value: value);
+    }
+    if (self is TransformedSchema<Boundary, dynamic, Runtime>) {
+      return self.optional(value: value);
+    }
+    throw StateError(
+      'optional() is not supported on ${self.runtimeType}.',
+    );
   }
 
-  /// Adds a raw [constraint] to the schema. This is useful for composing
-  /// declarative constraints in addition to the built-in helpers.
-  AckSchema<T> constrain(Constraint<T> constraint, {String? message}) {
-    if (constraint is! Validator<T>) {
+  /// Marks the schema as nullable.
+  AckSchema<Boundary, Runtime> nullable({bool value = true}) {
+    if (isNullable == value) return this;
+    final self = this;
+    if (self is FluentSchema) {
+      return (self as dynamic).nullable(value: value)
+          as AckSchema<Boundary, Runtime>;
+    }
+    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
+      return self.nullable(value: value);
+    }
+    if (self is DefaultSchema<Boundary, Runtime>) {
+      return self.nullable(value: value);
+    }
+    if (self is TransformedSchema<Boundary, dynamic, Runtime>) {
+      return self.nullable(value: value);
+    }
+    throw StateError(
+      'nullable() is not supported on ${self.runtimeType}.',
+    );
+  }
+
+  /// Adds a raw [constraint] to the schema.
+  AckSchema<Boundary, Runtime> constrain(
+    Constraint<Runtime> constraint, {
+    String? message,
+  }) {
+    if (constraint is! Validator<Runtime>) {
       throw ArgumentError(
-        'Constraint ${constraint.runtimeType} must implement Validator<T>.',
+        'Constraint ${constraint.runtimeType} must implement Validator<Runtime>.',
       );
     }
 
     final effectiveConstraint = message == null
         ? constraint
-        : _ConstraintMessageOverride<T>(constraint, message);
+        : _ConstraintMessageOverride<Runtime>(constraint, message);
 
-    return copyWith(constraints: [...constraints, effectiveConstraint]);
+    final self = this;
+    if (self is FluentSchema) {
+      return (self as dynamic).copyWithBase(
+        constraints: [...constraints, effectiveConstraint],
+      ) as AckSchema<Boundary, Runtime>;
+    }
+    if (self is CodecSchemaImpl<Boundary, dynamic, Runtime>) {
+      return self.copyWith(
+        constraints: [...constraints, effectiveConstraint],
+      );
+    }
+    throw StateError(
+      'constrain() is not supported on ${self.runtimeType}.',
+    );
   }
 
-  /// Transforms the validated value using the provided transformer function.
-  ///
-  /// The [transformer] always receives a non-null `T` value. Even when this
-  /// schema is nullable, the transformer is only called for non-null values; if
-  /// the input is `null`, it passes through as `null` without invoking the
-  /// transformer.
-  ///
-  /// This is useful for converting data types or applying business logic
-  /// transformations without defensively handling `null` inside the callback.
-  TransformedSchema<T, R> transform<R extends Object>(
-    R Function(T value) transformer,
+  /// Maps the validated runtime value to a new runtime type [R] in a
+  /// parse-only direction. Encoding will fail with
+  /// `SchemaEncodeFailureKind.oneWayTransform`.
+  TransformedSchema<Boundary, Runtime, R> transform<R extends Object>(
+    R Function(Runtime value) transformer,
   ) {
-    return TransformedSchema(
+    return TransformedSchema<Boundary, Runtime, R>(
       this,
       transformer,
       isOptional: isOptional,
       isNullable: isNullable,
+    );
+  }
+
+  /// Builds a bidirectional codec on top of this schema. Encoding is
+  /// supported when both [decode] and [encode] are provided.
+  CodecSchema<Boundary, R> codec<R extends Object>({
+    required R Function(Runtime value) decode,
+    required Runtime Function(R value) encode,
+    AckSchema<dynamic, R>? output,
+  }) {
+    return CodecSchemaImpl<Boundary, Runtime, R>(
+      inputSchema: this,
+      outputSchema: output ?? InstanceSchema<R>(),
+      decoder: decode,
+      encoder: encode,
     );
   }
 }

@@ -1,19 +1,22 @@
 part of 'schema.dart';
 
-/// Schema for validating maps (`Map<String, Object?>`), often used for objects.
+/// Schema for validating `JsonMap` shaped values.
+///
+/// `ObjectSchema` has identical boundary and runtime types
+/// (`AckSchema<JsonMap, JsonMap>`). Use [ObjectSchemaModelExtension.model] to
+/// map an object shape to a typed Dart model.
 @immutable
-final class ObjectSchema extends AckSchema<MapValue>
-    with FluentSchema<MapValue, ObjectSchema> {
+final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
+    with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
   final Map<String, AckSchema> properties;
   final bool additionalProperties;
 
-  const ObjectSchema(
+  ObjectSchema(
     Map<String, AckSchema>? properties, {
     this.additionalProperties = false,
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   }) : properties = properties ?? const {};
@@ -23,45 +26,39 @@ final class ObjectSchema extends AckSchema<MapValue>
 
   @override
   @protected
-  SchemaResult<MapValue> parseAndValidate(
+  SchemaResult<JsonMap> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
-    // Use centralized null handling (including cloned default handling).
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 
-    // Type guard
     if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
       return SchemaResult.fail(
         TypeMismatchError(
           expectedType: schemaType,
-          actualType: actualType,
+          actualType: AckSchema.getSchemaType(inputValue),
           context: context,
         ),
       );
     }
 
-    // Handle both Map<String, Object?> and Map<dynamic, dynamic> from JSON
-    final mapValue = inputValue is Map<String, Object?>
+    final mapValue = inputValue is JsonMap
         ? inputValue
         : inputValue.cast<String, Object?>();
     final validatedMap = <String, Object?>{};
     final validationErrors = <SchemaError>[];
 
-    // Validate all properties defined in the schema
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        // Property missing from input
         if (schema.isOptional) {
-          // Optional field with default - pass null to trigger the child schema's
-          // handleNullInput, which clones and validates the default.
-          if (schema.defaultValue != null) {
+          // Optional + DefaultSchema injection: invoke schema with null so it
+          // can supply its default.
+          if (schema is DefaultSchema) {
             final propertyContext = context.createChild(
               name: key,
               schema: schema,
@@ -78,9 +75,7 @@ final class ObjectSchema extends AckSchema<MapValue>
               onFail: validationErrors.add,
             );
           }
-          // Optional field without default - omit from output
         } else {
-          // Required field missing
           final ce = ObjectRequiredPropertiesConstraint(
             missingPropertyKey: key,
           ).validate(mapValue);
@@ -99,7 +94,6 @@ final class ObjectSchema extends AckSchema<MapValue>
           }
         }
       } else {
-        // Property exists - validate it
         final propertyValue = mapValue[key];
         final propertyContext = context.createChild(
           name: key,
@@ -117,7 +111,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       }
     }
 
-    // Handle additional properties
     final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
       if (!knownKeys.contains(key)) {
@@ -157,15 +150,122 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
+  @protected
+  SchemaResult<JsonMap> encodeRuntime(
+    JsonMap value,
+    SchemaContext context,
+  ) {
+    final encodedMap = <String, Object?>{};
+    final errors = <SchemaError>[];
+    final knownKeys = properties.keys.toSet();
+
+    for (final entry in properties.entries) {
+      final key = entry.key;
+      final schema = entry.value;
+      final hasValue = value.containsKey(key);
+
+      if (!hasValue) {
+        if (!schema.isOptional) {
+          errors.add(
+            SchemaEncodeError.missingRequiredProperty(
+              propertyKey: key,
+              context: context.createChild(
+                name: key,
+                schema: schema,
+                value: null,
+                pathSegment: key,
+                operation: SchemaOperation.encode,
+              ),
+            ),
+          );
+        }
+        continue;
+      }
+
+      final propertyValue = value[key];
+      final propertyContext = context.createChild(
+        name: key,
+        schema: schema,
+        value: propertyValue,
+        pathSegment: key,
+        operation: SchemaOperation.encode,
+      );
+
+      if (propertyValue == null) {
+        if (schema.isNullable) {
+          encodedMap[key] = null;
+        } else if (!schema.isOptional) {
+          errors.add(
+            SchemaEncodeError.nonNullable(context: propertyContext),
+          );
+        }
+        continue;
+      }
+
+      final encoded = schema.safeEncode(propertyValue);
+      if (encoded.isFail) {
+        errors.add(encoded.getError());
+        continue;
+      }
+      encodedMap[key] = encoded.getOrNull();
+    }
+
+    for (final key in value.keys) {
+      if (knownKeys.contains(key)) continue;
+      if (additionalProperties) {
+        encodedMap[key] = value[key];
+      } else {
+        errors.add(
+          SchemaEncodeError.unexpectedProperty(
+            propertyKey: key,
+            context: context.createChild(
+              name: key,
+              schema: this,
+              value: value[key],
+              pathSegment: key,
+              operation: SchemaOperation.encode,
+            ),
+          ),
+        );
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return SchemaResult.fail(
+        SchemaNestedError(errors: errors, context: context),
+      );
+    }
+
+    return SchemaResult.ok(Map<String, Object?>.unmodifiable(encodedMap));
+  }
+
+  @override
+  ObjectSchema copyWithBase({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<JsonMap>>? constraints,
+    List<Refinement<JsonMap>>? refinements,
+  }) {
+    return ObjectSchema(
+      properties,
+      additionalProperties: additionalProperties,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
+    );
+  }
+
   ObjectSchema copyWith({
     Map<String, AckSchema>? properties,
     bool? additionalProperties,
     bool? isNullable,
     bool? isOptional,
     String? description,
-    MapValue? defaultValue,
-    List<Constraint<MapValue>>? constraints,
-    List<Refinement<MapValue>>? refinements,
+    List<Constraint<JsonMap>>? constraints,
+    List<Refinement<JsonMap>>? refinements,
   }) {
     return ObjectSchema(
       properties ?? this.properties,
@@ -173,7 +273,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -186,13 +285,11 @@ final class ObjectSchema extends AckSchema<MapValue>
 
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
-      // All non-optional fields are required
       if (!entry.value.isOptional) {
         requiredFields.add(entry.key);
       }
     }
 
-    // Zod uses {} (empty schema) for true, false for false
     final additionalPropertiesValue = additionalProperties
         ? <String, Object?>{}
         : false;
@@ -204,7 +301,6 @@ final class ObjectSchema extends AckSchema<MapValue>
         if (requiredFields.isNotEmpty) 'required': requiredFields,
         'additionalProperties': additionalPropertiesValue,
       },
-      serializedDefault: defaultValue,
     );
   }
 
@@ -214,7 +310,6 @@ final class ObjectSchema extends AckSchema<MapValue>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'properties': properties.length,
       'additionalProperties': additionalProperties,

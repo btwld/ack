@@ -1,13 +1,14 @@
 part of 'schema.dart';
 
-/// Schema for validating string values.
+/// Schema that accepts a specific runtime [T] instance, with [T] as both
+/// boundary and runtime type.
 ///
-/// `StringSchema` is a primitive schema where boundary and runtime types both
-/// equal `String`.
+/// Used primarily as the `output` schema of a [CodecSchema] to attach typed
+/// refinements (e.g. requiring a `DateTime` to be UTC).
 @immutable
-final class StringSchema extends AckSchema<String, String>
-    with FluentSchema<String, String, StringSchema> {
-  const StringSchema({
+final class InstanceSchema<T extends Object> extends AckSchema<T, T>
+    with FluentSchema<T, T, InstanceSchema<T>> {
+  const InstanceSchema({
     super.isNullable,
     super.isOptional,
     super.description,
@@ -16,45 +17,43 @@ final class StringSchema extends AckSchema<String, String>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.string;
+  SchemaType get schemaType => SchemaType.any;
 
   @override
   @protected
-  SchemaResult<String> parseAndValidate(
+  SchemaResult<T> parseAndValidate(
     Object? inputValue,
     SchemaContext context,
   ) {
     final nullResult = handleNullInput(inputValue, context);
     if (nullResult != null) return nullResult;
 
-    if (inputValue is! String) {
+    if (inputValue is! T) {
       return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(inputValue),
+        SchemaValidationError(
+          message: 'Expected instance of $T, got ${inputValue.runtimeType}',
           context: context,
         ),
       );
     }
-
     return applyConstraintsAndRefinements(inputValue, context);
   }
 
   @override
   @protected
-  SchemaResult<String> encodeRuntime(String value, SchemaContext context) {
+  SchemaResult<T> encodeRuntime(T value, SchemaContext context) {
     return SchemaResult.ok(value);
   }
 
   @override
-  StringSchema copyWithBase({
+  InstanceSchema<T> copyWithBase({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    List<Constraint<String>>? constraints,
-    List<Refinement<String>>? refinements,
+    List<Constraint<T>>? constraints,
+    List<Refinement<T>>? refinements,
   }) {
-    return StringSchema(
+    return InstanceSchema<T>(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -65,12 +64,12 @@ final class StringSchema extends AckSchema<String, String>
 
   @override
   Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: {'type': 'string'});
+      buildJsonSchemaWithNullable(typeSchema: const {});
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! StringSchema) return false;
+    if (other is! InstanceSchema<T>) return false;
     return baseFieldsEqual(other);
   }
 

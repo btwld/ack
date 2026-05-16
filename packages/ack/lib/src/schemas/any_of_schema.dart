@@ -1,26 +1,12 @@
 part of 'schema.dart';
 
-/// Schema for validating against a list of schemas.
+/// Schema for validating against a list of schemas (union).
 ///
-/// The input is valid if it matches ANY of the provided schemas.
-/// This is useful for union types where a value can be one of several different types.
-///
-/// Example:
-/// ```dart
-/// final schema = Ack.anyOf([
-///   Ack.string(),
-///   Ack.integer(),
-///   Ack.boolean(),
-/// ]);
-///
-/// schema.safeParse('hello');  // Ok
-/// schema.safeParse(42);        // Ok
-/// schema.safeParse(true);      // Ok
-/// schema.safeParse([]);        // Fail - not matching any schema
-/// ```
+/// `AnyOfSchema` keeps broad typing in the first redesign (`Object`/`Object`)
+/// because Dart does not have first-class union types.
 @immutable
-final class AnyOfSchema extends AckSchema<Object>
-    with FluentSchema<Object, AnyOfSchema> {
+final class AnyOfSchema extends AckSchema<Object, Object>
+    with FluentSchema<Object, Object, AnyOfSchema> {
   final List<AckSchema> schemas;
 
   const AnyOfSchema(
@@ -28,7 +14,6 @@ final class AnyOfSchema extends AckSchema<Object>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -42,29 +27,14 @@ final class AnyOfSchema extends AckSchema<Object>
     Object? inputValue,
     SchemaContext context,
   ) {
-    // NOTE: AnyOfSchema intentionally does NOT use handleNullInput because
-    // null handling has special semantics for union types:
-    //
-    // 1. If a DEFAULT exists: apply it first (consistent with other schemas)
-    // 2. If NO default: try member schemas first - a nullable member can accept null
-    // 3. AnyOfSchema's own isNullable is only checked AFTER all members fail
-    //
-    // This differs from handleNullInput which checks isNullable before trying validation.
-    if (inputValue == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
-    }
-
-    // Try all member schemas (including with null input for nullable members)
     final errors = <SchemaError>[];
 
     for (final (index, schema) in schemas.indexed) {
-      // Branch name for debugging; inherit parent path (no segment pollution)
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
         value: inputValue,
-        pathSegment: '', // Inherit parent path
+        pathSegment: '',
       );
 
       final result = schema.parseAndValidate(inputValue, childContext);
@@ -72,44 +42,76 @@ final class AnyOfSchema extends AckSchema<Object>
       if (result.isOk) {
         final validatedValue = result.getOrNull();
 
-        // Nullable member returned null - pass through
         if (validatedValue == null) {
           return SchemaResult.ok(null);
         }
 
-        // Apply AnyOfSchema's own constraints to non-null values
         return applyConstraintsAndRefinements(validatedValue, context);
       }
 
       errors.add(result.getError());
     }
 
-    // No member schema matched; check AnyOfSchema's own nullable flag
     if (inputValue == null && isNullable) {
       return SchemaResult.ok(null);
     }
 
-    // Return all errors for debugging
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
   }
 
   @override
-  AnyOfSchema copyWith({
+  @protected
+  SchemaResult<Object> encodeRuntime(Object value, SchemaContext context) {
+    final errors = <SchemaError>[];
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: value,
+        pathSegment: '',
+        operation: SchemaOperation.encode,
+      );
+      try {
+        final encoded = schema.safeEncode(value);
+        if (encoded.isOk) {
+          final boundary = encoded.getOrNull();
+          if (boundary != null) {
+            return SchemaResult.ok(boundary);
+          }
+        } else {
+          errors.add(encoded.getError());
+        }
+      } catch (e, st) {
+        errors.add(
+          SchemaEncodeError.encoderThrew(
+            message: 'AnyOf branch $index threw: $e',
+            context: childContext,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+      }
+    }
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  @override
+  AnyOfSchema copyWithBase({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
     return AnyOfSchema(
-      schemas, // schemas are immutable once created
+      schemas,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -122,14 +124,11 @@ final class AnyOfSchema extends AckSchema<Object>
     final baseSchema = {
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-      if (!isNullable && defaultValue != null) 'default': defaultValue,
     };
 
-    // Wrap in another anyOf with null if nullable (match Zod's format)
     if (isNullable) {
       return {
         if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
         'anyOf': [
           mergeConstraintSchemas(baseSchema),
           {'type': 'null'},
@@ -146,7 +145,6 @@ final class AnyOfSchema extends AckSchema<Object>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'schemas': schemas.length,
     };
