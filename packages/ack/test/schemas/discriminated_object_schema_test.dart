@@ -38,15 +38,51 @@ void main() {
         final result = animalSchema.safeParse({'meow': true});
         expect(result.isOk, isFalse);
       });
+    });
 
-      test('fails when schemas map is empty', () {
-        final emptySchema = Ack.discriminated<Map<String, Object?>>(
+    group('Constructor validation', () {
+      test('rejects an empty discriminator key', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: '',
+            schemas: {'cat': catSchema},
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('rejects an empty schemas map', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: const <String, AckSchema<JsonMap, Map<String, Object?>>>{},
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('rejects an empty branch key', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {'': catSchema},
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('defensively copies schemas', () {
+        final schemas = {'cat': catSchema};
+        final schema = Ack.discriminated<Map<String, Object?>>(
           discriminatorKey: 'type',
-          schemas: const <String, AckSchema<JsonMap, Map<String, Object?>>>{},
+          schemas: schemas,
         );
 
-        final result = emptySchema.safeParse({'type': 'cat'});
-        expect(result.isOk, isFalse);
+        schemas['dog'] = dogSchema;
+
+        expect(schema.schemas, hasLength(1));
+        expect(schema.schemas, containsPair('cat', catSchema));
+        expect(() => schema.schemas['dog'] = dogSchema, throwsUnsupportedError);
       });
     });
 

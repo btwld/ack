@@ -643,7 +643,7 @@ Object? jsonSafeOrNull(Object? value) {
 /// not map-shaped or contains non-string keys. This eager check replaces
 /// `cast<String, Object?>()`, whose lazy semantics can throw at access time
 /// when a non-string key is hit.
-JsonMap? coerceJsonMap(Object? value) {
+JsonMap? jsonMapOrNull(Object? value) {
   if (value == null) return null;
   if (value is JsonMap) return value;
   if (value is! Map) return null;
@@ -654,3 +654,6 @@ JsonMap? coerceJsonMap(Object? value) {
   }
   return result;
 }
+
+@Deprecated('Use jsonMapOrNull(...) instead.')
+JsonMap? coerceJsonMap(Object? value) => jsonMapOrNull(value);

@@ -704,10 +704,10 @@ class <Target>SchemaConverter {
   }
 
   // ========================================================================
-  // Helper Methods - Type Coercion
+  // Helper Methods - Numeric Normalization
   // ========================================================================
 
-  /// Safely converts a value to int, handling num types.
+  /// Safely normalizes a JSON Schema numeric value to int.
   static int? _asInt(Object? value) {
     if (value == null) return null;
     if (value is int) return value;
@@ -715,7 +715,7 @@ class <Target>SchemaConverter {
     return null;
   }
 
-  /// Safely converts a value to double, handling num types.
+  /// Safely normalizes a JSON Schema numeric value to double.
   static double? _asDouble(Object? value) {
     if (value == null) return null;
     if (value is double) return value;
@@ -1462,10 +1462,10 @@ static TargetSchema _convertAny(AnySchema schema) {
 }
 ```
 
-### Type Coercion Helpers
+### Numeric Normalization Helpers
 
 ```dart
-/// Safely converts a value to int, handling num types.
+/// Safely normalizes a JSON Schema numeric value to int.
 static int? _asInt(Object? value) {
   if (value == null) return null;
   if (value is int) return value;
@@ -1473,7 +1473,7 @@ static int? _asInt(Object? value) {
   return null;
 }
 
-/// Safely converts a value to double, handling num types.
+/// Safely normalizes a JSON Schema numeric value to double.
 static double? _asDouble(Object? value) {
   if (value == null) return null;
   if (value is double) return value;

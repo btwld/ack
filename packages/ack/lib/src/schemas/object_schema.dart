@@ -44,7 +44,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final mapValue = coerceJsonMap(value);
+    final mapValue = jsonMapOrNull(value);
     if (mapValue == null) {
       return SchemaResult.fail(
         _buildTypeMismatch(
@@ -165,7 +165,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final mapValue = coerceJsonMap(value);
+    final mapValue = jsonMapOrNull(value);
     if (mapValue == null) {
       return SchemaResult.fail(
         _buildTypeMismatch(

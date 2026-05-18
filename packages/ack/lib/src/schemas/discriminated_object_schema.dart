@@ -12,15 +12,33 @@ final class DiscriminatedObjectSchema<T extends Object>
   final String discriminatorKey;
   final Map<String, AckSchema<JsonMap, T>> schemas;
 
-  const DiscriminatedObjectSchema({
+  DiscriminatedObjectSchema({
     required this.discriminatorKey,
-    required this.schemas,
+    required Map<String, AckSchema<JsonMap, T>> schemas,
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
-  });
+  }) : schemas = Map.unmodifiable(schemas) {
+    if (discriminatorKey.isEmpty) {
+      throw ArgumentError.value(
+        discriminatorKey,
+        'discriminatorKey',
+        'must not be empty',
+      );
+    }
+    if (schemas.isEmpty) {
+      throw ArgumentError.value(schemas, 'schemas', 'must not be empty');
+    }
+    if (schemas.containsKey('')) {
+      throw ArgumentError.value(
+        schemas,
+        'schemas',
+        'branch keys must not be empty',
+      );
+    }
+  }
 
   @override
   SchemaType get schemaType => SchemaType.discriminated;
@@ -31,7 +49,7 @@ final class DiscriminatedObjectSchema<T extends Object>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final mapValue = coerceJsonMap(value);
+    final mapValue = jsonMapOrNull(value);
     if (mapValue == null) {
       return SchemaResult.fail(
         _buildTypeMismatch(

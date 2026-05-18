@@ -122,7 +122,7 @@ void main() {
       );
     });
 
-    test('ignores non-numeric minLength (coerces to null)', () {
+    test('ignores non-numeric minLength by treating it as null', () {
       final schema = JsonSchema.fromJson({
         'type': 'string',
         'minLength': 'five',

@@ -810,17 +810,14 @@ void main() {
         expect(rectangleBranch.properties!['height'], isNotNull);
       });
 
-      test('handles empty discriminated schema', () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: <String, AckSchema<JsonMap, JsonMap>>{},
+      test('empty discriminated schema is rejected by ACK', () {
+        expect(
+          () => Ack.discriminated(
+            discriminatorKey: 'type',
+            schemas: <String, AckSchema<JsonMap, JsonMap>>{},
+          ),
+          throwsArgumentError,
         );
-
-        final result = schema.toFirebaseAiSchema();
-
-        // Empty discriminated schema converts to empty object
-        expect(result.type, firebase_ai.SchemaType.object);
-        expect(result.properties, isEmpty);
       });
 
       test('converts mixed object and non-object branches', () {
@@ -968,7 +965,7 @@ void main() {
       });
     });
 
-    group('Type coercion error paths', () {
+    group('Numeric normalization error paths', () {
       test('handles integer min/max constraints', () {
         final schema = Ack.integer().min(0).max(100);
         final result = schema.toFirebaseAiSchema();
