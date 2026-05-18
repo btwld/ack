@@ -1,24 +1,21 @@
-import 'dart:convert';
-
 import 'package:collection/collection.dart';
 
 import '../helpers.dart';
 import 'constraint.dart';
 
 /// Type of pattern matching operation.
-enum PatternType { regex, enumString, notEnumString, format }
+enum PatternType { regex, enumString, format }
 
 /// A generic constraint for string pattern/format validations.
 ///
-/// Handles regex matching, checking against a list of allowed/disallowed enum strings,
-/// and validating against predefined formats (like date, email) using either regex
+/// Handles regex matching, checking against a list of allowed enum strings, and
+/// validating against predefined formats (like date, email) using either regex
 /// or custom validation functions.
 class PatternConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
   final PatternType type;
   final RegExp? pattern; // For PatternType.regex
-  final List<String>?
-  allowedValues; // For PatternType.enumString, PatternType.notEnumString
+  final List<String>? allowedValues; // For PatternType.enumString
   final bool Function(String value)? formatValidator; // For PatternType.format
 
   final String? example; // Optional example for documentation/error messages
@@ -48,9 +45,7 @@ class PatternConstraint extends Constraint<String>
     this.customMessageBuilder,
   }) : assert(
          (type == PatternType.regex && pattern != null) ||
-             ((type == PatternType.enumString ||
-                     type == PatternType.notEnumString) &&
-                 allowedValues != null) ||
+             (type == PatternType.enumString && allowedValues != null) ||
              (type == PatternType.format && formatValidator != null),
          'Pattern, allowedValues, or formatValidator must be provided based on type.',
        );
@@ -109,15 +104,6 @@ class PatternConstraint extends Constraint<String>
     customMessageBuilder: (v) => 'Invalid UUID format, got "$v".',
   );
 
-  static PatternConstraint hexColor() => PatternConstraint(
-    type: PatternType.regex,
-    pattern: RegExp(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$'),
-    constraintKey: 'string_format_hexcolor',
-    description: 'Must be a valid hex color code (e.g., #RRGGBB or #RGB).',
-    example: '#FF0000',
-    customMessageBuilder: (v) => 'Invalid hex color format, got "$v".',
-  );
-
   static PatternConstraint uri() => PatternConstraint(
     type: PatternType.format,
     formatValidator: (v) {
@@ -138,17 +124,6 @@ class PatternConstraint extends Constraint<String>
       final suggestion = buildDidYouMeanSuggestion(v, values);
       return 'Value "$v" is not one of the allowed values: ${values.map((e) => '"$e"').join(', ')}.$suggestion';
     },
-  );
-
-  static PatternConstraint notEnumString(
-    List<String> disallowedValues,
-  ) => PatternConstraint(
-    type: PatternType.notEnumString,
-    allowedValues: disallowedValues,
-    constraintKey: 'string_not_enum',
-    description: 'Must not be one of: ${disallowedValues.join(", ")}.',
-    customMessageBuilder: (v) =>
-        'Value "$v" is disallowed. Cannot be one of: ${disallowedValues.map((e) => '"$e"').join(', ')}.',
   );
 
   static PatternConstraint startsWith(String prefix) => PatternConstraint(
@@ -243,28 +218,10 @@ class PatternConstraint extends Constraint<String>
         'Invalid time format (HH:MM:SS), got "$value".',
   );
 
-  static PatternConstraint jsonString() => PatternConstraint(
-    type: PatternType.format,
-    formatValidator: (v) {
-      try {
-        jsonDecode(v);
-        return true;
-      } on FormatException {
-        // Expected for invalid JSON
-        return false;
-      }
-      // Let other exceptions (OutOfMemoryError, stack overflow, etc.) propagate
-    },
-    constraintKey: 'string_format_json',
-    description: 'Must be a valid JSON formatted string.',
-    customMessageBuilder: (v) => 'Invalid JSON string format.',
-  );
-
   @override
   bool isValid(String value) => switch (type) {
     PatternType.regex => pattern!.hasMatch(value),
     PatternType.enumString => allowedValues!.contains(value),
-    PatternType.notEnumString => !allowedValues!.contains(value),
     PatternType.format => formatValidator!(value),
   };
 
@@ -285,8 +242,6 @@ class PatternConstraint extends Constraint<String>
         );
         return 'Value "$nonNullValue" is not one of the allowed values: ${allowedValues!.map((e) => '"$e"').join(', ')}.$suggestion';
       }(),
-      PatternType.notEnumString =>
-        'Value "$nonNullValue" is disallowed. Cannot be one of: ${allowedValues!.map((e) => '"$e"').join(', ')}.',
       PatternType.format =>
         'Value "$nonNullValue" is not a valid ${constraintKey.replaceFirst("string_format_", "")}${example != null ? " (e.g., $example)" : ""}.',
     };
@@ -320,9 +275,6 @@ class PatternConstraint extends Constraint<String>
       return {'pattern': pattern!.pattern};
     }(),
     PatternType.enumString => {'enum': allowedValues},
-    PatternType.notEnumString => {
-      'not': {'enum': allowedValues},
-    },
     PatternType.format => () {
       final standardFormat = _keyToFormat[constraintKey];
       if (standardFormat != null) {

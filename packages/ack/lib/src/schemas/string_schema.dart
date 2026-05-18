@@ -31,9 +31,9 @@ final class StringSchema extends AckSchema<String, String>
 
     if (value is! String) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );

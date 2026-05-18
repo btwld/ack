@@ -11,10 +11,6 @@ class ModelInfo {
   final List<FieldInfo> fields;
   final bool additionalProperties;
 
-  /// Computed property: returns list of required field JSON keys
-  List<String> get requiredFields =>
-      fields.where((f) => f.isRequired).map((f) => f.jsonKey).toList();
-
   /// Field name for discrimination.
   ///
   /// This is set on declared discriminated bases and may also be propagated

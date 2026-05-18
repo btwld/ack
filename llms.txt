@@ -142,6 +142,7 @@ AckType generation is intentionally strict:
 - `SchemaResult<T>.getOrThrow()` returns the validated value or throws `AckException`
 - `.optional()` allows a field to be omitted
 - `.nullable()` allows a present field to hold `null`
+- encode omits optional non-nullable fields whose runtime value is `null`
 - object schemas support `additionalProperties: true`
 
 ## Build command

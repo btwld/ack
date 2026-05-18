@@ -34,9 +34,9 @@ final class DiscriminatedObjectSchema<T extends Object>
     final mapValue = coerceJsonMap(value);
     if (mapValue == null) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );

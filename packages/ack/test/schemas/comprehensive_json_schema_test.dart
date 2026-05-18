@@ -114,7 +114,13 @@ void main() {
         test('should validate basic double', () {
           final schema = Ack.double();
           expect(schema.safeParse(3.14).isOk, isTrue);
-          expect(schema.safeParse(42).isOk, isTrue); // int to double coercion
+          expect(schema.safeParse(42).isOk, isFalse);
+        });
+
+        test('Ack.number accepts both integer and double values', () {
+          final schema = Ack.number();
+          expect(schema.safeParse(42).isOk, isTrue);
+          expect(schema.safeParse(3.14).isOk, isTrue);
         });
 
         test('should validate with numeric constraints', () {

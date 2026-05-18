@@ -752,7 +752,7 @@ class <Target>SchemaConverter {
 3. **Switch expression** - Type-safe routing
 4. **JSON Schema bridge** - Reuse Ack's `toJsonSchema()`
 5. **Helper builders** - Wrap target SDK API
-6. **Type coercion** - Handle num/int/double safely
+6. **Numeric mapping** - Handle integer, double, and num schemas explicitly
 
 ---
 
@@ -1631,7 +1631,7 @@ class GraphQlSchemaConverter {
 - [ ] Implement main library file with documentation
 - [ ] Implement extension method
 - [ ] Implement converter with all schema types
-- [ ] Add type coercion helpers
+- [ ] Add explicit numeric mapping helpers
 - [ ] Handle edge cases (WrapperSchema, AnySchema, etc.)
 
 ### Testing Phase

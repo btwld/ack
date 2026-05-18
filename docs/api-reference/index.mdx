@@ -17,7 +17,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum types. Parses enum names from string boundary values and encodes runtime enum values back to their names. **Preferred over `enumString` when a Dart enum exists.**
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AnyAckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
-- `Ack.any()`: Creates an `AnySchema` that accepts any value.
+- `Ack.any()`: Creates an `AnySchema` that accepts any non-null value.
 - `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<JsonMap, T>> schemas})`: Creates a discriminated union schema. Branches may be plain `ObjectSchema` or codec schemas whose base is an `ObjectSchema`.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)
@@ -28,6 +28,8 @@ Base class for all schema types.
 
 - `SchemaResult<Runtime> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure.
 - `Runtime? parse(Object? data, {String? debugName})`: Validates the input data and returns the value. Throws `AckException` if validation fails.
+- `SchemaResult<Runtime> validate(Object? data, {String? debugName})`: Deprecated alias for `safeParse`.
+- `Runtime? tryParse(Object? data, {String? debugName})`: Deprecated alias for `parse`.
 
 ### Schema Modification Methods
 
@@ -35,10 +37,6 @@ Base class for all schema types.
 - `AckSchema<Boundary, Runtime> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
 - `AckSchema<Boundary, Runtime> describe(String description)`: Adds a description for documentation and JSON Schema generation.
 - `AckSchema<Boundary, Runtime> withDefault(Runtime value)`: Sets a default value when input is `null`.
-- `StringSchema strictParsing({bool value = true})`: Enables strict parsing for strings.
-- `IntegerSchema strictParsing({bool value = true})`: Enables strict parsing for integers.
-- `DoubleSchema strictParsing({bool value = true})`: Enables strict parsing for doubles.
-- `BooleanSchema strictParsing({bool value = true})`: Enables strict parsing for booleans.
 
 ### Custom Validation Methods
 
@@ -115,7 +113,7 @@ Schemas for validating numbers. See [Number Validation](../core-concepts/validat
 
 ## `BooleanSchema`
 
-Schema for validating booleans. Validates `true` and `false` values, with optional type coercion from strings and numbers.
+Schema for validating booleans. Validates `true` and `false` values.
 
 ## `ListSchema<T>`
 
@@ -256,9 +254,10 @@ Schema for polymorphic validation based on a discriminator field.
 
 ### `AnySchema`
 
-Schema that accepts any value without validation.
+Schema that accepts any non-null value without validation.
 
 - Created using `Ack.any()`
+- Use `.nullable()` if `null` should also be accepted.
 - Useful for gradual migration or maximum flexibility
 
 ### `CodecSchema<Boundary, Runtime>`

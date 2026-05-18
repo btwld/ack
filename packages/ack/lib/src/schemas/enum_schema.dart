@@ -27,9 +27,9 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 
     if (value is! String) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: SchemaType.string,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );

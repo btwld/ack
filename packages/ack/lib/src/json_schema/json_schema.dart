@@ -497,5 +497,3 @@ class JsonSchema {
     ]);
   }
 }
-
-// Deprecated helpers removed: value-based enum covers string mapping.

@@ -36,7 +36,7 @@ class IsPositiveConstraint extends Constraint<double> with Validator<double> {
 final priceSchema = Ack.double().constrain(IsPositiveConstraint());
 
 print(priceSchema.safeParse(10.5).isOk); // true
-print(priceSchema.safeParse(-5).isFail); // true
+print(priceSchema.safeParse(-5.0).isFail); // true
 ```
 
 ## Cross-Field Rules with `.refine()`
@@ -67,7 +67,7 @@ The optional `message` parameter on `.constrain()` lets you customize the failur
 final schema = Ack.double()
     .constrain(IsPositiveConstraint(), message: 'Price must be greater than zero.');
 
-print(schema.safeParse(-10).getError().toString()); // Price must be greater than zero.
+print(schema.safeParse(-10.0).getError().toString()); // Price must be greater than zero.
 ```
 
 ## Organizing Reusable Constraints

@@ -31,9 +31,9 @@ final class BooleanSchema extends AckSchema<bool, bool>
 
     if (value is! bool) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );

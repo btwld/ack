@@ -47,9 +47,9 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     final mapValue = coerceJsonMap(value);
     if (mapValue == null) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );
@@ -168,9 +168,9 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     final mapValue = coerceJsonMap(value);
     if (mapValue == null) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );

@@ -41,9 +41,6 @@ if (result.isOk) {
 // Basic string
 final nameSchema = Ack.string();
 
-// Enable strict type checking (no coercion)
-final strictNameSchema = Ack.string().strictParsing();
-
 // With constraints
 final usernameSchema = Ack.string()
   .minLength(3)
@@ -156,7 +153,7 @@ Validate against multiple possible schemas:
 ```dart
 // String or integer
 final idSchema = Ack.anyOf([
-  Ack.string().strictParsing(),
+  Ack.string(),
   Ack.integer(),
 ]);
 
@@ -179,12 +176,12 @@ final shapeSchema = Ack.discriminated(
 
 ### Any
 
-Accept any value without validation (use sparingly):
+Accept any non-null value without validation (use sparingly):
 
 ```dart
 final flexibleSchema = Ack.object({
   'id': Ack.string(),
-  'metadata': Ack.any(), // Any value accepted
+  'metadata': Ack.any(), // Any non-null value accepted
 });
 ```
 
@@ -223,6 +220,11 @@ final userSchema = Ack.object({
 // ❌ Invalid
 {'name': 'John', 'age': null} // Use .nullable() if null should be allowed
 ```
+
+On encode, optional non-nullable properties whose runtime value is `null` are
+omitted from the output. This lets model encoders write fields directly, such
+as `'age': value.age`, while still preserving parse-side strictness for
+explicit `null` input.
 
 **Combining both** - Field can be missing OR null:
 
@@ -393,14 +395,14 @@ Transform validated data:
 
 ```dart
 // Transform to uppercase
-final upperSchema = Ack.string().transform((s) => s?.toUpperCase() ?? '');
+final upperSchema = Ack.string().transform((s) => s.toUpperCase());
 
 // Add computed fields
 final userWithAgeSchema = Ack.object({
   'name': Ack.string(),
   'birthYear': Ack.integer(),
 }).transform((data) {
-  final birthYear = data!['birthYear'] as int;
+  final birthYear = data['birthYear'] as int;
   final age = DateTime.now().year - birthYear;
   return {...data, 'age': age};
 });
@@ -408,7 +410,7 @@ final userWithAgeSchema = Ack.object({
 // Type transformation
 final dateSchema = Ack.string()
   .matches(r'\d{4}-\d{2}-\d{2}')
-  .transform<DateTime>((s) => DateTime.parse(s!));
+  .transform<DateTime>((s) => DateTime.parse(s));
 ```
 
 ## Validation Result

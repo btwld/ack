@@ -1,11 +1,5 @@
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/type.dart';
-import 'package:logging/logging.dart';
-
-import 'constraint_info.dart';
-
-/// Logger for field info extraction warnings and diagnostics.
-final _log = Logger('FieldInfo');
 
 /// Information about a field in the model
 class FieldInfo {
@@ -14,7 +8,6 @@ class FieldInfo {
   final DartType type;
   final bool isRequired;
   final bool isNullable;
-  final List<ConstraintInfo> constraints;
   final String? description;
 
   /// For list/set fields containing schema variable references (e.g., `Ack.list(addressSchema)`),
@@ -50,7 +43,6 @@ class FieldInfo {
     required this.type,
     required this.isRequired,
     required this.isNullable,
-    required this.constraints,
     this.description,
     this.listElementSchemaRef,
     this.nestedSchemaRef,
@@ -91,31 +83,6 @@ class FieldInfo {
 
     // Check if this is an enum by looking at the element type
     return element is EnumElement2;
-  }
-
-  /// Get enum values if this is an enum type
-  List<String> get enumValues {
-    if (!isEnum) return [];
-    final element = type.element3;
-    if (element == null) return [];
-
-    // For enums, get the enum constants using the analyzer API
-    if (element is EnumElement2) {
-      try {
-        final enumConstants = element.constants2
-            .map((field) => field.name3!)
-            .toList();
-
-        return enumConstants;
-      } catch (e) {
-        // If the analyzer can't resolve the enum constants, fall back to empty
-        // values so generation still works for manual string-enum schemas.
-        _log.warning('Could not extract enum values for ${element.name3}: $e');
-        return [];
-      }
-    }
-
-    return [];
   }
 
   /// Whether this is a List type

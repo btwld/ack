@@ -66,7 +66,7 @@ if (result.isOk) {
 }
 ```
 
-Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
+Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value. During encode, optional non-nullable fields with `null` values are omitted.
 
 ### Advanced Usage
 

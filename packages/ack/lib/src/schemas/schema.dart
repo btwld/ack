@@ -548,6 +548,29 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   }
 }
 
+/// Builds a type-mismatch error without throwing when [actualValue] is an
+/// unsupported Dart runtime object outside ACK's JSON-ish schema categories.
+SchemaError _buildTypeMismatch({
+  required SchemaType expectedType,
+  required Object? actualValue,
+  required SchemaContext context,
+}) {
+  final actualType = SchemaType.tryOf(actualValue);
+  if (actualType == null) {
+    return SchemaValidationError(
+      message:
+          'Expected ${expectedType.typeName}, got ${actualValue.runtimeType}.',
+      context: context,
+    );
+  }
+
+  return TypeMismatchError(
+    expectedType: expectedType,
+    actualType: actualType,
+    context: context,
+  );
+}
+
 class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
   _ConstraintMessageOverride(this.inner, this.customMessage)

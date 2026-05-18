@@ -34,10 +34,5 @@ echo ""
 echo "🔗 Running integration tests..."
 dart test test/integration --reporter compact || true
 
-# Run golden tests
-echo ""
-echo "✨ Running golden tests..."
-dart test test/golden_test.dart --reporter compact || true
-
 echo ""
 echo "✅ Test run complete!"

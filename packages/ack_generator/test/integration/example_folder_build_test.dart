@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// Integration test that verifies the example folder builds correctly
-/// and has no analyze errors. This acts as a golden test to ensure
+/// and has no analyze errors. This acts as a regression test to ensure
 /// the generated code remains valid and analyzer-clean.
 void main() {
   group('Example Folder Build Integration', () {

@@ -45,9 +45,9 @@ final class IntegerSchema extends NumSchema<int>
 
     if (value is! int) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );
@@ -111,16 +111,8 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   @protected
-  SchemaResult<double> parseWithContext(Object? value, SchemaContext context) {
-    final nullResult = handleNullInput(value, context);
-    if (nullResult != null) return nullResult;
-
-    // Per JSON Schema, an integer is a valid number — widen to double on parse.
-    if (value is int) {
-      return applyConstraintsAndRefinements(value.toDouble(), context);
-    }
-    return validateRuntimeWithContext(value, context);
-  }
+  SchemaResult<double> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -133,9 +125,9 @@ final class DoubleSchema extends NumSchema<double>
 
     if (value is! double) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );
@@ -212,9 +204,9 @@ final class NumberSchema extends NumSchema<num>
     if (nullResult != null) return nullResult;
     if (value is! num) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );

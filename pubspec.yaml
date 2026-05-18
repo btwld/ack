@@ -13,13 +13,9 @@ workspace:
   - packages/ack_json_schema_builder
   - example
   
-dependencies:
-  meta: ^1.15.0
-
 dev_dependencies:
   melos: ^7.3.0
   test: ^1.25.15
-  very_good_analysis: ^9.0.0
 
 melos:
   bootstrap:
@@ -96,11 +92,6 @@ melos:
       run: melos exec -- "dart pub outdated"
       description: Check for outdated dependencies in all packages
 
-    # Create proper analysis_options.yaml files
-    ensure_analysis_options:
-      run: .scripts/ensure_analysis_options.sh
-      description: Ensures each package has DCM configuration in analysis_options.yaml
-
     clean:
       run: melos clean
       description: Clean all build outputs.
@@ -137,20 +128,6 @@ melos:
       packageFilters:
         scope: ack_generator
 
-    update-golden:
-      run: cd packages/ack_generator && dart tool/update_goldens.dart
-      description: Update golden test files (interactive - specify test names)
-
-    update-golden:all:
-      run: cd packages/ack_generator && dart tool/update_goldens.dart --all
-      description: Update all golden test files
-
-    test:golden:
-      run: melos exec -c 1 -- dart test test/golden_test.dart
-      description: Run only golden tests
-      packageFilters:
-        dirExists: test/golden
-
     # JSON Schema Draft-7 validation
     validate-jsonschema:
       run: |
@@ -163,7 +140,7 @@ melos:
     validate-jsonschema:batch:
       run: |
         cd tools && npm install
-        node jsonschema-validator.js validate-batch --input test-fixtures/schema-validation-config.json
+        node jsonschema-validator.js validate-batch --input test-fixtures/reference-config.json
       description: Run batch JSON Schema Draft-7 validation
 
     validate-jsonschema:setup:

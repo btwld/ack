@@ -7,7 +7,7 @@
 ## Repository layout
 - `packages/ack`: core runtime validation library.
 - `packages/ack_annotations`: source annotations (`@AckModel`, `@AckType`).
-- `packages/ack_generator`: build_runner generator + golden tests.
+- `packages/ack_generator`: build_runner generator and integration tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.
 - `example`: sample usage.
@@ -27,13 +27,13 @@
   - `melos run test:dart`
   - `melos run test:flutter`
   - `melos run build` (when generator-related code changes)
-  - `melos run test:gen` / `melos run update-golden:all` (for generator golden updates)
+  - `melos run test:gen` (for generator tests)
   - `melos run validate-jsonschema` (for JSON Schema conformance tooling)
 
 ## Change-scope guidance
 - Keep changes minimal and package-scoped; do not refactor unrelated files.
 - Prefer existing patterns in each package (schema fluent APIs, existing test structure under `test/`).
-- Do not hand-edit generated `*.g.dart` files unless the repo pattern for that area explicitly requires it; prefer rerunning build/golden tooling.
+- Do not hand-edit generated `*.g.dart` files unless the repo pattern for that area explicitly requires it; prefer rerunning the generator build and tests.
 
 ## CI and release notes
 - CI is defined in `/.github/workflows/ci.yml` and delegates to `btwld/dart-actions/.github/workflows/ci.yml@main` with DCM enabled.

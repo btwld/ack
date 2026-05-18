@@ -9,6 +9,41 @@ final class _Cat {
 }
 
 void main() {
+  group('0. Safe API unsupported runtime objects', () {
+    test(
+      'safeParse returns Fail instead of throwing for unsupported values',
+      () {
+        expect(
+          () => Ack.string().safeParse(DateTime(2026, 1, 1)),
+          returnsNormally,
+        );
+
+        final result = Ack.string().safeParse(DateTime(2026, 1, 1));
+        expect(result.isFail, true);
+        expect(result.getError(), isA<SchemaValidationError>());
+        expect(result.getError().message, contains('Expected string'));
+        expect(result.getError().message, contains('DateTime'));
+      },
+    );
+
+    test('nested runtime validation returns Fail for unsupported values', () {
+      final schema = Ack.object({'name': Ack.string()});
+
+      expect(
+        () => schema.safeEncode({'name': DateTime(2026, 1, 1)}),
+        returnsNormally,
+      );
+
+      final result = schema.safeEncode({'name': DateTime(2026, 1, 1)});
+      expect(result.isFail, true);
+      expect(result.getError(), isA<SchemaNestedError>());
+      final nested = result.getError() as SchemaNestedError;
+      expect(nested.errors.single, isA<SchemaValidationError>());
+      expect(nested.errors.single.message, contains('Expected string'));
+      expect(nested.errors.single.message, contains('DateTime'));
+    });
+  });
+
   group('1. Null-policy hooks (no public safeEncode override needed)', () {
     test(
       'AnyOf with nullable branch accepts null on encode via base wrapper',

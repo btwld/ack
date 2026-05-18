@@ -1,0 +1,10 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+  errors:
+    avoid_relative_lib_imports: ignore
+    dangling_library_doc_comments: ignore
+    prefer_interpolation_to_compose_strings: ignore
+    unintended_html_in_doc_comment: ignore

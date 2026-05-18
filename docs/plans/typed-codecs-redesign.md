@@ -529,8 +529,8 @@ encode(null) -> no default injection
 
 ### Remove `strictPrimitiveParsing`
 
-`main` supports strict parsing toggles and implicit primitive coercion. In
-the new design, primitives should be strict and conversions should be
+Earlier versions supported strict parsing toggles and implicit primitive
+coercion. In the new design, primitives are strict and conversions are
 explicit codecs.
 
 Instead of implicit conversion:

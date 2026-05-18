@@ -1321,7 +1321,6 @@ class SchemaAstAnalyzer {
       type: mappedType,
       isRequired: isRequired,
       isNullable: isNullable,
-      constraints: [],
       nestedSchemaRef: hasTypedReference ? schemaVarName : null,
       displayTypeOverride: hasTypedReference
           ? '${typeBaseName}Type'
@@ -1410,7 +1409,6 @@ class SchemaAstAnalyzer {
       type: mappedType.dartType,
       isRequired: !chain.isOptional,
       isNullable: chain.isNullable,
-      constraints: [],
       listElementSchemaRef: mappedType.listElementSchemaRef,
       displayTypeOverride:
           displayTypeOverride ??

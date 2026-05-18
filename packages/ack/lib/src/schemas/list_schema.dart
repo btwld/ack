@@ -49,9 +49,9 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
 
     if (value is! List) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
+          actualValue: value,
           context: context,
         ),
       );
