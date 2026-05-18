@@ -21,10 +21,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 
   @override
   @protected
-  SchemaResult<T> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<T> parseWithContext(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
@@ -39,19 +36,11 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
     }
 
     T? parsed;
-    try {
-      parsed = values.firstWhere((e) => e.name == value);
-    } on StateError {
-      parsed = null;
-    } catch (e, st) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Unexpected error matching enum value: ${e.toString()}',
-          context: context,
-          cause: e,
-          stackTrace: st,
-        ),
-      );
+    for (final candidate in values) {
+      if (candidate.name == value) {
+        parsed = candidate;
+        break;
+      }
     }
 
     if (parsed == null) {

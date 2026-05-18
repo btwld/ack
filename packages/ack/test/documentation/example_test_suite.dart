@@ -171,6 +171,12 @@ void main() {
               contains('#ackdiscriminated-with-acktype-current-constraints'),
             ),
           );
+          expect(content, contains('Parses enum names'));
+          expect(content, contains('Encodes runtime enum values'));
+          expect(
+            content,
+            isNot(contains('Accepts enum instances, string names, or indices')),
+          );
         },
       );
 

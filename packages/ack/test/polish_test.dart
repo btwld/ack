@@ -10,13 +10,15 @@ final class _Cat {
 
 void main() {
   group('1. Null-policy hooks (no public safeEncode override needed)', () {
-    test('AnyOf with nullable branch accepts null on encode via base wrapper',
-        () {
-      final schema = Ack.anyOf([Ack.string().nullable(), Ack.integer()]);
-      final result = schema.safeEncode(null);
-      expect(result.isOk, true);
-      expect(result.getOrNull(), isNull);
-    });
+    test(
+      'AnyOf with nullable branch accepts null on encode via base wrapper',
+      () {
+        final schema = Ack.anyOf([Ack.string().nullable(), Ack.integer()]);
+        final result = schema.safeEncode(null);
+        expect(result.isOk, true);
+        expect(result.getOrNull(), isNull);
+      },
+    );
 
     test('AnyOf without nullable branch rejects null on encode', () {
       final schema = Ack.anyOf([Ack.string(), Ack.integer()]);
@@ -82,14 +84,17 @@ void main() {
           .where((b) => b['type'] != null)
           .map((b) => b['type'])
           .toList();
-      expect(types, containsAll([
-        'string',
-        'number',
-        'integer',
-        'boolean',
-        'object',
-        'array',
-      ]));
+      expect(
+        types,
+        containsAll([
+          'string',
+          'number',
+          'integer',
+          'boolean',
+          'object',
+          'array',
+        ]),
+      );
       // No null branch.
       expect(types.contains('null'), false);
     });
@@ -104,22 +109,19 @@ void main() {
   });
 
   group('4. Discriminated branch reject conflicting discriminator', () {
-    test('encode fails when a branch emits a conflicting discriminator',
-        () {
+    test('encode fails when a branch emits a conflicting discriminator', () {
       final schema = Ack.discriminated<_Cat>(
         discriminatorKey: 'kind',
         schemas: {
-          'cat': Ack.object({
-            // Branch encoder emits 'wrong-kind', which conflicts with 'cat'.
-            'kind': Ack.literal('wrong-kind'),
-            'name': Ack.string(),
-          }).model<_Cat>(
-            decode: (data) => _Cat(data['name'] as String),
-            encode: (cat) => {
-              'kind': 'wrong-kind',
-              'name': cat.name,
-            },
-          ),
+          'cat':
+              Ack.object({
+                // Branch encoder emits 'wrong-kind', which conflicts with 'cat'.
+                'kind': Ack.literal('wrong-kind'),
+                'name': Ack.string(),
+              }).model<_Cat>(
+                decode: (data) => _Cat(data['name'] as String),
+                encode: (cat) => {'kind': 'wrong-kind', 'name': cat.name},
+              ),
         },
       );
       final result = schema.safeEncode(_Cat('Mittens'));
@@ -130,9 +132,7 @@ void main() {
       final schema = Ack.discriminated<_Cat>(
         discriminatorKey: 'kind',
         schemas: {
-          'cat': Ack.object({
-            'name': Ack.string(),
-          }).model<_Cat>(
+          'cat': Ack.object({'name': Ack.string()}).model<_Cat>(
             decode: (data) => _Cat(data['name'] as String),
             encode: (cat) => {'name': cat.name},
           ),
@@ -146,16 +146,11 @@ void main() {
       final schema = Ack.discriminated<_Cat>(
         discriminatorKey: 'kind',
         schemas: {
-          'cat': Ack.object({
-            'kind': Ack.literal('cat'),
-            'name': Ack.string(),
-          }).model<_Cat>(
-            decode: (data) => _Cat(data['name'] as String),
-            encode: (cat) => {
-              'kind': 'cat',
-              'name': cat.name,
-            },
-          ),
+          'cat': Ack.object({'kind': Ack.literal('cat'), 'name': Ack.string()})
+              .model<_Cat>(
+                decode: (data) => _Cat(data['name'] as String),
+                encode: (cat) => {'kind': 'cat', 'name': cat.name},
+              ),
         },
       );
       final encoded = schema.encode(_Cat('Mittens'));
@@ -169,10 +164,7 @@ void main() {
         'name': Ack.string(),
         'nickname': Ack.string().optional(),
       });
-      final encoded = schema.encode({
-        'name': 'Cat',
-        'nickname': null,
-      });
+      final encoded = schema.encode({'name': 'Cat', 'nickname': null});
       expect(encoded, {'name': 'Cat'});
     });
 
@@ -181,10 +173,7 @@ void main() {
         'name': Ack.string(),
         'nickname': Ack.string().optional().nullable(),
       });
-      final encoded = schema.encode({
-        'name': 'Cat',
-        'nickname': null,
-      });
+      final encoded = schema.encode({'name': 'Cat', 'nickname': null});
       expect(encoded, {'name': 'Cat', 'nickname': null});
     });
 
@@ -193,10 +182,7 @@ void main() {
         'name': Ack.string(),
         'nickname': Ack.string().optional(),
       });
-      final result = schema.safeParse({
-        'name': 'Cat',
-        'nickname': null,
-      });
+      final result = schema.safeParse({'name': 'Cat', 'nickname': null});
       expect(result.isFail, true);
     });
   });

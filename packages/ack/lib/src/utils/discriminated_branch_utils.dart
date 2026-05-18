@@ -1,26 +1,13 @@
 import '../schemas/schema.dart';
 
-/// Returns the underlying branch schema by unwrapping any transform or codec
-/// layers.
+/// Returns the underlying branch schema by unwrapping wrapper layers.
 ///
-/// Discriminated branches may be wrapped in [TransformedSchema] or
-/// [CodecSchema] while still being object-backed at their core.
-AckSchema unwrapDiscriminatedBranchSchema(AckSchema schema) {
-  var current = schema;
-  while (true) {
-    if (current is TransformedSchema) {
-      current = current.schema;
-      continue;
-    }
-    if (current is CodecSchema) {
-      current = current.inputSchema as AckSchema;
-      continue;
-    }
-    if (current is DefaultSchema) {
-      current = current.inner;
-      continue;
-    }
-    break;
+/// Discriminated branches may be wrapped while still being object-backed at
+/// their core.
+AnyAckSchema unwrapDiscriminatedBranchSchema(AnyAckSchema schema) {
+  AnyAckSchema current = schema;
+  while (current is WrapperSchema) {
+    current = current.inner;
   }
 
   return current;

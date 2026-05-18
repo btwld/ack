@@ -260,29 +260,26 @@ void main() {
         expect(outerAnyOf.last.value['type'], 'null');
       });
 
-      test(
-        'TransformedSchema overrides are applied (description + nullable)',
-        () {
-          final schema = Ack.date().copyWith(
-            description: 'Birth date',
-            isNullable: true,
-          );
+      test('CodecSchema overrides are applied (description + nullable)', () {
+        final schema = Ack.date().copyWith(
+          description: 'Birth date',
+          isNullable: true,
+        );
 
-          final result = schema.toJsonSchemaBuilder();
-          final anyOf = (result.value['anyOf'] as List)
-              .map(_schemaFrom)
-              .toList(growable: false);
+        final result = schema.toJsonSchemaBuilder();
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
 
-          // First branch should carry description override and date format
-          final dateBranch = anyOf.first;
-          expect(dateBranch.value['description'], 'Birth date');
-          expect(dateBranch.value['format'], 'date');
+        // First branch should carry description override and date format
+        final dateBranch = anyOf.first;
+        expect(dateBranch.value['description'], 'Birth date');
+        expect(dateBranch.value['format'], 'date');
 
-          // Second branch represents nullability
-          final nullBranch = anyOf.last;
-          expect(nullBranch.value['type'], 'null');
-        },
-      );
+        // Second branch represents nullability
+        final nullBranch = anyOf.last;
+        expect(nullBranch.value['type'], 'null');
+      });
     });
 
     group('oneOf composition', () {
@@ -362,6 +359,17 @@ void main() {
         expect(result.value['exclusiveMinimum'], -1);
         expect(result.value['exclusiveMaximum'], 101);
         expect(result.value['multipleOf'], 5);
+      });
+
+      test('duration codec preserves runtime numeric constraints', () {
+        final schema = Ack.duration()
+            .min(const Duration(milliseconds: 250))
+            .max(const Duration(milliseconds: 750));
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'integer');
+        expect(result.value['minimum'], 250);
+        expect(result.value['maximum'], 750);
       });
 
       test('double preserves exclusiveMinimum', () {

@@ -10,7 +10,7 @@ part of 'schema.dart';
 @immutable
 final class AnyOfSchema extends AckSchema<Object, Object>
     with FluentSchema<Object, Object, AnyOfSchema> {
-  final List<AckSchema> schemas;
+  final List<AnyAckSchema> schemas;
 
   const AnyOfSchema(
     this.schemas, {
@@ -34,46 +34,24 @@ final class AnyOfSchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
-    if (value == null) {
-      if (acceptsParseNull) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
-
-    final errors = <SchemaError>[];
-    for (final (index, schema) in schemas.indexed) {
-      final childContext = context.createChild(
-        name: 'anyOf:$index',
-        schema: schema,
-        value: value,
-        pathSegment: '',
-      );
-      final result = schema.parseWithContext(value, childContext);
-      if (result.isOk) {
-        final v = result.getOrNull();
-        if (v == null) return SchemaResult.ok(null);
-        return applyConstraintsAndRefinements(v, context);
-      }
-      errors.add(result.getError());
-    }
-    return SchemaResult.fail(
-      SchemaNestedError(errors: errors, context: context),
-    );
-  }
+  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
+      _tryBranches(value, context, parse: true);
 
   @override
   @protected
   SchemaResult<Object> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,
-  ) {
-    if (value == null) {
-      if (acceptsParseNull) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
+  ) => _tryBranches(value, context, parse: false);
+
+  SchemaResult<Object> _tryBranches(
+    Object? value,
+    SchemaContext context, {
+    required bool parse,
+  }) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
     final errors = <SchemaError>[];
     for (final (index, schema) in schemas.indexed) {
       final childContext = context.createChild(
@@ -82,7 +60,9 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         value: value,
         pathSegment: '',
       );
-      final result = schema.validateRuntimeWithContext(value, childContext);
+      final result = parse
+          ? schema.parseWithContext(value, childContext)
+          : schema.validateRuntimeWithContext(value, childContext);
       if (result.isOk) {
         final v = result.getOrNull();
         if (v == null) return SchemaResult.ok(null);
@@ -97,10 +77,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> encodeWithContext(
-    Object value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Object> encodeWithContext(Object value, SchemaContext context) {
     final errors = <SchemaError>[];
     for (final (index, schema) in schemas.indexed) {
       final childContext = context.createChild(
@@ -113,8 +90,10 @@ final class AnyOfSchema extends AckSchema<Object, Object>
       try {
         // Validate against the branch's runtime first; only attempt encode
         // when the value plausibly fits this branch.
-        final branchValidation =
-            schema.validateRuntimeWithContext(value, childContext);
+        final branchValidation = schema.validateRuntimeWithContext(
+          value,
+          childContext,
+        );
         if (branchValidation.isFail) {
           errors.add(branchValidation.getError());
           continue;
@@ -164,24 +143,10 @@ final class AnyOfSchema extends AckSchema<Object, Object>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final anyOfClauses = schemas.map((s) => s.toJsonSchema()).toList();
-
-    final baseSchema = {
-      'anyOf': anyOfClauses,
+    return wrapCompositeWithNullable({
+      'anyOf': schemas.map((s) => s.toJsonSchema()).toList(),
       if (!isNullable && description != null) 'description': description,
-    };
-
-    if (isNullable) {
-      return {
-        if (description != null) 'description': description,
-        'anyOf': [
-          mergeConstraintSchemas(baseSchema),
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    return mergeConstraintSchemas(baseSchema);
+    });
   }
 
   @override
@@ -199,13 +164,13 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AnyOfSchema) return false;
-    const listEq = ListEquality<AckSchema>();
+    const listEq = ListEquality<AnyAckSchema>();
     return baseFieldsEqual(other) && listEq.equals(schemas, other.schemas);
   }
 
   @override
   int get hashCode {
-    const listEq = ListEquality<AckSchema>();
+    const listEq = ListEquality<AnyAckSchema>();
     return Object.hash(baseFieldsHashCode, listEq.hash(schemas));
   }
 }

@@ -47,7 +47,6 @@ void main() {
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
-
     });
 
     group('ObjectSchema', () {
@@ -162,7 +161,7 @@ void main() {
       });
     });
 
-    group('TransformedSchema', () {
+    group('One-way CodecSchema', () {
       test('same transformer are equal', () {
         String transform(String? s) => s?.toUpperCase() ?? '';
         final a = Ack.string().transform(transform);
@@ -189,7 +188,6 @@ void main() {
         expect(intSchema, isNot(equals(boolSchema)));
       });
     });
-
 
     group('Default values', () {
       test('same defaults are equal', () {

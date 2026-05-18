@@ -59,13 +59,19 @@ class Ack {
   static NumberSchema number() => const NumberSchema();
   static BooleanSchema boolean() => const BooleanSchema();
   static AnySchema any() => const AnySchema();
-  static TransformedSchema<String, Uri> uri() => TransformedSchema<String, Uri>(const StringSchema());
-  static TransformedSchema<String, DateTime> date() => TransformedSchema<String, DateTime>(const StringSchema());
-  static TransformedSchema<String, DateTime> datetime() => TransformedSchema<String, DateTime>(const StringSchema());
-  static TransformedSchema<int, Duration> duration() => TransformedSchema<int, Duration>(const IntegerSchema());
+  static CodecSchema<String, Uri> uri() => CodecSchema<String, Uri>(const StringSchema());
+  static CodecSchema<String, DateTime> date() => CodecSchema<String, DateTime>(const StringSchema());
+  static CodecSchema<String, DateTime> datetime() => CodecSchema<String, DateTime>(const StringSchema());
+  static CodecSchema<int, Duration> duration() => CodecSchema<int, Duration>(const IntegerSchema());
 
-  static ListSchema<T> list<T>(AckSchema<T> itemSchema) => ListSchema(itemSchema);
-  static MapSchema<T> map<T>(AckSchema<T> valueSchema) => MapSchema(valueSchema);
+  static ListSchema<B, R> list<B extends Object, R extends Object>(
+    AckSchema<B, R> itemSchema,
+  ) =>
+      ListSchema<B, R>(itemSchema);
+  static MapSchema<B, R> map<B extends Object, R extends Object>(
+    AckSchema<B, R> valueSchema,
+  ) =>
+      MapSchema<B, R>(valueSchema);
   static ObjectSchema object(
     Map<String, AckSchema> properties, {
     List<String>? required,
@@ -91,22 +97,25 @@ class Ack {
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) => EnumSchema<T>();
 }
 
-abstract class AckSchema<T> {
-  TransformedSchema<T, R> transform<R extends Object>(R Function(T value) transformer) =>
-      TransformedSchema<T, R>(this);
+abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+  CodecSchema<Boundary, R> transform<R extends Object>(
+    R Function(Runtime value) transformer,
+  ) =>
+      CodecSchema<Boundary, R>(this);
   Map<String, Object?> toJsonSchema();
 }
-class TransformedSchema<Input, Output> extends AckSchema<Output> {
-  final AckSchema<Input> schema;
-  TransformedSchema(this.schema);
-  TransformedSchema<Input, Output> nullable() => this;
-  TransformedSchema<Input, Output> optional() => this;
-  TransformedSchema<Input, Output> describe(String description) => this;
+class CodecSchema<Boundary extends Object, Runtime extends Object>
+    extends AckSchema<Boundary, Runtime> {
+  final AckSchema<Boundary, dynamic> schema;
+  CodecSchema(this.schema);
+  CodecSchema<Boundary, Runtime> nullable() => this;
+  CodecSchema<Boundary, Runtime> optional() => this;
+  CodecSchema<Boundary, Runtime> describe(String description) => this;
 
   @override
   Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
 }
-class StringSchema extends AckSchema<String> {
+class StringSchema extends AckSchema<String, String> {
   const StringSchema();
   StringSchema email() => this;
   StringSchema notEmpty() => this;
@@ -124,7 +133,7 @@ class StringSchema extends AckSchema<String> {
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'string'};
 }
-class IntegerSchema extends AckSchema<int> {
+class IntegerSchema extends AckSchema<int, int> {
   const IntegerSchema();
   IntegerSchema min(int value) => this;
   IntegerSchema max(int value) => this;
@@ -136,7 +145,7 @@ class IntegerSchema extends AckSchema<int> {
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'integer'};
 }
-class DoubleSchema extends AckSchema<double> {
+class DoubleSchema extends AckSchema<double, double> {
   const DoubleSchema();
   DoubleSchema nullable() => this;
   DoubleSchema optional() => this;
@@ -145,7 +154,7 @@ class DoubleSchema extends AckSchema<double> {
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'number'};
 }
-class NumberSchema extends AckSchema<num> {
+class NumberSchema extends AckSchema<num, num> {
   const NumberSchema();
   NumberSchema nullable() => this;
   NumberSchema optional() => this;
@@ -154,7 +163,7 @@ class NumberSchema extends AckSchema<num> {
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'number'};
 }
-class BooleanSchema extends AckSchema<bool> {
+class BooleanSchema extends AckSchema<bool, bool> {
   const BooleanSchema();
   BooleanSchema nullable() => this;
   BooleanSchema optional() => this;
@@ -163,7 +172,7 @@ class BooleanSchema extends AckSchema<bool> {
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'boolean'};
 }
-class AnySchema extends AckSchema<dynamic> {
+class AnySchema extends AckSchema<Object, Object> {
   const AnySchema();
   AnySchema nullable() => this;
   AnySchema optional() => this;
@@ -171,13 +180,14 @@ class AnySchema extends AckSchema<dynamic> {
   @override
   Map<String, Object?> toJsonSchema() => {};
 }
-class ListSchema<T> extends AckSchema<List<T>> {
-  final AckSchema<T> itemSchema;
+class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
+    extends AckSchema<List<ItemBoundary>, List<ItemRuntime>> {
+  final AckSchema<ItemBoundary, ItemRuntime> itemSchema;
   const ListSchema(this.itemSchema);
-  ListSchema<T> nullable() => this;
-  ListSchema<T> optional() => this;
-  ListSchema<T> unique() => this;
-  ListSchema<T> describe(String description) => this;
+  ListSchema<ItemBoundary, ItemRuntime> nullable() => this;
+  ListSchema<ItemBoundary, ItemRuntime> optional() => this;
+  ListSchema<ItemBoundary, ItemRuntime> unique() => this;
+  ListSchema<ItemBoundary, ItemRuntime> describe(String description) => this;
 
   @override
   Map<String, Object?> toJsonSchema() => {
@@ -185,12 +195,13 @@ class ListSchema<T> extends AckSchema<List<T>> {
     'items': itemSchema.toJsonSchema(),
   };
 }
-class MapSchema<T> extends AckSchema<Map<String, T>> {
-  final AckSchema<T> valueSchema;
+class MapSchema<ValueBoundary extends Object, ValueRuntime extends Object>
+    extends AckSchema<Map<String, ValueBoundary>, Map<String, ValueRuntime>> {
+  final AckSchema<ValueBoundary, ValueRuntime> valueSchema;
   const MapSchema(this.valueSchema);
-  MapSchema<T> nullable() => this;
-  MapSchema<T> optional() => this;
-  MapSchema<T> describe(String description) => this;
+  MapSchema<ValueBoundary, ValueRuntime> nullable() => this;
+  MapSchema<ValueBoundary, ValueRuntime> optional() => this;
+  MapSchema<ValueBoundary, ValueRuntime> describe(String description) => this;
 
   @override
   Map<String, Object?> toJsonSchema() => {
@@ -198,7 +209,7 @@ class MapSchema<T> extends AckSchema<Map<String, T>> {
     'additionalProperties': valueSchema.toJsonSchema(),
   };
 }
-class ObjectSchema extends AckSchema<Map<String, Object?>> {
+class ObjectSchema extends AckSchema<Map<String, Object?>, Map<String, Object?>> {
   final Map<String, AckSchema> properties;
   final List<String>? required;
   final bool additionalProperties;
@@ -229,7 +240,7 @@ class ObjectSchema extends AckSchema<Map<String, Object?>> {
 extension ObjectSchemaExtensions on ObjectSchema {
   ObjectSchema passthrough() => copyWith(additionalProperties: true);
 }
-class EnumSchema<T> extends AckSchema<T> {
+class EnumSchema<T extends Enum> extends AckSchema<String, T> {
   EnumSchema();
   EnumSchema<T> nullable() => this;
   EnumSchema<T> optional() => this;
@@ -238,7 +249,8 @@ class EnumSchema<T> extends AckSchema<T> {
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'string', 'enum': []};
 }
-class DiscriminatedSchema extends AckSchema<Map<String, Object?>> {
+class DiscriminatedSchema
+    extends AckSchema<Map<String, Object?>, Map<String, Object?>> {
   final String discriminatorKey;
   final Map<String, AckSchema> schemas;
   const DiscriminatedSchema({required this.discriminatorKey, required this.schemas});

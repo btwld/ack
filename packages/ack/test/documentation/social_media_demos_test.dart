@@ -244,6 +244,5 @@ void main() {
         expect(invalidNotif.isFail, isTrue);
       });
     });
-
   });
 }

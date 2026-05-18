@@ -32,7 +32,7 @@ final userSchema = Ack.object({
 });
 
 @AckType(name: 'Status')
-AckSchema<String> get statusSchema => Ack.string();
+AckSchema<String, String> get statusSchema => Ack.string();
 ''',
           },
           outputs: {
@@ -168,7 +168,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 class BadSchema {
   @AckType()
-  AckSchema<String> get valueSchema => Ack.string();
+  AckSchema<String, String> get valueSchema => Ack.string();
 }
 ''',
         },
@@ -201,7 +201,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 class BadSchema {
   @AckType()
-  static AckSchema<String> get valueSchema => Ack.string();
+  static AckSchema<String, String> get valueSchema => Ack.string();
 }
 ''',
         },

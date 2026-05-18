@@ -171,6 +171,5 @@ void main() {
         equals({'hasData': false, 'value': 'default', 'tagCount': 0}),
       );
     });
-
   });
 }

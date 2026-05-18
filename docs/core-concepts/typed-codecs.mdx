@@ -81,7 +81,7 @@ encodes it to an ISO 8601 string.
 ## Differences from one-way `.transform()`
 
 `schema.transform<R>(fn)` is still available, but is **parse-only**. Calling
-`encode` on a transformed schema returns a
+`encode` on a one-way transform codec returns a
 `SchemaEncodeError.oneWayTransform` failure. Use `.codec<T>()` when you need
 encoding too.
 

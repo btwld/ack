@@ -17,10 +17,8 @@ final class BooleanSchema extends AckSchema<bool, bool>
 
   @override
   @protected
-  SchemaResult<bool> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<bool> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -46,11 +44,8 @@ final class BooleanSchema extends AckSchema<bool, bool>
 
   @override
   @protected
-  SchemaResult<bool> encodeWithContext(bool value, SchemaContext context) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<bool> encodeWithContext(bool value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   BooleanSchema copyWith({

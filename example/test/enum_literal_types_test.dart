@@ -71,8 +71,8 @@ void main() {
   });
 
   group('EnumValues Schema (via safeParse)', () {
-    test('userRoleSchema validates enum values', () {
-      final result = userRoleSchema.safeParse(UserRole.admin);
+    test('userRoleSchema parses enum names', () {
+      final result = userRoleSchema.safeParse('admin');
 
       expect(result.isOk, true);
       final role = result.getOrNull();
@@ -81,14 +81,19 @@ void main() {
       expect(role?.index, 0);
     });
 
-    test('userRoleSchema validates all enum values', () {
-      expect(userRoleSchema.safeParse(UserRole.admin).isOk, true);
-      expect(userRoleSchema.safeParse(UserRole.user).isOk, true);
-      expect(userRoleSchema.safeParse(UserRole.guest).isOk, true);
+    test('userRoleSchema parses all enum names', () {
+      expect(userRoleSchema.safeParse('admin').isOk, true);
+      expect(userRoleSchema.safeParse('user').isOk, true);
+      expect(userRoleSchema.safeParse('guest').isOk, true);
     });
 
-    test('userRoleSchema accepts string representation', () {
-      // EnumSchema can parse from string name
+    test('userRoleSchema encodes enum values', () {
+      final result = userRoleSchema.safeEncode(UserRole.admin);
+      expect(result.isOk, true);
+      expect(result.getOrNull(), 'admin');
+    });
+
+    test('userRoleSchema accepts string name', () {
       final result = userRoleSchema.safeParse('admin');
       expect(result.isOk, true);
       final role = result.getOrNull();
@@ -96,16 +101,13 @@ void main() {
       expect(role?.name, 'admin');
     });
 
-    test('userRoleSchema accepts index number', () {
-      // EnumSchema can parse from index
+    test('userRoleSchema rejects index number', () {
       final result = userRoleSchema.safeParse(0);
-      expect(result.isOk, true);
-      final role = result.getOrNull();
-      expect(role, UserRole.admin);
+      expect(result.isFail, true);
     });
 
     test('userRoleSchema supports pattern matching', () {
-      final role = userRoleSchema.parse(UserRole.admin)!;
+      final role = userRoleSchema.parse('admin')!;
 
       final description = switch (role) {
         UserRole.admin => 'Administrator',
@@ -117,18 +119,18 @@ void main() {
     });
 
     test('userRoleSchema comparison works', () {
-      final role1 = userRoleSchema.parse(UserRole.admin);
+      final role1 = userRoleSchema.parse('admin');
       final role2 = userRoleSchema.parse('admin');
-      final role3 = userRoleSchema.parse(0);
+      final encoded = userRoleSchema.encode(UserRole.admin);
 
       expect(role1 == role2, true);
-      expect(role1 == role3, true);
       expect(role1 == UserRole.admin, true);
+      expect(encoded, 'admin');
     });
 
     test('Multiple enum types can coexist', () {
-      final role = userRoleSchema.parse(UserRole.admin)!;
-      final status = statusEnumSchema.parse(Status.active)!;
+      final role = userRoleSchema.parse('admin')!;
+      final status = statusEnumSchema.parse('active')!;
 
       expect(role, isA<UserRole>());
       expect(status, isA<Status>());
@@ -137,13 +139,14 @@ void main() {
     });
 
     test('statusEnumSchema works with all Status values', () {
-      final active = statusEnumSchema.parse(Status.active);
+      final active = statusEnumSchema.parse('active');
       final inactive = statusEnumSchema.parse('inactive');
-      final pending = statusEnumSchema.parse(2); // index
+      final pending = statusEnumSchema.parse('pending');
 
       expect(active, Status.active);
       expect(inactive, Status.inactive);
       expect(pending, Status.pending);
+      expect(statusEnumSchema.encode(Status.pending), 'pending');
     });
   });
 
@@ -176,7 +179,7 @@ void main() {
     });
 
     test('defaultedEnumSchema accepts valid value', () {
-      final result = defaultedEnumSchema.safeParse(UserRole.admin);
+      final result = defaultedEnumSchema.safeParse('admin');
       expect(result.isOk, true);
       expect(result.getOrNull(), UserRole.admin);
     });

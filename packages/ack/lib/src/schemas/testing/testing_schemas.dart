@@ -3,7 +3,8 @@ part of 'package:ack/src/schemas/schema.dart';
 /// Testing-only schema used to simulate unsupported conversions in
 /// integration packages.
 @visibleForTesting
-final class TestUnsupportedAckSchema extends AckSchema<Object, Object> {
+final class TestUnsupportedAckSchema extends AckSchema<Object, Object>
+    with FluentSchema<Object, Object, TestUnsupportedAckSchema> {
   const TestUnsupportedAckSchema({
     super.isNullable,
     super.isOptional,
@@ -17,10 +18,8 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object> {
 
   @override
   @protected
-  SchemaResult<Object> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -35,15 +34,10 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object> {
 
   @override
   @protected
-  SchemaResult<Object> encodeWithContext(
-    Object value,
-    SchemaContext context,
-  ) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<Object> encodeWithContext(Object value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
+  @override
   TestUnsupportedAckSchema copyWith({
     bool? isNullable,
     bool? isOptional,

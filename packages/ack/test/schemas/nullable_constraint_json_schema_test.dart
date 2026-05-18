@@ -139,5 +139,27 @@ void main() {
         expect(anyOfList[1], equals({'type': 'null'}));
       });
     });
+
+    group('AnySchema', () {
+      test('nullable merges constraints in inner JSON Schema', () {
+        final schema = Ack.any().nullable().withConstraint(
+          const _TestJsonSchemaConstraint(),
+        );
+
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema['anyOf'], isA<List>());
+        final anyOfList = jsonSchema['anyOf'] as List;
+        expect(anyOfList.length, equals(2));
+
+        final innerSchema = anyOfList[0] as Map<String, Object?>;
+        expect(
+          innerSchema['x-test-marker'],
+          isTrue,
+          reason: 'Constraint should be merged into inner schema when nullable',
+        );
+        expect(anyOfList[1], equals({'type': 'null'}));
+      });
+    });
   });
 }

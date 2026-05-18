@@ -81,6 +81,18 @@ void main() {
       expect(parsed.description, 'Wrapper Description');
     });
 
+    test('preserves runtime constraints when unwrapping codecs', () {
+      final schema = Ack.duration()
+          .min(const Duration(milliseconds: 250))
+          .max(const Duration(milliseconds: 750));
+
+      final json = schema.toJsonSchemaModel();
+
+      expect(json.type, JsonSchemaType.integer);
+      expect(json.minimum, 250);
+      expect(json.maximum, 750);
+    });
+
     test('unwraps transformed discriminated branches to object schemas', () {
       final schema = Ack.discriminated<String>(
         discriminatorKey: 'type',

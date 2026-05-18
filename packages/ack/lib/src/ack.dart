@@ -1,7 +1,6 @@
 import 'common_types.dart';
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
-import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
@@ -28,7 +27,7 @@ final class Ack {
 
   /// Creates an object schema with the given properties.
   static ObjectSchema object(
-    Map<String, AckSchema> properties, {
+    Map<String, AnyAckSchema> properties, {
     bool additionalProperties = false,
   }) => ObjectSchema(properties, additionalProperties: additionalProperties);
 
@@ -55,15 +54,14 @@ final class Ack {
       string().withConstraint(PatternConstraint.enumString(values));
 
   /// Creates a schema that can be one of many types.
-  static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);
+  static AnyOfSchema anyOf(List<AnyAckSchema> schemas) => AnyOfSchema(schemas);
 
   /// Creates a schema that accepts any non-null value.
   static AnySchema any() => const AnySchema();
 
   /// Creates a schema for a specific Dart instance type [T], with [T] as
   /// both boundary and runtime type.
-  static InstanceSchema<T> instance<T extends Object>() =>
-      InstanceSchema<T>();
+  static InstanceSchema<T> instance<T extends Object>() => InstanceSchema<T>();
 
   /// Creates a universal codec from an [input] schema, with a [decode]
   /// function and an [encode] function. The optional [output] schema
@@ -78,7 +76,7 @@ final class Ack {
     required InputRuntime Function(Runtime value) encode,
     AckSchema<dynamic, Runtime>? output,
   }) {
-    return CodecSchemaImpl<Boundary, InputRuntime, Runtime>(
+    return CodecSchema.create<Boundary, InputRuntime, Runtime>(
       inputSchema: input,
       outputSchema: output ?? InstanceSchema<Runtime>(),
       decoder: decode,
@@ -93,7 +91,7 @@ final class Ack {
   /// (year/month/day only). Values with non-zero time-of-day fail
   /// `safeEncode` and `validateRuntimeWithContext`.
   static CodecSchema<String, DateTime> date() {
-    return CodecSchemaImpl<String, String, DateTime>(
+    return CodecSchema.create<String, String, DateTime>(
       inputSchema: string().date(),
       outputSchema: InstanceSchema<DateTime>().refine(
         _isLocalMidnightDate,
@@ -110,7 +108,7 @@ final class Ack {
   /// Runtime invariant: the encoded `DateTime` must be UTC. Local-time
   /// values fail validation; convert with `.toUtc()` before encoding.
   static CodecSchema<String, DateTime> datetime() {
-    return CodecSchemaImpl<String, String, DateTime>(
+    return CodecSchema.create<String, String, DateTime>(
       inputSchema: string().datetime(),
       outputSchema: InstanceSchema<DateTime>().refine(
         (value) => value.isUtc,
@@ -126,7 +124,7 @@ final class Ack {
   /// Runtime invariant: the `Uri` must have both a scheme and a host
   /// (matching the parse-side predicate).
   static CodecSchema<String, Uri> uri() {
-    return CodecSchemaImpl<String, String, Uri>(
+    return CodecSchema.create<String, String, Uri>(
       inputSchema: string().uri(),
       outputSchema: InstanceSchema<Uri>().refine(
         (u) => u.hasScheme && u.host.isNotEmpty,
@@ -143,7 +141,7 @@ final class Ack {
   /// milliseconds (sub-millisecond precision is rejected to avoid silent
   /// truncation on encode).
   static CodecSchema<int, Duration> duration() {
-    return CodecSchemaImpl<int, int, Duration>(
+    return CodecSchema.create<int, int, Duration>(
       inputSchema: integer(),
       outputSchema: InstanceSchema<Duration>().refine(
         (value) =>

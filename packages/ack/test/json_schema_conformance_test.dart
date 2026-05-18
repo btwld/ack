@@ -265,8 +265,7 @@ void main() {
       // Default 0.01 satisfies the min constraint so JSON Schema emits it.
       // (DefaultSchema omits defaults that fail the inner schema's encode
       // pipeline; the previous fixture used 0.0 which would now be dropped.)
-      final ackSchema =
-          Ack.double().min(0.01).max(999999.99).withDefault(0.01);
+      final ackSchema = Ack.double().min(0.01).max(999999.99).withDefault(0.01);
       final ackOutput = ackSchema.toJsonSchema();
       expect(ackOutput, {
         'type': 'number',

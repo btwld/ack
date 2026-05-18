@@ -6,12 +6,11 @@ import '../schema.dart';
 extension ListSchemaExtensions<
   ItemBoundary extends Object,
   ItemRuntime extends Object
-> on ListSchema<ItemBoundary, ItemRuntime> {
+>
+    on ListSchema<ItemBoundary, ItemRuntime> {
   /// Adds a constraint that the list must have at least [n] items.
   ListSchema<ItemBoundary, ItemRuntime> minItems(int n) {
-    return withConstraint(
-      ComparisonConstraint.listMinItems<ItemRuntime>(n),
-    );
+    return withConstraint(ComparisonConstraint.listMinItems<ItemRuntime>(n));
   }
 
   /// Alias for [minItems].
@@ -19,9 +18,7 @@ extension ListSchemaExtensions<
 
   /// Adds a constraint that the list must have no more than [n] items.
   ListSchema<ItemBoundary, ItemRuntime> maxItems(int n) {
-    return withConstraint(
-      ComparisonConstraint.listMaxItems<ItemRuntime>(n),
-    );
+    return withConstraint(ComparisonConstraint.listMaxItems<ItemRuntime>(n));
   }
 
   /// Alias for [maxItems].
@@ -29,9 +26,7 @@ extension ListSchemaExtensions<
 
   /// Adds a constraint that the list must have exactly [n] items.
   ListSchema<ItemBoundary, ItemRuntime> exactLength(int n) {
-    return withConstraint(
-      ComparisonConstraint.listExactItems<ItemRuntime>(n),
-    );
+    return withConstraint(ComparisonConstraint.listExactItems<ItemRuntime>(n));
   }
 
   /// Alias for [exactLength].

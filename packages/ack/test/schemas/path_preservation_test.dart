@@ -142,8 +142,8 @@ void main() {
     });
   });
 
-  group('TransformedSchema Default Values', () {
-    test('nullable transformed schema with null input and no default', () {
+  group('One-way codec default values', () {
+    test('nullable one-way codec with null input and no default', () {
       final schema = Ack.string().nullable().transform(
         (value) => value.toUpperCase(),
       );

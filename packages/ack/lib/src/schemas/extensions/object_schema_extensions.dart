@@ -33,7 +33,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
 
   /// Extends this schema with additional or overridden properties.
   ObjectSchema extend(
-    Map<String, AckSchema> newProperties, {
+    Map<String, AnyAckSchema> newProperties, {
     bool? additionalProperties,
     bool? isNullable,
     String? description,

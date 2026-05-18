@@ -1,60 +1,79 @@
 part of 'schema.dart';
 
-/// Public interface for codec schemas exposing two type parameters.
-abstract interface class CodecSchema<
-  Boundary extends Object,
-  Runtime extends Object
-> implements
-        AckSchema<Boundary, Runtime>,
-        ConfigurableSchema<Boundary, Runtime> {
-  /// The input/boundary schema that this codec wraps.
-  AckSchema<Boundary, dynamic> get inputSchema;
-
-  /// The output schema applied to the runtime value after decoding (and
-  /// before encoding).
-  AckSchema<dynamic, Runtime> get outputSchema;
-}
-
-/// Internal implementation of [CodecSchema] with a hidden intermediate input
-/// runtime type [InputRuntime].
+/// Codec schema for translating between a boundary value and a runtime value.
+///
+/// [Boundary] is the encoded shape and [Runtime] is the Dart application value.
+/// The intermediate runtime type produced by [inputSchema] is preserved by
+/// [create] and erased inside this concrete wrapper so callers do not have to
+/// carry a third public type argument.
 @immutable
-final class CodecSchemaImpl<
-  Boundary extends Object,
-  InputRuntime extends Object,
-  Runtime extends Object
->
+final class CodecSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
-    implements CodecSchema<Boundary, Runtime> {
-  @override
-  final AckSchema<Boundary, InputRuntime> inputSchema;
+    with WrapperSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>> {
+  final AckSchema<Boundary, dynamic> inputSchema;
 
-  @override
+  /// The output schema applied to the runtime value after decoding and before
+  /// encoding.
   final AckSchema<dynamic, Runtime> outputSchema;
 
-  final Runtime Function(InputRuntime value) decoder;
-  final InputRuntime Function(Runtime value) encoder;
+  final Runtime Function(Object value) _decoder;
+  final Object Function(Runtime value)? _encoder;
+  final Object _decoderIdentity;
 
-  CodecSchemaImpl({
+  CodecSchema._({
     required this.inputSchema,
     required this.outputSchema,
-    required this.decoder,
-    required this.encoder,
+    required Runtime Function(Object value) decoder,
+    required Object Function(Runtime value)? encoder,
+    required Object decoderIdentity,
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
-  });
+  }) : _decoder = decoder,
+       _encoder = encoder,
+       _decoderIdentity = decoderIdentity;
+
+  /// Creates a codec while preserving the input schema's runtime type.
+  static CodecSchema<Boundary, Runtime> create<
+    Boundary extends Object,
+    InputRuntime extends Object,
+    Runtime extends Object
+  >({
+    required AckSchema<Boundary, InputRuntime> inputSchema,
+    required AckSchema<dynamic, Runtime> outputSchema,
+    required Runtime Function(InputRuntime value) decoder,
+    required InputRuntime Function(Runtime value)? encoder,
+    bool isNullable = false,
+    bool isOptional = false,
+    String? description,
+    List<Constraint<Runtime>> constraints = const [],
+    List<Refinement<Runtime>> refinements = const [],
+  }) {
+    return CodecSchema<Boundary, Runtime>._(
+      inputSchema: inputSchema,
+      outputSchema: outputSchema,
+      decoder: (value) => decoder(value as InputRuntime),
+      encoder: encoder,
+      decoderIdentity: decoder,
+      isNullable: isNullable,
+      isOptional: isOptional,
+      description: description,
+      constraints: constraints,
+      refinements: refinements,
+    );
+  }
+
+  @override
+  AnyAckSchema get inner => inputSchema as AnyAckSchema;
 
   @override
   SchemaType get schemaType => inputSchema.schemaType;
 
   @override
   @protected
-  SchemaResult<Runtime> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
@@ -65,13 +84,15 @@ final class CodecSchemaImpl<
 
     final intermediate = inputResult.getOrNull();
     if (intermediate == null) {
+      // Defensive: a well-behaved inputSchema does not return Ok(null) for a
+      // non-null input. Surface the nullability error as a contract violation.
       if (isNullable) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
 
     final Runtime runtime;
     try {
-      runtime = decoder(intermediate);
+      runtime = _decoder(intermediate);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaTransformError(
@@ -95,14 +116,18 @@ final class CodecSchemaImpl<
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final outputResult =
-        outputSchema.validateRuntimeWithContext(value, context);
+    final outputResult = outputSchema.validateRuntimeWithContext(
+      value,
+      context,
+    );
     if (outputResult.isFail) {
       return SchemaResult.fail(outputResult.getError());
     }
 
     final validated = outputResult.getOrNull();
     if (validated == null) {
+      // Defensive: a well-behaved outputSchema does not return Ok(null) for a
+      // non-null input. Surface the nullability error as a contract violation.
       if (isNullable) return SchemaResult.ok(null);
       return failNonNullable(context);
     }
@@ -116,14 +141,21 @@ final class CodecSchemaImpl<
     Runtime value,
     SchemaContext context,
   ) {
+    final encode = _encoder;
+    if (encode == null) {
+      return SchemaResult.fail(
+        SchemaEncodeError.oneWayTransform(context: context),
+      );
+    }
+
     final validated = validateRuntimeWithContext(value, context);
     if (validated.isFail) return SchemaResult.fail(validated.getError());
     final runtime = validated.getOrNull();
     if (runtime == null) return failNonNullableEncode(context);
 
-    final InputRuntime intermediate;
+    final Object intermediate;
     try {
-      intermediate = encoder(runtime);
+      intermediate = encode(runtime);
     } catch (e, st) {
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
@@ -135,40 +167,43 @@ final class CodecSchemaImpl<
       );
     }
 
-    // Ensure the intermediate matches the input schema's runtime shape
-    // before encoding to boundary. The intermediate context inherits the
-    // path so nested errors stay grouped under the codec's location.
-    final inputValidation =
-        inputSchema.validateRuntimeWithContext(intermediate, context);
+    // Ensure the intermediate matches the input schema's runtime shape before
+    // encoding to boundary.
+    final inputValidation = inputSchema.validateRuntimeWithContext(
+      intermediate,
+      context,
+    );
     if (inputValidation.isFail) {
       return SchemaResult.fail(inputValidation.getError());
     }
 
-    return inputSchema.encodeWithContext(intermediate, context);
+    final validatedInput = inputValidation.getOrNull();
+    if (validatedInput == null) return failNonNullableEncode(context);
+    return inputSchema.encodeWithContext(validatedInput, context);
   }
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final base = Map<String, Object?>.from(inputSchema.toJsonSchema());
-    if (description != null) {
-      base['description'] = description;
-    }
-    return mergeConstraintSchemas(base);
+    return applyWrapperJsonSchemaMetadata(
+      Map<String, Object?>.from(inputSchema.toJsonSchema()),
+      metadata: {if (_encoder == null) 'x-transformed': true},
+    );
   }
 
-  /// Returns a copy of this codec with the supplied fields replaced.
-  CodecSchemaImpl<Boundary, InputRuntime, Runtime> copyWith({
+  /// Returns a copy of this codec with the supplied runtime config replaced.
+  CodecSchema<Boundary, Runtime> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
     List<Constraint<Runtime>>? constraints,
     List<Refinement<Runtime>>? refinements,
   }) {
-    return CodecSchemaImpl<Boundary, InputRuntime, Runtime>(
+    return CodecSchema<Boundary, Runtime>._(
       inputSchema: inputSchema,
       outputSchema: outputSchema,
-      decoder: decoder,
-      encoder: encoder,
+      decoder: _decoder,
+      encoder: _encoder,
+      decoderIdentity: _decoderIdentity,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -178,7 +213,8 @@ final class CodecSchemaImpl<
   }
 
   @override
-  CodecSchemaImpl<Boundary, InputRuntime, Runtime> withRuntimeConfig({
+  @protected
+  CodecSchema<Boundary, Runtime> copyWithRuntimeConfig({
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -194,26 +230,15 @@ final class CodecSchemaImpl<
     );
   }
 
-  /// Wraps this codec in a [DefaultSchema] that supplies [defaultValue]
-  /// when the input is null on parse.
-  DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
-    return DefaultSchema<Boundary, Runtime>(
-      inner: this,
-      defaultValue: defaultValue,
-    );
-  }
-
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! CodecSchemaImpl<Boundary, InputRuntime, Runtime>) {
-      return false;
-    }
+    if (other is! CodecSchema<Boundary, Runtime>) return false;
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
-        identical(decoder, other.decoder) &&
-        identical(encoder, other.encoder);
+        identical(_decoderIdentity, other._decoderIdentity) &&
+        identical(_encoder, other._encoder);
   }
 
   @override
@@ -221,7 +246,7 @@ final class CodecSchemaImpl<
     baseFieldsHashCode,
     inputSchema,
     outputSchema,
-    decoder.hashCode,
-    encoder.hashCode,
+    _decoderIdentity.hashCode,
+    _encoder.hashCode,
   );
 }

@@ -22,11 +22,11 @@ part of 'schema.dart';
 @immutable
 final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
-  final Map<String, AckSchema> properties;
+  final Map<String, AnyAckSchema> properties;
   final bool additionalProperties;
 
   ObjectSchema(
-    Map<String, AckSchema>? properties, {
+    Map<String, AnyAckSchema>? properties, {
     this.additionalProperties = false,
     super.isNullable,
     super.isOptional,
@@ -40,10 +40,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
   @override
   @protected
-  SchemaResult<JsonMap> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<JsonMap> parseWithContext(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
@@ -75,7 +72,9 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
             value: null,
             pathSegment: key,
           );
-          schema.parseWithContext(null, childCtx).match(
+          schema
+              .parseWithContext(null, childCtx)
+              .match(
                 onOk: (v) {
                   if (v != null) validatedMap[key] = v;
                 },
@@ -109,7 +108,9 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         value: propertyValue,
         pathSegment: key,
       );
-      schema.parseWithContext(propertyValue, propertyCtx).match(
+      schema
+          .parseWithContext(propertyValue, propertyCtx)
+          .match(
             onOk: (v) {
               validatedMap[key] = v;
             },
@@ -117,9 +118,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           );
     }
 
-    final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
-      if (knownKeys.contains(key)) continue;
+      if (properties.containsKey(key)) continue;
       if (additionalProperties) {
         validatedMap[key] = mapValue[key];
       } else {
@@ -205,10 +205,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           ).validate(mapValue);
           if (ce != null) {
             errors.add(
-              SchemaConstraintsError(
-                constraints: [ce],
-                context: propertyCtx,
-              ),
+              SchemaConstraintsError(constraints: [ce], context: propertyCtx),
             );
           }
         }
@@ -231,10 +228,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           final ce = NonNullableConstraint().validate(null);
           if (ce != null) {
             errors.add(
-              SchemaConstraintsError(
-                constraints: [ce],
-                context: propertyCtx,
-              ),
+              SchemaConstraintsError(constraints: [ce], context: propertyCtx),
             );
           }
         }
@@ -245,9 +239,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       if (r.isFail) errors.add(r.getError());
     }
 
-    final knownKeys = properties.keys.toSet();
     for (final key in mapValue.keys) {
-      if (knownKeys.contains(key)) continue;
+      if (properties.containsKey(key)) continue;
       if (additionalProperties) continue;
       final extraCtx = context.createChild(
         name: key,
@@ -299,7 +292,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
     final encoded = <String, Object?>{};
     final errors = <SchemaError>[];
-    final knownKeys = properties.keys.toSet();
 
     for (final entry in properties.entries) {
       final key = entry.key;
@@ -338,7 +330,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
     if (additionalProperties) {
       for (final key in value.keys) {
-        if (!knownKeys.contains(key)) {
+        if (!properties.containsKey(key)) {
           encoded[key] = value[key];
         }
       }
@@ -355,7 +347,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
   @override
   ObjectSchema copyWith({
-    Map<String, AckSchema>? properties,
+    Map<String, AnyAckSchema>? properties,
     bool? additionalProperties,
     bool? isNullable,
     bool? isOptional,
@@ -416,7 +408,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ObjectSchema) return false;
-    const mapEq = MapEquality<String, AckSchema>();
+    const mapEq = MapEquality<String, AnyAckSchema>();
     return baseFieldsEqual(other) &&
         additionalProperties == other.additionalProperties &&
         mapEq.equals(properties, other.properties);
@@ -424,7 +416,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
   @override
   int get hashCode {
-    const mapEq = MapEquality<String, AckSchema>();
+    const mapEq = MapEquality<String, AnyAckSchema>();
     return Object.hash(
       baseFieldsHashCode,
       additionalProperties,

@@ -20,10 +20,8 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
 
   @override
   @protected
-  SchemaResult<T> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<T> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -46,11 +44,8 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
 
   @override
   @protected
-  SchemaResult<T> encodeWithContext(T value, SchemaContext context) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<T> encodeWithContext(T value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   InstanceSchema<T> copyWith({

@@ -123,7 +123,6 @@ void main() {
           expect(schema.safeParse(-1.0).isOk, isFalse);
           expect(schema.safeParse(101.0).isOk, isFalse);
         });
-
       });
 
       group('BooleanSchema', () {

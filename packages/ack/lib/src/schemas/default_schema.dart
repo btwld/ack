@@ -5,7 +5,8 @@ part of 'schema.dart';
 @immutable
 final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
-    implements ConfigurableSchema<Boundary, Runtime> {
+    with WrapperSchema<Boundary, Runtime, DefaultSchema<Boundary, Runtime>> {
+  @override
   final AckSchema<Boundary, Runtime> inner;
   final Runtime defaultValue;
 
@@ -15,7 +16,7 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     super.isNullable,
     super.isOptional,
     super.description,
-  }) : super(constraints: const [], refinements: const []);
+  });
 
   @override
   SchemaType get schemaType => inner.schemaType;
@@ -28,17 +29,23 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @override
   bool get isOptional => super.isOptional || inner.isOptional;
 
+  // Constraints and refinements live on the wrapped schema.
+  @override
+  List<Constraint<Runtime>> get constraints => inner.constraints;
+
+  @override
+  List<Refinement<Runtime>> get refinements => inner.refinements;
+
   @override
   @protected
-  SchemaResult<Runtime> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context) {
     if (value == null) {
+      // Defaults are runtime values, not boundary values, so validate via
+      // the runtime path. `cloneDefault` returns an `Object?` wrapped in
+      // unmodifiable copies; fall back to the original when the clone is
+      // not assignable to `Runtime`.
       final cloned = cloneDefault(defaultValue);
       final effective = (cloned is Runtime) ? cloned : defaultValue;
-      // Validate the runtime default through the inner schema's runtime
-      // path — defaults are runtime values, not boundary values.
       return inner.validateRuntimeWithContext(effective, context);
     }
     return inner.parseWithContext(value, context);
@@ -65,6 +72,7 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @override
   Map<String, Object?> toJsonSchema() {
     final base = Map<String, Object?>.from(inner.toJsonSchema());
+    Object? serializedDefault;
     // Best-effort: emit default only if it round-trips cleanly to boundary
     // AND the boundary value is JSON-safe. Schemas like `Ack.instance<T>()`
     // happily round-trip non-JSON Dart objects through their identity
@@ -76,11 +84,14 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
       if (value != null) {
         final safe = jsonSafeOrNull(value);
         if (safe != null) {
-          base['default'] = safe;
+          serializedDefault = safe;
         }
       }
     }
-    return base;
+    return applyWrapperJsonSchemaMetadata(
+      base,
+      serializedDefault: serializedDefault,
+    );
   }
 
   /// Returns a copy of this default-wrapped schema with the given fields
@@ -102,46 +113,28 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
-  AckSchema<Boundary, Runtime> withRuntimeConfig({
+  @protected
+  DefaultSchema<Boundary, Runtime> copyWithRuntimeConfig({
     bool? isNullable,
     bool? isOptional,
     String? description,
     List<Constraint<Runtime>>? constraints,
     List<Refinement<Runtime>>? refinements,
   }) {
-    // Constraints/refinements are forwarded onto the inner schema if it is
-    // configurable; the default wrapper itself only owns description,
-    // isNullable and isOptional.
-    if ((constraints != null || refinements != null) &&
-        inner is ConfigurableSchema<Boundary, Runtime>) {
-      final updated =
-          (inner as ConfigurableSchema<Boundary, Runtime>).withRuntimeConfig(
-        constraints: constraints,
-        refinements: refinements,
-      );
-      return DefaultSchema<Boundary, Runtime>(
-        inner: updated,
-        defaultValue: defaultValue,
-        isNullable: isNullable ?? super.isNullable,
-        isOptional: isOptional ?? super.isOptional,
-        description: description ?? this.description,
-      );
-    }
+    final updatedInner = constraints == null && refinements == null
+        ? inner
+        : inner.withRuntimeConfig(
+            constraints: constraints,
+            refinements: refinements,
+          );
+
     return copyWith(
+      inner: updatedInner,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
     );
   }
-
-  DefaultSchema<Boundary, Runtime> nullable({bool value = true}) =>
-      copyWith(isNullable: value);
-
-  DefaultSchema<Boundary, Runtime> optional({bool value = true}) =>
-      copyWith(isOptional: value);
-
-  DefaultSchema<Boundary, Runtime> describe(String description) =>
-      copyWith(description: description);
 
   @override
   bool operator ==(Object other) {

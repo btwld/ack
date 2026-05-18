@@ -18,52 +18,62 @@ void main() {
       expect(result.isFail, true);
       final err = result.getError();
       final flattened = _flatten(err);
-      expect(flattened.any((e) => e.path == '#/1'), true,
-          reason: 'Expected an error at path #/1, got: '
-              '${flattened.map((e) => '${e.path} ${e.runtimeType}').join(', ')}');
+      expect(
+        flattened.any((e) => e.path == '#/1'),
+        true,
+        reason:
+            'Expected an error at path #/1, got: '
+            '${flattened.map((e) => '${e.path} ${e.runtimeType}').join(', ')}',
+      );
     });
 
     test('object property encode failure carries property path', () {
-      final schema = Ack.object({
-        'when': Ack.datetime(),
-      });
+      final schema = Ack.object({'when': Ack.datetime()});
       final result = schema.safeEncode({'when': DateTime(2026, 1, 1)});
       expect(result.isFail, true);
       final flattened = _flatten(result.getError());
-      expect(flattened.any((e) => e.path == '#/when'), true,
-          reason: 'Expected error at #/when, got: '
-              '${flattened.map((e) => e.path).join(', ')}');
+      expect(
+        flattened.any((e) => e.path == '#/when'),
+        true,
+        reason:
+            'Expected error at #/when, got: '
+            '${flattened.map((e) => e.path).join(', ')}',
+      );
     });
 
     test('nested object encode failure carries deep path', () {
       final schema = Ack.object({
-        'event': Ack.object({
-          'at': Ack.datetime(),
-        }),
+        'event': Ack.object({'at': Ack.datetime()}),
       });
       final result = schema.safeEncode({
         'event': {'at': DateTime(2026, 5, 10)},
       });
       expect(result.isFail, true);
       final flattened = _flatten(result.getError());
-      expect(flattened.any((e) => e.path == '#/event/at'), true,
-          reason: 'Expected #/event/at, got: '
-              '${flattened.map((e) => e.path).join(', ')}');
+      expect(
+        flattened.any((e) => e.path == '#/event/at'),
+        true,
+        reason:
+            'Expected #/event/at, got: '
+            '${flattened.map((e) => e.path).join(', ')}',
+      );
     });
 
     test('list of objects encode failure carries deep indexed path', () {
-      final schema = Ack.list(
-        Ack.object({'at': Ack.datetime()}),
-      );
+      final schema = Ack.list(Ack.object({'at': Ack.datetime()}));
       final result = schema.safeEncode([
         {'at': DateTime.utc(2026, 1, 1)},
         {'at': DateTime(2026, 1, 2)},
       ]);
       expect(result.isFail, true);
       final flattened = _flatten(result.getError());
-      expect(flattened.any((e) => e.path == '#/1/at'), true,
-          reason: 'Expected #/1/at, got: '
-              '${flattened.map((e) => e.path).join(', ')}');
+      expect(
+        flattened.any((e) => e.path == '#/1/at'),
+        true,
+        reason:
+            'Expected #/1/at, got: '
+            '${flattened.map((e) => e.path).join(', ')}',
+      );
     });
   });
 
@@ -115,10 +125,9 @@ void main() {
 
     test('Encoding a map containing nested non-string-keyed map fails '
         'cleanly via object passthrough', () {
-      final schema = Ack.object(
-        {'meta': Ack.any()},
-        additionalProperties: false,
-      );
+      final schema = Ack.object({
+        'meta': Ack.any(),
+      }, additionalProperties: false);
       // Pass-through into Ack.any encodes identity, so the meta map is
       // preserved as-is. This documents that the public API enforces
       // string keys at the top-level via the `JsonMap` typedef; nested
@@ -133,9 +142,7 @@ void main() {
       final schema = Ack.discriminated<_Foo>(
         discriminatorKey: 'kind',
         schemas: {
-          'foo': Ack.object({
-            'created': Ack.datetime(),
-          }).model<_Foo>(
+          'foo': Ack.object({'created': Ack.datetime()}).model<_Foo>(
             decode: (data) => _Foo(data['created'] as DateTime),
             encode: (foo) => {'created': foo.created},
           ),
@@ -170,8 +177,7 @@ void main() {
     });
 
     test('Ack.datetime accepts UTC encode', () {
-      final result =
-          Ack.datetime().safeEncode(DateTime.utc(2026, 1, 1, 12));
+      final result = Ack.datetime().safeEncode(DateTime.utc(2026, 1, 1, 12));
       expect(result.isOk, true);
     });
 
@@ -196,8 +202,7 @@ void main() {
     });
 
     test('Ack.uri accepts absolute URI encode', () {
-      final result =
-          Ack.uri().safeEncode(Uri.parse('https://example.com/x'));
+      final result = Ack.uri().safeEncode(Uri.parse('https://example.com/x'));
       expect(result.isOk, true);
       expect(result.getOrNull(), 'https://example.com/x');
     });
@@ -225,7 +230,7 @@ void main() {
     });
   });
 
-  group('ConfigurableSchema interface', () {
+  group('Runtime configuration surface', () {
     test('CodecSchema can be refined without dynamic casts', () {
       final schema = Ack.string().codec<int>(
         decode: int.parse,
@@ -244,7 +249,7 @@ void main() {
       expect(nullable.parse(null), isNull);
     });
 
-    test('TransformedSchema can be refined without dynamic casts', () {
+    test('one-way CodecSchema can be refined without dynamic casts', () {
       final schema = Ack.string().transform<int>(int.parse);
       final refined = schema.refine((v) => v > 0, message: 'must be positive');
       expect(refined.parse('5'), 5);
@@ -259,7 +264,7 @@ void main() {
   });
 
   group('single-lifecycle invariants', () {
-    test('parse and validateRuntime agree on primitive types', () {
+    test('parse and runtime validation agree on primitive types', () {
       final schema = Ack.integer();
       expect(schema.safeParse(42).isOk, true);
       expect(schema.safeParse('42').isFail, true);
@@ -267,7 +272,7 @@ void main() {
 
     test('codec parse runs output runtime invariants', () {
       // Build a codec whose decode produces a value that fails the output
-      // schema's refinement. The decode succeeds, but validateRuntime fails.
+      // schema's refinement. The decode succeeds, but runtime validation fails.
       final schema = Ack.string().codec<int>(
         output: Ack.instance<int>().refine((v) => v.isEven, message: 'even'),
         decode: int.parse,

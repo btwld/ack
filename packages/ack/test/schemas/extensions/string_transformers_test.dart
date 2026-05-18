@@ -200,7 +200,6 @@ void main() {
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), equals('johndoe123'));
       });
-
     });
   });
 }

@@ -1,24 +1,17 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-/// Test to verify whether .optional().nullable().transform() works correctly.
-/// This test investigates the skipped test in optional_nullable_semantics_test.dart:134-135
+/// Covers optional/nullable transform combinations.
 void main() {
   group('Transform with optional().nullable() combination', () {
     test(
       'should handle .optional().nullable().transform() - missing field',
       () {
-        final schema = Ack.string().optional().nullable().transform((val) {
-          return val.toUpperCase();
-        });
+        final schema = Ack.string().optional().nullable().transform(
+          (val) => val.toUpperCase(),
+        );
 
         final result = schema.safeParse('hello');
-
-        print('Result isOk: ${result.isOk}');
-        print('Result value: ${result.getOrNull()}');
-        if (result.isFail) {
-          print('Error: ${result.getError()}');
-        }
 
         expect(
           result.isOk,
@@ -30,17 +23,11 @@ void main() {
     );
 
     test('should handle .optional().nullable().transform() - null value', () {
-      final schema = Ack.string().optional().nullable().transform((val) {
-        return val.toUpperCase();
-      });
+      final schema = Ack.string().optional().nullable().transform(
+        (val) => val.toUpperCase(),
+      );
 
       final result = schema.safeParse(null);
-
-      print('Result isOk: ${result.isOk}');
-      print('Result value: ${result.getOrNull()}');
-      if (result.isFail) {
-        print('Error: ${result.getError()}');
-      }
 
       expect(result.isOk, isTrue, reason: 'Should handle null value');
       // Null passes through without calling transformer
@@ -52,40 +39,17 @@ void main() {
       () {
         final schema = Ack.object({
           'name': Ack.string(),
-          'nickname': Ack.string().optional().nullable().transform((val) {
-            return val.toUpperCase();
-          }),
+          'nickname': Ack.string().optional().nullable().transform(
+            (val) => val.toUpperCase(),
+          ),
         });
 
-        // Test 1: Missing field
         final result1 = schema.safeParse({'name': 'John'});
-        print('Test 1 - Missing field:');
-        print('  Result isOk: ${result1.isOk}');
-        print('  Result value: ${result1.getOrNull()}');
-        if (result1.isFail) {
-          print('  Error: ${result1.getError()}');
-        }
-
-        // Test 2: Null value
         final result2 = schema.safeParse({'name': 'John', 'nickname': null});
-        print('Test 2 - Null value:');
-        print('  Result isOk: ${result2.isOk}');
-        print('  Result value: ${result2.getOrNull()}');
-        if (result2.isFail) {
-          print('  Error: ${result2.getError()}');
-        }
-
-        // Test 3: Actual value
         final result3 = schema.safeParse({
           'name': 'John',
           'nickname': 'Johnny',
         });
-        print('Test 3 - Actual value:');
-        print('  Result isOk: ${result3.isOk}');
-        print('  Result value: ${result3.getOrNull()}');
-        if (result3.isFail) {
-          print('  Error: ${result3.getError()}');
-        }
 
         expect(
           result1.isOk,
@@ -101,9 +65,7 @@ void main() {
 
     test('compare: .nullable().transform() without optional', () {
       // Null passes through without calling the transformer
-      final schema = Ack.string().nullable().transform((_) {
-        return 'was not null';
-      });
+      final schema = Ack.string().nullable().transform((_) => 'was not null');
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -112,28 +74,17 @@ void main() {
     });
 
     test('order matters: .nullable().optional().transform()', () {
-      final schema = Ack.string().nullable().optional().transform((val) {
-        return val.toUpperCase();
-      });
+      final schema = Ack.string().nullable().optional().transform(
+        (val) => val.toUpperCase(),
+      );
 
       final result1 = schema.safeParse(null);
-      print('Nullable then Optional - null value:');
-      print('  Result isOk: ${result1.isOk}');
-      print('  Result value: ${result1.getOrNull()}');
-      if (result1.isFail) {
-        print('  Error: ${result1.getError()}');
-      }
-
       final result2 = schema.safeParse('hello');
-      print('Nullable then Optional - string value:');
-      print('  Result isOk: ${result2.isOk}');
-      print('  Result value: ${result2.getOrNull()}');
-      if (result2.isFail) {
-        print('  Error: ${result2.getError()}');
-      }
 
       expect(result1.isOk, isTrue);
+      expect(result1.getOrNull(), isNull);
       expect(result2.isOk, isTrue);
+      expect(result2.getOrNull(), equals('HELLO'));
     });
   });
 }

@@ -5,37 +5,29 @@ import 'package:ack/ack.dart';
 import '../helpers.dart';
 
 /// Converts ACK schemas to the new JsonSchema (canonical) model.
-extension AckToJsonSchemaModel on AckSchema {
+extension AckToJsonSchemaModel on AnyAckSchema {
   JsonSchema toJsonSchemaModel() => _convert(this);
 }
 
-JsonSchema _convert(AckSchema schema) {
+JsonSchema _convert(AnyAckSchema schema) {
   final parsed = JsonSchema.fromJson(schema.toJsonSchema());
   final effective = _unwrapNullable(parsed);
   final nullableFlag = schema.isNullable;
 
-  // Codec schemas export their boundary (input) shape.
-  if (schema is CodecSchema) {
-    final base = _convert(schema.inputSchema as AckSchema);
-    return base.copyWith(
-      description: schema.description ?? base.description,
-      nullable: nullableFlag || base.nullable == true,
-    );
-  }
-
-  if (schema is DefaultSchema) {
-    final base = _convert(schema.inner);
-    return base.copyWith(
-      description: schema.description ?? base.description,
-      nullable: nullableFlag || base.nullable == true,
-    );
-  }
-
-  if (schema is TransformedSchema) {
-    final base = _convert(schema.schema);
-    return base.copyWith(
-      description: schema.description ?? base.description,
-      nullable: nullableFlag || base.nullable == true,
+  // Wrapper schemas delegate boundary structure to their inner schema, then
+  // merge wrapper-emitted metadata such as description, nullability, format,
+  // enum values, and constraints back onto the converted model.
+  final wrappedInner = switch (schema) {
+    WrapperSchema(:final inner) => inner,
+    _ => null,
+  };
+  if (wrappedInner != null) {
+    final base = _convert(wrappedInner);
+    return _mergeWrapperMetadata(
+      base: base,
+      wrapper: effective,
+      schema: schema,
+      nullableFlag: nullableFlag,
     );
   }
 
@@ -62,14 +54,42 @@ JsonSchema _convert(AckSchema schema) {
   };
 }
 
+JsonSchema _mergeWrapperMetadata({
+  required JsonSchema base,
+  required JsonSchema wrapper,
+  required AnyAckSchema schema,
+  required bool nullableFlag,
+}) {
+  return base.copyWith(
+    description: schema.description ?? wrapper.description ?? base.description,
+    title: wrapper.title ?? base.title,
+    nullable: nullableFlag || wrapper.nullable == true || base.nullable == true,
+    format: wrapper.format ?? base.format,
+    enumValues: wrapper.enumValues ?? base.enumValues,
+    minItems: wrapper.minItems ?? base.minItems,
+    maxItems: wrapper.maxItems ?? base.maxItems,
+    minProperties: wrapper.minProperties ?? base.minProperties,
+    maxProperties: wrapper.maxProperties ?? base.maxProperties,
+    minLength: wrapper.minLength ?? base.minLength,
+    maxLength: wrapper.maxLength ?? base.maxLength,
+    pattern: wrapper.pattern ?? base.pattern,
+    minimum: wrapper.minimum ?? base.minimum,
+    maximum: wrapper.maximum ?? base.maximum,
+    exclusiveMinimum: wrapper.exclusiveMinimum ?? base.exclusiveMinimum,
+    exclusiveMaximum: wrapper.exclusiveMaximum ?? base.exclusiveMaximum,
+    multipleOf: wrapper.multipleOf ?? base.multipleOf,
+    uniqueItems: wrapper.uniqueItems ?? base.uniqueItems,
+  );
+}
+
 JsonSchema _string(JsonSchema json, bool nullableFlag) {
-  final isEnum = json.enumValues != null && json.enumValues!.isNotEmpty;
+  final hasEnum = json.enumValues?.isNotEmpty ?? false;
   return JsonSchema(
     type: JsonSchemaType.string,
     format: json.format,
     description: json.description,
     title: json.title,
-    enumValues: isEnum ? json.enumValues : null,
+    enumValues: hasEnum ? json.enumValues : null,
     minLength: json.minLength,
     maxLength: json.maxLength,
     pattern: json.pattern,
@@ -179,7 +199,7 @@ JsonSchema _anyOf(AnyOfSchema schema) {
   );
 }
 
-JsonSchema _any(AckSchema schema, JsonSchema json, bool nullableFlag) {
+JsonSchema _any(AnyAckSchema schema, JsonSchema json, bool nullableFlag) {
   final description = json.description ?? schema.description;
   final primitives = [
     JsonSchema(type: JsonSchemaType.string, description: description),

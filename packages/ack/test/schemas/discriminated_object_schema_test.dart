@@ -179,7 +179,6 @@ void main() {
         expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
         expect(branch['required'], equals(['type', 'name']));
       });
-
     });
   });
 }

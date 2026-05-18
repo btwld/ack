@@ -19,7 +19,7 @@ abstract class SchemaError {
   });
 
   String get name => context.name;
-  AckSchema get schema => context.schema;
+  AnyAckSchema get schema => context.schema;
   Object? get value => context.value;
   String get path => context.path;
 

@@ -27,10 +27,7 @@ final class DiscriminatedObjectSchema<T extends Object>
 
   @override
   @protected
-  SchemaResult<T> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<T> parseWithContext(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
@@ -121,8 +118,10 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    final result =
-        selectedSubSchema.parseWithContext(mapValue, subSchemaContext);
+    final result = selectedSubSchema.parseWithContext(
+      mapValue,
+      subSchemaContext,
+    );
     if (result.isFail) {
       return SchemaResult.fail(result.getError());
     }
@@ -164,8 +163,10 @@ final class DiscriminatedObjectSchema<T extends Object>
         operation: SchemaOperation.encode,
       );
       try {
-        final branchValidation =
-            branchSchema.validateRuntimeWithContext(value, branchCtx);
+        final branchValidation = branchSchema.validateRuntimeWithContext(
+          value,
+          branchCtx,
+        );
         if (branchValidation.isFail) {
           errors.add(branchValidation.getError());
           continue;
@@ -174,11 +175,12 @@ final class DiscriminatedObjectSchema<T extends Object>
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {
+            final emittedDiscriminator = boundary.containsKey(discriminatorKey);
             // Policy A: if the branch already emitted the discriminator key,
             // require it to match this branch's discriminator value. Until
             // discriminator-key ownership lands, this catches branches that
             // disagree with the union routing.
-            if (boundary.containsKey(discriminatorKey) &&
+            if (emittedDiscriminator &&
                 boundary[discriminatorKey] != discValue) {
               errors.add(
                 SchemaEncodeError.typeMismatch(
@@ -191,10 +193,10 @@ final class DiscriminatedObjectSchema<T extends Object>
               );
               continue;
             }
-            final merged = boundary.containsKey(discriminatorKey)
+            final merged = emittedDiscriminator
                 ? boundary
                 : (Map<String, Object?>.from(boundary)
-                  ..[discriminatorKey] = discValue);
+                    ..[discriminatorKey] = discValue);
             return SchemaResult.ok(Map<String, Object?>.unmodifiable(merged));
           }
         } else {
@@ -252,30 +254,17 @@ final class DiscriminatedObjectSchema<T extends Object>
       };
       final existingRequired =
           (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
-      final requiredFields = <String>[
+      subSchemaJson['required'] = <String>[
         discriminatorKey,
         ...existingRequired.where((field) => field != discriminatorKey),
       ];
-      subSchemaJson['required'] = requiredFields;
       anyOfClauses.add(subSchemaJson);
     });
 
-    final baseSchema = {
+    return wrapCompositeWithNullable({
       'anyOf': anyOfClauses,
       if (!isNullable && description != null) 'description': description,
-    };
-
-    if (isNullable) {
-      return {
-        if (description != null) 'description': description,
-        'anyOf': [
-          mergeConstraintSchemas(baseSchema),
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    return mergeConstraintSchemas(baseSchema);
+    });
   }
 
   @override
@@ -293,8 +282,8 @@ final class DiscriminatedObjectSchema<T extends Object>
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! DiscriminatedObjectSchema) return false;
-    const mapEq = MapEquality<String, AckSchema>();
+    if (other is! DiscriminatedObjectSchema<Object>) return false;
+    const mapEq = MapEquality<String, AnyAckSchema>();
     return baseFieldsEqual(other) &&
         discriminatorKey == other.discriminatorKey &&
         mapEq.equals(schemas, other.schemas);
@@ -302,7 +291,7 @@ final class DiscriminatedObjectSchema<T extends Object>
 
   @override
   int get hashCode {
-    const mapEq = MapEquality<String, AckSchema>();
+    const mapEq = MapEquality<String, AnyAckSchema>();
     return Object.hash(
       baseFieldsHashCode,
       discriminatorKey,

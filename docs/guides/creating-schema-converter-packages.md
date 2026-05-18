@@ -53,7 +53,7 @@ packages/ack_<target>/
 │   ├── ack_<target>.dart           # Main library file (public API)
 │   └── src/
 │       ├── converter.dart          # Core conversion logic
-│       └── extension.dart          # Extension method on AckSchema
+│       └── extension.dart          # Extension method on AnyAckSchema
 ├── test/
 │   └── to_<target>_schema_test.dart  # Comprehensive test suite
 ├── example/
@@ -241,7 +241,7 @@ import 'package:ack/ack.dart';
 import 'converter.dart';
 
 /// Extension methods for converting Ack schemas to <Target> format.
-extension <Target>SchemaExtension on AckSchema {
+extension <Target>SchemaExtension on AnyAckSchema {
   /// Converts this Ack schema to <Target> format.
   ///
   /// Returns a [<TargetSchema>] instance that can be used with
@@ -301,11 +301,11 @@ class <Target>SchemaConverter {
   /// Converts an Ack schema to <Target> format.
   ///
   /// Returns a [<TargetSchema>] representing the schema structure.
-  static <TargetSchema> convert(AckSchema schema) {
+  static <TargetSchema> convert(AnyAckSchema schema) {
     return _convertSchema(schema);
   }
 
-  static <TargetSchema> _convertSchema(AckSchema schema) {
+  static <TargetSchema> _convertSchema(AnyAckSchema schema) {
     // Option 1: If target needs JSON Schema intermediate step
     final jsonSchema = schema.toJsonSchema();
 
@@ -321,7 +321,7 @@ class <Target>SchemaConverter {
       AnyOfSchema() => _convertAnyOf(schema),
       AnySchema() => _convertAny(schema),
       DiscriminatedObjectSchema() => _convertDiscriminated(schema),
-      TransformedSchema() => _handleTransformed(schema),
+      WrapperSchema<Object, Object, AnyAckSchema>() => _convertWrapper(schema),
       _ => throw UnsupportedError(
           'Schema type ${schema.runtimeType} is not supported '
           'for <Target> conversion.',
@@ -496,15 +496,12 @@ class <Target>SchemaConverter {
     );
   }
 
-  static <TargetSchema> _handleTransformed(TransformedSchema schema) {
-    // Option 1: Throw error (safest)
-    throw UnsupportedError(
-      'TransformedSchema cannot be converted to <Target> format. '
-      'Convert the underlying schema instead.',
-    );
-
-    // Option 2: Extract and convert underlying schema (if target supports metadata)
-    // return _convertSchema(schema.underlyingSchema);
+  static <TargetSchema> _convertWrapper(
+    WrapperSchema<Object, Object, AnyAckSchema> schema,
+  ) {
+    final converted = _convertSchema(schema.inner);
+    final wrapperJson = schema.toJsonSchema();
+    return _applyJsonSchemaMetadata(converted, wrapperJson);
   }
 
   // ========================================================================
@@ -621,7 +618,7 @@ class <Target>SchemaConverter {
 
   static <TargetSchema> _buildEnumSchema(
     List<String> enumValues,
-    AckSchema schema,
+    AnyAckSchema schema,
   ) {
     return <String, Object?>{
       'type': 'string',
@@ -669,8 +666,41 @@ class <Target>SchemaConverter {
       ..['discriminator'] = <String, Object?>{
         'propertyName': discriminatorKey,
         'value': discriminatorValue,
-      };
+    };
     return withDiscriminator as TargetSchema;
+  }
+
+  static <TargetSchema> _applyJsonSchemaMetadata(
+    <TargetSchema> schema,
+    Map<String, Object?> jsonSchema,
+  ) {
+    if (schema is! Map<String, Object?>) {
+      return schema;
+    }
+
+    final withMetadata = Map<String, Object?>.from(schema);
+    for (final key in [
+      'description',
+      'default',
+      'format',
+      'enum',
+      'minimum',
+      'maximum',
+      'minLength',
+      'maxLength',
+      'minItems',
+      'maxItems',
+      'pattern',
+      'x-transformed',
+    ]) {
+      if (jsonSchema.containsKey(key)) {
+        withMetadata[key] = jsonSchema[key];
+      }
+    }
+    if (_jsonSchemaAllowsNull(jsonSchema)) {
+      withMetadata['nullable'] = true;
+    }
+    return withMetadata as TargetSchema;
   }
 
   // ========================================================================
@@ -702,6 +732,16 @@ class <Target>SchemaConverter {
     return rawEnum
         .whereType<String>()
         .toList();
+  }
+
+  static bool _jsonSchemaAllowsNull(Map<String, Object?> jsonSchema) {
+    if (jsonSchema['type'] == 'null') return true;
+    final anyOf = jsonSchema['anyOf'];
+    return anyOf is List &&
+        anyOf.any(
+          (branch) =>
+              branch is Map<String, Object?> && _jsonSchemaAllowsNull(branch),
+        );
   }
 }
 ```
@@ -1323,35 +1363,23 @@ static TargetSchema _convertString(StringSchema schema) {
 
 ## Common Patterns
 
-### Handling TransformedSchema
+### Handling WrapperSchema
 
-**Option 1: Reject** (Recommended for most cases)
+Wrappers such as `CodecSchema` and `DefaultSchema` delegate their boundary
+shape to an inner schema.
+
+**Extract Inner Schema** (Recommended for most cases)
 ```dart
-if (schema is TransformedSchema) {
-  throw UnsupportedError(
-    'TransformedSchema cannot be converted to <Target> format. '
-    'Convert the underlying schema instead.',
-  );
+if (schema is WrapperSchema<Object, Object, AnyAckSchema>) {
+  final converted = _convertSchema(schema.inner);
+  final wrapperJson = schema.toJsonSchema();
+  return _applyJsonSchemaMetadata(converted, wrapperJson);
 }
 ```
 
-**Option 2: Extract Underlying** (If target supports metadata overrides)
-```dart
-if (schema is TransformedSchema) {
-  // Extract underlying schema
-  final underlying = schema.underlyingSchema;
-
-  // Convert with metadata from transformed schema
-  final converted = _convertSchema(underlying);
-
-  // Apply metadata overrides
-  return _applyMetadata(
-    converted,
-    description: schema.description,
-    nullable: schema.isNullable,
-  );
-}
-```
+Use the wrapper's own JSON Schema output as the metadata source instead of
+copying only `description` and `nullable`. Wrappers can emit defaults,
+transformed markers, constraint keywords, and other target-relevant metadata.
 
 ### Handling Discriminated Unions
 
@@ -1485,11 +1513,11 @@ import 'package:ack/ack.dart';
 class OpenApiSchemaConverter {
   const OpenApiSchemaConverter._();
 
-  static Map<String, Object?> convert(AckSchema schema) {
+  static Map<String, Object?> convert(AnyAckSchema schema) {
     return _convertSchema(schema);
   }
 
-  static Map<String, Object?> _convertSchema(AckSchema schema) {
+  static Map<String, Object?> _convertSchema(AnyAckSchema schema) {
     // OpenAPI uses JSON Schema Draft 2020-12
     final jsonSchema = schema.toJsonSchema();
 
@@ -1538,14 +1566,14 @@ import 'package:ack/ack.dart';
 class GraphQlSchemaConverter {
   const GraphQlSchemaConverter._();
 
-  static String convert(AckSchema schema, {required String typeName}) {
+  static String convert(AnyAckSchema schema, {required String typeName}) {
     final buffer = StringBuffer();
     _convertToSDL(schema, typeName, buffer);
     return buffer.toString();
   }
 
   static void _convertToSDL(
-    AckSchema schema,
+    AnyAckSchema schema,
     String typeName,
     StringBuffer buffer,
   ) {
@@ -1574,7 +1602,7 @@ class GraphQlSchemaConverter {
     }
   }
 
-  static String _getGraphQLType(AckSchema schema) {
+  static String _getGraphQLType(AnyAckSchema schema) {
     return switch (schema) {
       StringSchema() => 'String',
       IntegerSchema() => 'Int',
@@ -1604,7 +1632,7 @@ class GraphQlSchemaConverter {
 - [ ] Implement extension method
 - [ ] Implement converter with all schema types
 - [ ] Add type coercion helpers
-- [ ] Handle edge cases (TransformedSchema, AnySchema, etc.)
+- [ ] Handle edge cases (WrapperSchema, AnySchema, etc.)
 
 ### Testing Phase
 - [ ] Write tests for all primitive types

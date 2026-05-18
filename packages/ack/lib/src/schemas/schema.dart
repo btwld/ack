@@ -14,7 +14,6 @@ part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
 part 'codec_schema.dart';
-part 'configurable_schema.dart';
 part 'default_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
@@ -25,10 +24,18 @@ part 'num_schema.dart';
 part 'object_schema.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
-part 'transformed_schema.dart';
 part 'testing/testing_schemas.dart';
+part 'wrapper_schema.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
+
+/// Type-erased ACK schema used when traversing heterogeneous schema graphs.
+///
+/// Use this when both boundary and runtime types are intentionally unknown,
+/// such as converter traversal, object properties, or wrapper unwrapping.
+/// Keep partially known schemas typed with their specific generic half instead
+/// of widening them to [AnyAckSchema].
+typedef AnyAckSchema = AckSchema<Object, Object>;
 
 /// Indicates whether a schema operation is parsing inbound data or encoding
 /// runtime values back to the boundary representation.
@@ -88,10 +95,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Subclasses MUST implement this. The context passed in carries operation
   /// information and JSON Pointer path state.
   @protected
-  SchemaResult<Runtime> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  );
+  SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context);
 
   /// Validates that [value] is a valid runtime value for this schema.
   ///
@@ -126,7 +130,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     Runtime value,
     SchemaContext context,
   ) {
-    final constraintViolations = _checkConstraints(value, context);
+    final constraintViolations = _checkConstraints(value);
     if (constraintViolations.isNotEmpty) {
       return SchemaResult.fail(
         SchemaConstraintsError(
@@ -138,11 +142,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return _runRefinements(value, context);
   }
 
-  @protected
-  List<ConstraintError> _checkConstraints(
-    Runtime value,
-    SchemaContext context,
-  ) {
+  List<ConstraintError> _checkConstraints(Runtime value) {
     if (_constraints.isEmpty) return const [];
     final errors = <ConstraintError>[];
     for (final constraint in _constraints) {
@@ -156,11 +156,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return errors;
   }
 
-  @protected
-  SchemaResult<Runtime> _runRefinements(
-    Runtime value,
-    SchemaContext context,
-  ) {
+  SchemaResult<Runtime> _runRefinements(Runtime value, SchemaContext context) {
     for (final refinement in _refinements) {
       if (!refinement.validate(value)) {
         return SchemaResult.fail(
@@ -217,6 +213,38 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return mergeConstraintSchemas(schema);
   }
 
+  /// Wraps a composite (e.g. `anyOf`) JSON Schema in a nullable form when
+  /// the schema is nullable. Unlike [buildJsonSchemaWithNullable], the inner
+  /// composite is preserved as-is (constraints are merged into it) and the
+  /// nullable branch is added at the outer level. Used by [AnyOfSchema] and
+  /// [DiscriminatedObjectSchema] whose root key is already `anyOf`.
+  @protected
+  Map<String, Object?> wrapCompositeWithNullable(
+    Map<String, Object?> baseSchema,
+  ) {
+    if (!isNullable) return mergeConstraintSchemas(baseSchema);
+    return {
+      if (description != null) 'description': description,
+      'anyOf': [
+        mergeConstraintSchemas(baseSchema),
+        {'type': 'null'},
+      ],
+    };
+  }
+
+  /// Helper for schemas whose boundary == runtime: validates the runtime
+  /// value and, if it passes, returns it as the boundary value unchanged.
+  /// Only safe to call when `Boundary` and `Runtime` are the same type.
+  @protected
+  SchemaResult<Boundary> encodeAsBoundary(
+    Runtime value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+    return SchemaResult.ok(value as Boundary);
+  }
+
   /// Runtime-side non-nullable failure.
   @protected
   SchemaResult<Runtime> failNonNullable(SchemaContext context) {
@@ -232,9 +260,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Encode-side non-nullable failure.
   @protected
   SchemaResult<Boundary> failNonNullableEncode(SchemaContext context) {
-    return SchemaResult.fail(
-      SchemaEncodeError.nonNullable(context: context),
-    );
+    return SchemaResult.fail(SchemaEncodeError.nonNullable(context: context));
   }
 
   /// Centralized null gate for the parse/validate paths. Returns null when
@@ -273,6 +299,85 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   /// Human-readable type name for error messages and debugging.
   String get schemaTypeName => schemaType.typeName;
+
+  /// Returns a copy of this schema with runtime-side configuration replaced.
+  AckSchema<Boundary, Runtime> withRuntimeConfig({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<Runtime>>? constraints,
+    List<Refinement<Runtime>>? refinements,
+  });
+
+  /// Marks the schema as nullable.
+  AckSchema<Boundary, Runtime> nullable({bool value = true}) {
+    if (isNullable == value) return this;
+    return withRuntimeConfig(isNullable: value);
+  }
+
+  /// Marks the schema as optional so the field can be omitted from an object.
+  AckSchema<Boundary, Runtime> optional({bool value = true}) {
+    if (isOptional == value) return this;
+    return withRuntimeConfig(isOptional: value);
+  }
+
+  /// Sets the description for the schema.
+  AckSchema<Boundary, Runtime> describe(String description) {
+    return withRuntimeConfig(description: description);
+  }
+
+  /// Alias for [describe].
+  @Deprecated('Use describe() instead. Will be removed in a future version.')
+  AckSchema<Boundary, Runtime> withDescription(String description) {
+    return describe(description);
+  }
+
+  /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
+  /// the parse input is null. Encoding does not inject the default.
+  DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
+    return DefaultSchema<Boundary, Runtime>(
+      inner: this,
+      defaultValue: defaultValue,
+    );
+  }
+
+  /// Adds a validation constraint to the schema.
+  AckSchema<Boundary, Runtime> withConstraint(Constraint<Runtime> constraint) {
+    return withRuntimeConfig(constraints: [...constraints, constraint]);
+  }
+
+  /// Adds validation constraints to the schema.
+  AckSchema<Boundary, Runtime> withConstraints(
+    List<Constraint<Runtime>> newConstraints,
+  ) {
+    return withRuntimeConfig(constraints: [...constraints, ...newConstraints]);
+  }
+
+  /// Adds a custom validation check that runs after all other validations have
+  /// passed for this schema.
+  AckSchema<Boundary, Runtime> refine(
+    bool Function(Runtime value) validate, {
+    String message = 'The value did not pass the custom validation.',
+  }) {
+    final newRefinement = (validate: validate, message: message);
+    return withRuntimeConfig(refinements: [...refinements, newRefinement]);
+  }
+
+  /// Adds a raw [constraint] to the schema.
+  AckSchema<Boundary, Runtime> constrain(
+    Constraint<Runtime> constraint, {
+    String? message,
+  }) {
+    if (constraint is! Validator<Runtime>) {
+      throw ArgumentError(
+        'Constraint ${constraint.runtimeType} must implement Validator<Runtime>.',
+      );
+    }
+    final effectiveConstraint = message == null
+        ? constraint
+        : _ConstraintMessageOverride<Runtime>(constraint, message);
+    return withConstraint(effectiveConstraint);
+  }
 
   // ---------------------------------------------------------------------------
   // Public API (thin wrappers around the internal lifecycle)
@@ -414,7 +519,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   /// Compares base schema fields for equality.
   @protected
-  bool baseFieldsEqual(AckSchema other) {
+  bool baseFieldsEqual(AnyAckSchema other) {
     const listEq = ListEquality<Object?>();
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
@@ -440,6 +545,36 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       listEq.hash(_constraints),
       listEq.hash(_refinements),
     );
+  }
+}
+
+class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
+  _ConstraintMessageOverride(this.inner, this.customMessage)
+    : super(constraintKey: inner.constraintKey, description: inner.description);
+
+  final Constraint<T> inner;
+  final String customMessage;
+
+  Validator<T> get _validator => inner as Validator<T>;
+
+  @override
+  bool isValid(T value) => _validator.isValid(value);
+
+  @override
+  String buildMessage(T value) => customMessage;
+
+  @override
+  Map<String, Object?> buildContext(T value) {
+    return _validator.buildContext(value);
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    if (inner is JsonSchemaSpec<T>) {
+      return (inner as JsonSchemaSpec<T>).toJsonSchema();
+    }
+    return const {};
   }
 }
 

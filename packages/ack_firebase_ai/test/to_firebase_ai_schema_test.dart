@@ -14,7 +14,7 @@ enum Status { pending, active, completed }
 /// - Basic schema conversion (primitives, objects, arrays)
 /// - Edge cases and error handling
 /// - Semantic validation (behavioral equivalence)
-/// - TransformedSchema and metadata overrides
+/// - CodecSchema and metadata overrides
 /// - Dart enum support
 void main() {
   group('toFirebaseAiSchema()', () {
@@ -331,7 +331,7 @@ void main() {
         expect(result.anyOf!.last.type, firebase_ai.SchemaType.integer);
       });
 
-      test('converts TransformedSchema using underlying definition', () {
+      test('converts CodecSchema using underlying definition', () {
         final schema = Ack.date();
 
         final result = schema.toFirebaseAiSchema();
@@ -404,7 +404,7 @@ void main() {
     });
 
     group('Metadata override behavior', () {
-      test('TransformedSchema with copyWith description override', () {
+      test('CodecSchema with copyWith description override', () {
         // Create date schema with description via copyWith
         final dateSchema = Ack.date().copyWith(description: 'Birth date');
 
@@ -415,7 +415,7 @@ void main() {
         expect(result.format, 'date');
       });
 
-      test('nullable flag is forced on TransformedSchema', () {
+      test('nullable flag is forced on CodecSchema', () {
         // Create nullable date schema via copyWith
         final dateSchema = Ack.date().copyWith(isNullable: true);
 
@@ -442,7 +442,7 @@ void main() {
         expect(result.format, 'date');
       });
 
-      test('TransformedSchema preserves underlying schema format', () {
+      test('CodecSchema preserves underlying schema format', () {
         // Datetime has format 'date-time', add description via copyWith
         final datetimeSchema = Ack.datetime().copyWith(
           description: 'Event timestamp',
@@ -455,22 +455,19 @@ void main() {
         expect(result.description, 'Event timestamp');
       });
 
-      test(
-        'description override on TransformedSchema wins over base schema',
-        () {
-          // Test that TransformedSchema's description takes precedence
-          final withDescription = Ack.date().copyWith(
-            description: 'Overridden description',
-          );
+      test('description override on CodecSchema wins over base schema', () {
+        // Test that CodecSchema's description takes precedence
+        final withDescription = Ack.date().copyWith(
+          description: 'Overridden description',
+        );
 
-          final result = withDescription.toFirebaseAiSchema();
+        final result = withDescription.toFirebaseAiSchema();
 
-          expect(result.description, 'Overridden description');
-        },
-      );
+        expect(result.description, 'Overridden description');
+      });
     });
 
-    group('TransformedSchema support', () {
+    group('CodecSchema support', () {
       test(
         'converts date schema by unwrapping to underlying string schema',
         () {
@@ -495,7 +492,7 @@ void main() {
         },
       );
 
-      test('converts transformed schema in arrays', () {
+      test('converts codec schema in arrays', () {
         final schema = Ack.list(Ack.date());
 
         final result = schema.toFirebaseAiSchema();
@@ -505,10 +502,22 @@ void main() {
         expect(result.items!.format, 'date');
       });
 
-      test('converts nested TransformedSchema properties correctly', () {
+      test('duration codec preserves runtime numeric constraints', () {
+        final schema = Ack.duration()
+            .min(const Duration(milliseconds: 250))
+            .max(const Duration(milliseconds: 750));
+
+        final result = schema.toFirebaseAiSchema();
+
+        expect(result.type, firebase_ai.SchemaType.integer);
+        expect(result.minimum, 250);
+        expect(result.maximum, 750);
+      });
+
+      test('converts nested CodecSchema properties correctly', () {
         final schema = Ack.object({
           'user': Ack.object({
-            'birthdate': Ack.date(), // TransformedSchema
+            'birthdate': Ack.date(), // CodecSchema
           }),
         });
 
@@ -522,7 +531,7 @@ void main() {
         expect(birthdateProp.format, 'date');
       });
 
-      test('converts top-level TransformedSchema properties correctly', () {
+      test('converts top-level CodecSchema properties correctly', () {
         final schema = Ack.object({'timestamp': Ack.datetime()});
 
         final result = schema.toFirebaseAiSchema();
@@ -533,7 +542,7 @@ void main() {
         expect(timestampProp.format, 'date-time');
       });
 
-      test('converts deeply nested TransformedSchema properties correctly', () {
+      test('converts deeply nested CodecSchema properties correctly', () {
         final schema = Ack.object({
           'data': Ack.object({
             'metadata': Ack.object({'createdAt': Ack.date()}),
@@ -804,7 +813,7 @@ void main() {
       test('handles empty discriminated schema', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
-          schemas: <String, AckSchema<Map<String, Object?>>>{},
+          schemas: <String, AckSchema<JsonMap, JsonMap>>{},
         );
 
         final result = schema.toFirebaseAiSchema();

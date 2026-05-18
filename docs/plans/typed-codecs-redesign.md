@@ -111,37 +111,38 @@ Notes:
 * Nullability remains a runtime schema flag in the first implementation. Do
   not model it as `AckSchema<Boundary?, Runtime?>` yet.
 
-### Public codec interface
+### Public codec schema
 
 Expose only two type parameters publicly:
 
 ```dart
-abstract interface class CodecSchema<Boundary extends Object, Runtime extends Object>
-    implements AckSchema<Boundary, Runtime> {
+final class CodecSchema<Boundary extends Object, Runtime extends Object>
+    extends AckSchema<Boundary, Runtime> {
   AckSchema<Boundary, dynamic> get inputSchema;
   AckSchema<dynamic, Runtime> get outputSchema;
 }
 ```
 
-Internally, codecs need a hidden intermediate input runtime type:
+Construction still needs a hidden intermediate input runtime type:
 
 ```dart
-final class _CodecSchema<
+static CodecSchema<Boundary, Runtime> create<
   Boundary extends Object,
   InputRuntime extends Object,
   Runtime extends Object
-> extends AckSchema<Boundary, Runtime>
-    implements CodecSchema<Boundary, Runtime> {
-  final AckSchema<Boundary, InputRuntime> inputSchema;
-  final AckSchema<dynamic, Runtime> outputSchema;
-  final Runtime Function(InputRuntime value) decoder;
-  final InputRuntime Function(Runtime value)? encoder;
-}
+>({
+  required AckSchema<Boundary, InputRuntime> inputSchema,
+  required AckSchema<dynamic, Runtime> outputSchema,
+  required Runtime Function(InputRuntime value) decoder,
+  required InputRuntime Function(Runtime value)? encoder,
+});
 ```
 
 The public API should not expose the intermediate type because it makes
-signatures noisy. It only exists because a codec's encoder returns the input
-schema's runtime shape, which is then recursively encoded by the input schema.
+signatures noisy. `create` preserves that relationship at construction time;
+the concrete wrapper erases it afterward because a codec's encoder returns the
+input schema's runtime shape, which is then recursively encoded by the input
+schema.
 
 ---
 
@@ -408,12 +409,12 @@ Keep objects map-shaped:
 typedef JsonMap = Map<String, Object?>;
 
 final class ObjectSchema extends AckSchema<JsonMap, JsonMap> {
-  final Map<String, AckSchema<dynamic, dynamic>> properties;
+  final Map<String, AnyAckSchema> properties;
 }
 ```
 
 Do not attempt to infer a typed object/record shape from a
-`Map<String, AckSchema>`. Use `.model<T>()` for nominal object output.
+`Map<String, AnyAckSchema>`. Use `.model<T>()` for nominal object output.
 
 ### Enums
 
@@ -769,9 +770,15 @@ List<Refinement<Runtime>> refinements;
 Update protected hooks:
 
 ```dart
-SchemaResult<Runtime> decodeBoundary(Object? input, SchemaContext context);
-SchemaResult<Runtime> validateRuntime(Object? value, SchemaContext context);
-SchemaResult<Boundary> encodeBoundary(Runtime value, SchemaContext context);
+SchemaResult<Runtime> parseWithContext(Object? input, SchemaContext context);
+SchemaResult<Runtime> validateRuntimeWithContext(
+  Object? value,
+  SchemaContext context,
+);
+SchemaResult<Boundary> encodeWithContext(
+  Runtime value,
+  SchemaContext context,
+);
 ```
 
 Lifecycle:
@@ -846,23 +853,21 @@ Remove `strictPrimitiveParsing` from the base schema.
 Public:
 
 ```dart
-abstract interface class CodecSchema<Boundary extends Object, Runtime extends Object>
-    implements AckSchema<Boundary, Runtime> {}
-```
-
-Private implementation:
-
-```dart
-final class _CodecSchema<
-  Boundary extends Object,
-  InputRuntime extends Object,
-  Runtime extends Object
-> extends AckSchema<Boundary, Runtime>
-    implements CodecSchema<Boundary, Runtime> {
-  final AckSchema<Boundary, InputRuntime> inputSchema;
+final class CodecSchema<Boundary extends Object, Runtime extends Object>
+    extends AckSchema<Boundary, Runtime> {
+  final AckSchema<Boundary, dynamic> inputSchema;
   final AckSchema<dynamic, Runtime> outputSchema;
-  final Runtime Function(InputRuntime value) decoder;
-  final InputRuntime Function(Runtime value)? encoder;
+
+  static CodecSchema<Boundary, Runtime> create<
+    Boundary extends Object,
+    InputRuntime extends Object,
+    Runtime extends Object
+  >({
+    required AckSchema<Boundary, InputRuntime> inputSchema,
+    required AckSchema<dynamic, Runtime> outputSchema,
+    required Runtime Function(InputRuntime value) decoder,
+    required InputRuntime Function(Runtime value)? encoder,
+  });
 }
 ```
 
@@ -882,7 +887,7 @@ validate runtime via output schema
 apply codec constraints/refinements
 run encoder -> InputRuntime
 validate input runtime shape
-inputSchema.encodeBoundary -> Boundary
+inputSchema.encodeWithContext -> Boundary
 ```
 
 ---
@@ -1075,13 +1080,16 @@ encode(null) -> no default injection
 
 ### Phase 15 — Refactor transform
 
-Replace `TransformedSchema` with two-type compatible one-way transform.
-
-Suggested:
+Replace `TransformedSchema` with a two-type-compatible one-way transform backed
+by `CodecSchema`.
 
 ```dart
-final class TransformSchema<Boundary extends Object, InputRuntime extends Object, Runtime extends Object>
-    extends AckSchema<Boundary, Runtime>
+CodecSchema.create<Boundary, InputRuntime, Runtime>(
+  inputSchema: schema,
+  outputSchema: Ack.instance<Runtime>(),
+  decoder: decode,
+  encoder: null,
+)
 ```
 
 Created by:

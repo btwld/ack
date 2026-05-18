@@ -17,10 +17,8 @@ final class AnySchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -35,14 +33,8 @@ final class AnySchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> encodeWithContext(
-    Object value,
-    SchemaContext context,
-  ) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<Object> encodeWithContext(Object value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   AnySchema copyWith({
@@ -76,21 +68,11 @@ final class AnySchema extends AckSchema<Object, Object>
       {'type': 'array'},
     ];
 
-    if (isNullable) {
-      return {
-        if (description != null) 'description': description,
-        'anyOf': [
-          ...nonNullBranches,
-          {'type': 'null'},
-        ],
-      };
-    }
-
     final base = {
       'anyOf': nonNullBranches,
       if (description != null) 'description': description,
     };
-    return mergeConstraintSchemas(base);
+    return wrapCompositeWithNullable(base);
   }
 
   @override

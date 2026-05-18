@@ -8,6 +8,80 @@ final class _Event {
 
 enum _Role { admin, member }
 
+final class _StartsWithConstraint extends Constraint<String>
+    with Validator<String> {
+  _StartsWithConstraint(this.prefix)
+    : super(constraintKey: 'startsWith', description: 'Starts with $prefix');
+
+  final String prefix;
+
+  @override
+  bool isValid(String value) => value.startsWith(prefix);
+
+  @override
+  String buildMessage(String value) => 'Expected value to start with $prefix';
+}
+
+final class _OneOfNullableStringSchema extends AckSchema<String, String>
+    with FluentSchema<String, String, _OneOfNullableStringSchema> {
+  const _OneOfNullableStringSchema({
+    super.isNullable,
+    super.isOptional,
+    super.description,
+    super.constraints,
+    super.refinements,
+  });
+
+  @override
+  SchemaType get schemaType => SchemaType.string;
+
+  @override
+  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    return SchemaResult.ok(value as String);
+  }
+
+  @override
+  SchemaResult<String> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    return SchemaResult.ok(value as String);
+  }
+
+  @override
+  SchemaResult<String> encodeWithContext(String value, SchemaContext context) =>
+      SchemaResult.ok(value);
+
+  @override
+  _OneOfNullableStringSchema copyWith({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<String>>? constraints,
+    List<Refinement<String>>? refinements,
+  }) {
+    return _OneOfNullableStringSchema(
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
+    );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() => const {
+    'oneOf': [
+      {'type': 'string'},
+      {'type': 'null'},
+    ],
+  };
+}
+
 void main() {
   group('AckSchema<Boundary, Runtime> type model', () {
     test('Ack.string is AckSchema<String, String>', () {
@@ -76,9 +150,7 @@ void main() {
 
     test('Ack.duration encode is statically typed as int', () {
       final schema = Ack.duration();
-      final int? encoded = schema.encode(
-        const Duration(milliseconds: 500),
-      );
+      final int? encoded = schema.encode(const Duration(milliseconds: 500));
       expect(encoded, 500);
     });
 
@@ -100,9 +172,7 @@ void main() {
   group('Nested list codec encode', () {
     test('Ack.list(Ack.date()) encode is List<String>', () {
       final schema = Ack.list(Ack.date());
-      final List<String>? encoded = schema.encode([
-        DateTime(2026, 5, 10),
-      ]);
+      final List<String>? encoded = schema.encode([DateTime(2026, 5, 10)]);
       expect(encoded, ['2026-05-10']);
     });
 
@@ -118,13 +188,9 @@ void main() {
 
   group('Object model mapping', () {
     test('ObjectSchema.model parses model and encodes JsonMap', () {
-      final schema = Ack.object({
-        'createdAt': Ack.datetime(),
-      }).model<_Event>(
+      final schema = Ack.object({'createdAt': Ack.datetime()}).model<_Event>(
         decode: (data) => _Event(data['createdAt'] as DateTime),
-        encode: (event) => {
-          'createdAt': event.createdAt,
-        },
+        encode: (event) => {'createdAt': event.createdAt},
       );
 
       final _Event? parsed = schema.parse({
@@ -134,9 +200,7 @@ void main() {
       expect(parsed!.createdAt, DateTime.utc(2026, 5, 10));
 
       final JsonMap? encoded = schema.encode(parsed);
-      expect(encoded, {
-        'createdAt': '2026-05-10T00:00:00.000Z',
-      });
+      expect(encoded, {'createdAt': '2026-05-10T00:00:00.000Z'});
     });
   });
 
@@ -151,6 +215,47 @@ void main() {
       final String? encoded = schema.encode(42);
       expect(parsed, 42);
       expect(encoded, '42');
+    });
+
+    test(
+      'CodecSchema.create supports distinct boundary, input, and runtime',
+      () {
+        final schema = CodecSchema.create<String, DateTime, int>(
+          inputSchema: Ack.date(),
+          outputSchema: Ack.integer(),
+          decoder: (date) => date.year,
+          encoder: (year) => DateTime(year),
+        );
+
+        final int? parsed = schema.parse('2026-05-10');
+        final String? encoded = schema.encode(2026);
+
+        expect(parsed, 2026);
+        expect(encoded, '2026-01-01');
+      },
+    );
+
+    test('decoder exceptions use codec decode wording', () {
+      final transformSchema = Ack.string().transform<int>(
+        (_) => throw StateError('transform decoder failed'),
+      );
+      final transformResult = transformSchema.safeParse('value');
+
+      expect(transformResult.isFail, true);
+      final transformError = transformResult.getError();
+      expect(transformError, isA<SchemaTransformError>());
+      expect(transformError.message, startsWith('Codec decode failed:'));
+
+      final codecSchema = Ack.string().codec<int>(
+        decode: (_) => throw StateError('codec decoder failed'),
+        encode: (value) => value.toString(),
+      );
+      final codecResult = codecSchema.safeParse('value');
+
+      expect(codecResult.isFail, true);
+      final codecError = codecResult.getError();
+      expect(codecError, isA<SchemaTransformError>());
+      expect(codecError.message, startsWith('Codec decode failed:'));
     });
   });
 
@@ -181,9 +286,55 @@ void main() {
       final schema = Ack.integer().withDefault(0);
       expect(schema.parse(5), 5);
     });
+
+    test(
+      'withConstraint after default preserves existing inner constraints',
+      () {
+        final schema = Ack.string()
+            .minLength(3)
+            .withDefault('abcd')
+            .withConstraint(_StartsWithConstraint('a'));
+
+        expect(
+          schema.safeParse('ab').isFail,
+          true,
+          reason: 'minLength from the inner schema should still run',
+        );
+        expect(
+          schema.safeParse('bcd').isFail,
+          true,
+          reason: 'new constraints added after withDefault should run',
+        );
+        expect(schema.safeParse('abcd').isOk, true);
+      },
+    );
+
+    test('refine after default preserves existing inner refinements', () {
+      final schema = Ack.string()
+          .refine((value) => value.length >= 3, message: 'too short')
+          .withDefault('abcd')
+          .refine((value) => value.startsWith('a'), message: 'bad prefix');
+
+      expect(
+        schema.safeParse('ab').isFail,
+        true,
+        reason: 'inner refinements should still run',
+      );
+      expect(
+        schema.safeParse('bcd').isFail,
+        true,
+        reason: 'new refinements added after withDefault should run',
+      );
+      expect(schema.safeParse('abcd').isOk, true);
+    });
   });
 
-  group('TransformedSchema is one-way', () {
+  group('One-way transforms use CodecSchema', () {
+    test('transform returns CodecSchema', () {
+      final schema = Ack.string().transform<int>(int.parse);
+      expect(schema, isA<CodecSchema<String, int>>());
+    });
+
     test('parse works via transformer', () {
       final schema = Ack.string().transform<int>(int.parse);
       expect(schema.parse('123'), 123);
@@ -202,12 +353,85 @@ void main() {
     });
   });
 
+  group('WrapperSchema smoke checks', () {
+    test('defaults, codecs, and one-way transforms are wrappers', () {
+      expect(Ack.string().withDefault('x'), isA<WrapperSchema>());
+      expect(Ack.string().transform<int>(int.parse), isA<WrapperSchema>());
+      expect(Ack.date(), isA<WrapperSchema>());
+    });
+
+    test('default wrapper composes inner nullable flag', () {
+      final schema = Ack.string().nullable().withDefault('');
+      expect(schema.isNullable, true);
+    });
+
+    test('built-in codec exposes typed copyWith', () {
+      final schema = Ack.date().copyWith(description: 'd');
+      expect(schema.description, 'd');
+    });
+
+    test('wrapper fluent calls preserve concrete return types', () {
+      final CodecSchema<String, DateTime> nullableCodec = Ack.date().nullable();
+      final CodecSchema<String, int> refinedTransform = Ack.string()
+          .transform<int>(int.parse)
+          .refine((value) => value > 0, message: 'positive');
+      final DefaultSchema<String, String> constrainedDefault = Ack.string()
+          .withDefault('abcd')
+          .withConstraint(_StartsWithConstraint('a'));
+
+      expect(nullableCodec.isNullable, true);
+      expect(refinedTransform.safeParse('-1').isFail, true);
+      expect(constrainedDefault.safeParse('bcd').isFail, true);
+    });
+
+    test('wrapper JSON Schema includes wrapper-owned metadata', () {
+      final codecJson = Ack.date()
+          .describe('Local date')
+          .nullable()
+          .toJsonSchema();
+      expect(codecJson['description'], 'Local date');
+      expect((codecJson['anyOf'] as List).last, {'type': 'null'});
+
+      final defaultJson = Ack.string()
+          .withDefault('fallback')
+          .describe('Display name')
+          .nullable()
+          .toJsonSchema();
+      expect(defaultJson['description'], 'Display name');
+      expect(defaultJson['default'], 'fallback');
+      expect((defaultJson['anyOf'] as List).last, {'type': 'null'});
+    });
+
+    test('nullable wrapper reuses inner nullable JSON Schema branch', () {
+      final json = Ack.string()
+          .nullable()
+          .withDefault('fallback')
+          .describe('Display name')
+          .toJsonSchema();
+
+      expect(json['description'], 'Display name');
+      expect(json['default'], 'fallback');
+      expect(json['anyOf'], isA<List>());
+      expect(json['anyOf'], hasLength(2));
+      expect((json['anyOf'] as List).last, {'type': 'null'});
+    });
+
+    test('nullable wrapper recognizes oneOf null branch', () {
+      final json = const _OneOfNullableStringSchema()
+          .withDefault('fallback')
+          .nullable()
+          .toJsonSchema();
+
+      expect(json.containsKey('anyOf'), false);
+      expect(json['oneOf'], isA<List>());
+      expect(json['oneOf'], hasLength(2));
+      expect((json['oneOf'] as List).last, {'type': 'null'});
+    });
+  });
+
   group('Object encode validations', () {
     test('Missing required property fails encode', () {
-      final schema = Ack.object({
-        'name': Ack.string(),
-        'age': Ack.integer(),
-      });
+      final schema = Ack.object({'name': Ack.string(), 'age': Ack.integer()});
       final result = schema.safeEncode({'name': 'x'});
       expect(result.isFail, true);
     });
@@ -219,10 +443,9 @@ void main() {
     });
 
     test('additionalProperties: true allows extras on encode', () {
-      final schema = Ack.object(
-        {'name': Ack.string()},
-        additionalProperties: true,
-      );
+      final schema = Ack.object({
+        'name': Ack.string(),
+      }, additionalProperties: true);
       final result = schema.safeEncode({'name': 'x', 'extra': 'y'});
       expect(result.isOk, true);
       expect(result.getOrNull(), {'name': 'x', 'extra': 'y'});

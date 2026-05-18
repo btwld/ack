@@ -3,10 +3,7 @@ part of 'schema.dart';
 /// Schema for validating `List<ItemRuntime>` whose items conform to
 /// [itemSchema], with boundary type `List<ItemBoundary>`.
 @immutable
-final class ListSchema<
-  ItemBoundary extends Object,
-  ItemRuntime extends Object
->
+final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
     extends AckSchema<List<ItemBoundary>, List<ItemRuntime>>
     with
         FluentSchema<
@@ -33,67 +30,20 @@ final class ListSchema<
   SchemaResult<List<ItemRuntime>> parseWithContext(
     Object? value,
     SchemaContext context,
-  ) {
-    final nullResult = handleNullInput(value, context);
-    if (nullResult != null) return nullResult;
-
-    if (value is! List) {
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: schemaType,
-          actualType: AckSchema.getSchemaType(value),
-          context: context,
-        ),
-      );
-    }
-    final validated = <ItemRuntime>[];
-    final errors = <SchemaError>[];
-
-    for (var i = 0; i < value.length; i++) {
-      final item = value[i];
-      final itemCtx = context.createChild(
-        name: '$i',
-        schema: itemSchema,
-        value: item,
-        pathSegment: '$i',
-      );
-      final r = itemSchema.parseWithContext(item, itemCtx);
-      if (r.isOk) {
-        final v = r.getOrNull();
-        if (v is ItemRuntime) {
-          validated.add(v);
-        } else {
-          errors.add(
-            SchemaValidationError(
-              message:
-                  'List item $i resolved to null. Use non-nullable item schemas for Ack.list.',
-              context: itemCtx,
-            ),
-          );
-        }
-      } else {
-        errors.add(r.getError());
-      }
-    }
-
-    if (errors.isNotEmpty) {
-      return SchemaResult.fail(
-        SchemaNestedError(errors: errors, context: context),
-      );
-    }
-
-    return applyConstraintsAndRefinements(
-      List<ItemRuntime>.unmodifiable(validated),
-      context,
-    );
-  }
+  ) => _processItems(value, context, parse: true);
 
   @override
   @protected
   SchemaResult<List<ItemRuntime>> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,
-  ) {
+  ) => _processItems(value, context, parse: false);
+
+  SchemaResult<List<ItemRuntime>> _processItems(
+    Object? value,
+    SchemaContext context, {
+    required bool parse,
+  }) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
@@ -117,7 +67,9 @@ final class ListSchema<
         value: item,
         pathSegment: '$i',
       );
-      final r = itemSchema.validateRuntimeWithContext(item, itemCtx);
+      final r = parse
+          ? itemSchema.parseWithContext(item, itemCtx)
+          : itemSchema.validateRuntimeWithContext(item, itemCtx);
       if (r.isOk) {
         final v = r.getOrNull();
         if (v is ItemRuntime) {

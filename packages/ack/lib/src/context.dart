@@ -7,7 +7,7 @@ import 'schemas/schema.dart';
 class SchemaContext {
   final String name;
   final Object? value;
-  final AckSchema schema;
+  final AnyAckSchema schema;
   final SchemaContext? parent;
   final String? pathSegment;
   final SchemaOperation operation;
@@ -51,7 +51,7 @@ class SchemaContext {
   /// The child inherits the parent's [operation] unless overridden.
   SchemaContext createChild({
     required String name,
-    required AckSchema schema,
+    required AnyAckSchema schema,
     required Object? value,
     String? pathSegment,
     SchemaOperation? operation,

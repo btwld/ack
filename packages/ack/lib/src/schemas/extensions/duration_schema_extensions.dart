@@ -12,12 +12,7 @@ extension DurationSchemaExtensions on CodecSchema<int, Duration> {
   CodecSchema<int, Duration> max(Duration maxDuration) =>
       _addConstraint(DurationConstraint.max(maxDuration));
 
-  CodecSchema<int, Duration> _addConstraint(
-    Constraint<Duration> constraint,
-  ) {
-    final configurable = this as ConfigurableSchema<int, Duration>;
-    return configurable.withRuntimeConfig(
-      constraints: [...constraints, constraint],
-    ) as CodecSchema<int, Duration>;
+  CodecSchema<int, Duration> _addConstraint(Constraint<Duration> constraint) {
+    return withRuntimeConfig(constraints: [...constraints, constraint]);
   }
 }

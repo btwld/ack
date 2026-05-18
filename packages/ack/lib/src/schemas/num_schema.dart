@@ -31,10 +31,8 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   @protected
-  SchemaResult<int> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<int> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -59,11 +57,8 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   @protected
-  SchemaResult<int> encodeWithContext(int value, SchemaContext context) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<int> encodeWithContext(int value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   IntegerSchema copyWith({
@@ -116,10 +111,7 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   @protected
-  SchemaResult<double> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
+  SchemaResult<double> parseWithContext(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
@@ -153,14 +145,8 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   @protected
-  SchemaResult<double> encodeWithContext(
-    double value,
-    SchemaContext context,
-  ) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<double> encodeWithContext(double value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   DoubleSchema copyWith({
@@ -213,10 +199,8 @@ final class NumberSchema extends NumSchema<num>
 
   @override
   @protected
-  SchemaResult<num> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<num> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -240,11 +224,8 @@ final class NumberSchema extends NumSchema<num>
 
   @override
   @protected
-  SchemaResult<num> encodeWithContext(num value, SchemaContext context) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<num> encodeWithContext(num value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   NumberSchema copyWith({

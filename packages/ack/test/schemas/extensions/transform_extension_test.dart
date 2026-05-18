@@ -76,7 +76,7 @@ void main() {
       expect(result.getError(), isA<SchemaTransformError>());
       expect(
         result.getError().message,
-        contains('Transformation failed: Exception: Intentional failure'),
+        contains('Codec decode failed: Exception: Intentional failure'),
       );
     });
 

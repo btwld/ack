@@ -167,10 +167,10 @@ class Color {
   const Color(this.value);
 }
 
-AckSchema<String> get baseColorSchema => Ack.string();
+AckSchema<String, String> get baseColorSchema => Ack.string();
 
 @AckType()
-AckSchema<Color> get colorSchema =>
+AckSchema<String, Color> get colorSchema =>
     baseColorSchema.transform<Color>((value) => Color(value));
 ''',
         },

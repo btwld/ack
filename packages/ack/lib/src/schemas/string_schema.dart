@@ -17,10 +17,8 @@ final class StringSchema extends AckSchema<String, String>
 
   @override
   @protected
-  SchemaResult<String> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => validateRuntimeWithContext(value, context);
+  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   @override
   @protected
@@ -46,14 +44,8 @@ final class StringSchema extends AckSchema<String, String>
 
   @override
   @protected
-  SchemaResult<String> encodeWithContext(
-    String value,
-    SchemaContext context,
-  ) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
+  SchemaResult<String> encodeWithContext(String value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   StringSchema copyWith({
