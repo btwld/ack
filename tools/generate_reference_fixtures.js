@@ -78,7 +78,7 @@ const referenceSchemas = {
   "double-range": z.number().min(0.0).max(1.0),
   "double-positive": z.number().positive(),
   "double-finite": z.number().finite(),
-  "double-price-example": z.number().min(0.01).max(999999.99).default(0.0),
+  "double-price-example": z.number().min(0.01).max(999999.99).default(0.01),
 
   // ==================== Boolean Schemas ====================
   "boolean-basic": z.boolean(),
