@@ -185,7 +185,10 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional) continue;
+        if (schema.isOptional ||
+            (isEncode && schema is DefaultSchema<dynamic, dynamic>)) {
+          continue;
+        }
         final propertyCtx = context.createChild(
           name: key,
           schema: schema,

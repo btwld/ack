@@ -2,6 +2,7 @@ library;
 
 import 'package:ack/ack.dart';
 
+import '../constraints/string_literal_constraint.dart';
 import '../helpers.dart';
 
 /// Converts ACK schemas to the new JsonSchema (canonical) model.
@@ -252,7 +253,9 @@ JsonSchema _discriminated(
       );
     }
 
-    if (baseBranchSchema.properties.containsKey(discriminatorKey)) {
+    final branchDiscriminator = baseBranchSchema.properties[discriminatorKey];
+    if (branchDiscriminator != null &&
+        !_hasMatchingDiscriminatorLiteral(branchDiscriminator, label)) {
       throw ArgumentError(
         'Discriminator key "$discriminatorKey" conflicts with existing property in branch "$label".',
       );
@@ -286,6 +289,22 @@ JsonSchema _discriminated(
     description: schema.description ?? json.description,
     nullable: nullableFlag,
   );
+}
+
+bool _hasMatchingDiscriminatorLiteral(AnyAckSchema schema, String label) {
+  AnyAckSchema current = schema;
+  while (current is WrapperSchema) {
+    current = current.inner;
+  }
+
+  final literalConstraints = current.constraints
+      .whereType<StringLiteralConstraint>()
+      .toList(growable: false);
+
+  return literalConstraints.isNotEmpty &&
+      literalConstraints.every(
+        (constraint) => constraint.expectedValue == label,
+      );
 }
 
 JsonSchema _unwrapNullable(JsonSchema jsonSchema) {

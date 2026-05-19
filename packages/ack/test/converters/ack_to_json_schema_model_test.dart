@@ -152,5 +152,32 @@ void main() {
         expect(catBranch.description, equals('cat branch'));
       },
     );
+
+    test('accepts matching branch-defined discriminator literal', () {
+      final schema = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()}),
+        },
+      );
+
+      final json = schema.toJsonSchemaModel();
+
+      final catBranch = json.oneOf!.single;
+      expect(catBranch.properties!['type']!.enumValues, equals(['cat']));
+      expect(catBranch.required, contains('type'));
+      expect(catBranch.properties, contains('name'));
+    });
+
+    test('rejects conflicting branch-defined discriminator literal', () {
+      final schema = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
+        },
+      );
+
+      expect(schema.toJsonSchemaModel, throwsArgumentError);
+    });
   });
 }

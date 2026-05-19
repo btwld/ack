@@ -6,6 +6,11 @@ final class _Event {
   final DateTime createdAt;
 }
 
+final class _User {
+  _User(this.name);
+  final String name;
+}
+
 enum _Role { admin, member }
 
 final class _StartsWithConstraint extends Constraint<String>
@@ -80,6 +85,73 @@ final class _OneOfNullableStringSchema extends AckSchema<String, String>
       {'type': 'null'},
     ],
   };
+}
+
+final class _OperationRecordingSchema extends AckSchema<String, String>
+    with FluentSchema<String, String, _OperationRecordingSchema> {
+  _OperationRecordingSchema({
+    required this.parseOperations,
+    required this.validateOperations,
+    required this.encodeOperations,
+    super.isNullable,
+    super.isOptional,
+    super.description,
+    super.constraints,
+    super.refinements,
+  });
+
+  final List<SchemaOperation> parseOperations;
+  final List<SchemaOperation> validateOperations;
+  final List<SchemaOperation> encodeOperations;
+
+  @override
+  SchemaType get schemaType => SchemaType.string;
+
+  @override
+  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) {
+    parseOperations.add(context.operation);
+    return validateRuntimeWithContext(value, context);
+  }
+
+  @override
+  SchemaResult<String> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    validateOperations.add(context.operation);
+    return SchemaResult.ok(value as String);
+  }
+
+  @override
+  SchemaResult<String> encodeWithContext(String value, SchemaContext context) {
+    encodeOperations.add(context.operation);
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+    return SchemaResult.ok(value);
+  }
+
+  @override
+  _OperationRecordingSchema copyWith({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<String>>? constraints,
+    List<Refinement<String>>? refinements,
+  }) {
+    return _OperationRecordingSchema(
+      parseOperations: parseOperations,
+      validateOperations: validateOperations,
+      encodeOperations: encodeOperations,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
+    );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() => const {'type': 'string'};
 }
 
 void main() {
@@ -201,6 +273,22 @@ void main() {
 
       final JsonMap? encoded = schema.encode(parsed);
       expect(encoded, {'createdAt': '2026-05-10T00:00:00.000Z'});
+    });
+
+    test('model encoder can omit defaulted property', () {
+      final schema =
+          Ack.object({
+            'name': Ack.string(),
+            'role': Ack.string().withDefault('user'),
+          }).model<_User>(
+            decode: (data) => _User(data['name'] as String),
+            encode: (user) => {'name': user.name},
+          );
+
+      final result = schema.safeEncode(_User('Ada'));
+
+      expect(result.isOk, true);
+      expect(result.getOrNull(), {'name': 'Ada'});
     });
   });
 
@@ -450,17 +538,46 @@ void main() {
       expect(result.isOk, true);
       expect(result.getOrNull(), {'name': 'x', 'extra': 'y'});
     });
+
+    test('Missing defaulted property is omitted on encode', () {
+      final schema = Ack.object({'role': Ack.string().withDefault('user')});
+
+      final result = schema.safeEncode({});
+
+      expect(result.isOk, true);
+      expect(result.getOrNull(), <String, Object?>{});
+    });
   });
 
   group('SchemaContext.operation', () {
-    test('parse uses SchemaOperation.parse', () {
-      late SchemaOperation op;
-      final schema = Ack.string().refine((s) {
-        op = SchemaOperation.parse; // captured lazily on parse path
-        return true;
-      });
+    test('parse path observes SchemaOperation.parse', () {
+      final parseOperations = <SchemaOperation>[];
+      final validateOperations = <SchemaOperation>[];
+      final schema = _OperationRecordingSchema(
+        parseOperations: parseOperations,
+        validateOperations: validateOperations,
+        encodeOperations: [],
+      );
+
       schema.parse('x');
-      expect(op, SchemaOperation.parse);
+
+      expect(parseOperations, [SchemaOperation.parse]);
+      expect(validateOperations, [SchemaOperation.parse]);
+    });
+
+    test('encode path observes SchemaOperation.encode', () {
+      final validateOperations = <SchemaOperation>[];
+      final encodeOperations = <SchemaOperation>[];
+      final schema = _OperationRecordingSchema(
+        parseOperations: [],
+        validateOperations: validateOperations,
+        encodeOperations: encodeOperations,
+      );
+
+      schema.encode('x');
+
+      expect(encodeOperations, [SchemaOperation.encode]);
+      expect(validateOperations, [SchemaOperation.encode]);
     });
   });
 }
