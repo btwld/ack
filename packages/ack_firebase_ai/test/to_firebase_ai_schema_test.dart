@@ -748,12 +748,12 @@ void main() {
     });
 
     group('DiscriminatedObjectSchema conversion', () {
-      test('throws when branch property conflicts with discriminator key', () {
+      test('throws when branch discriminator rejects branch key', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(), // conflict
+              'type': Ack.literal('square'),
               'radius': Ack.double(),
             }),
           },
@@ -800,6 +800,28 @@ void main() {
         expect(rectangleBranch.properties!['width'], isNotNull);
         expect(rectangleBranch.properties!['height'], isNotNull);
       });
+
+      test(
+        'converts discriminated schema with compatible existing discriminator property',
+        () {
+          final schema = Ack.discriminated(
+            discriminatorKey: 'type',
+            schemas: {
+              'circle': Ack.object({
+                'type': Ack.string(),
+                'radius': Ack.double(),
+              }),
+            },
+          );
+
+          final result = schema.toFirebaseAiSchema();
+          final circleBranch = result.anyOf!.single;
+
+          expect(circleBranch.properties!['type']!.enumValues, ['circle']);
+          expect(circleBranch.optionalProperties, isNot(contains('type')));
+          expect(circleBranch.properties!['radius'], isNotNull);
+        },
+      );
 
       test('handles empty discriminated schema', () {
         final schema = Ack.discriminated(

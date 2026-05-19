@@ -205,32 +205,32 @@ JsonSchema _discriminated(
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
     final originalBranchSchema = entry.value;
-    final baseBranchSchema = unwrapDiscriminatedBranchSchema(
-      originalBranchSchema,
+    final effectiveBranchSchema = effectiveDiscriminatedBranch(
+      discriminatorKey: discriminatorKey,
+      discriminatorValue: label,
+      branchSchema: originalBranchSchema,
     );
-    if (baseBranchSchema is! ObjectSchema) {
-      throw ArgumentError(
-        'Discriminated branches must be object-backed schemas.',
-      );
-    }
 
-    if (baseBranchSchema.properties.containsKey(discriminatorKey)) {
-      throw ArgumentError(
-        'Discriminator key "$discriminatorKey" conflicts with existing property in branch "$label".',
-      );
-    }
-
-    final convertedBranch = _convert(originalBranchSchema);
+    final convertedBranch = _convert(effectiveBranchSchema);
     final properties = <String, JsonSchema>{
-      ...?convertedBranch.properties,
       discriminatorKey: JsonSchema(
         type: JsonSchemaType.string,
         enumValues: [label],
       ),
+      for (final entry
+          in convertedBranch.properties?.entries ??
+              <MapEntry<String, JsonSchema>>[])
+        if (entry.key != discriminatorKey) entry.key: entry.value,
     };
     final required = <String>[
       discriminatorKey,
       ...?convertedBranch.required?.where((field) => field != discriminatorKey),
+    ];
+    final propertyOrdering = <String>[
+      discriminatorKey,
+      ...?convertedBranch.propertyOrdering?.where(
+        (field) => field != discriminatorKey,
+      ),
     ];
 
     branches.add(
@@ -238,6 +238,7 @@ JsonSchema _discriminated(
         type: JsonSchemaType.object,
         properties: properties,
         required: required,
+        propertyOrdering: propertyOrdering,
       ),
     );
   }

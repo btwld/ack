@@ -56,16 +56,27 @@ dev_dependencies:
 ## Supported schema shapes
 
 - `Ack.object(...)`
-- Primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
+- Primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`,
+  `Ack.boolean()`
 - `Ack.list(...)` and `Set`-like list wrappers
 - `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
 - Non-object transforms with explicit output types
-- `Ack.discriminated(...)` when branches are top-level `@AckType` object schemas in the same library
+- `Ack.discriminated(...)` when branches are top-level `@AckType` object
+  schemas in the same library
+
+For discriminated unions, `Ack.discriminated(...)` owns the discriminator
+property. Branch schemas normally omit the discriminator field; if they include
+it, that field must be statically provable as accepting the branch map key.
+Boundary payloads must still include the discriminator key. Conflicting
+discriminator fields are rejected. Generated branches expose the exact branch
+literal, and generated subtype `parse()` / `safeParse()` methods validate
+through the union's effective branch.
 
 ## Important limitations
 
 - `Ack.any()` and `Ack.anyOf()` do not generate extension types.
-- Inline anonymous object branches are rejected for typed generation. Extract them to a named top-level schema first.
+- Inline anonymous object branches are rejected for typed generation. Extract
+  them to a named top-level schema first.
 - Nullable top-level schemas do not emit extension types.
 - `@AckType()` requires static schema resolution for nested object references.
 

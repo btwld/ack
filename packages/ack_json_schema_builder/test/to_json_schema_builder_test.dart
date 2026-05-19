@@ -324,6 +324,28 @@ void main() {
         expect(oneOf, isNotNull);
         expect(oneOf, hasLength(2));
       });
+
+      test(
+        'oneOf accepts compatible existing discriminator property as singleton enum',
+        () {
+          final schema = Ack.discriminated(
+            discriminatorKey: 'kind',
+            schemas: {
+              'a': Ack.object({'kind': Ack.string(), 'val': Ack.string()}),
+            },
+          );
+          final result = schema.toJsonSchemaBuilder();
+
+          final oneOf = result.value['oneOf'] as List;
+          final branch = _schemaFrom(oneOf.single);
+          final properties = (branch.value['properties'] as Map).map(
+            (key, value) => MapEntry(key as String, _schemaFrom(value)),
+          );
+
+          expect(properties['kind']!.value['enum'], ['a']);
+          expect(branch.value['required'], ['kind', 'val']);
+        },
+      );
     });
 
     group('Numeric constraints - exclusive bounds and multipleOf', () {
@@ -403,12 +425,12 @@ void main() {
     });
 
     group('Discriminated + error wrapping', () {
-      test('throws on discriminator/property conflict', () {
+      test('throws when branch discriminator rejects branch key', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
             'circle': Ack.object({
-              'type': Ack.string(), // conflict
+              'type': Ack.literal('square'),
               'radius': Ack.double(),
             }),
           },

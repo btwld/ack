@@ -31,7 +31,77 @@ Future<void> _expectGenerationFailure({
 
 void main() {
   group('@AckType discriminated schemas', () {
-    test('generates discriminated base and subtype extension types', () async {
+    test(
+      'generates discriminated subtypes when branches omit discriminator property',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'lives': Ack.integer(),
+});
+
+@AckType()
+ObjectSchema get dogSchema => Ack.object({
+  'bark': Ack.boolean(),
+}).passthrough();
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+    'dog': dogSchema,
+  },
+);
+''',
+          },
+          outputs: {
+            'test_pkg|lib/schema.g.dart': decodedMatches(
+              allOf([
+                contains('extension type PetType(Map<String, Object?> _data)'),
+                contains('implements Map<String, Object?>'),
+                contains("switch (map['kind'])"),
+                contains("'cat' => CatType(map)"),
+                contains("'dog' => DogType(map)"),
+                contains('extension type CatType(Map<String, Object?> _data)'),
+                contains('extension type DogType(Map<String, Object?> _data)'),
+                contains('implements PetType, Map<String, Object?>'),
+                contains('return petSchema.parseAs('),
+                contains('return petSchema.safeParseAs('),
+                contains(".effectiveBranch('cat')"),
+                contains(".effectiveBranch('dog')"),
+                isNot(contains('return catSchema.parseAs(')),
+                isNot(contains('return catSchema.safeParseAs(')),
+                isNot(contains('return dogSchema.parseAs(')),
+                isNot(contains('return dogSchema.safeParseAs(')),
+                isNot(contains("map['kind'] !=")),
+                isNot(contains('Expected kind')),
+                contains('Map<String, Object?> get args =>'),
+                contains("e.key != 'kind' && e.key != 'bark'"),
+                predicate((content) {
+                  final source = content as String;
+                  final count = RegExp(
+                    r"String get kind => _data\['kind'\] as String;",
+                  ).allMatches(source).length;
+                  return count == 3;
+                }, 'contains one kind getter per generated type'),
+              ]),
+            ),
+          },
+        );
+      },
+    );
+
+    test('allows existing matching discriminator literal', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -49,17 +119,10 @@ final catSchema = Ack.object({
 });
 
 @AckType()
-ObjectSchema get dogSchema => Ack.object({
-  'kind': Ack.literal('dog'),
-  'bark': Ack.boolean(),
-}).passthrough();
-
-@AckType()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {
     'cat': catSchema,
-    'dog': dogSchema,
   },
 );
 ''',
@@ -68,25 +131,46 @@ final petSchema = Ack.discriminated(
           'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
               contains('extension type PetType(Map<String, Object?> _data)'),
-              contains('implements Map<String, Object?>'),
-              contains("switch (map['kind'])"),
-              contains("'cat' => CatType(map)"),
-              contains("'dog' => DogType(map)"),
               contains('extension type CatType(Map<String, Object?> _data)'),
-              contains('extension type DogType(Map<String, Object?> _data)'),
-              contains('implements PetType, Map<String, Object?>'),
-              contains('return catSchema.parseAs('),
-              contains('return catSchema.safeParseAs('),
-              contains('return dogSchema.parseAs('),
-              contains('return dogSchema.safeParseAs('),
-              contains('Map<String, Object?> get args =>'),
-              predicate((content) {
-                final source = content as String;
-                final count = RegExp(
-                  r"String get kind => _data\['kind'\] as String;",
-                ).allMatches(source).length;
-                return count == 3;
-              }, 'contains one kind getter per generated type'),
+              contains("String get kind => _data['kind'] as String;"),
+            ]),
+          ),
+        },
+      );
+    });
+
+    test('allows existing broad string discriminator property', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.string(),
+  'lives': Ack.integer(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+  },
+);
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('extension type PetType(Map<String, Object?> _data)'),
+              contains('extension type CatType(Map<String, Object?> _data)'),
+              contains("String get kind => _data['kind'] as String;"),
             ]),
           ),
         },
