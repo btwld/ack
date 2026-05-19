@@ -8,9 +8,15 @@ void main() {
     late DiscriminatedObjectSchema animalSchema;
 
     setUp(() {
-      catSchema = Ack.object({'type': Ack.string(), 'meow': Ack.boolean()});
+      catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'meow': Ack.boolean(),
+      });
 
-      dogSchema = Ack.object({'type': Ack.string(), 'bark': Ack.boolean()});
+      dogSchema = Ack.object({
+        'type': Ack.literal('dog'),
+        'bark': Ack.boolean(),
+      });
 
       animalSchema = Ack.discriminated(
         discriminatorKey: 'type',
@@ -37,6 +43,19 @@ void main() {
       test('fails for missing discriminator', () {
         final result = animalSchema.safeParse({'meow': true});
         expect(result.isOk, isFalse);
+      });
+
+      test('encode rejects missing branch discriminator', () {
+        final result = animalSchema.safeEncode({'meow': true});
+
+        expect(result.isFail, isTrue);
+      });
+
+      test('encode accepts a matching branch-owned discriminator', () {
+        final result = animalSchema.safeEncode({'type': 'cat', 'meow': true});
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'cat', 'meow': true});
       });
     });
 
@@ -66,6 +85,33 @@ void main() {
           () => Ack.discriminated<Map<String, Object?>>(
             discriminatorKey: 'type',
             schemas: {'': catSchema},
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('rejects a branch missing the discriminator literal', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'meow': Ack.boolean()}),
+            },
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('rejects a branch whose discriminator literal does not match', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({
+                'type': Ack.literal('dog'),
+                'meow': Ack.boolean(),
+              }),
+            },
           ),
           throwsArgumentError,
         );
@@ -146,7 +192,7 @@ void main() {
 
       test('copyWith updates specific values', () {
         final birdSchema = Ack.object({
-          'type': Ack.string(),
+          'type': Ack.literal('bird'),
           'fly': Ack.boolean(),
         });
 
@@ -200,6 +246,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'cat': Ack.object({
+              'type': Ack.literal('cat'),
               'name': Ack.string(),
             }).transform<String>((map) => map['name'] as String),
           },

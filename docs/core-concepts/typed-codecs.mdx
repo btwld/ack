@@ -93,13 +93,17 @@ encodes it to an ISO 8601 string.
 final schema = Ack.string().withDefault('fallback');
 
 schema.parse(null);           // 'fallback'
-schema.safeEncode(null);      // Fail — encode does not inject defaults
+schema.safeEncode(null);      // Fail — direct encode still validates null
 
 final nullable = Ack.string().nullable().withDefault('fallback');
 nullable.encode(null);        // null
+
+final object = Ack.object({'role': schema});
+object.encode({});            // {'role': 'fallback'}
 ```
 
-The default value is a runtime value; encoding does not substitute it.
+The default value is a runtime value. Object schemas inject encoded defaults
+for missing default-wrapped fields.
 
 ## Strictness
 
@@ -122,8 +126,9 @@ returns a `SchemaResult<Boundary>`. Object schemas additionally check:
 * missing required keys → `SchemaEncodeError.missingRequiredProperty`
 * unexpected keys → `SchemaEncodeError.unexpectedProperty`
 
-`SchemaContext.operation` is `SchemaOperation.encode` during encode so
-custom constraints can branch on direction.
+`SchemaContext.operation` is `SchemaOperation.encode` during encode so internal
+codec and encoder errors can distinguish directions. Custom constraints declared
+with `refine` or `Validator<T>` do not receive context.
 
 ## Optional vs nullable on encode
 

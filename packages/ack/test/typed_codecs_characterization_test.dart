@@ -275,7 +275,7 @@ void main() {
       expect(encoded, {'createdAt': '2026-05-10T00:00:00.000Z'});
     });
 
-    test('model encoder can omit defaulted property', () {
+    test('model encoder injects missing defaulted property', () {
       final schema =
           Ack.object({
             'name': Ack.string(),
@@ -288,7 +288,7 @@ void main() {
       final result = schema.safeEncode(_User('Ada'));
 
       expect(result.isOk, true);
-      expect(result.getOrNull(), {'name': 'Ada'});
+      expect(result.getOrNull(), {'name': 'Ada', 'role': 'user'});
     });
   });
 
@@ -539,13 +539,13 @@ void main() {
       expect(result.getOrNull(), {'name': 'x', 'extra': 'y'});
     });
 
-    test('Missing defaulted property is omitted on encode', () {
+    test('Missing defaulted property is injected on encode', () {
       final schema = Ack.object({'role': Ack.string().withDefault('user')});
 
       final result = schema.safeEncode({});
 
       expect(result.isOk, true);
-      expect(result.getOrNull(), <String, Object?>{});
+      expect(result.getOrNull(), {'role': 'user'});
     });
   });
 

@@ -53,14 +53,18 @@ final emailSchema = Ack.string().email();
 // URL validation
 final websiteSchema = Ack.string().url();
 
-// Date/datetime strings
-final dateSchema = Ack.string().date(); // YYYY-MM-DD
-final datetimeSchema = Ack.string().datetime(); // ISO 8601
+// Date/datetime strings (returns String — pattern-validated only)
+final dateString = Ack.string().date(); // YYYY-MM-DD
+final datetimeString = Ack.string().datetime(); // ISO 8601
 
 // Enum values
 enum Role { admin, user, guest }
 final roleSchema = Ack.enumValues(Role.values);
 ```
+
+For schemas whose runtime value is a Dart `DateTime`, `Uri`, or `Duration`
+(string boundary in, typed runtime out), use the typed codecs documented
+below in [Date and time codecs](#date-and-time-codecs).
 
 ### Number
 
@@ -176,14 +180,39 @@ final shapeSchema = Ack.discriminated(
 
 ### Any
 
-Accept any non-null value without validation (use sparingly):
+Accept any non-null JSON-safe value without shape validation (use sparingly):
 
 ```dart
 final flexibleSchema = Ack.object({
   'id': Ack.string(),
-  'metadata': Ack.any(), // Any non-null value accepted
+  'metadata': Ack.any(), // Any non-null JSON-safe value accepted
 });
 ```
+
+### Date and time codecs
+
+For schemas whose runtime value is a Dart `DateTime`, `Uri`, or `Duration`, use
+the bidirectional codecs. They parse a JSON-safe string boundary into the typed
+runtime value and encode it back.
+
+```dart
+// AckSchema<String, DateTime> — boundary: 'YYYY-MM-DD', runtime: DateTime
+final dateSchema = Ack.date();
+
+// AckSchema<String, DateTime> — boundary: ISO 8601 datetime, runtime: DateTime
+final datetimeSchema = Ack.datetime();
+
+// AckSchema<String, Uri> — boundary: URI string, runtime: Uri
+final uriSchema = Ack.uri();
+
+// AckSchema<String, Duration> — boundary: ISO 8601 duration, runtime: Duration
+final durationSchema = Ack.duration();
+```
+
+`.min()` / `.max()` constraints on `Ack.date()` require a local-midnight
+`DateTime` reference; on `Ack.datetime()` they require a UTC reference. The
+exported JSON Schema bound is shaped to match (`YYYY-MM-DD` for date, full ISO
+8601 for date-time).
 
 ## Optional vs Nullable
 

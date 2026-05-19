@@ -123,29 +123,31 @@ void main() {
       expect(result.getError(), isA<TypeMismatchError>());
     });
 
-    test('Encoding a map containing nested non-string-keyed map fails '
-        'cleanly via object passthrough', () {
-      final schema = Ack.object({
-        'meta': Ack.any(),
-      }, additionalProperties: false);
-      // Pass-through into Ack.any encodes identity, so the meta map is
-      // preserved as-is. This documents that the public API enforces
-      // string keys at the top-level via the `JsonMap` typedef; nested
-      // structures inside `Ack.any` are not normalised.
-      final inner = <dynamic, dynamic>{1: 'oops'};
-      final result = schema.safeEncode({'meta': inner});
-      expect(result.isOk, true);
-      expect((result.getOrNull()!['meta'] as Map)[1], 'oops');
-    });
+    test(
+      'Encoding a map containing nested non-string-keyed map fails cleanly',
+      () {
+        final schema = Ack.object({
+          'meta': Ack.any(),
+        }, additionalProperties: false);
+        final inner = <dynamic, dynamic>{1: 'oops'};
+        final result = schema.safeEncode({'meta': inner});
+        expect(result.isFail, true);
+        expect(result.getError(), isA<SchemaNestedError>());
+      },
+    );
 
     test('DiscriminatedObjectSchema rejects non-string-keyed maps', () {
       final schema = Ack.discriminated<_Foo>(
         discriminatorKey: 'kind',
         schemas: {
-          'foo': Ack.object({'created': Ack.datetime()}).model<_Foo>(
-            decode: (data) => _Foo(data['created'] as DateTime),
-            encode: (foo) => {'created': foo.created},
-          ),
+          'foo':
+              Ack.object({
+                'kind': Ack.literal('foo'),
+                'created': Ack.datetime(),
+              }).model<_Foo>(
+                decode: (data) => _Foo(data['created'] as DateTime),
+                encode: (foo) => {'kind': 'foo', 'created': foo.created},
+              ),
         },
       );
       final result = schema.safeParse({1: 'oops'});
@@ -346,15 +348,23 @@ void main() {
     });
 
     test('Discriminated encode runs root runtime refinements', () {
-      final schema = Ack.discriminated<_Foo>(
-        discriminatorKey: 'type',
-        schemas: {
-          'foo': Ack.object({'created': Ack.datetime()}).model<_Foo>(
-            decode: (data) => _Foo(data['created'] as DateTime),
-            encode: (foo) => {'created': foo.created},
-          ),
-        },
-      ).refine((value) => value.created.year >= 2020, message: 'too old');
+      final schema =
+          Ack.discriminated<_Foo>(
+            discriminatorKey: 'type',
+            schemas: {
+              'foo':
+                  Ack.object({
+                    'type': Ack.literal('foo'),
+                    'created': Ack.datetime(),
+                  }).model<_Foo>(
+                    decode: (data) => _Foo(data['created'] as DateTime),
+                    encode: (foo) => {'type': 'foo', 'created': foo.created},
+                  ),
+            },
+          ).refine(
+            (value) => value.created.year >= 2020,
+            message: 'too old',
+          );
 
       expect(
         schema.safeParse({

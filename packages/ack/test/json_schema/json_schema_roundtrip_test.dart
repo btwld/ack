@@ -18,11 +18,13 @@ void main() {
         'format': 'email',
         'title': 'Email Address',
         'description': 'User email',
+        'default': 'user@example.com',
       };
 
       final schema = JsonSchema.fromJson(input);
       final output = schema.toJson();
 
+      expect(schema.defaultValue, 'user@example.com');
       expect(output, equals(input));
     });
 

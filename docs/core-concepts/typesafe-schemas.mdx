@@ -47,7 +47,8 @@ The generated part file contains:
 `@AckType()` works with:
 
 - `Ack.object(...)`
-- primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
+- primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`
+- codec schemas such as `Ack.uri()`, `Ack.date()`, `Ack.datetime()`, `Ack.duration()`
 - `Ack.list(...)`
 - `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
 - non-object transforms with explicit output types
@@ -66,6 +67,7 @@ Unsupported helpers include `Ack.any()` and `Ack.anyOf()`.
 - each branch is non-nullable
 - each branch is declared in the same library as the base
 - the branch discriminator literal matches the branch key
+- encode does not auto-add the discriminator; branch encoders must emit it
 
 Example:
 

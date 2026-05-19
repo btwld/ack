@@ -4,7 +4,7 @@ part of 'schema.dart';
 ///
 /// Branches must produce the same runtime type [T]. Boundary type is
 /// [JsonMap]. Encoding selects the first branch whose runtime validation
-/// AND encode succeed, then re-inserts the discriminator key.
+/// AND encode succeed. Branch encoders must emit the discriminator key.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
@@ -37,6 +37,34 @@ final class DiscriminatedObjectSchema<T extends Object>
         'schemas',
         'branch keys must not be empty',
       );
+    }
+    for (final entry in schemas.entries) {
+      final label = entry.key;
+      final base = unwrapDiscriminatedBranchSchema(entry.value);
+      if (base is! ObjectSchema) {
+        throw ArgumentError.value(
+          entry.value,
+          'schemas["$label"]',
+          'Discriminated branches must be object-backed schemas.',
+        );
+      }
+      final branchDiscriminator = base.properties[discriminatorKey];
+      if (branchDiscriminator == null) {
+        throw ArgumentError.value(
+          entry.value,
+          'schemas["$label"]',
+          'Discriminated branch "$label" must define discriminator key '
+              '"$discriminatorKey" with Ack.literal("$label").',
+        );
+      }
+      if (!hasMatchingDiscriminatorLiteral(branchDiscriminator, label)) {
+        throw ArgumentError.value(
+          entry.value,
+          'schemas["$label"]',
+          'Discriminator key "$discriminatorKey" conflicts with existing '
+              'property in branch "$label".',
+        );
+      }
     }
   }
 
@@ -201,12 +229,18 @@ final class DiscriminatedObjectSchema<T extends Object>
           final boundary = encoded.getOrNull();
           if (boundary != null) {
             final emittedDiscriminator = boundary.containsKey(discriminatorKey);
-            // Policy A: if the branch already emitted the discriminator key,
-            // require it to match this branch's discriminator value. Until
-            // discriminator-key ownership lands, this catches branches that
-            // disagree with the union routing.
-            if (emittedDiscriminator &&
-                boundary[discriminatorKey] != discValue) {
+            if (!emittedDiscriminator) {
+              errors.add(
+                SchemaEncodeError.typeMismatch(
+                  message:
+                      'Discriminated branch "$discValue" must emit '
+                      '"$discriminatorKey".',
+                  context: branchCtx,
+                ),
+              );
+              continue;
+            }
+            if (boundary[discriminatorKey] != discValue) {
               errors.add(
                 SchemaEncodeError.typeMismatch(
                   message:
@@ -218,11 +252,7 @@ final class DiscriminatedObjectSchema<T extends Object>
               );
               continue;
             }
-            final merged = emittedDiscriminator
-                ? boundary
-                : (Map<String, Object?>.from(boundary)
-                    ..[discriminatorKey] = discValue);
-            return SchemaResult.ok(Map<String, Object?>.unmodifiable(merged));
+            return SchemaResult.ok(Map<String, Object?>.unmodifiable(boundary));
           }
         } else {
           errors.add(encoded.getError());
@@ -266,12 +296,6 @@ final class DiscriminatedObjectSchema<T extends Object>
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
     schemas.forEach((discriminatorValue, branchSchema) {
-      final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
-      if (baseSchema is! ObjectSchema) {
-        throw ArgumentError(
-          'Discriminated branches must be object-backed schemas.',
-        );
-      }
       final subSchemaJson = branchSchema.toJsonSchema();
       subSchemaJson['properties'] = {
         ...?(subSchemaJson['properties'] as Map?),

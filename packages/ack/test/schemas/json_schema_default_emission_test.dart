@@ -61,7 +61,7 @@ void main() {
       final disc = Ack.discriminated(
         discriminatorKey: 'type',
         schemas: {
-          'a': Ack.object({'type': Ack.string()}),
+          'a': Ack.object({'type': Ack.literal('a')}),
         },
       );
       final discJsonSchema = disc.toJsonSchema();

@@ -1,6 +1,6 @@
 part of 'schema.dart';
 
-/// Schema that accepts any non-null value.
+/// Schema that accepts any non-null JSON-safe value.
 @immutable
 final class AnySchema extends AckSchema<Object, Object>
     with FluentSchema<Object, Object, AnySchema> {
@@ -28,6 +28,15 @@ final class AnySchema extends AckSchema<Object, Object>
   ) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
+    if (_jsonSafeOrNull(value) == null) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Expected a JSON-safe value composed of finite numbers, strings, booleans, lists, and string-keyed maps.',
+          context: context,
+        ),
+      );
+    }
     return applyConstraintsAndRefinements(value!, context);
   }
 
@@ -55,7 +64,7 @@ final class AnySchema extends AckSchema<Object, Object>
 
   @override
   Map<String, Object?> toJsonSchema() {
-    // `Ack.any()` accepts any non-null Dart value at runtime, so the
+    // `Ack.any()` accepts any non-null JSON-safe value at runtime. The
     // emitted JSON Schema must NOT accept null unless the schema is
     // explicitly marked nullable. Raw `{}` would accept null, so we
     // enumerate the non-null JSON types explicitly.

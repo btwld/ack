@@ -49,6 +49,9 @@ final datetimeSchema = Ack.datetime();
 final durationSchema = Ack.duration();
 
 @AckType()
+final numberSchema = Ack.number();
+
+@AckType()
 final validatedStringSchema = Ack.string().uri();
 ''',
           },
@@ -61,6 +64,8 @@ final validatedStringSchema = Ack.string().uri();
                 contains('extension type DateType(DateTime _value)'),
                 contains('extension type DatetimeType(DateTime _value)'),
                 contains('extension type DurationType(Duration _value)'),
+                contains('extension type NumberType(num _value)'),
+                contains('return numberSchema.parseAs('),
                 contains('extension type ValidatedStringType(String _value)'),
               ]),
             ),

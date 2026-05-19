@@ -299,19 +299,31 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     for (final entry in properties.entries) {
       final key = entry.key;
       final schema = entry.value;
-      if (!value.containsKey(key)) continue;
-      final propertyValue = value[key];
+      final hasValue = value.containsKey(key);
+      final propertyCtx = context.createChild(
+        name: key,
+        schema: schema,
+        value: hasValue ? value[key] : null,
+        pathSegment: key,
+        operation: SchemaOperation.encode,
+      );
+      final Object? propertyValue;
+      if (hasValue) {
+        propertyValue = value[key];
+      } else if (schema is DefaultSchema<dynamic, dynamic>) {
+        final defaultResult = schema.parseWithContext(null, propertyCtx);
+        if (defaultResult.isFail) {
+          errors.add(defaultResult.getError());
+          continue;
+        }
+        propertyValue = defaultResult.getOrNull();
+      } else {
+        continue;
+      }
       if (propertyValue == null) {
         if (schema.isNullable) encoded[key] = null;
         continue;
       }
-      final propertyCtx = context.createChild(
-        name: key,
-        schema: schema,
-        value: propertyValue,
-        pathSegment: key,
-        operation: SchemaOperation.encode,
-      );
       try {
         final r = schema.encodeWithContext(propertyValue, propertyCtx);
         if (r.isFail) {

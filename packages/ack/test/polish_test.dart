@@ -100,6 +100,22 @@ void main() {
       expect(json.containsKey('required'), false);
     });
 
+    test('ObjectSchema injects encoded defaults for missing encode fields', () {
+      final schema = Ack.object({
+        'name': Ack.string().withDefault('guest'),
+        'birthday': Ack.date().withDefault(DateTime(2026, 1, 1)),
+      });
+
+      expect(schema.safeParse({}).getOrThrow(), {
+        'name': 'guest',
+        'birthday': DateTime(2026, 1, 1),
+      });
+      expect(schema.safeEncode({}).getOrThrow(), {
+        'name': 'guest',
+        'birthday': '2026-01-01',
+      });
+    });
+
     test(
       'DefaultSchema rejects mutable collection defaults it cannot clone',
       () {
@@ -170,20 +186,27 @@ void main() {
       final types = branches.map((b) => b['type']).toList();
       expect(types.contains('null'), true);
     });
+
+    test('Ack.any() rejects non-JSON-safe Dart runtime values', () {
+      final result = Ack.any().safeParse(DateTime(2026, 1, 1));
+      expect(result.isFail, true);
+      expect(result.getError().message, contains('JSON-safe'));
+    });
   });
 
   group('4. Discriminated branch reject conflicting discriminator', () {
-    test('encode fails when a branch emits a conflicting discriminator', () {
+    test('encode fails when a branch encoder emits a conflicting '
+        'discriminator', () {
       final schema = Ack.discriminated<_Cat>(
         discriminatorKey: 'kind',
         schemas: {
           'cat':
               Ack.object({
-                // Branch encoder emits 'wrong-kind', which conflicts with 'cat'.
-                'kind': Ack.literal('wrong-kind'),
+                'kind': Ack.literal('cat'),
                 'name': Ack.string(),
               }).model<_Cat>(
                 decode: (data) => _Cat(data['name'] as String),
+                // Branch encoder lies about its kind.
                 encode: (cat) => {'kind': 'wrong-kind', 'name': cat.name},
               ),
         },
@@ -192,18 +215,19 @@ void main() {
       expect(result.isFail, true);
     });
 
-    test('encode succeeds when branch omits discriminator (auto-added)', () {
-      final schema = Ack.discriminated<_Cat>(
-        discriminatorKey: 'kind',
-        schemas: {
-          'cat': Ack.object({'name': Ack.string()}).model<_Cat>(
-            decode: (data) => _Cat(data['name'] as String),
-            encode: (cat) => {'name': cat.name},
-          ),
-        },
+    test('constructor rejects a branch missing the discriminator literal', () {
+      expect(
+        () => Ack.discriminated<_Cat>(
+          discriminatorKey: 'kind',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}).model<_Cat>(
+              decode: (data) => _Cat(data['name'] as String),
+              encode: (cat) => {'name': cat.name},
+            ),
+          },
+        ),
+        throwsArgumentError,
       );
-      final encoded = schema.encode(_Cat('Mittens'));
-      expect(encoded, {'kind': 'cat', 'name': 'Mittens'});
     });
 
     test('encode succeeds when branch emits a matching discriminator', () {

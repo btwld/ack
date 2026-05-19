@@ -110,8 +110,14 @@ Firebase AI API only supports `anyOf`. Schemas using `oneOf` (exactly-one-of sem
 final schema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {
-    'circle': Ack.object({'radius': Ack.double()}),
-    'square': Ack.object({'side': Ack.double()}),
+    'circle': Ack.object({
+      'type': Ack.literal('circle'),
+      'radius': Ack.double(),
+    }),
+    'square': Ack.object({
+      'type': Ack.literal('square'),
+      'side': Ack.double(),
+    }),
   },
 );
 final geminiSchema = schema.toFirebaseAiSchema();

@@ -86,6 +86,7 @@ class JsonSchema {
     this.format,
     this.title,
     this.description,
+    this.defaultValue,
     this.nullable,
     this.enumValues,
     this.items,
@@ -125,6 +126,7 @@ class JsonSchema {
   final String? format;
   final String? title;
   final String? description;
+  final Object? defaultValue;
   final bool? nullable;
   final List<Object?>? enumValues;
   final JsonSchema? items;
@@ -165,6 +167,7 @@ class JsonSchema {
     addIfNotNull('format', format);
     addIfNotNull('title', title);
     addIfNotNull('description', description);
+    addIfNotNull('default', defaultValue);
     addIfNotNull('enum', enumValues);
     addIfNotNull('items', items?.toJson());
 
@@ -308,6 +311,7 @@ class JsonSchema {
       format: json['format'] as String?,
       title: json['title'] as String?,
       description: json['description'] as String?,
+      defaultValue: json['default'],
       enumValues: parseList(json['enum']),
       items: parseSchema(json['items']),
       properties: properties,
@@ -363,6 +367,7 @@ class JsonSchema {
     String? format,
     String? title,
     String? description,
+    Object? defaultValue,
     bool? nullable,
     List<Object?>? enumValues,
     JsonSchema? items,
@@ -394,6 +399,7 @@ class JsonSchema {
       format: format ?? this.format,
       title: title ?? this.title,
       description: description ?? this.description,
+      defaultValue: defaultValue ?? this.defaultValue,
       nullable: nullable ?? this.nullable,
       enumValues: enumValues ?? this.enumValues,
       items: items ?? this.items,
@@ -434,6 +440,7 @@ class JsonSchema {
         format == other.format &&
         title == other.title &&
         description == other.description &&
+        deepEq.equals(defaultValue, other.defaultValue) &&
         nullable == other.nullable &&
         deepEq.equals(enumValues, other.enumValues) &&
         items == other.items &&
@@ -469,6 +476,7 @@ class JsonSchema {
       format,
       title,
       description,
+      deepEq.hash(defaultValue),
       nullable,
       deepEq.hash(enumValues),
       items,

@@ -757,19 +757,18 @@ void main() {
     });
 
     group('DiscriminatedObjectSchema conversion', () {
-      test('throws when branch property conflicts with discriminator key', () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(), // conflict
-              'radius': Ack.double(),
-            }),
-          },
-        );
-
+      test('throws at construction when branch property conflicts with '
+          'discriminator key', () {
         expect(
-          () => schema.toFirebaseAiSchema(),
+          () => Ack.discriminated(
+            discriminatorKey: 'type',
+            schemas: {
+              'circle': Ack.object({
+                'type': Ack.string(), // conflict: not a matching literal
+                'radius': Ack.double(),
+              }),
+            },
+          ),
           throwsA(
             isA<ArgumentError>().having(
               (e) => e.message,
@@ -784,8 +783,12 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({'radius': Ack.double()}),
+            'circle': Ack.object({
+              'type': Ack.literal('circle'),
+              'radius': Ack.double(),
+            }),
             'rectangle': Ack.object({
+              'type': Ack.literal('rectangle'),
               'width': Ack.double(),
               'height': Ack.double(),
             }),
@@ -797,7 +800,7 @@ void main() {
         expect(result.type, firebase_ai.SchemaType.anyOf);
         expect(result.anyOf, hasLength(2));
 
-        // Verify discriminator is injected into each branch
+        // Verify branch-owned discriminators are preserved.
         final circleBranch = result.anyOf![0];
         expect(circleBranch.properties, isNotNull);
         expect(circleBranch.properties!['type'], isNotNull);
@@ -824,8 +827,15 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({'radius': Ack.double()}),
-            'point': Ack.object({'x': Ack.double(), 'y': Ack.double()}),
+            'circle': Ack.object({
+              'type': Ack.literal('circle'),
+              'radius': Ack.double(),
+            }),
+            'point': Ack.object({
+              'type': Ack.literal('point'),
+              'x': Ack.double(),
+              'y': Ack.double(),
+            }),
           },
         );
 
@@ -834,7 +844,7 @@ void main() {
         expect(result.type, firebase_ai.SchemaType.anyOf);
         expect(result.anyOf, hasLength(2));
 
-        // Verify both branches have discriminator injected
+        // Verify both branches keep their declared discriminator.
         final circleBranch = result.anyOf![0];
         expect(circleBranch.properties!['type'], isNotNull);
 
@@ -846,7 +856,7 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'kind',
           schemas: {
-            'a': Ack.object({'value': Ack.string()}),
+            'a': Ack.object({'kind': Ack.literal('a'), 'value': Ack.string()}),
           },
         ).nullable();
 
@@ -860,8 +870,14 @@ void main() {
           'shape': Ack.discriminated(
             discriminatorKey: 'type',
             schemas: {
-              'circle': Ack.object({'radius': Ack.double()}),
-              'square': Ack.object({'side': Ack.double()}),
+              'circle': Ack.object({
+                'type': Ack.literal('circle'),
+                'radius': Ack.double(),
+              }),
+              'square': Ack.object({
+                'type': Ack.literal('square'),
+                'side': Ack.double(),
+              }),
             },
           ),
         });

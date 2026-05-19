@@ -2,9 +2,6 @@ library;
 
 import 'package:ack/ack.dart';
 
-import '../constraints/string_literal_constraint.dart';
-import '../helpers.dart';
-
 /// Converts ACK schemas to the new JsonSchema (canonical) model.
 extension AckToJsonSchemaModel on AnyAckSchema {
   JsonSchema toJsonSchemaModel() => _convert(this);
@@ -63,6 +60,7 @@ JsonSchema _mergeWrapperMetadata({
 }) {
   return base.copyWith(
     description: schema.description ?? wrapper.description ?? base.description,
+    defaultValue: wrapper.defaultValue ?? base.defaultValue,
     title: wrapper.title ?? base.title,
     nullable: nullableFlag || wrapper.nullable == true || base.nullable == true,
     format: wrapper.format ?? base.format,
@@ -228,39 +226,12 @@ JsonSchema _discriminated(
   JsonSchema json,
   bool nullableFlag,
 ) {
-  if (schema.schemas.isEmpty) {
-    return JsonSchema(
-      type: JsonSchemaType.object,
-      properties: const {},
-      required: const [],
-      nullable: nullableFlag,
-      description: schema.description ?? json.description,
-    );
-  }
-
   final discriminatorKey = schema.discriminatorKey;
   final branches = <JsonSchema>[];
 
   for (final entry in schema.schemas.entries) {
     final label = entry.key;
     final originalBranchSchema = entry.value;
-    final baseBranchSchema = unwrapDiscriminatedBranchSchema(
-      originalBranchSchema,
-    );
-    if (baseBranchSchema is! ObjectSchema) {
-      throw ArgumentError(
-        'Discriminated branches must be object-backed schemas.',
-      );
-    }
-
-    final branchDiscriminator = baseBranchSchema.properties[discriminatorKey];
-    if (branchDiscriminator != null &&
-        !_hasMatchingDiscriminatorLiteral(branchDiscriminator, label)) {
-      throw ArgumentError(
-        'Discriminator key "$discriminatorKey" conflicts with existing property in branch "$label".',
-      );
-    }
-
     final convertedBranch = _convert(originalBranchSchema);
     final properties = <String, JsonSchema>{
       ...?convertedBranch.properties,
@@ -289,22 +260,6 @@ JsonSchema _discriminated(
     description: schema.description ?? json.description,
     nullable: nullableFlag,
   );
-}
-
-bool _hasMatchingDiscriminatorLiteral(AnyAckSchema schema, String label) {
-  AnyAckSchema current = schema;
-  while (current is WrapperSchema) {
-    current = current.inner;
-  }
-
-  final literalConstraints = current.constraints
-      .whereType<StringLiteralConstraint>()
-      .toList(growable: false);
-
-  return literalConstraints.isNotEmpty &&
-      literalConstraints.every(
-        (constraint) => constraint.expectedValue == label,
-      );
 }
 
 JsonSchema _unwrapNullable(JsonSchema jsonSchema) {

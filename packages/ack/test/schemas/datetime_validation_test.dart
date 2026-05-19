@@ -454,5 +454,46 @@ void main() {
         expect(schema.safeParse('2025-07-01T00:00:00Z').isFail, isTrue);
       });
     });
+
+    group('JSON Schema boundary serialization', () {
+      test('date constraints emit date-only boundaries', () {
+        final json = Ack.date()
+            .min(DateTime(2026, 1, 1))
+            .max(DateTime(2026, 12, 31))
+            .toJsonSchema();
+
+        expect(json['format'], 'date');
+        expect(json['formatMinimum'], '2026-01-01');
+        expect(json['formatMaximum'], '2026-12-31');
+      });
+
+      test('datetime constraints emit ISO datetime boundaries', () {
+        final start = DateTime.utc(2026, 1, 1, 12, 30);
+        final end = DateTime.utc(2026, 1, 1, 13, 45);
+        final json = Ack.datetime().min(start).max(end).toJsonSchema();
+
+        expect(json['format'], 'date-time');
+        expect(json['formatMinimum'], start.toIso8601String());
+        expect(json['formatMaximum'], end.toIso8601String());
+      });
+
+      test('date constraints reject non-local-midnight bounds', () {
+        expect(
+          () => Ack.date().min(DateTime.utc(2026, 1, 1)),
+          throwsArgumentError,
+        );
+        expect(
+          () => Ack.date().max(DateTime(2026, 1, 1, 1)),
+          throwsArgumentError,
+        );
+      });
+
+      test('datetime constraints reject non-UTC bounds', () {
+        expect(
+          () => Ack.datetime().min(DateTime(2026, 1, 1)),
+          throwsArgumentError,
+        );
+      });
+    });
   });
 }

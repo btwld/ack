@@ -425,8 +425,16 @@ void main() {
       final ackSchema = Ack.discriminated(
         discriminatorKey: 'type',
         schemas: {
-          'user': Ack.object({'name': Ack.string(), 'email': Ack.string()}),
-          'admin': Ack.object({'name': Ack.string(), 'role': Ack.string()}),
+          'user': Ack.object({
+            'type': Ack.literal('user'),
+            'name': Ack.string(),
+            'email': Ack.string(),
+          }),
+          'admin': Ack.object({
+            'type': Ack.literal('admin'),
+            'name': Ack.string(),
+            'role': Ack.string(),
+          }),
         },
       );
       final jsonMap = ackSchema.toJsonSchema();
@@ -443,8 +451,14 @@ void main() {
       final ackSchema = Ack.discriminated(
         discriminatorKey: 'kind',
         schemas: {
-          'text': Ack.object({'content': Ack.string()}),
-          'image': Ack.object({'url': Ack.string().url()}),
+          'text': Ack.object({
+            'kind': Ack.literal('text'),
+            'content': Ack.string(),
+          }),
+          'image': Ack.object({
+            'kind': Ack.literal('image'),
+            'url': Ack.string().url(),
+          }),
         },
       ).nullable();
       final jsonMap = ackSchema.toJsonSchema();

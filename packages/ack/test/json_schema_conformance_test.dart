@@ -569,8 +569,16 @@ void main() {
       final ackSchema = Ack.discriminated(
         discriminatorKey: 'type',
         schemas: {
-          'user': Ack.object({'name': Ack.string(), 'email': Ack.string()}),
-          'admin': Ack.object({'name': Ack.string(), 'role': Ack.string()}),
+          'user': Ack.object({
+            'type': Ack.literal('user'),
+            'name': Ack.string(),
+            'email': Ack.string(),
+          }),
+          'admin': Ack.object({
+            'type': Ack.literal('admin'),
+            'name': Ack.string(),
+            'role': Ack.string(),
+          }),
         },
       );
       final ackOutput = ackSchema.toJsonSchema();
@@ -582,8 +590,14 @@ void main() {
       final ackSchema = Ack.discriminated(
         discriminatorKey: 'kind',
         schemas: {
-          'text': Ack.object({'content': Ack.string()}),
-          'image': Ack.object({'url': Ack.string().url()}),
+          'text': Ack.object({
+            'kind': Ack.literal('text'),
+            'content': Ack.string(),
+          }),
+          'image': Ack.object({
+            'kind': Ack.literal('image'),
+            'url': Ack.string().url(),
+          }),
         },
       ).nullable();
       final ackOutput = ackSchema.toJsonSchema();
@@ -595,8 +609,15 @@ void main() {
       final ackSchema = Ack.discriminated(
         discriminatorKey: 'eventType',
         schemas: {
-          'click': Ack.object({'x': Ack.integer(), 'y': Ack.integer()}),
-          'scroll': Ack.object({'delta': Ack.integer()}),
+          'click': Ack.object({
+            'eventType': Ack.literal('click'),
+            'x': Ack.integer(),
+            'y': Ack.integer(),
+          }),
+          'scroll': Ack.object({
+            'eventType': Ack.literal('scroll'),
+            'delta': Ack.integer(),
+          }),
         },
       ).describe('A discriminated event union');
       final ackOutput = ackSchema.toJsonSchema();
@@ -611,15 +632,18 @@ void main() {
         discriminatorKey: 'paymentMethod',
         schemas: {
           'card': Ack.object({
+            'paymentMethod': Ack.literal('card'),
             'cardNumber': Ack.string().minLength(16).maxLength(16),
             'cvv': Ack.string().minLength(3).maxLength(4),
             'expiryDate': Ack.string(),
           }),
           'bank': Ack.object({
+            'paymentMethod': Ack.literal('bank'),
             'accountNumber': Ack.string(),
             'routingNumber': Ack.string(),
           }),
           'crypto': Ack.object({
+            'paymentMethod': Ack.literal('crypto'),
             'wallet': Ack.string(),
             'currency': Ack.string(),
           }),

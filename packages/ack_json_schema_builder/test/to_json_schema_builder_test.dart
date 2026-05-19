@@ -287,8 +287,14 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({'radius': Ack.double()}),
-            'square': Ack.object({'side': Ack.double()}),
+            'circle': Ack.object({
+              'type': Ack.literal('circle'),
+              'radius': Ack.double(),
+            }),
+            'square': Ack.object({
+              'type': Ack.literal('square'),
+              'side': Ack.double(),
+            }),
           },
         );
         final result = schema.toJsonSchemaBuilder();
@@ -311,8 +317,8 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'kind',
           schemas: {
-            'a': Ack.object({'val': Ack.string()}),
-            'b': Ack.object({'num': Ack.integer()}),
+            'a': Ack.object({'kind': Ack.literal('a'), 'val': Ack.string()}),
+            'b': Ack.object({'kind': Ack.literal('b'), 'num': Ack.integer()}),
           },
         );
         final result = schema.toJsonSchemaBuilder();
@@ -411,19 +417,17 @@ void main() {
     });
 
     group('Discriminated + error wrapping', () {
-      test('throws on discriminator/property conflict', () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(), // conflict
-              'radius': Ack.double(),
-            }),
-          },
-        );
-
+      test('throws at construction on discriminator/property conflict', () {
         expect(
-          () => schema.toJsonSchemaBuilder(),
+          () => Ack.discriminated(
+            discriminatorKey: 'type',
+            schemas: {
+              'circle': Ack.object({
+                'type': Ack.string(), // conflict: not a matching literal
+                'radius': Ack.double(),
+              }),
+            },
+          ),
           throwsA(
             isA<ArgumentError>().having(
               (e) => e.message,

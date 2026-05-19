@@ -153,7 +153,7 @@ ObjectSchema get userSchema => Ack.object({
       );
     });
 
-    test('documents nullable list element type inference loss', () async {
+    test('uses non-nullable list element type inference', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -166,7 +166,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckType()
 ObjectSchema get userSchema => Ack.object({
-  'tags': Ack.list(Ack.string().nullable()),
+  'tags': Ack.list(Ack.string()),
 });
 ''',
         },

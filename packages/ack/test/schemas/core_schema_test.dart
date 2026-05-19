@@ -194,13 +194,8 @@ void main() {
     });
 
     group('ListSchema', () {
-      test('should fail when nullable item resolves to null', () {
-        final schema = Ack.list(Ack.string().nullable());
-
-        final result = schema.safeParse(['valid', null, 'also valid']);
-
-        expect(result.isOk, isFalse);
-        expect(result.getError(), isA<SchemaNestedError>());
+      test('should reject nullable item schemas at construction', () {
+        expect(() => Ack.list(Ack.string().nullable()), throwsArgumentError);
       });
     });
   });

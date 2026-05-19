@@ -455,25 +455,31 @@ class <Target>SchemaConverter {
   static <TargetSchema> _convertDiscriminated(
     DiscriminatedObjectSchema schema,
   ) {
-    // Option 1: If target supports discriminated unions natively
+    // `Ack.discriminated(...)` enforces the branch-owned discriminator policy
+    // at construction time: every branch is object-backed AND already
+    // declares the discriminator key as `Ack.literal(label)`. So by the time
+    // a converter receives a `DiscriminatedObjectSchema`, the literal is
+    // guaranteed to be present and matching — converters should NOT inject
+    // the discriminator field.
+    //
+    // Option 1: If the target supports discriminated unions natively, emit
+    //           that representation directly.
     // return _buildDiscriminatedSchema(...);
-
-    // Option 2: Convert to anyOf with discriminator enum injected
+    //
+    // Option 2: Translate to anyOf and preserve each branch as-is. The
+    //           discriminator property and `required` entry travel with the
+    //           branch schema during conversion.
+    //
+    // Need to introspect the literal value on a branch (for example to emit
+    // a target-side `const` clause)? Use the public helpers in
+    // `package:ack/src/utils/discriminated_branch_utils.dart`:
+    //   * `hasMatchingDiscriminatorLiteral(branchSchema, label)`
+    //   * `unwrapDiscriminatedBranchSchema(branchSchema)`
     final branches = <TargetSchema>[];
 
     for (final entry in schema.schemas.entries) {
-      final discriminatorValue = entry.key;
       final branchSchema = entry.value;
-
-      // Convert branch and inject discriminator
-      final convertedBranch = _convertSchema(branchSchema);
-      branches.add(
-        _injectDiscriminatorField(
-          convertedBranch,
-          schema.discriminatorKey,
-          discriminatorValue,
-        ),
-      );
+      branches.add(_convertSchema(branchSchema));
     }
 
     return _buildAnyOfSchema(
@@ -651,23 +657,6 @@ class <Target>SchemaConverter {
       if (nullable) 'nullable': true,
       'additionalProperties': true,
     } as TargetSchema;
-  }
-
-  static <TargetSchema> _injectDiscriminatorField(
-    <TargetSchema> schema,
-    String discriminatorKey,
-    String discriminatorValue,
-  ) {
-    if (schema is! Map<String, Object?>) {
-      return schema;
-    }
-
-    final withDiscriminator = Map<String, Object?>.from(schema)
-      ..['discriminator'] = <String, Object?>{
-        'propertyName': discriminatorKey,
-        'value': discriminatorValue,
-    };
-    return withDiscriminator as TargetSchema;
   }
 
   static <TargetSchema> _applyJsonSchemaMetadata(
@@ -1398,33 +1387,31 @@ static TargetSchema _convertDiscriminated(
 }
 ```
 
-**Option 2: AnyOf with Injected Discriminator** (Fallback)
+**Option 2: AnyOf Pass-Through** (Fallback)
+
+`Ack.discriminated(...)` enforces at construction that every branch declares
+its discriminator key with `Ack.literal(label)`. The discriminator property
+and its `required` entry are already part of each branch's converted output,
+so the converter only needs to translate each branch and emit an `anyOf`.
+
 ```dart
 static TargetSchema _convertDiscriminated(
   DiscriminatedObjectSchema schema,
 ) {
-  final branches = <TargetSchema>[];
-
-  for (final entry in schema.schemas.entries) {
-    final discriminatorValue = entry.key;
-    final branchSchema = entry.value;
-
-    // Convert branch
-    final converted = _convertSchema(branchSchema);
-
-    // Inject discriminator enum
-    final withDiscriminator = _injectField(
-      converted,
-      schema.discriminatorKey,
-      TargetSchema.enumString([discriminatorValue]),
-    );
-
-    branches.add(withDiscriminator);
-  }
+  final branches = <TargetSchema>[
+    for (final entry in schema.schemas.entries)
+      _convertSchema(entry.value),
+  ];
 
   return TargetSchema.anyOf(branches);
 }
 ```
+
+Need to introspect a branch's literal value (for example to emit a target-side
+`const` clause)? Use the public helpers from
+`package:ack/src/utils/discriminated_branch_utils.dart`:
+`hasMatchingDiscriminatorLiteral(branchSchema, label)` and
+`unwrapDiscriminatedBranchSchema(branchSchema)`.
 
 ### Handling AnySchema
 

@@ -41,7 +41,7 @@ void main() {
       expect(schema.safeEncode(42).isFail, true);
     });
 
-    test('defaults parse null but encode does not inject defaults', () {
+    test('defaults parse null and object encode injects missing defaults', () {
       final schema = Ack.string().withDefault('fallback');
 
       expect(schema.parse(null), 'fallback');
@@ -49,6 +49,9 @@ void main() {
 
       final nullable = Ack.string().nullable().withDefault('fallback');
       expect(nullable.encode(null), isNull);
+
+      final object = Ack.object({'role': schema});
+      expect(object.encode({}), {'role': 'fallback'});
     });
   });
 }

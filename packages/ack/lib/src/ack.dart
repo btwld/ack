@@ -40,10 +40,20 @@ final class Ack {
     schemas: schemas,
   );
 
-  /// Creates a list schema with the given item schema.
+  /// Creates a list schema with the given non-nullable item schema.
+  ///
+  /// `Ack.list(...)` models JSON arrays whose items are present values. Use
+  /// `Ack.any()` for mixed JSON values. Nullable list items are intentionally
+  /// rejected.
   static ListSchema<B, R> list<B extends Object, R extends Object>(
     AckSchema<B, R> itemSchema,
-  ) => ListSchema<B, R>(itemSchema);
+  ) {
+    if (itemSchema.isNullable) {
+      assert(_throwNullableListItemSchema(itemSchema));
+      throw _nullableListItemSchemaError(itemSchema);
+    }
+    return ListSchema<B, R>(itemSchema);
+  }
 
   /// Creates an enum schema for validating enum values.
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
@@ -56,7 +66,11 @@ final class Ack {
   /// Creates a schema that can be one of many types.
   static AnyOfSchema anyOf(List<AnyAckSchema> schemas) => AnyOfSchema(schemas);
 
-  /// Creates a schema that accepts any non-null value.
+  /// Creates a schema that accepts any non-null JSON-safe value.
+  ///
+  /// Accepted values are finite numbers, strings, booleans, string-keyed maps,
+  /// and lists recursively composed from those values. Mark the schema nullable
+  /// to accept `null`.
   static AnySchema any() => const AnySchema();
 
   /// Creates a schema for a specific Dart instance type [T], with [T] as
@@ -174,4 +188,16 @@ String _encodeIsoDate(DateTime value) {
 
 String _encodeIsoDateTime(DateTime value) {
   return value.toIso8601String();
+}
+
+bool _throwNullableListItemSchema(AnyAckSchema itemSchema) {
+  throw _nullableListItemSchemaError(itemSchema);
+}
+
+ArgumentError _nullableListItemSchemaError(AnyAckSchema itemSchema) {
+  return ArgumentError.value(
+    itemSchema,
+    'itemSchema',
+    'Use non-nullable item schemas for Ack.list.',
+  );
 }

@@ -17,7 +17,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum types. Parses enum names from string boundary values and encodes runtime enum values back to their names. **Preferred over `enumString` when a Dart enum exists.**
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AnyAckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
-- `Ack.any()`: Creates an `AnySchema` that accepts any non-null value.
+- `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe value.
 - `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<JsonMap, T>> schemas})`: Creates a discriminated union schema. Branches may be plain `ObjectSchema` or codec schemas whose base is an `ObjectSchema`.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)
@@ -256,7 +256,7 @@ Schema for polymorphic validation based on a discriminator field.
 
 ### `AnySchema`
 
-Schema that accepts any non-null value without validation.
+Schema that accepts any non-null JSON-safe value without shape validation.
 
 - Created using `Ack.any()`
 - Use `.nullable()` if `null` should also be accepted.

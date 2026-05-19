@@ -35,6 +35,22 @@ void main() {
       expect(json.required, equals(['name']));
     });
 
+    test('preserves default values in the canonical JsonSchema model', () {
+      final stringJson = Ack.string().withDefault('x').toJsonSchemaModel();
+      final dateJson = Ack.date()
+          .withDefault(DateTime(2026, 1, 1))
+          .toJsonSchemaModel();
+      final objectJson = Ack.object({
+        'role': Ack.string().withDefault('user'),
+      }).toJsonSchemaModel();
+
+      expect(stringJson.defaultValue, 'x');
+      expect(stringJson.toJson()['default'], 'x');
+      expect(JsonSchema.fromJson(stringJson.toJson()).defaultValue, 'x');
+      expect(dateJson.defaultValue, '2026-01-01');
+      expect(objectJson.properties!['role']!.defaultValue, 'user');
+    });
+
     test('keeps description on anyOf unions', () {
       final schema = Ack.anyOf([
         Ack.string(),
@@ -109,9 +125,11 @@ void main() {
         discriminatorKey: 'type',
         schemas: {
           'cat': Ack.object({
+            'type': Ack.literal('cat'),
             'name': Ack.string(),
           }).transform<String>((map) => map['name'] as String),
           'dog': Ack.object({
+            'type': Ack.literal('dog'),
             'name': Ack.string(),
           }).transform<String>((map) => map['name'] as String),
         },
@@ -137,9 +155,10 @@ void main() {
         final schema = Ack.discriminated<String>(
           discriminatorKey: 'type',
           schemas: {
-            'cat': Ack.object({'name': Ack.string()})
-                .transform<String>((map) => map['name'] as String)
-                .copyWith(description: 'cat branch'),
+            'cat':
+                Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()})
+                    .transform<String>((map) => map['name'] as String)
+                    .copyWith(description: 'cat branch'),
           },
         );
 
@@ -170,14 +189,30 @@ void main() {
     });
 
     test('rejects conflicting branch-defined discriminator literal', () {
-      final schema = Ack.discriminated<JsonMap>(
-        discriminatorKey: 'type',
-        schemas: {
-          'cat': Ack.object({'type': Ack.literal('dog'), 'name': Ack.string()}),
-        },
+      expect(
+        () => Ack.discriminated<JsonMap>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.literal('dog'),
+              'name': Ack.string(),
+            }),
+          },
+        ),
+        throwsArgumentError,
       );
+    });
 
-      expect(schema.toJsonSchemaModel, throwsArgumentError);
+    test('rejects missing branch-defined discriminator literal', () {
+      expect(
+        () => Ack.discriminated<JsonMap>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}),
+          },
+        ),
+        throwsArgumentError,
+      );
     });
   });
 }

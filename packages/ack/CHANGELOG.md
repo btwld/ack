@@ -11,6 +11,22 @@
 * Move runtime defaults into `DefaultSchema`; defaults now parse through the
   runtime validation path and are only emitted to JSON Schema when they encode
   to JSON-safe values.
+* Require discriminated branch encoders to emit a matching discriminator field;
+  `Ack.discriminated(...)` no longer auto-adds the discriminator on encode.
+* Validate discriminated branch schemas at `Ack.discriminated(...)` construction
+  time: every branch must be object-backed and define the discriminator key
+  with `Ack.literal(label)`. Previously this surfaced lazily at
+  `toJsonSchema()` / `toJsonSchemaModel()` time.
+* Treat `Ack.any()` as JSON-any: runtime values must be recursively JSON-safe.
+* Reject nullable item schemas at `Ack.list(...)` construction time
+  (`ArgumentError`); previously each null item failed at parse time.
+* `Ack.date().min/max` requires a local-midnight `DateTime`; `Ack.datetime()
+  .min/max` requires a UTC `DateTime`. References outside those invariants
+  throw `ArgumentError` so the exported JSON Schema bound stays well-formed.
+* `DateTimeConstraint` now carries a `DateTimeConstraintFormat` field; the
+  `min` / `max` factories take an optional `format` parameter and emit
+  `formatMinimum` / `formatMaximum` shaped to the boundary (`YYYY-MM-DD` for
+  date, ISO 8601 for date-time).
 
 ## 1.0.0-beta.11
 

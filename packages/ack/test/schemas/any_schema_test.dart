@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('AnySchema', () {
-    test('should accept any non-null value', () {
+    test('should accept any non-null JSON-safe value', () {
       final schema = Ack.any();
 
       // Test various types
@@ -13,6 +13,35 @@ void main() {
       expect(schema.safeParse({"a": 1}).getOrThrow(), equals({"a": 1}));
       expect(schema.safeParse(true).getOrThrow(), equals(true));
       expect(schema.safeParse(3.14).getOrThrow(), equals(3.14));
+    });
+
+    test('should reject non-JSON-safe values', () {
+      final schema = Ack.any();
+
+      expect(schema.safeParse(DateTime(2026, 1, 1)).isFail, isTrue);
+      expect(schema.safeParse(double.nan).isFail, isTrue);
+      expect(schema.safeParse({1: 'one'}).isFail, isTrue);
+      expect(schema.safeParse([DateTime(2026, 1, 1)]).isFail, isTrue);
+      expect(
+        schema.safeParse({
+          'nested': {'createdAt': DateTime(2026, 1, 1)},
+        }).isFail,
+        isTrue,
+      );
+      expect(schema.safeEncode(DateTime(2026, 1, 1)).isFail, isTrue);
+    });
+
+    test('should accept nested JSON-safe values', () {
+      final schema = Ack.any();
+      final value = {
+        'items': [
+          {'name': 'one', 'count': 1, 'enabled': true},
+          ['nested', null],
+        ],
+      };
+
+      expect(schema.safeParse(value).getOrThrow(), equals(value));
+      expect(schema.safeEncode(value).getOrThrow(), equals(value));
     });
 
     test('should reject null by default', () {
@@ -58,11 +87,9 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      // AnySchema generates an empty schema {} (which accepts any type except null)
-      // with description and default fields
       expect(jsonSchema['description'], equals('Accepts any value'));
       expect(jsonSchema['default'], equals('fallback'));
-      // Empty schema (no 'type' field) accepts any value
+      expect(jsonSchema['anyOf'], isA<List>());
       expect(jsonSchema.containsKey('type'), isFalse);
     });
 

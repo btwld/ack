@@ -84,13 +84,17 @@ Ack.string().email()
 
 
 ### `date()`
-Requires a valid date string in `YYYY-MM-DD` format.
+Requires a valid date string in `YYYY-MM-DD` format. Returns `String`. For a
+`DateTime` runtime value, use the [`Ack.date()`](../core-concepts/schemas#date-and-time-codecs)
+typed codec instead.
 ```dart
 Ack.string().date()
 ```
 
 ### `datetime()`
-Requires a valid ISO 8601 date-time string.
+Requires a valid ISO 8601 date-time string. Returns `String`. For a `DateTime`
+runtime value, use the [`Ack.datetime()`](../core-concepts/schemas#date-and-time-codecs)
+typed codec instead.
 ```dart
 Ack.string().datetime()
 ```
