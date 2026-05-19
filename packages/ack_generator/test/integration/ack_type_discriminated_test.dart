@@ -177,6 +177,72 @@ final petSchema = Ack.discriminated(
       );
     });
 
+    test(
+      'fails when matching discriminator literal has restrictive chain',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await _expectGenerationFailure(
+          builder: builder,
+          expectedMessage: 'could not be proven to accept "cat"',
+          assets: {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.literal('cat').minLength(4),
+  'lives': Ack.integer(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+  },
+);
+''',
+          },
+        );
+      },
+    );
+
+    test(
+      'fails when matching discriminator enum has restrictive chain',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+
+        await _expectGenerationFailure(
+          builder: builder,
+          expectedMessage: 'could not be proven to accept "cat"',
+          assets: {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.enumString(['cat']).minLength(4),
+  'lives': Ack.integer(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+  },
+);
+''',
+          },
+        );
+      },
+    );
+
     test('fails when a branch is an inline expression', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

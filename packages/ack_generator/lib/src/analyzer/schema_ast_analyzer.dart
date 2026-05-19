@@ -986,6 +986,14 @@ class SchemaAstAnalyzer {
 
       final schemaMethod = baseInvocation.methodName.name;
       if (schemaMethod == 'literal') {
+        if (!_hasOnlyNonRestrictiveDiscriminatorMethods(
+          expression,
+          baseInvocation,
+          baseMethod: 'literal',
+        )) {
+          return 'has discriminator property schema ${expression.toSource()} that could not be proven to accept "$discriminatorValue".';
+        }
+
         final literalValue = _extractSingleStringArgument(baseInvocation);
         if (literalValue == null) {
           return 'has a discriminator literal that is not a string literal.';
@@ -997,6 +1005,14 @@ class SchemaAstAnalyzer {
       }
 
       if (schemaMethod == 'enumString') {
+        if (!_hasOnlyNonRestrictiveDiscriminatorMethods(
+          expression,
+          baseInvocation,
+          baseMethod: 'enumString',
+        )) {
+          return 'has discriminator property schema ${expression.toSource()} that could not be proven to accept "$discriminatorValue".';
+        }
+
         final allowedValues = _extractStringListArgument(baseInvocation);
         if (allowedValues == null) {
           return 'has an Ack.enumString(...) discriminator that is not a string list literal.';
@@ -1009,9 +1025,10 @@ class SchemaAstAnalyzer {
       }
 
       if (schemaMethod == 'string' &&
-          _hasOnlyNonRestrictiveStringDiscriminatorMethods(
+          _hasOnlyNonRestrictiveDiscriminatorMethods(
             expression,
             baseInvocation,
+            baseMethod: 'string',
           )) {
         return null;
       }
@@ -1082,17 +1099,18 @@ class SchemaAstAnalyzer {
     return values;
   }
 
-  bool _hasOnlyNonRestrictiveStringDiscriminatorMethods(
+  bool _hasOnlyNonRestrictiveDiscriminatorMethods(
     MethodInvocation expression,
-    MethodInvocation baseInvocation,
-  ) {
+    MethodInvocation baseInvocation, {
+    required String baseMethod,
+  }) {
     final (chain, _) = _collectMethodChain(expression);
-    const allowedMethods = {'string', 'optional', 'nullable', 'describe'};
+    const allowedMethods = {'optional', 'nullable', 'describe'};
 
     for (final invocation in chain) {
       final methodName = invocation.methodName.name;
       if (identical(invocation, baseInvocation)) {
-        return methodName == 'string';
+        return methodName == baseMethod;
       }
       if (!allowedMethods.contains(methodName)) {
         return false;
