@@ -1,3 +1,17 @@
+## Unreleased
+
+### Breaking
+
+* Redesign schemas around typed boundary/runtime codec pairs:
+  `AckSchema<Boundary, Runtime>`.
+* Make primitive schemas strict by default. Use `.codec(...)` for explicit
+  conversions such as string-to-integer parsing.
+* Replace parse-only transformed built-ins with bidirectional codecs for
+  date, datetime, URI, and duration schemas.
+* Move runtime defaults into `DefaultSchema`; defaults now parse through the
+  runtime validation path and are only emitted to JSON Schema when they encode
+  to JSON-safe values.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.

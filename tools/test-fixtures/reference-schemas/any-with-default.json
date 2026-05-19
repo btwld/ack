@@ -1,12 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "anyOf": [
-    {"type": "string"},
-    {"type": "number"},
-    {"type": "integer"},
-    {"type": "boolean"},
-    {"type": "object"},
-    {"type": "array"}
+    {
+      "type": "string"
+    },
+    {
+      "type": "number"
+    },
+    {
+      "type": "integer"
+    },
+    {
+      "type": "boolean"
+    },
+    {
+      "type": "object"
+    },
+    {
+      "type": "array"
+    }
   ],
   "default": "default-any-value"
 }

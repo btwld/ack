@@ -221,7 +221,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
 
       if (propertyValue == null) {
-        if (schema.isNullable || schema.isOptional) continue;
+        if (schema.isNullable || (isEncode && schema.isOptional)) continue;
         if (isEncode) {
           errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
         } else {
@@ -373,7 +373,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
     for (final entry in properties.entries) {
       propsJsonSchema[entry.key] = entry.value.toJsonSchema();
-      if (!entry.value.isOptional) {
+      if (!entry.value.isOptional &&
+          entry.value is! DefaultSchema<dynamic, dynamic>) {
         requiredFields.add(entry.key);
       }
     }

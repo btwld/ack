@@ -2,8 +2,8 @@ part of 'schema.dart';
 
 /// Schema for validating against a list of schemas (union).
 ///
-/// Keeps broad typing in the first redesign (`Object`/`Object`) because
-/// Dart does not have first-class union types.
+/// Uses broad `Object`/`Object` typing because Dart does not have first-class
+/// union types.
 ///
 /// Nullable semantics are symmetric: an `AnyOfSchema` allows null on both
 /// parse and encode if [isNullable] is true OR any branch is itself nullable.
@@ -78,12 +78,19 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   @override
   @protected
   SchemaResult<Object> encodeWithContext(Object value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) {
+      return SchemaResult.fail(validated.getError());
+    }
+    final runtime = validated.getOrNull();
+    if (runtime == null) return SchemaResult.ok(null);
+
     final errors = <SchemaError>[];
     for (final (index, schema) in schemas.indexed) {
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
-        value: value,
+        value: runtime,
         pathSegment: '',
         operation: SchemaOperation.encode,
       );
@@ -91,14 +98,14 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         // Validate against the branch's runtime first; only attempt encode
         // when the value plausibly fits this branch.
         final branchValidation = schema.validateRuntimeWithContext(
-          value,
+          runtime,
           childContext,
         );
         if (branchValidation.isFail) {
           errors.add(branchValidation.getError());
           continue;
         }
-        final encoded = schema.encodeWithContext(value, childContext);
+        final encoded = schema.encodeWithContext(runtime, childContext);
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {

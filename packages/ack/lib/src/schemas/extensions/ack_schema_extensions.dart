@@ -36,6 +36,8 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
       outputSchema: output ?? InstanceSchema<R>(),
       decoder: decode,
       encoder: encode,
+      isOptional: isOptional,
+      isNullable: isNullable,
     );
   }
 }

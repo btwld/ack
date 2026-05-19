@@ -249,6 +249,39 @@ void main() {
       expect(nullable.parse(null), isNull);
     });
 
+    test('bidirectional codec preserves nullable input policy', () {
+      final schema = Ack.string().nullable().codec<int>(
+        decode: int.parse,
+        encode: (i) => i.toString(),
+      );
+
+      expect(schema.safeParse(null).isOk, true);
+      expect(schema.safeEncode(null).isOk, true);
+    });
+
+    test('static codec preserves nullable input policy', () {
+      final schema = Ack.codec<String, String, int>(
+        input: Ack.string().nullable(),
+        decode: int.parse,
+        encode: (i) => i.toString(),
+      );
+
+      expect(schema.safeParse(null).isOk, true);
+      expect(schema.safeEncode(null).isOk, true);
+    });
+
+    test('bidirectional codec preserves optional input policy in objects', () {
+      final schema = Ack.object({
+        'count': Ack.string().optional().codec<int>(
+          decode: int.parse,
+          encode: (i) => i.toString(),
+        ),
+      });
+
+      expect(schema.safeParse({}).isOk, true);
+      expect(schema.safeEncode({}).isOk, true);
+    });
+
     test('one-way CodecSchema can be refined without dynamic casts', () {
       final schema = Ack.string().transform<int>(int.parse);
       final refined = schema.refine((v) => v > 0, message: 'must be positive');
@@ -290,6 +323,47 @@ void main() {
       );
       expect(schema.safeEncode(4).isOk, true);
       expect(schema.safeEncode(5).isFail, true);
+    });
+
+    test('codec parse rejects present-null optional object fields', () {
+      final schema = Ack.string().codec<JsonMap>(
+        output: Ack.object({'name': Ack.string().optional()}),
+        decode: (_) => {'name': null},
+        encode: (_) => 'ignored',
+      );
+
+      expect(schema.safeParse('ignored').isFail, true);
+    });
+
+    test('AnyOf encode runs root runtime refinements', () {
+      final schema = Ack.anyOf([
+        Ack.string(),
+        Ack.integer(),
+      ]).refine((value) => value != 'blocked', message: 'blocked');
+
+      expect(schema.safeParse('blocked').isFail, true);
+      expect(schema.safeEncode('blocked').isFail, true);
+    });
+
+    test('Discriminated encode runs root runtime refinements', () {
+      final schema = Ack.discriminated<_Foo>(
+        discriminatorKey: 'type',
+        schemas: {
+          'foo': Ack.object({'created': Ack.datetime()}).model<_Foo>(
+            decode: (data) => _Foo(data['created'] as DateTime),
+            encode: (foo) => {'created': foo.created},
+          ),
+        },
+      ).refine((value) => value.created.year >= 2020, message: 'too old');
+
+      expect(
+        schema.safeParse({
+          'type': 'foo',
+          'created': '2019-01-01T00:00:00.000Z',
+        }).isFail,
+        true,
+      );
+      expect(schema.safeEncode(_Foo(DateTime.utc(2019))).isFail, true);
     });
   });
 }

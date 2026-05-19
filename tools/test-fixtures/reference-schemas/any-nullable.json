@@ -3,14 +3,28 @@
   "anyOf": [
     {
       "anyOf": [
-        {"type": "string"},
-        {"type": "number"},
-        {"type": "integer"},
-        {"type": "boolean"},
-        {"type": "object"},
-        {"type": "array"}
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
       ]
     },
-    {"type": "null"}
+    {
+      "type": "null"
+    }
   ]
 }

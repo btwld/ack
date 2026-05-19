@@ -230,6 +230,52 @@ const referenceSchemas = {
     .describe("Status of the entity"),
 };
 
+const ackAnyCore = () => ({
+  anyOf: [
+    { type: "string" },
+    { type: "number" },
+    { type: "integer" },
+    { type: "boolean" },
+    { type: "object" },
+    { type: "array" },
+  ],
+});
+
+const ackAnySchema = () => ({
+  $schema: "http://json-schema.org/draft-07/schema#",
+  ...ackAnyCore(),
+});
+
+const ackAnyReferenceSchemas = {
+  "any-basic": ackAnySchema(),
+  "any-nullable": {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    anyOf: [ackAnyCore(), { type: "null" }],
+  },
+  "any-with-default": {
+    ...ackAnySchema(),
+    default: "default-any-value",
+  },
+  "any-with-description": {
+    ...ackAnySchema(),
+    description: "Accepts any value type",
+  },
+};
+
+const applyAckOverrides = (name, jsonSchema) => {
+  if (name === "object-required-fields") {
+    jsonSchema.required = ["id", "email"];
+  }
+  if (name === "object-nested") {
+    delete jsonSchema.properties.settings.required;
+  }
+  if (name === "object-comprehensive") {
+    jsonSchema.properties.metadata = ackAnyCore();
+    jsonSchema.required = ["id", "email", "name", "age", "tags"];
+  }
+  return jsonSchema;
+};
+
 // Generate fixtures
 let successCount = 0;
 let failCount = 0;
@@ -238,12 +284,16 @@ const generatedFiles = [];
 for (const [name, zodSchema] of Object.entries(referenceSchemas)) {
   try {
     // Use Zod v4's NATIVE toJSONSchema - no external package needed!
-    const jsonSchema = z.toJSONSchema(zodSchema, {
-      target: "draft-7", // JSON Schema Draft 7
-      unrepresentable: "any", // Convert unrepresentable types to {}
-      cycles: "ref", // Use $ref for cycles
-      reused: "inline", // Inline reused schemas
-    });
+    const jsonSchema = applyAckOverrides(
+      name,
+      ackAnyReferenceSchemas[name] ??
+        z.toJSONSchema(zodSchema, {
+          target: "draft-7", // JSON Schema Draft 7
+          unrepresentable: "any", // Convert unrepresentable types to {}
+          cycles: "ref", // Use $ref for cycles
+          reused: "inline", // Inline reused schemas
+        })
+    );
 
     // Validate with AJV
     ajv.compile(jsonSchema);

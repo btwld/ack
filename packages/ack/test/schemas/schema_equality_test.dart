@@ -27,6 +27,16 @@ void main() {
       });
     });
 
+    group('DefaultSchema', () {
+      test('equal effective nullable schemas are equal', () {
+        final a = Ack.string().nullable().withDefault('x');
+        final b = Ack.string().nullable().withDefault('x');
+
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
+      });
+    });
+
     group('ListSchema', () {
       test('equal schemas are equal', () {
         final a = Ack.list(Ack.string());

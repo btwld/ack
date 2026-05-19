@@ -92,11 +92,40 @@ void main() {
       expect(json['default'], {'name': 'guest'});
     });
 
+    test('ObjectSchema does not require fields with parse defaults', () {
+      final schema = Ack.object({'name': Ack.string().withDefault('guest')});
+      final json = schema.toJsonSchema();
+
+      expect(schema.safeParse({}).isOk, true);
+      expect(json.containsKey('required'), false);
+    });
+
+    test(
+      'DefaultSchema rejects mutable collection defaults it cannot clone',
+      () {
+        final defaultTags = <String>['guest'];
+        final schema = Ack.instance<List<String>>().withDefault(defaultTags);
+
+        expect(schema.safeParse(null).isFail, true);
+        expect(schema.toJsonSchema().containsKey('default'), false);
+      },
+    );
+
     test('DefaultSchema emits codec-encoded default (date) cleanly', () {
       final schema = Ack.date().withDefault(DateTime(2026, 1, 1));
       final json = schema.toJsonSchema();
       // The codec encodes DateTime → 'YYYY-MM-DD', which is JSON-safe.
       expect(json['default'], '2026-01-01');
+    });
+
+    test('DefaultSchema omits non-finite numeric defaults', () {
+      final nanJson = Ack.double().withDefault(double.nan).toJsonSchema();
+      final infinityJson = Ack.double()
+          .withDefault(double.infinity)
+          .toJsonSchema();
+
+      expect(nanJson.containsKey('default'), false);
+      expect(infinityJson.containsKey('default'), false);
     });
 
     test('DefaultSchema default survives a jsonEncode round-trip', () {

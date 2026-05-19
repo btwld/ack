@@ -169,6 +169,13 @@ final class DiscriminatedObjectSchema<T extends Object>
   @override
   @protected
   SchemaResult<JsonMap> encodeWithContext(T value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) {
+      return SchemaResult.fail(validated.getError());
+    }
+    final runtime = validated.getOrNull();
+    if (runtime == null) return SchemaResult.ok(null);
+
     final errors = <SchemaError>[];
     for (final entry in schemas.entries) {
       final discValue = entry.key;
@@ -176,20 +183,20 @@ final class DiscriminatedObjectSchema<T extends Object>
       final branchCtx = context.createChild(
         name: 'when $discriminatorKey="$discValue"',
         schema: branchSchema,
-        value: value,
+        value: runtime,
         pathSegment: '',
         operation: SchemaOperation.encode,
       );
       try {
         final branchValidation = branchSchema.validateRuntimeWithContext(
-          value,
+          runtime,
           branchCtx,
         );
         if (branchValidation.isFail) {
           errors.add(branchValidation.getError());
           continue;
         }
-        final encoded = branchSchema.encodeWithContext(value, branchCtx);
+        final encoded = branchSchema.encodeWithContext(runtime, branchCtx);
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {

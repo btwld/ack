@@ -40,13 +40,7 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @protected
   SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context) {
     if (value == null) {
-      // Defaults are runtime values, not boundary values, so validate via
-      // the runtime path. `cloneDefault` returns an `Object?` wrapped in
-      // unmodifiable copies; fall back to the original when the clone is
-      // not assignable to `Runtime`.
-      final cloned = cloneDefault(defaultValue);
-      final effective = (cloned is Runtime) ? cloned : defaultValue;
-      return inner.validateRuntimeWithContext(effective, context);
+      return _validateDefaultWithContext(context);
     }
     return inner.parseWithContext(value, context);
   }
@@ -78,13 +72,25 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     // happily round-trip non-JSON Dart objects through their identity
     // encode path; emitting those would leak runtime-only types into the
     // schema output.
-    final encoded = inner.safeEncode(defaultValue);
-    if (encoded.isOk) {
-      final value = encoded.getOrNull();
-      if (value != null) {
-        final safe = jsonSafeOrNull(value);
-        if (safe != null) {
-          serializedDefault = safe;
+    final validatedDefault = _validateDefaultWithContext(
+      inner._createRootContext(
+        defaultValue,
+        debugName: 'default',
+        operation: SchemaOperation.parse,
+      ),
+    );
+    if (validatedDefault.isOk) {
+      final runtimeDefault = validatedDefault.getOrNull();
+      if (runtimeDefault != null) {
+        final encoded = inner.safeEncode(runtimeDefault);
+        if (encoded.isOk) {
+          final value = encoded.getOrNull();
+          if (value != null) {
+            final safe = _jsonSafeOrNull(value);
+            if (safe != null) {
+              serializedDefault = safe;
+            }
+          }
         }
       }
     }
@@ -142,17 +148,40 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     if (other is! DefaultSchema<Boundary, Runtime>) return false;
     return inner == other.inner &&
         defaultValue == other.defaultValue &&
-        super.isNullable == other.isNullable &&
-        super.isOptional == other.isOptional &&
+        isNullable == other.isNullable &&
+        isOptional == other.isOptional &&
         description == other.description;
   }
 
   @override
-  int get hashCode => Object.hash(
-    inner,
-    defaultValue,
-    super.isNullable,
-    super.isOptional,
-    description,
-  );
+  int get hashCode =>
+      Object.hash(inner, defaultValue, isNullable, isOptional, description);
+
+  SchemaResult<Runtime> _validateDefaultWithContext(SchemaContext context) {
+    // Defaults are runtime values, not boundary values, so validate via the
+    // runtime path. `cloneDefault` returns unmodifiable collection copies when
+    // it can; mutable collection defaults are rejected if the inner schema
+    // would otherwise return the original reference.
+    final cloned = cloneDefault(defaultValue);
+    final clonedSafely = cloned is Runtime && !identical(cloned, defaultValue);
+    final effective = (cloned is Runtime) ? cloned : defaultValue;
+    final result = inner.validateRuntimeWithContext(effective, context);
+    if (result.isOk &&
+        !clonedSafely &&
+        _isCollectionDefault(defaultValue) &&
+        identical(result.getOrNull(), defaultValue)) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Default collection value for $runtimeType could not be '
+              'cloned safely as $Runtime.',
+          context: context,
+        ),
+      );
+    }
+    return result;
+  }
 }
+
+bool _isCollectionDefault(Object value) =>
+    value is List || value is Map || value is Set;

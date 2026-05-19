@@ -24,6 +24,17 @@ void main() {
       expect(json.uniqueItems, isTrue);
     });
 
+    test('does not require fields with parse defaults', () {
+      final schema = Ack.object({
+        'name': Ack.string(),
+        'role': Ack.string().withDefault('user'),
+      });
+
+      final json = schema.toJsonSchemaModel();
+
+      expect(json.required, equals(['name']));
+    });
+
     test('keeps description on anyOf unions', () {
       final schema = Ack.anyOf([
         Ack.string(),

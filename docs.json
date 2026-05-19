@@ -34,6 +34,7 @@
       "group": "Core Concepts",
       "pages": [
         { "title": "Schema Types", "href": "/core-concepts/schemas" },
+        { "title": "Typed Codecs", "href": "/core-concepts/typed-codecs" },
         { "title": "Validation Rules", "href": "/core-concepts/validation" },
         {
           "title": "TypeSafe Schemas",

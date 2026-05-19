@@ -28,8 +28,10 @@ Base class for all schema types.
 
 - `SchemaResult<Runtime> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure.
 - `Runtime? parse(Object? data, {String? debugName})`: Validates the input data and returns the value. Throws `AckException` if validation fails.
+- `SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName})`: Encodes a runtime value to its boundary representation and returns a result instead of throwing.
+- `Boundary? encode(Runtime? value, {String? debugName})`: Encodes a runtime value to its boundary representation. Throws `AckException` if encoding fails.
 - `SchemaResult<Runtime> validate(Object? data, {String? debugName})`: Deprecated alias for `safeParse`.
-- `Runtime? tryParse(Object? data, {String? debugName})`: Deprecated alias for `parse`.
+- `Runtime? tryParse(Object? data, {String? debugName})`: Deprecated helper that returns `safeParse(...).getOrNull()`.
 
 ### Schema Modification Methods
 

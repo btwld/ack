@@ -170,7 +170,8 @@ JsonSchema _object(ObjectSchema schema, JsonSchema json, bool nullableFlag) {
       entry.key,
       () => _convert(entry.value),
     );
-    if (!entry.value.isOptional) {
+    if (!entry.value.isOptional &&
+        entry.value is! DefaultSchema<dynamic, dynamic>) {
       required.add(entry.key);
     }
   }

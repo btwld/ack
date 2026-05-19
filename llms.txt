@@ -1,6 +1,6 @@
 # Ack
 
-> A schema validation library for Dart and Flutter with a fluent runtime API and `@AckType()`-driven extension-type generation. Version 1.0.0-beta.11.
+> A schema validation library for Dart and Flutter with a fluent runtime API and `@AckType()`-driven extension-type generation. Published prerelease: 1.0.0-beta.11. Current branch changes are tracked as Unreleased.
 
 Ack validates external data with hand-written schemas built using the `Ack`
 factory. When you want typed wrappers over validated values, annotate top-level
@@ -12,6 +12,7 @@ schema variables or getters with `@AckType()` and run `ack_generator`.
 2. `ack_annotations`: exposes `@AckType()`
 3. `ack_generator`: generates extension types for annotated top-level schemas
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
+5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` models
 
 ## Core runtime usage
 
@@ -137,11 +138,17 @@ AckType generation is intentionally strict:
 
 ## Runtime API reminders
 
+- Schemas are typed as `AckSchema<Boundary, Runtime>`, where `Boundary` is the external wire value and `Runtime` is the validated Dart value.
 - `schema.parse(data)` throws on invalid input
-- `schema.safeParse(data)` returns `SchemaResult<T>`
+- `schema.safeParse(data)` returns `SchemaResult<Runtime>`
+- `schema.encode(value)` converts runtime values back to boundary values and throws on invalid input
+- `schema.safeEncode(value)` returns `SchemaResult<Boundary>` instead of throwing
 - `SchemaResult<T>.getOrThrow()` returns the validated value or throws `AckException`
 - `.optional()` allows a field to be omitted
 - `.nullable()` allows a present field to hold `null`
+- primitive schemas parse strictly; use `.codec(...)` for explicit conversions
+- `Ack.double()` accepts only `double` values, while `Ack.number()` accepts both `int` and `double`
+- `.transform(...)` creates a parse-only codec; `.codec(...)` creates a bidirectional codec
 - encode omits optional non-nullable fields whose runtime value is `null`
 - object schemas support `additionalProperties: true`
 

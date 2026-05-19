@@ -72,6 +72,10 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Returns an unmodifiable view of the refinements for this schema.
   List<Refinement<Runtime>> get refinements => List.unmodifiable(_refinements);
 
+  Iterable<Object?> get _constraintsForEquality => _constraints;
+
+  Iterable<Object?> get _refinementsForEquality => _refinements;
+
   const AckSchema({
     this.isNullable = false,
     this.isOptional = false,
@@ -519,31 +523,31 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   /// Compares base schema fields for equality.
   @protected
-  bool baseFieldsEqual(AnyAckSchema other) {
-    const listEq = ListEquality<Object?>();
+  bool baseFieldsEqual(AckSchema<dynamic, dynamic> other) {
+    const iterableEq = IterableEquality<Object?>();
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
         description == other.description &&
-        listEq.equals(
-          _constraints as List<Object?>,
-          other._constraints as List<Object?>,
+        iterableEq.equals(
+          _constraintsForEquality,
+          other._constraintsForEquality,
         ) &&
-        listEq.equals(
-          _refinements as List<Object?>,
-          other._refinements as List<Object?>,
+        iterableEq.equals(
+          _refinementsForEquality,
+          other._refinementsForEquality,
         );
   }
 
   /// Computes hash code for base schema fields.
   @protected
   int get baseFieldsHashCode {
-    const listEq = ListEquality<Object?>();
+    const iterableEq = IterableEquality<Object?>();
     return Object.hash(
       isNullable,
       isOptional,
       description,
-      listEq.hash(_constraints),
-      listEq.hash(_refinements),
+      iterableEq.hash(_constraintsForEquality),
+      iterableEq.hash(_refinementsForEquality),
     );
   }
 }
@@ -602,13 +606,15 @@ class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
 }
 
 /// Returns [value] if it is composed entirely of JSON-safe primitives
-/// (`null`, `num`, `bool`, `String`, `List`, string-keyed `Map`), recursively.
+/// (`null`, finite `num`, `bool`, `String`, `List`, string-keyed `Map`),
+/// recursively.
 /// Returns `null` if any nested value is not JSON-safe. Used by
 /// [DefaultSchema] to avoid emitting runtime-only objects (e.g. raw
 /// `DateTime` instances) as JSON Schema defaults.
-Object? jsonSafeOrNull(Object? value) {
+Object? _jsonSafeOrNull(Object? value) {
   if (value == null) return null;
-  if (value is num || value is bool || value is String) return value;
+  if (value is num) return value.isFinite ? value : null;
+  if (value is bool || value is String) return value;
   if (value is List) {
     final result = <Object?>[];
     for (final item in value) {
@@ -616,7 +622,7 @@ Object? jsonSafeOrNull(Object? value) {
         result.add(null);
         continue;
       }
-      final converted = jsonSafeOrNull(item);
+      final converted = _jsonSafeOrNull(item);
       if (converted == null) return null;
       result.add(converted);
     }
@@ -630,7 +636,7 @@ Object? jsonSafeOrNull(Object? value) {
         result[entry.key as String] = null;
         continue;
       }
-      final converted = jsonSafeOrNull(entry.value);
+      final converted = _jsonSafeOrNull(entry.value);
       if (converted == null) return null;
       result[entry.key as String] = converted;
     }

@@ -7,11 +7,11 @@
 
 ```yaml
 dependencies:
-  ack: ^1.0.0-beta.12-wip
-  ack_annotations: ^1.0.0-beta.12-wip
+  ack: ^1.0.0-beta.11
+  ack_annotations: ^1.0.0-beta.11
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.12-wip
+  ack_generator: ^1.0.0-beta.11
   build_runner: ^2.4.0
 ```
 

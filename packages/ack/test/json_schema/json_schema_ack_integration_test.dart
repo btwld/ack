@@ -504,7 +504,7 @@ void main() {
       expect(jsonSchema.required, contains('id'));
       expect(jsonSchema.required, contains('email'));
       expect(jsonSchema.required, contains('name'));
-      expect(jsonSchema.required, contains('isActive'));
+      expect(jsonSchema.required, isNot(contains('isActive')));
       expect(jsonSchema.required, isNot(contains('metadata')));
     });
 

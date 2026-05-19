@@ -35,6 +35,19 @@ void main() {
     test(
       'example folder should build successfully with build_runner',
       () async {
+        final expectedGeneratedContent = <String, String>{};
+        for (final relativePath in expectedGeneratedFiles) {
+          final file = File(p.join(exampleDir.path, relativePath));
+          expect(
+            file.existsSync(),
+            isTrue,
+            reason:
+                '$relativePath should exist before regeneration so generated '
+                'output can be compared against committed content',
+          );
+          expectedGeneratedContent[relativePath] = await file.readAsString();
+        }
+
         // Clean previous builds
         final cleanResult = await Process.run('dart', [
           'run',
@@ -85,6 +98,17 @@ void main() {
           expectedGeneratedFiles,
           reason: 'The retained AckType example output set should stay stable',
         );
+
+        for (final relativePath in expectedGeneratedFiles) {
+          final file = File(p.join(exampleDir.path, relativePath));
+          expect(
+            await file.readAsString(),
+            expectedGeneratedContent[relativePath],
+            reason:
+                '$relativePath should match committed generated output after '
+                'build_runner regeneration',
+          );
+        }
 
         print('✅ Generated ${generatedFiles.length} files:');
         for (final file in generatedFiles) {

@@ -1,6 +1,5 @@
 # Development and IDE files
 melos_ack_generator.iml
-pubspec_overrides.yaml
 
 # Development documentation
 docs/

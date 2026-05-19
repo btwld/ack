@@ -81,9 +81,9 @@ encodes it to an ISO 8601 string.
 ## Differences from one-way `.transform()`
 
 `schema.transform<R>(fn)` is still available, but is **parse-only**. Calling
-`encode` on a one-way transform codec returns a
-`SchemaEncodeError.oneWayTransform` failure. Use `.codec<T>()` when you need
-encoding too.
+`safeEncode` on a one-way transform codec returns a
+`SchemaResult` failure with `SchemaEncodeError.oneWayTransform`. Calling
+`encode` throws that failure. Use `.codec<T>()` when you need encoding too.
 
 ## Defaults
 
@@ -92,8 +92,11 @@ encoding too.
 ```dart
 final schema = Ack.string().withDefault('fallback');
 
-schema.parse(null);   // 'fallback'
-schema.encode(null);  // null — encode does not inject defaults
+schema.parse(null);           // 'fallback'
+schema.safeEncode(null);      // Fail — encode does not inject defaults
+
+final nullable = Ack.string().nullable().withDefault('fallback');
+nullable.encode(null);        // null
 ```
 
 The default value is a runtime value; encoding does not substitute it.

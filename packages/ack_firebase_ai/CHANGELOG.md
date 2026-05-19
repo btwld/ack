@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+* Update Firebase AI schema conversion for typed-codecs schema semantics.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.
