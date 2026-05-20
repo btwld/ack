@@ -65,20 +65,20 @@ Unsupported helpers include `Ack.any()` and `Ack.anyOf()`.
 - each branch is an `@AckType` object schema
 - each branch is non-nullable
 - each branch is declared in the same library as the base
-- the branch discriminator literal matches the branch key
+- branch schemas normally omit the discriminator field
+- if a branch includes the discriminator field, it must be `Ack.literal(...)`
+  matching the branch key or `Ack.enumString(...)` containing the branch key
 
 Example:
 
 ```dart
 @AckType()
 final catSchema = Ack.object({
-  'type': Ack.literal('cat'),
   'lives': Ack.integer(),
 });
 
 @AckType()
 final dogSchema = Ack.object({
-  'type': Ack.literal('dog'),
   'breed': Ack.string(),
 });
 
@@ -91,6 +91,25 @@ final petSchema = Ack.discriminated(
   },
 );
 ```
+
+`Ack.discriminated(...)` owns the discriminator property. Boundary payloads
+must still include the discriminator key, but branch schemas should usually
+omit it. If a branch schema includes the discriminator field, it must be
+an exact literal or enum containing the branch map key:
+
+```dart
+@AckType()
+final catSchema = Ack.object({
+  'type': Ack.literal('cat'), // allowed, but usually unnecessary
+  'lives': Ack.integer(),
+});
+```
+
+Conflicting discriminator fields are rejected. Exported and generated schemas
+treat the discriminator as an exact literal for each branch. Broad
+`Ack.string()`, transformed/refined discriminator fields, and restrictive
+chains are rejected. Generated subtype `parse()` / `safeParse()` methods
+validate through the union's effective branch.
 
 ## Resolution rules
 

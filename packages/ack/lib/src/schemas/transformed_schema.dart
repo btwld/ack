@@ -131,6 +131,22 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
     );
   }
 
+  /// Returns a copy of this transformed schema with a different input schema.
+  TransformedSchema<InputType, OutputType> copyWithSchema(
+    AckSchema<InputType> schema,
+  ) {
+    return TransformedSchema(
+      schema,
+      transformer,
+      isNullable: isNullable,
+      isOptional: isOptional,
+      description: description,
+      defaultValue: defaultValue,
+      constraints: constraints,
+      refinements: refinements,
+    );
+  }
+
   @override
   Map<String, Object?> toJsonSchema() {
     // A transformed schema doesn't have a direct, standard JSON Schema representation.

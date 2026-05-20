@@ -41,17 +41,21 @@ extension type CatType(Map<String, Object?> _data)
   String get type => _data['type'] as String;
 
   static CatType parse(Object? data) {
-    return catSchema.parseAs(
-      data,
-      (validated) => CatType(validated as Map<String, Object?>),
-    );
+    return petSchema
+        .effectiveBranch('cat')
+        .parseAs(
+          data,
+          (validated) => CatType(validated as Map<String, Object?>),
+        );
   }
 
   static SchemaResult<CatType> safeParse(Object? data) {
-    return catSchema.safeParseAs(
-      data,
-      (validated) => CatType(validated as Map<String, Object?>),
-    );
+    return petSchema
+        .effectiveBranch('cat')
+        .safeParseAs(
+          data,
+          (validated) => CatType(validated as Map<String, Object?>),
+        );
   }
 
   int get lives => _data['lives'] as int;
@@ -63,17 +67,21 @@ extension type DogType(Map<String, Object?> _data)
   String get type => _data['type'] as String;
 
   static DogType parse(Object? data) {
-    return dogSchema.parseAs(
-      data,
-      (validated) => DogType(validated as Map<String, Object?>),
-    );
+    return petSchema
+        .effectiveBranch('dog')
+        .parseAs(
+          data,
+          (validated) => DogType(validated as Map<String, Object?>),
+        );
   }
 
   static SchemaResult<DogType> safeParse(Object? data) {
-    return dogSchema.safeParseAs(
-      data,
-      (validated) => DogType(validated as Map<String, Object?>),
-    );
+    return petSchema
+        .effectiveBranch('dog')
+        .safeParseAs(
+          data,
+          (validated) => DogType(validated as Map<String, Object?>),
+        );
   }
 
   String get breed => _data['breed'] as String;

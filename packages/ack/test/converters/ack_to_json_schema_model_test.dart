@@ -109,6 +109,52 @@ void main() {
     });
 
     test(
+      'toJsonSchemaModel_accepts_omitted_and_compatible_existing_discriminator_property',
+      () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'lives': Ack.integer()}),
+            'dog': Ack.object({
+              'type': Ack.enumString(['dog', 'canine']),
+              'breed': Ack.string(),
+            }),
+          },
+        );
+
+        final json = schema.toJsonSchemaModel();
+
+        expect(json.discriminator?.propertyName, equals('type'));
+        expect(json.oneOf, hasLength(2));
+
+        final catBranch = json.oneOf!.firstWhere(
+          (branch) =>
+              branch.properties?['type']?.enumValues?.contains('cat') ?? false,
+        );
+        expect(catBranch.required, equals(['type', 'lives']));
+        expect(catBranch.propertyOrdering, equals(['type', 'lives']));
+
+        final dogBranch = json.oneOf!.firstWhere(
+          (branch) =>
+              branch.properties?['type']?.enumValues?.contains('dog') ?? false,
+        );
+        expect(dogBranch.required, equals(['type', 'breed']));
+        expect(dogBranch.propertyOrdering, equals(['type', 'breed']));
+      },
+    );
+
+    test('toJsonSchemaModel_rejects_broad_string_discriminator_property', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.string(), 'lives': Ack.integer()}),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+    });
+
+    test(
       'preserves transformed branch description in discriminated model conversion',
       () {
         final schema = Ack.discriminated<String>(

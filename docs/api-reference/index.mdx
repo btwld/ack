@@ -2,7 +2,9 @@
 title: API Reference
 ---
 
-This page provides a quick reference for the core Ack classes, methods, and annotations. For detailed explanations and usage examples, refer to the specific guides linked below.
+This page provides a quick reference for the core Ack classes, methods, and
+annotations. For detailed explanations and usage examples, refer to the
+specific guides linked below.
 
 ## Core `Ack` Class
 
@@ -14,11 +16,19 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.boolean()`: Creates a `BooleanSchema` for validating booleans.
 - `Ack.list(AckSchema itemSchema)`: Creates a `ListSchema` for validating arrays.
 - `Ack.object(Map<String, AckSchema> properties)`: Creates an `ObjectSchema` for validating objects.
-- `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum types. Accepts enum instances, string names, or indices. **Preferred over `enumString` when a Dart enum exists.**
-- `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained to the given values. For ad-hoc string lists without a backing Dart enum.
+- `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum
+  types. Accepts enum instances, string names, or indices. **Preferred over
+  `enumString` when a Dart enum exists.**
+- `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained
+  to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any value.
-- `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`: Creates a discriminated union schema. Branches may be plain `ObjectSchema` or transformed schemas whose base is an `ObjectSchema`.
+- `Ack.discriminated<T extends Object>(...)`: Creates a discriminated union
+  schema. Branches may be plain `ObjectSchema` or transformed schemas whose
+  base is an `ObjectSchema`. The union owns the discriminator: branches normally
+  omit it, boundary payloads must include it, compatible branch discriminator
+  fields are allowed, and conflicts are rejected. Exported/generated branches
+  expose the exact branch literal.
 
 ## `AckSchema<T>` (Base Class)
 
@@ -188,6 +198,21 @@ See [Schema Types](../core-concepts/schemas.mdx) for the full catalogue,
 including helpers like `Ack.date()`, `Ack.literal()`, and rich list/object
 combinators.
 
+### `Ack.discriminated(...)`
+
+Schema for polymorphic validation based on a string discriminator property.
+
+- Branch schemas normally omit the discriminator field.
+- The boundary payload must still contain the discriminator key.
+- If a branch schema includes the discriminator field, it must be
+  `Ack.literal(...)` matching the branch key or `Ack.enumString(...)`
+  containing it. Broad, transformed, refined, or otherwise restrictive
+  discriminator fields are rejected.
+- Exported and generated schemas expose each branch discriminator as an exact
+  literal.
+- Generated subtype `parse()` and `safeParse()` methods validate through the
+  union's effective branch.
+
 ## Code Generation Annotations
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to
@@ -252,7 +277,11 @@ Schema for union types (value must match one of several schemas).
 
 Schema for polymorphic validation based on a discriminator field.
 
-- Created using `Ack.discriminated<T extends Object>({required String discriminatorKey, required Map<String, AckSchema<T>> schemas})`
+- Created using `Ack.discriminated<T extends Object>(...)` with
+  `discriminatorKey` and `schemas`.
+- `effectiveBranch(String discriminatorValue)`: Returns the branch schema with
+  the discriminator injected as the exact branch literal. Generated subtypes use
+  this to validate a specific branch.
 
 ### `AnySchema`
 

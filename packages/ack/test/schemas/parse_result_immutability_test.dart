@@ -106,7 +106,7 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'cat': Ack.object({'type': Ack.string(), 'name': Ack.string()}),
+            'cat': Ack.object({'name': Ack.string()}),
           },
         );
 

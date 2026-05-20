@@ -24,11 +24,9 @@ Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
 ///   discriminatorKey: 'type',
 ///   schemas: {
 ///     'cat': Ack.object({
-///       'type': Ack.literal('cat'),
 ///       'name': Ack.string(),
 ///     }).transform<Animal>((map) => Cat(map['name'] as String)),
 ///     'dog': Ack.object({
-///       'type': Ack.literal('dog'),
 ///       'name': Ack.string(),
 ///     }).transform<Animal>((map) => Dog(map['name'] as String)),
 ///   },
@@ -50,6 +48,27 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     super.constraints,
     super.refinements,
   });
+
+  /// Returns the effective schema for [discriminatorValue].
+  ///
+  /// The effective schema includes this union's discriminator property as an
+  /// exact branch literal, even when the authored branch omitted it.
+  AckSchema<T> effectiveBranch(String discriminatorValue) {
+    final branchSchema = schemas[discriminatorValue];
+    if (branchSchema == null) {
+      throw ArgumentError.value(
+        discriminatorValue,
+        'discriminatorValue',
+        'No discriminated branch is registered for this value.',
+      );
+    }
+
+    return effectiveDiscriminatedBranch<T>(
+      discriminatorKey: discriminatorKey,
+      discriminatorValue: discriminatorValue,
+      branchSchema: branchSchema,
+    );
+  }
 
   @override
   SchemaType get schemaType => SchemaType.discriminated;
@@ -160,24 +179,33 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
     }
 
     // Validate the selected branch; branch name for debug only
-    final subSchemaContext = context.createChild(
+    var subSchemaContext = context.createChild(
       name: 'when $discriminatorKey="$discValueRaw"',
       schema: selectedSubSchema,
       value: mapValue,
       pathSegment: '', // Inherit parent path
     );
 
-    final baseSubSchema = unwrapDiscriminatedBranchSchema(selectedSubSchema);
-    if (baseSubSchema is! ObjectSchema) {
+    final AckSchema<T> effectiveSubSchema;
+    try {
+      effectiveSubSchema = effectiveBranch(discValueRaw);
+    } on ArgumentError catch (error) {
       return SchemaResult.fail(
         SchemaValidationError(
-          message: 'Discriminated branches must be object-backed schemas',
+          message: error.message?.toString() ?? error.toString(),
           context: subSchemaContext,
         ),
       );
     }
 
-    final result = selectedSubSchema.parseAndValidate(
+    subSchemaContext = context.createChild(
+      name: 'when $discriminatorKey="$discValueRaw"',
+      schema: effectiveSubSchema,
+      value: mapValue,
+      pathSegment: '', // Inherit parent path
+    );
+
+    final result = effectiveSubSchema.parseAndValidate(
       mapValue,
       subSchemaContext,
     );
@@ -221,19 +249,8 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   Map<String, Object?> toJsonSchema() {
     final anyOfClauses = <Map<String, Object?>>[];
     final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
-    schemas.forEach((discriminatorValue, branchSchema) {
-      final baseSchema = unwrapDiscriminatedBranchSchema(branchSchema);
-      if (baseSchema is! ObjectSchema) {
-        throw ArgumentError(
-          'Discriminated branches must be object-backed schemas.',
-        );
-      }
-      final subSchemaJson = branchSchema.toJsonSchema();
-      // Constrain discriminator property with type and const
-      subSchemaJson['properties'] = {
-        ...?(subSchemaJson['properties'] as Map?),
-        discriminatorKey: {'type': 'string', 'const': discriminatorValue},
-      };
+    schemas.forEach((discriminatorValue, _) {
+      final subSchemaJson = effectiveBranch(discriminatorValue).toJsonSchema();
       // Build required array with discriminator first
       final existingRequired =
           (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];

@@ -216,7 +216,6 @@ class TypeBuilder {
     final baseTypeName = _getExtensionTypeName(baseModel);
     final lookups = _ModelLookups(allModels);
     final discriminatorKey = baseModel.discriminatorKey!;
-    final schemaVarName = _toCamelCase(model.schemaClassName);
 
     return ExtensionType(
       (b) => b
@@ -232,8 +231,7 @@ class TypeBuilder {
           refer('Map<String, Object?>'),
         ])
         ..methods.addAll([
-          // Override discriminator to read from _data.
-          // Factory constructors already validate the discriminator value matches
+          // Subtype factories validate through the effective branch schema.
           Method(
             (m) => m
               ..type = MethodType.getter
@@ -242,10 +240,11 @@ class TypeBuilder {
               ..lambda = true
               ..body = Code("_data['$discriminatorKey'] as String"),
           ),
-          ..._buildStaticFactories(model, schemaVarName),
+          ..._buildDiscriminatedSubtypeFactories(model, baseModel),
           // Add regular field getters
           ..._buildGetters(model, lookups, skipJsonKeys: {discriminatorKey}),
-          if (model.additionalProperties) _buildArgsGetter(model),
+          if (model.additionalProperties)
+            _buildArgsGetter(model, additionalKnownKeys: {discriminatorKey}),
         ]),
     );
   }
@@ -395,6 +394,56 @@ return $schemaVarName.parseAs(
 return $schemaVarName.safeParseAs(
   data,
   (validated) => $typeName(validated as $castType),
+);'''),
+      ),
+    ];
+  }
+
+  List<Method> _buildDiscriminatedSubtypeFactories(
+    ModelInfo model,
+    ModelInfo baseModel,
+  ) {
+    final typeName = _getExtensionTypeName(model);
+    final baseSchemaVarName = _toCamelCase(baseModel.schemaClassName);
+    final discriminatorValue = model.discriminatorValue!;
+    final effectiveBranch =
+        "$baseSchemaVarName.effectiveBranch('$discriminatorValue')";
+
+    return [
+      Method(
+        (m) => m
+          ..name = 'parse'
+          ..static = true
+          ..returns = refer(typeName)
+          ..requiredParameters.add(
+            Parameter(
+              (p) => p
+                ..name = 'data'
+                ..type = refer('Object?'),
+            ),
+          )
+          ..body = Code('''
+return $effectiveBranch.parseAs(
+  data,
+  (validated) => $typeName(validated as Map<String, Object?>),
+);'''),
+      ),
+      Method(
+        (m) => m
+          ..name = 'safeParse'
+          ..static = true
+          ..returns = _schemaResultRef(refer(typeName))
+          ..requiredParameters.add(
+            Parameter(
+              (p) => p
+                ..name = 'data'
+                ..type = refer('Object?'),
+            ),
+          )
+          ..body = Code('''
+return $effectiveBranch.safeParseAs(
+  data,
+  (validated) => $typeName(validated as Map<String, Object?>),
 );'''),
       ),
     ];
@@ -1007,8 +1056,14 @@ ${cases.join(',\n')},
   ///
   /// Returns a Map containing only properties that are not explicitly
   /// defined in the schema. This is useful when additionalProperties: true.
-  Method _buildArgsGetter(ModelInfo model) {
-    final knownKeys = model.fields.map((f) => f.jsonKey).toSet();
+  Method _buildArgsGetter(
+    ModelInfo model, {
+    Set<String> additionalKnownKeys = const {},
+  }) {
+    final knownKeys = {
+      ...additionalKnownKeys,
+      ...model.fields.map((f) => f.jsonKey),
+    };
 
     // Generate filter condition inline for better performance
     final conditions = knownKeys.map((k) => "e.key != '$k'").toList();

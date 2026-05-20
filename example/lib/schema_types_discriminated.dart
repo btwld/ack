@@ -5,16 +5,10 @@ part 'schema_types_discriminated.g.dart';
 
 /// Discriminated schema example for @AckType extension generation.
 @AckType()
-final catSchema = Ack.object({
-  'kind': Ack.literal('cat'),
-  'lives': Ack.integer(),
-});
+final catSchema = Ack.object({'lives': Ack.integer()});
 
 @AckType()
-ObjectSchema get dogSchema => Ack.object({
-  'kind': Ack.literal('dog'),
-  'bark': Ack.boolean(),
-}).passthrough();
+ObjectSchema get dogSchema => Ack.object({'bark': Ack.boolean()}).passthrough();
 
 @AckType()
 final petSchema = Ack.discriminated(

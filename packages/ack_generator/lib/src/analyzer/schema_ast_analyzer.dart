@@ -630,7 +630,7 @@ class SchemaAstAnalyzer {
   /// - `schemas` must be a non-empty map literal
   /// - Branches must be top-level schema variable/getter references
   /// - Branches must be @AckType object schemas and non-nullable
-  /// - Branches must declare `discriminatorKey` as a matching `Ack.literal(...)`
+  /// - Branch discriminator properties may be omitted or compatible
   /// - Each branch schema can only appear once per discriminated base
   /// - Branches must be declared in the same library
   ModelInfo _parseDiscriminatedSchema(
@@ -791,30 +791,21 @@ class SchemaAstAnalyzer {
         );
       }
 
-      final branchLiteralValue = _extractDiscriminatorLiteralFromDeclaration(
-        declaration: resolvedBranch.sourceDeclaration,
-        discriminatorKey: resolvedDiscriminatorKey,
-        visitedDeclarations: <String>{},
-      );
+      final discriminatorCompatibilityError =
+          _analyzeDiscriminatorPropertyCompatibility(
+            declaration: resolvedBranch.sourceDeclaration,
+            discriminatorKey: resolvedDiscriminatorKey,
+            discriminatorValue: discriminatorValue,
+            visitedDeclarations: <String>{},
+          );
 
-      if (branchLiteralValue == null) {
+      if (discriminatorCompatibilityError != null) {
         throw InvalidGenerationSourceError(
-          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" must define '
-          '"$resolvedDiscriminatorKey" as Ack.literal("$discriminatorValue").',
+          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" '
+          '$discriminatorCompatibilityError',
           element: element,
           todo:
-              'Update the branch object schema so "$resolvedDiscriminatorKey" is a literal matching its map key.',
-        );
-      }
-
-      if (branchLiteralValue != discriminatorValue) {
-        throw InvalidGenerationSourceError(
-          'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" has '
-          '"$resolvedDiscriminatorKey" literal "$branchLiteralValue", '
-          'but is mapped as "$discriminatorValue".',
-          element: element,
-          todo:
-              'Use matching values for the schemas map key and branch discriminator literal.',
+              'Omit "$resolvedDiscriminatorKey" from the branch schema, or make it accept "$discriminatorValue".',
         );
       }
 
@@ -839,33 +830,38 @@ class SchemaAstAnalyzer {
     );
   }
 
-  String? _extractDiscriminatorLiteralFromDeclaration({
+  String? _analyzeDiscriminatorPropertyCompatibility({
     required Element2 declaration,
     required String discriminatorKey,
+    required String discriminatorValue,
     required Set<String> visitedDeclarations,
   }) {
     final declarationKey = _declarationVisitKey(declaration);
     if (!visitedDeclarations.add(declarationKey)) {
-      return null;
+      return 'has a recursive discriminator property reference that cannot be analyzed.';
     }
 
     final schemaExpression = _extractSchemaExpressionForDeclaration(
       declaration,
     );
-    if (schemaExpression == null) return null;
+    if (schemaExpression == null) {
+      return 'has a discriminator property that could not be analyzed.';
+    }
 
-    return _extractDiscriminatorLiteralFromSchemaExpression(
+    return _analyzeDiscriminatorSchemaExpressionCompatibility(
       expression: schemaExpression,
       contextElement: declaration,
       discriminatorKey: discriminatorKey,
+      discriminatorValue: discriminatorValue,
       visitedDeclarations: visitedDeclarations,
     );
   }
 
-  String? _extractDiscriminatorLiteralFromSchemaExpression({
+  String? _analyzeDiscriminatorSchemaExpressionCompatibility({
     required Expression expression,
     required Element2 contextElement,
     required String discriminatorKey,
+    required String discriminatorValue,
     required Set<String> visitedDeclarations,
   }) {
     if (expression is MethodInvocation) {
@@ -875,11 +871,14 @@ class SchemaAstAnalyzer {
           schemaReferenceBase,
           contextElement,
         );
-        if (resolvedBranch == null) return null;
+        if (resolvedBranch == null) {
+          return 'has a discriminator property reference that could not be resolved.';
+        }
 
-        return _extractDiscriminatorLiteralFromDeclaration(
+        return _analyzeDiscriminatorPropertyCompatibility(
           declaration: resolvedBranch.sourceDeclaration,
           discriminatorKey: discriminatorKey,
+          discriminatorValue: discriminatorValue,
           visitedDeclarations: visitedDeclarations,
         );
       }
@@ -887,36 +886,48 @@ class SchemaAstAnalyzer {
       final baseInvocation = _findBaseAckInvocation(expression);
       if (baseInvocation == null ||
           baseInvocation.methodName.name != 'object') {
-        return null;
+        return _analyzeDiscriminatorPropertySchemaExpression(
+          expression: expression,
+          contextElement: contextElement,
+          discriminatorValue: discriminatorValue,
+          visitedDeclarations: visitedDeclarations,
+        );
       }
 
-      return _extractDiscriminatorLiteralFromObjectInvocation(
+      return _analyzeDiscriminatorObjectInvocation(
         objectInvocation: baseInvocation,
         contextElement: contextElement,
         discriminatorKey: discriminatorKey,
+        discriminatorValue: discriminatorValue,
         visitedDeclarations: visitedDeclarations,
       );
     }
 
     final schemaReference = _extractSchemaReference(expression);
-    if (schemaReference == null) return null;
+    if (schemaReference == null) {
+      return 'has a discriminator property that could not be analyzed.';
+    }
     final resolvedBranch = _resolveSchemaReference(
       schemaReference,
       contextElement,
     );
-    if (resolvedBranch == null) return null;
+    if (resolvedBranch == null) {
+      return 'has a discriminator property reference that could not be resolved.';
+    }
 
-    return _extractDiscriminatorLiteralFromDeclaration(
+    return _analyzeDiscriminatorPropertyCompatibility(
       declaration: resolvedBranch.sourceDeclaration,
       discriminatorKey: discriminatorKey,
+      discriminatorValue: discriminatorValue,
       visitedDeclarations: visitedDeclarations,
     );
   }
 
-  String? _extractDiscriminatorLiteralFromObjectInvocation({
+  String? _analyzeDiscriminatorObjectInvocation({
     required MethodInvocation objectInvocation,
     required Element2 contextElement,
     required String discriminatorKey,
+    required String discriminatorValue,
     required Set<String> visitedDeclarations,
   }) {
     final args = objectInvocation.argumentList.arguments;
@@ -933,9 +944,10 @@ class SchemaAstAnalyzer {
         continue;
       }
 
-      return _extractLiteralValueFromSchemaExpression(
+      return _analyzeDiscriminatorPropertySchemaExpression(
         expression: mapElement.value,
         contextElement: contextElement,
+        discriminatorValue: discriminatorValue,
         visitedDeclarations: visitedDeclarations,
       );
     }
@@ -943,9 +955,10 @@ class SchemaAstAnalyzer {
     return null;
   }
 
-  String? _extractLiteralValueFromSchemaExpression({
+  String? _analyzeDiscriminatorPropertySchemaExpression({
     required Expression expression,
     required Element2 contextElement,
+    required String discriminatorValue,
     required Set<String> visitedDeclarations,
   }) {
     if (expression is MethodInvocation) {
@@ -955,59 +968,147 @@ class SchemaAstAnalyzer {
           schemaReferenceBase,
           contextElement,
         );
-        if (resolved == null) return null;
+        if (resolved == null) {
+          return 'has a discriminator property reference that could not be resolved.';
+        }
 
-        return _extractLiteralValueFromDeclaration(
+        return _analyzeDiscriminatorPropertySchemaDeclaration(
           declaration: resolved.sourceDeclaration,
+          discriminatorValue: discriminatorValue,
           visitedDeclarations: visitedDeclarations,
         );
       }
 
       final baseInvocation = _findBaseAckInvocation(expression);
-      if (baseInvocation == null ||
-          baseInvocation.methodName.name != 'literal') {
-        return null;
+      if (baseInvocation == null) {
+        return 'has a discriminator property that could not be analyzed.';
       }
 
-      final literalArguments = baseInvocation.argumentList.arguments;
-      if (literalArguments.length != 1 ||
-          literalArguments.first is! SimpleStringLiteral) {
-        return null;
+      final schemaMethod = baseInvocation.methodName.name;
+      if (schemaMethod == 'literal') {
+        if (!_hasOnlyNonRestrictiveDiscriminatorMethods(
+          expression,
+          baseInvocation,
+          baseMethod: 'literal',
+        )) {
+          return 'has discriminator property schema ${expression.toSource()} that could not be proven to accept "$discriminatorValue".';
+        }
+
+        final literalValue = _extractSingleStringArgument(baseInvocation);
+        if (literalValue == null) {
+          return 'has a discriminator literal that is not a string literal.';
+        }
+        if (literalValue == discriminatorValue) {
+          return null;
+        }
+        return 'has discriminator literal "$literalValue", but is mapped as "$discriminatorValue".';
       }
 
-      return (literalArguments.first as SimpleStringLiteral).value;
+      if (schemaMethod == 'enumString') {
+        if (!_hasOnlyNonRestrictiveDiscriminatorMethods(
+          expression,
+          baseInvocation,
+          baseMethod: 'enumString',
+        )) {
+          return 'has discriminator property schema ${expression.toSource()} that could not be proven to accept "$discriminatorValue".';
+        }
+
+        final allowedValues = _extractStringListArgument(baseInvocation);
+        if (allowedValues == null) {
+          return 'has an Ack.enumString(...) discriminator that is not a string list literal.';
+        }
+        if (allowedValues.contains(discriminatorValue)) {
+          return null;
+        }
+        return 'has discriminator enum values ${allowedValues.map((v) => '"$v"').join(', ')}, '
+            'which do not include "$discriminatorValue".';
+      }
+
+      return 'has discriminator property schema ${expression.toSource()} that could not be proven to accept "$discriminatorValue".';
     }
 
     final schemaReference = _extractSchemaReference(expression);
-    if (schemaReference == null) return null;
+    if (schemaReference == null) {
+      return 'has a discriminator property that could not be analyzed.';
+    }
     final resolved = _resolveSchemaReference(schemaReference, contextElement);
-    if (resolved == null) return null;
+    if (resolved == null) {
+      return 'has a discriminator property reference that could not be resolved.';
+    }
 
-    return _extractLiteralValueFromDeclaration(
+    return _analyzeDiscriminatorPropertySchemaDeclaration(
       declaration: resolved.sourceDeclaration,
+      discriminatorValue: discriminatorValue,
       visitedDeclarations: visitedDeclarations,
     );
   }
 
-  String? _extractLiteralValueFromDeclaration({
+  String? _analyzeDiscriminatorPropertySchemaDeclaration({
     required Element2 declaration,
+    required String discriminatorValue,
     required Set<String> visitedDeclarations,
   }) {
     final declarationKey = _declarationVisitKey(declaration);
     if (!visitedDeclarations.add(declarationKey)) {
-      return null;
+      return 'has a recursive discriminator property reference that cannot be analyzed.';
     }
 
     final schemaExpression = _extractSchemaExpressionForDeclaration(
       declaration,
     );
-    if (schemaExpression == null) return null;
+    if (schemaExpression == null) {
+      return 'has a discriminator property reference that could not be analyzed.';
+    }
 
-    return _extractLiteralValueFromSchemaExpression(
+    return _analyzeDiscriminatorPropertySchemaExpression(
       expression: schemaExpression,
       contextElement: declaration,
+      discriminatorValue: discriminatorValue,
       visitedDeclarations: visitedDeclarations,
     );
+  }
+
+  String? _extractSingleStringArgument(MethodInvocation invocation) {
+    final arguments = invocation.argumentList.arguments;
+    if (arguments.length != 1 || arguments.first is! SimpleStringLiteral) {
+      return null;
+    }
+    return (arguments.first as SimpleStringLiteral).value;
+  }
+
+  List<String>? _extractStringListArgument(MethodInvocation invocation) {
+    final arguments = invocation.argumentList.arguments;
+    if (arguments.length != 1 || arguments.first is! ListLiteral) {
+      return null;
+    }
+
+    final values = <String>[];
+    for (final element in (arguments.first as ListLiteral).elements) {
+      if (element is! SimpleStringLiteral) return null;
+      values.add(element.value);
+    }
+    return values;
+  }
+
+  bool _hasOnlyNonRestrictiveDiscriminatorMethods(
+    MethodInvocation expression,
+    MethodInvocation baseInvocation, {
+    required String baseMethod,
+  }) {
+    final (chain, _) = _collectMethodChain(expression);
+    const allowedMethods = {'optional', 'nullable', 'describe'};
+
+    for (final invocation in chain) {
+      final methodName = invocation.methodName.name;
+      if (identical(invocation, baseInvocation)) {
+        return methodName == baseMethod;
+      }
+      if (!allowedMethods.contains(methodName)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   String _declarationVisitKey(Element2 declaration) {

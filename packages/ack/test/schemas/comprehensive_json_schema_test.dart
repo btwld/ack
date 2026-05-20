@@ -450,13 +450,11 @@ void main() {
 
         setUp(() {
           carSchema = Ack.object({
-            'type': Ack.string(),
             'doors': Ack.integer(),
             'engine': Ack.string(),
           });
 
           bikeSchema = Ack.object({
-            'type': Ack.string(),
             'wheels': Ack.integer(),
             'pedals': Ack.boolean(),
           });
@@ -682,15 +680,11 @@ void main() {
             discriminatorKey: 'type',
             schemas: {
               'credit_card': Ack.object({
-                'type': Ack.string(),
                 'cardNumber': Ack.string().length(16),
                 'expiryMonth': Ack.integer().min(1).max(12),
                 'expiryYear': Ack.integer().min(2023),
               }),
-              'paypal': Ack.object({
-                'type': Ack.string(),
-                'email': Ack.string().email(),
-              }),
+              'paypal': Ack.object({'email': Ack.string().email()}),
             },
           ),
         });
