@@ -120,6 +120,17 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
+  DefaultSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
+    return DefaultSchema<Boundary, Runtime>(
+      inner: newInner as AckSchema<Boundary, Runtime>,
+      defaultValue: defaultValue,
+      isNullable: super.isNullable,
+      isOptional: super.isOptional,
+      description: description,
+    );
+  }
+
+  @override
   @protected
   DefaultSchema<Boundary, Runtime> copyWithRuntimeConfig({
     bool? isNullable,

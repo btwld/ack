@@ -48,24 +48,46 @@ final class DiscriminatedObjectSchema<T extends Object>
           'Discriminated branches must be object-backed schemas.',
         );
       }
+      // Union-owned discriminator (PR #107): if a branch declares the
+      // discriminator property, it must accept the branch label. Otherwise
+      // the union synthesizes the literal automatically via [effectiveBranch].
       final branchDiscriminator = base.properties[discriminatorKey];
-      if (branchDiscriminator == null) {
+      if (branchDiscriminator != null &&
+          !discriminatorPropertyAcceptsValue(
+            propertySchema: branchDiscriminator,
+            discriminatorValue: label,
+          )) {
         throw ArgumentError.value(
           entry.value,
           'schemas["$label"]',
-          'Discriminated branch "$label" must define discriminator key '
-              '"$discriminatorKey" with Ack.literal("$label").',
-        );
-      }
-      if (!hasMatchingDiscriminatorLiteral(branchDiscriminator, label)) {
-        throw ArgumentError.value(
-          entry.value,
-          'schemas["$label"]',
-          'Discriminator key "$discriminatorKey" conflicts with existing '
-              'property in branch "$label".',
+          'Discriminator property "$discriminatorKey" in branch "$label" '
+              'must be Ack.literal("$label") or Ack.enumString containing '
+              '"$label".',
         );
       }
     }
+  }
+
+  /// Returns the effective schema for [discriminatorValue].
+  ///
+  /// The effective schema includes this union's discriminator property as an
+  /// exact branch literal, even when the authored branch omitted it. Wrappers
+  /// around the branch (codecs, defaults) are preserved.
+  AckSchema<JsonMap, T> effectiveBranch(String discriminatorValue) {
+    final branchSchema = schemas[discriminatorValue];
+    if (branchSchema == null) {
+      throw ArgumentError.value(
+        discriminatorValue,
+        'discriminatorValue',
+        'No discriminated branch is registered for this value.',
+      );
+    }
+    return effectiveDiscriminatedBranch(
+          discriminatorKey: discriminatorKey,
+          discriminatorValue: discriminatorValue,
+          branchSchema: branchSchema,
+        )
+        as AckSchema<JsonMap, T>;
   }
 
   @override

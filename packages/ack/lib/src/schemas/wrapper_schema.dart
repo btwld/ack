@@ -16,6 +16,13 @@ mixin WrapperSchema<
   /// The wrapped schema used for boundary-shape traversal.
   AnyAckSchema get inner;
 
+  /// Returns a copy of this wrapper with [inner] swapped for [newInner].
+  ///
+  /// Used by traversal utilities (e.g. discriminated-branch synthesis) that
+  /// need to rewrite the underlying boundary schema while preserving wrapper
+  /// configuration and behavior.
+  Schema copyWithInner(AnyAckSchema newInner);
+
   /// Returns a copy with runtime-side configuration replaced.
   @protected
   Schema copyWithRuntimeConfig({

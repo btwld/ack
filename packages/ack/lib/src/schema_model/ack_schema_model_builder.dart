@@ -12,9 +12,25 @@ extension AckSchemaModelExtension on AckSchema {
 }
 
 AckSchemaModel _build(AckSchema schema) {
-  if (schema is TransformedSchema) {
-    final base = _build(schema.schema);
-    final transformed = _applyConstraints(
+  if (schema is DefaultSchema) {
+    final base = _build(schema.inner);
+    final exportDefault = _defaultExportValueOrNull(schema);
+    if (exportDefault != null) {
+      return base.withDefaultValue(exportDefault);
+    }
+    return base.withWarnings([
+      ...base.warnings,
+      AckSchemaModelWarning(
+        code: 'default_not_export_safe',
+        message:
+            'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
+      ),
+    ]);
+  }
+
+  if (schema is WrapperSchema) {
+    final base = _build(schema.inner);
+    return _applyConstraints(
       base
           .withDescription(schema.description ?? base.description)
           .withNullable(schema.isNullable || base.nullable)
@@ -22,7 +38,6 @@ AckSchemaModel _build(AckSchema schema) {
       schema,
       boundaryFormat: base.format,
     );
-    return _withDefaultAndWarnings(transformed, schema);
   }
 
   final model = switch (schema) {
@@ -35,13 +50,14 @@ AckSchemaModel _build(AckSchema schema) {
     ObjectSchema() => _object(schema),
     AnyOfSchema() => _anyOf(schema),
     AnySchema() => _any(schema),
+    InstanceSchema() => _instance(schema),
     DiscriminatedObjectSchema() => _discriminated(schema),
     _ => throw UnsupportedError(
       'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
     ),
   };
 
-  return _withDefaultAndWarnings(_applyConstraints(model, schema), schema);
+  return _applyConstraints(model, schema);
 }
 
 AckSchemaModel _string(StringSchema schema) {
@@ -127,6 +143,31 @@ AckSchemaModel _anyOf(AnyOfSchema schema) {
     schemas: schema.schemas.map(_build).toList(growable: false),
     nullable: schema.isNullable,
     description: schema.description,
+  );
+}
+
+AckSchemaModel _instance(InstanceSchema schema) {
+  // InstanceSchema accepts arbitrary Dart instances of a runtime type with no
+  // direct JSON representation. Adapters that flow through a codec see the
+  // boundary schema instead; this is the fallback for a bare instance.
+  return AckAnyOfSchemaModel(
+    schemas: [
+      AckStringSchemaModel(description: schema.description),
+      AckNumberSchemaModel(description: schema.description),
+      AckIntegerSchemaModel(description: schema.description),
+      AckBooleanSchemaModel(description: schema.description),
+      AckObjectSchemaModel(description: schema.description),
+      AckArraySchemaModel(description: schema.description),
+    ],
+    nullable: schema.isNullable,
+    description: schema.description,
+    warnings: const [
+      AckSchemaModelWarning(
+        code: 'ack_instance_json_boundary',
+        message:
+            'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
+      ),
+    ],
   );
 }
 
@@ -237,32 +278,26 @@ AckSchemaModel _applyDateTimeConstraint(
   ]);
 }
 
-AckSchemaModel _withDefaultAndWarnings(AckSchemaModel model, AckSchema schema) {
+/// Best-effort export of a [DefaultSchema] default value.
+///
+/// Encodes the runtime default through the wrapped schema so codec
+/// transformations are applied, then verifies the result is JSON-safe before
+/// returning it. Returns `null` when no JSON-safe representation is reachable.
+Object? _defaultExportValueOrNull(DefaultSchema schema) {
   final defaultValue = schema.defaultValue;
-  if (defaultValue == null) return model;
+  if (defaultValue is Enum) return defaultValue.name;
 
-  final exportDefault = _exportSafeDefaultOrNull(schema, defaultValue);
-  if (exportDefault != null) {
-    return model.withDefaultValue(exportDefault);
-  }
-
-  return model.withWarnings([
-    ...model.warnings,
-    AckSchemaModelWarning(
-      code: 'default_not_export_safe',
-      message:
-          'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
-    ),
-  ]);
-}
-
-Object? _exportSafeDefaultOrNull(AckSchema schema, Object defaultValue) {
-  if (schema is TransformedSchema) {
-    return null;
-  }
-
-  if (schema is EnumSchema && defaultValue is Enum) {
-    return defaultValue.name;
+  // Try encoding through the inner schema (handles codec transformations).
+  final encoded = schema.inner.safeEncode(defaultValue);
+  if (encoded.isOk) {
+    final encodedValue = encoded.getOrNull();
+    if (encodedValue != null) {
+      try {
+        return jsonDecode(jsonEncode(encodedValue));
+      } catch (_) {
+        // fall through to runtime fallback
+      }
+    }
   }
 
   if (defaultValue is String ||

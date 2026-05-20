@@ -213,6 +213,22 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
+  CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
+    return CodecSchema<Boundary, Runtime>._(
+      inputSchema: newInner as AckSchema<Boundary, dynamic>,
+      outputSchema: outputSchema,
+      decoder: _decoder,
+      encoder: _encoder,
+      decoderIdentity: _decoderIdentity,
+      isNullable: isNullable,
+      isOptional: isOptional,
+      description: description,
+      constraints: constraints,
+      refinements: refinements,
+    );
+  }
+
+  @override
   @protected
   CodecSchema<Boundary, Runtime> copyWithRuntimeConfig({
     bool? isNullable,
