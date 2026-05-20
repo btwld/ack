@@ -70,9 +70,9 @@ Example Dart test:
 test('JSON Schema compatibility for user schema', () async {
   // Generate JSON schema from Ack schema
   final ackSchema = Ack.object({
-    'name': Ack.string.minLength(2),
-    'email': Ack.string.email(),
-  }, required: ['name', 'email']);
+    'name': Ack.string().minLength(2),
+    'email': Ack.string().email(),
+  });
   
   final jsonSchema = ackSchema.toSchemaModel().toJsonSchema();
   

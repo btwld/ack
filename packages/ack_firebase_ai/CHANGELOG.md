@@ -1,8 +1,7 @@
 ## Unreleased
 
 ### Added
-- Added `toFirebaseAiResponseJsonSchema()` and
-  `convertAckSchemaModelToFirebaseAiResponseJsonSchema()` for Firebase AI's
+- Added `toFirebaseAiResponseJsonSchema()` for Firebase AI's
   `GenerationConfig.responseJsonSchema` path.
 - Added an opt-in live Firebase AI contract test for real
   `responseJsonSchema` generation and ACK validation.

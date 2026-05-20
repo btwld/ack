@@ -62,7 +62,7 @@ final class SchemaModelResponseJsonSchemaCase
 
   @override
   Map<String, Object?> buildJsonSchema() {
-    return convertAckSchemaModelToFirebaseAiResponseJsonSchema(model);
+    return model.toJsonSchema();
   }
 
   @override
