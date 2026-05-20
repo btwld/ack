@@ -1024,15 +1024,6 @@ class SchemaAstAnalyzer {
             'which do not include "$discriminatorValue".';
       }
 
-      if (schemaMethod == 'string' &&
-          _hasOnlyNonRestrictiveDiscriminatorMethods(
-            expression,
-            baseInvocation,
-            baseMethod: 'string',
-          )) {
-        return null;
-      }
-
       return 'has discriminator property schema ${expression.toSource()} that could not be proven to accept "$discriminatorValue".';
     }
 

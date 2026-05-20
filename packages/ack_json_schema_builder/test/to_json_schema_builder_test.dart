@@ -331,7 +331,10 @@ void main() {
           final schema = Ack.discriminated(
             discriminatorKey: 'kind',
             schemas: {
-              'a': Ack.object({'kind': Ack.string(), 'val': Ack.string()}),
+              'a': Ack.object({
+                'kind': Ack.enumString(['a', 'alpha']),
+                'val': Ack.string(),
+              }),
             },
           );
           final result = schema.toJsonSchemaBuilder();

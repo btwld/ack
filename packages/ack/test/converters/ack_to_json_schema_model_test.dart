@@ -115,7 +115,10 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'cat': Ack.object({'lives': Ack.integer()}),
-            'dog': Ack.object({'type': Ack.string(), 'breed': Ack.string()}),
+            'dog': Ack.object({
+              'type': Ack.enumString(['dog', 'canine']),
+              'breed': Ack.string(),
+            }),
           },
         );
 
@@ -139,6 +142,17 @@ void main() {
         expect(dogBranch.propertyOrdering, equals(['type', 'breed']));
       },
     );
+
+    test('toJsonSchemaModel_rejects_broad_string_discriminator_property', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'type',
+        schemas: {
+          'cat': Ack.object({'type': Ack.string(), 'lives': Ack.integer()}),
+        },
+      );
+
+      expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+    });
 
     test(
       'preserves transformed branch description in discriminated model conversion',

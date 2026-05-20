@@ -808,7 +808,7 @@ void main() {
             discriminatorKey: 'type',
             schemas: {
               'circle': Ack.object({
-                'type': Ack.string(),
+                'type': Ack.enumString(['circle', 'round']),
                 'radius': Ack.double(),
               }),
             },

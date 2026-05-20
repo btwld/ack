@@ -60,9 +60,7 @@ void main() {
       // DiscriminatedObjectSchema
       final disc = Ack.discriminated(
         discriminatorKey: 'type',
-        schemas: {
-          'a': Ack.object({'type': Ack.string()}),
-        },
+        schemas: {'a': Ack.object({})},
       );
       final discJsonSchema = disc.toJsonSchema();
       expect(

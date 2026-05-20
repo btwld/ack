@@ -204,9 +204,10 @@ Schema for polymorphic validation based on a string discriminator property.
 
 - Branch schemas normally omit the discriminator field.
 - The boundary payload must still contain the discriminator key.
-- If a branch schema includes the discriminator field, it must accept the
-  branch map key; conflicting schemas are rejected. For generated types, this
-  compatibility must be statically provable.
+- If a branch schema includes the discriminator field, it must be
+  `Ack.literal(...)` matching the branch key or `Ack.enumString(...)`
+  containing it. Broad, transformed, refined, or otherwise restrictive
+  discriminator fields are rejected.
 - Exported and generated schemas expose each branch discriminator as an exact
   literal.
 - Generated subtype `parse()` and `safeParse()` methods validate through the

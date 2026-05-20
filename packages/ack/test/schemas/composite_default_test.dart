@@ -270,11 +270,8 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(),
-              'radius': Ack.integer(),
-            }),
-            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
+            'circle': Ack.object({'radius': Ack.integer()}),
+            'square': Ack.object({'side': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -290,11 +287,8 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(),
-              'radius': Ack.integer(),
-            }),
-            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
+            'circle': Ack.object({'radius': Ack.integer()}),
+            'square': Ack.object({'side': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -311,10 +305,7 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(),
-              'radius': Ack.integer(),
-            }),
+            'circle': Ack.object({'radius': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -336,11 +327,8 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(),
-              'radius': Ack.integer(),
-            }),
-            'square': Ack.object({'type': Ack.string(), 'side': Ack.integer()}),
+            'circle': Ack.object({'radius': Ack.integer()}),
+            'square': Ack.object({'side': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 
@@ -357,10 +345,7 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({
-              'type': Ack.string(),
-              'radius': Ack.integer(),
-            }),
+            'circle': Ack.object({'radius': Ack.integer()}),
           },
         ).copyWith(defaultValue: defaultValue);
 

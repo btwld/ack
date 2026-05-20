@@ -139,7 +139,7 @@ final petSchema = Ack.discriminated(
       );
     });
 
-    test('allows existing broad string discriminator property', () async {
+    test('allows existing matching discriminator enum', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
       await testBuilder(
@@ -152,7 +152,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
-  'kind': Ack.string(),
+  'kind': Ack.enumString(['cat', 'kitty']),
   'lives': Ack.integer(),
 });
 
@@ -173,6 +173,36 @@ final petSchema = Ack.discriminated(
               contains("String get kind => _data['kind'] as String;"),
             ]),
           ),
+        },
+      );
+    });
+
+    test('fails when branch discriminator property is broad string', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await _expectGenerationFailure(
+        builder: builder,
+        expectedMessage: 'could not be proven to accept "cat"',
+        assets: {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.string(),
+  'lives': Ack.integer(),
+});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {
+    'cat': catSchema,
+  },
+);
+''',
         },
       );
     });

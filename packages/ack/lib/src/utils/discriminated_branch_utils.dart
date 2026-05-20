@@ -1,3 +1,4 @@
+import '../constraints/pattern_constraint.dart';
 import '../constraints/string_literal_constraint.dart';
 import '../schemas/schema.dart';
 
@@ -8,11 +9,29 @@ StringSchema _discriminatorLiteralSchema(String discriminatorValue) {
 }
 
 /// Returns whether [propertySchema] accepts [discriminatorValue].
+///
+/// This compatibility check is structural and side-effect-free. It deliberately
+/// does not parse the discriminator value because parsing can execute user
+/// transforms/refinements during branch selection or schema export.
 bool discriminatorPropertyAcceptsValue({
   required AckSchema propertySchema,
   required String discriminatorValue,
 }) {
-  return propertySchema.safeParse(discriminatorValue).isOk;
+  if (propertySchema is! StringSchema) return false;
+  if (propertySchema.refinements.isNotEmpty) return false;
+  if (propertySchema.constraints.length != 1) return false;
+
+  final constraint = propertySchema.constraints.single;
+  if (constraint is StringLiteralConstraint) {
+    return constraint.expectedValue == discriminatorValue;
+  }
+
+  if (constraint is PatternConstraint &&
+      constraint.type == PatternType.enumString) {
+    return constraint.allowedValues?.contains(discriminatorValue) ?? false;
+  }
+
+  return false;
 }
 
 /// Builds the effective object branch for a discriminated-union value.

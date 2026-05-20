@@ -66,11 +66,12 @@ dev_dependencies:
 
 For discriminated unions, `Ack.discriminated(...)` owns the discriminator
 property. Branch schemas normally omit the discriminator field; if they include
-it, that field must be statically provable as accepting the branch map key.
-Boundary payloads must still include the discriminator key. Conflicting
-discriminator fields are rejected. Generated branches expose the exact branch
-literal, and generated subtype `parse()` / `safeParse()` methods validate
-through the union's effective branch.
+it, that field must be `Ack.literal(...)` matching the branch key or
+`Ack.enumString(...)` containing the branch key. Boundary payloads must still
+include the discriminator key. Conflicting, broad, transformed/refined, and
+restrictive discriminator fields are rejected. Generated branches expose the
+exact branch literal, and generated subtype `parse()` / `safeParse()` methods
+validate through the union's effective branch.
 
 ## Important limitations
 
