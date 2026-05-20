@@ -1,5 +1,6 @@
 import '../../constraints/constraint.dart';
 import '../../constraints/datetime_constraint.dart';
+import '../../schema_model/ack_schema_model_builder.dart';
 import '../schema.dart';
 
 /// Extensions for `CodecSchema<String, DateTime>` to add date range
@@ -29,7 +30,9 @@ extension DateTimeSchemaExtensions on CodecSchema<String, DateTime> {
 DateTimeConstraintFormat _dateTimeConstraintFormat(
   CodecSchema<String, DateTime> schema,
 ) {
-  return switch (schema.inputSchema.toJsonSchema()['format']) {
+  final inputSchema = schema.inputSchema as AckSchema<String, Object>;
+  final model = inputSchema.toSchemaModel();
+  return switch (model.format) {
     'date' => DateTimeConstraintFormat.date,
     'date-time' => DateTimeConstraintFormat.dateTime,
     _ => DateTimeConstraintFormat.dateTime,

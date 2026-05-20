@@ -7,7 +7,11 @@ import '../schemas/schema.dart';
 import 'ack_schema_model.dart';
 import 'ack_schema_model_warning.dart';
 
-extension AckSchemaModelExtension on AckSchema {
+extension AckSchemaModelExtension<
+  Boundary extends Object,
+  Runtime extends Object
+>
+    on AckSchema<Boundary, Runtime> {
   AckSchemaModel toSchemaModel() => _build(this);
 }
 
@@ -19,14 +23,16 @@ AckSchemaModel _build(AckSchema schema) {
     final extensions = schema is DefaultSchema
         ? base.extensions
         : {...base.extensions, 'x-transformed': true};
-    var wrapped = _applyConstraints(
-      base
-          .withDescription(schema.description ?? base.description)
-          .withNullable(schema.isNullable || base.nullable)
-          .withExtensions(extensions),
-      schema,
-      boundaryFormat: base.format,
-    );
+    final layered = base
+        .withDescription(schema.description ?? base.description)
+        .withNullable(schema.isNullable || base.nullable)
+        .withExtensions(extensions);
+    // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
+    // which `_build(schema.inner)` already applied. Re-running them here
+    // would emit duplicate warnings (e.g. datetime range under a default).
+    var wrapped = schema is DefaultSchema
+        ? layered
+        : _applyConstraints(layered, schema);
 
     if (schema is DefaultSchema) {
       final exportDefault = _defaultExportValueOrNull(schema);
@@ -122,7 +128,7 @@ AckSchemaModel _object(ObjectSchema schema) {
       entry.key,
       () => _build(entry.value),
     );
-    if (!entry.value.isOptional) {
+    if (_isRequiredObjectProperty(entry.value)) {
       required.add(entry.key);
     }
   }
@@ -191,7 +197,7 @@ AckSchemaModel _any(AnySchema schema) {
       AckSchemaModelWarning(
         code: 'ack_any_json_boundary',
         message:
-            'Ack.any() accepts arbitrary non-null Dart objects at runtime, but JSON-like adapters can only represent JSON-compatible values.',
+            'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
       ),
     ],
   );
@@ -228,19 +234,11 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
   );
 }
 
-AckSchemaModel _applyConstraints(
-  AckSchemaModel model,
-  AckSchema schema, {
-  String? boundaryFormat,
-}) {
+AckSchemaModel _applyConstraints(AckSchemaModel model, AckSchema schema) {
   var next = model;
   for (final constraint in schema.constraints) {
     if (constraint is DateTimeConstraint) {
-      next = _applyDateTimeConstraint(
-        next,
-        constraint,
-        boundaryFormat: boundaryFormat ?? next.format,
-      );
+      next = _applyDateTimeConstraint(next, constraint);
       continue;
     }
 
@@ -255,14 +253,13 @@ AckSchemaModel _applyConstraints(
 
 AckSchemaModel _applyDateTimeConstraint(
   AckSchemaModel model,
-  DateTimeConstraint constraint, {
-  required String? boundaryFormat,
-}) {
-  final formatted = switch (boundaryFormat) {
-    'date' => _dateOnly(constraint.reference),
-    'date-time' => constraint.reference.toIso8601String(),
-    _ => constraint.reference.toIso8601String(),
-  };
+  DateTimeConstraint constraint,
+) {
+  final boundaryFormat = _dateTimeJsonFormat(constraint.format);
+  final formatted = _formatDateTimeReference(
+    constraint.reference,
+    constraint.format,
+  );
 
   return model.withWarnings([
     ...model.warnings,
@@ -273,7 +270,7 @@ AckSchemaModel _applyDateTimeConstraint(
       context: {
         'constraint': constraint.type.name,
         'reference': formatted,
-        if (boundaryFormat != null) 'format': boundaryFormat,
+        'format': boundaryFormat,
       },
     ),
   ]);
@@ -285,59 +282,49 @@ AckSchemaModel _applyDateTimeConstraint(
 /// transformations are applied, then verifies the result is JSON-safe before
 /// returning it. Returns `null` when no JSON-safe representation is reachable.
 Object? _defaultExportValueOrNull(DefaultSchema schema) {
-  final defaultValue = schema.defaultValue;
-  if (defaultValue is Enum) return defaultValue.name;
+  final parsed = schema.safeParse(null);
+  if (parsed.isFail) return null;
 
-  // Mirror DefaultSchema's runtime guard so defaults the parse path would
-  // reject (mutable collections that cannot be cloned to the declared
-  // Runtime type) are not surfaced via JSON Schema either. We only veto
-  // when the runtime path itself fails — constraint violations on the
-  // default value (e.g. min/max) are kept so consumers still see the
-  // declared default.
-  if (_defaultRejectedAsUncloneableCollection(schema)) return null;
+  final defaultValue = parsed.getOrNull();
+  if (defaultValue == null) return null;
 
-  // Try encoding through the inner schema (handles codec transformations).
   final encoded = schema.inner.safeEncode(defaultValue);
-  if (encoded.isOk) {
-    final encodedValue = encoded.getOrNull();
-    if (encodedValue != null) {
-      try {
-        return jsonDecode(jsonEncode(encodedValue));
-      } catch (_) {
-        // fall through to runtime fallback
-      }
-    }
-  }
+  if (encoded.isFail) return null;
 
-  if (defaultValue is String ||
-      defaultValue is num ||
-      defaultValue is bool ||
-      defaultValue is List ||
-      defaultValue is Map) {
-    try {
-      return jsonDecode(jsonEncode(defaultValue));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  return null;
+  return _jsonRoundTripOrNull(encoded.getOrNull());
 }
 
-bool _defaultRejectedAsUncloneableCollection(DefaultSchema schema) {
-  final defaultValue = schema.defaultValue;
-  if (defaultValue is! List && defaultValue is! Map && defaultValue is! Set) {
+bool _isRequiredObjectProperty(AckSchema schema) {
+  if (schema.isOptional) return false;
+  if (schema is DefaultSchema && schema.safeParse(null).isOk) {
     return false;
   }
 
-  // Mirror DefaultSchema._validateDefaultWithContext: a collection default
-  // that cloneDefault cannot widen back to the declared Runtime type leaks
-  // the original reference. We surface only that specific failure mode so
-  // unrelated constraint failures (e.g. min/max) still keep the declared
-  // default in JSON Schema output.
-  final result = schema.safeParse(null);
-  if (!result.isFail) return false;
-  return result.getError().message.contains('could not be cloned safely');
+  return true;
+}
+
+Object? _jsonRoundTripOrNull(Object? value) {
+  if (value == null) return null;
+  try {
+    return jsonDecode(jsonEncode(value));
+  } catch (_) {
+    return null;
+  }
+}
+
+String _dateTimeJsonFormat(DateTimeConstraintFormat format) => switch (format) {
+  DateTimeConstraintFormat.date => 'date',
+  DateTimeConstraintFormat.dateTime => 'date-time',
+};
+
+String _formatDateTimeReference(
+  DateTime reference,
+  DateTimeConstraintFormat format,
+) {
+  return switch (format) {
+    DateTimeConstraintFormat.date => _dateOnly(reference),
+    DateTimeConstraintFormat.dateTime => reference.toIso8601String(),
+  };
 }
 
 String _dateOnly(DateTime date) {

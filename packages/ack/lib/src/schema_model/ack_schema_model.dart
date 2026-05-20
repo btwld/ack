@@ -881,24 +881,13 @@ final class AckObjectSchemaModel extends AckSchemaModel {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    // Exclude properties that carry a default from JSON Schema's `required`:
-    // a present default means the property is satisfiable without input.
-    final visibleRequired = required == null
-        ? null
-        : [
-            for (final key in required!)
-              if (properties == null || properties![key]?.defaultValue == null)
-                key,
-          ];
-
     return finishTypeJson({
       'type': 'object',
       if (properties != null)
         'properties': properties!.map(
           (key, value) => MapEntry(key, value.toJsonSchema()),
         ),
-      if (visibleRequired != null && visibleRequired.isNotEmpty)
-        'required': visibleRequired,
+      if (required != null && required!.isNotEmpty) 'required': required,
       if (minProperties != null) 'minProperties': minProperties,
       if (maxProperties != null) 'maxProperties': maxProperties,
       if (additionalProperties != null)

@@ -169,27 +169,20 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
+    // Route through `effectiveBranch` so branches authored without the
+    // discriminator property (per PR #107) still validate the literal at parse
+    // time. The constructor guarantees `selectedSubSchema` unwraps to an
+    // `ObjectSchema`, so `effectiveBranch` is always callable here.
+    final effective = effectiveBranch(discValueRaw);
+
     final subSchemaContext = context.createChild(
       name: 'when $discriminatorKey="$discValueRaw"',
-      schema: selectedSubSchema,
+      schema: effective,
       value: mapValue,
       pathSegment: '',
     );
 
-    final baseSubSchema = unwrapDiscriminatedBranchSchema(selectedSubSchema);
-    if (baseSubSchema is! ObjectSchema) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Discriminated branches must be object-backed schemas',
-          context: subSchemaContext,
-        ),
-      );
-    }
-
-    final result = selectedSubSchema.parseWithContext(
-      mapValue,
-      subSchemaContext,
-    );
+    final result = effective.parseWithContext(mapValue, subSchemaContext);
     if (result.isFail) {
       return SchemaResult.fail(result.getError());
     }
@@ -227,18 +220,21 @@ final class DiscriminatedObjectSchema<T extends Object>
     if (runtime == null) return SchemaResult.ok(null);
 
     final errors = <SchemaError>[];
-    for (final entry in schemas.entries) {
-      final discValue = entry.key;
-      final branchSchema = entry.value;
+    for (final discValue in schemas.keys) {
+      // Use the effective branch so per-PR-#107 the literal discriminator
+      // gates branch selection (validate) and the encoded boundary carries
+      // the discriminator key (encode), even for branches that did not
+      // declare the property themselves.
+      final effective = effectiveBranch(discValue);
       final branchCtx = context.createChild(
         name: 'when $discriminatorKey="$discValue"',
-        schema: branchSchema,
+        schema: effective,
         value: runtime,
         pathSegment: '',
         operation: SchemaOperation.encode,
       );
       try {
-        final branchValidation = branchSchema.validateRuntimeWithContext(
+        final branchValidation = effective.validateRuntimeWithContext(
           runtime,
           branchCtx,
         );
@@ -246,7 +242,7 @@ final class DiscriminatedObjectSchema<T extends Object>
           errors.add(branchValidation.getError());
           continue;
         }
-        final encoded = branchSchema.encodeWithContext(runtime, branchCtx);
+        final encoded = effective.encodeWithContext(runtime, branchCtx);
         if (encoded.isOk) {
           final boundary = encoded.getOrNull();
           if (boundary != null) {

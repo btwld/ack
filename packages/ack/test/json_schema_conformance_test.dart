@@ -726,8 +726,25 @@ Map<String, Object?> normalizeZodFixture(
     }
   }
 
+  void removeInvalidNumericDefault(Map<String, Object?> schema) {
+    final defaultValue = schema['default'];
+    if (defaultValue is! num) return;
+
+    final minimum = schema['minimum'];
+    if (minimum is num && defaultValue < minimum) {
+      schema.remove('default');
+      return;
+    }
+
+    final maximum = schema['maximum'];
+    if (maximum is num && defaultValue > maximum) {
+      schema.remove('default');
+    }
+  }
+
   // Remove bounds from root schema
   removeSafeBounds(normalized);
+  removeInvalidNumericDefault(normalized);
 
   if (normalized.isEmpty) {
     return _canonicalAnySchema(normalized);

@@ -27,7 +27,7 @@ void main() {
         'member',
       ]);
       expect(object.properties!['role']!.defaultValue, 'admin');
-      expect(object.required, ['name', 'role']);
+      expect(object.required, isNull);
       expect(object.propertyOrdering, ['name', 'role']);
     });
 
@@ -35,6 +35,42 @@ void main() {
       final model = Ack.string().withDefault('draft').toSchemaModel();
 
       expect(model.toJsonSchema(), {'type': 'string', 'default': 'draft'});
+    });
+
+    test('omits defaults that cannot be encoded through wrapped schema', () {
+      final transformed = Ack.string()
+          .transform<int>((value) => int.parse(value))
+          .withDefault(7);
+      final constrained = Ack.integer().min(10).withDefault(5);
+      final invalidEnum = Ack.enumValues([
+        _Role.admin,
+      ]).withDefault(_Role.member);
+
+      expect(transformed.toJsonSchema(), isNot(contains('default')));
+      expect(constrained.toJsonSchema(), isNot(contains('default')));
+      expect(invalidEnum.toJsonSchema(), isNot(contains('default')));
+    });
+
+    test('object required fields follow parse-valid defaults', () {
+      final schema = Ack.object({
+        'createdAt': Ack.instance<DateTime>().withDefault(DateTime(2026, 1, 1)),
+        'age': Ack.integer().min(10).withDefault(5),
+      });
+
+      final model = schema.toSchemaModel() as AckObjectSchemaModel;
+      final json = model.toJsonSchema();
+      final properties = json['properties'] as Map<Object?, Object?>;
+
+      expect(model.required, ['age']);
+      expect(json['required'], ['age']);
+      expect(
+        properties['createdAt'] as Map<Object?, Object?>,
+        isNot(contains('default')),
+      );
+      expect(
+        properties['age'] as Map<Object?, Object?>,
+        isNot(contains('default')),
+      );
     });
 
     test('renders direct JSON Schema through the schema model', () {
@@ -219,7 +255,7 @@ void main() {
       expect(model, isA<AckAnyOfSchemaModel>());
       expect((model as AckAnyOfSchemaModel).schemas, isNotEmpty);
       expect(model.warnings, hasLength(1));
-      expect(model.warnings.single.message, contains('JSON-compatible values'));
+      expect(model.warnings.single.message, contains('JSON-safe values'));
     });
 
     test('applies constraints to all model-producing schema kinds', () {

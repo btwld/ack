@@ -226,9 +226,9 @@ shape should implement that as explicit adapter rendering.
 -   **`additionalProperties`:** `Ack.object(..., additionalProperties: false)`
     becomes `additionalProperties: false`; `additionalProperties: true` is
     emitted as the boolean `true`.
--   **`Ack.any()`:** Runtime validation accepts arbitrary non-null Dart
-    objects. JSON-like adapter exports represent only JSON-compatible values
-    and attach an `ack_any_json_boundary` warning to the `AckSchemaModel`.
+-   **`Ack.any()`:** Runtime validation accepts non-null JSON-safe values.
+    JSON-like adapter exports represent those JSON-compatible values and attach
+    an `ack_any_json_boundary` warning to the `AckSchemaModel`.
 -   **Date/time range constraints:** Draft-7 has no standard `formatMinimum` or
     `formatMaximum` keywords. ACK validates `.min()` and `.max()` at runtime and
     records schema-model warnings instead of rendering non-standard keywords.

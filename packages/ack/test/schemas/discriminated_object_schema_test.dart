@@ -59,6 +59,51 @@ void main() {
       });
     });
 
+    group('Union-owned discriminator (PR #107)', () {
+      // Branches without the discriminator property are valid; the union
+      // synthesizes the literal via `effectiveBranch` for parse and encode.
+      late DiscriminatedObjectSchema unionOwnedSchema;
+
+      setUp(() {
+        unionOwnedSchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'meow': Ack.boolean()}),
+            'dog': Ack.object({'bark': Ack.boolean()}),
+          },
+        );
+      });
+
+      test('parses a branch whose schema omits the discriminator', () {
+        final result = unionOwnedSchema.safeParse({
+          'type': 'cat',
+          'meow': true,
+        });
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'cat', 'meow': true});
+      });
+
+      test('encodes a branch whose schema omits the discriminator', () {
+        final result = unionOwnedSchema.safeEncode({
+          'type': 'dog',
+          'bark': false,
+        });
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
+      });
+
+      test('parse against the wrong branch fails on the literal', () {
+        final result = unionOwnedSchema.safeParse({
+          'type': 'cat',
+          'bark': true,
+        });
+
+        expect(result.isFail, isTrue);
+      });
+    });
+
     group('Constructor validation', () {
       test('rejects an empty discriminator key', () {
         expect(

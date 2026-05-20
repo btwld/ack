@@ -337,6 +337,71 @@ void main() {
           everyElement('datetime_constraint_not_draft7'),
         );
       });
+
+      test('default-wrapped date constraint emits warning once, not twice', () {
+        final schema = Ack.date()
+            .min(DateTime(2026, 1, 1))
+            .withDefault(DateTime(2026, 6, 1));
+        final model = schema.toSchemaModel();
+
+        expect(model.warnings, hasLength(1));
+        expect(model.warnings.single.code, 'datetime_constraint_not_draft7');
+      });
+
+      test('nullable custom date codec keeps date constraint format', () {
+        final schema = Ack.string()
+            .date()
+            .nullable()
+            .codec<DateTime>(
+              decode: DateTime.parse,
+              encode: (value) =>
+                  '${value.year.toString().padLeft(4, '0')}-'
+                  '${value.month.toString().padLeft(2, '0')}-'
+                  '${value.day.toString().padLeft(2, '0')}',
+            )
+            .min(DateTime(2026, 1, 1));
+        final model = schema.toSchemaModel();
+
+        expect(schema.safeParse('2026-01-02').isOk, isTrue);
+        expect(model.warnings.single.context, {
+          'constraint': 'min',
+          'reference': '2026-01-01',
+          'format': 'date',
+        });
+      });
+
+      test(
+        'nullable custom datetime codec keeps date-time constraint format',
+        () {
+          final schema = Ack.string()
+              .datetime()
+              .nullable()
+              .codec<DateTime>(
+                decode: DateTime.parse,
+                encode: (value) => value.toIso8601String(),
+              )
+              .min(DateTime.utc(2026, 1, 1));
+          final model = schema.toSchemaModel();
+
+          expect(schema.safeParse('2026-01-02T00:00:00Z').isOk, isTrue);
+          expect(model.warnings.single.context, {
+            'constraint': 'min',
+            'reference': '2026-01-01T00:00:00.000Z',
+            'format': 'date-time',
+          });
+        },
+      );
+
+      test('DateTimeConstraint.toJsonSchema omits non-Draft-7 keys', () {
+        expect(
+          DateTimeConstraint.min(DateTime(2026, 1, 1)).toJsonSchema(),
+          isEmpty,
+        );
+        expect(
+          DateTimeConstraint.max(DateTime(2026, 12, 31)).toJsonSchema(),
+          isEmpty,
+        );
+      });
     });
 
     group('Real-World Use Cases', () {

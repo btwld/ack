@@ -76,6 +76,24 @@ void main() {
       });
     });
 
+    test(
+      'renders explicit object required fields even with property default',
+      () {
+        const model = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel(defaultValue: 'guest')},
+          required: ['name'],
+        );
+
+        expect(model.toJsonSchema(), {
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string', 'default': 'guest'},
+          },
+          'required': ['name'],
+        });
+      },
+    );
+
     test('renders allOf directly for adapter tests', () {
       const model = AckAllOfSchemaModel(
         schemas: [
