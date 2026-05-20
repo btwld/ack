@@ -8,7 +8,7 @@
  *
  * Usage:
  *   node tools/jsonschema-validator.js validate-schema --schema schema.json [--output results.json]
- *   node tools/jsonschema-validator.js validate-batch --input batch-config.json [--output results.json]
+ *   node tools/jsonschema-validator.js validate-batch --input test-fixtures/reference-config.json [--output results.json]
  *
  * Batch config format:
  * {

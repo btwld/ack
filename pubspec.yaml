@@ -167,7 +167,7 @@ melos:
     validate-jsonschema:batch:
       run: |
         cd tools && npm install
-        node jsonschema-validator.js validate-batch --input test-fixtures/schema-validation-config.json
+        node jsonschema-validator.js validate-batch --input test-fixtures/reference-config.json
       description: Run batch JSON Schema Draft-7 validation
 
     validate-jsonschema:setup:
