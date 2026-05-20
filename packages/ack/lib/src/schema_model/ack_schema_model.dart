@@ -887,8 +887,7 @@ final class AckObjectSchemaModel extends AckSchemaModel {
         ? null
         : [
             for (final key in required!)
-              if (properties == null ||
-                  properties![key]?.defaultValue == null)
+              if (properties == null || properties![key]?.defaultValue == null)
                 key,
           ];
 

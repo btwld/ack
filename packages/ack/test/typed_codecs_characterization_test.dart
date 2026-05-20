@@ -443,7 +443,6 @@ void main() {
       expect(json['anyOf'], hasLength(2));
       expect((json['anyOf'] as List).last, {'type': 'null'});
     });
-
   });
 
   group('Object encode validations', () {

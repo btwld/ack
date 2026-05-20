@@ -24,9 +24,9 @@ AnyAckSchema unwrapDiscriminatedBranchSchema(AnyAckSchema schema) {
 /// every one of them matches [label].
 bool hasMatchingDiscriminatorLiteral(AnyAckSchema schema, String label) {
   final base = unwrapDiscriminatedBranchSchema(schema);
-  final literals = base.constraints
-      .whereType<StringLiteralConstraint>()
-      .toList(growable: false);
+  final literals = base.constraints.whereType<StringLiteralConstraint>().toList(
+    growable: false,
+  );
 
   return literals.isNotEmpty &&
       literals.every((constraint) => constraint.expectedValue == label);

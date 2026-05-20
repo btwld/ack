@@ -348,23 +348,19 @@ void main() {
     });
 
     test('Discriminated encode runs root runtime refinements', () {
-      final schema =
-          Ack.discriminated<_Foo>(
-            discriminatorKey: 'type',
-            schemas: {
-              'foo':
-                  Ack.object({
-                    'type': Ack.literal('foo'),
-                    'created': Ack.datetime(),
-                  }).model<_Foo>(
-                    decode: (data) => _Foo(data['created'] as DateTime),
-                    encode: (foo) => {'type': 'foo', 'created': foo.created},
-                  ),
-            },
-          ).refine(
-            (value) => value.created.year >= 2020,
-            message: 'too old',
-          );
+      final schema = Ack.discriminated<_Foo>(
+        discriminatorKey: 'type',
+        schemas: {
+          'foo':
+              Ack.object({
+                'type': Ack.literal('foo'),
+                'created': Ack.datetime(),
+              }).model<_Foo>(
+                decode: (data) => _Foo(data['created'] as DateTime),
+                encode: (foo) => {'type': 'foo', 'created': foo.created},
+              ),
+        },
+      ).refine((value) => value.created.year >= 2020, message: 'too old');
 
       expect(
         schema.safeParse({

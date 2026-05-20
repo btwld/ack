@@ -303,31 +303,28 @@ void main() {
         expect(result.value, isNot(contains('formatMaximum')));
       });
 
-      test(
-        'codec overrides are applied (description + nullable)',
-        () {
-          final schema = Ack.date().describe('Birth date').nullable();
+      test('codec overrides are applied (description + nullable)', () {
+        final schema = Ack.date().describe('Birth date').nullable();
 
-          final result = schema.toJsonSchemaBuilder();
+        final result = schema.toJsonSchemaBuilder();
 
-          // Envelope-level metadata: description hoists to the nullable
-          // anyOf envelope, branches carry the type information.
-          expect(result.value['description'], 'Birth date');
+        // Envelope-level metadata: description hoists to the nullable
+        // anyOf envelope, branches carry the type information.
+        expect(result.value['description'], 'Birth date');
 
-          final anyOf = (result.value['anyOf'] as List)
-              .map(_schemaFrom)
-              .toList(growable: false);
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
 
-          // First branch carries the date format (no inner description per
-          // the Zod v4 hoist convention).
-          final dateBranch = anyOf.first;
-          expect(dateBranch.value['format'], 'date');
+        // First branch carries the date format (no inner description per
+        // the Zod v4 hoist convention).
+        final dateBranch = anyOf.first;
+        expect(dateBranch.value['format'], 'date');
 
-          // Second branch represents nullability.
-          final nullBranch = anyOf.last;
-          expect(nullBranch.value['type'], 'null');
-        },
-      );
+        // Second branch represents nullability.
+        final nullBranch = anyOf.last;
+        expect(nullBranch.value['type'], 'null');
+      });
     });
 
     group('discriminated anyOf composition', () {
