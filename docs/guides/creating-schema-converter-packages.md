@@ -431,6 +431,7 @@ class <Target>SchemaConverter {
       branches: branches,
       description: schema.description,
       nullable: schema.nullable,
+      discriminator: schema.discriminator?.propertyName,
     );
   }
 
@@ -441,7 +442,6 @@ class <Target>SchemaConverter {
       branches: branches,
       description: schema.description,
       nullable: schema.nullable,
-      discriminator: schema.discriminator?.propertyName,
     );
   }
 
@@ -583,12 +583,14 @@ class <Target>SchemaConverter {
     required List<TargetSchema> branches,
     String? description,
     bool nullable = false,
+    String? discriminator,
   }) {
     return <String, Object?>{
       'type': 'anyOf',
       'branches': branches,
       if (description != null) 'description': description,
       if (nullable) 'nullable': true,
+      if (discriminator != null) 'discriminator': discriminator,
     } as TargetSchema;
   }
 
@@ -596,14 +598,12 @@ class <Target>SchemaConverter {
     required List<TargetSchema> branches,
     String? description,
     bool nullable = false,
-    String? discriminator,
   }) {
     return <String, Object?>{
       'type': 'oneOf',
       'branches': branches,
       if (description != null) 'description': description,
       if (nullable) 'nullable': true,
-      if (discriminator != null) 'discriminator': discriminator,
     } as TargetSchema;
   }
 
@@ -790,7 +790,7 @@ void main() {
         expect(result.properties['user']?.type, target.SchemaType.object);
       });
 
-      test('includes propertyOrdering if supported', () {
+      test('uses model property ordering if the target supports it', () {
         final schema = Ack.object({
           'id': Ack.string(),
           'name': Ack.string(),
@@ -798,7 +798,7 @@ void main() {
         });
         final result = schema.to<Target>Schema();
 
-        // If target supports property ordering
+        // This comes from AckObjectSchemaModel metadata, not generic JSON Schema.
         expect(result.propertyOrdering, ['id', 'name', 'email']);
       });
     });
@@ -1192,7 +1192,8 @@ TargetSchema _convertString(AckStringSchemaModel schema) {
 }
 ```
 
-**Pros**: One normalized Ack-owned model, shared semantics with maintained adapter packages, no duplicated discriminator/default/nullability traversal
+**Pros**: One normalized Ack-owned model, shared semantics with maintained
+adapter packages, no duplicated discriminator/default/nullability traversal
 **Cons**: Target-specific unsupported features still need explicit handling
 
 ### Pattern 2: JSON Schema Renderer
@@ -1255,7 +1256,7 @@ if (schema.extensions['x-transformed'] == true) {
 **Option 1: Native Support** (If target has discriminators)
 ```dart
 static TargetSchema _convertDiscriminated(
-  AckOneOfSchemaModel schema,
+  AckAnyOfSchemaModel schema,
 ) {
   return TargetSchema.discriminated(
     discriminatorKey: schema.discriminator!.propertyName,
@@ -1264,10 +1265,10 @@ static TargetSchema _convertDiscriminated(
 }
 ```
 
-**Option 2: OneOf with Effective Discriminator Properties** (Fallback)
+**Option 2: AnyOf with Effective Discriminator Properties** (Fallback)
 ```dart
 static TargetSchema _convertDiscriminated(
-  AckOneOfSchemaModel schema,
+  AckAnyOfSchemaModel schema,
 ) {
   final branches = <TargetSchema>[];
 
@@ -1276,7 +1277,7 @@ static TargetSchema _convertDiscriminated(
     branches.add(_convert(branch));
   }
 
-  return TargetSchema.oneOf(
+  return TargetSchema.anyOf(
     branches,
     discriminator: schema.discriminator?.propertyName,
   );
@@ -1343,7 +1344,8 @@ class OpenApiSchemaConverter {
   const OpenApiSchemaConverter._();
 
   static Map<String, Object?> convert(AckSchema schema) {
-    // OpenAPI 3.1 is JSON Schema-compatible enough for the canonical renderer.
+    // OpenAPI 3.1 is compatible with the generic Draft-7 renderer for
+    // schemas that do not need OpenAPI-specific extensions.
     return schema.toSchemaModel().toJsonSchema();
   }
 }

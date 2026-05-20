@@ -353,18 +353,20 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      // Nullable AnyOfSchema appends null to the same anyOf list.
+      // Nullable AnyOfSchema wraps the union and null in an outer anyOf.
       expect(jsonSchema['anyOf'], isA<List>());
       final anyOf = jsonSchema['anyOf'] as List;
 
-      expect(anyOf.length, equals(3)); // integer + string + null
+      expect(anyOf.length, equals(2)); // union + null
       expect(
         anyOf.last,
         equals({'type': 'null'}),
         reason: 'Last element should be null type',
       );
-      expect((anyOf[0] as Map)['type'], equals('integer'));
-      expect((anyOf[1] as Map)['type'], equals('string'));
+      final union = anyOf.first as Map;
+      final branches = union['anyOf'] as List;
+      expect((branches[0] as Map)['type'], equals('integer'));
+      expect((branches[1] as Map)['type'], equals('string'));
     });
   });
 }

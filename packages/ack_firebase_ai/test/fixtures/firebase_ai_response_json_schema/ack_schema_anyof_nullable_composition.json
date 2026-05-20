@@ -1,10 +1,14 @@
 {
   "anyOf": [
     {
-      "type": "string"
-    },
-    {
-      "type": "integer"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
     },
     {
       "type": "null"

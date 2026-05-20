@@ -4,7 +4,7 @@
     {
       "type": "string",
       "const": "ready",
-      "x-firebase-test": true
+      "x-ack-test": true
     },
     {
       "type": "null"

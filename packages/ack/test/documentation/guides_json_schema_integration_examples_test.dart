@@ -60,7 +60,7 @@ void main() {
     });
 
     test(
-      'nullable discriminated schema is emitted as oneOf with null branch',
+      'nullable discriminated schema is emitted as generic anyOf with null',
       () {
         final schema = Ack.discriminated(
           discriminatorKey: 'kind',
@@ -77,16 +77,22 @@ void main() {
         ).nullable();
 
         final jsonSchema = schema.toJsonSchema();
-        expect(jsonSchema['discriminator'], {'propertyName': 'kind'});
+        expect(jsonSchema, isNot(contains('discriminator')));
+        expect(jsonSchema, isNot(contains('oneOf')));
 
-        final oneOf = jsonSchema['oneOf'] as List<Object?>;
-        expect(oneOf, hasLength(3));
+        final anyOf = jsonSchema['anyOf'] as List<Object?>;
+        expect(anyOf, hasLength(2));
         expect(
-          oneOf.any((e) => e is Map<String, Object?> && e['type'] == 'null'),
+          anyOf.any((e) => e is Map<String, Object?> && e['type'] == 'null'),
           isTrue,
         );
 
-        final objectBranches = oneOf
+        final unionBranch =
+            anyOf.firstWhere(
+                  (e) => e is Map<String, Object?> && e.containsKey('anyOf'),
+                )
+                as Map<String, Object?>;
+        final objectBranches = (unionBranch['anyOf'] as List<Object?>)
             .where((e) => e is Map<String, Object?> && e['type'] == 'object')
             .toList();
         expect(objectBranches, hasLength(2));

@@ -206,6 +206,8 @@ class <Target>SchemaConverter {
       'type': 'anyOf',
       if (s.description != null) 'description': s.description,
       if (s.nullable) 'nullable': true,
+      if (s.discriminator != null)
+        'discriminator': s.discriminator!.propertyName,
       'branches': [
         for (final branch in s.schemas) _convertSchema(branch),
       ],
@@ -217,8 +219,6 @@ class <Target>SchemaConverter {
       'type': 'oneOf',
       if (s.description != null) 'description': s.description,
       if (s.nullable) 'nullable': true,
-      if (s.discriminator != null)
-        'discriminator': s.discriminator!.propertyName,
       'branches': [
         for (final branch in s.schemas) _convertSchema(branch),
       ],

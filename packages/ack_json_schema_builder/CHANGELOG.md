@@ -2,10 +2,10 @@
 
 ### Changed
 
-* Route conversion through ACK's sealed `AckSchemaModel` boundary and
-  canonical JSON Schema renderer.
+* Route conversion through ACK's sealed `AckSchemaModel` boundary and generic
+  Draft-7 JSON Schema renderer.
 * Preserve model defaults, const values, extension keywords, transformed
-  metadata, composition, discriminators, and date format bounds.
+  metadata, and composition.
 * Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
   adapter boundary.
 

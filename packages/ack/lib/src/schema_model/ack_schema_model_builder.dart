@@ -176,7 +176,7 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
     branches.add(converted);
   }
 
-  return AckOneOfSchemaModel(
+  return AckAnyOfSchemaModel(
     schemas: branches,
     discriminator: AckSchemaDiscriminatorModel(
       propertyName: schema.discriminatorKey,
@@ -219,29 +219,22 @@ AckSchemaModel _applyDateTimeConstraint(
   final formatted = switch (boundaryFormat) {
     'date' => _dateOnly(constraint.reference),
     'date-time' => constraint.reference.toIso8601String(),
-    _ => null,
+    _ => constraint.reference.toIso8601String(),
   };
 
-  if (formatted == null) {
-    return model.withWarnings([
-      ...model.warnings,
-      AckSchemaModelWarning(
-        code: 'datetime_constraint_unprojectable',
-        message:
-            'DateTime constraint could not be projected because the boundary string format is unknown.',
-        context: {'constraint': constraint.type.name},
-      ),
-    ]);
-  }
-
-  return switch (constraint.type) {
-    DateTimeComparisonType.min => model.withJsonSchemaKeywords({
-      'formatMinimum': formatted,
-    }),
-    DateTimeComparisonType.max => model.withJsonSchemaKeywords({
-      'formatMaximum': formatted,
-    }),
-  };
+  return model.withWarnings([
+    ...model.warnings,
+    AckSchemaModelWarning(
+      code: 'datetime_constraint_not_draft7',
+      message:
+          'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',
+      context: {
+        'constraint': constraint.type.name,
+        'reference': formatted,
+        if (boundaryFormat != null) 'format': boundaryFormat,
+      },
+    ),
+  ]);
 }
 
 AckSchemaModel _withDefaultAndWarnings(AckSchemaModel model, AckSchema schema) {

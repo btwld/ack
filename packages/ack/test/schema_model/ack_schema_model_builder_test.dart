@@ -98,7 +98,7 @@ void main() {
         },
       );
 
-      final model = schema.toSchemaModel() as AckOneOfSchemaModel;
+      final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
       final branch = model.schemas.single as AckObjectSchemaModel;
       final discriminator = branch.properties!['type'] as AckStringSchemaModel;
 
@@ -106,7 +106,9 @@ void main() {
       expect(discriminator.constValue, 'cat');
       expect(branch.required, ['type', 'name']);
       expect(branch.propertyOrdering, ['type', 'name']);
-      expect(model.toJsonSchema()['oneOf'], isNotNull);
+      expect(model.toJsonSchema()['anyOf'], isNotNull);
+      expect(model.toJsonSchema(), isNot(contains('discriminator')));
+      expect(branch.toJsonSchema(), isNot(contains('propertyOrdering')));
     });
 
     test(
@@ -122,7 +124,7 @@ void main() {
           },
         );
 
-        final model = schema.toSchemaModel() as AckOneOfSchemaModel;
+        final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
         final branch = model.schemas.single as AckObjectSchemaModel;
         final discriminator =
             branch.properties!['type'] as AckStringSchemaModel;
@@ -130,7 +132,7 @@ void main() {
         expect(model.discriminator!.propertyName, 'type');
         expect(discriminator.constValue, 'cat');
         expect(branch.required, ['type', 'name']);
-        expect(model.toJsonSchema()['oneOf'], isNotNull);
+        expect(model.toJsonSchema()['anyOf'], isNotNull);
       },
     );
 
@@ -142,7 +144,7 @@ void main() {
         },
       );
 
-      final model = schema.toSchemaModel() as AckOneOfSchemaModel;
+      final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
       final branch = model.schemas.single as AckObjectSchemaModel;
 
       expect(branch.properties!.keys, ['type', 'name']);
@@ -181,7 +183,7 @@ void main() {
           },
         );
 
-        final model = schema.toSchemaModel() as AckOneOfSchemaModel;
+        final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
         final branch = model.schemas.single as AckObjectSchemaModel;
         final discriminator =
             branch.properties!['type'] as AckStringSchemaModel;
@@ -192,18 +194,22 @@ void main() {
       },
     );
 
-    test('exports date constraints using date-only bounds', () {
+    test('records date constraints as non-Draft-7 warnings', () {
       final schema = Ack.date()
           .min(DateTime(2026, 1, 1))
           .max(DateTime(2026, 12, 31));
+      final model = schema.toSchemaModel();
 
-      expect(schema.toSchemaModel().toJsonSchema(), {
+      expect(model.toJsonSchema(), {
         'type': 'string',
         'format': 'date',
-        'formatMinimum': '2026-01-01',
-        'formatMaximum': '2026-12-31',
         'x-transformed': true,
       });
+      expect(
+        model.warnings.map((warning) => warning.code),
+        everyElement('datetime_constraint_not_draft7'),
+      );
+      expect(model.warnings, hasLength(2));
     });
 
     test('records Ack.any JSON export limitation as a warning', () {

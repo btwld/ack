@@ -5,9 +5,7 @@
   "minLength": 5,
   "maxLength": 5,
   "pattern": "^[a-z]+$",
-  "formatMinimum": "ready",
-  "formatMaximum": "ready",
   "title": "Status",
   "description": "Current status",
-  "x-firebase-test": true
+  "x-ack-test": true
 }

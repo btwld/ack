@@ -58,13 +58,13 @@ other logic that JSON Schema cannot represent.
 
 ### Target Schema Support
 
-The converter emits ACK's canonical JSON Schema map before constructing the
-`json_schema_builder` schema. If a downstream validator or consumer ignores a
-JSON Schema keyword, validate with ACK after parsing.
+The converter emits ACK's generic Draft-7 JSON Schema map before constructing
+the `json_schema_builder` schema. If a downstream validator or consumer ignores
+a JSON Schema keyword, validate with ACK after parsing.
 
 ```dart
 final schema = Ack.date().min(DateTime.utc(2026));
-final jsonSchema = schema.toJsonSchemaBuilder(); // Includes date format bounds.
+final jsonSchema = schema.toJsonSchemaBuilder(); // Includes format: date.
 ```
 
 ## Usage

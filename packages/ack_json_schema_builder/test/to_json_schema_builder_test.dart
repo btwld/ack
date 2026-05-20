@@ -262,10 +262,13 @@ void main() {
         final anyOf = (result.value['anyOf'] as List)
             .map(_schemaFrom)
             .toList(growable: false);
-        expect(anyOf, hasLength(3));
-        expect(anyOf[0].value['type'], 'string');
-        expect(anyOf[1].value['type'], 'integer');
-        expect(anyOf[2].value['type'], 'null');
+        expect(anyOf, hasLength(2));
+        final union = (anyOf.first.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
+        expect(union[0].value['type'], 'string');
+        expect(union[1].value['type'], 'integer');
+        expect(anyOf[1].value['type'], 'null');
       });
 
       test('preserves model defaults, const values, and extensions', () {
@@ -287,7 +290,7 @@ void main() {
         expect(result.value['x-ack'], 'kept');
       });
 
-      test('preserves date format bounds from schema model keywords', () {
+      test('omits non-Draft-7 date range keywords', () {
         final schema = Ack.date()
             .min(DateTime.utc(2026))
             .max(DateTime.utc(2026, 12, 31));
@@ -296,8 +299,8 @@ void main() {
 
         expect(result.value['type'], 'string');
         expect(result.value['format'], 'date');
-        expect(result.value['formatMinimum'], '2026-01-01');
-        expect(result.value['formatMaximum'], '2026-12-31');
+        expect(result.value, isNot(contains('formatMinimum')));
+        expect(result.value, isNot(contains('formatMaximum')));
       });
 
       test(
@@ -325,8 +328,8 @@ void main() {
       );
     });
 
-    group('oneOf composition', () {
-      test('oneOf converts to oneOf (not anyOf)', () {
+    group('discriminated anyOf composition', () {
+      test('discriminated schema converts to generic anyOf', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
@@ -342,21 +345,20 @@ void main() {
         );
         final result = schema.toJsonSchemaBuilder();
 
-        // MUST have oneOf, NOT anyOf - discriminated unions require exactly-one semantics
-        expect(
-          result.value.containsKey('oneOf'),
-          isTrue,
-          reason:
-              'Discriminated schema should use oneOf for exactly-one semantics',
-        );
         expect(
           result.value.containsKey('anyOf'),
+          isTrue,
+          reason:
+              'Discriminated schema should use generic Draft-7 anyOf output',
+        );
+        expect(
+          result.value.containsKey('oneOf'),
           isFalse,
-          reason: 'oneOf should not be converted to anyOf',
+          reason: 'Generic Draft-7 output should not use oneOf here',
         );
       });
 
-      test('oneOf preserves branch schemas', () {
+      test('anyOf preserves branch schemas', () {
         final schema = Ack.discriminated(
           discriminatorKey: 'kind',
           schemas: {
@@ -366,13 +368,13 @@ void main() {
         );
         final result = schema.toJsonSchemaBuilder();
 
-        final oneOf = result.value['oneOf'] as List?;
-        expect(oneOf, isNotNull);
-        expect(oneOf, hasLength(2));
+        final anyOf = result.value['anyOf'] as List?;
+        expect(anyOf, isNotNull);
+        expect(anyOf, hasLength(2));
       });
 
       test(
-        'oneOf replaces compatible discriminator property with exact const',
+        'anyOf replaces compatible discriminator property with exact const',
         () {
           final schema = Ack.discriminated(
             discriminatorKey: 'kind',
@@ -385,8 +387,8 @@ void main() {
           );
           final result = schema.toJsonSchemaBuilder();
 
-          final oneOf = result.value['oneOf'] as List;
-          final branch = _schemaFrom(oneOf.single);
+          final anyOf = result.value['anyOf'] as List;
+          final branch = _schemaFrom(anyOf.single);
           final properties = (branch.value['properties'] as Map).map(
             (key, value) => MapEntry(key as String, _schemaFrom(value)),
           );

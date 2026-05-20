@@ -1,7 +1,5 @@
 {
   "type": "string",
   "format": "date",
-  "formatMinimum": "2026-01-01",
-  "formatMaximum": "2026-12-31",
   "x-transformed": true
 }

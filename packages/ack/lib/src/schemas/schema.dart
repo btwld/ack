@@ -333,12 +333,12 @@ sealed class AckSchema<DartType extends Object> {
     List<Refinement<DartType>>? refinements,
   });
 
-  /// Converts this schema to the canonical JSON Schema representation.
+  /// Converts this schema to generic Draft-7 JSON Schema.
   ///
-  /// The sealed [AckSchemaModel] boundary is the single source of truth for
-  /// exported schema shape. Adapters should call [toSchemaModel] directly when
-  /// they need the typed intermediate model; this method renders that model as
-  /// JSON Schema.
+  /// The sealed [AckSchemaModel] boundary is the single source of truth for the
+  /// exported shape. Adapters should call [toSchemaModel] directly when they
+  /// need the typed intermediate model; this method renders that model as
+  /// generic JSON Schema rather than provider-specific schema metadata.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
 
   Map<String, Object?> toMap() {

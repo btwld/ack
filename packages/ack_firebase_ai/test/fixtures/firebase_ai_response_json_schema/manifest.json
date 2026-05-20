@@ -19,6 +19,7 @@
     "anyOf": [
       "ack_schema_any_json_compatible_branches",
       "ack_schema_anyof_nullable_composition",
+      "ack_schema_discriminated_union",
       "ack_schema_nullable_boolean_default",
       "ack_schema_object_passthrough",
       "schema_model_anyof_common_fields_explicit_null",
@@ -55,10 +56,6 @@
     "description": [
       "schema_model_string_common_options"
     ],
-    "discriminator": [
-      "ack_schema_discriminated_union",
-      "schema_model_oneof_discriminator"
-    ],
     "enum": [
       "ack_schema_enum_values_default"
     ],
@@ -83,14 +80,6 @@
       "ack_schema_uri_transform",
       "schema_model_integer_const_format",
       "schema_model_number_const_format",
-      "schema_model_string_common_options"
-    ],
-    "formatMaximum": [
-      "ack_schema_date_transform_constraints",
-      "schema_model_string_common_options"
-    ],
-    "formatMinimum": [
-      "ack_schema_date_transform_constraints",
       "schema_model_string_common_options"
     ],
     "integer": [
@@ -160,7 +149,6 @@
       "schema_model_object_schema_additional_properties"
     ],
     "oneOf": [
-      "ack_schema_discriminated_union",
       "schema_model_oneof_discriminator",
       "schema_model_oneof_nullable_composition"
     ],
@@ -174,10 +162,6 @@
       "schema_model_string_common_options"
     ],
     "properties": [
-      "ack_schema_object_properties_requiredness",
-      "schema_model_object_schema_additional_properties"
-    ],
-    "propertyOrdering": [
       "ack_schema_object_properties_requiredness",
       "schema_model_object_schema_additional_properties"
     ],
@@ -311,7 +295,6 @@
         "properties",
         "required",
         "optional",
-        "propertyOrdering",
         "additionalProperties"
       ],
       "fixture": "ack_schema_object_properties_requiredness.json"
@@ -365,9 +348,7 @@
       "source": "ack_schema",
       "features": [
         "transform",
-        "format",
-        "formatMinimum",
-        "formatMaximum"
+        "format"
       ],
       "fixture": "ack_schema_date_transform_constraints.json"
     },
@@ -408,8 +389,7 @@
       "name": "discriminated union",
       "source": "ack_schema",
       "features": [
-        "oneOf",
-        "discriminator",
+        "anyOf",
         "const",
         "unionOwnedDiscriminator"
       ],
@@ -428,8 +408,6 @@
         "minLength",
         "maxLength",
         "pattern",
-        "formatMinimum",
-        "formatMaximum",
         "extension"
       ],
       "fixture": "schema_model_string_common_options.json"
@@ -499,7 +477,6 @@
         "object",
         "properties",
         "required",
-        "propertyOrdering",
         "minProperties",
         "maxProperties",
         "additionalPropertiesSchema"
@@ -543,11 +520,10 @@
     },
     {
       "id": "schema_model_oneof_discriminator",
-      "name": "oneOf model discriminator",
+      "name": "oneOf model discriminator metadata",
       "source": "schema_model",
       "features": [
         "oneOf",
-        "discriminator",
         "const"
       ],
       "fixture": "schema_model_oneof_discriminator.json"

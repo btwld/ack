@@ -44,7 +44,7 @@ void main() {
 
         // Non-nullable: constraints merged at top level
         expect(jsonSchema['minProperties'], equals(1));
-        expect(jsonSchema['oneOf'], isA<List>());
+        expect(jsonSchema['anyOf'], isA<List>());
       });
 
       test('nullable merges constraints at composition level', () {
@@ -61,17 +61,19 @@ void main() {
 
         final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['oneOf'], isA<List>());
-        final oneOfList = jsonSchema['oneOf'] as List;
-        expect(oneOfList.length, equals(3));
+        expect(jsonSchema['anyOf'], isA<List>());
+        final anyOfList = jsonSchema['anyOf'] as List;
+        expect(anyOfList.length, equals(2));
+        final unionBranch = anyOfList.first as Map<String, Object?>;
 
         expect(
-          jsonSchema['minProperties'],
+          unionBranch['minProperties'],
           equals(1),
           reason: 'Constraint should be merged into the composition schema',
         );
 
-        expect(oneOfList.last, equals({'type': 'null'}));
+        expect(unionBranch['anyOf'], isA<List>());
+        expect(anyOfList.last, equals({'type': 'null'}));
       });
 
       test('nullable with multiple constraints merges all', () {
@@ -89,9 +91,12 @@ void main() {
 
         final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['minProperties'], equals(1));
-        expect(jsonSchema['maxProperties'], equals(10));
-        expect((jsonSchema['oneOf'] as List).last, equals({'type': 'null'}));
+        final anyOfList = jsonSchema['anyOf'] as List;
+        final unionBranch = anyOfList.first as Map<String, Object?>;
+
+        expect(unionBranch['minProperties'], equals(1));
+        expect(unionBranch['maxProperties'], equals(10));
+        expect(anyOfList.last, equals({'type': 'null'}));
       });
     });
 
@@ -119,14 +124,16 @@ void main() {
 
         expect(jsonSchema['anyOf'], isA<List>());
         final anyOfList = jsonSchema['anyOf'] as List;
-        expect(anyOfList.length, equals(3));
+        expect(anyOfList.length, equals(2));
+        final unionBranch = anyOfList.first as Map<String, Object?>;
 
         expect(
-          jsonSchema['x-test-marker'],
+          unionBranch['x-test-marker'],
           isTrue,
           reason: 'Constraint should be merged into the composition schema',
         );
 
+        expect(unionBranch['anyOf'], isA<List>());
         expect(anyOfList.last, equals({'type': 'null'}));
       });
     });

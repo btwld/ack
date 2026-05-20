@@ -33,8 +33,5 @@
         "number"
       ]
     }
-  ],
-  "discriminator": {
-    "propertyName": "type"
-  }
+  ]
 }

@@ -111,7 +111,7 @@ void main() {
 
         final result = pet.safeParse({'type': 'cat', 'lives': 9});
         final jsonSchema = pet.toJsonSchema();
-        final branch = ((jsonSchema['oneOf'] as List<Object?>).single as Map)
+        final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
             .cast<String, Object?>();
         final properties = (branch['properties'] as Map)
             .cast<String, Object?>();
@@ -231,7 +231,7 @@ void main() {
           );
 
           final jsonSchema = pet.toJsonSchema();
-          final branch = ((jsonSchema['oneOf'] as List<Object?>).single as Map)
+          final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
               .cast<String, Object?>();
           final properties = (branch['properties'] as Map)
               .cast<String, Object?>();
@@ -257,7 +257,7 @@ void main() {
           );
 
           final jsonSchema = pet.toJsonSchema();
-          final branch = ((jsonSchema['oneOf'] as List<Object?>).single as Map)
+          final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
               .cast<String, Object?>();
           final properties = (branch['properties'] as Map)
               .cast<String, Object?>();
@@ -428,7 +428,7 @@ void main() {
         );
 
         final jsonSchema = schema.toJsonSchema();
-        final branch = ((jsonSchema['oneOf'] as List<Object?>).single as Map)
+        final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
             .cast<String, Object?>();
         final properties = (branch['properties'] as Map)
             .cast<String, Object?>();
@@ -489,6 +489,7 @@ void main() {
           final jsonSchema = schema.toJsonSchema();
 
           expect(jsonSchema.containsKey('default'), isFalse);
+          expect(jsonSchema, isNot(contains('discriminator')));
           expect(() => jsonEncode(jsonSchema), returnsNormally);
         },
       );

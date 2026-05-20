@@ -112,5 +112,46 @@ void main() {
       expect(left, right);
       expect(left.hashCode, right.hashCode);
     });
+
+    test('uses non-rendered metadata in equality and hashCode', () {
+      const left = AckAnyOfSchemaModel(
+        schemas: [AckStringSchemaModel()],
+        discriminator: AckSchemaDiscriminatorModel(propertyName: 'type'),
+      );
+      const same = AckAnyOfSchemaModel(
+        schemas: [AckStringSchemaModel()],
+        discriminator: AckSchemaDiscriminatorModel(propertyName: 'type'),
+      );
+      const different = AckAnyOfSchemaModel(
+        schemas: [AckStringSchemaModel()],
+        discriminator: AckSchemaDiscriminatorModel(propertyName: 'kind'),
+      );
+
+      expect(left.toJsonSchema(), same.toJsonSchema());
+      expect(left.toJsonSchema(), different.toJsonSchema());
+      expect(left, same);
+      expect(left.hashCode, same.hashCode);
+      expect(left, isNot(different));
+
+      const ordered = AckObjectSchemaModel(
+        properties: {'name': AckStringSchemaModel()},
+        propertyOrdering: ['name'],
+      );
+      const unordered = AckObjectSchemaModel(
+        properties: {'name': AckStringSchemaModel()},
+      );
+
+      expect(ordered.toJsonSchema(), unordered.toJsonSchema());
+      expect(ordered, isNot(unordered));
+
+      const dateBounded = AckStringSchemaModel(
+        format: 'date',
+        formatMinimum: '2026-01-01',
+      );
+      const dateUnbounded = AckStringSchemaModel(format: 'date');
+
+      expect(dateBounded.toJsonSchema(), dateUnbounded.toJsonSchema());
+      expect(dateBounded, isNot(dateUnbounded));
+    });
   });
 }

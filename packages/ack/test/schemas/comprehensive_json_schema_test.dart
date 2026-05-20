@@ -511,9 +511,9 @@ void main() {
         test('should generate correct JSON schema', () {
           final jsonSchema = vehicleSchema.toJsonSchema();
 
-          expect(jsonSchema['oneOf'], isNotNull);
-          expect((jsonSchema['oneOf'] as List).length, equals(2));
-          expect(jsonSchema['discriminator'], {'propertyName': 'type'});
+          expect(jsonSchema['anyOf'], isNotNull);
+          expect((jsonSchema['anyOf'] as List).length, equals(2));
+          expect(jsonSchema, isNot(contains('discriminator')));
         });
       });
 

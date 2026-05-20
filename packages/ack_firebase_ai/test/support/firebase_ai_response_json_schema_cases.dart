@@ -167,7 +167,6 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       'properties',
       'required',
       'optional',
-      'propertyOrdering',
       'additionalProperties',
     ],
     schema: Ack.object({
@@ -206,7 +205,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
   AckSchemaResponseJsonSchemaCase(
     id: 'ack_schema_date_transform_constraints',
     name: 'date transform constraints',
-    features: const ['transform', 'format', 'formatMinimum', 'formatMaximum'],
+    features: const ['transform', 'format'],
     schema: Ack.date().min(DateTime(2026, 1, 1)).max(DateTime(2026, 12, 31)),
   ),
   AckSchemaResponseJsonSchemaCase(
@@ -232,12 +231,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
   AckSchemaResponseJsonSchemaCase(
     id: 'ack_schema_discriminated_union',
     name: 'discriminated union',
-    features: const [
-      'oneOf',
-      'discriminator',
-      'const',
-      'unionOwnedDiscriminator',
-    ],
+    features: const ['anyOf', 'const', 'unionOwnedDiscriminator'],
     schema: Ack.discriminated<Map<String, Object?>>(
       discriminatorKey: 'type',
       schemas: {
@@ -258,8 +252,6 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       'minLength',
       'maxLength',
       'pattern',
-      'formatMinimum',
-      'formatMaximum',
       'extension',
     ],
     model: AckStringSchemaModel(
@@ -272,7 +264,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       pattern: r'^[a-z]+$',
       formatMinimum: 'ready',
       formatMaximum: 'ready',
-      extensions: {'x-firebase-test': true},
+      extensions: {'x-ack-test': true},
     ),
   ),
   const SchemaModelResponseJsonSchemaCase(
@@ -301,7 +293,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       constValue: 'ready',
       nullable: true,
       defaultValue: 'ready',
-      extensions: {'x-firebase-test': true},
+      extensions: {'x-ack-test': true},
     ),
   ),
   const SchemaModelResponseJsonSchemaCase(
@@ -317,7 +309,6 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       'object',
       'properties',
       'required',
-      'propertyOrdering',
       'minProperties',
       'maxProperties',
       'additionalPropertiesSchema',
@@ -347,7 +338,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       title: 'Flexible value',
       defaultValue: 'fallback',
       nullable: true,
-      extensions: {'x-firebase-test': true},
+      extensions: {'x-ack-test': true},
       schemas: [
         AckStringSchemaModel(minLength: 1),
         AckIntegerSchemaModel(minimum: 1),
@@ -369,8 +360,8 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_oneof_discriminator',
-    name: 'oneOf model discriminator',
-    features: ['oneOf', 'discriminator', 'const'],
+    name: 'oneOf model discriminator metadata',
+    features: ['oneOf', 'const'],
     model: AckOneOfSchemaModel(
       schemas: [
         AckObjectSchemaModel(

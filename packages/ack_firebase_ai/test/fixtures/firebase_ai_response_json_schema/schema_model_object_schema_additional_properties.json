@@ -8,9 +8,6 @@
   "required": [
     "id"
   ],
-  "propertyOrdering": [
-    "id"
-  ],
   "minProperties": 1,
   "maxProperties": 3,
   "additionalProperties": {

@@ -144,6 +144,8 @@ sealed class AckSchemaModel {
 
   Map<String, Object?> toJsonSchema();
 
+  Object? get _metadataEquality => null;
+
   @protected
   AckSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common);
 
@@ -250,8 +252,19 @@ sealed class AckSchemaModel {
   ) {
     final branches = schemas.map((schema) => schema.toJsonSchema()).toList();
     if (nullable && !schemas.any((schema) => schema is AckNullSchemaModel)) {
-      branches.add(_nullSchemaJson);
+      // Match Zod v4's Draft-7 nullable-union shape: keep the composition as
+      // one branch, then add null as the other branch. Flattening would validate
+      // the same values but loses the distinction between nullability and the
+      // composed union.
+      return {
+        if (defaultValue != null) 'default': defaultValue,
+        'anyOf': [
+          {..._common.toJson(includeDefault: false), keyword: branches},
+          _nullSchemaJson,
+        ],
+      };
     }
+
     return {..._common.toJson(), keyword: branches};
   }
 
@@ -273,6 +286,7 @@ sealed class AckSchemaModel {
     const deepEq = DeepCollectionEquality();
     return runtimeType == other.runtimeType &&
         deepEq.equals(toJsonSchema(), other.toJsonSchema()) &&
+        deepEq.equals(_metadataEquality, other._metadataEquality) &&
         deepEq.equals(warnings, other.warnings);
   }
 
@@ -282,6 +296,7 @@ sealed class AckSchemaModel {
     return Object.hash(
       runtimeType,
       deepEq.hash(toJsonSchema()),
+      deepEq.hash(_metadataEquality),
       deepEq.hash(warnings),
     );
   }
@@ -327,6 +342,12 @@ final class AckStringSchemaModel extends AckSchemaModel {
   final String? formatMinimum;
   final String? formatMaximum;
 
+  @override
+  Object? get _metadataEquality => {
+    if (formatMinimum != null) 'formatMinimum': formatMinimum,
+    if (formatMaximum != null) 'formatMaximum': formatMaximum,
+  };
+
   List<String>? get allowedStringValues {
     if (constValue case final value?) return [value];
     final values = enumValues;
@@ -343,8 +364,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
     if (minLength != null) 'minLength': minLength,
     if (maxLength != null) 'maxLength': maxLength,
     if (pattern != null) 'pattern': pattern,
-    if (formatMinimum != null) 'formatMinimum': formatMinimum,
-    if (formatMaximum != null) 'formatMaximum': formatMaximum,
   });
 
   @override
@@ -839,6 +858,11 @@ final class AckObjectSchemaModel extends AckSchemaModel {
   final AckAdditionalPropertiesModel? additionalProperties;
 
   @override
+  Object? get _metadataEquality => {
+    if (propertyOrdering != null) 'propertyOrdering': propertyOrdering,
+  };
+
+  @override
   Map<String, Object?> toJsonSchema() => finishTypeJson({
     'type': 'object',
     if (properties != null)
@@ -846,7 +870,6 @@ final class AckObjectSchemaModel extends AckSchemaModel {
         (key, value) => MapEntry(key, value.toJsonSchema()),
       ),
     if (required != null) 'required': required,
-    if (propertyOrdering != null) 'propertyOrdering': propertyOrdering,
     if (minProperties != null) 'minProperties': minProperties,
     if (maxProperties != null) 'maxProperties': maxProperties,
     if (additionalProperties != null)
@@ -941,6 +964,7 @@ final class AckNullSchemaModel extends AckSchemaModel {
 final class AckAnyOfSchemaModel extends AckSchemaModel {
   const AckAnyOfSchemaModel({
     required this.schemas,
+    this.discriminator,
     super.title,
     super.description,
     super.nullable,
@@ -949,10 +973,19 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckAnyOfSchemaModel._(_AckSchemaModelCommon common, {required this.schemas})
-    : super._(common);
+  AckAnyOfSchemaModel._(
+    _AckSchemaModelCommon common, {
+    required this.schemas,
+    this.discriminator,
+  }) : super._(common);
 
   final List<AckSchemaModel> schemas;
+  final AckSchemaDiscriminatorModel? discriminator;
+
+  @override
+  Object? get _metadataEquality => {
+    if (discriminator != null) 'discriminator': discriminator,
+  };
 
   @override
   Map<String, Object?> toJsonSchema() =>
@@ -960,7 +993,11 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
 
   @override
   AckAnyOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckAnyOfSchemaModel._(common, schemas: schemas);
+      AckAnyOfSchemaModel._(
+        common,
+        schemas: schemas,
+        discriminator: discriminator,
+      );
 
   AckSchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
@@ -992,10 +1029,13 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
   final AckSchemaDiscriminatorModel? discriminator;
 
   @override
-  Map<String, Object?> toJsonSchema() => {
-    ...finishCompositionJson('oneOf', schemas),
-    if (discriminator != null) 'discriminator': discriminator!.toJson(),
+  Object? get _metadataEquality => {
+    if (discriminator != null) 'discriminator': discriminator,
   };
+
+  @override
+  Map<String, Object?> toJsonSchema() =>
+      finishCompositionJson('oneOf', schemas);
 
   @override
   AckOneOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>

@@ -80,7 +80,9 @@ Future<void> main() async {
 
 ## Schema Mapping
 
-The adapter returns ACK's canonical JSON Schema renderer output. That means adapter behavior matches `AckSchema.toJsonSchema()`, which renders `AckSchema.toSchemaModel().toJsonSchema()`.
+The adapter returns ACK's generic Draft-7 JSON Schema renderer output. That
+means adapter behavior matches `AckSchema.toJsonSchema()`, which renders
+`AckSchema.toSchemaModel().toJsonSchema()`.
 
 | ACK schema | JSON Schema output |
 | --- | --- |
@@ -88,21 +90,28 @@ The adapter returns ACK's canonical JSON Schema renderer output. That means adap
 | `Ack.integer()` | `type: integer` |
 | `Ack.double()` | `type: number` |
 | `Ack.boolean()` | `type: boolean` |
-| `Ack.object({...})` | `type: object`, `properties`, `required`, `propertyOrdering` |
+| `Ack.object({...})` | `type: object`, `properties`, `required` |
 | `Ack.list(...)` | `type: array`, `items` |
 | `Ack.enumString([...])` / `Ack.enumValues(...)` | `enum` |
 | `Ack.literal(...)` | `const` |
 | `Ack.anyOf([...])` | `anyOf` |
-| `Ack.discriminated(...)` | `oneOf` plus `discriminator` |
+| `Ack.discriminated(...)` | `anyOf` with exact discriminator `const` branches |
 | `Ack.any()` | JSON-compatible primitive/object/array branches |
 
-Supported ACK constraints are preserved when they can be represented in JSON Schema, including string length and pattern keywords, numeric bounds, `multipleOf`, array length, `uniqueItems`, nullability, defaults, and additional properties policy.
+Supported ACK constraints are preserved when they can be represented in JSON
+Schema, including string length and pattern keywords, numeric bounds,
+`multipleOf`, array length, `uniqueItems`, nullability, defaults, and additional
+properties policy.
 
-Firebase serializes `responseJsonSchema` as a map, but Gemini supports a subset of JSON Schema and may ignore unsupported keywords. Treat the generated schema as model guidance and ACK validation as the authoritative runtime check.
+Firebase serializes `responseJsonSchema` as a map, but Gemini supports a subset
+of JSON Schema and may ignore unsupported keywords. Treat the generated schema
+as model guidance and ACK validation as the authoritative runtime check.
 
 ## Discriminated Unions
 
-`Ack.discriminated(...)` owns the discriminator. Branch schemas may omit the discriminator property; the schema model injects an exact `const` discriminator into each branch export.
+`Ack.discriminated(...)` owns the discriminator. Branch schemas may omit the
+discriminator property; the schema model injects an exact `const`
+discriminator into each branch export.
 
 ```dart
 final shapeSchema = Ack.discriminated<Map<String, Object?>>(
@@ -116,7 +125,8 @@ final shapeSchema = Ack.discriminated<Map<String, Object?>>(
 final jsonSchema = shapeSchema.toFirebaseAiResponseJsonSchema();
 ```
 
-The generated map contains `oneOf` branches with exact `type` literals.
+The generated map contains `anyOf` branches with exact `type` literals. It does
+not emit OpenAPI-style `discriminator` metadata.
 
 ## Limitations
 
