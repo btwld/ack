@@ -63,60 +63,223 @@ void main() {
         );
       });
 
-      test(
-        'generates JSON that validates with the same ACK schema',
-        () async {
-          final schema = Ack.object({
-            'category': Ack.enumString(['bug', 'feature', 'docs']),
-            'confidence': Ack.integer().min(0).max(100),
-            'actions': Ack.list(
-              Ack.object({
-                'title': Ack.string(),
-                'owner': Ack.enumString(['engineering', 'product', 'docs']),
-                'estimate': Ack.anyOf([
-                  Ack.integer().min(1).max(5),
-                  Ack.enumString(['unknown']),
-                ]),
-              }, additionalProperties: false),
-            ).minLength(2).maxLength(3),
-          }, additionalProperties: false).describe('Issue triage response');
+      for (final schemaCase in _liveFirebaseAiSchemaCases()) {
+        test(
+          'generates valid JSON for ${schemaCase.name}',
+          () async {
+            final generatedJson = await _generateLiveFirebaseJson(
+              app: app,
+              config: liveConfig!,
+              schemaCase: schemaCase,
+            );
 
-          final model = liveConfig!
-              .firebaseAI(app)
-              .generativeModel(
-                model: liveConfig.model,
-                generationConfig: GenerationConfig(
-                  responseMimeType: 'application/json',
-                  responseJsonSchema: schema.toFirebaseAiResponseJsonSchema(),
-                  temperature: 0,
-                  maxOutputTokens: 2048,
-                ),
-              );
-
-          final response = await model.generateContent([
-            Content.text(
-              'Return issue triage JSON only. Use category "bug", '
-              'confidence 87, and exactly two actions. Each action needs a '
-              'title, owner, and estimate.',
-            ),
-          ]);
-
-          final generatedJson = _decodeGeneratedJson(response.text);
-          final parsed = schema.safeParse(generatedJson);
-
-          expect(
-            parsed.isOk,
-            isTrue,
-            reason:
-                'Firebase AI returned JSON that ACK rejected.\n'
-                'Generated response: ${jsonEncode(generatedJson)}\n'
-                'ACK error: ${parsed.isFail ? parsed.getError() : null}',
-          );
-        },
-        timeout: const Timeout(Duration(minutes: 2)),
-      );
+            schemaCase.expectGeneratedJson(generatedJson);
+            _expectAckValid(schemaCase.schema, generatedJson);
+          },
+          timeout: const Timeout(Duration(minutes: 2)),
+        );
+      }
     },
   );
+}
+
+List<_LiveFirebaseAiSchemaCase> _liveFirebaseAiSchemaCases() => [
+  _LiveFirebaseAiSchemaCase(
+    name: 'nested object arrays and anyOf',
+    schema: Ack.object({
+      'category': Ack.enumString(['bug', 'feature', 'docs']),
+      'confidence': Ack.integer().min(0).max(100),
+      'actions': Ack.list(
+        Ack.object({
+          'title': Ack.string().minLength(4),
+          'owner': Ack.enumString(['engineering', 'product', 'docs']),
+          'estimate': Ack.anyOf([
+            Ack.integer().min(1).max(5),
+            Ack.enumString(['unknown']),
+          ]),
+        }, additionalProperties: false),
+      ).minLength(2).maxLength(3),
+    }, additionalProperties: false).describe('Issue triage response'),
+    prompt:
+        'Return issue triage JSON only. Use category "bug", confidence 87, '
+        'and exactly two actions. First action: title "Fix parser", owner '
+        '"engineering", estimate 3. Second action: title "Update docs", '
+        'owner "docs", estimate "unknown".',
+    expectGeneratedJson: _expectTriageJson,
+  ),
+  _LiveFirebaseAiSchemaCase(
+    name: 'literal nullable transformed and numeric fields',
+    schema: Ack.object({
+      'status': Ack.literal('ready'),
+      'version': Ack.string().matches(r'^v\d+\.\d+\.\d+$'),
+      'risk': Ack.double().min(0).max(1),
+      'approved': Ack.boolean(),
+      'shipDate': Ack.date().min(DateTime(2026)).max(DateTime(2026, 12, 31)),
+      'notes': Ack.string().nullable().optional(),
+      'metadata': Ack.object({
+        'owner': Ack.enumString(['release', 'qa']),
+        'ticket': Ack.string().matches(r'^ACK-\d{3}$'),
+      }, additionalProperties: false),
+    }, additionalProperties: false).describe('Release readiness response'),
+    prompt:
+        'Return release readiness JSON only. Use status "ready", version '
+        '"v1.2.3", risk 0.25, approved true, shipDate "2026-05-20", notes '
+        'null, metadata owner "release", and metadata ticket "ACK-108".',
+    expectGeneratedJson: _expectReleaseJson,
+  ),
+  _LiveFirebaseAiSchemaCase(
+    name: 'union-owned discriminated branch',
+    schema: Ack.discriminated<Map<String, Object?>>(
+      discriminatorKey: 'channel',
+      schemas: {
+        'email': Ack.object({
+          'address': Ack.string().email(),
+          'subject': Ack.string().minLength(5),
+        }, additionalProperties: false),
+        'sms': Ack.object({
+          'phone': Ack.string().matches(r'^\+1555\d{7}$'),
+          'message': Ack.string().maxLength(80),
+        }, additionalProperties: false),
+      },
+    ).describe('Notification response'),
+    prompt:
+        'Return notification JSON only. Use the sms branch with channel '
+        '"sms", phone "+15551234567", and message "Build passed".',
+    expectGeneratedJson: _expectDiscriminatedJson,
+  ),
+  _LiveFirebaseAiSchemaCase(
+    name: 'any JSON-compatible payload',
+    schema: Ack.object({
+      'id': Ack.string().uuid(),
+      'labels': Ack.list(
+        Ack.enumString(['alpha', 'beta', 'stable']),
+      ).minLength(2).maxLength(2),
+      'payload': Ack.any(),
+    }, additionalProperties: true).describe('Flexible event response'),
+    prompt:
+        'Return event JSON only. Use id '
+        '"00000000-0000-0000-0000-000000000000", labels ["alpha", '
+        '"stable"], and payload "firebase-attempt-1".',
+    expectGeneratedJson: _expectFlexibleEventJson,
+  ),
+];
+
+Future<Object?> _generateLiveFirebaseJson({
+  required FirebaseApp app,
+  required _LiveFirebaseAiConfig config,
+  required _LiveFirebaseAiSchemaCase schemaCase,
+}) async {
+  final responseJsonSchema = schemaCase.schema.toFirebaseAiResponseJsonSchema();
+
+  expect(
+    responseJsonSchema,
+    schemaCase.schema.toSchemaModel().toJsonSchema(),
+    reason:
+        'Firebase live tests must exercise the canonical sealed '
+        'AckSchemaModel rendering path.',
+  );
+
+  final generationConfig = GenerationConfig(
+    responseMimeType: 'application/json',
+    responseJsonSchema: responseJsonSchema,
+    temperature: 0,
+    maxOutputTokens: 2048,
+  );
+
+  expect(
+    generationConfig.toJson()['responseJsonSchema'],
+    responseJsonSchema,
+    reason: 'Firebase GenerationConfig must preserve responseJsonSchema.',
+  );
+
+  final model = config
+      .firebaseAI(app)
+      .generativeModel(model: config.model, generationConfig: generationConfig);
+
+  final response = await model.generateContent([
+    Content.text(schemaCase.prompt),
+  ]);
+
+  return _decodeGeneratedJson(response.text);
+}
+
+void _expectAckValid(AckSchema schema, Object? generatedJson) {
+  final parsed = schema.safeParse(generatedJson);
+
+  expect(
+    parsed.isOk,
+    isTrue,
+    reason:
+        'Firebase AI returned JSON that ACK rejected.\n'
+        'Generated response: ${jsonEncode(generatedJson)}\n'
+        'ACK error: ${parsed.isFail ? parsed.getError() : null}',
+  );
+}
+
+void _expectTriageJson(Object? value) {
+  final json = _expectJsonObject(value);
+  expect(json['category'], 'bug');
+  expect(json['confidence'], 87);
+
+  final actionsValue = json['actions'];
+  expect(actionsValue, isA<List<dynamic>>());
+  final actions = actionsValue as List<dynamic>;
+  expect(actions, hasLength(2));
+
+  final firstAction = _expectJsonObject(actions[0]);
+  expect(firstAction['owner'], 'engineering');
+  expect(firstAction['estimate'], 3);
+
+  final secondAction = _expectJsonObject(actions[1]);
+  expect(secondAction['owner'], 'docs');
+  expect(secondAction['estimate'], 'unknown');
+}
+
+void _expectReleaseJson(Object? value) {
+  final json = _expectJsonObject(value);
+  expect(json['status'], 'ready');
+  expect(json['version'], 'v1.2.3');
+  expect(json['risk'], 0.25);
+  expect(json['approved'], isTrue);
+  expect(json['shipDate'], '2026-05-20');
+  expect(json['notes'], isNull);
+
+  final metadata = _expectJsonObject(json['metadata']);
+  expect(metadata['owner'], 'release');
+  expect(metadata['ticket'], 'ACK-108');
+}
+
+void _expectDiscriminatedJson(Object? value) {
+  final json = _expectJsonObject(value);
+  expect(json['channel'], 'sms');
+  expect(json['phone'], '+15551234567');
+  expect(json['message'], 'Build passed');
+}
+
+void _expectFlexibleEventJson(Object? value) {
+  final json = _expectJsonObject(value);
+  expect(json['id'], '00000000-0000-0000-0000-000000000000');
+  expect(json['labels'], ['alpha', 'stable']);
+  expect(json['payload'], 'firebase-attempt-1');
+}
+
+Map<Object?, Object?> _expectJsonObject(Object? value) {
+  expect(value, isA<Map<dynamic, dynamic>>());
+  return (value as Map<dynamic, dynamic>).cast<Object?, Object?>();
+}
+
+final class _LiveFirebaseAiSchemaCase {
+  const _LiveFirebaseAiSchemaCase({
+    required this.name,
+    required this.schema,
+    required this.prompt,
+    required this.expectGeneratedJson,
+  });
+
+  final String name;
+  final AckSchema schema;
+  final String prompt;
+  final void Function(Object? value) expectGeneratedJson;
 }
 
 Map<String, String> _liveFirebaseAiEnv({

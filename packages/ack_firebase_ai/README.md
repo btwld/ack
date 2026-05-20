@@ -149,7 +149,13 @@ FIREBASE_MESSAGING_SENDER_ID=... \
 flutter test test/live_firebase_ai_response_json_schema_test.dart
 ```
 
-The test uses `GenerationConfig.responseJsonSchema`, sends a real Gemini request, decodes the response, and validates it with the same ACK schema. By default it uses Firebase AI's Gemini Developer API backend with `gemini-3.5-flash`. Set `ACK_FIREBASE_AI_MODEL` to test a different model.
+The test uses `GenerationConfig.responseJsonSchema`, sends real Gemini requests,
+decodes each response, and validates it with the same ACK schema. It covers
+nested objects/lists, `anyOf`, nullable fields, transformed date output,
+union-owned discriminators, and `Ack.any()` payloads. By default it uses
+Firebase AI's Gemini Developer API backend with `gemini-3.5-flash`. Set
+`ACK_FIREBASE_AI_MODEL` to test a different 3.x model, for example
+`gemini-3-flash-preview` when the default model is temporarily high-demand.
 
 The same values can also be passed with `flutter test --dart-define=...`. Use the Firebase app values from your FlutterFire-generated `DefaultFirebaseOptions.currentPlatform` or Firebase console app settings. To run the live test against the Vertex AI backend, set:
 
