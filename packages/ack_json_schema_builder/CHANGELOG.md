@@ -1,3 +1,18 @@
+## Unreleased
+
+### Changed
+
+* Route conversion through ACK's sealed `AckSchemaModel` boundary and
+  canonical JSON Schema renderer.
+* Preserve model defaults, const values, extension keywords, transformed
+  metadata, composition, discriminators, and date format bounds.
+* Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
+  adapter boundary.
+
+### Removed
+
+* Remove the legacy JSON Schema DTO converter path.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.

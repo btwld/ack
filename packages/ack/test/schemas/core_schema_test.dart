@@ -238,13 +238,17 @@ void main() {
     });
 
     group('ListSchema', () {
-      test('should fail when nullable item resolves to null', () {
-        final schema = Ack.list(Ack.string().nullable());
-
-        final result = schema.safeParse(['valid', null, 'also valid']);
-
-        expect(result.isOk, isFalse);
-        expect(result.getError(), isA<SchemaNestedError>());
+      test('rejects nullable item schemas at construction', () {
+        expect(
+          () => Ack.list(Ack.string().nullable()),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('does not support nullable item schemas'),
+            ),
+          ),
+        );
       });
     });
   });

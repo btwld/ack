@@ -1,3 +1,28 @@
+## Unreleased
+
+### Added
+- Added `toFirebaseAiResponseJsonSchema()` and
+  `convertAckSchemaModelToFirebaseAiResponseJsonSchema()` for Firebase AI's
+  `GenerationConfig.responseJsonSchema` path.
+- Added an opt-in live Firebase AI contract test for real
+  `responseJsonSchema` generation and ACK validation.
+- Added live-test configuration for Gemini Developer API vs Vertex AI
+  backends, Firebase app credentials, location, and model override.
+
+### Changed
+- Target Firebase AI `^3.12.1` and models that support JSON Schema
+  structured output.
+- Default Firebase AI examples and live tests to `gemini-3.5-flash`.
+- Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
+  adapter boundary.
+- Keep `firebase_ai` and Flutter as explicit package dependencies so package
+  tests and workspace orchestration use the Firebase AI SDK runtime.
+
+### Removed
+- Removed typed Firebase AI `Schema` conversion APIs. Use
+  `toFirebaseAiResponseJsonSchema()` with
+  `GenerationConfig.responseJsonSchema`.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.
@@ -42,13 +67,13 @@
 - Removed `ConversionContext` class - cyclic detection unnecessary for immutable schemas
 - Removed `FirebaseAiSchemaConverter` class wrapper - now uses top-level functions
 - Improved `TransformedSchema` handling with direct override application
-- Better `JsonSchema` integration - convert once and reuse metadata
-- Package complexity reduced by 26% (379 lines → 280 lines → 352 lines final)
+- Better JSON Schema integration - convert once and reuse metadata
+- Package complexity reduced by 26% (379 lines to 280 lines to 352 lines final)
 - Inlined nullable checks for clarity
 
 ### Fixed
 - `TransformedSchema` conversion now works correctly with proper override handling
-- Union types (`anyOf`) now fully supported via updated JsonSchema implementation
+- Union types (`anyOf`) now fully supported via updated JSON Schema implementation
 - Discriminated unions (`DiscriminatedObjectSchema`) now properly supported
 - Typeless schemas now handled correctly
 - `additionalProperties` parsing fixed to accept `{}` as `true`
@@ -60,8 +85,8 @@
 - Separate extension and converter files
 
 ### Improved
-- **Performance**: Fewer JsonSchema conversions, more direct conversion path
-- **Maintainability**: Simpler structure (3 files → 1), easier to navigate
+- **Performance**: Fewer JSON Schema conversions, more direct conversion path
+- **Maintainability**: Simpler structure (3 files to 1), easier to navigate
 - **Code quality**: Removed unnecessary abstractions and indirection
 - **Test coverage**: All 82 tests passing (was 45+)
 - **Documentation**: Single source of truth with comprehensive inline docs
@@ -69,18 +94,18 @@
 ## [1.0.0-beta.2] - 2025-10-16
 
 ### Changed
-- Return Firebase AI `Schema` objects from `.toFirebaseAiSchema()` instead of raw `Map`s.
-- Added direct dependency on `firebase_ai` and aligned converter/tests with its typed API.
-- Updated test suite and documentation to reflect Firebase AI Schema limitations (e.g., missing string length metadata).
+- Updated Firebase AI converter output to match the SDK integration style at the time.
+- Added direct dependency on `firebase_ai` and aligned converter/tests with that SDK API.
+- Updated test suite and documentation to reflect Firebase AI schema limitations at the time.
 
 ### Fixed
-- Preserve enum and optional property metadata via typed schema helpers.
+- Preserve enum and optional property metadata.
 
 ## [1.0.0-beta.1] - 2025-01-16
 
 ### Added
 - Initial release of ack_firebase_ai package
-- Extension method `.toFirebaseAiSchema()` for converting ACK schemas
+- Extension method for converting ACK schemas
 - Support for all basic schema types (string, integer, double, boolean, object, array)
 - Support for enum schemas via `Ack.enumString()`
 - Constraint mapping (minLength, maxLength, min, max, format)

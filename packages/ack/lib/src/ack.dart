@@ -42,8 +42,14 @@ final class Ack {
   );
 
   /// Creates a list schema with the given item schema.
-  static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) =>
-      ListSchema(itemSchema);
+  static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) {
+    if (itemSchema.isNullable) {
+      throw ArgumentError(
+        'Ack.list(...) does not support nullable item schemas yet.',
+      );
+    }
+    return ListSchema(itemSchema);
+  }
 
   /// Creates an enum schema for validating enum values.
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>

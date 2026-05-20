@@ -74,7 +74,7 @@ test('JSON Schema compatibility for user schema', () async {
     'email': Ack.string.email(),
   }, required: ['name', 'email']);
   
-  final jsonSchema = JsonSchemaConverter(schema: ackSchema).toSchema();
+  final jsonSchema = ackSchema.toSchemaModel().toJsonSchema();
   
   // Write schema to temp file
   final schemaFile = File('temp/user-schema.json');

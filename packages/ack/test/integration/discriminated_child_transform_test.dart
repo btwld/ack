@@ -102,7 +102,7 @@ void main() {
       expect(result.getOrThrow()!.name, equals('Default Cat'));
     });
 
-    test('fails when a branch is not object-backed', () {
+    test('parse rejects non-object-backed branches via effectiveBranch', () {
       final animalSchema = Ack.discriminated<String>(
         discriminatorKey: 'type',
         schemas: {'cat': Ack.string()},
@@ -114,6 +114,16 @@ void main() {
       expect(
         result.getError().message,
         equals('Discriminated branches must be object-backed schemas'),
+      );
+      expect(
+        animalSchema.toSchemaModel,
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('Discriminated branches must be object-backed schemas'),
+          ),
+        ),
       );
     });
 

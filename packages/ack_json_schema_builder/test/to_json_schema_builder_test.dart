@@ -243,21 +243,61 @@ void main() {
         expect(anyOf.last.value['type'], 'integer');
       });
 
+      test('single-branch anyOf stays non-nullable', () {
+        final schema = Ack.anyOf([Ack.string()]);
+
+        final result = schema.toJsonSchemaBuilder();
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
+
+        expect(anyOf, hasLength(1));
+        expect(anyOf.single.value['type'], 'string');
+      });
+
       test('nullable anyOf preserves union and null branch', () {
         final schema = Ack.anyOf([Ack.string(), Ack.integer()]).nullable();
 
         final result = schema.toJsonSchemaBuilder();
-        final outerAnyOf = (result.value['anyOf'] as List)
+        final anyOf = (result.value['anyOf'] as List)
             .map(_schemaFrom)
             .toList(growable: false);
-        expect(outerAnyOf, hasLength(2));
+        expect(anyOf, hasLength(3));
+        expect(anyOf[0].value['type'], 'string');
+        expect(anyOf[1].value['type'], 'integer');
+        expect(anyOf[2].value['type'], 'null');
+      });
 
-        final unionBranch = outerAnyOf.first;
-        final innerAnyOf = (unionBranch.value['anyOf'] as List)
-            .map(_schemaFrom)
-            .toList(growable: false);
-        expect(innerAnyOf, hasLength(2));
-        expect(outerAnyOf.last.value['type'], 'null');
+      test('preserves model defaults, const values, and extensions', () {
+        const schema = AckBooleanSchemaModel(
+          constValue: true,
+          defaultValue: true,
+          extensions: {
+            'not': {'const': false},
+            'x-ack': 'kept',
+          },
+        );
+
+        final result = convertAckSchemaModelToBuilder(schema);
+
+        expect(result.value['type'], 'boolean');
+        expect(result.value['const'], true);
+        expect(result.value['default'], true);
+        expect(result.value['not'], {'const': false});
+        expect(result.value['x-ack'], 'kept');
+      });
+
+      test('preserves date format bounds from schema model keywords', () {
+        final schema = Ack.date()
+            .min(DateTime.utc(2026))
+            .max(DateTime.utc(2026, 12, 31));
+
+        final result = schema.toJsonSchemaBuilder();
+
+        expect(result.value['type'], 'string');
+        expect(result.value['format'], 'date');
+        expect(result.value['formatMinimum'], '2026-01-01');
+        expect(result.value['formatMaximum'], '2026-12-31');
       });
 
       test(
@@ -290,8 +330,14 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'circle': Ack.object({'radius': Ack.double()}),
-            'square': Ack.object({'side': Ack.double()}),
+            'circle': Ack.object({
+              'type': Ack.literal('circle'),
+              'radius': Ack.double(),
+            }),
+            'square': Ack.object({
+              'type': Ack.literal('square'),
+              'side': Ack.double(),
+            }),
           },
         );
         final result = schema.toJsonSchemaBuilder();
@@ -314,8 +360,8 @@ void main() {
         final schema = Ack.discriminated(
           discriminatorKey: 'kind',
           schemas: {
-            'a': Ack.object({'val': Ack.string()}),
-            'b': Ack.object({'num': Ack.integer()}),
+            'a': Ack.object({'kind': Ack.literal('a'), 'val': Ack.string()}),
+            'b': Ack.object({'kind': Ack.literal('b'), 'num': Ack.integer()}),
           },
         );
         final result = schema.toJsonSchemaBuilder();
@@ -326,7 +372,7 @@ void main() {
       });
 
       test(
-        'oneOf accepts compatible existing discriminator property as singleton enum',
+        'oneOf replaces compatible discriminator property with exact const',
         () {
           final schema = Ack.discriminated(
             discriminatorKey: 'kind',
@@ -345,7 +391,7 @@ void main() {
             (key, value) => MapEntry(key as String, _schemaFrom(value)),
           );
 
-          expect(properties['kind']!.value['enum'], ['a']);
+          expect(properties['kind']!.value['const'], 'a');
           expect(branch.value['required'], ['kind', 'val']);
         },
       );
@@ -487,30 +533,33 @@ void main() {
           anyOf(equals(true), equals({})),
         );
       });
+
+      test('additionalProperties schema converts recursively', () {
+        const schema = AckObjectSchemaModel(
+          additionalProperties: AckAdditionalPropertiesSchema(
+            AckStringSchemaModel(minLength: 1),
+          ),
+        );
+
+        final result = convertAckSchemaModelToBuilder(schema);
+        final additional = _schemaFrom(result.value['additionalProperties']);
+
+        expect(additional.value['type'], 'string');
+        expect(additional.value['minLength'], 1);
+      });
     });
 
     group('allOf composition', () {
       test('allOf converts to allOf in json_schema_builder', () {
-        // Create a JsonSchema with allOf directly (ACK doesn't have Ack.allOf() yet)
-        final jsonSchema = JsonSchema.fromJson({
-          'allOf': [
-            {
-              'type': 'object',
-              'properties': {
-                'name': {'type': 'string'},
-              },
-            },
-            {
-              'type': 'object',
-              'properties': {
-                'age': {'type': 'integer'},
-              },
-            },
+        const jsonSchema = AckAllOfSchemaModel(
+          schemas: [
+            AckObjectSchemaModel(properties: {'name': AckStringSchemaModel()}),
+            AckObjectSchemaModel(properties: {'age': AckIntegerSchemaModel()}),
           ],
-        });
+        );
 
         // Convert using the public helper
-        final result = convertJsonSchemaToBuilder(jsonSchema);
+        final result = convertAckSchemaModelToBuilder(jsonSchema);
 
         // Verify allOf is in the output
         expect(
@@ -529,14 +578,14 @@ void main() {
       });
 
       test('allOf preserves branch schemas', () {
-        final jsonSchema = JsonSchema.fromJson({
-          'allOf': [
-            {'type': 'string', 'minLength': 5},
-            {'type': 'string', 'maxLength': 10},
+        const jsonSchema = AckAllOfSchemaModel(
+          schemas: [
+            AckStringSchemaModel(minLength: 5),
+            AckStringSchemaModel(maxLength: 10),
           ],
-        });
+        );
 
-        final result = convertJsonSchemaToBuilder(jsonSchema);
+        final result = convertAckSchemaModelToBuilder(jsonSchema);
         final allOf = (result.value['allOf'] as List).map(_schemaFrom).toList();
 
         expect(allOf, hasLength(2));
@@ -548,44 +597,35 @@ void main() {
 
     group('Object property count constraints', () {
       test('minProperties is preserved in conversion', () {
-        final jsonSchema = JsonSchema.fromJson({
-          'type': 'object',
-          'properties': {
-            'name': {'type': 'string'},
-          },
-          'minProperties': 2,
-        });
+        const jsonSchema = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
+          minProperties: 2,
+        );
 
-        final result = convertJsonSchemaToBuilder(jsonSchema);
+        final result = convertAckSchemaModelToBuilder(jsonSchema);
 
         expect(result.value['minProperties'], 2);
       });
 
       test('maxProperties is preserved in conversion', () {
-        final jsonSchema = JsonSchema.fromJson({
-          'type': 'object',
-          'properties': {
-            'name': {'type': 'string'},
-          },
-          'maxProperties': 5,
-        });
+        const jsonSchema = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
+          maxProperties: 5,
+        );
 
-        final result = convertJsonSchemaToBuilder(jsonSchema);
+        final result = convertAckSchemaModelToBuilder(jsonSchema);
 
         expect(result.value['maxProperties'], 5);
       });
 
       test('both minProperties and maxProperties together', () {
-        final jsonSchema = JsonSchema.fromJson({
-          'type': 'object',
-          'properties': {
-            'name': {'type': 'string'},
-          },
-          'minProperties': 1,
-          'maxProperties': 10,
-        });
+        const jsonSchema = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
+          minProperties: 1,
+          maxProperties: 10,
+        );
 
-        final result = convertJsonSchemaToBuilder(jsonSchema);
+        final result = convertAckSchemaModelToBuilder(jsonSchema);
 
         expect(result.value['minProperties'], 1);
         expect(result.value['maxProperties'], 10);

@@ -1,219 +1,159 @@
 # ack_firebase_ai
 
-Firebase AI (Gemini) schema converter for the [ACK](https://pub.dev/packages/ack) validation library.
+Firebase AI (Gemini) structured-output adapter for the [ACK](https://pub.dev/packages/ack) validation library.
 
 [![pub package](https://img.shields.io/pub/v/ack_firebase_ai.svg)](https://pub.dev/packages/ack_firebase_ai)
 
 ## Overview
 
-Converts ACK schemas to Firebase AI Schema format via `.toFirebaseAiSchema()`. Assumes familiarity with [ACK](https://pub.dev/packages/ack) and [firebase_ai](https://pub.dev/packages/firebase_ai).
+`ack_firebase_ai` converts ACK schemas to the JSON-compatible map accepted by Firebase AI's `GenerationConfig.responseJsonSchema`.
+
+The adapter is intentionally thin:
+
+```text
+AckSchema
+  -> AckSchemaModel
+  -> JSON Schema map
+  -> GenerationConfig.responseJsonSchema
+```
+
+Always validate model output with the same ACK schema after generation. Firebase response schemas guide generation, but ACK remains the runtime validator.
 
 ## Installation
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_firebase_ai: ^1.0.0
-  firebase_ai: ^3.4.0  # Required peer dependency
+  ack: ^1.0.0-beta.12-wip
+  ack_firebase_ai: ^1.0.0-beta.12-wip
+  firebase_ai: ^3.12.1
 ```
 
-### Compatibility
-
-Requires `firebase_ai: >=3.4.0 <5.0.0` as a peer dependency. Report [compatibility issues](https://github.com/btwld/ack/issues).
-
-## Limitations ⚠️
-
-**Read this first** - Firebase AI schema conversion has important constraints:
-
-### 1. Gemini Doesn't Enforce Schemas
-
-Firebase AI schemas are **hints**, not validation. Always validate output with ACK.
-
-```dart
-// Gemini may ignore constraints
-final schema = Ack.integer().min(0).max(10);
-final geminiSchema = schema.toFirebaseAiSchema();
-
-final model = FirebaseAI.instance.generativeModel(
-  model: 'gemini-1.5-pro',
-  generationConfig: GenerationConfig(
-    responseMimeType: 'application/json',
-    responseSchema: geminiSchema,
-  ),
-);
-
-final response = await model.generateContent([...]);
-// Response may contain values outside 0-10 range!
-
-// ALWAYS validate with ACK
-final result = schema.safeParse(response.data);
-if (!result.isOk) {
-  // Handle validation failure
-}
-```
-
-### 2. String Length Not Enforced
-
-Firebase AI Schema (as of firebase_ai v3.6.0) does not expose `minLength`/`maxLength` properties in the serialized JSON schema. These constraints exist in ACK schemas but cannot be passed to Gemini. Always validate AI output with ACK after generation.
-
-**Why:** This is a limitation of the Firebase AI Dart SDK's Schema API, not the Gemini API itself. The underlying Gemini API supports string constraints, but they're not yet surfaced in the typed Schema class.
-
-**Workaround:** Validate all AI responses with your ACK schema to enforce length constraints client-side.
-
-```dart
-final schema = Ack.string().minLength(5).maxLength(20);
-final geminiSchema = schema.toFirebaseAiSchema();
-// Length constraints not included in geminiSchema.toJson()
-// Validate with ACK: schema.safeParse(aiResponse)
-```
-
-### 3. Refinements Unsupported
-
-Custom validation logic cannot be expressed in Firebase AI schemas.
-
-```dart
-// Cannot convert
-final schema = Ack.string().refine((s) => s.startsWith('ACK_'));
-
-// Validate AI output with ACK schema
-final result = schema.safeParse(aiResponse);
-```
-
-### 4. Regex Patterns Limited
-
-Patterns not supported - use enums or post-validation.
-
-```dart
-// Not convertible
-final schema = Ack.string().matches(r'^[A-Z]{3}-\d{5}$');
-
-// Alternative: enum or validate after
-final schema = Ack.enumString(['ABC-12345', 'DEF-67890']);
-```
-
-### 5. Default Values Not Passed
-
-Defaults are ACK-only. Apply after parsing.
-
-```dart
-final schema = Ack.string().withDefault('default');
-schema.toFirebaseAiSchema(); // Default not included
-// Apply defaults after parsing AI response
-```
-
-### 6. oneOf Converted to anyOf
-
-Firebase AI API only supports `anyOf`. Schemas using `oneOf` (exactly-one-of semantics via discriminated unions) are converted to `anyOf` (at-least-one-of), which may accept additional values.
-
-```dart
-// oneOf semantics: exactly one branch should match
-final schema = Ack.discriminated(
-  discriminatorKey: 'type',
-  schemas: {
-    'circle': Ack.object({'radius': Ack.double()}),
-    'square': Ack.object({'side': Ack.double()}),
-  },
-);
-final geminiSchema = schema.toFirebaseAiSchema();
-// Converted to anyOf - exclusivity not enforced
-// Always validate with ACK to ensure single branch match
-```
-
-### 7. Transformed Schemas
-
-Supported - metadata overrides (description, title, nullable) work correctly.
-
-```dart
-final dateSchema = Ack.date(); // TransformedSchema
-final geminiSchema = dateSchema.toFirebaseAiSchema(); // Works
-```
+This package targets Firebase AI's map-based `responseJsonSchema` API for models that support JSON Schema structured output.
 
 ## Usage
 
+In a Flutter app that has initialized Firebase:
+
 ```dart
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:ack_firebase_ai/ack_firebase_ai.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 
-// 1. Define schema
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50),
-  'email': Ack.string().email(),
-  'age': Ack.integer().min(0).max(120).optional(),
-});
+Future<void> main() async {
+  final userSchema = Ack.object({
+    'name': Ack.string().minLength(2).maxLength(50),
+    'email': Ack.string().email(),
+    'age': Ack.integer().min(0).max(120).optional(),
+  });
 
-// 2. Convert to Firebase AI
-final geminiSchema = userSchema.toFirebaseAiSchema();
+  // Assumes Firebase.initializeApp() has already run in your app startup.
+  final model = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-3.5-flash',
+    generationConfig: GenerationConfig(
+      responseMimeType: 'application/json',
+      responseJsonSchema: userSchema.toFirebaseAiResponseJsonSchema(),
+    ),
+  );
 
-// 3. Use with Gemini
-final model = FirebaseAI.instance.generativeModel(
-  model: 'gemini-1.5-pro',
-  generationConfig: GenerationConfig(
-    responseMimeType: 'application/json',
-    responseSchema: geminiSchema,
-  ),
-);
+  final response = await model.generateContent([
+    Content.text(
+      'Generate a JSON user profile with name, email, and optional age.',
+    ),
+  ]);
 
-final response = await model.generateContent([
-  Content.text('Generate a user'),
-]);
+  final decoded = jsonDecode(response.text ?? 'null');
+  final result = userSchema.safeParse(decoded);
 
-// 4. ALWAYS validate with ACK (Gemini may violate schema)
-final result = userSchema.safeParse(response.data);
-if (result.isOk) {
-  final user = result.getOrThrow();
-  print('Valid: $user');
-} else {
-  print('Invalid: ${result.getError()}');
+  if (result.isOk) {
+    final user = result.getOrThrow();
+    print('Valid user: $user');
+    return;
+  }
+
+  throw StateError(
+    'Generated response did not match schema: ${result.getError()}',
+  );
 }
 ```
 
 ## Schema Mapping
 
-### Supported Types
+The adapter returns ACK's canonical JSON Schema renderer output. That means adapter behavior follows `AckSchema.toSchemaModel().toJsonSchema()`.
 
-| ACK Type | Firebase AI Type | Conversion details |
-|----------|-----------------|-------------------|
-| `Ack.string()` | `string` | Full support |
-| `Ack.integer()` | `integer` | Full support |
-| `Ack.double()` | `number` | Full support |
-| `Ack.boolean()` | `boolean` | Full support |
-| `Ack.object({...})` | `object` | Full support |
-| `Ack.list(...)` | `array` | Full support |
-| `Ack.enumString([...])` | `string` with `enum` | Full support |
-| `Ack.anyOf([...])` | `anyOf` array | Full support |
-| `Ack.any()` | `object` | Converts to empty object |
+| ACK schema | JSON Schema output |
+| --- | --- |
+| `Ack.string()` | `type: string` |
+| `Ack.integer()` | `type: integer` |
+| `Ack.double()` | `type: number` |
+| `Ack.boolean()` | `type: boolean` |
+| `Ack.object({...})` | `type: object`, `properties`, `required`, `propertyOrdering` |
+| `Ack.list(...)` | `type: array`, `items` |
+| `Ack.enumString([...])` / `Ack.enumValues(...)` | `enum` |
+| `Ack.literal(...)` | `const` |
+| `Ack.anyOf([...])` | `anyOf` |
+| `Ack.discriminated(...)` | `oneOf` plus `discriminator` |
+| `Ack.any()` | JSON-compatible primitive/object/array branches |
 
-### Supported Constraints
+Supported ACK constraints are preserved when they can be represented in JSON Schema, including string length and pattern keywords, numeric bounds, `multipleOf`, array length, `uniqueItems`, nullability, defaults, and additional properties policy.
 
-| ACK Constraint | Firebase AI | Notes |
-|----------------|-------------|-------|
-| `.minLength()` / `.maxLength()` | `minItems` / `maxItems` (arrays only) | String length not surfaced - validate with ACK |
-| `.min()` / `.max()` | `minimum` / `maximum` | Numeric bounds |
-| `.email()` / `.uuid()` / `.url()` | `format` | Format hints (enforcement varies by model) |
-| `.nullable()` | `nullable: true` | Null support |
-| `.optional()` | Excluded from `required` | Optional fields |
-| `.describe()` | `description` | Descriptions |
+Firebase serializes `responseJsonSchema` as a map, but Gemini supports a subset of JSON Schema and may ignore unsupported keywords. Treat the generated schema as model guidance and ACK validation as the authoritative runtime check.
 
-## Testing
+## Discriminated Unions
 
-Requires Flutter (firebase_ai dependency). Use `flutter test`, not `dart test`.
+`Ack.discriminated(...)` owns the discriminator. Branch schemas may omit the discriminator property; the schema model injects an exact `const` discriminator into each branch export.
 
-```bash
-cd packages/ack_firebase_ai
-flutter test
+```dart
+final shapeSchema = Ack.discriminated<Map<String, Object?>>(
+  discriminatorKey: 'type',
+  schemas: {
+    'circle': Ack.object({'radius': Ack.double().positive()}),
+    'square': Ack.object({'side': Ack.double().positive()}),
+  },
+);
+
+final jsonSchema = shapeSchema.toFirebaseAiResponseJsonSchema();
 ```
 
-## Contributing
+The generated map contains `oneOf` branches with exact `type` literals.
 
-For contribution guidelines, see [CONTRIBUTING.md](../../CONTRIBUTING.md) in the root repository.
+## Limitations
 
-## License
+Firebase AI response schemas are generation guidance, not a substitute for validation. Validate generated JSON with ACK before using it.
 
-This package is part of the [ACK](https://github.com/btwld/ack) monorepo.
+Custom refinements and transforms that cannot be represented as JSON Schema are not enforceable by Firebase AI. ACK still enforces them after parsing.
 
-## Related Packages
+Schema size counts toward the model input token budget. Keep response schemas focused on the shape you need back.
 
-- [ack](https://pub.dev/packages/ack) - Core validation library
-- [ack_generator](https://pub.dev/packages/ack_generator) - Code generator for schemas
-- [firebase_ai](https://pub.dev/packages/firebase_ai) - Firebase AI SDK for Flutter
+## Live Contract Test
+
+The normal test suite does not call Firebase. To verify the adapter against a real Firebase AI project, run the opt-in live test with Firebase app credentials:
+
+```bash
+firebase projects:list
+firebase apps:list --project <project-id>
+gcloud services enable firebasevertexai.googleapis.com --project <project-id>
+```
+
+Use a Firebase Web app's SDK config for the environment values below. The project also needs Firebase AI Logic configured for the selected backend.
+
+```bash
+ACK_FIREBASE_AI_LIVE=1 \
+ACK_FIREBASE_AI_BACKEND=google_ai \
+ACK_FIREBASE_AI_MODEL=gemini-3.5-flash \
+FIREBASE_API_KEY=... \
+FIREBASE_PROJECT_ID=... \
+FIREBASE_APP_ID=... \
+FIREBASE_MESSAGING_SENDER_ID=... \
+flutter test test/live_firebase_ai_response_json_schema_test.dart
+```
+
+The test uses `GenerationConfig.responseJsonSchema`, sends a real Gemini request, decodes the response, and validates it with the same ACK schema. By default it uses Firebase AI's Gemini Developer API backend with `gemini-3.5-flash`. Set `ACK_FIREBASE_AI_MODEL` to test a different model.
+
+The same values can also be passed with `flutter test --dart-define=...`. Use the Firebase app values from your FlutterFire-generated `DefaultFirebaseOptions.currentPlatform` or Firebase console app settings. To run the live test against the Vertex AI backend, set:
+
+```bash
+ACK_FIREBASE_AI_BACKEND=vertex_ai \
+FIREBASE_AI_LOCATION=global
+```
