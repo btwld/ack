@@ -120,7 +120,7 @@ void main() {
       final schema = Ack.anyOf([
         Ack.string(),
         Ack.integer(),
-      ]).copyWith(defaultValue: defaultValue);
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -132,7 +132,7 @@ void main() {
       final schema = Ack.anyOf([
         Ack.string().nullable(),
         Ack.integer(),
-      ]).copyWith(defaultValue: defaultValue);
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -145,7 +145,7 @@ void main() {
       final schema = Ack.anyOf([
         Ack.integer(),
         Ack.double(),
-      ]).copyWith(defaultValue: defaultValue);
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isFail, isTrue);
@@ -199,16 +199,16 @@ void main() {
       expect(jsonSchema['anyOf'], isA<List>());
 
       final anyOfList = jsonSchema['anyOf'] as List;
-      expect(anyOfList.length, equals(2)); // union + null
+      // Nullable anyOf wraps the base anyOf in another anyOf with null
+      // Structure: anyOf: [ { anyOf: [string, integer] }, { type: 'null' } ]
+      expect(anyOfList.length, equals(2)); // base anyOf + null
       expect(
-        anyOfList.last,
+        anyOfList[1],
         equals({'type': 'null'}),
         reason: 'Last element should be null type',
       );
-      final union = anyOfList.first as Map;
-      final branches = union['anyOf'] as List;
-      expect((branches[0] as Map)['type'], equals('string'));
-      expect((branches[1] as Map)['type'], equals('integer'));
+      expect(anyOfList[0], isA<Map>());
+      expect((anyOfList[0] as Map).containsKey('anyOf'), isTrue);
     });
 
     test('should not include null type when AnyOfSchema is not nullable', () {

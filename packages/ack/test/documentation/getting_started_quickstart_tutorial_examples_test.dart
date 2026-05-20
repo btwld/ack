@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 /// Tests for code snippets in docs/getting-started/quickstart-tutorial.mdx.
 void main() {
   group('Docs /getting-started/quickstart-tutorial.mdx', () {
-    AckSchema<Map<String, Object?>> buildUserSchema() {
+    AckSchema<Map<String, Object?>, Map<String, Object?>> buildUserSchema() {
       return Ack.object({
         'name': Ack.string().minLength(2),
         'age': Ack.integer().min(0).optional(),

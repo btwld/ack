@@ -6,6 +6,8 @@ library;
 
 // Main API
 export 'src/ack.dart';
+// Common types
+export 'src/common_types.dart' show JsonMap;
 // Constraints
 export 'src/constraints/constraint.dart';
 export 'src/constraints/datetime_constraint.dart';

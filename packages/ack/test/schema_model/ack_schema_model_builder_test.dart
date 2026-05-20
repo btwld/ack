@@ -38,7 +38,7 @@ void main() {
     });
 
     test('renders direct JSON Schema through the schema model', () {
-      void expectDirectMatchesModel<T extends Object>(AckSchema<T> schema) {
+      void expectDirectMatchesModel(AnyAckSchema schema) {
         expect(
           schema.toJsonSchema(),
           equals(schema.toSchemaModel().toJsonSchema()),

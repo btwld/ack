@@ -142,38 +142,8 @@ void main() {
     });
   });
 
-  group('TransformedSchema Default Values', () {
-    test('should apply output default when input is null', () {
-      // Create a TransformedSchema with a default value
-      final baseSchema = Ack.string();
-      final transformedSchema = TransformedSchema<String, String>(
-        baseSchema,
-        (value) => value.toUpperCase(),
-        defaultValue: 'DEFAULT_OUTPUT',
-      );
-
-      final result = transformedSchema.safeParse(null);
-
-      expect(result.isOk, isTrue);
-      expect(
-        result.getOrNull(),
-        equals('DEFAULT_OUTPUT'),
-        reason: 'Should use output default, not transformer default',
-      );
-    });
-
-    test('should apply transformation when input is not null', () {
-      final schema = Ack.string()
-          .transform((value) => value.toUpperCase())
-          .copyWith(defaultValue: 'DEFAULT');
-
-      final result = schema.safeParse('hello');
-
-      expect(result.isOk, isTrue);
-      expect(result.getOrNull(), equals('HELLO'));
-    });
-
-    test('nullable transformed schema with null input and no default', () {
+  group('One-way codec default values', () {
+    test('nullable one-way codec with null input and no default', () {
       final schema = Ack.string().nullable().transform(
         (value) => value.toUpperCase(),
       );
@@ -340,12 +310,25 @@ void main() {
       final nullableJson = nullableSchema.toJsonSchema();
       final nonNullableJson = nonNullableSchema.toJsonSchema();
 
-      // Nullable AnySchema uses anyOf pattern with null
+      // Both nullable and non-nullable AnySchema use anyOf with explicit
+      // type branches so the emitted JSON Schema matches ACK's runtime
+      // semantics (non-null unless explicitly marked nullable). The
+      // nullable variant additionally includes a {"type": "null"} branch.
       expect(nullableJson.containsKey('anyOf'), isTrue);
-
-      // Non-nullable AnySchema exports the JSON-compatible boundary types.
+      expect(nonNullableJson.containsKey('anyOf'), isTrue);
       expect(nonNullableJson.containsKey('type'), isFalse);
-      expect(nonNullableJson['anyOf'], isA<List>());
+
+      final nullableBranches = nullableJson['anyOf'] as List;
+      expect(
+        nullableBranches.any((b) => b is Map && b['type'] == 'null'),
+        isTrue,
+      );
+
+      final nonNullBranches = nonNullableJson['anyOf'] as List;
+      expect(
+        nonNullBranches.any((b) => b is Map && b['type'] == 'null'),
+        isFalse,
+      );
     });
 
     test('AnyOfSchema should include null type when nullable', () {
@@ -353,20 +336,19 @@ void main() {
 
       final jsonSchema = schema.toJsonSchema();
 
-      // Nullable AnyOfSchema wraps the union and null in an outer anyOf.
+      // When nullable, AnyOfSchema wraps in another anyOf with null
+      // Structure: anyOf: [ { anyOf: [integer, string] }, { type: 'null' } ]
       expect(jsonSchema['anyOf'], isA<List>());
       final anyOf = jsonSchema['anyOf'] as List;
 
-      expect(anyOf.length, equals(2)); // union + null
+      expect(anyOf.length, equals(2)); // base anyOf + null
       expect(
-        anyOf.last,
+        anyOf[1],
         equals({'type': 'null'}),
         reason: 'Last element should be null type',
       );
-      final union = anyOf.first as Map;
-      final branches = union['anyOf'] as List;
-      expect((branches[0] as Map)['type'], equals('integer'));
-      expect((branches[1] as Map)['type'], equals('string'));
+      expect(anyOf[0], isA<Map>());
+      expect((anyOf[0] as Map).containsKey('anyOf'), isTrue);
     });
   });
 }

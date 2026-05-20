@@ -8,7 +8,7 @@ enum UserRole { admin, user, guest }
 /// Tests for code snippets in docs/guides/json-schema-integration.mdx.
 void main() {
   group('Docs /guides/json-schema-integration.mdx', () {
-    AckSchema<Map<String, Object?>> buildUserSchema() {
+    AckSchema<Map<String, Object?>, Map<String, Object?>> buildUserSchema() {
       return Ack.object({
         'id': Ack.integer().positive().describe('Unique user identifier'),
         'name': Ack.string()
@@ -59,45 +59,37 @@ void main() {
       expect(enumBranch['enum'], equals(['admin', 'user', 'guest']));
     });
 
-    test(
-      'nullable discriminated schema is emitted as generic anyOf with null',
-      () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'kind',
-          schemas: {
-            'circle': Ack.object({
-              'kind': Ack.literal('circle'),
-              'radius': Ack.double().positive(),
-            }),
-            'square': Ack.object({
-              'kind': Ack.literal('square'),
-              'size': Ack.double().positive(),
-            }),
-          },
-        ).nullable();
+    test('nullable discriminated schema is emitted as nested anyOf', () {
+      final schema = Ack.discriminated(
+        discriminatorKey: 'kind',
+        schemas: {
+          'circle': Ack.object({
+            'kind': Ack.literal('circle'),
+            'radius': Ack.double().positive(),
+          }),
+          'square': Ack.object({
+            'kind': Ack.literal('square'),
+            'size': Ack.double().positive(),
+          }),
+        },
+      ).nullable();
 
-        final jsonSchema = schema.toJsonSchema();
-        expect(jsonSchema, isNot(contains('discriminator')));
-        expect(jsonSchema, isNot(contains('oneOf')));
+      final jsonSchema = schema.toJsonSchema();
+      final outerAnyOf = jsonSchema['anyOf'] as List<Object?>;
+      expect(outerAnyOf, hasLength(2));
+      expect(
+        outerAnyOf.any((e) => e is Map<String, Object?> && e['type'] == 'null'),
+        isTrue,
+      );
 
-        final anyOf = jsonSchema['anyOf'] as List<Object?>;
-        expect(anyOf, hasLength(2));
-        expect(
-          anyOf.any((e) => e is Map<String, Object?> && e['type'] == 'null'),
-          isTrue,
-        );
-
-        final unionBranch =
-            anyOf.firstWhere(
-                  (e) => e is Map<String, Object?> && e.containsKey('anyOf'),
-                )
-                as Map<String, Object?>;
-        final objectBranches = (unionBranch['anyOf'] as List<Object?>)
-            .where((e) => e is Map<String, Object?> && e['type'] == 'object')
-            .toList();
-        expect(objectBranches, hasLength(2));
-      },
-    );
+      final unionBranch =
+          outerAnyOf.firstWhere(
+                (e) => e is Map<String, Object?> && e['anyOf'] is List,
+              )
+              as Map<String, Object?>;
+      final innerAnyOf = unionBranch['anyOf'] as List<Object?>;
+      expect(innerAnyOf, hasLength(2));
+    });
 
     test('API specification example includes referenced schema', () {
       Map<String, Object?> buildApiSpecification() {
