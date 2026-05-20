@@ -38,7 +38,7 @@ void main() {
     });
 
     test('renders direct JSON Schema through the schema model', () {
-      void expectDirectMatchesModel(AckSchema<Object> schema) {
+      void expectDirectMatchesModel<T extends Object>(AckSchema<T> schema) {
         expect(
           schema.toJsonSchema(),
           equals(schema.toSchemaModel().toJsonSchema()),
@@ -47,6 +47,11 @@ void main() {
       }
 
       expectDirectMatchesModel(Ack.string().email().nullable());
+      expectDirectMatchesModel(Ack.integer().min(1).max(10));
+      expectDirectMatchesModel(Ack.double().positive().multipleOf(0.5));
+      expectDirectMatchesModel(Ack.boolean().withDefault(true));
+      expectDirectMatchesModel(Ack.enumValues(_Role.values).nullable());
+      expectDirectMatchesModel(Ack.list(Ack.string()).minItems(1).unique());
       expectDirectMatchesModel(
         Ack.object({
           'name': Ack.string(),
@@ -56,6 +61,9 @@ void main() {
       expectDirectMatchesModel(Ack.any());
       expectDirectMatchesModel(
         Ack.anyOf([Ack.string(), Ack.integer()]).nullable(),
+      );
+      expectDirectMatchesModel(
+        Ack.string().transform<int>((value) => value.length),
       );
       expectDirectMatchesModel(Ack.date().min(DateTime(2026, 1, 1)));
       expectDirectMatchesModel(
