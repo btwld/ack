@@ -145,6 +145,10 @@ melos:
       run: cd packages/ack_generator && dart tool/update_goldens.dart --all
       description: Update all golden test files
 
+    firebase-ai-fixtures:
+      run: cd packages/ack_firebase_ai && dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
+      description: Regenerate Firebase AI responseJsonSchema golden fixtures
+
     test:golden:
       run: melos exec -c 1 -- dart test test/golden_test.dart
       description: Run only golden tests

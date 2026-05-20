@@ -1,0 +1,11 @@
+{
+  "default": false,
+  "anyOf": [
+    {
+      "type": "boolean"
+    },
+    {
+      "type": "null"
+    }
+  ]
+}

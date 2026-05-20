@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "propertyOrdering": [
+    "id"
+  ],
+  "minProperties": 1,
+  "maxProperties": 3,
+  "additionalProperties": {
+    "type": "string"
+  }
+}

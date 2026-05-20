@@ -1,0 +1,15 @@
+{
+  "oneOf": [
+    {
+      "type": "string",
+      "const": "ready"
+    },
+    {
+      "type": "integer",
+      "minimum": 1
+    },
+    {
+      "type": "null"
+    }
+  ]
+}

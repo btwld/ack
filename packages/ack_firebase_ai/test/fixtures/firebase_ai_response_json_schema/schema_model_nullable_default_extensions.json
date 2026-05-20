@@ -1,0 +1,13 @@
+{
+  "default": "ready",
+  "anyOf": [
+    {
+      "type": "string",
+      "const": "ready",
+      "x-firebase-test": true
+    },
+    {
+      "type": "null"
+    }
+  ]
+}

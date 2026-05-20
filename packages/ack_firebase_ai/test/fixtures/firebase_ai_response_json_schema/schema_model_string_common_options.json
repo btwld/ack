@@ -1,0 +1,13 @@
+{
+  "type": "string",
+  "format": "custom-format",
+  "const": "ready",
+  "minLength": 5,
+  "maxLength": 5,
+  "pattern": "^[a-z]+$",
+  "formatMinimum": "ready",
+  "formatMaximum": "ready",
+  "title": "Status",
+  "description": "Current status",
+  "x-firebase-test": true
+}

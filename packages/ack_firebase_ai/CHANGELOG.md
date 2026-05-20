@@ -8,6 +8,8 @@
   `responseJsonSchema` generation and ACK validation.
 - Added live-test configuration for Gemini Developer API vs Vertex AI
   backends, Firebase app credentials, location, and model override.
+- Added committed Firebase AI `responseJsonSchema` golden fixtures and a
+  fixture generator so converter coverage runs without Firebase credentials.
 
 ### Changed
 - Target Firebase AI `^3.12.1` and models that support JSON Schema

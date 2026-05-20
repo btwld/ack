@@ -1,510 +1,54 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:ack/ack.dart';
-import 'package:ack_firebase_ai/ack_firebase_ai.dart';
 import 'package:firebase_ai/firebase_ai.dart' as firebase_ai;
 import 'package:test/test.dart';
 
-enum Role { admin, member }
+import 'support/firebase_ai_response_json_schema_cases.dart';
 
 void main() {
-  group('toFirebaseAiResponseJsonSchema()', () {
-    for (final schemaCase in _ackSchemaCases()) {
-      test('matches Firebase responseJsonSchema for ${schemaCase.name}', () {
-        final jsonSchema = schemaCase.schema.toFirebaseAiResponseJsonSchema();
+  final fixtures = _FirebaseAiResponseJsonSchemaFixtures.load();
 
-        expect(jsonSchema, schemaCase.expected);
-        expect(jsonSchema, schemaCase.schema.toSchemaModel().toJsonSchema());
-        _expectFirebaseGenerationConfigSerializes(jsonSchema);
-      });
-    }
-  });
+  group('Firebase AI responseJsonSchema fixtures', () {
+    test('manifest tracks every generated case and feature', () {
+      final cases = firebaseAiResponseJsonSchemaCases();
 
-  group('convertAckSchemaModelToFirebaseAiResponseJsonSchema()', () {
-    for (final schemaCase in _schemaModelCases()) {
-      test('matches Firebase responseJsonSchema for ${schemaCase.name}', () {
-        final jsonSchema = convertAckSchemaModelToFirebaseAiResponseJsonSchema(
-          schemaCase.model,
-        );
+      expect(fixtures.fixtureCount, cases.length);
+      expect(fixtures.ids, cases.map((schemaCase) => schemaCase.id).toList());
+      for (final schemaCase in cases) {
+        final fixture = fixtures.byId(schemaCase.id);
+        expect(fixture.name, schemaCase.name);
+        expect(fixture.source, schemaCase.source);
+        expect(fixture.features, schemaCase.features);
+      }
 
-        expect(jsonSchema, schemaCase.expected);
-        expect(jsonSchema, schemaCase.model.toJsonSchema());
+      final expectedFeatureCoverage = <String, List<String>>{};
+      for (final schemaCase in cases) {
+        for (final feature in schemaCase.features) {
+          expectedFeatureCoverage
+              .putIfAbsent(feature, () => <String>[])
+              .add(schemaCase.id);
+        }
+      }
+      for (final ids in expectedFeatureCoverage.values) {
+        ids.sort();
+      }
+
+      expect(fixtures.featureCoverage, expectedFeatureCoverage);
+    });
+
+    for (final schemaCase in firebaseAiResponseJsonSchemaCases()) {
+      test('${schemaCase.source} ${schemaCase.name}', () {
+        final fixture = fixtures.byId(schemaCase.id);
+        final jsonSchema = schemaCase.buildJsonSchema();
+
+        expect(jsonSchema, fixture.jsonSchema);
+        expect(jsonSchema, schemaCase.buildCanonicalJsonSchema());
         _expectFirebaseGenerationConfigSerializes(jsonSchema);
       });
     }
   });
 }
-
-List<_AckSchemaCase> _ackSchemaCases() => [
-  _AckSchemaCase(
-    name: 'string constraints',
-    schema: Ack.string()
-        .minLength(2)
-        .maxLength(8)
-        .matches(r'^[A-Z]+$')
-        .describe('Code'),
-    expected: {
-      'type': 'string',
-      'minLength': 2,
-      'maxLength': 8,
-      'pattern': r'^[A-Z]+$',
-      'description': 'Code',
-    },
-  ),
-  _AckSchemaCase(
-    name: 'string literal',
-    schema: Ack.literal('ready'),
-    expected: {'type': 'string', 'const': 'ready'},
-  ),
-  _AckSchemaCase(
-    name: 'Dart enum values and enum default',
-    schema: Ack.enumValues(Role.values).withDefault(Role.member),
-    expected: {
-      'type': 'string',
-      'enum': ['admin', 'member'],
-      'default': 'member',
-    },
-  ),
-  _AckSchemaCase(
-    name: 'integer constraints',
-    schema: Ack.integer()
-        .min(1)
-        .max(10)
-        .greaterThan(0)
-        .lessThan(11)
-        .multipleOf(2)
-        .withDefault(2),
-    expected: {
-      'type': 'integer',
-      'minimum': 1,
-      'maximum': 10,
-      'exclusiveMinimum': 0,
-      'exclusiveMaximum': 11,
-      'multipleOf': 2,
-      'default': 2,
-    },
-  ),
-  _AckSchemaCase(
-    name: 'number constraints',
-    schema: Ack.double()
-        .min(0.5)
-        .max(9.5)
-        .greaterThan(0)
-        .lessThan(10)
-        .multipleOf(0.5)
-        .withDefault(1.5),
-    expected: {
-      'type': 'number',
-      'minimum': 0.5,
-      'maximum': 9.5,
-      'exclusiveMinimum': 0.0,
-      'exclusiveMaximum': 10.0,
-      'multipleOf': 0.5,
-      'default': 1.5,
-    },
-  ),
-  _AckSchemaCase(
-    name: 'nullable boolean default',
-    schema: Ack.boolean().nullable().withDefault(false),
-    expected: {
-      'default': false,
-      'anyOf': [
-        {'type': 'boolean'},
-        {'type': 'null'},
-      ],
-    },
-  ),
-  _AckSchemaCase(
-    name: 'array constraints',
-    schema: Ack.list(Ack.string().uuid())
-        .minLength(1)
-        .maxLength(3)
-        .unique()
-        .withDefault(['00000000-0000-0000-0000-000000000000']),
-    expected: {
-      'type': 'array',
-      'items': {
-        'type': 'string',
-        'format': 'uuid',
-        'pattern':
-            r'^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$',
-      },
-      'minItems': 1,
-      'maxItems': 3,
-      'uniqueItems': true,
-      'default': ['00000000-0000-0000-0000-000000000000'],
-    },
-  ),
-  _AckSchemaCase(
-    name: 'object properties and requiredness',
-    schema: Ack.object({
-      'name': Ack.string().minLength(2).maxLength(50).describe('Full name'),
-      'age': Ack.integer().min(0).max(120).optional(),
-      'role': Ack.enumString(['admin', 'member']),
-      'tags': Ack.list(Ack.string()).minLength(1).maxLength(5).optional(),
-    }, additionalProperties: false).describe('User payload'),
-    expected: {
-      'type': 'object',
-      'description': 'User payload',
-      'properties': {
-        'name': {
-          'type': 'string',
-          'description': 'Full name',
-          'minLength': 2,
-          'maxLength': 50,
-        },
-        'age': {'type': 'integer', 'minimum': 0, 'maximum': 120},
-        'role': {
-          'type': 'string',
-          'enum': ['admin', 'member'],
-        },
-        'tags': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'minItems': 1,
-          'maxItems': 5,
-        },
-      },
-      'required': ['name', 'role'],
-      'propertyOrdering': ['name', 'age', 'role', 'tags'],
-      'additionalProperties': false,
-    },
-  ),
-  _AckSchemaCase(
-    name: 'object passthrough',
-    schema: Ack.object({
-      'metadata': Ack.any().optional(),
-    }, additionalProperties: true),
-    expected: {
-      'type': 'object',
-      'properties': {
-        'metadata': {
-          'anyOf': [
-            {'type': 'string'},
-            {'type': 'number'},
-            {'type': 'integer'},
-            {'type': 'boolean'},
-            {'type': 'object'},
-            {'type': 'array'},
-          ],
-        },
-      },
-      'propertyOrdering': ['metadata'],
-      'additionalProperties': true,
-    },
-  ),
-  _AckSchemaCase(
-    name: 'anyOf nullable composition',
-    schema: Ack.anyOf([Ack.string(), Ack.integer()]).nullable(),
-    expected: {
-      'anyOf': [
-        {'type': 'string'},
-        {'type': 'integer'},
-        {'type': 'null'},
-      ],
-    },
-  ),
-  _AckSchemaCase(
-    name: 'generic transform',
-    schema: Ack.string().minLength(1).transform((value) => value.trim()),
-    expected: {'type': 'string', 'minLength': 1, 'x-transformed': true},
-  ),
-  _AckSchemaCase(
-    name: 'any JSON-compatible branches',
-    schema: Ack.any(),
-    expected: {
-      'anyOf': [
-        {'type': 'string'},
-        {'type': 'number'},
-        {'type': 'integer'},
-        {'type': 'boolean'},
-        {'type': 'object'},
-        {'type': 'array'},
-      ],
-    },
-  ),
-  _AckSchemaCase(
-    name: 'date transform constraints',
-    schema: Ack.date().min(DateTime(2026, 1, 1)).max(DateTime(2026, 12, 31)),
-    expected: {
-      'type': 'string',
-      'format': 'date',
-      'formatMinimum': '2026-01-01',
-      'formatMaximum': '2026-12-31',
-      'x-transformed': true,
-    },
-  ),
-  _AckSchemaCase(
-    name: 'datetime transform',
-    schema: Ack.datetime(),
-    expected: {'type': 'string', 'format': 'date-time', 'x-transformed': true},
-  ),
-  _AckSchemaCase(
-    name: 'uri transform',
-    schema: Ack.uri(),
-    expected: {'type': 'string', 'format': 'uri', 'x-transformed': true},
-  ),
-  _AckSchemaCase(
-    name: 'duration transform constraints',
-    schema: Ack.duration()
-        .min(const Duration(seconds: 1))
-        .max(const Duration(seconds: 2)),
-    expected: {
-      'type': 'integer',
-      'minimum': 1000,
-      'maximum': 2000,
-      'x-transformed': true,
-    },
-  ),
-  _AckSchemaCase(
-    name: 'discriminated union',
-    schema: Ack.discriminated<Map<String, Object?>>(
-      discriminatorKey: 'type',
-      schemas: {
-        'circle': Ack.object({'radius': Ack.double().positive()}),
-        'square': Ack.object({'side': Ack.double().positive()}),
-      },
-    ),
-    expected: {
-      'oneOf': [
-        {
-          'type': 'object',
-          'properties': {
-            'type': {'type': 'string', 'const': 'circle'},
-            'radius': {'type': 'number', 'exclusiveMinimum': 0.0},
-          },
-          'required': ['type', 'radius'],
-          'propertyOrdering': ['type', 'radius'],
-          'additionalProperties': false,
-        },
-        {
-          'type': 'object',
-          'properties': {
-            'type': {'type': 'string', 'const': 'square'},
-            'side': {'type': 'number', 'exclusiveMinimum': 0.0},
-          },
-          'required': ['type', 'side'],
-          'propertyOrdering': ['type', 'side'],
-          'additionalProperties': false,
-        },
-      ],
-      'discriminator': {'propertyName': 'type'},
-    },
-  ),
-];
-
-List<_SchemaModelCase> _schemaModelCases() => [
-  const _SchemaModelCase(
-    name: 'string model common and string-only options',
-    model: AckStringSchemaModel(
-      title: 'Status',
-      description: 'Current status',
-      format: 'custom-format',
-      constValue: 'ready',
-      minLength: 5,
-      maxLength: 5,
-      pattern: r'^[a-z]+$',
-      formatMinimum: 'ready',
-      formatMaximum: 'ready',
-      extensions: {'x-firebase-test': true},
-    ),
-    expected: {
-      'type': 'string',
-      'format': 'custom-format',
-      'const': 'ready',
-      'minLength': 5,
-      'maxLength': 5,
-      'pattern': r'^[a-z]+$',
-      'formatMinimum': 'ready',
-      'formatMaximum': 'ready',
-      'title': 'Status',
-      'description': 'Current status',
-      'x-firebase-test': true,
-    },
-  ),
-  const _SchemaModelCase(
-    name: 'integer model const and format',
-    model: AckIntegerSchemaModel(format: 'int32', constValue: 7),
-    expected: {'type': 'integer', 'format': 'int32', 'const': 7},
-  ),
-  const _SchemaModelCase(
-    name: 'number model const and format',
-    model: AckNumberSchemaModel(format: 'double', constValue: 1.5),
-    expected: {'type': 'number', 'format': 'double', 'const': 1.5},
-  ),
-  const _SchemaModelCase(
-    name: 'boolean model const',
-    model: AckBooleanSchemaModel(constValue: true),
-    expected: {'type': 'boolean', 'const': true},
-  ),
-  const _SchemaModelCase(
-    name: 'nullable model default and extensions',
-    model: AckStringSchemaModel(
-      constValue: 'ready',
-      nullable: true,
-      defaultValue: 'ready',
-      extensions: {'x-firebase-test': true},
-    ),
-    expected: {
-      'default': 'ready',
-      'anyOf': [
-        {'type': 'string', 'const': 'ready', 'x-firebase-test': true},
-        {'type': 'null'},
-      ],
-    },
-  ),
-  const _SchemaModelCase(
-    name: 'array model without item schema',
-    model: AckArraySchemaModel(minItems: 0, maxItems: 2),
-    expected: {'type': 'array', 'minItems': 0, 'maxItems': 2},
-  ),
-  const _SchemaModelCase(
-    name: 'object model property count and schema additional properties',
-    model: AckObjectSchemaModel(
-      properties: {'id': AckStringSchemaModel()},
-      required: ['id'],
-      propertyOrdering: ['id'],
-      minProperties: 1,
-      maxProperties: 3,
-      additionalProperties: AckAdditionalPropertiesSchema(
-        AckStringSchemaModel(),
-      ),
-    ),
-    expected: {
-      'type': 'object',
-      'properties': {
-        'id': {'type': 'string'},
-      },
-      'required': ['id'],
-      'propertyOrdering': ['id'],
-      'minProperties': 1,
-      'maxProperties': 3,
-      'additionalProperties': {'type': 'string'},
-    },
-  ),
-  const _SchemaModelCase(
-    name: 'null model',
-    model: AckNullSchemaModel(title: 'Nothing'),
-    expected: {'type': 'null', 'title': 'Nothing'},
-  ),
-  const _SchemaModelCase(
-    name: 'anyOf model common fields and explicit null branch',
-    model: AckAnyOfSchemaModel(
-      title: 'Flexible value',
-      defaultValue: 'fallback',
-      nullable: true,
-      extensions: {'x-firebase-test': true},
-      schemas: [
-        AckStringSchemaModel(minLength: 1),
-        AckIntegerSchemaModel(minimum: 1),
-        AckNullSchemaModel(),
-      ],
-    ),
-    expected: {
-      'title': 'Flexible value',
-      'default': 'fallback',
-      'x-firebase-test': true,
-      'anyOf': [
-        {'type': 'string', 'minLength': 1},
-        {'type': 'integer', 'minimum': 1},
-        {'type': 'null'},
-      ],
-    },
-  ),
-  const _SchemaModelCase(
-    name: 'oneOf model nullable composition',
-    model: AckOneOfSchemaModel(
-      nullable: true,
-      schemas: [
-        AckStringSchemaModel(constValue: 'ready'),
-        AckIntegerSchemaModel(minimum: 1),
-      ],
-    ),
-    expected: {
-      'oneOf': [
-        {'type': 'string', 'const': 'ready'},
-        {'type': 'integer', 'minimum': 1},
-        {'type': 'null'},
-      ],
-    },
-  ),
-  const _SchemaModelCase(
-    name: 'oneOf model discriminator',
-    model: AckOneOfSchemaModel(
-      schemas: [
-        AckObjectSchemaModel(
-          properties: {
-            'type': AckStringSchemaModel(constValue: 'email'),
-            'address': AckStringSchemaModel(format: 'email'),
-          },
-          required: ['type', 'address'],
-        ),
-        AckObjectSchemaModel(
-          properties: {
-            'type': AckStringSchemaModel(constValue: 'sms'),
-            'number': AckStringSchemaModel(),
-          },
-          required: ['type', 'number'],
-        ),
-      ],
-      discriminator: AckSchemaDiscriminatorModel(propertyName: 'type'),
-    ),
-    expected: {
-      'oneOf': [
-        {
-          'type': 'object',
-          'properties': {
-            'type': {'type': 'string', 'const': 'email'},
-            'address': {'type': 'string', 'format': 'email'},
-          },
-          'required': ['type', 'address'],
-        },
-        {
-          'type': 'object',
-          'properties': {
-            'type': {'type': 'string', 'const': 'sms'},
-            'number': {'type': 'string'},
-          },
-          'required': ['type', 'number'],
-        },
-      ],
-      'discriminator': {'propertyName': 'type'},
-    },
-  ),
-  const _SchemaModelCase(
-    name: 'allOf model',
-    model: AckAllOfSchemaModel(
-      schemas: [
-        AckObjectSchemaModel(
-          properties: {'id': AckStringSchemaModel()},
-          required: ['id'],
-        ),
-        AckObjectSchemaModel(
-          properties: {'name': AckStringSchemaModel()},
-          required: ['name'],
-        ),
-      ],
-    ),
-    expected: {
-      'allOf': [
-        {
-          'type': 'object',
-          'properties': {
-            'id': {'type': 'string'},
-          },
-          'required': ['id'],
-        },
-        {
-          'type': 'object',
-          'properties': {
-            'name': {'type': 'string'},
-          },
-          'required': ['name'],
-        },
-      ],
-    },
-  ),
-];
 
 void _expectFirebaseGenerationConfigSerializes(
   Map<String, Object?> jsonSchema,
@@ -526,14 +70,14 @@ void _expectJsonValue(Object? value, [String path = r'$']) {
     return;
   }
 
-  if (value is List) {
+  if (value is List<dynamic>) {
     for (var index = 0; index < value.length; index += 1) {
       _expectJsonValue(value[index], '$path[$index]');
     }
     return;
   }
 
-  if (value is Map) {
+  if (value is Map<dynamic, dynamic>) {
     for (final entry in value.entries) {
       expect(entry.key, isA<String>(), reason: '$path keys must be strings');
       _expectJsonValue(entry.value, '$path.${entry.key}');
@@ -544,26 +88,167 @@ void _expectJsonValue(Object? value, [String path = r'$']) {
   fail('Expected $path to be JSON-compatible, got ${value.runtimeType}.');
 }
 
-final class _AckSchemaCase {
-  const _AckSchemaCase({
-    required this.name,
-    required this.schema,
-    required this.expected,
-  });
+final class _FirebaseAiResponseJsonSchemaFixtures {
+  const _FirebaseAiResponseJsonSchemaFixtures({
+    required this.ids,
+    required this.fixtureCount,
+    required this.featureCoverage,
+    required Map<String, _FirebaseAiResponseJsonSchemaFixture> fixtures,
+  }) : _fixtures = fixtures;
 
-  final String name;
-  final AckSchema schema;
-  final Map<String, Object?> expected;
+  final List<String> ids;
+  final int fixtureCount;
+  final Map<String, List<String>> featureCoverage;
+  final Map<String, _FirebaseAiResponseJsonSchemaFixture> _fixtures;
+
+  _FirebaseAiResponseJsonSchemaFixture byId(String id) {
+    final fixture = _fixtures[id];
+    if (fixture == null) {
+      fail(
+        'Missing fixture for $id. Run '
+        'dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart '
+        'from packages/ack_firebase_ai.',
+      );
+    }
+    return fixture;
+  }
+
+  static _FirebaseAiResponseJsonSchemaFixtures load() {
+    final packageRoot = _findPackageRoot();
+    final fixtureDir = Directory(
+      '${packageRoot.path}/test/fixtures/firebase_ai_response_json_schema',
+    );
+    final manifestFile = File('${fixtureDir.path}/manifest.json');
+    if (!manifestFile.existsSync()) {
+      fail(
+        'Missing Firebase AI responseJsonSchema fixture manifest. Run '
+        'dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart '
+        'from packages/ack_firebase_ai.',
+      );
+    }
+
+    final manifestJson = _decodeJsonObject(manifestFile);
+    final manifestFixtures = _jsonList(manifestJson['fixtures'], 'fixtures');
+    final fixtures = <String, _FirebaseAiResponseJsonSchemaFixture>{};
+    final ids = <String>[];
+
+    for (final entry in manifestFixtures) {
+      final manifestFixture = _jsonObject(entry, 'fixtures[]');
+      final id = _jsonString(manifestFixture['id'], 'fixtures[].id');
+      final fixtureName = _jsonString(
+        manifestFixture['fixture'],
+        'fixtures[].fixture',
+      );
+      final fixtureFile = File('${fixtureDir.path}/$fixtureName');
+
+      ids.add(id);
+      fixtures[id] = _FirebaseAiResponseJsonSchemaFixture(
+        id: id,
+        name: _jsonString(manifestFixture['name'], 'fixtures[].name'),
+        source: _jsonString(manifestFixture['source'], 'fixtures[].source'),
+        features: _jsonStringList(
+          manifestFixture['features'],
+          'fixtures[].features',
+        ),
+        jsonSchema: _decodeJsonObject(fixtureFile),
+      );
+    }
+
+    return _FirebaseAiResponseJsonSchemaFixtures(
+      ids: ids,
+      fixtureCount: _jsonInt(manifestJson['fixtureCount'], 'fixtureCount'),
+      featureCoverage: _featureCoverageFromManifest(manifestJson),
+      fixtures: fixtures,
+    );
+  }
 }
 
-final class _SchemaModelCase {
-  const _SchemaModelCase({
+final class _FirebaseAiResponseJsonSchemaFixture {
+  const _FirebaseAiResponseJsonSchemaFixture({
+    required this.id,
     required this.name,
-    required this.model,
-    required this.expected,
+    required this.source,
+    required this.features,
+    required this.jsonSchema,
   });
 
+  final String id;
   final String name;
-  final AckSchemaModel model;
-  final Map<String, Object?> expected;
+  final String source;
+  final List<String> features;
+  final Map<String, Object?> jsonSchema;
+}
+
+Directory _findPackageRoot() {
+  var current = Directory.current.absolute;
+  while (true) {
+    final pubspec = File('${current.path}/pubspec.yaml');
+    if (pubspec.existsSync() &&
+        pubspec.readAsStringSync().contains('name: ack_firebase_ai')) {
+      return current;
+    }
+
+    final nested = Directory('${current.path}/packages/ack_firebase_ai');
+    final nestedPubspec = File('${nested.path}/pubspec.yaml');
+    if (nestedPubspec.existsSync() &&
+        nestedPubspec.readAsStringSync().contains('name: ack_firebase_ai')) {
+      return nested;
+    }
+
+    final parent = current.parent;
+    if (parent.path == current.path) {
+      fail(
+        'Could not find packages/ack_firebase_ai from ${Directory.current}.',
+      );
+    }
+    current = parent;
+  }
+}
+
+Map<String, List<String>> _featureCoverageFromManifest(
+  Map<String, Object?> manifestJson,
+) {
+  final featureCoverage = _jsonObject(
+    manifestJson['featureCoverage'],
+    'featureCoverage',
+  );
+  return {
+    for (final entry in featureCoverage.entries)
+      entry.key: _jsonStringList(entry.value, 'featureCoverage.${entry.key}'),
+  };
+}
+
+Map<String, Object?> _decodeJsonObject(File file) {
+  if (!file.existsSync()) {
+    fail('Missing fixture file: ${file.path}');
+  }
+  return _jsonObject(jsonDecode(file.readAsStringSync()), file.path);
+}
+
+Map<String, Object?> _jsonObject(Object? value, String path) {
+  if (value is Map<String, Object?>) return value;
+  if (value is Map<dynamic, dynamic>) {
+    return value.cast<String, Object?>();
+  }
+  fail('Expected $path to be a JSON object, got ${value.runtimeType}.');
+}
+
+List<Object?> _jsonList(Object? value, String path) {
+  if (value is List<Object?>) return value;
+  if (value is List<dynamic>) return value.cast<Object?>();
+  fail('Expected $path to be a JSON array, got ${value.runtimeType}.');
+}
+
+String _jsonString(Object? value, String path) {
+  if (value is String) return value;
+  fail('Expected $path to be a string, got ${value.runtimeType}.');
+}
+
+int _jsonInt(Object? value, String path) {
+  if (value is int) return value;
+  fail('Expected $path to be an integer, got ${value.runtimeType}.');
+}
+
+List<String> _jsonStringList(Object? value, String path) {
+  return [for (final item in _jsonList(value, path)) _jsonString(item, path)];
 }

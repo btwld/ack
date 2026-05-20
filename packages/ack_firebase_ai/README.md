@@ -163,3 +163,22 @@ The same values can also be passed with `flutter test --dart-define=...`. Use th
 ACK_FIREBASE_AI_BACKEND=vertex_ai \
 FIREBASE_AI_LOCATION=global
 ```
+
+## Fixture Golden Tests
+
+The committed fixture tests are the normal adapter contract and do not require
+Firebase credentials. They compare ACK conversion output against JSON fixtures
+under `test/fixtures/firebase_ai_response_json_schema/` and verify the same
+maps serialize through Firebase AI's `GenerationConfig.responseJsonSchema`.
+
+Regenerate the fixtures after an intentional schema-output change:
+
+```bash
+dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
+```
+
+From the workspace root, the same generator is available through Melos:
+
+```bash
+melos run firebase-ai-fixtures
+```

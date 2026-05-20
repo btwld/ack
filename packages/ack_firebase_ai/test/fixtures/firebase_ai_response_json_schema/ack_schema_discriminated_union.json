@@ -1,0 +1,51 @@
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "circle"
+        },
+        "radius": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "radius"
+      ],
+      "propertyOrdering": [
+        "type",
+        "radius"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "square"
+        },
+        "side": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "side"
+      ],
+      "propertyOrdering": [
+        "type",
+        "side"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "discriminator": {
+    "propertyName": "type"
+  }
+}

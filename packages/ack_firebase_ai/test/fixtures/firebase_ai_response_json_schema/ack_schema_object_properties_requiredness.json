@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Full name"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 120
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "member"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 5
+    }
+  },
+  "required": [
+    "name",
+    "role"
+  ],
+  "propertyOrdering": [
+    "name",
+    "age",
+    "role",
+    "tags"
+  ],
+  "additionalProperties": false,
+  "description": "User payload"
+}

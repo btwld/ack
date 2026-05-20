@@ -1,0 +1,6 @@
+{
+  "type": "integer",
+  "minimum": 1000,
+  "maximum": 2000,
+  "x-transformed": true
+}
