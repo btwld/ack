@@ -12,32 +12,39 @@ extension AckSchemaModelExtension on AckSchema {
 }
 
 AckSchemaModel _build(AckSchema schema) {
-  if (schema is DefaultSchema) {
-    final base = _build(schema.inner);
-    final exportDefault = _defaultExportValueOrNull(schema);
-    if (exportDefault != null) {
-      return base.withDefaultValue(exportDefault);
-    }
-    return base.withWarnings([
-      ...base.warnings,
-      AckSchemaModelWarning(
-        code: 'default_not_export_safe',
-        message:
-            'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
-      ),
-    ]);
-  }
-
   if (schema is WrapperSchema) {
     final base = _build(schema.inner);
-    return _applyConstraints(
+    // Defaults wrap their inner without transforming the boundary value, so
+    // they should not advertise themselves as a transformed schema.
+    final extensions = schema is DefaultSchema
+        ? base.extensions
+        : {...base.extensions, 'x-transformed': true};
+    var wrapped = _applyConstraints(
       base
           .withDescription(schema.description ?? base.description)
           .withNullable(schema.isNullable || base.nullable)
-          .withExtensions({...base.extensions, 'x-transformed': true}),
+          .withExtensions(extensions),
       schema,
       boundaryFormat: base.format,
     );
+
+    if (schema is DefaultSchema) {
+      final exportDefault = _defaultExportValueOrNull(schema);
+      if (exportDefault != null) {
+        wrapped = wrapped.withDefaultValue(exportDefault);
+      } else {
+        wrapped = wrapped.withWarnings([
+          ...wrapped.warnings,
+          AckSchemaModelWarning(
+            code: 'default_not_export_safe',
+            message:
+                'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
+          ),
+        ]);
+      }
+    }
+
+    return wrapped;
   }
 
   final model = switch (schema) {
@@ -97,12 +104,6 @@ AckSchemaModel _enum(EnumSchema schema) {
 }
 
 AckSchemaModel _array(ListSchema schema) {
-  if (schema.itemSchema.isNullable) {
-    throw ArgumentError(
-      'Ack.list(...) does not support nullable item schemas yet.',
-    );
-  }
-
   return AckArraySchemaModel(
     description: schema.description,
     nullable: schema.isNullable,
@@ -287,6 +288,14 @@ Object? _defaultExportValueOrNull(DefaultSchema schema) {
   final defaultValue = schema.defaultValue;
   if (defaultValue is Enum) return defaultValue.name;
 
+  // Mirror DefaultSchema's runtime guard so defaults the parse path would
+  // reject (mutable collections that cannot be cloned to the declared
+  // Runtime type) are not surfaced via JSON Schema either. We only veto
+  // when the runtime path itself fails — constraint violations on the
+  // default value (e.g. min/max) are kept so consumers still see the
+  // declared default.
+  if (_defaultRejectedAsUncloneableCollection(schema)) return null;
+
   // Try encoding through the inner schema (handles codec transformations).
   final encoded = schema.inner.safeEncode(defaultValue);
   if (encoded.isOk) {
@@ -313,6 +322,22 @@ Object? _defaultExportValueOrNull(DefaultSchema schema) {
   }
 
   return null;
+}
+
+bool _defaultRejectedAsUncloneableCollection(DefaultSchema schema) {
+  final defaultValue = schema.defaultValue;
+  if (defaultValue is! List && defaultValue is! Map && defaultValue is! Set) {
+    return false;
+  }
+
+  // Mirror DefaultSchema._validateDefaultWithContext: a collection default
+  // that cloneDefault cannot widen back to the declared Runtime type leaks
+  // the original reference. We surface only that specific failure mode so
+  // unrelated constraint failures (e.g. min/max) still keep the declared
+  // default in JSON Schema output.
+  final result = schema.safeParse(null);
+  if (!result.isFail) return false;
+  return result.getError().message.contains('could not be cloned safely');
 }
 
 String _dateOnly(DateTime date) {

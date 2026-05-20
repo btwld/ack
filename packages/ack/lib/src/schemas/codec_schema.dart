@@ -182,14 +182,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     return inputSchema.encodeWithContext(validatedInput, context);
   }
 
-  @override
-  Map<String, Object?> toJsonSchema() {
-    return applyWrapperJsonSchemaMetadata(
-      Map<String, Object?>.from(inputSchema.toJsonSchema()),
-      metadata: {if (_encoder == null) 'x-transformed': true},
-    );
-  }
-
   /// Returns a copy of this codec with the supplied runtime config replaced.
   CodecSchema<Boundary, Runtime> copyWith({
     bool? isNullable,

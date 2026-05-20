@@ -149,14 +149,6 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    return wrapCompositeWithNullable({
-      'anyOf': schemas.map((s) => s.toJsonSchema()).toList(),
-      if (!isNullable && description != null) 'description': description,
-    });
-  }
-
-  @override
   Map<String, Object?> toMap() {
     return {
       'type': schemaType.typeName,

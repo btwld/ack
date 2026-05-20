@@ -63,28 +63,6 @@ final class AnySchema extends AckSchema<Object, Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    // `Ack.any()` accepts any non-null JSON-safe value at runtime. The
-    // emitted JSON Schema must NOT accept null unless the schema is
-    // explicitly marked nullable. Raw `{}` would accept null, so we
-    // enumerate the non-null JSON types explicitly.
-    final nonNullBranches = <Map<String, Object?>>[
-      {'type': 'string'},
-      {'type': 'number'},
-      {'type': 'integer'},
-      {'type': 'boolean'},
-      {'type': 'object'},
-      {'type': 'array'},
-    ];
-
-    final base = {
-      'anyOf': nonNullBranches,
-      if (description != null) 'description': description,
-    };
-    return wrapCompositeWithNullable(base);
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AnySchema) return false;

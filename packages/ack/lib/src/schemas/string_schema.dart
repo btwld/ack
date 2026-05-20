@@ -65,10 +65,6 @@ final class StringSchema extends AckSchema<String, String>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: {'type': 'string'});
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! StringSchema) return false;

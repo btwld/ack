@@ -154,20 +154,21 @@ void main() {
 
     test('rejects incompatible discriminator without executing transforms', () {
       var transformCalled = false;
-      final schema = Ack.discriminated<Map<String, Object?>>(
-        discriminatorKey: 'type',
-        schemas: {
-          'cat': Ack.object({
-            'type': Ack.string().transform<String>((value) {
-              transformCalled = true;
-              return value;
+      expect(
+        () => Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({
+              'type': Ack.string().transform<String>((value) {
+                transformCalled = true;
+                return value;
+              }),
+              'name': Ack.string(),
             }),
-            'name': Ack.string(),
-          }),
-        },
+          },
+        ),
+        throwsArgumentError,
       );
-
-      expect(schema.toSchemaModel, throwsArgumentError);
       expect(transformCalled, isFalse);
     });
 

@@ -34,9 +34,12 @@ void main() {
         nullable: true,
       );
 
+      // Description is hoisted to the top level so generic JSON Schema
+      // consumers can discover it without descending into anyOf branches.
       expect(model.toJsonSchema(), {
+        'description': 'nickname',
         'anyOf': [
-          {'type': 'string', 'description': 'nickname'},
+          {'type': 'string'},
           {'type': 'null'},
         ],
       });

@@ -78,10 +78,6 @@ final class IntegerSchema extends NumSchema<int>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: {'type': 'integer'});
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! IntegerSchema) return false;
@@ -158,10 +154,6 @@ final class DoubleSchema extends NumSchema<double>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: {'type': 'number'});
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DoubleSchema) return false;
@@ -235,10 +227,6 @@ final class NumberSchema extends NumSchema<num>
       refinements: refinements ?? this.refinements,
     );
   }
-
-  @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: {'type': 'number'});
 
   @override
   bool operator ==(Object other) {

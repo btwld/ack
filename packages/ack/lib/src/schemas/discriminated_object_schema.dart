@@ -315,30 +315,6 @@ final class DiscriminatedObjectSchema<T extends Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    final anyOfClauses = <Map<String, Object?>>[];
-    schemas.forEach((discriminatorValue, branchSchema) {
-      final subSchemaJson = branchSchema.toJsonSchema();
-      subSchemaJson['properties'] = {
-        ...?(subSchemaJson['properties'] as Map?),
-        discriminatorKey: {'type': 'string', 'const': discriminatorValue},
-      };
-      final existingRequired =
-          (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
-      subSchemaJson['required'] = <String>[
-        discriminatorKey,
-        ...existingRequired.where((field) => field != discriminatorKey),
-      ];
-      anyOfClauses.add(subSchemaJson);
-    });
-
-    return wrapCompositeWithNullable({
-      'anyOf': anyOfClauses,
-      if (!isNullable && description != null) 'description': description,
-    });
-  }
-
-  @override
   Map<String, Object?> toMap() {
     return {
       'type': schemaType.typeName,

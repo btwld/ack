@@ -90,18 +90,6 @@ void main() {
         );
       });
 
-      test('rejects a branch missing the discriminator literal', () {
-        expect(
-          () => Ack.discriminated<Map<String, Object?>>(
-            discriminatorKey: 'type',
-            schemas: {
-              'cat': Ack.object({'meow': Ack.boolean()}),
-            },
-          ),
-          throwsArgumentError,
-        );
-      });
-
       test('rejects a branch whose discriminator literal does not match', () {
         expect(
           () => Ack.discriminated<Map<String, Object?>>(

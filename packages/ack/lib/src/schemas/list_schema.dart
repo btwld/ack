@@ -13,14 +13,22 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
         > {
   final AckSchema<ItemBoundary, ItemRuntime> itemSchema;
 
-  const ListSchema(
+  ListSchema(
     this.itemSchema, {
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
-  });
+  }) {
+    if (itemSchema.isNullable) {
+      throw ArgumentError.value(
+        itemSchema,
+        'itemSchema',
+        'Ack.list(...) does not support nullable item schemas yet.',
+      );
+    }
+  }
 
   @override
   SchemaType get schemaType => SchemaType.array;
@@ -173,11 +181,6 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
       refinements: refinements ?? this.refinements,
     );
   }
-
-  @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'array', 'items': itemSchema.toJsonSchema()},
-  );
 
   @override
   Map<String, Object?> toMap() {

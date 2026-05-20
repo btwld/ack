@@ -27,66 +27,6 @@ final class _StartsWithConstraint extends Constraint<String>
   String buildMessage(String value) => 'Expected value to start with $prefix';
 }
 
-final class _OneOfNullableStringSchema extends AckSchema<String, String>
-    with FluentSchema<String, String, _OneOfNullableStringSchema> {
-  const _OneOfNullableStringSchema({
-    super.isNullable,
-    super.isOptional,
-    super.description,
-    super.constraints,
-    super.refinements,
-  });
-
-  @override
-  SchemaType get schemaType => SchemaType.string;
-
-  @override
-  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) {
-    final nullResult = handleNullInput(value, context);
-    if (nullResult != null) return nullResult;
-    return SchemaResult.ok(value as String);
-  }
-
-  @override
-  SchemaResult<String> validateRuntimeWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
-    final nullResult = handleNullInput(value, context);
-    if (nullResult != null) return nullResult;
-    return SchemaResult.ok(value as String);
-  }
-
-  @override
-  SchemaResult<String> encodeWithContext(String value, SchemaContext context) =>
-      SchemaResult.ok(value);
-
-  @override
-  _OneOfNullableStringSchema copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    List<Constraint<String>>? constraints,
-    List<Refinement<String>>? refinements,
-  }) {
-    return _OneOfNullableStringSchema(
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
-  }
-
-  @override
-  Map<String, Object?> toJsonSchema() => const {
-    'oneOf': [
-      {'type': 'string'},
-      {'type': 'null'},
-    ],
-  };
-}
-
 final class _OperationRecordingSchema extends AckSchema<String, String>
     with FluentSchema<String, String, _OperationRecordingSchema> {
   _OperationRecordingSchema({
@@ -504,17 +444,6 @@ void main() {
       expect((json['anyOf'] as List).last, {'type': 'null'});
     });
 
-    test('nullable wrapper recognizes oneOf null branch', () {
-      final json = const _OneOfNullableStringSchema()
-          .withDefault('fallback')
-          .nullable()
-          .toJsonSchema();
-
-      expect(json.containsKey('anyOf'), false);
-      expect(json['oneOf'], isA<List>());
-      expect(json['oneOf'], hasLength(2));
-      expect((json['oneOf'] as List).last, {'type': 'null'});
-    });
   });
 
   group('Object encode validations', () {

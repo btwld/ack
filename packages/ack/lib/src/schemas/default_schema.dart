@@ -64,43 +64,6 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     return inner.encodeWithContext(value, context);
   }
 
-  @override
-  Map<String, Object?> toJsonSchema() {
-    final base = Map<String, Object?>.from(inner.toJsonSchema());
-    Object? serializedDefault;
-    // Best-effort: emit default only if it round-trips cleanly to boundary
-    // AND the boundary value is JSON-safe. Schemas like `Ack.instance<T>()`
-    // happily round-trip non-JSON Dart objects through their identity
-    // encode path; emitting those would leak runtime-only types into the
-    // schema output.
-    final validatedDefault = _validateDefaultWithContext(
-      inner._createRootContext(
-        defaultValue,
-        debugName: 'default',
-        operation: SchemaOperation.parse,
-      ),
-    );
-    if (validatedDefault.isOk) {
-      final runtimeDefault = validatedDefault.getOrNull();
-      if (runtimeDefault != null) {
-        final encoded = inner.safeEncode(runtimeDefault);
-        if (encoded.isOk) {
-          final value = encoded.getOrNull();
-          if (value != null) {
-            final safe = _jsonSafeOrNull(value);
-            if (safe != null) {
-              serializedDefault = safe;
-            }
-          }
-        }
-      }
-    }
-    return applyWrapperJsonSchemaMetadata(
-      base,
-      serializedDefault: serializedDefault,
-    );
-  }
-
   /// Returns a copy of this default-wrapped schema with the given fields
   /// replaced.
   DefaultSchema<Boundary, Runtime> copyWith({

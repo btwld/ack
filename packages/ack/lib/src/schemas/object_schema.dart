@@ -382,33 +382,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    final propsJsonSchema = <String, Object?>{};
-    final requiredFields = <String>[];
-
-    for (final entry in properties.entries) {
-      propsJsonSchema[entry.key] = entry.value.toJsonSchema();
-      if (!entry.value.isOptional &&
-          entry.value is! DefaultSchema<dynamic, dynamic>) {
-        requiredFields.add(entry.key);
-      }
-    }
-
-    final additionalPropertiesValue = additionalProperties
-        ? <String, Object?>{}
-        : false;
-
-    return buildJsonSchemaWithNullable(
-      typeSchema: {
-        'type': 'object',
-        'properties': propsJsonSchema,
-        if (requiredFields.isNotEmpty) 'required': requiredFields,
-        'additionalProperties': additionalPropertiesValue,
-      },
-    );
-  }
-
-  @override
   Map<String, Object?> toMap() {
     return {
       'type': schemaType.typeName,

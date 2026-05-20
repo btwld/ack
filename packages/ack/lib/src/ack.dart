@@ -47,13 +47,7 @@ final class Ack {
   /// rejected.
   static ListSchema<B, R> list<B extends Object, R extends Object>(
     AckSchema<B, R> itemSchema,
-  ) {
-    if (itemSchema.isNullable) {
-      assert(_throwNullableListItemSchema(itemSchema));
-      throw _nullableListItemSchemaError(itemSchema);
-    }
-    return ListSchema<B, R>(itemSchema);
-  }
+  ) => ListSchema<B, R>(itemSchema);
 
   /// Creates an enum schema for validating enum values.
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
@@ -188,16 +182,4 @@ String _encodeIsoDate(DateTime value) {
 
 String _encodeIsoDateTime(DateTime value) {
   return value.toIso8601String();
-}
-
-bool _throwNullableListItemSchema(AnyAckSchema itemSchema) {
-  throw _nullableListItemSchemaError(itemSchema);
-}
-
-ArgumentError _nullableListItemSchemaError(AnyAckSchema itemSchema) {
-  return ArgumentError.value(
-    itemSchema,
-    'itemSchema',
-    'Use non-nullable item schemas for Ack.list.',
-  );
 }

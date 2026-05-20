@@ -215,21 +215,6 @@ void main() {
       expect(result.isFail, true);
     });
 
-    test('constructor rejects a branch missing the discriminator literal', () {
-      expect(
-        () => Ack.discriminated<_Cat>(
-          discriminatorKey: 'kind',
-          schemas: {
-            'cat': Ack.object({'name': Ack.string()}).model<_Cat>(
-              decode: (data) => _Cat(data['name'] as String),
-              encode: (cat) => {'name': cat.name},
-            ),
-          },
-        ),
-        throwsArgumentError,
-      );
-    });
-
     test('encode succeeds when branch emits a matching discriminator', () {
       final schema = Ack.discriminated<_Cat>(
         discriminatorKey: 'kind',

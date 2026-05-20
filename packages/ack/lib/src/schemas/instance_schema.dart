@@ -65,10 +65,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      buildJsonSchemaWithNullable(typeSchema: const {});
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! InstanceSchema<T>) return false;
