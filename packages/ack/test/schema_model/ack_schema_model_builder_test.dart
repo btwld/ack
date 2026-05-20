@@ -37,6 +37,38 @@ void main() {
       expect(model.toJsonSchema(), {'type': 'string', 'default': 'draft'});
     });
 
+    test('renders direct JSON Schema through the schema model', () {
+      void expectDirectMatchesModel(AckSchema<Object> schema) {
+        expect(
+          schema.toJsonSchema(),
+          equals(schema.toSchemaModel().toJsonSchema()),
+          reason: '${schema.runtimeType} should render from AckSchemaModel',
+        );
+      }
+
+      expectDirectMatchesModel(Ack.string().email().nullable());
+      expectDirectMatchesModel(
+        Ack.object({
+          'name': Ack.string(),
+          'age': Ack.integer().optional(),
+        }, additionalProperties: true),
+      );
+      expectDirectMatchesModel(Ack.any());
+      expectDirectMatchesModel(
+        Ack.anyOf([Ack.string(), Ack.integer()]).nullable(),
+      );
+      expectDirectMatchesModel(Ack.date().min(DateTime(2026, 1, 1)));
+      expectDirectMatchesModel(
+        Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}),
+            'dog': Ack.object({'good': Ack.boolean()}),
+          },
+        ).nullable(),
+      );
+    });
+
     test('rejects nullable list item schemas at construction', () {
       expect(
         () => Ack.list(Ack.string().nullable()),

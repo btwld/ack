@@ -11,7 +11,8 @@ not the source of truth for adapter behavior.
 
 ## Generating JSON Schemas
 
-Use the `toJsonSchema()` method available on any `AckSchema` instance.
+Use the `toJsonSchema()` method available on any `AckSchema` instance. This is
+the same canonical renderer used by `schema.toSchemaModel().toJsonSchema()`.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -173,16 +174,16 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 
 ## Shape Stability Notes
 
-`toJsonSchema()` uses stable nullability wrapping rules:
+`toJsonSchema()` renders the canonical `AckSchemaModel` JSON Schema shape and
+uses stable nullability rules:
 
 - Primitive/object/list/enum schemas marked with `.nullable()` are emitted as:
   - `anyOf: [<base-schema>, { "type": "null" }]`
-- `Ack.anyOf([...]).nullable()` is emitted as nested `anyOf`:
-  - outer `anyOf` for nullability
-  - inner `anyOf` for the union branches
-- `Ack.discriminated(...).nullable()` follows the same nested pattern:
-  - outer `anyOf` for nullability
-  - inner `anyOf` for discriminated branches
+- `Ack.anyOf([...]).nullable()` is emitted as one `anyOf` containing the union
+  branches plus `{ "type": "null" }`
+- `Ack.discriminated(...).nullable()` is emitted as one `oneOf` containing the
+  effective object branches plus `{ "type": "null" }`, with top-level
+  `discriminator` metadata
 
 This means nullable enums are represented as:
 
@@ -199,10 +200,11 @@ And nullable discriminated unions are represented as:
 
 ```json
 {
-  "anyOf": [
-    { "anyOf": [/* discriminated object branches */] },
+  "oneOf": [
+    /* effective discriminated object branches */,
     { "type": "null" }
-  ]
+  ],
+  "discriminator": { "propertyName": "type" }
 }
 ```
 
@@ -213,7 +215,7 @@ live at the top level.
 **Limitations:**
 
 -   **Custom Constraints:** [`Constraint<T>` + `Validator<T>`](./custom-validation.mdx) instances added via `.constrain()` are **not** translated to JSON Schema as there's no standard way to represent arbitrary logic.
--   **`additionalProperties`:** `Ack.object(..., additionalProperties: false)` becomes `additionalProperties: false`. Direct `AckSchema.toJsonSchema()` renders `true` as an open object schema (`{}`), while `schema.toSchemaModel().toJsonSchema()` renders it as the boolean `true`; both are valid JSON Schema.
+-   **`additionalProperties`:** `Ack.object(..., additionalProperties: false)` becomes `additionalProperties: false`; `additionalProperties: true` is emitted as the boolean `true`.
 -   **`Ack.any()`:** Runtime validation accepts arbitrary non-null Dart objects. JSON-like adapter exports represent only JSON-compatible values and attach an `ack_any_json_boundary` warning to the `AckSchemaModel`.
 -   **List item nullability:** `Ack.list(...)` does not support nullable item schemas yet. Make the list itself nullable with `Ack.list(item).nullable()` when the whole field may be null.
 -   **Discriminated branches:** `Ack.discriminated(...)` owns the discriminator. Branches may omit the discriminator field; compatible `Ack.literal(...)` or `Ack.enumString(...)` fields are accepted; generated branches expose the exact branch value as `const`.

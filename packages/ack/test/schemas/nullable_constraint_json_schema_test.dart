@@ -44,10 +44,10 @@ void main() {
 
         // Non-nullable: constraints merged at top level
         expect(jsonSchema['minProperties'], equals(1));
-        expect(jsonSchema['anyOf'], isA<List>());
+        expect(jsonSchema['oneOf'], isA<List>());
       });
 
-      test('nullable merges constraints in inner JSON Schema', () {
+      test('nullable merges constraints at composition level', () {
         final schema =
             Ack.discriminated(
               discriminatorKey: 'type',
@@ -61,21 +61,17 @@ void main() {
 
         final jsonSchema = schema.toJsonSchema();
 
-        // Structure: { anyOf: [ {anyOf: [...], minProperties: 1}, {type: 'null'} ] }
-        expect(jsonSchema['anyOf'], isA<List>());
-        final anyOfList = jsonSchema['anyOf'] as List;
-        expect(anyOfList.length, equals(2));
+        expect(jsonSchema['oneOf'], isA<List>());
+        final oneOfList = jsonSchema['oneOf'] as List;
+        expect(oneOfList.length, equals(3));
 
-        // Inner schema should have minProperties merged
-        final innerSchema = anyOfList[0] as Map<String, Object?>;
         expect(
-          innerSchema['minProperties'],
+          jsonSchema['minProperties'],
           equals(1),
-          reason: 'Constraint should be merged into inner schema when nullable',
+          reason: 'Constraint should be merged into the composition schema',
         );
 
-        // Second element is null type
-        expect(anyOfList[1], equals({'type': 'null'}));
+        expect(oneOfList.last, equals({'type': 'null'}));
       });
 
       test('nullable with multiple constraints merges all', () {
@@ -92,11 +88,10 @@ void main() {
                 .withConstraint(ComparisonConstraint.objectMaxProperties(10));
 
         final jsonSchema = schema.toJsonSchema();
-        final anyOfList = jsonSchema['anyOf'] as List;
-        final innerSchema = anyOfList[0] as Map<String, Object?>;
 
-        expect(innerSchema['minProperties'], equals(1));
-        expect(innerSchema['maxProperties'], equals(10));
+        expect(jsonSchema['minProperties'], equals(1));
+        expect(jsonSchema['maxProperties'], equals(10));
+        expect((jsonSchema['oneOf'] as List).last, equals({'type': 'null'}));
       });
     });
 
@@ -114,7 +109,7 @@ void main() {
         expect(jsonSchema['anyOf'], isA<List>());
       });
 
-      test('nullable merges constraints in inner JSON Schema', () {
+      test('nullable merges constraints at composition level', () {
         final schema = Ack.anyOf([
           Ack.string(),
           Ack.integer(),
@@ -122,21 +117,17 @@ void main() {
 
         final jsonSchema = schema.toJsonSchema();
 
-        // Structure: { anyOf: [ {anyOf: [...], x-test-marker: true}, {type: 'null'} ] }
         expect(jsonSchema['anyOf'], isA<List>());
         final anyOfList = jsonSchema['anyOf'] as List;
-        expect(anyOfList.length, equals(2));
+        expect(anyOfList.length, equals(3));
 
-        // Inner schema should have test marker merged
-        final innerSchema = anyOfList[0] as Map<String, Object?>;
         expect(
-          innerSchema['x-test-marker'],
+          jsonSchema['x-test-marker'],
           isTrue,
-          reason: 'Constraint should be merged into inner schema when nullable',
+          reason: 'Constraint should be merged into the composition schema',
         );
 
-        // Second element is null type
-        expect(anyOfList[1], equals({'type': 'null'}));
+        expect(anyOfList.last, equals({'type': 'null'}));
       });
     });
   });

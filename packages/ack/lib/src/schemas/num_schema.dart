@@ -18,12 +18,6 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
     super.constraints,
     super.refinements,
   });
-
-  @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'number'},
-    serializedDefault: defaultValue,
-  );
 }
 
 // --- IntegerSchema ---
@@ -78,12 +72,6 @@ final class IntegerSchema extends NumSchema<int>
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
-
-  @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'integer'},
-    serializedDefault: defaultValue,
-  );
 
   @override
   bool operator ==(Object other) {
@@ -149,9 +137,6 @@ final class DoubleSchema extends NumSchema<double>
           strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
-
-  // Note: DoubleSchema inherits toJsonSchema() from NumSchema.
-  // JSON Schema uses 'number' type for all floating point values.
 
   @override
   bool operator ==(Object other) {

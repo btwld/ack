@@ -59,37 +59,39 @@ void main() {
       expect(enumBranch['enum'], equals(['admin', 'user', 'guest']));
     });
 
-    test('nullable discriminated schema is emitted as nested anyOf', () {
-      final schema = Ack.discriminated(
-        discriminatorKey: 'kind',
-        schemas: {
-          'circle': Ack.object({
-            'kind': Ack.literal('circle'),
-            'radius': Ack.double().positive(),
-          }),
-          'square': Ack.object({
-            'kind': Ack.literal('square'),
-            'size': Ack.double().positive(),
-          }),
-        },
-      ).nullable();
+    test(
+      'nullable discriminated schema is emitted as oneOf with null branch',
+      () {
+        final schema = Ack.discriminated(
+          discriminatorKey: 'kind',
+          schemas: {
+            'circle': Ack.object({
+              'kind': Ack.literal('circle'),
+              'radius': Ack.double().positive(),
+            }),
+            'square': Ack.object({
+              'kind': Ack.literal('square'),
+              'size': Ack.double().positive(),
+            }),
+          },
+        ).nullable();
 
-      final jsonSchema = schema.toJsonSchema();
-      final outerAnyOf = jsonSchema['anyOf'] as List<Object?>;
-      expect(outerAnyOf, hasLength(2));
-      expect(
-        outerAnyOf.any((e) => e is Map<String, Object?> && e['type'] == 'null'),
-        isTrue,
-      );
+        final jsonSchema = schema.toJsonSchema();
+        expect(jsonSchema['discriminator'], {'propertyName': 'kind'});
 
-      final unionBranch =
-          outerAnyOf.firstWhere(
-                (e) => e is Map<String, Object?> && e['anyOf'] is List,
-              )
-              as Map<String, Object?>;
-      final innerAnyOf = unionBranch['anyOf'] as List<Object?>;
-      expect(innerAnyOf, hasLength(2));
-    });
+        final oneOf = jsonSchema['oneOf'] as List<Object?>;
+        expect(oneOf, hasLength(3));
+        expect(
+          oneOf.any((e) => e is Map<String, Object?> && e['type'] == 'null'),
+          isTrue,
+        );
+
+        final objectBranches = oneOf
+            .where((e) => e is Map<String, Object?> && e['type'] == 'object')
+            .toList();
+        expect(objectBranches, hasLength(2));
+      },
+    );
 
     test('API specification example includes referenced schema', () {
       Map<String, Object?> buildApiSpecification() {

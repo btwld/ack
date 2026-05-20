@@ -80,7 +80,7 @@ Future<void> main() async {
 
 ## Schema Mapping
 
-The adapter returns ACK's canonical JSON Schema renderer output. That means adapter behavior follows `AckSchema.toSchemaModel().toJsonSchema()`.
+The adapter returns ACK's canonical JSON Schema renderer output. That means adapter behavior matches `AckSchema.toJsonSchema()`, which renders `AckSchema.toSchemaModel().toJsonSchema()`.
 
 | ACK schema | JSON Schema output |
 | --- | --- |

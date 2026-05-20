@@ -111,17 +111,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    final enumNames = values.map((e) => e.name).toList();
-
-    return buildJsonSchemaWithNullable(
-      typeSchema: {'type': 'string', 'enum': enumNames},
-      // Serialize enum default to its name
-      serializedDefault: defaultValue?.name,
-    );
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! EnumSchema<T>) return false;

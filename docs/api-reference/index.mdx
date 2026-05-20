@@ -62,7 +62,7 @@ Base class for all schema types.
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema Draft-7 representation.
+- `Map<String, Object?> toJsonSchema()`: Renders the schema through the canonical `AckSchemaModel` JSON Schema output.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
@@ -290,7 +290,7 @@ Canonical export model for Ack schemas.
 
 - Created using `schema.toSchemaModel()`
 - Represents the boundary/export shape, JSON-compatible defaults, discriminator metadata, target-independent constraints, and export warnings
-- Render to JSON Schema with `schema.toSchemaModel().toJsonSchema()`
+- Render to JSON Schema with `schema.toSchemaModel().toJsonSchema()`, the same output returned by `schema.toJsonSchema()`
 - Adapter packages should render from `AckSchemaModel` rather than traversing `AckSchema` subclasses directly
 
 ### `AnySchema`

@@ -163,7 +163,7 @@ AckType generation is intentionally strict:
 - `.nullable()` allows a present field to hold `null`
 - object schemas support `additionalProperties: true`
 - `schema.toSchemaModel()` returns `AckSchemaModel`, the canonical boundary/export model for adapters
-- `schema.toSchemaModel().toJsonSchema()` renders that model as JSON Schema
+- `schema.toJsonSchema()` renders `schema.toSchemaModel().toJsonSchema()`
 - adapter packages should render from `AckSchemaModel`, not by traversing `AckSchema` subclasses
 - `Ack.list(...)` does not support nullable item schemas; make the list itself nullable when needed
 

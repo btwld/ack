@@ -56,13 +56,6 @@ final class AnySchema extends AckSchema<Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    // Empty typeSchema means "accepts any JSON value" per JSON Schema standard.
-    typeSchema: {},
-    serializedDefault: defaultValue,
-  );
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AnySchema) return false;

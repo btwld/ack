@@ -148,23 +148,6 @@ class TransformedSchema<InputType extends Object, OutputType extends Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    // A transformed schema doesn't have a direct, standard JSON Schema representation.
-    // It might be possible to represent it as the original schema with a custom
-    // property indicating a transformation, but for now, we'll return the original.
-    // Another option is to add an "x-transformed" property, a common practice for
-    // custom annotations in JSON Schema.
-    final originalJsonSchema = schema.toJsonSchema();
-    originalJsonSchema['x-transformed'] = true;
-    if (description != null) {
-      originalJsonSchema['description'] = description;
-    }
-
-    // Merge constraints from the TransformedSchema (e.g., DateTimeConstraint)
-    return mergeConstraintSchemas(originalJsonSchema);
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! TransformedSchema<InputType, OutputType>) return false;
