@@ -1,0 +1,37 @@
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "email"
+        },
+        "address": {
+          "type": "string",
+          "format": "email"
+        }
+      },
+      "required": [
+        "type",
+        "address"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "sms"
+        },
+        "number": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "number"
+      ]
+    }
+  ]
+}

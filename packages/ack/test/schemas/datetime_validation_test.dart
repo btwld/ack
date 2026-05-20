@@ -309,32 +309,33 @@ void main() {
         expect(jsonSchema['type'], 'string');
       });
 
-      test('includes formatMinimum when min constraint is applied', () {
+      test('does not emit non-Draft-7 formatMinimum for min constraint', () {
         final schema = Ack.date().min(DateTime(2025, 1, 1));
         final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['formatMinimum'], isNotNull);
-        expect(jsonSchema['formatMinimum'], contains('2025-01-01'));
+        expect(jsonSchema, isNot(contains('formatMinimum')));
       });
 
-      test('includes formatMaximum when max constraint is applied', () {
+      test('does not emit non-Draft-7 formatMaximum for max constraint', () {
         final schema = Ack.date().max(DateTime(2025, 12, 31));
         final jsonSchema = schema.toJsonSchema();
 
-        expect(jsonSchema['formatMaximum'], isNotNull);
-        expect(jsonSchema['formatMaximum'], contains('2025-12-31'));
+        expect(jsonSchema, isNot(contains('formatMaximum')));
       });
 
-      test('includes both formatMinimum and formatMaximum for range', () {
+      test('records unrendered date range constraints as model warnings', () {
         final schema = Ack.date()
             .min(DateTime(2025, 1, 1))
             .max(DateTime(2025, 12, 31));
-        final jsonSchema = schema.toJsonSchema();
+        final model = schema.toSchemaModel();
 
-        expect(jsonSchema['formatMinimum'], isNotNull);
-        expect(jsonSchema['formatMaximum'], isNotNull);
-        expect(jsonSchema['formatMinimum'], contains('2025-01-01'));
-        expect(jsonSchema['formatMaximum'], contains('2025-12-31'));
+        expect(model.toJsonSchema(), isNot(contains('formatMinimum')));
+        expect(model.toJsonSchema(), isNot(contains('formatMaximum')));
+        expect(model.warnings, hasLength(2));
+        expect(
+          model.warnings.map((warning) => warning.code),
+          everyElement('datetime_constraint_not_draft7'),
+        );
       });
     });
 

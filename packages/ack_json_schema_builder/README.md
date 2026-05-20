@@ -12,8 +12,8 @@ Converts ACK schemas to json_schema_builder format via `.toJsonSchemaBuilder()`.
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_json_schema_builder: ^1.0.0
+  ack: ^1.0.0-beta.12-wip
+  ack_json_schema_builder: ^1.0.0-beta.12-wip
   json_schema_builder: ^0.1.3
 ```
 
@@ -21,11 +21,27 @@ dependencies:
 
 Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/btwld/ack/issues).
 
+## Conversion Model
+
+`ack_json_schema_builder` uses ACK's canonical adapter boundary:
+
+```text
+AckSchema
+  -> AckSchemaModel
+  -> JSON Schema map
+  -> json_schema_builder Schema.fromMap()
+```
+
+That means defaults, const values, extension keywords, transformed-schema
+metadata, composition, and discriminated-union branches follow
+`AckSchema.toSchemaModel().toJsonSchema()`.
+
 ## Limitations ⚠️
 
-**Read this first** - json_schema_builder schema conversion has important constraints:
+**Read this first** - json_schema_builder schema conversion has important
+constraints:
 
-### 1. Custom Refinements Not Supported
+### Custom Refinements Not Supported
 
 Custom validation logic cannot be expressed in JSON Schema format.
 
@@ -37,22 +53,18 @@ final schema = Ack.string().refine((s) => s.startsWith('ACK_'));
 final result = schema.safeParse(data);
 ```
 
-### 2. Default Values Not Applied
+ACK still remains the authoritative runtime validator for refinements and
+other logic that JSON Schema cannot represent.
 
-Defaults are ACK-only. Apply after parsing.
+### Target Schema Support
 
-```dart
-final schema = Ack.string().withDefault('default');
-schema.toJsonSchemaBuilder(); // Default not included in JSON Schema
-```
-
-### 3. TransformedSchema Limitations
-
-Transformed schemas convert the underlying schema. Metadata overrides may not be fully preserved due to json_schema_builder's immutable Schema objects.
+The converter emits ACK's generic Draft-7 JSON Schema map before constructing
+the `json_schema_builder` schema. If a downstream validator or consumer ignores
+a JSON Schema keyword, validate with ACK after parsing.
 
 ```dart
-final dateSchema = Ack.date(); // TransformedSchema
-final jsonSchema = dateSchema.toJsonSchemaBuilder(); // Converts underlying string schema
+final schema = Ack.date().min(DateTime.utc(2026));
+final jsonSchema = schema.toJsonSchemaBuilder(); // Includes format: date.
 ```
 
 ## Usage
@@ -105,6 +117,8 @@ if (errors.isEmpty) {
 | `.email()` / `.uuid()` / `.url()` | `format` | Format hints |
 | `.optional()` | Excluded from `required` | Optional fields |
 | `.describe()` | `description` | Descriptions |
+| `.withDefault()` | `default` | JSON-compatible defaults |
+| `Ack.literal(...)` | `const` | Literal values |
 | `.unique()` | `uniqueItems` | Array uniqueness |
 
 ## Testing

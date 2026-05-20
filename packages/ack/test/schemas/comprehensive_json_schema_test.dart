@@ -511,9 +511,9 @@ void main() {
         test('should generate correct JSON schema', () {
           final jsonSchema = vehicleSchema.toJsonSchema();
 
-          // Discriminated unions use anyOf (not oneOf) in JSON Schema
           expect(jsonSchema['anyOf'], isNotNull);
           expect((jsonSchema['anyOf'] as List).length, equals(2));
+          expect(jsonSchema, isNot(contains('discriminator')));
         });
       });
 

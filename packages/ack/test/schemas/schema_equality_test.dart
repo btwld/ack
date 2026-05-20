@@ -163,15 +163,27 @@ void main() {
         final a = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'user': Ack.object({'name': Ack.string()}),
-            'admin': Ack.object({'role': Ack.string()}),
+            'user': Ack.object({
+              'type': Ack.literal('user'),
+              'name': Ack.string(),
+            }),
+            'admin': Ack.object({
+              'type': Ack.literal('admin'),
+              'role': Ack.string(),
+            }),
           },
         );
         final b = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'user': Ack.object({'name': Ack.string()}),
-            'admin': Ack.object({'role': Ack.string()}),
+            'user': Ack.object({
+              'type': Ack.literal('user'),
+              'name': Ack.string(),
+            }),
+            'admin': Ack.object({
+              'type': Ack.literal('admin'),
+              'role': Ack.string(),
+            }),
           },
         );
         expect(a, equals(b));
@@ -182,13 +194,19 @@ void main() {
         final a = Ack.discriminated(
           discriminatorKey: 'type',
           schemas: {
-            'user': Ack.object({'name': Ack.string()}),
+            'user': Ack.object({
+              'type': Ack.literal('user'),
+              'name': Ack.string(),
+            }),
           },
         );
         final b = Ack.discriminated(
           discriminatorKey: 'kind',
           schemas: {
-            'user': Ack.object({'name': Ack.string()}),
+            'user': Ack.object({
+              'kind': Ack.literal('user'),
+              'name': Ack.string(),
+            }),
           },
         );
         expect(a, isNot(equals(b)));

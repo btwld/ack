@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
@@ -9,6 +7,7 @@ import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
+import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
@@ -112,64 +111,6 @@ sealed class AckSchema<DartType extends Object> {
     }
 
     return SchemaResult.ok(value);
-  }
-
-  /// Merges constraint JSON schemas into a base schema.
-  ///
-  /// Folds constraint-specific JSON schema definitions into the base structure.
-  /// Used in toJsonSchema() implementations.
-  @protected
-  Map<String, Object?> mergeConstraintSchemas(Map<String, Object?> baseSchema) {
-    final constraintSchemas = <Map<String, Object?>>[];
-    for (final constraint in constraints) {
-      if (constraint is JsonSchemaSpec<DartType>) {
-        constraintSchemas.add(constraint.toJsonSchema());
-      }
-    }
-    return constraintSchemas.fold(
-      baseSchema,
-      (prev, current) => deepMerge(prev, current),
-    );
-  }
-
-  /// Builds a JSON Schema with proper nullable handling.
-  ///
-  /// This helper centralizes the nullable/non-nullable pattern used by most
-  /// schema types by combining description, defaults, nullability wrapping, and
-  /// constraint schema merging.
-  ///
-  /// [typeSchema] contains type-specific fields (e.g., `{'type': 'string'}`
-  /// or `{'type': 'array', 'items': ...}`).
-  ///
-  /// [serializedDefault] is the already-serialized default value (e.g.,
-  /// enum values should pass `defaultValue?.name`).
-  @protected
-  Map<String, Object?> buildJsonSchemaWithNullable({
-    required Map<String, Object?> typeSchema,
-    Object? serializedDefault,
-  }) {
-    if (isNullable) {
-      final baseSchema = {
-        ...typeSchema,
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (serializedDefault != null) 'default': serializedDefault,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      ...typeSchema,
-      if (description != null) 'description': description,
-      if (serializedDefault != null) 'default': serializedDefault,
-    };
-
-    return mergeConstraintSchemas(schema);
   }
 
   /// Creates a non-nullable constraint error result.
@@ -392,14 +333,13 @@ sealed class AckSchema<DartType extends Object> {
     List<Refinement<DartType>>? refinements,
   });
 
-  /// Converts this schema to a JSON Schema Draft-7 representation.
+  /// Converts this schema to generic Draft-7 JSON Schema.
   ///
-  /// Returns a Map containing the JSON Schema structure.
-  ///
-  /// Subclasses must override this to provide their specific JSON Schema structure.
-  /// The implementation should call [mergeConstraintSchemas] at the structurally
-  /// appropriate point for the schema type.
-  Map<String, Object?> toJsonSchema();
+  /// The sealed [AckSchemaModel] boundary is the single source of truth for the
+  /// exported shape. Adapters should call [toSchemaModel] directly when they
+  /// need the typed intermediate model; this method renders that model as
+  /// generic JSON Schema rather than provider-specific schema metadata.
+  Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
 
   Map<String, Object?> toMap() {
     return {

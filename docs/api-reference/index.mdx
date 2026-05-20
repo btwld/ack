@@ -14,7 +14,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.integer()`: Creates an `IntegerSchema` for validating integers.
 - `Ack.double()`: Creates a `DoubleSchema` for validating floating-point numbers.
 - `Ack.boolean()`: Creates a `BooleanSchema` for validating booleans.
-- `Ack.list(AckSchema itemSchema)`: Creates a `ListSchema` for validating arrays.
+- `Ack.list(AckSchema itemSchema)`: Creates a `ListSchema` for validating arrays. Nullable item schemas are not supported; make the list itself nullable instead.
 - `Ack.object(Map<String, AckSchema> properties)`: Creates an `ObjectSchema` for validating objects.
 - `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum
   types. Accepts enum instances, string names, or indices. **Preferred over
@@ -22,7 +22,8 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained
   to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
-- `Ack.any()`: Creates an `AnySchema` that accepts any value.
+- `Ack.any()`: Creates an `AnySchema` that accepts any non-null value. Chain
+  `.nullable()` to allow `null`.
 - `Ack.discriminated<T extends Object>(...)`: Creates a discriminated union
   schema. Branches may be plain `ObjectSchema` or transformed schemas whose
   base is an `ObjectSchema`. The union owns the discriminator: branches normally
@@ -61,7 +62,8 @@ Base class for all schema types.
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Converts the schema to a JSON Schema Draft-7 representation.
+- `Map<String, Object?> toJsonSchema()`: Renders generic Draft-7 JSON Schema
+  through the canonical `AckSchemaModel` boundary.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
@@ -283,12 +285,24 @@ Schema for polymorphic validation based on a discriminator field.
   the discriminator injected as the exact branch literal. Generated subtypes use
   this to validate a specific branch.
 
+### `AckSchemaModel`
+
+Canonical export model for Ack schemas.
+
+- Created using `schema.toSchemaModel()`
+- Represents the boundary/export shape, JSON-compatible defaults,
+  discriminator metadata, target-independent constraints, and export warnings
+- Render generic Draft-7 JSON Schema with
+  `schema.toSchemaModel().toJsonSchema()`, the same output returned by
+  `schema.toJsonSchema()`
+- Adapter packages should render from `AckSchemaModel` rather than traversing `AckSchema` subclasses directly
+
 ### `AnySchema`
 
-Schema that accepts any value without validation.
+Schema that accepts any non-null value without validation.
 
 - Created using `Ack.any()`
-- Useful for gradual migration or maximum flexibility
+- Useful for dynamic payloads or pass-through metadata
 
 ### `TransformedSchema<T, R>`
 

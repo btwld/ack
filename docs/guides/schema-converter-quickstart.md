@@ -93,126 +93,148 @@ class <Target>SchemaConverter {
   /// Returns a map-based representation to avoid binding this template to one
   /// specific SDK type. Replace these map shapes with your target SDK schema types.
   static Map<String, Object?> convert(AckSchema schema) {
-    return _convertSchema(schema);
+    return _convertSchema(schema.toSchemaModel());
   }
 
-  static Map<String, Object?> _convertSchema(AckSchema schema) {
-    final json = schema.toJsonSchema();
-
+  static Map<String, Object?> _convertSchema(AckSchemaModel schema) {
     return switch (schema) {
-      StringSchema() => _convertString(schema, json),
-      IntegerSchema() => _convertInteger(schema, json),
-      DoubleSchema() => _convertDouble(schema, json),
-      BooleanSchema() => _convertBoolean(schema, json),
-      ObjectSchema() => _convertObject(schema, json),
-      ListSchema() => _convertArray(schema, json),
-      EnumSchema() => _convertEnum(schema, json),
-      AnyOfSchema() => _convertAnyOf(schema),
-      _ => throw UnsupportedError(
-          'Schema type ${schema.runtimeType} not supported',
-        ),
+      AckStringSchemaModel(allowedStringValues: final values)
+          when values != null =>
+        _convertEnum(schema),
+      AckStringSchemaModel() => _convertString(schema),
+      AckIntegerSchemaModel() => _convertInteger(schema),
+      AckNumberSchemaModel() => _convertNumber(schema),
+      AckBooleanSchemaModel() => _convertBoolean(schema),
+      AckObjectSchemaModel() => _convertObject(schema),
+      AckArraySchemaModel() => _convertArray(schema),
+      AckAnyOfSchemaModel() => _convertAnyOf(schema),
+      AckOneOfSchemaModel() => _convertOneOf(schema),
+      AckAllOfSchemaModel() => _convertAllOf(schema),
+      AckNullSchemaModel() => {'type': 'null'},
     };
   }
 
-  static Map<String, Object?> _convertString(StringSchema s, Map<String, Object?> j) {
+  static Map<String, Object?> _convertString(AckStringSchemaModel s) {
     return <String, Object?>{
       'type': 'string',
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
-      if (_asInt(j['minLength']) != null) 'minLength': _asInt(j['minLength']),
-      if (_asInt(j['maxLength']) != null) 'maxLength': _asInt(j['maxLength']),
-      if (j['pattern'] is String && (j['pattern'] as String).isNotEmpty)
-        'pattern': j['pattern'],
-      if (j['format'] is String) 'format': j['format'],
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      if (s.minLength != null) 'minLength': s.minLength,
+      if (s.maxLength != null) 'maxLength': s.maxLength,
+      if (s.pattern != null && s.pattern!.isNotEmpty) 'pattern': s.pattern,
+      if (s.format != null) 'format': s.format,
     };
   }
 
-  static Map<String, Object?> _convertInteger(IntegerSchema s, Map<String, Object?> j) {
+  static Map<String, Object?> _convertInteger(AckIntegerSchemaModel s) {
     return <String, Object?>{
       'type': 'integer',
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
-      if (_asInt(j['minimum']) != null) 'minimum': _asInt(j['minimum']),
-      if (_asInt(j['maximum']) != null) 'maximum': _asInt(j['maximum']),
-      if (j['exclusiveMinimum'] is bool)
-        'exclusiveMinimum': j['exclusiveMinimum'],
-      if (j['exclusiveMaximum'] is bool)
-        'exclusiveMaximum': j['exclusiveMaximum'],
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      if (s.minimum != null) 'minimum': s.minimum,
+      if (s.maximum != null) 'maximum': s.maximum,
+      if (s.exclusiveMinimum != null) 'exclusiveMinimum': s.exclusiveMinimum,
+      if (s.exclusiveMaximum != null) 'exclusiveMaximum': s.exclusiveMaximum,
     };
   }
 
-  static Map<String, Object?> _convertDouble(DoubleSchema s, Map<String, Object?> j) {
+  static Map<String, Object?> _convertNumber(AckNumberSchemaModel s) {
     return <String, Object?>{
       'type': 'number',
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
-      if (_asDouble(j['minimum']) != null) 'minimum': _asDouble(j['minimum']),
-      if (_asDouble(j['maximum']) != null) 'maximum': _asDouble(j['maximum']),
-      if (j['exclusiveMinimum'] is bool)
-        'exclusiveMinimum': j['exclusiveMinimum'],
-      if (j['exclusiveMaximum'] is bool)
-        'exclusiveMaximum': j['exclusiveMaximum'],
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      if (s.minimum != null) 'minimum': s.minimum,
+      if (s.maximum != null) 'maximum': s.maximum,
+      if (s.exclusiveMinimum != null) 'exclusiveMinimum': s.exclusiveMinimum,
+      if (s.exclusiveMaximum != null) 'exclusiveMaximum': s.exclusiveMaximum,
     };
   }
 
-  static Map<String, Object?> _convertBoolean(BooleanSchema s, Map<String, Object?> j) {
+  static Map<String, Object?> _convertBoolean(AckBooleanSchemaModel s) {
     return <String, Object?>{
       'type': 'boolean',
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
     };
   }
 
-  static Map<String, Object?> _convertObject(ObjectSchema s, Map<String, Object?> j) {
-    final properties = j['properties'];
-    final required = (j['required'] is List)
-        ? (j['required'] as List).whereType<String>().toList()
-        : null;
+  static Map<String, Object?> _convertObject(AckObjectSchemaModel s) {
+    final additionalProperties = switch (s.additionalProperties) {
+      AckAdditionalPropertiesAllowed() => true,
+      AckAdditionalPropertiesDisallowed() => false,
+      AckAdditionalPropertiesSchema(schema: final schema) =>
+        _convertSchema(schema),
+      null => null,
+    };
 
     return <String, Object?>{
       'type': 'object',
-      'properties': properties,
-      if (required != null && required.isNotEmpty) 'required': required,
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
-      if (j['additionalProperties'] is bool)
-        'additionalProperties': j['additionalProperties'],
+      'properties': {
+        for (final entry in s.properties?.entries ?? const [])
+          entry.key: _convertSchema(entry.value),
+      },
+      if (s.required != null && s.required!.isNotEmpty) 'required': s.required,
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      if (additionalProperties != null)
+        'additionalProperties': additionalProperties,
     };
   }
 
-  static Map<String, Object?> _convertArray(ListSchema s, Map<String, Object?> j) {
+  static Map<String, Object?> _convertArray(AckArraySchemaModel s) {
     return <String, Object?>{
       'type': 'array',
-      'items': j['items'],
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
-      if (_asInt(j['minItems']) != null) 'minItems': _asInt(j['minItems']),
-      if (_asInt(j['maxItems']) != null) 'maxItems': _asInt(j['maxItems']),
+      if (s.items != null) 'items': _convertSchema(s.items!),
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      if (s.minItems != null) 'minItems': s.minItems,
+      if (s.maxItems != null) 'maxItems': s.maxItems,
     };
   }
 
-  static Map<String, Object?> _convertEnum(EnumSchema s, Map<String, Object?> j) {
+  static Map<String, Object?> _convertEnum(AckStringSchemaModel s) {
     return <String, Object?>{
       'type': 'string',
-      if (j['description'] is String) 'description': j['description'],
-      if (s.isNullable) 'nullable': true,
-      if (j['enum'] is List) 'enum': j['enum'],
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      'enum': s.allowedStringValues,
     };
   }
 
-  static Map<String, Object?> _convertAnyOf(AnyOfSchema s) {
-    final json = s.toJsonSchema();
+  static Map<String, Object?> _convertAnyOf(AckAnyOfSchemaModel s) {
     return <String, Object?>{
       'type': 'anyOf',
-      if (json['description'] is String) 'description': json['description'],
-      if (s.isNullable) 'nullable': true,
-      if (json['anyOf'] is List) 'branches': json['anyOf'],
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      if (s.discriminator != null)
+        'discriminator': s.discriminator!.propertyName,
+      'branches': [
+        for (final branch in s.schemas) _convertSchema(branch),
+      ],
     };
   }
 
-  // Helpers
-  static int? _asInt(Object? v) => v is int ? v : (v is double ? v.toInt() : null);
-  static double? _asDouble(Object? v) => v is double ? v : (v is int ? v.toDouble() : null);
+  static Map<String, Object?> _convertOneOf(AckOneOfSchemaModel s) {
+    return <String, Object?>{
+      'type': 'oneOf',
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      'branches': [
+        for (final branch in s.schemas) _convertSchema(branch),
+      ],
+    };
+  }
+
+  static Map<String, Object?> _convertAllOf(AckAllOfSchemaModel s) {
+    return <String, Object?>{
+      'type': 'allOf',
+      if (s.description != null) 'description': s.description,
+      if (s.nullable) 'nullable': true,
+      'branches': [
+        for (final branch in s.schemas) _convertSchema(branch),
+      ],
+    };
+  }
 }
 ```
 

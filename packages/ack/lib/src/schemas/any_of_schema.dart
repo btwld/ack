@@ -116,31 +116,6 @@ final class AnyOfSchema extends AckSchema<Object>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    final anyOfClauses = schemas.map((s) => s.toJsonSchema()).toList();
-
-    final baseSchema = {
-      'anyOf': anyOfClauses,
-      if (!isNullable && description != null) 'description': description,
-      if (!isNullable && defaultValue != null) 'default': defaultValue,
-    };
-
-    // Wrap in another anyOf with null if nullable (match Zod's format)
-    if (isNullable) {
-      return {
-        if (description != null) 'description': description,
-        if (defaultValue != null) 'default': defaultValue,
-        'anyOf': [
-          mergeConstraintSchemas(baseSchema),
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    return mergeConstraintSchemas(baseSchema);
-  }
-
-  @override
   Map<String, Object?> toMap() {
     return {
       'type': schemaType.typeName,

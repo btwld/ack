@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,11 @@
+{
+  "type": "string",
+  "format": "custom-format",
+  "const": "ready",
+  "minLength": 5,
+  "maxLength": 5,
+  "pattern": "^[a-z]+$",
+  "title": "Status",
+  "description": "Current status",
+  "x-ack-test": true
+}

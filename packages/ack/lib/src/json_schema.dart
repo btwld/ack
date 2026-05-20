@@ -1,12 +1,10 @@
-/// JSON Schema Draft-7 type system.
+/// JSON Schema rendering for ACK's schema model.
 ///
-/// Provides typed representations of JSON Schema documents with support for
-/// all core JSON Schema features including types, formats, constraints, and
-/// composition keywords.
+/// [AckSchemaModel] is ACK's canonical export model. JSON Schema is one output
+/// renderer for that model.
 library;
 
-export 'json_schema/json_schema.dart';
-export 'json_schema/json_schema_type.dart';
 export 'json_schema/json_schema_utils.dart';
-export 'json_schema/well_known_format.dart';
-export 'converters/ack_to_json_schema_model.dart';
+export 'schema_model/ack_schema_model.dart';
+export 'schema_model/ack_schema_model_builder.dart';
+export 'schema_model/ack_schema_model_warning.dart';

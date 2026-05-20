@@ -68,8 +68,8 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
 /// Builds the effective schema for a discriminated-union branch.
 ///
 /// Supports plain object branches and direct object-backed transforms. The
-/// effective schema validates/exports as if the branch owned a literal
-/// discriminator, while preserving the branch output type.
+/// effective schema validates/exports with a union-injected literal
+/// discriminator while preserving the branch output type.
 AckSchema<T> effectiveDiscriminatedBranch<T extends Object>({
   required String discriminatorKey,
   required String discriminatorValue,

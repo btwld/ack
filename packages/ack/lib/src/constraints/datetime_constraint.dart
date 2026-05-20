@@ -82,18 +82,9 @@ class DateTimeConstraint extends Constraint<DateTime>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      // JSON Schema Draft 2019-09 and later support formatMinimum/formatMaximum
-      // for validating string formats like dates.
-      // See: https://json-schema.org/draft/2019-09/json-schema-validation.html#rfc.section.7.3
-      switch (type) {
-        DateTimeComparisonType.min => {
-          'formatMinimum': reference.toIso8601String(),
-        },
-        DateTimeComparisonType.max => {
-          'formatMaximum': reference.toIso8601String(),
-        },
-      };
+  // Draft-7 has no standard string-format range keywords. AckSchemaModel
+  // records this as a warning instead of emitting provider-specific keywords.
+  Map<String, Object?> toJsonSchema() => const {};
 
   @override
   bool operator ==(Object other) {

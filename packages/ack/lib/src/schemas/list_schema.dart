@@ -105,12 +105,6 @@ final class ListSchema<V extends Object> extends AckSchema<List<V>>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    typeSchema: {'type': 'array', 'items': itemSchema.toJsonSchema()},
-    serializedDefault: defaultValue,
-  );
-
-  @override
   Map<String, Object?> toMap() {
     return {
       'type': schemaType.typeName,

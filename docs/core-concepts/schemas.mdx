@@ -165,11 +165,9 @@ final shapeSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {
     'circle': Ack.object({
-      'type': Ack.literal('circle'),
       'radius': Ack.double().positive(),
     }),
     'rectangle': Ack.object({
-      'type': Ack.literal('rectangle'),
       'width': Ack.double().positive(),
       'height': Ack.double().positive(),
     }),
@@ -177,16 +175,21 @@ final shapeSchema = Ack.discriminated(
 );
 ```
 
+The union owns the discriminator and injects the exact branch literal at
+parse/export boundaries. Branch schemas usually omit the discriminator field.
+
 ### Any
 
-Accept any value without validation (use sparingly):
+Accept any non-null value without validation (use sparingly):
 
 ```dart
 final flexibleSchema = Ack.object({
   'id': Ack.string(),
-  'metadata': Ack.any(), // Any value accepted
+  'metadata': Ack.any(), // Any non-null value accepted
 });
 ```
+
+Use `Ack.any().nullable()` to accept `null`.
 
 ## Optional vs Nullable
 
@@ -346,7 +349,7 @@ passthrough.safeParse({'id': '1', 'name': 'John', 'role': 'admin'}); // ✅ Pass
 **Common Use Cases:**
 
 - **Strict mode**: API request validation, form validation where only known fields are allowed
-- **Passthrough mode**: Working with dynamic data, gradual migration, or when extra metadata is acceptable
+- **Passthrough mode**: Working with dynamic data or when extra metadata is acceptable
 
 ## Custom Validation
 

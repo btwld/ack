@@ -27,6 +27,18 @@ Schema converter packages bridge Ack's validation schemas with external schema s
 - **Cross-language validation** (JSON Schema, Protobuf)
 - **Frontend validation** (TypeBox, Zod, Yup)
 
+Current converter packages should use Ack's canonical export model:
+
+```dart
+final model = schema.toSchemaModel();
+```
+
+`AckSchemaModel` describes the boundary shape, constraints, export-safe
+defaults, discriminator metadata, and warnings that adapters can reuse. Adapter
+packages should render from `AckSchemaModel`; they should not traverse
+`AckSchema` subclasses or parse raw `schema.toJsonSchema()` output as their
+source of truth.
+
 ### Package Naming Convention
 
 ```
@@ -302,30 +314,21 @@ class <Target>SchemaConverter {
   ///
   /// Returns a [<TargetSchema>] representing the schema structure.
   static <TargetSchema> convert(AckSchema schema) {
-    return _convertSchema(schema);
+    return _convertModel(schema.toSchemaModel());
   }
 
-  static <TargetSchema> _convertSchema(AckSchema schema) {
-    // Option 1: If target needs JSON Schema intermediate step
-    final jsonSchema = schema.toJsonSchema();
-
-    // Option 2: Direct conversion based on Ack type
+  static <TargetSchema> _convertModel(AckSchemaModel schema) {
     return switch (schema) {
-      StringSchema() => _convertString(schema),
-      IntegerSchema() => _convertInteger(schema),
-      DoubleSchema() => _convertDouble(schema),
-      BooleanSchema() => _convertBoolean(schema),
-      ObjectSchema() => _convertObject(schema),
-      ListSchema() => _convertArray(schema),
-      EnumSchema() => _convertEnum(schema),
-      AnyOfSchema() => _convertAnyOf(schema),
-      AnySchema() => _convertAny(schema),
-      DiscriminatedObjectSchema() => _convertDiscriminated(schema),
-      TransformedSchema() => _handleTransformed(schema),
-      _ => throw UnsupportedError(
-          'Schema type ${schema.runtimeType} is not supported '
-          'for <Target> conversion.',
-        ),
+      AckStringSchemaModel() => _convertString(schema),
+      AckIntegerSchemaModel() => _convertInteger(schema),
+      AckNumberSchemaModel() => _convertNumber(schema),
+      AckBooleanSchemaModel() => _convertBoolean(schema),
+      AckObjectSchemaModel() => _convertObject(schema),
+      AckArraySchemaModel() => _convertArray(schema),
+      AckAnyOfSchemaModel() => _convertAnyOf(schema),
+      AckOneOfSchemaModel() => _convertOneOf(schema),
+      AckAllOfSchemaModel() => _convertAllOf(schema),
+      AckNullSchemaModel() => _buildNullSchema(),
     };
   }
 
@@ -333,55 +336,46 @@ class <Target>SchemaConverter {
   // Primitive Type Converters
   // ========================================================================
 
-  static <TargetSchema> _convertString(StringSchema schema) {
-    // Extract constraints from JSON Schema or directly from schema
-    final jsonSchema = schema.toJsonSchema();
-
-    // Check for enum values
-    final enumValues = jsonSchema['enum'] as List<String>?;
+  static <TargetSchema> _convertString(AckStringSchemaModel schema) {
+    final enumValues = schema.allowedStringValues;
     if (enumValues != null) {
       return _buildEnumSchema(enumValues, schema);
     }
 
-    // Build string schema with constraints
     return _buildStringSchema(
       description: schema.description,
-      nullable: schema.isNullable,
-      format: jsonSchema['format'] as String?,
-      minLength: jsonSchema['minLength'] as int?,
-      maxLength: jsonSchema['maxLength'] as int?,
-      pattern: jsonSchema['pattern'] as String?,
+      nullable: schema.nullable,
+      format: schema.format,
+      minLength: schema.minLength,
+      maxLength: schema.maxLength,
+      pattern: schema.pattern,
     );
   }
 
-  static <TargetSchema> _convertInteger(IntegerSchema schema) {
-    final jsonSchema = schema.toJsonSchema();
-
+  static <TargetSchema> _convertInteger(AckIntegerSchemaModel schema) {
     return _buildIntegerSchema(
       description: schema.description,
-      nullable: schema.isNullable,
-      minimum: jsonSchema['minimum'] as num?,
-      maximum: jsonSchema['maximum'] as num?,
-      exclusiveMinimum: jsonSchema['exclusiveMinimum'] as bool?,
-      exclusiveMaximum: jsonSchema['exclusiveMaximum'] as bool?,
+      nullable: schema.nullable,
+      minimum: schema.minimum,
+      maximum: schema.maximum,
+      exclusiveMinimum: schema.exclusiveMinimum,
+      exclusiveMaximum: schema.exclusiveMaximum,
     );
   }
 
-  static <TargetSchema> _convertDouble(DoubleSchema schema) {
-    final jsonSchema = schema.toJsonSchema();
-
+  static <TargetSchema> _convertNumber(AckNumberSchemaModel schema) {
     return _buildNumberSchema(
       description: schema.description,
-      nullable: schema.isNullable,
-      minimum: jsonSchema['minimum'] as num?,
-      maximum: jsonSchema['maximum'] as num?,
+      nullable: schema.nullable,
+      minimum: schema.minimum,
+      maximum: schema.maximum,
     );
   }
 
-  static <TargetSchema> _convertBoolean(BooleanSchema schema) {
+  static <TargetSchema> _convertBoolean(AckBooleanSchemaModel schema) {
     return _buildBooleanSchema(
       description: schema.description,
-      nullable: schema.isNullable,
+      nullable: schema.nullable,
     );
   }
 
@@ -389,122 +383,76 @@ class <Target>SchemaConverter {
   // Complex Type Converters
   // ========================================================================
 
-  static <TargetSchema> _convertObject(ObjectSchema schema) {
-    final jsonSchema = schema.toJsonSchema();
-
-    // Convert each property recursively
-    final properties = <String, <TargetSchema>>{};
-    for (final entry in schema.properties.entries) {
-      properties[entry.key] = _convertSchema(entry.value);
+  static <TargetSchema> _convertObject(AckObjectSchemaModel schema) {
+    final properties = <String, TargetSchema>{};
+    for (final entry in schema.properties?.entries ?? const []) {
+      properties[entry.key] = _convertModel(entry.value);
     }
 
-    // Determine which properties are required
-    final required = jsonSchema['required'] as List<String>?;
+    final required = schema.required ?? const [];
     final optionalProperties = properties.keys
-        .where((key) => !(required?.contains(key) ?? false))
+        .where((key) => !required.contains(key))
         .toList();
+
+    final additionalProperties = switch (schema.additionalProperties) {
+      AckAdditionalPropertiesAllowed() || null => true,
+      AckAdditionalPropertiesDisallowed() => false,
+      AckAdditionalPropertiesSchema(schema: final schema) =>
+        _convertModel(schema),
+    };
 
     return _buildObjectSchema(
       properties: properties,
       optionalProperties: optionalProperties,
       description: schema.description,
-      nullable: schema.isNullable,
-      additionalProperties: schema.additionalProperties,
+      nullable: schema.nullable,
+      additionalProperties: additionalProperties,
     );
   }
 
-  static <TargetSchema> _convertArray(ListSchema schema) {
-    // Convert item schema recursively
-    final itemSchema = _convertSchema(schema.itemSchema);
-    final jsonSchema = schema.toJsonSchema();
+  static <TargetSchema> _convertArray(AckArraySchemaModel schema) {
+    final itemSchema = schema.items != null
+        ? _convertModel(schema.items!)
+        : _buildAnySchema();
 
     return _buildArraySchema(
       items: itemSchema,
       description: schema.description,
-      nullable: schema.isNullable,
-      minItems: jsonSchema['minItems'] as int?,
-      maxItems: jsonSchema['maxItems'] as int?,
+      nullable: schema.nullable,
+      minItems: schema.minItems,
+      maxItems: schema.maxItems,
     );
   }
 
-  static <TargetSchema> _convertEnum(EnumSchema schema) {
-    final jsonSchema = schema.toJsonSchema();
-    final enumValues = (jsonSchema['enum'] as List)
-        .cast<String>()
-        .toList();
-
-    return _buildEnumSchema(
-      enumValues,
-      schema,
-    );
-  }
-
-  static <TargetSchema> _convertAnyOf(AnyOfSchema schema) {
-    // Convert each branch
-    final branches = schema.schemas
-        .map(_convertSchema)
-        .toList();
+  static <TargetSchema> _convertAnyOf(AckAnyOfSchemaModel schema) {
+    final branches = schema.schemas.map(_convertModel).toList();
 
     return _buildAnyOfSchema(
       branches: branches,
       description: schema.description,
-      nullable: schema.isNullable,
+      nullable: schema.nullable,
+      discriminator: schema.discriminator?.propertyName,
     );
   }
 
-  static <TargetSchema> _convertDiscriminated(
-    DiscriminatedObjectSchema schema,
-  ) {
-    // Option 1: If target supports discriminated unions natively
-    // return _buildDiscriminatedSchema(...);
+  static <TargetSchema> _convertOneOf(AckOneOfSchemaModel schema) {
+    final branches = schema.schemas.map(_convertModel).toList();
 
-    // Option 2: Convert to anyOf with discriminator enum injected
-    final branches = <TargetSchema>[];
-
-    for (final entry in schema.schemas.entries) {
-      final discriminatorValue = entry.key;
-      final branchSchema = entry.value;
-
-      // Convert branch and inject discriminator
-      final convertedBranch = _convertSchema(branchSchema);
-      branches.add(
-        _injectDiscriminatorField(
-          convertedBranch,
-          schema.discriminatorKey,
-          discriminatorValue,
-        ),
-      );
-    }
-
-    return _buildAnyOfSchema(
+    return _buildOneOfSchema(
       branches: branches,
       description: schema.description,
-      nullable: schema.isNullable,
+      nullable: schema.nullable,
     );
   }
 
-  static <TargetSchema> _convertAny(AnySchema schema) {
-    // Most schema systems don't have a true "any" type
-    // Common approaches:
-    // 1. Empty object (allows anything)
-    // 2. Union of all primitive types
-    // 3. Target-specific "any" type if available
+  static <TargetSchema> _convertAllOf(AckAllOfSchemaModel schema) {
+    final branches = schema.schemas.map(_convertModel).toList();
 
-    return _buildAnySchema(
+    return _buildAllOfSchema(
+      branches: branches,
       description: schema.description,
-      nullable: schema.isNullable,
+      nullable: schema.nullable,
     );
-  }
-
-  static <TargetSchema> _handleTransformed(TransformedSchema schema) {
-    // Option 1: Throw error (safest)
-    throw UnsupportedError(
-      'TransformedSchema cannot be converted to <Target> format. '
-      'Convert the underlying schema instead.',
-    );
-
-    // Option 2: Extract and convert underlying schema (if target supports metadata)
-    // return _convertSchema(schema.underlyingSchema);
   }
 
   // ========================================================================
@@ -536,8 +484,8 @@ class <Target>SchemaConverter {
     bool nullable = false,
     num? minimum,
     num? maximum,
-    bool? exclusiveMinimum,
-    bool? exclusiveMaximum,
+    num? exclusiveMinimum,
+    num? exclusiveMaximum,
   }) {
     return <String, Object?>{
       'type': 'integer',
@@ -579,11 +527,11 @@ class <Target>SchemaConverter {
   }
 
   static <TargetSchema> _buildObjectSchema({
-    required Map<String, <TargetSchema>> properties,
+    required Map<String, TargetSchema> properties,
     List<String>? optionalProperties,
     String? description,
     bool nullable = false,
-    bool additionalProperties = false,
+    Object additionalProperties = false,
   }) {
     final required = <String>[];
     for (final propertyName in properties.keys) {
@@ -603,7 +551,7 @@ class <Target>SchemaConverter {
   }
 
   static <TargetSchema> _buildArraySchema({
-    required <TargetSchema> items,
+    required TargetSchema items,
     String? description,
     bool nullable = false,
     int? minItems,
@@ -620,99 +568,70 @@ class <Target>SchemaConverter {
   }
 
   static <TargetSchema> _buildEnumSchema(
-    List<String> enumValues,
-    AckSchema schema,
+    List<Object?> enumValues,
+    AckSchemaModel schema,
   ) {
     return <String, Object?>{
       'type': 'string',
-      'enum': enumValues,
-      if (schema.isNullable) 'nullable': true,
+      'enum': enumValues.map((value) => value.toString()).toList(),
+      if (schema.nullable) 'nullable': true,
       if (schema.description != null) 'description': schema.description,
     } as TargetSchema;
   }
 
   static <TargetSchema> _buildAnyOfSchema({
-    required List<<TargetSchema>> branches,
+    required List<TargetSchema> branches,
     String? description,
     bool nullable = false,
+    String? discriminator,
   }) {
     return <String, Object?>{
       'type': 'anyOf',
       'branches': branches,
       if (description != null) 'description': description,
       if (nullable) 'nullable': true,
+      if (discriminator != null) 'discriminator': discriminator,
     } as TargetSchema;
   }
 
-  static <TargetSchema> _buildAnySchema({
+  static <TargetSchema> _buildOneOfSchema({
+    required List<TargetSchema> branches,
     String? description,
     bool nullable = false,
   }) {
     return <String, Object?>{
-      'type': 'any',
+      'type': 'oneOf',
+      'branches': branches,
       if (description != null) 'description': description,
       if (nullable) 'nullable': true,
-      'additionalProperties': true,
     } as TargetSchema;
   }
 
-  static <TargetSchema> _injectDiscriminatorField(
-    <TargetSchema> schema,
-    String discriminatorKey,
-    String discriminatorValue,
-  ) {
-    if (schema is! Map<String, Object?>) {
-      return schema;
-    }
-
-    final withDiscriminator = Map<String, Object?>.from(schema)
-      ..['discriminator'] = <String, Object?>{
-        'propertyName': discriminatorKey,
-        'value': discriminatorValue,
-      };
-    return withDiscriminator as TargetSchema;
+  static <TargetSchema> _buildAllOfSchema({
+    required List<TargetSchema> branches,
+    String? description,
+    bool nullable = false,
+  }) {
+    return <String, Object?>{
+      'type': 'allOf',
+      'branches': branches,
+      if (description != null) 'description': description,
+      if (nullable) 'nullable': true,
+    } as TargetSchema;
   }
 
-  // ========================================================================
-  // Helper Methods - Type Coercion
-  // ========================================================================
-
-  /// Safely converts a value to int, handling num types.
-  static int? _asInt(Object? value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is double) return value.toInt();
-    return null;
-  }
-
-  /// Safely converts a value to double, handling num types.
-  static double? _asDouble(Object? value) {
-    if (value == null) return null;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    return null;
-  }
-
-  /// Reads enum values from JSON Schema.
-  static List<String>? _readEnumValues(Map<String, Object?> json) {
-    final rawEnum = json['enum'];
-    if (rawEnum == null) return null;
-    if (rawEnum is! List) return null;
-
-    return rawEnum
-        .whereType<String>()
-        .toList();
-  }
+  // Add target SDK coercion helpers here only when the target builder API
+  // needs a narrower type than AckSchemaModel exposes.
 }
 ```
 
 **Key patterns**:
 1. **Private constructor** - Prevent instantiation
 2. **Static converter methods** - Pure functions
-3. **Switch expression** - Type-safe routing
-4. **JSON Schema bridge** - Reuse Ack's `toJsonSchema()`
+3. **Model-first routing** - Convert once with `schema.toSchemaModel()`
+4. **Switch expression** - Type-safe routing on sealed `AckSchemaModel` variants
 5. **Helper builders** - Wrap target SDK API
-6. **Type coercion** - Handle num/int/double safely
+6. **Explicit gaps** - Throw or warn for target-unsupported model features
 
 ---
 
@@ -871,7 +790,7 @@ void main() {
         expect(result.properties['user']?.type, target.SchemaType.object);
       });
 
-      test('includes propertyOrdering if supported', () {
+      test('uses model property ordering if the target supports it', () {
         final schema = Ack.object({
           'id': Ack.string(),
           'name': Ack.string(),
@@ -879,7 +798,7 @@ void main() {
         });
         final result = schema.to<Target>Schema();
 
-        // If target supports property ordering
+        // This comes from AckObjectSchemaModel metadata, not generic JSON Schema.
         expect(result.propertyOrdering, ['id', 'name', 'email']);
       });
     });
@@ -983,7 +902,6 @@ void main() {
       });
 
       test('handles title metadata if supported', () {
-        final jsonSchema = Ack.string().toJsonSchema();
         final schemaWithTitle = Ack.string(); // Add title somehow
         final result = schemaWithTitle.to<Target>Schema();
 
@@ -1240,116 +1158,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Architecture Patterns
 
-### Pattern 1: JSON Schema Bridge
+### Pattern 1: AckSchemaModel Renderer
 
-**When to use**: Target system uses JSON Schema-compatible format
+**When to use**: Default for new converter packages
 
 **Implementation**:
 ```dart
-static TargetSchema _convertString(StringSchema schema) {
-  // 1. Get JSON Schema representation
-  final jsonSchema = schema.toJsonSchema();
+extension TargetSchemaExtension on AckSchema {
+  TargetSchema toTargetSchema() => _convert(toSchemaModel());
+}
 
-  // 2. Extract relevant fields
-  final format = jsonSchema['format'] as String?;
-  final minLength = jsonSchema['minLength'] as int?;
+TargetSchema _convert(AckSchemaModel schema) {
+  return switch (schema) {
+    AckStringSchemaModel() => _convertString(schema),
+    AckIntegerSchemaModel() => _convertInteger(schema),
+    AckNumberSchemaModel() => _convertNumber(schema),
+    AckBooleanSchemaModel() => _convertBoolean(schema),
+    AckArraySchemaModel() => _convertArray(schema),
+    AckObjectSchemaModel() => _convertObject(schema),
+    AckAnyOfSchemaModel() => _convertAnyOf(schema),
+    AckOneOfSchemaModel() => _convertOneOf(schema),
+    AckAllOfSchemaModel() => _convertAllOf(schema),
+    AckNullSchemaModel() => TargetSchema.nullValue(),
+  };
+}
 
-  // 3. Build target schema
+TargetSchema _convertString(AckStringSchemaModel schema) {
   return TargetSchema.string(
-    format: format,
-    minLength: minLength,
+    format: schema.format,
+    minLength: schema.minLength,
     description: schema.description,
   );
 }
 ```
 
-**Pros**: Reuses Ack's existing JSON Schema logic
-**Cons**: Indirect, may include unused fields
+**Pros**: One normalized Ack-owned model, shared semantics with maintained
+adapter packages, no duplicated discriminator/default/nullability traversal
+**Cons**: Target-specific unsupported features still need explicit handling
 
-### Pattern 2: Direct Conversion
+### Pattern 2: JSON Schema Renderer
 
-**When to use**: Target has very different schema model
-
-**Implementation**:
-```dart
-static TargetSchema _convertString(StringSchema schema) {
-  // 1. Access schema properties directly
-  final constraints = schema.constraints;
-
-  // 2. Extract constraint values
-  int? minLength;
-  for (final constraint in constraints) {
-    if (constraint is StringMinLengthConstraint) {
-      minLength = constraint.minLength;
-    }
-  }
-
-  // 3. Build target schema
-  return TargetSchema.string(
-    minLength: minLength,
-    description: schema.description,
-  );
-}
-```
-
-**Pros**: Precise, no intermediate steps
-**Cons**: More code, must handle each constraint type
-
-### Pattern 3: Hybrid Approach
-
-**When to use**: Most cases (recommended)
+**When to use**: Target system consumes JSON Schema-compatible maps directly
 
 **Implementation**:
 ```dart
-static TargetSchema _convertString(StringSchema schema) {
-  // Use JSON Schema for standard fields
-  final jsonSchema = schema.toJsonSchema();
-
-  // Access schema directly for target-specific handling
-  final isNullable = schema.isNullable;
-
-  return TargetSchema.string(
-    format: jsonSchema['format'] as String?,
-    nullable: isNullable ? true : null,
-    description: schema.description,
-  );
+Map<String, Object?> _convert(AckSchema schema) {
+  return schema.toSchemaModel().toJsonSchema();
 }
 ```
 
-**Pros**: Balance of convenience and control
-**Cons**: Some duplication
+**Pros**: Uses the canonical model while emitting a standard map format
+**Cons**: Target systems that are not JSON Schema-compatible still need a model renderer
+
+### Pattern 3: Target-Specific Model Post-Processing
+
+**When to use**: Target systems require extra annotations after the canonical
+model has been rendered
+
+**Implementation**:
+```dart
+TargetSchema _convert(AckSchema schema) {
+  final model = schema.toSchemaModel();
+  final converted = _convertModel(model);
+  return _applyTargetAnnotations(converted, model.extensions);
+}
+```
+
+**Pros**: Keeps conversion anchored on `AckSchemaModel` while leaving room for target-specific metadata
+**Cons**: Extra metadata must be documented and tested per target
 
 ---
 
 ## Common Patterns
 
-### Handling TransformedSchema
+### Handling Transformed Schemas
 
-**Option 1: Reject** (Recommended for most cases)
+`toSchemaModel()` projects transformed schemas from their boundary input schema
+and preserves adapter-safe metadata such as description, nullability, and
+`x-transformed`.
+
+**Option 1: Render projected boundary model** (Recommended)
 ```dart
-if (schema is TransformedSchema) {
-  throw UnsupportedError(
-    'TransformedSchema cannot be converted to <Target> format. '
-    'Convert the underlying schema instead.',
-  );
+TargetSchema _convertTransformed(AckSchemaModel schema) {
+  return _convert(schema);
 }
 ```
 
-**Option 2: Extract Underlying** (If target supports metadata overrides)
+**Option 2: Reject explicit transformed marker** (If target cannot tolerate transforms)
 ```dart
-if (schema is TransformedSchema) {
-  // Extract underlying schema
-  final underlying = schema.underlyingSchema;
-
-  // Convert with metadata from transformed schema
-  final converted = _convertSchema(underlying);
-
-  // Apply metadata overrides
-  return _applyMetadata(
-    converted,
-    description: schema.description,
-    nullable: schema.isNullable,
-  );
+if (schema.extensions['x-transformed'] == true) {
+  throw UnsupportedError('Transformed Ack schemas are not supported here.');
 }
 ```
 
@@ -1358,117 +1256,77 @@ if (schema is TransformedSchema) {
 **Option 1: Native Support** (If target has discriminators)
 ```dart
 static TargetSchema _convertDiscriminated(
-  DiscriminatedObjectSchema schema,
+  AckAnyOfSchemaModel schema,
 ) {
   return TargetSchema.discriminated(
-    discriminatorKey: schema.discriminatorKey,
-    branches: {
-      for (final entry in schema.schemas.entries)
-        entry.key: _convertSchema(entry.value),
-    },
+    discriminatorKey: schema.discriminator!.propertyName,
+    branches: [for (final branch in schema.schemas) _convert(branch)],
   );
 }
 ```
 
-**Option 2: AnyOf with Injected Discriminator** (Fallback)
+**Option 2: AnyOf with Effective Discriminator Properties** (Fallback)
 ```dart
 static TargetSchema _convertDiscriminated(
-  DiscriminatedObjectSchema schema,
+  AckAnyOfSchemaModel schema,
 ) {
   final branches = <TargetSchema>[];
 
-  for (final entry in schema.schemas.entries) {
-    final discriminatorValue = entry.key;
-    final branchSchema = entry.value;
-
-    // Convert branch
-    final converted = _convertSchema(branchSchema);
-
-    // Inject discriminator enum
-    final withDiscriminator = _injectField(
-      converted,
-      schema.discriminatorKey,
-      TargetSchema.enumString([discriminatorValue]),
-    );
-
-    branches.add(withDiscriminator);
+  for (final branch in schema.schemas) {
+    // Branches already expose the union-owned discriminator as an exact const.
+    branches.add(_convert(branch));
   }
 
-  return TargetSchema.anyOf(branches);
-}
-```
-
-### Handling AnySchema
-
-**Option 1: Empty Object** (Most permissive)
-```dart
-static TargetSchema _convertAny(AnySchema schema) {
-  return TargetSchema.object(
-    properties: const {},
-    additionalProperties: true,
+  return TargetSchema.anyOf(
+    branches,
+    discriminator: schema.discriminator?.propertyName,
   );
 }
 ```
 
-**Option 2: Union of Primitives** (More restrictive)
+### Handling Any Schema Models
+
+`Ack.any()` reaches converters as an `AckAnyOfSchemaModel` over the
+JSON-compatible value shapes Ack can export. Inspect `schema.warnings` if the
+target needs to surface that runtime `Object` acceptance is wider than the
+export boundary.
+
+**Option 1: Union of JSON-Compatible Shapes** (Canonical)
 ```dart
-static TargetSchema _convertAny(AnySchema schema) {
+static TargetSchema _convertAny(AckAnyOfSchemaModel schema) {
   return TargetSchema.anyOf([
-    TargetSchema.string(),
-    TargetSchema.integer(),
-    TargetSchema.number(),
-    TargetSchema.boolean(),
-    TargetSchema.array(items: TargetSchema.any()),
-    TargetSchema.object(properties: const {}),
+    for (final branch in schema.schemas) _convert(branch),
   ]);
 }
 ```
 
-**Option 3: Target-Specific Any** (If available)
+**Option 2: Target-Specific Any** (If available)
 ```dart
-static TargetSchema _convertAny(AnySchema schema) {
+static TargetSchema _convertAny(AckAnyOfSchemaModel schema) {
   return TargetSchema.any(
     description: schema.description,
-    nullable: schema.isNullable,
+    nullable: schema.nullable,
   );
 }
 ```
 
-### Type Coercion Helpers
-
+**Option 3: Empty Object Fallback** (If the target has no union support)
 ```dart
-/// Safely converts a value to int, handling num types.
-static int? _asInt(Object? value) {
-  if (value == null) return null;
-  if (value is int) return value;
-  if (value is double) return value.toInt();
-  return null;
-}
-
-/// Safely converts a value to double, handling num types.
-static double? _asDouble(Object? value) {
-  if (value == null) return null;
-  if (value is double) return value;
-  if (value is int) return value.toDouble();
-  return null;
-}
-
-/// Reads enum values from JSON Schema, filtering non-strings.
-static List<String>? _readEnumValues(Map<String, Object?> json) {
-  final rawEnum = json['enum'];
-  if (rawEnum == null) return null;
-  if (rawEnum is! List) return null;
-
-  return rawEnum.whereType<String>().toList();
-}
-
-/// Safely reads boolean from JSON, defaulting to false.
-static bool _readBool(Map<String, Object?> json, String key) {
-  final value = json[key];
-  if (value is bool) return value;
-  return false;
+static TargetSchema _convertAny(AckAnyOfSchemaModel schema) {
+  return TargetSchema.object(
+    properties: const {},
+    additionalProperties: true,
+    description: schema.description,
+  );
 }
 ```
+
+### Target Builder Helpers
+
+`AckSchemaModel` exposes typed fields for constraints and enum values, so
+converter packages should not parse JSON Schema maps to recover them. Add helper
+functions only for target SDK requirements, such as adapting `num` bounds to a
+target API that requires `int` or `double`.
 
 ---
 
@@ -1486,44 +1344,10 @@ class OpenApiSchemaConverter {
   const OpenApiSchemaConverter._();
 
   static Map<String, Object?> convert(AckSchema schema) {
-    return _convertSchema(schema);
+    // OpenAPI 3.1 is compatible with the generic Draft-7 renderer for
+    // schemas that do not need OpenAPI-specific extensions.
+    return schema.toSchemaModel().toJsonSchema();
   }
-
-  static Map<String, Object?> _convertSchema(AckSchema schema) {
-    // OpenAPI uses JSON Schema Draft 2020-12
-    final jsonSchema = schema.toJsonSchema();
-
-    return switch (schema) {
-      StringSchema() => _convertString(schema, jsonSchema),
-      IntegerSchema() => _convertInteger(schema, jsonSchema),
-      DoubleSchema() => _convertNumber(schema, jsonSchema),
-      BooleanSchema() => _convertBoolean(schema, jsonSchema),
-      ObjectSchema() => _convertObject(schema, jsonSchema),
-      ListSchema() => _convertArray(schema, jsonSchema),
-      EnumSchema() => _convertEnum(schema, jsonSchema),
-      AnyOfSchema() => _convertAnyOf(schema),
-      _ => throw UnsupportedError(
-          'Schema type ${schema.runtimeType} not supported',
-        ),
-    };
-  }
-
-  static Map<String, Object?> _convertString(
-    StringSchema schema,
-    Map<String, Object?> json,
-  ) {
-    return {
-      'type': 'string',
-      if (schema.description != null) 'description': schema.description,
-      if (json['format'] != null) 'format': json['format'],
-      if (json['minLength'] != null) 'minLength': json['minLength'],
-      if (json['maxLength'] != null) 'maxLength': json['maxLength'],
-      if (json['pattern'] != null) 'pattern': json['pattern'],
-      if (json['enum'] != null) 'enum': json['enum'],
-    };
-  }
-
-  // ... other converters
 }
 ```
 
@@ -1540,53 +1364,52 @@ class GraphQlSchemaConverter {
 
   static String convert(AckSchema schema, {required String typeName}) {
     final buffer = StringBuffer();
-    _convertToSDL(schema, typeName, buffer);
+    _convertToSDL(schema.toSchemaModel(), typeName, buffer);
     return buffer.toString();
   }
 
   static void _convertToSDL(
-    AckSchema schema,
+    AckSchemaModel schema,
     String typeName,
     StringBuffer buffer,
   ) {
-    if (schema is ObjectSchema) {
-      buffer.writeln('type $typeName {');
-
-      for (final entry in schema.properties.entries) {
-        final fieldName = entry.key;
-        final fieldSchema = entry.value;
-        final gqlType = _getGraphQLType(fieldSchema);
-        final isRequired = !fieldSchema.isOptional;
-        final nullableSuffix = isRequired ? '!' : '';
-
-        if (fieldSchema.description != null) {
-          buffer.writeln('  """${fieldSchema.description}"""');
-        }
-        buffer.writeln('  $fieldName: $gqlType$nullableSuffix');
-      }
-
-      buffer.writeln('}');
-    } else {
-      throw UnsupportedError(
-        'Only ObjectSchema can be converted to GraphQL types. '
-        'Got: ${schema.runtimeType}',
-      );
+    if (schema is! AckObjectSchemaModel) {
+      throw UnsupportedError('Only object schema models can be converted.');
     }
+
+    buffer.writeln('type $typeName {');
+
+    final required = schema.required ?? const <String>[];
+    for (final entry in schema.properties?.entries ?? const []) {
+      final fieldName = entry.key;
+      final fieldSchema = entry.value;
+      final gqlType = _getGraphQLType(fieldSchema);
+      final nullableSuffix = required.contains(fieldName) ? '!' : '';
+
+      if (fieldSchema.description != null) {
+        buffer.writeln('  """${fieldSchema.description}"""');
+      }
+      buffer.writeln('  $fieldName: $gqlType$nullableSuffix');
+    }
+
+    buffer.writeln('}');
   }
 
-  static String _getGraphQLType(AckSchema schema) {
+  static String _getGraphQLType(AckSchemaModel schema) {
     return switch (schema) {
-      StringSchema() => 'String',
-      IntegerSchema() => 'Int',
-      DoubleSchema() => 'Float',
-      BooleanSchema() => 'Boolean',
-      ListSchema(:final itemSchema) => '[${_getGraphQLType(itemSchema)}]',
-      EnumSchema() => _generateEnumType(schema),
+      AckStringSchemaModel(allowedStringValues: final values)
+          when values != null && values.isNotEmpty =>
+        _generateEnumType(schema),
+      AckStringSchemaModel() => 'String',
+      AckIntegerSchemaModel() => 'Int',
+      AckNumberSchemaModel() => 'Float',
+      AckBooleanSchemaModel() => 'Boolean',
+      AckArraySchemaModel(items: final item?) => '[${_getGraphQLType(item)}]',
       _ => 'String', // Fallback
     };
   }
 
-  static String _generateEnumType(EnumSchema schema) {
+  static String _generateEnumType(AckStringSchemaModel schema) {
     // Would need to generate enum definitions separately
     return 'EnumType';
   }
@@ -1674,7 +1497,7 @@ class GraphQlSchemaConverter {
 
 **During development**:
 - Reference `ack_firebase_ai` for patterns
-- Use Ack's `toJsonSchema()` as a bridge when possible
+- Use `schema.toSchemaModel()` as the adapter boundary
 - Write tests first (TDD approach)
 - Document limitations as you discover them
 

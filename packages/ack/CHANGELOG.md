@@ -1,3 +1,18 @@
+## Unreleased
+
+### Breaking Changes
+
+* Remove the retired JSON Schema DTO converter APIs.
+* Replace the interim JSON Schema model kind API with sealed
+  `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
+  adapter conversion.
+
+### Changed
+
+* Project discriminated schemas through union-owned discriminator branches.
+* Preserve defaults, const values, extension keywords, transformed metadata,
+  composition, and JSON Schema constraints through the schema model boundary.
+
 ## 1.0.0-beta.11
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0-beta.11) for details.
@@ -47,12 +62,12 @@
 
 ### Breaking Changes
 
-* **WellKnownFormat**: Reduced to 7 core formats (`email`, `uri`, `uuid`, `date`, `dateTime`, `ipv4`, `ipv6`). Removed formats: `hostname`, `idn_email`, `idn_hostname`, `uri_reference`, `uri_template`, `iri`, `iri_reference`, `time`, `duration`, `int32`, `int64`, `float`, `double`, `json_pointer`, `relative_json_pointer`, `regex`, `enum_`, `byte`, `binary`. Custom format strings are still supported via the `format` property.
+* **Format metadata**: Reduced built-in format guidance to 7 core formats (`email`, `uri`, `uuid`, `date`, `dateTime`, `ipv4`, `ipv6`). Custom format strings are still supported via the `format` property.
 * **`withDescription` deprecated**: Use `describe()` instead for setting schema descriptions.
 
 ### Bug Fixes
 
-* **JsonSchema.toJson**: Now correctly adds null branch to `anyOf`/`oneOf` compositions when `nullable: true`, producing valid JSON Schema Draft-07 format.
+* **JSON Schema output**: Now correctly adds null branch to `anyOf`/`oneOf` compositions when `nullable: true`, producing valid JSON Schema Draft-07 format.
 
 ### Improvements
 

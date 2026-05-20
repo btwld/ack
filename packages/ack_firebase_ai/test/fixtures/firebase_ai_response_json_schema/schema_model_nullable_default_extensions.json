@@ -1,0 +1,13 @@
+{
+  "default": "ready",
+  "anyOf": [
+    {
+      "type": "string",
+      "const": "ready",
+      "x-ack-test": true
+    },
+    {
+      "type": "null"
+    }
+  ]
+}

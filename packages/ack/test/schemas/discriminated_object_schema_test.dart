@@ -421,6 +421,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'cat': Ack.object({
+              'type': Ack.literal('cat'),
               'name': Ack.string(),
             }).transform<String>((map) => map['name'] as String),
           },
@@ -446,13 +447,13 @@ void main() {
         expect(() => schema.toJsonSchema(), throwsArgumentError);
       });
 
-      test('rejects non-object-backed child branches in toJsonSchemaModel', () {
+      test('rejects non-object-backed child branches in toSchemaModel', () {
         final schema = Ack.discriminated<String>(
           discriminatorKey: 'type',
           schemas: {'cat': Ack.string()},
         );
 
-        expect(() => schema.toJsonSchemaModel(), throwsArgumentError);
+        expect(() => schema.toSchemaModel(), throwsArgumentError);
       });
 
       test('omits non-JSON defaults for transformed discriminated schemas', () {
@@ -460,6 +461,7 @@ void main() {
           discriminatorKey: 'type',
           schemas: {
             'cat': Ack.object({
+              'type': Ack.literal('cat'),
               'name': Ack.string(),
             }).transform<Object>((map) => map['name'] as Object),
           },
@@ -478,6 +480,7 @@ void main() {
             discriminatorKey: 'type',
             schemas: {
               'cat': Ack.object({
+                'type': Ack.literal('cat'),
                 'name': Ack.string(),
               }).transform<Object>((map) => map['name'] as Object),
             },
@@ -486,6 +489,7 @@ void main() {
           final jsonSchema = schema.toJsonSchema();
 
           expect(jsonSchema.containsKey('default'), isFalse);
+          expect(jsonSchema, isNot(contains('discriminator')));
           expect(() => jsonEncode(jsonSchema), returnsNormally);
         },
       );

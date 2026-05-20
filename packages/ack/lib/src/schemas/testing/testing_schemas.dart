@@ -39,9 +39,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object> {
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => const {'type': 'string'};
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! TestUnsupportedAckSchema) return false;

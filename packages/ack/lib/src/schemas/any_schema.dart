@@ -1,6 +1,6 @@
 part of 'schema.dart';
 
-/// Schema that accepts any value without type conversion or validation.
+/// Schema that accepts any non-null value without type conversion or validation.
 /// Useful for dynamic content or when you need maximum flexibility.
 ///
 /// Unlike composite schemas (List, Object, AnyOf, Discriminated), AnySchema
@@ -20,7 +20,7 @@ final class AnySchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.any;
 
-  /// AnySchema accepts all values, so it overrides parseAndValidate directly.
+  /// AnySchema accepts all non-null values, so it overrides parseAndValidate directly.
   @override
   @protected
   SchemaResult<Object> parseAndValidate(
@@ -54,13 +54,6 @@ final class AnySchema extends AckSchema<Object>
       refinements: refinements ?? this.refinements,
     );
   }
-
-  @override
-  Map<String, Object?> toJsonSchema() => buildJsonSchemaWithNullable(
-    // Empty typeSchema means "accepts any value" per JSON Schema standard
-    typeSchema: {},
-    serializedDefault: defaultValue,
-  );
 
   @override
   bool operator ==(Object other) {

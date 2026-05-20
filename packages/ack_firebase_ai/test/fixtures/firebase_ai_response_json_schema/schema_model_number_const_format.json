@@ -1,0 +1,5 @@
+{
+  "type": "number",
+  "format": "double",
+  "const": 1.5
+}

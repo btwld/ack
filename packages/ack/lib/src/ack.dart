@@ -42,8 +42,14 @@ final class Ack {
   );
 
   /// Creates a list schema with the given item schema.
-  static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) =>
-      ListSchema(itemSchema);
+  static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) {
+    if (itemSchema.isNullable) {
+      throw ArgumentError(
+        'Ack.list(...) does not support nullable item schemas yet.',
+      );
+    }
+    return ListSchema(itemSchema);
+  }
 
   /// Creates an enum schema for validating enum values.
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
@@ -56,7 +62,7 @@ final class Ack {
   /// Creates a schema that can be one of many types.
   static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);
 
-  /// Creates a schema that accepts any value without type conversion or validation.
+  /// Creates a schema that accepts any non-null value without type conversion or validation.
   /// Useful for dynamic content or when you need maximum flexibility.
   static AnySchema any() => const AnySchema();
 

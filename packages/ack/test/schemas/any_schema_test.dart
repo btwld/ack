@@ -53,17 +53,15 @@ void main() {
 
     test('should generate correct JSON schema', () {
       final schema = Ack.any()
-          .describe("Accepts any value")
+          .describe("Accepts any non-null value")
           .withDefault("fallback");
 
       final jsonSchema = schema.toJsonSchema();
 
-      // AnySchema generates an empty schema {} (which accepts any type except null)
-      // with description and default fields
-      expect(jsonSchema['description'], equals('Accepts any value'));
+      expect(jsonSchema['description'], equals('Accepts any non-null value'));
       expect(jsonSchema['default'], equals('fallback'));
-      // Empty schema (no 'type' field) accepts any value
       expect(jsonSchema.containsKey('type'), isFalse);
+      expect(jsonSchema['anyOf'], isA<List>());
     });
 
     test('should support fluent API', () {

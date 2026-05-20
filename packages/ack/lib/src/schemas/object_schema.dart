@@ -180,35 +180,6 @@ final class ObjectSchema extends AckSchema<MapValue>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() {
-    final propsJsonSchema = <String, Object?>{};
-    final requiredFields = <String>[];
-
-    for (final entry in properties.entries) {
-      propsJsonSchema[entry.key] = entry.value.toJsonSchema();
-      // All non-optional fields are required
-      if (!entry.value.isOptional) {
-        requiredFields.add(entry.key);
-      }
-    }
-
-    // Zod uses {} (empty schema) for true, false for false
-    final additionalPropertiesValue = additionalProperties
-        ? <String, Object?>{}
-        : false;
-
-    return buildJsonSchemaWithNullable(
-      typeSchema: {
-        'type': 'object',
-        'properties': propsJsonSchema,
-        if (requiredFields.isNotEmpty) 'required': requiredFields,
-        'additionalProperties': additionalPropertiesValue,
-      },
-      serializedDefault: defaultValue,
-    );
-  }
-
-  @override
   Map<String, Object?> toMap() {
     return {
       'type': schemaType.typeName,

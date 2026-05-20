@@ -1,0 +1,541 @@
+{
+  "description": "Golden fixtures for ACK to Firebase AI responseJsonSchema conversion.",
+  "generatedBy": "dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart",
+  "fixtureCount": 29,
+  "featureCoverage": {
+    "additionalProperties": [
+      "ack_schema_object_passthrough",
+      "ack_schema_object_properties_requiredness"
+    ],
+    "additionalPropertiesSchema": [
+      "schema_model_object_schema_additional_properties"
+    ],
+    "allOf": [
+      "schema_model_allof"
+    ],
+    "any": [
+      "ack_schema_any_json_compatible_branches"
+    ],
+    "anyOf": [
+      "ack_schema_any_json_compatible_branches",
+      "ack_schema_anyof_nullable_composition",
+      "ack_schema_discriminated_union",
+      "ack_schema_nullable_boolean_default",
+      "ack_schema_object_passthrough",
+      "schema_model_anyof_common_fields_explicit_null",
+      "schema_model_nullable_default_extensions"
+    ],
+    "array": [
+      "ack_schema_array_constraints",
+      "schema_model_array_without_item_schema"
+    ],
+    "boolean": [
+      "ack_schema_nullable_boolean_default",
+      "schema_model_boolean_const"
+    ],
+    "const": [
+      "ack_schema_discriminated_union",
+      "ack_schema_string_literal",
+      "schema_model_boolean_const",
+      "schema_model_integer_const_format",
+      "schema_model_nullable_default_extensions",
+      "schema_model_number_const_format",
+      "schema_model_oneof_discriminator",
+      "schema_model_oneof_nullable_composition",
+      "schema_model_string_common_options"
+    ],
+    "default": [
+      "ack_schema_array_constraints",
+      "ack_schema_enum_values_default",
+      "ack_schema_integer_constraints",
+      "ack_schema_nullable_boolean_default",
+      "ack_schema_number_constraints",
+      "schema_model_anyof_common_fields_explicit_null",
+      "schema_model_nullable_default_extensions"
+    ],
+    "description": [
+      "schema_model_string_common_options"
+    ],
+    "enum": [
+      "ack_schema_enum_values_default"
+    ],
+    "exclusiveMaximum": [
+      "ack_schema_integer_constraints",
+      "ack_schema_number_constraints"
+    ],
+    "exclusiveMinimum": [
+      "ack_schema_integer_constraints",
+      "ack_schema_number_constraints"
+    ],
+    "extension": [
+      "ack_schema_generic_transform",
+      "schema_model_anyof_common_fields_explicit_null",
+      "schema_model_nullable_default_extensions",
+      "schema_model_string_common_options"
+    ],
+    "format": [
+      "ack_schema_array_constraints",
+      "ack_schema_date_transform_constraints",
+      "ack_schema_datetime_transform",
+      "ack_schema_uri_transform",
+      "schema_model_integer_const_format",
+      "schema_model_number_const_format",
+      "schema_model_string_common_options"
+    ],
+    "integer": [
+      "ack_schema_duration_transform_constraints",
+      "ack_schema_integer_constraints",
+      "schema_model_integer_const_format"
+    ],
+    "items": [
+      "ack_schema_array_constraints"
+    ],
+    "maxItems": [
+      "ack_schema_array_constraints",
+      "schema_model_array_without_item_schema"
+    ],
+    "maxLength": [
+      "ack_schema_string_constraints",
+      "schema_model_string_common_options"
+    ],
+    "maxProperties": [
+      "schema_model_object_schema_additional_properties"
+    ],
+    "maximum": [
+      "ack_schema_duration_transform_constraints",
+      "ack_schema_integer_constraints",
+      "ack_schema_number_constraints"
+    ],
+    "minItems": [
+      "ack_schema_array_constraints",
+      "schema_model_array_without_item_schema"
+    ],
+    "minLength": [
+      "ack_schema_generic_transform",
+      "ack_schema_string_constraints",
+      "schema_model_string_common_options"
+    ],
+    "minProperties": [
+      "schema_model_object_schema_additional_properties"
+    ],
+    "minimum": [
+      "ack_schema_duration_transform_constraints",
+      "ack_schema_integer_constraints",
+      "ack_schema_number_constraints"
+    ],
+    "multipleOf": [
+      "ack_schema_integer_constraints",
+      "ack_schema_number_constraints"
+    ],
+    "null": [
+      "schema_model_anyof_common_fields_explicit_null",
+      "schema_model_null",
+      "schema_model_oneof_nullable_composition"
+    ],
+    "nullable": [
+      "ack_schema_anyof_nullable_composition",
+      "ack_schema_nullable_boolean_default",
+      "schema_model_anyof_common_fields_explicit_null",
+      "schema_model_nullable_default_extensions",
+      "schema_model_oneof_nullable_composition"
+    ],
+    "number": [
+      "ack_schema_number_constraints",
+      "schema_model_number_const_format"
+    ],
+    "object": [
+      "ack_schema_object_passthrough",
+      "ack_schema_object_properties_requiredness",
+      "schema_model_object_schema_additional_properties"
+    ],
+    "oneOf": [
+      "schema_model_oneof_discriminator",
+      "schema_model_oneof_nullable_composition"
+    ],
+    "optional": [
+      "ack_schema_object_passthrough",
+      "ack_schema_object_properties_requiredness"
+    ],
+    "pattern": [
+      "ack_schema_array_constraints",
+      "ack_schema_string_constraints",
+      "schema_model_string_common_options"
+    ],
+    "properties": [
+      "ack_schema_object_properties_requiredness",
+      "schema_model_object_schema_additional_properties"
+    ],
+    "required": [
+      "ack_schema_object_properties_requiredness",
+      "schema_model_object_schema_additional_properties"
+    ],
+    "string": [
+      "ack_schema_enum_values_default",
+      "ack_schema_string_constraints",
+      "ack_schema_string_literal",
+      "schema_model_nullable_default_extensions",
+      "schema_model_string_common_options"
+    ],
+    "title": [
+      "schema_model_null",
+      "schema_model_string_common_options"
+    ],
+    "transform": [
+      "ack_schema_date_transform_constraints",
+      "ack_schema_datetime_transform",
+      "ack_schema_duration_transform_constraints",
+      "ack_schema_generic_transform",
+      "ack_schema_uri_transform"
+    ],
+    "unionOwnedDiscriminator": [
+      "ack_schema_discriminated_union"
+    ],
+    "uniqueItems": [
+      "ack_schema_array_constraints"
+    ]
+  },
+  "fixtures": [
+    {
+      "id": "ack_schema_string_constraints",
+      "name": "string constraints",
+      "source": "ack_schema",
+      "features": [
+        "string",
+        "minLength",
+        "maxLength",
+        "pattern"
+      ],
+      "fixture": "ack_schema_string_constraints.json"
+    },
+    {
+      "id": "ack_schema_string_literal",
+      "name": "string literal",
+      "source": "ack_schema",
+      "features": [
+        "string",
+        "const"
+      ],
+      "fixture": "ack_schema_string_literal.json"
+    },
+    {
+      "id": "ack_schema_enum_values_default",
+      "name": "Dart enum values and enum default",
+      "source": "ack_schema",
+      "features": [
+        "string",
+        "enum",
+        "default"
+      ],
+      "fixture": "ack_schema_enum_values_default.json"
+    },
+    {
+      "id": "ack_schema_integer_constraints",
+      "name": "integer constraints",
+      "source": "ack_schema",
+      "features": [
+        "integer",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+        "default"
+      ],
+      "fixture": "ack_schema_integer_constraints.json"
+    },
+    {
+      "id": "ack_schema_number_constraints",
+      "name": "number constraints",
+      "source": "ack_schema",
+      "features": [
+        "number",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+        "default"
+      ],
+      "fixture": "ack_schema_number_constraints.json"
+    },
+    {
+      "id": "ack_schema_nullable_boolean_default",
+      "name": "nullable boolean default",
+      "source": "ack_schema",
+      "features": [
+        "boolean",
+        "nullable",
+        "anyOf",
+        "default"
+      ],
+      "fixture": "ack_schema_nullable_boolean_default.json"
+    },
+    {
+      "id": "ack_schema_array_constraints",
+      "name": "array constraints",
+      "source": "ack_schema",
+      "features": [
+        "array",
+        "items",
+        "format",
+        "pattern",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "default"
+      ],
+      "fixture": "ack_schema_array_constraints.json"
+    },
+    {
+      "id": "ack_schema_object_properties_requiredness",
+      "name": "object properties and requiredness",
+      "source": "ack_schema",
+      "features": [
+        "object",
+        "properties",
+        "required",
+        "optional",
+        "additionalProperties"
+      ],
+      "fixture": "ack_schema_object_properties_requiredness.json"
+    },
+    {
+      "id": "ack_schema_object_passthrough",
+      "name": "object passthrough",
+      "source": "ack_schema",
+      "features": [
+        "object",
+        "additionalProperties",
+        "anyOf",
+        "optional"
+      ],
+      "fixture": "ack_schema_object_passthrough.json"
+    },
+    {
+      "id": "ack_schema_anyof_nullable_composition",
+      "name": "anyOf nullable composition",
+      "source": "ack_schema",
+      "features": [
+        "anyOf",
+        "nullable"
+      ],
+      "fixture": "ack_schema_anyof_nullable_composition.json"
+    },
+    {
+      "id": "ack_schema_generic_transform",
+      "name": "generic transform",
+      "source": "ack_schema",
+      "features": [
+        "transform",
+        "extension",
+        "minLength"
+      ],
+      "fixture": "ack_schema_generic_transform.json"
+    },
+    {
+      "id": "ack_schema_any_json_compatible_branches",
+      "name": "any JSON-compatible branches",
+      "source": "ack_schema",
+      "features": [
+        "any",
+        "anyOf"
+      ],
+      "fixture": "ack_schema_any_json_compatible_branches.json"
+    },
+    {
+      "id": "ack_schema_date_transform_constraints",
+      "name": "date transform constraints",
+      "source": "ack_schema",
+      "features": [
+        "transform",
+        "format"
+      ],
+      "fixture": "ack_schema_date_transform_constraints.json"
+    },
+    {
+      "id": "ack_schema_datetime_transform",
+      "name": "datetime transform",
+      "source": "ack_schema",
+      "features": [
+        "transform",
+        "format"
+      ],
+      "fixture": "ack_schema_datetime_transform.json"
+    },
+    {
+      "id": "ack_schema_uri_transform",
+      "name": "uri transform",
+      "source": "ack_schema",
+      "features": [
+        "transform",
+        "format"
+      ],
+      "fixture": "ack_schema_uri_transform.json"
+    },
+    {
+      "id": "ack_schema_duration_transform_constraints",
+      "name": "duration transform constraints",
+      "source": "ack_schema",
+      "features": [
+        "transform",
+        "integer",
+        "minimum",
+        "maximum"
+      ],
+      "fixture": "ack_schema_duration_transform_constraints.json"
+    },
+    {
+      "id": "ack_schema_discriminated_union",
+      "name": "discriminated union",
+      "source": "ack_schema",
+      "features": [
+        "anyOf",
+        "const",
+        "unionOwnedDiscriminator"
+      ],
+      "fixture": "ack_schema_discriminated_union.json"
+    },
+    {
+      "id": "schema_model_string_common_options",
+      "name": "string model common and string-only options",
+      "source": "schema_model",
+      "features": [
+        "string",
+        "title",
+        "description",
+        "format",
+        "const",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "extension"
+      ],
+      "fixture": "schema_model_string_common_options.json"
+    },
+    {
+      "id": "schema_model_integer_const_format",
+      "name": "integer model const and format",
+      "source": "schema_model",
+      "features": [
+        "integer",
+        "format",
+        "const"
+      ],
+      "fixture": "schema_model_integer_const_format.json"
+    },
+    {
+      "id": "schema_model_number_const_format",
+      "name": "number model const and format",
+      "source": "schema_model",
+      "features": [
+        "number",
+        "format",
+        "const"
+      ],
+      "fixture": "schema_model_number_const_format.json"
+    },
+    {
+      "id": "schema_model_boolean_const",
+      "name": "boolean model const",
+      "source": "schema_model",
+      "features": [
+        "boolean",
+        "const"
+      ],
+      "fixture": "schema_model_boolean_const.json"
+    },
+    {
+      "id": "schema_model_nullable_default_extensions",
+      "name": "nullable model default and extensions",
+      "source": "schema_model",
+      "features": [
+        "string",
+        "nullable",
+        "anyOf",
+        "const",
+        "default",
+        "extension"
+      ],
+      "fixture": "schema_model_nullable_default_extensions.json"
+    },
+    {
+      "id": "schema_model_array_without_item_schema",
+      "name": "array model without item schema",
+      "source": "schema_model",
+      "features": [
+        "array",
+        "minItems",
+        "maxItems"
+      ],
+      "fixture": "schema_model_array_without_item_schema.json"
+    },
+    {
+      "id": "schema_model_object_schema_additional_properties",
+      "name": "object model property count and schema additional properties",
+      "source": "schema_model",
+      "features": [
+        "object",
+        "properties",
+        "required",
+        "minProperties",
+        "maxProperties",
+        "additionalPropertiesSchema"
+      ],
+      "fixture": "schema_model_object_schema_additional_properties.json"
+    },
+    {
+      "id": "schema_model_null",
+      "name": "null model",
+      "source": "schema_model",
+      "features": [
+        "null",
+        "title"
+      ],
+      "fixture": "schema_model_null.json"
+    },
+    {
+      "id": "schema_model_anyof_common_fields_explicit_null",
+      "name": "anyOf model common fields and explicit null branch",
+      "source": "schema_model",
+      "features": [
+        "anyOf",
+        "nullable",
+        "default",
+        "extension",
+        "null"
+      ],
+      "fixture": "schema_model_anyof_common_fields_explicit_null.json"
+    },
+    {
+      "id": "schema_model_oneof_nullable_composition",
+      "name": "oneOf model nullable composition",
+      "source": "schema_model",
+      "features": [
+        "oneOf",
+        "nullable",
+        "const",
+        "null"
+      ],
+      "fixture": "schema_model_oneof_nullable_composition.json"
+    },
+    {
+      "id": "schema_model_oneof_discriminator",
+      "name": "oneOf model discriminator metadata",
+      "source": "schema_model",
+      "features": [
+        "oneOf",
+        "const"
+      ],
+      "fixture": "schema_model_oneof_discriminator.json"
+    },
+    {
+      "id": "schema_model_allof",
+      "name": "allOf model",
+      "source": "schema_model",
+      "features": [
+        "allOf"
+      ],
+      "fixture": "schema_model_allof.json"
+    }
+  ]
+}

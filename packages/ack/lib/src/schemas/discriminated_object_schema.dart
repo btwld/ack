@@ -1,15 +1,5 @@
 part of 'schema.dart';
 
-Object? _serializeJsonSchemaDefaultOrNull(Object? defaultValue) {
-  if (defaultValue == null) return null;
-
-  try {
-    return jsonDecode(jsonEncode(defaultValue));
-  } catch (_) {
-    return null;
-  }
-}
-
 /// Schema for validating a discriminated union of objects.
 ///
 /// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
@@ -243,45 +233,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
-  }
-
-  @override
-  Map<String, Object?> toJsonSchema() {
-    final anyOfClauses = <Map<String, Object?>>[];
-    final serializedDefault = _serializeJsonSchemaDefaultOrNull(defaultValue);
-    schemas.forEach((discriminatorValue, _) {
-      final subSchemaJson = effectiveBranch(discriminatorValue).toJsonSchema();
-      // Build required array with discriminator first
-      final existingRequired =
-          (subSchemaJson['required'] as List?)?.cast<String>() ?? <String>[];
-      final requiredFields = <String>[
-        discriminatorKey,
-        ...existingRequired.where((field) => field != discriminatorKey),
-      ];
-      subSchemaJson['required'] = requiredFields;
-      anyOfClauses.add(subSchemaJson);
-    });
-
-    final baseSchema = {
-      'anyOf': anyOfClauses,
-      if (!isNullable && description != null) 'description': description,
-      if (!isNullable && serializedDefault != null)
-        'default': serializedDefault,
-    };
-
-    // Wrap in anyOf with null if nullable
-    if (isNullable) {
-      return {
-        if (description != null) 'description': description,
-        if (serializedDefault != null) 'default': serializedDefault,
-        'anyOf': [
-          mergeConstraintSchemas(baseSchema),
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    return mergeConstraintSchemas(baseSchema);
   }
 
   @override
