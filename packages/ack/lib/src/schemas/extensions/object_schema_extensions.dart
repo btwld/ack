@@ -1,3 +1,4 @@
+import '../../common_types.dart';
 import '../schema.dart';
 import 'ack_schema_extensions.dart';
 
@@ -5,34 +6,23 @@ import 'ack_schema_extensions.dart';
 extension ObjectSchemaExtensions on ObjectSchema {
   /// Makes the object schema strict, disallowing any properties not
   /// explicitly defined in the `properties` map.
-  ///
-  /// This is a convenience method for `copyWith(additionalProperties: false)`.
   ObjectSchema strict() {
     return copyWith(additionalProperties: false);
   }
 
   /// Allows the object schema to have properties that are not
   /// explicitly defined in the `properties` map.
-  ///
-  /// This is a convenience method for `copyWith(additionalProperties: true)`.
   ObjectSchema passthrough() {
     return copyWith(additionalProperties: true);
   }
 
   /// Merges this schema with another [ObjectSchema].
-  ///
-  /// The properties of the [other] schema will overwrite properties of this
-  /// schema if they share the same key.
   ObjectSchema merge(ObjectSchema other) {
-    // Combine properties, with the 'other' schema's properties taking precedence.
     final newProperties = {...properties, ...other.properties};
-
     return copyWith(properties: newProperties);
   }
 
   /// Makes all properties on the schema optional.
-  ///
-  /// This wraps each property schema with `.optional()`.
   ObjectSchema partial() {
     final optionalProperties = properties.map(
       (key, schema) => MapEntry(key, schema.optional()),
@@ -42,17 +32,12 @@ extension ObjectSchemaExtensions on ObjectSchema {
   }
 
   /// Extends this schema with additional or overridden properties.
-  ///
-  /// Properties in [newProperties] will override existing properties with the same key.
-  /// Other schema settings can be overridden using the optional parameters.
   ObjectSchema extend(
-    Map<String, AckSchema> newProperties, {
+    Map<String, AnyAckSchema> newProperties, {
     bool? additionalProperties,
     bool? isNullable,
     String? description,
-    Map<String, Object?>? defaultValue,
   }) {
-    // Merge properties, with new properties taking precedence
     final mergedProperties = {...properties, ...newProperties};
 
     return copyWith(
@@ -60,17 +45,12 @@ extension ObjectSchemaExtensions on ObjectSchema {
       additionalProperties: additionalProperties,
       isNullable: isNullable,
       description: description,
-      defaultValue: defaultValue,
     );
   }
 
   /// Creates a new schema with a subset of the original's properties.
-  ///
-  /// Only the properties with keys included in [keysToPick] will be kept.
   ObjectSchema pick(List<String> keysToPick) {
     final pickSet = keysToPick.toSet();
-
-    // Filter the properties map to only include the picked keys.
     final newProperties = Map.fromEntries(
       properties.entries.where((entry) => pickSet.contains(entry.key)),
     );
@@ -79,16 +59,44 @@ extension ObjectSchemaExtensions on ObjectSchema {
   }
 
   /// Creates a new schema with a subset of the original's properties removed.
-  ///
-  /// The properties with keys included in [keysToOmit] will be removed.
   ObjectSchema omit(List<String> keysToOmit) {
     final omitSet = keysToOmit.toSet();
-
-    // Filter the properties map to exclude the omitted keys.
     final newProperties = Map.fromEntries(
       properties.entries.where((entry) => !omitSet.contains(entry.key)),
     );
 
     return copyWith(properties: newProperties);
+  }
+}
+
+/// Extension that turns an [ObjectSchema] into a bidirectional codec mapping
+/// the underlying [JsonMap] to a typed Dart model [Runtime].
+extension ObjectSchemaModelExtension on ObjectSchema {
+  /// Creates a [CodecSchema] that decodes a parsed [JsonMap] into [Runtime]
+  /// and encodes [Runtime] back to [JsonMap].
+  ///
+  /// When [omitNullOptionals] is true, the encoded map drops `null` entries
+  /// whose property schema is marked optional.
+  CodecSchema<JsonMap, Runtime> model<Runtime extends Object>({
+    required Runtime Function(JsonMap data) decode,
+    required JsonMap Function(Runtime value) encode,
+    AckSchema<dynamic, Runtime>? output,
+    bool omitNullOptionals = true,
+  }) {
+    final self = this;
+    return self.codec<Runtime>(
+      output: output ?? InstanceSchema<Runtime>(),
+      decode: decode,
+      encode: (value) {
+        final raw = encode(value);
+        if (!omitNullOptionals) return raw;
+        return {
+          for (final entry in raw.entries)
+            if (!(entry.value == null &&
+                (self.properties[entry.key]?.isOptional ?? false)))
+              entry.key: entry.value,
+        };
+      },
+    );
   }
 }

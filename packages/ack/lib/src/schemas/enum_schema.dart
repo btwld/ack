@@ -1,9 +1,10 @@
 part of 'schema.dart';
 
-/// Schema for validating enum values.
+/// Schema for validating enum values where the boundary is the enum's `.name`
+/// (a `String`) and the runtime is the typed enum value.
 @immutable
-final class EnumSchema<T extends Enum> extends AckSchema<T>
-    with FluentSchema<T, EnumSchema<T>> {
+final class EnumSchema<T extends Enum> extends AckSchema<String, T>
+    with FluentSchema<String, T, EnumSchema<T>> {
   final List<T> values;
 
   const EnumSchema({
@@ -11,7 +12,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -19,53 +19,34 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
   @override
   SchemaType get schemaType => SchemaType.enum_;
 
-  /// EnumSchema uses custom parsing logic that doesn't fit the standard
-  /// primitive type conversion patterns, so it overrides parseAndValidate directly.
   @override
   @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
+  SchemaResult<T> parseWithContext(Object? value, SchemaContext context) {
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    // Custom enum parsing logic
-    T? parsed;
+    if (value is! String) {
+      return SchemaResult.fail(
+        _buildTypeMismatch(
+          expectedType: SchemaType.string,
+          actualValue: value,
+          context: context,
+        ),
+      );
+    }
 
-    // Try exact enum match first
-    if (inputValue is T && values.contains(inputValue)) {
-      parsed = inputValue;
-    }
-    // Try to match by name if input is a string
-    else if (inputValue is String) {
-      try {
-        parsed = values.firstWhere((e) => e.name == inputValue);
-      } on StateError {
-        // Expected when no match found - continue to integer check
-      } catch (e, st) {
-        // Unexpected error indicates a serious problem
-        return SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Unexpected error matching enum value: ${e.toString()}',
-            context: context,
-            cause: e,
-            stackTrace: st,
-          ),
-        );
+    T? parsed;
+    for (final candidate in values) {
+      if (candidate.name == value) {
+        parsed = candidate;
+        break;
       }
-    }
-    // Try to match by index if input is an int
-    else if (inputValue is int &&
-        inputValue >= 0 &&
-        inputValue < values.length) {
-      parsed = values[inputValue];
     }
 
     if (parsed == null) {
-      // Build helpful error message with allowed values and suggestions
       final allowed = values.map((e) => e.name).toList(growable: false);
-      final inputStr = inputValue.toString();
-      final closest = findClosestStringMatch(inputStr, allowed);
-      final suggestion = closest != null && closest != inputStr
+      final closest = findClosestStringMatch(value, allowed);
+      final suggestion = closest != null && closest != value
           ? ' Did you mean "$closest"?'
           : '';
 
@@ -74,7 +55,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
         message:
             'Invalid enum value. Allowed: ${allowed.map((s) => '"$s"').join(', ')}.$suggestion',
         context: {
-          'received': inputValue,
+          'received': value,
           'allowedValues': allowed,
           if (closest != null) 'closestMatchSuggestion': closest,
         },
@@ -85,28 +66,68 @@ final class EnumSchema<T extends Enum> extends AckSchema<T>
       );
     }
 
-    // Use centralized constraints and refinements check
     return applyConstraintsAndRefinements(parsed, context);
   }
 
   @override
+  @protected
+  SchemaResult<T> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    if (value is! T) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Expected instance of $T, got ${value.runtimeType}',
+          context: context,
+        ),
+      );
+    }
+    if (!values.contains(value)) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Enum value $value is not part of the schema values.',
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<String> encodeWithContext(T value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+    return SchemaResult.ok(value.name);
+  }
+
+  @override
   EnumSchema<T> copyWith({
-    List<T>? values,
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
-    return EnumSchema(
-      values: values ?? this.values,
+    return EnumSchema<T>(
+      values: values,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
+    );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    final enumNames = values.map((e) => e.name).toList();
+
+    return buildJsonSchemaWithNullable(
+      typeSchema: {'type': 'string', 'enum': enumNames},
     );
   }
 

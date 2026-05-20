@@ -1,4 +1,7 @@
 library;
 
-/// Shared map type used by object schemas and parsed values.
-typedef MapValue = Map<String, Object?>;
+/// Canonical JSON map type used for object boundary/runtime values.
+typedef JsonMap = Map<String, Object?>;
+
+/// Backwards-compatible alias for [JsonMap].
+typedef MapValue = JsonMap;

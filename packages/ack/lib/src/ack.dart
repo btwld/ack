@@ -1,54 +1,58 @@
+import 'common_types.dart';
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
-import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
 /// The main entry point for creating schemas with the Ack validation library.
-///
-/// Provides a fluent API for creating various schema types.
 final class Ack {
-  /// Creates a string schema.
+  /// Creates a string schema. Boundary and runtime are both `String`.
   static StringSchema string() => const StringSchema();
 
   /// Creates a literal string schema that only accepts the exact [value].
-  /// Similar to Zod's `z.literal("value")`.
   static StringSchema literal(String value) =>
       string().withConstraint(StringLiteralConstraint(value));
 
-  /// Creates an integer schema.
+  /// Creates an integer schema. Boundary and runtime are both `int`.
   static IntegerSchema integer() => const IntegerSchema();
 
-  /// Creates a double schema.
+  /// Creates a double schema. Boundary and runtime are both `double`.
   static DoubleSchema double() => const DoubleSchema();
 
-  /// Creates a boolean schema.
+  /// Creates a number schema. Boundary and runtime are both `num`.
+  static NumberSchema number() => const NumberSchema();
+
+  /// Creates a boolean schema. Boundary and runtime are both `bool`.
   static BooleanSchema boolean() => const BooleanSchema();
 
   /// Creates an object schema with the given properties.
-  /// All properties are required by default unless wrapped with .optional().
   static ObjectSchema object(
-    Map<String, AckSchema> properties, {
+    Map<String, AnyAckSchema> properties, {
     bool additionalProperties = false,
   }) => ObjectSchema(properties, additionalProperties: additionalProperties);
 
   /// Creates a discriminated object schema for polymorphic validation.
   static DiscriminatedObjectSchema<T> discriminated<T extends Object>({
     required String discriminatorKey,
-    required Map<String, AckSchema<T>> schemas,
+    required Map<String, AckSchema<JsonMap, T>> schemas,
   }) => DiscriminatedObjectSchema<T>(
     discriminatorKey: discriminatorKey,
     schemas: schemas,
   );
 
-  /// Creates a list schema with the given item schema.
-  static ListSchema<T> list<T extends Object>(AckSchema<T> itemSchema) {
+  /// Creates a list schema with the given non-nullable item schema.
+  ///
+  /// `Ack.list(...)` models JSON arrays whose items are present values. Use
+  /// `Ack.any()` for mixed JSON values. Nullable list items are intentionally
+  /// rejected.
+  static ListSchema<B, R> list<B extends Object, R extends Object>(
+    AckSchema<B, R> itemSchema,
+  ) {
     if (itemSchema.isNullable) {
-      throw ArgumentError(
-        'Ack.list(...) does not support nullable item schemas yet.',
-      );
+      assert(_throwNullableListItemSchema(itemSchema));
+      throw _nullableListItemSchemaError(itemSchema);
     }
-    return ListSchema(itemSchema);
+    return ListSchema<B, R>(itemSchema);
   }
 
   /// Creates an enum schema for validating enum values.
@@ -60,83 +64,140 @@ final class Ack {
       string().withConstraint(PatternConstraint.enumString(values));
 
   /// Creates a schema that can be one of many types.
-  static AnyOfSchema anyOf(List<AckSchema> schemas) => AnyOfSchema(schemas);
+  static AnyOfSchema anyOf(List<AnyAckSchema> schemas) => AnyOfSchema(schemas);
 
-  /// Creates a schema that accepts any non-null value without type conversion or validation.
-  /// Useful for dynamic content or when you need maximum flexibility.
+  /// Creates a schema that accepts any non-null JSON-safe value.
+  ///
+  /// Accepted values are finite numbers, strings, booleans, string-keyed maps,
+  /// and lists recursively composed from those values. Mark the schema nullable
+  /// to accept `null`.
   static AnySchema any() => const AnySchema();
 
-  /// Creates a date schema that parses ISO 8601 date strings (YYYY-MM-DD) into DateTime objects.
-  ///
-  /// The schema validates the string format before transformation, ensuring only valid
-  /// date strings are parsed. You can add range constraints using [.min()] and [.max()].
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.date();
-  /// final result = schema.parse("2025-06-15"); // Returns DateTime(2025, 6, 15)
-  ///
-  /// // With range validation
-  /// final futureDate = Ack.date().min(DateTime.now());
-  /// final year2025 = Ack.date()
-  ///   .min(DateTime(2025, 1, 1))
-  ///   .max(DateTime(2025, 12, 31));
-  /// ```
-  static TransformedSchema<String, DateTime> date() {
-    return string()
-        .date() // Validates ISO 8601 date format (YYYY-MM-DD) first
-        .transform<DateTime>((s) => DateTime.parse(s));
+  /// Creates a schema for a specific Dart instance type [T], with [T] as
+  /// both boundary and runtime type.
+  static InstanceSchema<T> instance<T extends Object>() => InstanceSchema<T>();
+
+  /// Creates a universal codec from an [input] schema, with a [decode]
+  /// function and an [encode] function. The optional [output] schema
+  /// applies runtime-side invariants.
+  static CodecSchema<Boundary, Runtime> codec<
+    Boundary extends Object,
+    InputRuntime extends Object,
+    Runtime extends Object
+  >({
+    required AckSchema<Boundary, InputRuntime> input,
+    required Runtime Function(InputRuntime value) decode,
+    required InputRuntime Function(Runtime value) encode,
+    AckSchema<dynamic, Runtime>? output,
+  }) {
+    return CodecSchema.create<Boundary, InputRuntime, Runtime>(
+      inputSchema: input,
+      outputSchema: output ?? InstanceSchema<Runtime>(),
+      decoder: decode,
+      encoder: encode,
+      isOptional: input.isOptional,
+      isNullable: input.isNullable,
+    );
   }
 
-  /// Creates a datetime schema that parses ISO 8601 datetime strings into DateTime objects.
+  /// Bidirectional date codec: ISO 8601 `YYYY-MM-DD` strings ↔ local
+  /// midnight `DateTime` runtime values.
   ///
-  /// The schema validates the string format (including timezone) before transformation.
-  /// You can add range constraints using [.min()] and [.max()].
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.datetime();
-  /// final result = schema.parse("2025-06-15T10:30:00Z"); // Returns DateTime
-  ///
-  /// // With range validation
-  /// final appointmentSchema = Ack.datetime().min(DateTime.now());
-  /// ```
-  static TransformedSchema<String, DateTime> datetime() {
-    return string()
-        .datetime() // Validates ISO 8601 datetime format with timezone first
-        .transform<DateTime>((s) => DateTime.parse(s));
+  /// Runtime invariant: the encoded `DateTime` must be local midnight
+  /// (year/month/day only). Values with non-zero time-of-day fail
+  /// `safeEncode` and `validateRuntimeWithContext`.
+  static CodecSchema<String, DateTime> date() {
+    return CodecSchema.create<String, String, DateTime>(
+      inputSchema: string().date(),
+      outputSchema: InstanceSchema<DateTime>().refine(
+        _isLocalMidnightDate,
+        message: 'Expected a local DateTime at midnight (00:00:00.000).',
+      ),
+      decoder: DateTime.parse,
+      encoder: _encodeIsoDate,
+    );
   }
 
-  /// Creates a schema that parses URI strings into [Uri] objects.
+  /// Bidirectional datetime codec: ISO 8601 datetime strings ↔ UTC
+  /// `DateTime` runtime values.
   ///
-  /// The schema validates that the string is an absolute URI with a scheme
-  /// and host (e.g., `https://example.com`) before transformation. URIs
-  /// without an authority component (e.g., `mailto:` or `urn:`) are rejected.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.uri();
-  /// final result = schema.parse('https://example.com/path?x=1');
-  /// ```
-  static TransformedSchema<String, Uri> uri() {
-    return string()
-        .uri() // Validates URI format first
-        .transform<Uri>((s) => Uri.parse(s));
+  /// Runtime invariant: the encoded `DateTime` must be UTC. Local-time
+  /// values fail validation; convert with `.toUtc()` before encoding.
+  static CodecSchema<String, DateTime> datetime() {
+    return CodecSchema.create<String, String, DateTime>(
+      inputSchema: string().datetime(),
+      outputSchema: InstanceSchema<DateTime>().refine(
+        (value) => value.isUtc,
+        message: 'Expected a UTC DateTime.',
+      ),
+      decoder: DateTime.parse,
+      encoder: _encodeIsoDateTime,
+    );
   }
 
-  /// Creates a schema that parses millisecond integers into [Duration] objects.
+  /// Bidirectional URI codec.
   ///
-  /// You can add range constraints using [.min()] and [.max()].
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.duration();
-  /// final result = schema.parse(1500); // Returns Duration(milliseconds: 1500)
-  ///
-  /// // With range validation
-  /// final timeout = Ack.duration().min(Duration(minutes: 1)).max(Duration(minutes: 2));
-  /// ```
-  static TransformedSchema<int, Duration> duration() {
-    return integer().transform<Duration>((ms) => Duration(milliseconds: ms));
+  /// Runtime invariant: the `Uri` must have both a scheme and a host
+  /// (matching the parse-side predicate).
+  static CodecSchema<String, Uri> uri() {
+    return CodecSchema.create<String, String, Uri>(
+      inputSchema: string().uri(),
+      outputSchema: InstanceSchema<Uri>().refine(
+        (u) => u.hasScheme && u.host.isNotEmpty,
+        message: 'Expected an absolute URI with scheme and host.',
+      ),
+      decoder: Uri.parse,
+      encoder: (value) => value.toString(),
+    );
   }
+
+  /// Bidirectional duration codec: milliseconds ↔ `Duration`.
+  ///
+  /// Runtime invariant: the `Duration` must be a whole number of
+  /// milliseconds (sub-millisecond precision is rejected to avoid silent
+  /// truncation on encode).
+  static CodecSchema<int, Duration> duration() {
+    return CodecSchema.create<int, int, Duration>(
+      inputSchema: integer(),
+      outputSchema: InstanceSchema<Duration>().refine(
+        (value) =>
+            value.inMicroseconds % Duration.microsecondsPerMillisecond == 0,
+        message: 'Expected a whole-millisecond Duration.',
+      ),
+      decoder: (ms) => Duration(milliseconds: ms),
+      encoder: (value) => value.inMilliseconds,
+    );
+  }
+}
+
+bool _isLocalMidnightDate(DateTime value) {
+  if (value.isUtc) return false;
+  return value.hour == 0 &&
+      value.minute == 0 &&
+      value.second == 0 &&
+      value.millisecond == 0 &&
+      value.microsecond == 0;
+}
+
+String _encodeIsoDate(DateTime value) {
+  final y = value.year.toString().padLeft(4, '0');
+  final m = value.month.toString().padLeft(2, '0');
+  final d = value.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
+String _encodeIsoDateTime(DateTime value) {
+  return value.toIso8601String();
+}
+
+bool _throwNullableListItemSchema(AnyAckSchema itemSchema) {
+  throw _nullableListItemSchemaError(itemSchema);
+}
+
+ArgumentError _nullableListItemSchemaError(AnyAckSchema itemSchema) {
+  return ArgumentError.value(
+    itemSchema,
+    'itemSchema',
+    'Use non-nullable item schemas for Ack.list.',
+  );
 }

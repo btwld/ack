@@ -1,20 +1,12 @@
 part of 'schema.dart';
 
-/// Base schema for numeric types (integer and double).
-///
-/// Provides common numeric validation constraints. Use [IntegerSchema]
-/// or [DoubleSchema] for type-specific validation.
+/// Base schema for numeric types (integer, double, num).
 @immutable
-sealed class NumSchema<T extends num> extends AckSchema<T> {
-  @override
-  final bool strictPrimitiveParsing;
-
+sealed class NumSchema<T extends num> extends AckSchema<T, T> {
   const NumSchema({
-    this.strictPrimitiveParsing = false,
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -23,23 +15,13 @@ sealed class NumSchema<T extends num> extends AckSchema<T> {
 // --- IntegerSchema ---
 
 /// Schema for validating integer values.
-///
-/// Supports validation for whole numbers with constraints like min/max,
-/// positive/negative, and multipleOf.
-///
-/// Example:
-/// ```dart
-/// final ageSchema = Ack.integer().min(0).max(150);
-/// ```
 @immutable
 final class IntegerSchema extends NumSchema<int>
-    with FluentSchema<int, IntegerSchema> {
+    with FluentSchema<int, int, IntegerSchema> {
   const IntegerSchema({
-    super.strictPrimitiveParsing,
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -47,64 +29,79 @@ final class IntegerSchema extends NumSchema<int>
   @override
   SchemaType get schemaType => SchemaType.integer;
 
-  /// Creates a new [IntegerSchema] that enforces strict parsing.
-  IntegerSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
+  @override
+  @protected
+  SchemaResult<int> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<int> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
+    if (value is! int) {
+      return SchemaResult.fail(
+        _buildTypeMismatch(
+          expectedType: schemaType,
+          actualValue: value,
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<int> encodeWithContext(int value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   IntegerSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    int? defaultValue,
     List<Constraint<int>>? constraints,
     List<Refinement<int>>? refinements,
-    bool? strictPrimitiveParsing,
   }) {
     return IntegerSchema(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
+
+  @override
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'integer'});
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! IntegerSchema) return false;
-    return baseFieldsEqual(other) &&
-        strictPrimitiveParsing == other.strictPrimitiveParsing;
+    return baseFieldsEqual(other);
   }
 
   @override
-  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
+  int get hashCode => baseFieldsHashCode;
 }
 
 // --- DoubleSchema ---
 
-/// Schema for validating double/floating-point values.
-///
-/// Supports validation for decimal numbers with constraints like min/max,
-/// finite checks, and precision requirements.
-///
-/// Example:
-/// ```dart
-/// final priceSchema = Ack.double().min(0.0).finite();
-/// ```
+/// Schema for validating double values.
 @immutable
 final class DoubleSchema extends NumSchema<double>
-    with FluentSchema<double, DoubleSchema> {
+    with FluentSchema<double, double, DoubleSchema> {
   const DoubleSchema({
-    super.strictPrimitiveParsing,
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -112,40 +109,144 @@ final class DoubleSchema extends NumSchema<double>
   @override
   SchemaType get schemaType => SchemaType.number;
 
-  /// Creates a new [DoubleSchema] that enforces strict parsing.
-  DoubleSchema strictParsing({bool value = true}) =>
-      copyWith(strictPrimitiveParsing: value);
+  @override
+  @protected
+  SchemaResult<double> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<double> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
+    if (value is! double) {
+      return SchemaResult.fail(
+        _buildTypeMismatch(
+          expectedType: schemaType,
+          actualValue: value,
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<double> encodeWithContext(double value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
 
   @override
   DoubleSchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    double? defaultValue,
     List<Constraint<double>>? constraints,
     List<Refinement<double>>? refinements,
-    bool? strictPrimitiveParsing,
   }) {
     return DoubleSchema(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
-      strictPrimitiveParsing:
-          strictPrimitiveParsing ?? this.strictPrimitiveParsing,
     );
   }
+
+  @override
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'number'});
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DoubleSchema) return false;
-    return baseFieldsEqual(other) &&
-        strictPrimitiveParsing == other.strictPrimitiveParsing;
+    return baseFieldsEqual(other);
   }
 
   @override
-  int get hashCode => Object.hash(baseFieldsHashCode, strictPrimitiveParsing);
+  int get hashCode => baseFieldsHashCode;
+}
+
+// --- NumberSchema (num boundary/runtime) ---
+
+/// Schema for validating any [num] value.
+@immutable
+final class NumberSchema extends NumSchema<num>
+    with FluentSchema<num, num, NumberSchema> {
+  const NumberSchema({
+    super.isNullable,
+    super.isOptional,
+    super.description,
+    super.constraints,
+    super.refinements,
+  });
+
+  @override
+  SchemaType get schemaType => SchemaType.number;
+
+  @override
+  @protected
+  SchemaResult<num> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
+
+  @override
+  @protected
+  SchemaResult<num> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    if (value is! num) {
+      return SchemaResult.fail(
+        _buildTypeMismatch(
+          expectedType: schemaType,
+          actualValue: value,
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<num> encodeWithContext(num value, SchemaContext context) =>
+      encodeAsBoundary(value, context);
+
+  @override
+  NumberSchema copyWith({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<num>>? constraints,
+    List<Refinement<num>>? refinements,
+  }) {
+    return NumberSchema(
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
+    );
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() =>
+      buildJsonSchemaWithNullable(typeSchema: {'type': 'number'});
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! NumberSchema) return false;
+    return baseFieldsEqual(other);
+  }
+
+  @override
+  int get hashCode => baseFieldsHashCode;
 }

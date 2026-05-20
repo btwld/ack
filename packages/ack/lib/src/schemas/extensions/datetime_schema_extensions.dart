@@ -1,63 +1,66 @@
+import '../../constraints/constraint.dart';
 import '../../constraints/datetime_constraint.dart';
 import '../schema.dart';
 
-/// Extensions for `TransformedSchema<String, DateTime>` to add date range validation.
-///
-/// These extensions work with schemas created by [Ack.date()] or [Ack.datetime()],
-/// which parse ISO 8601 date/datetime strings into DateTime objects.
-///
-/// Example:
-/// ```dart
-/// // Age validation (18+)
-/// final eighteenYearsAgo = DateTime.now().subtract(Duration(days: 365 * 18));
-/// final birthdateSchema = Ack.date().max(eighteenYearsAgo);
-///
-/// // Date range validation
-/// final eventDateSchema = Ack.date()
-///   .min(DateTime(2025, 1, 1))
-///   .max(DateTime(2025, 12, 31));
-/// ```
-extension DateTimeSchemaExtensions on TransformedSchema<String, DateTime> {
+/// Extensions for `CodecSchema<String, DateTime>` to add date range
+/// validation.
+extension DateTimeSchemaExtensions on CodecSchema<String, DateTime> {
   /// Constrains the date to be on or after [minDate] (inclusive).
-  ///
-  /// The constraint is applied to the transformed DateTime value, after the
-  /// string has been validated and parsed.
-  ///
-  /// Example:
-  /// ```dart
-  /// final schema = Ack.date().min(DateTime(2000, 1, 1));
-  ///
-  /// schema.parse("2005-06-15"); // ✓ Valid - after min
-  /// schema.parse("2000-01-01"); // ✓ Valid - exactly at min (inclusive)
-  /// schema.parse("1999-12-31"); // ✗ Fails - before min
-  /// ```
-  TransformedSchema<String, DateTime> min(DateTime minDate) {
-    return copyWith(
-      constraints: [...constraints, DateTimeConstraint.min(minDate)],
-    );
+  CodecSchema<String, DateTime> min(DateTime minDate) {
+    final format = _dateTimeConstraintFormat(this);
+    _validateDateTimeReference(minDate, format);
+    return _addConstraint(DateTimeConstraint.min(minDate, format: format));
   }
 
   /// Constrains the date to be on or before [maxDate] (inclusive).
-  ///
-  /// The constraint is applied to the transformed DateTime value, after the
-  /// string has been validated and parsed.
-  ///
-  /// Example - 18+ age requirement:
-  /// ```dart
-  /// final now = DateTime.now();
-  /// final eighteenYearsAgo = DateTime(
-  ///   now.year - 18,
-  ///   now.month,
-  ///   now.day,
-  /// );
-  /// final schema = Ack.date().max(eighteenYearsAgo);
-  ///
-  /// schema.parse("2000-01-01"); // ✓ Valid if more than 18 years ago
-  /// schema.parse("2020-01-01"); // ✗ Fails if less than 18 years ago
-  /// ```
-  TransformedSchema<String, DateTime> max(DateTime maxDate) {
-    return copyWith(
-      constraints: [...constraints, DateTimeConstraint.max(maxDate)],
-    );
+  CodecSchema<String, DateTime> max(DateTime maxDate) {
+    final format = _dateTimeConstraintFormat(this);
+    _validateDateTimeReference(maxDate, format);
+    return _addConstraint(DateTimeConstraint.max(maxDate, format: format));
+  }
+
+  CodecSchema<String, DateTime> _addConstraint(
+    Constraint<DateTime> constraint,
+  ) {
+    return withRuntimeConfig(constraints: [...constraints, constraint]);
+  }
+}
+
+DateTimeConstraintFormat _dateTimeConstraintFormat(
+  CodecSchema<String, DateTime> schema,
+) {
+  return switch (schema.inputSchema.toJsonSchema()['format']) {
+    'date' => DateTimeConstraintFormat.date,
+    'date-time' => DateTimeConstraintFormat.dateTime,
+    _ => DateTimeConstraintFormat.dateTime,
+  };
+}
+
+void _validateDateTimeReference(
+  DateTime reference,
+  DateTimeConstraintFormat format,
+) {
+  switch (format) {
+    case DateTimeConstraintFormat.date:
+      if (reference.isUtc ||
+          reference.hour != 0 ||
+          reference.minute != 0 ||
+          reference.second != 0 ||
+          reference.millisecond != 0 ||
+          reference.microsecond != 0) {
+        throw ArgumentError.value(
+          reference,
+          'reference',
+          'Ack.date() constraints require a local DateTime at midnight.',
+        );
+      }
+    case DateTimeConstraintFormat.dateTime:
+      if (!reference.isUtc) {
+        throw ArgumentError.value(
+          reference,
+          'reference',
+          'Ack.datetime() constraints require a UTC DateTime.',
+        );
+      }
   }
 }
