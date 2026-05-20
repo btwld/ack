@@ -164,10 +164,10 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`nullable()`](../core-concepts/validation.mdx#nullable) | `anyOf: [<schema>, {type: null}]` | Any schema |
 | `withDefault(v)` | `default: v` | JSON/export-safe defaults only in `AckSchemaModel`; unsupported defaults are omitted with a warning |
 | `describe(d)` | `description: d` | Any schema |
-| [`Ack.integer`](../core-concepts/schemas.mdx#number) | `type: integer` | Type |
-| [`Ack.double`](../core-concepts/schemas.mdx#number) | `type: number` | Type |
-| [`Ack.string`](../core-concepts/schemas.mdx#string) | `type: string` | Type |
-| [`Ack.boolean`](../core-concepts/schemas.mdx#boolean) | `type: boolean` | Type |
+| [`Ack.integer()`](../core-concepts/schemas.mdx#number) | `type: integer` | Type |
+| [`Ack.double()`](../core-concepts/schemas.mdx#number) | `type: number` | Type |
+| [`Ack.string()`](../core-concepts/schemas.mdx#string) | `type: string` | Type |
+| [`Ack.boolean()`](../core-concepts/schemas.mdx#boolean) | `type: boolean` | Type |
 | [`Ack.list(...)`](../core-concepts/schemas.mdx#list) | `type: array`, `items: {...}` | Type |
 | [`Ack.object(...)`](../core-concepts/schemas.mdx#object) | `type: object`, `properties: {...}`, `required: [...]` | Type |
 
@@ -309,11 +309,9 @@ final shapeSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {
     'circle': Ack.object({
-      'type': Ack.literal('circle'),
       'radius': Ack.double().positive(),
     }),
     'rectangle': Ack.object({
-      'type': Ack.literal('rectangle'),
       'width': Ack.double().positive(),
       'height': Ack.double().positive(),
     }),

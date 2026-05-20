@@ -1,7 +1,7 @@
 /// Firebase AI (Gemini) schema converter for ACK validation library.
 ///
 /// Converts ACK validation schemas to Firebase AI's map-based JSON Schema
-/// format for structured output generation with Gemini 2.5+ models.
+/// format for models that support `responseJsonSchema` structured output.
 library;
 
 import 'package:ack/ack.dart';

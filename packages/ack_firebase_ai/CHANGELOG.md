@@ -104,36 +104,7 @@
 
 ## [1.0.0-beta.1] - 2025-01-16
 
-### Added
-- Initial release of ack_firebase_ai package
-- Extension method for converting ACK schemas
-- Support for all basic schema types (string, integer, double, boolean, object, array)
-- Support for enum schemas via `Ack.enumString()`
-- Constraint mapping (minLength, maxLength, min, max, format)
-- Nullable and optional field support
-- Property ordering for Firebase AI compatibility
-- Comprehensive test suite with 45+ tests
-- Semantic validation tests ensuring behavioral equivalence
-- Full documentation and examples
-
-### Supported
-- String schemas with constraints (min/max length, format)
-- Numeric schemas with constraints (min/max, exclusive bounds)
-- Boolean schemas
-- Object schemas with nested properties
-- Array schemas with item constraints
-- Enum schemas
-- Nullable fields
-- Optional fields
-- Nested structures
-
-### Limitations
-- Custom refinements (`.refine()`) are not converted
-- Regex patterns (`.matches()`) are not fully supported
-- Transformed schemas (`.transform()`) throw `UnsupportedError` *(Note: fully supported as of 1.0.0-beta.3)*
-- Default values are not sent to Firebase AI
-- AnyOf schemas use first schema only
-- Discriminated unions have limited support
+* See [release notes](https://github.com/btwld/ack/releases/tag/ack_firebase_ai-v1.0.0-beta.1) for details.
 
 [1.0.0-beta.5]: https://github.com/btwld/ack/releases/tag/ack_firebase_ai-v1.0.0-beta.5
 [1.0.0-beta.1]: https://github.com/btwld/ack/releases/tag/ack_firebase_ai-v1.0.0-beta.1

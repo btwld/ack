@@ -244,35 +244,4 @@ program
     }
   });
 
-// Default command for backward compatibility
-if (
-  process.argv.length > 2 &&
-  ![
-    "validate-schema",
-    "validate-batch",
-    "--help",
-    "-h",
-    "--version",
-    "-V",
-  ].includes(process.argv[2])
-) {
-  // Legacy mode: node jsonschema-validator.js schema.json [output.json]
-  const [, , schemaPath, outputPath] = process.argv;
-
-  if (!schemaPath) {
-    console.error(
-      "❌ Usage: node jsonschema-validator.js <schema.json> [output.json]"
-    );
-    process.exit(1);
-  }
-
-  try {
-    const result = runSchemaValidation(schemaPath, outputPath);
-    process.exit(result.result.valid ? 0 : 1);
-  } catch (error) {
-    console.error("❌ Error:", error.message);
-    process.exit(1);
-  }
-} else {
-  program.parse();
-}
+program.parse();

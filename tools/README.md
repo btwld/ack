@@ -43,14 +43,6 @@ Run multiple schema validation tests from a configuration file:
 node jsonschema-validator.js validate-batch --input batch-config.json --output results.json
 ```
 
-#### Legacy Mode
-
-For backward compatibility:
-
-```bash
-node jsonschema-validator.js schema.json [output.json]
-```
-
 ### Test Fixtures
 
 The `test-fixtures/` directory contains:

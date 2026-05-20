@@ -22,7 +22,8 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained
   to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
-- `Ack.any()`: Creates an `AnySchema` that accepts any value.
+- `Ack.any()`: Creates an `AnySchema` that accepts any non-null value. Chain
+  `.nullable()` to allow `null`.
 - `Ack.discriminated<T extends Object>(...)`: Creates a discriminated union
   schema. Branches may be plain `ObjectSchema` or transformed schemas whose
   base is an `ObjectSchema`. The union owns the discriminator: branches normally
@@ -294,10 +295,10 @@ Canonical export model for Ack schemas.
 
 ### `AnySchema`
 
-Schema that accepts any value without validation.
+Schema that accepts any non-null value without validation.
 
 - Created using `Ack.any()`
-- Useful for gradual migration or maximum flexibility
+- Useful for dynamic payloads or pass-through metadata
 
 ### `TransformedSchema<T, R>`
 

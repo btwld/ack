@@ -2,9 +2,7 @@
 
 ### Breaking Changes
 
-* Remove legacy JSON Schema DTO APIs: `JsonSchema`, `JsonSchemaType`,
-  `WellKnownFormat`, `toJsonSchemaModel`, and the old
-  `ack_to_json_schema_model` converter.
+* Remove the retired JSON Schema DTO converter APIs.
 * Replace the interim JSON Schema model kind API with sealed
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
