@@ -264,8 +264,8 @@ void main() {
         final error = result.getError() as SchemaConstraintsError;
         final context = error.constraints.first.context;
         expect(context?['comparisonType'], 'min');
-        expect(context?['reference'], contains('2025-01-01'));
-        expect(context?['value'], contains('2024-12-31'));
+        expect(context?['reference'], '2025-01-01');
+        expect(context?['value'], '2024-12-31');
       });
 
       test('error message for max constraint is clear', () {
@@ -392,15 +392,16 @@ void main() {
         },
       );
 
-      test('DateTimeConstraint.toJsonSchema omits non-Draft-7 keys', () {
-        expect(
-          DateTimeConstraint.min(DateTime(2026, 1, 1)).toJsonSchema(),
-          isEmpty,
-        );
-        expect(
-          DateTimeConstraint.max(DateTime(2026, 12, 31)).toJsonSchema(),
-          isEmpty,
-        );
+      test('fluent date-time constraints omit non-Draft-7 keys', () {
+        final dateSchema = Ack.date().min(DateTime(2026, 1, 1)).toJsonSchema();
+        final dateTimeSchema = Ack.datetime()
+            .max(DateTime.utc(2026, 12, 31))
+            .toJsonSchema();
+
+        expect(dateSchema['format'], 'date');
+        expect(dateSchema, isNot(contains('formatMinimum')));
+        expect(dateTimeSchema['format'], 'date-time');
+        expect(dateTimeSchema, isNot(contains('formatMaximum')));
       });
     });
 

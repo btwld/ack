@@ -123,30 +123,30 @@ void main() {
     group('DateTimeConstraint', () {
       test('equal min are equal', () {
         final date = DateTime(2023, 1, 1);
-        final a = DateTimeConstraint.min(date);
-        final b = DateTimeConstraint.min(date);
+        final a = DateTimeConstraint.minDateTime(date);
+        final b = DateTimeConstraint.minDateTime(date);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
 
       test('equal max are equal', () {
         final date = DateTime(2023, 12, 31);
-        final a = DateTimeConstraint.max(date);
-        final b = DateTimeConstraint.max(date);
+        final a = DateTimeConstraint.maxDateTime(date);
+        final b = DateTimeConstraint.maxDateTime(date);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
 
       test('different dates are not equal', () {
-        final a = DateTimeConstraint.min(DateTime(2023, 1, 1));
-        final b = DateTimeConstraint.min(DateTime(2024, 1, 1));
+        final a = DateTimeConstraint.minDateTime(DateTime(2023, 1, 1));
+        final b = DateTimeConstraint.minDateTime(DateTime(2024, 1, 1));
         expect(a, isNot(equals(b)));
       });
 
       test('min and max are not equal', () {
         final date = DateTime(2023, 1, 1);
-        final a = DateTimeConstraint.min(date);
-        final b = DateTimeConstraint.max(date);
+        final a = DateTimeConstraint.minDateTime(date);
+        final b = DateTimeConstraint.maxDateTime(date);
         expect(a, isNot(equals(b)));
       });
     });

@@ -8,16 +8,12 @@ import '../schema.dart';
 extension DateTimeSchemaExtensions on CodecSchema<String, DateTime> {
   /// Constrains the date to be on or after [minDate] (inclusive).
   CodecSchema<String, DateTime> min(DateTime minDate) {
-    final format = _dateTimeConstraintFormat(this);
-    _validateDateTimeReference(minDate, format);
-    return _addConstraint(DateTimeConstraint.min(minDate, format: format));
+    return _addConstraint(_dateTimeConstraint(this, minDate, isMinimum: true));
   }
 
   /// Constrains the date to be on or before [maxDate] (inclusive).
   CodecSchema<String, DateTime> max(DateTime maxDate) {
-    final format = _dateTimeConstraintFormat(this);
-    _validateDateTimeReference(maxDate, format);
-    return _addConstraint(DateTimeConstraint.max(maxDate, format: format));
+    return _addConstraint(_dateTimeConstraint(this, maxDate, isMinimum: false));
   }
 
   CodecSchema<String, DateTime> _addConstraint(
@@ -27,24 +23,36 @@ extension DateTimeSchemaExtensions on CodecSchema<String, DateTime> {
   }
 }
 
-DateTimeConstraintFormat _dateTimeConstraintFormat(
+DateTimeConstraint _dateTimeConstraint(
   CodecSchema<String, DateTime> schema,
-) {
-  final inputSchema = schema.inputSchema as AckSchema<String, Object>;
-  final model = inputSchema.toSchemaModel();
-  return switch (model.format) {
-    'date' => DateTimeConstraintFormat.date,
-    'date-time' => DateTimeConstraintFormat.dateTime,
-    _ => DateTimeConstraintFormat.dateTime,
+  DateTime reference, {
+  required bool isMinimum,
+}) {
+  final format = _dateTimeJsonFormat(schema);
+  _validateDateTimeReference(reference, format);
+
+  return switch ((format, isMinimum)) {
+    ('date', true) => DateTimeConstraint.minDate(reference),
+    ('date', false) => DateTimeConstraint.maxDate(reference),
+    ('date-time', true) => DateTimeConstraint.minDateTime(reference),
+    ('date-time', false) => DateTimeConstraint.maxDateTime(reference),
+    _ => throw StateError('Unsupported DateTime JSON Schema format: $format'),
   };
 }
 
-void _validateDateTimeReference(
-  DateTime reference,
-  DateTimeConstraintFormat format,
-) {
+String _dateTimeJsonFormat(CodecSchema<String, DateTime> schema) {
+  final inputSchema = schema.inputSchema as AckSchema<String, Object>;
+  final model = inputSchema.toSchemaModel();
+  return switch (model.format) {
+    'date' => 'date',
+    'date-time' => 'date-time',
+    _ => 'date-time',
+  };
+}
+
+void _validateDateTimeReference(DateTime reference, String format) {
   switch (format) {
-    case DateTimeConstraintFormat.date:
+    case 'date':
       if (reference.isUtc ||
           reference.hour != 0 ||
           reference.minute != 0 ||
@@ -57,7 +65,7 @@ void _validateDateTimeReference(
           'Ack.date() constraints require a local DateTime at midnight.',
         );
       }
-    case DateTimeConstraintFormat.dateTime:
+    case 'date-time':
       if (!reference.isUtc) {
         throw ArgumentError.value(
           reference,
@@ -65,5 +73,7 @@ void _validateDateTimeReference(
           'Ack.datetime() constraints require a UTC DateTime.',
         );
       }
+    default:
+      throw StateError('Unsupported DateTime JSON Schema format: $format');
   }
 }

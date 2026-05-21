@@ -255,12 +255,6 @@ AckSchemaModel _applyDateTimeConstraint(
   AckSchemaModel model,
   DateTimeConstraint constraint,
 ) {
-  final boundaryFormat = _dateTimeJsonFormat(constraint.format);
-  final formatted = _formatDateTimeReference(
-    constraint.reference,
-    constraint.format,
-  );
-
   return model.withWarnings([
     ...model.warnings,
     AckSchemaModelWarning(
@@ -268,9 +262,9 @@ AckSchemaModel _applyDateTimeConstraint(
       message:
           'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',
       context: {
-        'constraint': constraint.type.name,
-        'reference': formatted,
-        'format': boundaryFormat,
+        'constraint': constraint.comparisonType,
+        'reference': constraint.formattedReference,
+        'format': constraint.jsonSchemaFormat,
       },
     ),
   ]);
@@ -310,26 +304,4 @@ Object? _jsonRoundTripOrNull(Object? value) {
   } catch (_) {
     return null;
   }
-}
-
-String _dateTimeJsonFormat(DateTimeConstraintFormat format) => switch (format) {
-  DateTimeConstraintFormat.date => 'date',
-  DateTimeConstraintFormat.dateTime => 'date-time',
-};
-
-String _formatDateTimeReference(
-  DateTime reference,
-  DateTimeConstraintFormat format,
-) {
-  return switch (format) {
-    DateTimeConstraintFormat.date => _dateOnly(reference),
-    DateTimeConstraintFormat.dateTime => reference.toIso8601String(),
-  };
-}
-
-String _dateOnly(DateTime date) {
-  final year = date.year.toString().padLeft(4, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
 }

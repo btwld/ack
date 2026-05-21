@@ -10,7 +10,6 @@ export 'src/ack.dart';
 export 'src/common_types.dart' show JsonMap;
 // Constraints
 export 'src/constraints/constraint.dart';
-export 'src/constraints/datetime_constraint.dart';
 export 'src/constraints/duration_constraint.dart';
 // Context
 export 'src/context.dart';
