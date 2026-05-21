@@ -197,12 +197,6 @@ void main() {
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
-
-      test('different transformers are not equal', () {
-        final a = Ack.string().transform((s) => s.toUpperCase());
-        final b = Ack.string().transform((s) => s.toLowerCase());
-        expect(a, isNot(equals(b)));
-      });
     });
 
     group('Cross-type inequality', () {

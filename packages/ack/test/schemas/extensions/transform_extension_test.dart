@@ -39,7 +39,7 @@ void main() {
         final schema = Ack.string()
             .nullable()
             .transform((value) => value)
-            .copyWith(isNullable: false);
+            .nullable(value: false);
 
         final result = schema.safeParse(null);
 

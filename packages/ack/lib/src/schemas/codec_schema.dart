@@ -10,7 +10,7 @@ part of 'schema.dart';
 final class CodecSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
     with WrapperSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>> {
-  final AckSchema<Boundary, dynamic> inputSchema;
+  final AckSchema<Boundary, Object> inputSchema;
 
   /// The output schema applied to the runtime value after decoding and before
   /// encoding.
@@ -18,22 +18,19 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
 
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
-  final Object _decoderIdentity;
 
   CodecSchema._({
     required this.inputSchema,
     required this.outputSchema,
     required Runtime Function(Object value) decoder,
     required Object Function(Runtime value)? encoder,
-    required Object decoderIdentity,
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
   }) : _decoder = decoder,
-       _encoder = encoder,
-       _decoderIdentity = decoderIdentity;
+       _encoder = encoder;
 
   /// Creates a codec while preserving the input schema's runtime type.
   static CodecSchema<Boundary, Runtime> create<
@@ -56,7 +53,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       outputSchema: outputSchema,
       decoder: (value) => decoder(value as InputRuntime),
       encoder: encoder,
-      decoderIdentity: decoder,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -82,13 +78,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       return SchemaResult.fail(inputResult.getError());
     }
 
-    final intermediate = inputResult.getOrNull();
-    if (intermediate == null) {
-      // Defensive: a well-behaved inputSchema does not return Ok(null) for a
-      // non-null input. Surface the nullability error as a contract violation.
-      if (isNullable) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
+    final intermediate = inputResult.getOrNull()!;
 
     final Runtime runtime;
     try {
@@ -124,14 +114,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       return SchemaResult.fail(outputResult.getError());
     }
 
-    final validated = outputResult.getOrNull();
-    if (validated == null) {
-      // Defensive: a well-behaved outputSchema does not return Ok(null) for a
-      // non-null input. Surface the nullability error as a contract violation.
-      if (isNullable) return SchemaResult.ok(null);
-      return failNonNullable(context);
-    }
-
+    final validated = outputResult.getOrNull()!;
     return applyConstraintsAndRefinements(validated, context);
   }
 
@@ -150,8 +133,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
 
     final validated = validateRuntimeWithContext(value, context);
     if (validated.isFail) return SchemaResult.fail(validated.getError());
-    final runtime = validated.getOrNull();
-    if (runtime == null) return failNonNullableEncode(context);
+    final runtime = validated.getOrNull()!;
 
     final Object intermediate;
     try {
@@ -167,55 +149,16 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       );
     }
 
-    // Ensure the intermediate matches the input schema's runtime shape before
-    // encoding to boundary.
-    final inputValidation = inputSchema.validateRuntimeWithContext(
-      intermediate,
-      context,
-    );
-    if (inputValidation.isFail) {
-      return SchemaResult.fail(inputValidation.getError());
-    }
-
-    final validatedInput = inputValidation.getOrNull();
-    if (validatedInput == null) return failNonNullableEncode(context);
-    return inputSchema.encodeWithContext(validatedInput, context);
-  }
-
-  /// Returns a copy of this codec with the supplied runtime config replaced.
-  ///
-  /// Prefer the fluent helpers (`nullable()`, `describe()`, `withConstraint(...)`,
-  /// etc.) over calling this directly; it exists to back the wrapper protocol.
-  @internal
-  CodecSchema<Boundary, Runtime> copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    List<Constraint<Runtime>>? constraints,
-    List<Refinement<Runtime>>? refinements,
-  }) {
-    return CodecSchema<Boundary, Runtime>._(
-      inputSchema: inputSchema,
-      outputSchema: outputSchema,
-      decoder: _decoder,
-      encoder: _encoder,
-      decoderIdentity: _decoderIdentity,
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
+    return inputSchema.encodeWithContext(intermediate, context);
   }
 
   @override
   CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
     return CodecSchema<Boundary, Runtime>._(
-      inputSchema: newInner as AckSchema<Boundary, dynamic>,
+      inputSchema: newInner as AckSchema<Boundary, Object>,
       outputSchema: outputSchema,
       decoder: _decoder,
       encoder: _encoder,
-      decoderIdentity: _decoderIdentity,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -233,12 +176,16 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     List<Constraint<Runtime>>? constraints,
     List<Refinement<Runtime>>? refinements,
   }) {
-    return copyWith(
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
-      constraints: constraints,
-      refinements: refinements,
+    return CodecSchema<Boundary, Runtime>._(
+      inputSchema: inputSchema,
+      outputSchema: outputSchema,
+      decoder: _decoder,
+      encoder: _encoder,
+      isNullable: isNullable ?? this.isNullable,
+      isOptional: isOptional ?? this.isOptional,
+      description: description ?? this.description,
+      constraints: constraints ?? this.constraints,
+      refinements: refinements ?? this.refinements,
     );
   }
 
@@ -248,17 +195,10 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     if (other is! CodecSchema<Boundary, Runtime>) return false;
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
-        outputSchema == other.outputSchema &&
-        identical(_decoderIdentity, other._decoderIdentity) &&
-        identical(_encoder, other._encoder);
+        outputSchema == other.outputSchema;
   }
 
   @override
-  int get hashCode => Object.hash(
-    baseFieldsHashCode,
-    inputSchema,
-    outputSchema,
-    _decoderIdentity.hashCode,
-    _encoder.hashCode,
-  );
+  int get hashCode =>
+      Object.hash(baseFieldsHashCode, inputSchema, outputSchema);
 }

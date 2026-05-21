@@ -41,8 +41,7 @@ DateTimeConstraint _dateTimeConstraint(
 }
 
 String _dateTimeJsonFormat(CodecSchema<String, DateTime> schema) {
-  final inputSchema = schema.inputSchema as AckSchema<String, Object>;
-  final model = inputSchema.toSchemaModel();
+  final model = schema.inputSchema.toSchemaModel();
   return switch (model.format) {
     'date' => 'date',
     'date-time' => 'date-time',

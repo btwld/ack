@@ -397,11 +397,6 @@ void main() {
       expect(schema.isNullable, true);
     });
 
-    test('built-in codec exposes typed copyWith', () {
-      final schema = Ack.date().copyWith(description: 'd');
-      expect(schema.description, 'd');
-    });
-
     test('wrapper fluent calls preserve concrete return types', () {
       final CodecSchema<String, DateTime> nullableCodec = Ack.date().nullable();
       final CodecSchema<String, int> refinedTransform = Ack.string()
