@@ -183,6 +183,10 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   }
 
   /// Returns a copy of this codec with the supplied runtime config replaced.
+  ///
+  /// Prefer the fluent helpers (`nullable()`, `describe()`, `withConstraint(...)`,
+  /// etc.) over calling this directly; it exists to back the wrapper protocol.
+  @internal
   CodecSchema<Boundary, Runtime> copyWith({
     bool? isNullable,
     bool? isOptional,

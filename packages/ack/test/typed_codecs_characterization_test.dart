@@ -1,8 +1,8 @@
 import 'package:ack/ack.dart';
-// `WrapperSchema` is intentionally hidden from the public ack.dart export;
-// internal smoke checks below reach into the source path to assert that
-// codec/default/transform schemas implement the wrapper mixin.
-import 'package:ack/src/schemas/schema.dart' show WrapperSchema;
+// These symbols are intentionally hidden from the public ack.dart export;
+// the internal characterization tests below reach into the source path.
+import 'package:ack/src/schemas/schema.dart'
+    show Refinement, SchemaOperation, WrapperSchema;
 import 'package:test/test.dart';
 
 final class _Event {

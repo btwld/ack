@@ -200,14 +200,8 @@ void main() {
       });
 
       test('InvalidTypeConstraint equal', () {
-        final a = InvalidTypeConstraint.withTypes(
-          expectedType: String,
-          actualType: int,
-        );
-        final b = InvalidTypeConstraint.withTypes(
-          expectedType: String,
-          actualType: int,
-        );
+        final a = InvalidTypeConstraint(expectedType: String, inputValue: 1);
+        final b = InvalidTypeConstraint(expectedType: String, inputValue: 2);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });

@@ -33,14 +33,6 @@ class InvalidTypeConstraint extends Constraint<Object?>
         description: 'Value must be of type $expectedType.',
       );
 
-  const InvalidTypeConstraint.withTypes({
-    required this.expectedType,
-    this.actualType,
-  }) : super(
-         constraintKey: 'core_invalid_type',
-         description: 'Value must be of type $expectedType.',
-       );
-
   @override
   bool isValid(Object? value) {
     if (value == null) return false;

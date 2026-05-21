@@ -72,16 +72,15 @@ extension StringSchemaExtensions on StringSchema {
   StringSchema matches(String pattern, {String? example, String? message}) {
     final constraint = PatternConstraint.regex(pattern, example: example);
 
-    return constrain(constraint, message: message) as StringSchema;
+    return constrain(constraint, message: message);
   }
 
   /// Adds a constraint that the string must contain the given [pattern] somewhere.
   StringSchema contains(String pattern, {String? example, String? message}) {
     return constrain(
-          PatternConstraint.contains(pattern, example: example),
-          message: message,
-        )
-        as StringSchema;
+      PatternConstraint.contains(pattern, example: example),
+      message: message,
+    );
   }
 
   /// Adds a constraint that the string must be a valid ISO 8601 date-time.

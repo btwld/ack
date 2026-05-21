@@ -1,4 +1,5 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/schemas/schema.dart' show AnyAckSchema;
 import 'package:test/test.dart';
 
 enum _Role { admin, member }

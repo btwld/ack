@@ -162,9 +162,6 @@ sealed class AckSchemaModel {
   @protected
   AckSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common);
 
-  AckSchemaModel withTitle(String? title) =>
-      _rebuildWithCommon(_common.copyWith(title: title));
-
   AckSchemaModel withDescription(String? description) =>
       _rebuildWithCommon(_common.copyWith(description: description));
 

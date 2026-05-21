@@ -63,4 +63,28 @@ mixin FluentSchema<
   @override
   Schema withConstraints(List<Constraint<Runtime>> newConstraints) =>
       copyWith(constraints: [...constraints, ...newConstraints]);
+
+  /// Adds a custom validation check that runs after all other validations.
+  @override
+  Schema refine(
+    bool Function(Runtime value) validate, {
+    String message = 'The value did not pass the custom validation.',
+  }) {
+    final newRefinement = (validate: validate, message: message);
+    return copyWith(refinements: [...refinements, newRefinement]);
+  }
+
+  /// Adds a raw [constraint] to the schema.
+  @override
+  Schema constrain(Constraint<Runtime> constraint, {String? message}) {
+    if (constraint is! Validator<Runtime>) {
+      throw ArgumentError(
+        'Constraint ${constraint.runtimeType} must implement Validator<Runtime>.',
+      );
+    }
+    final effectiveConstraint = message == null
+        ? constraint
+        : _ConstraintMessageOverride<Runtime>(constraint, message);
+    return withConstraint(effectiveConstraint);
+  }
 }

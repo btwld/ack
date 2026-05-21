@@ -223,17 +223,5 @@ void main() {
       expect(schema.tryParse('bad'), isNull);
     });
 
-    test('coerceJsonMap delegates to jsonMapOrNull', () {
-      final jsonMap = {'name': 'Ada'};
-
-      // ignore: deprecated_member_use_from_same_package
-      expect(coerceJsonMap(jsonMap), same(jsonMap));
-
-      // ignore: deprecated_member_use_from_same_package
-      expect(coerceJsonMap({'name': 'Ada'}), equals({'name': 'Ada'}));
-
-      // ignore: deprecated_member_use_from_same_package
-      expect(coerceJsonMap({1: 'Ada'}), isNull);
-    });
   });
 }

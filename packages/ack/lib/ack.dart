@@ -26,7 +26,11 @@ export 'src/json_schema.dart';
 // Core schemas
 // `WrapperSchema` is internal infrastructure; users compose wrappers via
 // `withDefault`, `codec`, `transform`, etc., not by implementing the mixin.
-export 'src/schemas/schema.dart' hide WrapperSchema;
+// `Refinement`, `SchemaOperation`, and `AnyAckSchema` are traversal
+// plumbing for subclasses; consumers use `.refine(...)`, `safeParse`, and
+// concrete schema types instead.
+export 'src/schemas/schema.dart'
+    hide AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results
