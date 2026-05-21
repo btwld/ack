@@ -27,11 +27,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
 
   @override
   @protected
-  SchemaResult<T> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
-
-  @override
-  @protected
   SchemaResult<T> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,

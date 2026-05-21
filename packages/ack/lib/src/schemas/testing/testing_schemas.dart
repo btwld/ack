@@ -18,11 +18,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object>
 
   @override
   @protected
-  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
-
-  @override
-  @protected
   SchemaResult<Object> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,

@@ -17,11 +17,6 @@ final class BooleanSchema extends AckSchema<bool, bool>
 
   @override
   @protected
-  SchemaResult<bool> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
-
-  @override
-  @protected
   SchemaResult<bool> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,

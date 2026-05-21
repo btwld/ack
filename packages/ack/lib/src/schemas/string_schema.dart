@@ -17,11 +17,6 @@ final class StringSchema extends AckSchema<String, String>
 
   @override
   @protected
-  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
-
-  @override
-  @protected
   SchemaResult<String> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,

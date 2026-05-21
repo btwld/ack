@@ -31,11 +31,6 @@ final class IntegerSchema extends NumSchema<int>
 
   @override
   @protected
-  SchemaResult<int> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
-
-  @override
-  @protected
   SchemaResult<int> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,
@@ -107,11 +102,6 @@ final class DoubleSchema extends NumSchema<double>
 
   @override
   @protected
-  SchemaResult<double> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
-
-  @override
-  @protected
   SchemaResult<double> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,
@@ -180,11 +170,6 @@ final class NumberSchema extends NumSchema<num>
 
   @override
   SchemaType get schemaType => SchemaType.number;
-
-  @override
-  @protected
-  SchemaResult<num> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
 
   @override
   @protected

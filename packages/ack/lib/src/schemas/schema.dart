@@ -92,10 +92,12 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   /// Decodes a boundary value into a runtime value.
   ///
-  /// Subclasses MUST implement this. The context passed in carries operation
-  /// information and JSON Pointer path state.
+  /// The default delegates to [validateRuntimeWithContext], which is correct
+  /// for schemas whose parse is just runtime validation. Composite and codec
+  /// schemas override this to implement boundary-shape-specific logic.
   @protected
-  SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context);
+  SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context) =>
+      validateRuntimeWithContext(value, context);
 
   /// Validates that [value] is a valid runtime value for this schema.
   ///
@@ -262,12 +264,6 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return withRuntimeConfig(description: description);
   }
 
-  /// Alias for [describe].
-  @Deprecated('Use describe() instead. Will be removed in a future version.')
-  AckSchema<Boundary, Runtime> withDescription(String description) {
-    return describe(description);
-  }
-
   /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
   /// the parse input is null. Object encode also injects encoded defaults for
   /// missing default-wrapped fields.
@@ -428,18 +424,6 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       value: value,
       operation: operation,
     );
-  }
-
-  /// Legacy alias for [safeParse].
-  @Deprecated('Use safeParse(...) instead.')
-  SchemaResult<Runtime> validate(Object? value, {String? debugName}) =>
-      safeParse(value, debugName: debugName);
-
-  /// Legacy helper that returns the parsed value or `null` when validation fails.
-  @Deprecated('Use safeParse(...).getOrNull() instead.')
-  Runtime? tryParse(Object? value, {String? debugName}) {
-    final result = safeParse(value, debugName: debugName);
-    return result.getOrNull();
   }
 
   /// Converts this schema to a JSON Schema Draft-7 representation.

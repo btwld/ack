@@ -74,13 +74,6 @@ mixin WrapperSchema<
     return copyWithRuntimeConfig(description: description);
   }
 
-  /// Alias for [describe].
-  @Deprecated('Use describe() instead. Will be removed in a future version.')
-  @override
-  Schema withDescription(String description) {
-    return describe(description);
-  }
-
   /// Adds a validation constraint to the schema.
   @override
   Schema withConstraint(Constraint<Runtime> constraint) {

@@ -48,12 +48,6 @@ mixin FluentSchema<
   @override
   Schema describe(String description) => copyWith(description: description);
 
-  /// Alias for describe() for backward compatibility.
-  @Deprecated('Use describe() instead. Will be removed in a future version.')
-  @override
-  Schema withDescription(String description) =>
-      copyWith(description: description);
-
   /// Adds a validation constraint to the schema.
   @override
   Schema withConstraint(Constraint<Runtime> constraint) =>

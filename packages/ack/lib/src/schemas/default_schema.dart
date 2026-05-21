@@ -64,24 +64,6 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     return inner.encodeWithContext(value, context);
   }
 
-  /// Returns a copy of this default-wrapped schema with the given fields
-  /// replaced.
-  DefaultSchema<Boundary, Runtime> copyWith({
-    AckSchema<Boundary, Runtime>? inner,
-    Runtime? defaultValue,
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-  }) {
-    return DefaultSchema<Boundary, Runtime>(
-      inner: inner ?? this.inner,
-      defaultValue: defaultValue ?? this.defaultValue,
-      isNullable: isNullable ?? super.isNullable,
-      isOptional: isOptional ?? super.isOptional,
-      description: description ?? this.description,
-    );
-  }
-
   @override
   DefaultSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
     return DefaultSchema<Boundary, Runtime>(
@@ -109,11 +91,12 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
             refinements: refinements,
           );
 
-    return copyWith(
+    return DefaultSchema<Boundary, Runtime>(
       inner: updatedInner,
-      isNullable: isNullable,
-      isOptional: isOptional,
-      description: description,
+      defaultValue: defaultValue,
+      isNullable: isNullable ?? super.isNullable,
+      isOptional: isOptional ?? super.isOptional,
+      description: description ?? this.description,
     );
   }
 
