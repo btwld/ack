@@ -9,7 +9,9 @@ part of 'schema.dart';
 @immutable
 final class CodecSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
-    with WrapperSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>> {
+    with
+        FluentSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>>,
+        WrapperSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>> {
   final AckSchema<Boundary, Object> inputSchema;
 
   /// The output schema applied to the runtime value after decoding and before
@@ -168,8 +170,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
-  @protected
-  CodecSchema<Boundary, Runtime> copyWithRuntimeConfig({
+  CodecSchema<Boundary, Runtime> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

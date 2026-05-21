@@ -6,7 +6,9 @@ part of 'schema.dart';
 @immutable
 final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
-    with WrapperSchema<Boundary, Runtime, DefaultSchema<Boundary, Runtime>> {
+    with
+        FluentSchema<Boundary, Runtime, DefaultSchema<Boundary, Runtime>>,
+        WrapperSchema<Boundary, Runtime, DefaultSchema<Boundary, Runtime>> {
   @override
   final AckSchema<Boundary, Runtime> inner;
   final Runtime defaultValue;
@@ -76,8 +78,7 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
-  @protected
-  DefaultSchema<Boundary, Runtime> copyWithRuntimeConfig({
+  DefaultSchema<Boundary, Runtime> copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,

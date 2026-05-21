@@ -70,15 +70,6 @@ mixin FluentSchema<
 
   /// Adds a raw [constraint] to the schema.
   @override
-  Schema constrain(Constraint<Runtime> constraint, {String? message}) {
-    if (constraint is! Validator<Runtime>) {
-      throw ArgumentError(
-        'Constraint ${constraint.runtimeType} must implement Validator<Runtime>.',
-      );
-    }
-    final effectiveConstraint = message == null
-        ? constraint
-        : _ConstraintMessageOverride<Runtime>(constraint, message);
-    return withConstraint(effectiveConstraint);
-  }
+  Schema constrain(Constraint<Runtime> constraint, {String? message}) =>
+      super.constrain(constraint, message: message) as Schema;
 }
