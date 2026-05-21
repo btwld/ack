@@ -27,10 +27,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   bool get _anyBranchNullable => schemas.any((s) => s.isNullable);
 
   @override
-  bool get acceptsParseNull => super.acceptsParseNull || _anyBranchNullable;
-
-  @override
-  bool get acceptsEncodeNull => super.acceptsEncodeNull || _anyBranchNullable;
+  bool get acceptsNull => super.acceptsNull || _anyBranchNullable;
 
   @override
   @protected

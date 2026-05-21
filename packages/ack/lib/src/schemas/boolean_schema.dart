@@ -38,11 +38,6 @@ final class BooleanSchema extends AckSchema<bool, bool>
   }
 
   @override
-  @protected
-  SchemaResult<bool> encodeWithContext(bool value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
-
-  @override
   BooleanSchema copyWith({
     bool? isNullable,
     bool? isOptional,

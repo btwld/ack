@@ -45,11 +45,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
   }
 
   @override
-  @protected
-  SchemaResult<T> encodeWithContext(T value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
-
-  @override
   InstanceSchema<T> copyWith({
     bool? isNullable,
     bool? isOptional,

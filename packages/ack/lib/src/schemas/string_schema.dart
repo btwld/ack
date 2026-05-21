@@ -38,11 +38,6 @@ final class StringSchema extends AckSchema<String, String>
   }
 
   @override
-  @protected
-  SchemaResult<String> encodeWithContext(String value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
-
-  @override
   StringSchema copyWith({
     bool? isNullable,
     bool? isOptional,

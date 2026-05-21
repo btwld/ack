@@ -114,13 +114,14 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Encodes a runtime value into a boundary value. The base class strips
   /// `null` before calling this; subclasses receive a non-null [value].
   ///
-  /// Implementations should call [validateRuntimeWithContext] first so the
-  /// runtime is checked before encoding.
+  /// The default delegates to [encodeAsBoundary], which is correct for schemas
+  /// where `Boundary == Runtime`. Schemas where the two types differ (codecs,
+  /// objects, lists, enums, …) override this to implement encoding logic.
   @protected
   SchemaResult<Boundary> encodeWithContext(
     Runtime value,
     SchemaContext context,
-  );
+  ) => encodeAsBoundary(value, context);
 
   // ---------------------------------------------------------------------------
   // Shared helpers used by subclasses
@@ -202,7 +203,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   }
 
   /// Centralized null gate for the parse/validate paths. Returns null when
-  /// [inputValue] is non-null; otherwise returns Ok(null) if [acceptsParseNull]
+  /// [inputValue] is non-null; otherwise returns Ok(null) if [acceptsNull]
   /// is true or a non-nullable failure.
   @protected
   SchemaResult<Runtime>? handleNullInput(
@@ -211,25 +212,18 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   ) {
     if (inputValue != null) return null;
 
-    if (acceptsParseNull) {
+    if (acceptsNull) {
       return SchemaResult.ok(null);
     }
 
     return failNonNullable(context);
   }
 
-  /// Whether `parse(null)` (and the parse-side null gate inside
-  /// [handleNullInput]) should accept null without raising a non-nullable
-  /// failure. Defaults to [isNullable]; subclasses with branch-level null
-  /// policies (e.g. [AnyOfSchema]) override this hook.
+  /// Whether `parse(null)` and `encode(null)` should accept null without
+  /// raising a non-nullable failure. Defaults to [isNullable]; subclasses with
+  /// branch-level null policies (e.g. [AnyOfSchema]) override this hook.
   @protected
-  bool get acceptsParseNull => isNullable;
-
-  /// Whether `encode(null)` should produce `Ok(null)` rather than a
-  /// non-nullable encode failure. Defaults to [isNullable]; subclasses with
-  /// branch-level null policies override this hook.
-  @protected
-  bool get acceptsEncodeNull => isNullable;
+  bool get acceptsNull => isNullable;
 
   /// The schema type category for this schema.
   @protected
@@ -375,9 +369,9 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Encodes a runtime value to a boundary value, returning a [SchemaResult].
   ///
   /// Null handling lives here so subclass [encodeWithContext] receives
-  /// non-null values. The null gate consults [acceptsEncodeNull] so
-  /// subclasses with branch-level null policies (e.g. [AnyOfSchema]) can
-  /// participate without overriding this public wrapper.
+  /// non-null values. The null gate consults [acceptsNull] so subclasses
+  /// with branch-level null policies (e.g. [AnyOfSchema]) can participate
+  /// without overriding this public wrapper.
   SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName}) {
     final context = _createRootContext(
       value,
@@ -385,7 +379,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       operation: SchemaOperation.encode,
     );
     if (value == null) {
-      if (acceptsEncodeNull) return SchemaResult.ok(null);
+      if (acceptsNull) return SchemaResult.ok(null);
       return failNonNullableEncode(context);
     }
     try {

@@ -36,11 +36,6 @@ final class AnySchema extends AckSchema<Object, Object>
   }
 
   @override
-  @protected
-  SchemaResult<Object> encodeWithContext(Object value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
-
-  @override
   AnySchema copyWith({
     bool? isNullable,
     bool? isOptional,

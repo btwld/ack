@@ -51,11 +51,6 @@ final class IntegerSchema extends NumSchema<int>
   }
 
   @override
-  @protected
-  SchemaResult<int> encodeWithContext(int value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
-
-  @override
   IntegerSchema copyWith({
     bool? isNullable,
     bool? isOptional,
@@ -122,11 +117,6 @@ final class DoubleSchema extends NumSchema<double>
   }
 
   @override
-  @protected
-  SchemaResult<double> encodeWithContext(double value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
-
-  @override
   DoubleSchema copyWith({
     bool? isNullable,
     bool? isOptional,
@@ -190,11 +180,6 @@ final class NumberSchema extends NumSchema<num>
     }
     return applyConstraintsAndRefinements(value, context);
   }
-
-  @override
-  @protected
-  SchemaResult<num> encodeWithContext(num value, SchemaContext context) =>
-      encodeAsBoundary(value, context);
 
   @override
   NumberSchema copyWith({
