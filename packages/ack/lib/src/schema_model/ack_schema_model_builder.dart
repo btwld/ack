@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../constraints/constraint.dart';
 import '../constraints/datetime_constraint.dart';
+import '../context.dart';
 import '../json_schema/json_schema_utils.dart';
 import '../schemas/schema.dart';
 import 'ack_schema_model.dart';
@@ -276,10 +277,12 @@ AckSchemaModel _applyDateTimeConstraint(
 /// transformations are applied, then verifies the result is JSON-safe before
 /// returning it. Returns `null` when no JSON-safe representation is reachable.
 Object? _defaultExportValueOrNull(DefaultSchema schema) {
-  final parsed = schema.safeParse(null);
-  if (parsed.isFail) return null;
+  final resolved = schema.resolveDefaultWithContext(
+    _defaultExportContext(schema),
+  );
+  if (resolved.isFail) return null;
 
-  final defaultValue = parsed.getOrNull();
+  final defaultValue = resolved.getOrNull();
   if (defaultValue == null) return null;
 
   final encoded = schema.inner.safeEncode(defaultValue);
@@ -290,11 +293,24 @@ Object? _defaultExportValueOrNull(DefaultSchema schema) {
 
 bool _isRequiredObjectProperty(AckSchema schema) {
   if (schema.isOptional) return false;
-  if (schema is DefaultSchema && schema.safeParse(null).isOk) {
+  if (schema is DefaultSchema &&
+      schema.resolveDefaultWithContext(_defaultExportContext(schema)).isOk) {
     return false;
   }
 
   return true;
+}
+
+/// Throwaway [SchemaContext] used only to drive
+/// [DefaultSchema.resolveDefaultWithContext]. Errors produced through this
+/// context are never surfaced — both callers consume only `.isOk` /
+/// `.getOrNull()` — so the rooted error path is intentional.
+SchemaContext _defaultExportContext(DefaultSchema schema) {
+  return SchemaContext(
+    name: schema.schemaTypeName,
+    schema: schema,
+    value: null,
+  );
 }
 
 Object? _jsonRoundTripOrNull(Object? value) {

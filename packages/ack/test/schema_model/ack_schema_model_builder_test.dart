@@ -52,6 +52,18 @@ void main() {
       expect(invalidEnum.toJsonSchema(), isNot(contains('default')));
     });
 
+    test('records warning when default cannot be exported', () {
+      final model = Ack.instance<DateTime>()
+          .withDefault(DateTime(2026, 1, 1))
+          .toSchemaModel();
+      final defaultWarnings = model.warnings
+          .where((warning) => warning.code == 'default_not_export_safe')
+          .toList(growable: false);
+
+      expect(model.toJsonSchema(), isNot(contains('default')));
+      expect(defaultWarnings, hasLength(1));
+    });
+
     test('object required fields follow parse-valid defaults', () {
       final schema = Ack.object({
         'createdAt': Ack.instance<DateTime>().withDefault(DateTime(2026, 1, 1)),

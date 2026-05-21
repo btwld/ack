@@ -43,7 +43,7 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @protected
   SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context) {
     if (value == null) {
-      return _validateDefaultWithContext(context);
+      return resolveDefaultWithContext(context);
     }
     return inner.parseWithContext(value, context);
   }
@@ -116,7 +116,12 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   int get hashCode =>
       Object.hash(inner, defaultValue, isNullable, isOptional, description);
 
-  SchemaResult<Runtime> _validateDefaultWithContext(SchemaContext context) {
+  /// Resolves and validates this schema's runtime default value.
+  ///
+  /// Defaults are runtime values rather than boundary values, so callers that
+  /// need a default should use this method instead of parsing `null`.
+  @internal
+  SchemaResult<Runtime> resolveDefaultWithContext(SchemaContext context) {
     // Defaults are runtime values, not boundary values, so validate via the
     // runtime path. `cloneDefault` returns unmodifiable collection copies when
     // it can; mutable collection defaults are rejected if the inner schema

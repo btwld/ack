@@ -1,6 +1,5 @@
 import '../../constraints/constraint.dart';
 import '../../constraints/datetime_constraint.dart';
-import '../../schema_model/ack_schema_model_builder.dart';
 import '../schema.dart';
 
 /// Extensions for `CodecSchema<String, DateTime>` to add date range
@@ -41,12 +40,17 @@ DateTimeConstraint _dateTimeConstraint(
 }
 
 String _dateTimeJsonFormat(CodecSchema<String, DateTime> schema) {
-  final model = schema.inputSchema.toSchemaModel();
-  return switch (model.format) {
-    'date' => 'date',
-    'date-time' => 'date-time',
-    _ => 'date-time',
-  };
+  for (final constraint in schema.inputSchema.constraints) {
+    if (constraint is JsonSchemaSpec) {
+      final spec = constraint as JsonSchemaSpec<dynamic>;
+      final format = spec.toJsonSchema()['format'];
+      if (format is String && (format == 'date' || format == 'date-time')) {
+        return format;
+      }
+    }
+  }
+
+  return 'date-time';
 }
 
 void _validateDateTimeReference(DateTime reference, String format) {

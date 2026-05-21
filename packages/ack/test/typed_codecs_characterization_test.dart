@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 // These symbols are intentionally hidden from the public ack.dart export;
 // the internal characterization tests below reach into the source path.
 import 'package:ack/src/schemas/schema.dart'
-    show Refinement, SchemaOperation, WrapperSchema;
+    show AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
 import 'package:test/test.dart';
 
 final class _Event {
@@ -307,6 +307,23 @@ void main() {
       final String? parsed = schema.parse(null);
       expect(parsed, 'fallback');
     });
+
+    test(
+      'resolveDefaultWithContext validates default through inner schema',
+      () {
+        final schema = Ack.string().minLength(3).withDefault('x');
+        final context = SchemaContext(
+          name: 'name',
+          schema: schema as AnyAckSchema,
+          value: null,
+        );
+
+        final result = schema.resolveDefaultWithContext(context);
+
+        expect(result.isFail, true);
+        expect(result.getError().path, '#');
+      },
+    );
 
     test('encode(null) does NOT inject default', () {
       final schema = Ack.string().nullable().withDefault('fallback');

@@ -27,17 +27,18 @@ Schema converter packages bridge Ack's validation schemas with external schema s
 - **Cross-language validation** (JSON Schema, Protobuf)
 - **Frontend validation** (TypeBox, Zod, Yup)
 
-Current converter packages should use Ack's canonical export model:
+Current converter packages should use Ack's canonical export surface:
 
 ```dart
 final model = schema.toSchemaModel();
+final jsonSchema = schema.toJsonSchema();
 ```
 
 `AckSchemaModel` describes the boundary shape, constraints, export-safe
-defaults, discriminator metadata, and warnings that adapters can reuse. Adapter
-packages should render from `AckSchemaModel`; they should not traverse
-`AckSchema` subclasses or parse raw `schema.toJsonSchema()` output as their
-source of truth.
+defaults, discriminator metadata, and warnings that adapters can reuse for
+non-JSON targets. JSON-map adapters can call `schema.toJsonSchema()` directly.
+Adapters should not traverse `AckSchema` subclasses or parse rendered JSON
+Schema output as their source of truth for non-JSON formats.
 
 ### Package Naming Convention
 
@@ -1203,7 +1204,7 @@ adapter packages, no duplicated discriminator/default/nullability traversal
 **Implementation**:
 ```dart
 Map<String, Object?> _convert(AckSchema schema) {
-  return schema.toSchemaModel().toJsonSchema();
+  return schema.toJsonSchema();
 }
 ```
 
@@ -1346,7 +1347,7 @@ class OpenApiSchemaConverter {
   static Map<String, Object?> convert(AckSchema schema) {
     // OpenAPI 3.1 is compatible with the generic Draft-7 renderer for
     // schemas that do not need OpenAPI-specific extensions.
-    return schema.toSchemaModel().toJsonSchema();
+    return schema.toJsonSchema();
   }
 }
 ```
@@ -1427,7 +1428,7 @@ class GraphQlSchemaConverter {
 - [ ] Implement extension method
 - [ ] Implement converter with all schema types
 - [ ] Add type coercion helpers
-- [ ] Handle edge cases (TransformedSchema, AnySchema, etc.)
+- [ ] Handle edge cases (CodecSchema transforms, AnySchema, etc.)
 
 ### Testing Phase
 - [ ] Write tests for all primitive types

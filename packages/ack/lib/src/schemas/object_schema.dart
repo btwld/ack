@@ -65,7 +65,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
 
       if (!hasValue) {
         if (schema is DefaultSchema) {
-          // Default-wrapped schemas resolve their default on parse(null).
           final childCtx = context.createChild(
             name: key,
             schema: schema,
@@ -73,7 +72,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
             pathSegment: key,
           );
           schema
-              .parseWithContext(null, childCtx)
+              .resolveDefaultWithContext(childCtx)
               .match(
                 onOk: (v) {
                   if (v != null) validatedMap[key] = v;
@@ -185,8 +184,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional ||
-            (isEncode && schema is DefaultSchema<dynamic, dynamic>)) {
+        if (schema.isOptional || (isEncode && schema is DefaultSchema)) {
           continue;
         }
         final propertyCtx = context.createChild(
@@ -310,8 +308,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final Object? propertyValue;
       if (hasValue) {
         propertyValue = value[key];
-      } else if (schema is DefaultSchema<dynamic, dynamic>) {
-        final defaultResult = schema.parseWithContext(null, propertyCtx);
+      } else if (schema is DefaultSchema) {
+        final defaultResult = schema.resolveDefaultWithContext(propertyCtx);
         if (defaultResult.isFail) {
           errors.add(defaultResult.getError());
           continue;

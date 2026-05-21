@@ -371,6 +371,30 @@ void main() {
       });
 
       test(
+        'custom JSON Schema date format controls date constraint format',
+        () {
+          final schema = Ack.string()
+              .withConstraint(const _TestFormatConstraint<String>('date'))
+              .codec<DateTime>(
+                decode: DateTime.parse,
+                encode: (value) =>
+                    '${value.year.toString().padLeft(4, '0')}-'
+                    '${value.month.toString().padLeft(2, '0')}-'
+                    '${value.day.toString().padLeft(2, '0')}',
+              )
+              .min(DateTime(2026, 1, 1));
+          final model = schema.toSchemaModel();
+
+          expect(schema.safeParse('2026-01-02').isOk, isTrue);
+          expect(model.warnings.single.context, {
+            'constraint': 'min',
+            'reference': '2026-01-01',
+            'format': 'date',
+          });
+        },
+      );
+
+      test(
         'nullable custom datetime codec keeps date-time constraint format',
         () {
           final schema = Ack.string()
@@ -524,4 +548,24 @@ void main() {
       });
     });
   });
+}
+
+final class _TestFormatConstraint<T extends Object> extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
+  const _TestFormatConstraint(this.format)
+    : super(
+        constraintKey: 'test_format',
+        description: 'Adds a test-only JSON Schema format.',
+      );
+
+  final String format;
+
+  @override
+  bool isValid(T value) => true;
+
+  @override
+  String buildMessage(T value) => 'ok';
+
+  @override
+  Map<String, Object?> toJsonSchema() => {'format': format};
 }

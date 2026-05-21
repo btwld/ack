@@ -255,5 +255,36 @@ void main() {
       final result = schema.safeParse({'name': 'Cat', 'nickname': null});
       expect(result.isFail, true);
     });
+
+    test('encode omits optional codec property with explicit null', () {
+      final schema = Ack.object({
+        'name': Ack.string(),
+        'count': Ack.string().optional().codec<int>(
+          decode: int.parse,
+          encode: (value) => value.toString(),
+        ),
+      });
+
+      final encoded = schema.encode({'name': 'Cat', 'count': null});
+
+      expect(encoded, {'name': 'Cat'});
+    });
+
+    test(
+      'encode keeps nullable optional codec property with explicit null',
+      () {
+        final schema = Ack.object({
+          'name': Ack.string(),
+          'count': Ack.string().optional().nullable().codec<int>(
+            decode: int.parse,
+            encode: (value) => value.toString(),
+          ),
+        });
+
+        final encoded = schema.encode({'name': 'Cat', 'count': null});
+
+        expect(encoded, {'name': 'Cat', 'count': null});
+      },
+    );
   });
 }

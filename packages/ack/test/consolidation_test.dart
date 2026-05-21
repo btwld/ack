@@ -113,6 +113,27 @@ void main() {
       final json = schema.toJsonSchema();
       expect(json['default'], '2026-01-01');
     });
+
+    test(
+      'object encode fails at child path when missing default is invalid',
+      () {
+        final schema = Ack.object({
+          'birthday': Ack.date().withDefault(DateTime(2026, 1, 1, 12)),
+        });
+
+        final result = schema.safeEncode({});
+
+        expect(result.isFail, true);
+        final flattened = _flatten(result.getError());
+        expect(
+          flattened.any((e) => e.path == '#/birthday'),
+          true,
+          reason:
+              'Expected error at #/birthday, got: '
+              '${flattened.map((e) => e.path).join(', ')}',
+        );
+      },
+    );
   });
 
   group('non-string map keys', () {
@@ -325,6 +346,53 @@ void main() {
       );
       expect(schema.safeEncode(4).isOk, true);
       expect(schema.safeEncode(5).isFail, true);
+    });
+
+    test('codec encoder throws preserve child path and encode kind', () {
+      final schema = Ack.object({
+        'count': Ack.string().codec<int>(
+          decode: int.parse,
+          encode: (_) => throw StateError('boom'),
+        ),
+      });
+
+      final result = schema.safeEncode({'count': 1});
+
+      expect(result.isFail, true);
+      final flattened = _flatten(result.getError());
+      expect(
+        flattened.any(
+          (e) =>
+              e.path == '#/count' &&
+              e is SchemaEncodeError &&
+              e.kind == SchemaEncodeFailureKind.encoderThrew,
+        ),
+        true,
+        reason:
+            'Expected encoderThrew at #/count, got: '
+            '${flattened.map((e) => '${e.path} ${e.runtimeType}').join(', ')}',
+      );
+    });
+
+    test('codec invalid intermediate preserves error type and child path', () {
+      final schema = Ack.object({
+        'value': Ack.any().codec<int>(
+          decode: (_) => 1,
+          encode: (_) => DateTime(2026, 1, 1),
+        ),
+      });
+
+      final result = schema.safeEncode({'value': 1});
+
+      expect(result.isFail, true);
+      final flattened = _flatten(result.getError());
+      expect(
+        flattened.any((e) => e.path == '#/value' && e is SchemaValidationError),
+        true,
+        reason:
+            'Expected invalid intermediate validation error at #/value, got: '
+            '${flattened.map((e) => '${e.path} ${e.runtimeType}').join(', ')}',
+      );
     });
 
     test('codec parse rejects present-null optional object fields', () {

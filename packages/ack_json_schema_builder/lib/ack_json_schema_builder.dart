@@ -29,7 +29,7 @@ extension JsonSchemaBuilderExtension on AckSchema {
   /// Returns a json_schema_builder [Schema] instance from ACK's generic
   /// Draft-7 JSON Schema map.
   jsb.Schema toJsonSchemaBuilder() {
-    return convertAckSchemaModelToBuilder(toSchemaModel());
+    return jsb.Schema.fromMap(toJsonSchema());
   }
 }
 
