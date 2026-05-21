@@ -1,9 +1,16 @@
 part of 'schema.dart';
 
-/// Schema that accepts a specific runtime [T] instance, with [T] as both
-/// boundary and runtime type. Used as the default `output` schema of a
-/// [CodecSchema] so codec authors can attach typed refinements (e.g.
-/// requiring a `DateTime` to be UTC) on the runtime side.
+/// Runtime-side schema that validates a Dart value is an instance of [T].
+///
+/// Primarily intended as the `output` schema for a [CodecSchema]: it gates
+/// decoded runtime values by type and is where codec authors attach runtime
+/// invariants via [refine] (e.g. requiring a `DateTime` to be UTC).
+///
+/// This is **not** a JSON-boundary schema for [T]. When exported directly, the
+/// schema model only approximates it across JSON-compatible branches and
+/// surfaces the `ack_instance_json_boundary` warning. For wire-format
+/// validation, pair it with a codec (`schema.codec(...)`) or use a boundary
+/// schema such as `Ack.string()` / `Ack.object(...)` instead.
 @immutable
 final class InstanceSchema<T extends Object> extends AckSchema<T, T>
     with FluentSchema<T, T, InstanceSchema<T>> {

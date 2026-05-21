@@ -86,11 +86,6 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   }) : _constraints = constraints,
        _refinements = refinements;
 
-  /// Utility method to get the schema type of any value.
-  static SchemaType getSchemaType(Object? value) {
-    return SchemaType.of(value);
-  }
-
   // ---------------------------------------------------------------------------
   // Subclass-facing internal lifecycle
   // ---------------------------------------------------------------------------
@@ -171,70 +166,6 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     }
 
     return SchemaResult.ok(value);
-  }
-
-  /// Merges constraint JSON schemas into a base schema.
-  @protected
-  Map<String, Object?> mergeConstraintSchemas(Map<String, Object?> baseSchema) {
-    final constraintSchemas = <Map<String, Object?>>[];
-    for (final constraint in _constraints) {
-      if (constraint is JsonSchemaSpec<Runtime>) {
-        constraintSchemas.add(constraint.toJsonSchema());
-      }
-    }
-    return constraintSchemas.fold(
-      baseSchema,
-      (prev, current) => deepMerge(prev, current),
-    );
-  }
-
-  /// Builds a JSON Schema map with proper nullable handling.
-  @protected
-  Map<String, Object?> buildJsonSchemaWithNullable({
-    required Map<String, Object?> typeSchema,
-    Object? serializedDefault,
-  }) {
-    if (isNullable) {
-      final baseSchema = {
-        ...typeSchema,
-        if (description != null) 'description': description,
-      };
-      final mergedSchema = mergeConstraintSchemas(baseSchema);
-      return {
-        if (serializedDefault != null) 'default': serializedDefault,
-        'anyOf': [
-          mergedSchema,
-          {'type': 'null'},
-        ],
-      };
-    }
-
-    final schema = {
-      ...typeSchema,
-      if (description != null) 'description': description,
-      if (serializedDefault != null) 'default': serializedDefault,
-    };
-
-    return mergeConstraintSchemas(schema);
-  }
-
-  /// Wraps a composite (e.g. `anyOf`) JSON Schema in a nullable form when
-  /// the schema is nullable. Unlike [buildJsonSchemaWithNullable], the inner
-  /// composite is preserved as-is (constraints are merged into it) and the
-  /// nullable branch is added at the outer level. Used by [AnyOfSchema] and
-  /// [DiscriminatedObjectSchema] whose root key is already `anyOf`.
-  @protected
-  Map<String, Object?> wrapCompositeWithNullable(
-    Map<String, Object?> baseSchema,
-  ) {
-    if (!isNullable) return mergeConstraintSchemas(baseSchema);
-    return {
-      if (description != null) 'description': description,
-      'anyOf': [
-        mergeConstraintSchemas(baseSchema),
-        {'type': 'null'},
-      ],
-    };
   }
 
   /// Helper for schemas whose boundary == runtime: validates the runtime
@@ -667,5 +598,3 @@ JsonMap? jsonMapOrNull(Object? value) {
   return result;
 }
 
-@Deprecated('Use jsonMapOrNull(...) instead.')
-JsonMap? coerceJsonMap(Object? value) => jsonMapOrNull(value);

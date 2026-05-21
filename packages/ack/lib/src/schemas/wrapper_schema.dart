@@ -1,12 +1,17 @@
 part of 'schema.dart';
 
-/// Shared contract for schemas that add runtime behavior around an inner
-/// boundary-facing schema.
+/// ACK-internal infrastructure for schemas that wrap another boundary-facing
+/// schema.
 ///
-/// Wrappers keep their own runtime-side configuration and delegate boundary
-/// shape traversal to [inner]. Converters can follow [inner] to recover the
-/// encoded JSON shape, then merge wrapper-owned metadata such as description,
-/// nullability, defaults, and generated marker fields.
+/// Wrappers add runtime behavior (e.g. codecs, defaults) while preserving an
+/// inner schema for boundary-shape traversal, schema-model export, and
+/// discriminated-branch rewriting. The canonical JSON export path is
+/// `AckSchema → AckSchemaModel → JSON`; wrappers do not render JSON directly.
+///
+/// Not a public extension point for application code. Consumers should use
+/// `Ack.*` factories (`withDefault`, `codec`, `transform`, `model`) instead of
+/// implementing this mixin themselves.
+@internal
 mixin WrapperSchema<
   Boundary extends Object,
   Runtime extends Object,
@@ -114,50 +119,4 @@ mixin WrapperSchema<
     return withConstraint(effectiveConstraint);
   }
 
-  /// Applies wrapper-owned JSON Schema metadata to an inner boundary schema.
-  @protected
-  Map<String, Object?> applyWrapperJsonSchemaMetadata(
-    Map<String, Object?> baseSchema, {
-    Object? serializedDefault,
-    Map<String, Object?> metadata = const {},
-  }) {
-    // Precedence is intentional: inner boundary schema first, generated
-    // wrapper metadata second, then user-facing wrapper description last.
-    final branchSchema = mergeConstraintSchemas({
-      ...baseSchema,
-      ...metadata,
-      if (description != null) 'description': description,
-    });
-
-    if (!isNullable || _jsonSchemaHasNullBranch(branchSchema)) {
-      return {
-        ...branchSchema,
-        if (serializedDefault != null) 'default': serializedDefault,
-      };
-    }
-
-    return {
-      if (description != null) 'description': description,
-      if (serializedDefault != null) 'default': serializedDefault,
-      'anyOf': [
-        branchSchema,
-        {'type': 'null'},
-      ],
-    };
-  }
-}
-
-bool _jsonSchemaHasNullBranch(Map<String, Object?> schema) {
-  if (schema['type'] == 'null') return true;
-
-  return _jsonSchemaCompositionHasNullBranch(schema['anyOf']) ||
-      _jsonSchemaCompositionHasNullBranch(schema['oneOf']);
-}
-
-bool _jsonSchemaCompositionHasNullBranch(Object? composition) {
-  if (composition is! List) return false;
-  return composition.any(
-    (branch) =>
-        branch is Map<String, Object?> && _jsonSchemaHasNullBranch(branch),
-  );
 }

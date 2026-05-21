@@ -24,7 +24,9 @@ export 'src/schemas/extensions/string_schema_extensions.dart';
 // JSON Schema
 export 'src/json_schema.dart';
 // Core schemas
-export 'src/schemas/schema.dart';
+// `WrapperSchema` is internal infrastructure; users compose wrappers via
+// `withDefault`, `codec`, `transform`, etc., not by implementing the mixin.
+export 'src/schemas/schema.dart' hide WrapperSchema;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results
