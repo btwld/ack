@@ -38,11 +38,8 @@ if (result.isOk) {
 ### String
 
 ```dart
-// Basic string
+// Basic string — primitives are strict by default and reject non-string values
 final nameSchema = Ack.string();
-
-// Enable strict type checking (no coercion)
-final strictNameSchema = Ack.string().strictParsing();
 
 // With constraints
 final usernameSchema = Ack.string()
@@ -67,16 +64,23 @@ final roleSchema = Ack.enumValues(Role.values);
 
 ### Number
 
+Numeric schemas are strict about their Dart runtime type. `Ack.integer()`
+rejects `double` values (even whole ones like `42.0`); `Ack.double()` rejects
+`int` values. Use `Ack.number()` when either is acceptable.
+
 ```dart
-// Integer validation
+// Integer validation (int only — 42.0 would fail)
 final ageSchema = Ack.integer()
   .min(0)
   .max(120);
 
-// Double validation
+// Double validation (double only — 42 would fail)
 final priceSchema = Ack.double()
   .positive()
   .multipleOf(0.5); // Use factors that avoid floating point rounding issues
+
+// Either int or double
+final amountSchema = Ack.number().positive();
 
 // Negative/positive
 final temperatureSchema = Ack.integer(); // Any integer
@@ -154,9 +158,10 @@ if (result.isOk) {
 Validate against multiple possible schemas:
 
 ```dart
-// String or integer
+// String or integer — primitive branches are strict, so the union won't
+// silently coerce one into the other.
 final idSchema = Ack.anyOf([
-  Ack.string().strictParsing(),
+  Ack.string(),
   Ack.integer(),
 ]);
 
@@ -395,15 +400,16 @@ final orderSchema = Ack.object({
 Transform validated data:
 
 ```dart
-// Transform to uppercase
-final upperSchema = Ack.string().transform((s) => s?.toUpperCase() ?? '');
+// Transform to uppercase. The callback receives the non-null validated
+// runtime value; nullable handling happens on the surrounding schema.
+final upperSchema = Ack.string().transform((s) => s.toUpperCase());
 
 // Add computed fields
 final userWithAgeSchema = Ack.object({
   'name': Ack.string(),
   'birthYear': Ack.integer(),
 }).transform((data) {
-  final birthYear = data!['birthYear'] as int;
+  final birthYear = data['birthYear'] as int;
   final age = DateTime.now().year - birthYear;
   return {...data, 'age': age};
 });

@@ -10,10 +10,11 @@ specific guides linked below.
 
 Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.mdx).
 
-- `Ack.string()`: Creates a `StringSchema` for validating strings.
-- `Ack.integer()`: Creates an `IntegerSchema` for validating integers.
-- `Ack.double()`: Creates a `DoubleSchema` for validating floating-point numbers.
-- `Ack.boolean()`: Creates a `BooleanSchema` for validating booleans.
+- `Ack.string()`: Creates a `StringSchema` for validating `String` values.
+- `Ack.integer()`: Creates an `IntegerSchema` for validating `int` values. Rejects `double` (e.g. `42.0`).
+- `Ack.double()`: Creates a `DoubleSchema` for validating `double` values. Rejects `int` (e.g. `42`).
+- `Ack.number()`: Creates a `NumberSchema` for validating any `num` value (accepts both `int` and `double`).
+- `Ack.boolean()`: Creates a `BooleanSchema` for validating `bool` values.
 - `Ack.list(AckSchema itemSchema)`: Creates a `ListSchema` for validating arrays. Nullable item schemas are not supported; make the list itself nullable instead.
 - `Ack.object(Map<String, AckSchema> properties)`: Creates an `ObjectSchema` for validating objects.
 - `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum
@@ -37,21 +38,21 @@ Base class for all schema types.
 
 ### Primary Validation Methods
 
-- `SchemaResult<T> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure.
+- `SchemaResult<T> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure. Use `safeParse(...).getOrNull()` to obtain the validated value with no exception.
 - `T? parse(Object? data, {String? debugName})`: Validates the input data and returns the value. Throws `AckException` if validation fails.
-- `T? tryParse(Object? data, {String? debugName})`: **Deprecated** - Use `safeParse(...).getOrNull()` instead.
-- `SchemaResult<T> validate(Object? data, {String? debugName})`: **Deprecated** - Use `safeParse(...)` instead.
+- `SchemaResult<TOut> safeParseAs<TOut>(Object? data, TOut Function(T?) map, {String? debugName})`: Parses and maps the validated value to another type.
+- `TOut parseAs<TOut>(Object? data, TOut Function(T?) map, {String? debugName})`: Throwing variant of `safeParseAs`.
+- `SchemaResult<Boundary> safeEncode(T? value, {String? debugName})`: Encodes a runtime value back to the boundary representation.
+- `Boundary? encode(T? value, {String? debugName})`: Throwing variant of `safeEncode`.
 
 ### Schema Modification Methods
 
 - `AckSchema<T> nullable()`: Returns a new schema that also accepts `null` values.
 - `AckSchema<T> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
 - `AckSchema<T> describe(String description)`: Adds a description for documentation and JSON Schema generation.
-- `AckSchema<T> withDefault(T value)`: Sets a default value when input is `null`.
-- `StringSchema strictParsing({bool value = true})`: Enables strict parsing for strings.
-- `IntegerSchema strictParsing({bool value = true})`: Enables strict parsing for integers.
-- `DoubleSchema strictParsing({bool value = true})`: Enables strict parsing for doubles.
-- `BooleanSchema strictParsing({bool value = true})`: Enables strict parsing for booleans.
+- `AckSchema<T> withDefault(T value)`: Wraps the schema in a `DefaultSchema` that supplies `value` when the parse input is `null`.
+
+Primitive schemas (`StringSchema`, `IntegerSchema`, `DoubleSchema`, `NumberSchema`, `BooleanSchema`) are strict — they reject values whose Dart runtime type doesn't match. `IntegerSchema` and `DoubleSchema` do not overlap (`42.0` fails `Ack.integer()`, `42` fails `Ack.double()`); use `Ack.number()` when either is acceptable. For non-`num` boundary types (e.g. numeric strings), use [`transform`](../core-concepts/schemas.mdx#transformations) or [`codec`](#codecschemaboundary-runtime) to convert before validation.
 
 ### Custom Validation Methods
 
@@ -113,9 +114,9 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 - `toLowerCase()`: Converts to lowercase
 - `toUpperCase()`: Converts to uppercase
 
-## `IntegerSchema` / `DoubleSchema` (Number Schemas)
+## `IntegerSchema` / `DoubleSchema` / `NumberSchema` (Number Schemas)
 
-Schemas for validating numbers. See [Number Validation](../core-concepts/validation.mdx#number-constraints-int-and-double).
+Schemas for validating numeric values. `IntegerSchema` only accepts `int`, `DoubleSchema` only accepts `double`, and `NumberSchema` accepts any `num` (either `int` or `double`). See [Number Validation](../core-concepts/validation.mdx#number-constraints-int-and-double).
 
 - `min(num limit)`: Minimum value (inclusive)
 - `max(num limit)`: Maximum value (inclusive)
@@ -129,7 +130,7 @@ Schemas for validating numbers. See [Number Validation](../core-concepts/validat
 
 ## `BooleanSchema`
 
-Schema for validating booleans. Validates `true` and `false` values, with optional type coercion from strings and numbers.
+Schema for validating booleans. Validates `true` and `false` values strictly — non-boolean inputs are rejected. For boundary types that arrive as strings (e.g. `"true"`/`"false"`), use a `transform` or `codec` to convert before validation.
 
 ## `ListSchema<T>`
 

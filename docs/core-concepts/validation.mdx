@@ -192,7 +192,7 @@ Ack.string().toUpperCase()
 
 ## Number Constraints (Int and Double)
 
-Apply these to [`Ack.integer()`](./schemas.mdx#number) and [`Ack.double()`](./schemas.mdx#number) schemas.
+Apply these to [`Ack.integer()`](./schemas.mdx#number), [`Ack.double()`](./schemas.mdx#number), or [`Ack.number()`](./schemas.mdx#number) schemas.
 
 ### `min(num limit)`
 Requires a value `>= limit` (inclusive).
@@ -289,89 +289,71 @@ Requires all items to be unique. Uses deep structural equality, so nested maps/l
 Ack.list(Ack.string()).unique()
 ```
 
-## Strict Parsing
+## Primitive Type Strictness
 
-By default, Ack performs type coercion for primitive types. Use `.strictParsing()` to disable coercion and require exact type matches.
+Primitive schemas (`Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`) are strict: a value must already match the expected Dart runtime type. Mismatched inputs surface as a `TypeMismatchError` instead of being silently coerced.
 
-### Default Behavior (Type Coercion Enabled)
+Each schema maps to a specific runtime type:
 
-Without strict parsing, Ack accepts compatible types and converts them:
+| Schema           | Accepted runtime type | Notes                              |
+| ---------------- | --------------------- | ---------------------------------- |
+| `Ack.string()`   | `String`              | rejects `num`, `bool`, etc.        |
+| `Ack.integer()`  | `int`                 | rejects `double` (even `42.0`)     |
+| `Ack.double()`   | `double`              | rejects `int` (even `42`)          |
+| `Ack.number()`   | `num`                 | accepts both `int` and `double`    |
+| `Ack.boolean()`  | `bool`                | rejects `"true"`, `1`, `0`, etc.   |
 
 ```dart
-// String schema accepts numbers and converts them
 final stringSchema = Ack.string();
-stringSchema.safeParse(123);      // ✅ OK: converts to "123"
-stringSchema.safeParse(true);     // ✅ OK: converts to "true"
-stringSchema.safeParse('hello');  // ✅ OK: already a string
+stringSchema.safeParse('hello');  // ✅ OK
+stringSchema.safeParse(123);      // ❌ FAIL: TypeMismatchError
+stringSchema.safeParse(true);     // ❌ FAIL: TypeMismatchError
 
-// Integer schema accepts numeric strings and converts them
 final intSchema = Ack.integer();
-intSchema.safeParse('42');   // ✅ OK: converts to 42
-intSchema.safeParse(42);     // ✅ OK: already an integer
-intSchema.safeParse(42.0);   // ✅ OK: converts to 42
+intSchema.safeParse(42);    // ✅ OK
+intSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
+intSchema.safeParse(42.0);  // ❌ FAIL: TypeMismatchError (double is not int)
+
+final doubleSchema = Ack.double();
+doubleSchema.safeParse(3.14);  // ✅ OK
+doubleSchema.safeParse(42);    // ❌ FAIL: TypeMismatchError (int is not double)
+
+final numberSchema = Ack.number();
+numberSchema.safeParse(42);    // ✅ OK (int is num)
+numberSchema.safeParse(3.14);  // ✅ OK (double is num)
+numberSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
 ```
 
-### Strict Parsing Behavior
+Because `Ack.integer()` and `Ack.double()` do not overlap, use `Ack.number()` when a field may legitimately be either an int or a double. Reach for `transform`/`codec` only when the boundary value isn't already a `num` (for example, a numeric string).
 
-With strict parsing enabled, only exact type matches are accepted:
-
-```dart
-// String schema rejects non-strings
-final strictStringSchema = Ack.string().strictParsing();
-strictStringSchema.safeParse('hello');  // ✅ OK: exact match
-strictStringSchema.safeParse(123);      // ❌ FAIL: TypeMismatchError
-strictStringSchema.safeParse(true);     // ❌ FAIL: TypeMismatchError
-
-// Integer schema rejects strings and doubles
-final strictIntSchema = Ack.integer().strictParsing();
-strictIntSchema.safeParse(42);     // ✅ OK: exact match
-strictIntSchema.safeParse('42');   // ❌ FAIL: TypeMismatchError
-strictIntSchema.safeParse(42.0);   // ❌ FAIL: TypeMismatchError
-```
-
-### When to Use Strict Parsing
-
-Use strict parsing when you need to:
-
-- **Validate API requests** where types must match exactly
-- **Distinguish between types** in union schemas (e.g., string "123" vs integer 123)
-- **Enforce type discipline** in strongly typed contexts
-- **Prevent unexpected conversions** that might hide bugs
+This strictness makes `anyOf` and discriminated unions reliable — they can distinguish, for example, the string `"42"` from the integer `42` without configuration:
 
 ```dart
-// Union type that distinguishes strings from numbers
 final stringOrNumber = Ack.anyOf([
-  Ack.string().strictParsing(),  // Only accepts actual strings
-  Ack.integer(),                  // Only accepts integers
+  Ack.string(),
+  Ack.integer(),
 ]);
 
-stringOrNumber.safeParse('42');  // ✅ Matches string schema
-stringOrNumber.safeParse(42);    // ✅ Matches integer schema
+stringOrNumber.safeParse('42');  // ✅ Matches string branch
+stringOrNumber.safeParse(42);    // ✅ Matches integer branch
 ```
 
-### Type Coercion Rules
+### Converting Boundary Types
 
-When strict parsing is disabled (default), Ack applies these coercion rules:
+When your boundary payload uses a different shape from your runtime model (for example, ISO strings → `DateTime`, or `"true"`/`"false"` → `bool`), express the conversion explicitly with [`transform`](./schemas.mdx#transformations) or a `codec`:
 
-**String Schema:**
-- Numbers → string representation (`123` → `"123"`)
-- Booleans → string representation (`true` → `"true"`)
-- Strings → no conversion
+```dart
+// Boundary "true"/"false" string → runtime bool
+final boolFromString = Ack.string()
+  .enumString(['true', 'false'])
+  .transform((s) => s == 'true');
 
-**Integer Schema:**
-- Numeric strings → parsed integer (`"42"` → `42`)
-- Doubles without decimals → converted (`42.0` → `42`)
-- Integers → no conversion
+boolFromString.safeParse('true');   // ✅ runtime value: true
+boolFromString.safeParse('false');  // ✅ runtime value: false
+boolFromString.safeParse(true);     // ❌ FAIL: string schema rejects bool
+```
 
-**Double Schema:**
-- Numeric strings → parsed double (`"3.14"` → `3.14`)
-- Integers → converted to double (`42` → `42.0`)
-- Doubles → no conversion
-
-**Boolean Schema:**
-- Strings "true"/"false" → corresponding boolean
-- Numbers 1/0 → true/false
-- Booleans → no conversion
+Use `schema.codec<R>(decode: ..., encode: ...)` when you also need a reversible encode path back to the boundary type.
 
 ## Combining Constraints
 

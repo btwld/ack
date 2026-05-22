@@ -168,13 +168,16 @@ if (result.isFail) {
 
 Occurs when a transformation function (from `.transform()`) throws an exception.
 
+Transform callbacks receive the non-null validated runtime value; null handling is owned by the surrounding schema's `nullable`/`withDefault` configuration. A `SchemaTransformError` is raised when the callback itself throws — for example, when the input shape passes validation but the conversion fails:
+
 ```dart
 final schema = Ack.string().transform((value) {
-  if (value == null) throw Exception('Cannot transform null');
-  return value.toUpperCase();
+  final parsed = int.tryParse(value);
+  if (parsed == null) throw FormatException('Not numeric: $value');
+  return parsed;
 });
 
-final result = schema.safeParse(null);
+final result = schema.safeParse('not-a-number');
 
 if (result.isFail) {
   final error = result.getError() as SchemaTransformError;

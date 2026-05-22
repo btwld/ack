@@ -139,6 +139,19 @@ void main() {
       expect(result.getOrThrow(), equals(defaultValue));
     });
 
+    test('should resolve branch default when input is null', () {
+      // Regression: a DefaultSchema branch should resolve its default on null
+      // before the union-level null gate rejects the value.
+      final schema = Ack.anyOf([
+        Ack.string().withDefault('fallback'),
+        Ack.integer(),
+      ]);
+
+      final result = schema.safeParse(null);
+      expect(result.isOk, isTrue);
+      expect(result.getOrThrow(), equals('fallback'));
+    });
+
     test('should fail when default is invalid for all member schemas', () {
       // Use a list as default - neither integer nor double accept lists
       const defaultValue = [1, 2, 3];

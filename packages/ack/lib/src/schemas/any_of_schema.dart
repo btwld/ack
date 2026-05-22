@@ -46,8 +46,13 @@ final class AnyOfSchema extends AckSchema<Object, Object>
     SchemaContext context, {
     required bool parse,
   }) {
-    final nullResult = handleNullInput(value, context);
-    if (nullResult != null) return nullResult;
+    // On parse we let branches see null first so a member's DefaultSchema or
+    // nullable branch can resolve before the union-level null gate rejects.
+    // Runtime validation keeps the union-level null gate intact.
+    if (!parse) {
+      final nullResult = handleNullInput(value, context);
+      if (nullResult != null) return nullResult;
+    }
 
     final errors = <SchemaError>[];
     for (final (index, schema) in schemas.indexed) {
@@ -67,6 +72,12 @@ final class AnyOfSchema extends AckSchema<Object, Object>
       }
       errors.add(result.getError());
     }
+
+    if (parse && value == null) {
+      if (acceptsNull) return SchemaResult.ok(null);
+      return failNonNullable(context);
+    }
+
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
