@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show BorderSide, BorderStyle, Color;
 
-import 'enums.dart' show borderStyleCodec, enumCodec;
+import 'enums.dart' show borderStyleCodec;
 import 'numbers.dart';
 import 'primitives/color.dart' show colorCodec;
 
@@ -16,7 +16,7 @@ enum _StrokeAlign { inside, center, outside }
 /// canonicalizes the three named offsets back to their aliases and emits any
 /// other finite value as a number.
 final strokeAlignCodec = Ack.codec<Object, Object, double>(
-  input: Ack.anyOf([enumCodec(_StrokeAlign.values), finiteNumber()]),
+  input: Ack.anyOf([Ack.enumCodec(_StrokeAlign.values), finiteNumber()]),
   decode: _decodeStrokeAlign,
   encode: _encodeStrokeAlign,
 );

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -117,10 +119,42 @@ void main() {
           expect(schema.safeParse(42).isOk, isFalse);
         });
 
+        test('rejects non-finite doubles by default', () {
+          final schema = Ack.double();
+
+          for (final value in [
+            double.nan,
+            double.infinity,
+            double.negativeInfinity,
+          ]) {
+            expect(schema.safeParse(value).isFail, isTrue);
+            expect(schema.safeEncode(value).isFail, isTrue);
+          }
+        });
+
         test('Ack.number accepts both integer and double values', () {
           final schema = Ack.number();
           expect(schema.safeParse(42).isOk, isTrue);
           expect(schema.safeParse(3.14).isOk, isTrue);
+        });
+
+        test('Ack.number rejects non-finite values by default', () {
+          final schema = Ack.number();
+
+          for (final value in [
+            double.nan,
+            double.infinity,
+            double.negativeInfinity,
+          ]) {
+            expect(schema.safeParse(value).isFail, isTrue);
+            expect(schema.safeEncode(value).isFail, isTrue);
+          }
+        });
+
+        test('Ack.number generates a number JSON schema', () {
+          final jsonSchema = Ack.number().toJsonSchema();
+
+          expect(jsonSchema, {'type': 'number'});
         });
 
         test('should validate with numeric constraints', () {
@@ -128,6 +162,17 @@ void main() {
           expect(schema.safeParse(50.5).isOk, isTrue);
           expect(schema.safeParse(-1.0).isOk, isFalse);
           expect(schema.safeParse(101.0).isOk, isFalse);
+        });
+
+        test('numeric JSON schemas survive jsonEncode', () {
+          final doubleJson = Ack.double().toJsonSchema();
+          final numberJson = Ack.number().min(0).max(10).toJsonSchema();
+
+          expect(jsonEncode(doubleJson), '{"type":"number"}');
+          expect(
+            jsonEncode(numberJson),
+            '{"type":"number","minimum":0,"maximum":10}',
+          );
         });
       });
 

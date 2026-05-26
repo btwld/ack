@@ -66,7 +66,8 @@ final roleSchema = Ack.enumValues(Role.values);
 
 Numeric schemas are strict about their Dart runtime type. `Ack.integer()`
 rejects `double` values (even whole ones like `42.0`); `Ack.double()` rejects
-`int` values. Use `Ack.number()` when either is acceptable.
+`int` values. Use `Ack.number()` when either is acceptable. `Ack.double()` and
+`Ack.number()` reject non-finite values (`NaN` and infinities) by default.
 
 ```dart
 // Integer validation (int only — 42.0 would fail)

@@ -3,6 +3,7 @@ import 'package:meta/meta.dart';
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
+import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
@@ -96,8 +97,10 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// for schemas whose parse is just runtime validation. Composite and codec
   /// schemas override this to implement boundary-shape-specific logic.
   @protected
-  SchemaResult<Runtime> parseWithContext(Object? value, SchemaContext context) =>
-      validateRuntimeWithContext(value, context);
+  SchemaResult<Runtime> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
 
   /// Validates that [value] is a valid runtime value for this schema.
   ///
@@ -575,4 +578,3 @@ JsonMap? jsonMapOrNull(Object? value) {
   }
   return result;
 }
-

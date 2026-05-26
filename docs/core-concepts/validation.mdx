@@ -190,7 +190,7 @@ Ack.string().toUpperCase()
 // "hello" → "HELLO"
 ```
 
-## Number Constraints (Int and Double)
+## Number Constraints
 
 Apply these to [`Ack.integer()`](./schemas.mdx#number), [`Ack.double()`](./schemas.mdx#number), or [`Ack.number()`](./schemas.mdx#number) schemas.
 
@@ -199,6 +199,7 @@ Requires a value `>= limit` (inclusive).
 ```dart
 Ack.integer().min(0) // >= 0
 Ack.double().min(0.0) // >= 0.0
+Ack.number().min(0) // >= 0
 ```
 
 ### `max(num limit)`
@@ -206,6 +207,7 @@ Requires a value `<= limit` (inclusive).
 ```dart
 Ack.integer().max(100) // <= 100
 Ack.double().max(100.0) // <= 100.0
+Ack.number().max(100) // <= 100
 ```
 
 ### `greaterThan(num limit)`
@@ -213,6 +215,7 @@ Requires a value strictly `> limit` (exclusive).
 ```dart
 Ack.integer().greaterThan(0) // > 0
 Ack.double().greaterThan(0.0) // > 0.0
+Ack.number().greaterThan(0) // > 0
 ```
 
 ### `lessThan(num limit)`
@@ -220,6 +223,7 @@ Requires a value strictly `< limit` (exclusive).
 ```dart
 Ack.integer().lessThan(100) // < 100
 Ack.double().lessThan(100.0) // < 100.0
+Ack.number().lessThan(100) // < 100
 ```
 
 ### `multipleOf(num factor)`
@@ -227,6 +231,7 @@ Requires a value that is a multiple of `factor`.
 ```dart
 Ack.integer().multipleOf(5) // Must be divisible by 5
 Ack.double().multipleOf(0.5) // Use factors that avoid floating point rounding issues
+Ack.number().multipleOf(0.5)
 ```
 
 ### `positive()`
@@ -234,6 +239,7 @@ Requires a value greater than 0.
 ```dart
 Ack.integer().positive() // > 0
 Ack.double().positive() // > 0.0
+Ack.number().positive() // > 0
 ```
 
 ### `negative()`
@@ -241,6 +247,7 @@ Requires a value less than 0.
 ```dart
 Ack.integer().negative() // < 0
 Ack.double().negative() // < 0.0
+Ack.number().negative() // < 0
 ```
 
 ### `safe()` (Integer only)
@@ -249,10 +256,13 @@ Requires an integer within JavaScript's safe range (`-2^53+1` to `2^53-1`).
 Ack.integer().safe()
 ```
 
-### `finite()` (Double only)
-Requires a finite number (rejects `infinity` and `NaN`).
+### `finite()`
+Requires a finite number (rejects `infinity` and `NaN`). `Ack.double()` and
+`Ack.number()` already enforce this by default; the method is available for
+explicitness and API symmetry.
 ```dart
 Ack.double().finite()
+Ack.number().finite()
 ```
 
 ## List Constraints

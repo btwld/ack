@@ -2,7 +2,6 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
     show Alignment, AlignmentDirectional, AlignmentGeometry;
 
-import '../enums.dart' show enumCodec;
 import '../numbers.dart';
 
 /// Named [Alignment] constants, encoded as string aliases.
@@ -27,7 +26,7 @@ enum _Alignment {
 /// emits the name when the value matches a constant, otherwise the object.
 final alignmentCodec = Ack.codec<Object, Object, Alignment>(
   input: Ack.anyOf([
-    enumCodec(_Alignment.values),
+    Ack.enumCodec(_Alignment.values),
     Ack.object({'x': finiteNumber(), 'y': finiteNumber()}),
   ]),
   decode: _decodeAlignment,
@@ -73,7 +72,7 @@ enum _AlignmentDirectional {
 final alignmentDirectionalCodec =
     Ack.codec<Object, Object, AlignmentDirectional>(
       input: Ack.anyOf([
-        enumCodec(_AlignmentDirectional.values),
+        Ack.enumCodec(_AlignmentDirectional.values),
         Ack.object({'start': finiteNumber(), 'y': finiteNumber()}),
       ]),
       decode: _decodeAlignmentDirectional,

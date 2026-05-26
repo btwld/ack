@@ -10,6 +10,26 @@ sealed class NumSchema<T extends num> extends AckSchema<T, T> {
     super.constraints,
     super.refinements,
   });
+
+  @override
+  @protected
+  SchemaResult<T> applyConstraintsAndRefinements(
+    T value,
+    SchemaContext context,
+  ) {
+    if (value is double && !value.isFinite) {
+      final constraint = NumberFiniteConstraint<T>();
+      final error = constraint.validate(value);
+      return SchemaResult.fail(
+        SchemaConstraintsError(
+          constraints: error != null ? [error] : const [],
+          context: context,
+        ),
+      );
+    }
+
+    return super.applyConstraintsAndRefinements(value, context);
+  }
 }
 
 // --- IntegerSchema ---
