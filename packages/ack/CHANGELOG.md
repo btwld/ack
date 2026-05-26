@@ -7,6 +7,14 @@
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
 
+### Added
+
+* `Ack.enumCodec<T extends Enum>(List<T> values)` returns a
+  `CodecSchema<String, T>` wrapping `EnumSchema<T>`. Use this when downstream
+  code expects every value-shape to be a `CodecSchema` (e.g. a registry of
+  codecs). Decode/encode are identity since `EnumSchema` already maps between
+  `T` and the enum's `.name`.
+
 ### Changed
 
 * Project discriminated schemas through union-owned discriminator branches.

@@ -20,6 +20,11 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.enumValues(List<T> values)`: Creates an `EnumSchema<T>` for Dart enum
   types. Accepts enum instances, string names, or indices. **Preferred over
   `enumString` when a Dart enum exists.**
+- `Ack.enumCodec(List<T> values)`: Like `enumValues`, but returns a
+  `CodecSchema<String, T>` instead of an `EnumSchema<T>`. Use this when
+  downstream code expects every value-shape to be a `CodecSchema` (e.g. a
+  registry of codecs). The decode and encode functions are identity — the
+  underlying `EnumSchema` still maps between `T` and the enum's `.name`.
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained
   to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.

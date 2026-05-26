@@ -301,6 +301,54 @@ void main() {
     });
   });
 
+  group('Ack.enumCodec', () {
+    test('returns a CodecSchema with String boundary and enum runtime', () {
+      final schema = Ack.enumCodec(_Role.values);
+      expect(schema, isA<CodecSchema<String, _Role>>());
+    });
+
+    test('parses .name into the typed enum value', () {
+      final schema = Ack.enumCodec(_Role.values);
+      // Static-type check: boundary is String, runtime is _Role.
+      // The String → _Role mapping is performed inside the underlying
+      // EnumSchema (via `.name` lookup), not by the codec's identity
+      // decoder.
+      const String boundaryInput = 'admin';
+      final _Role? parsed = schema.parse(boundaryInput);
+      expect(parsed, _Role.admin);
+      expect(schema.parse('member'), _Role.member);
+    });
+
+    test('encodes the enum value back to .name', () {
+      final schema = Ack.enumCodec(_Role.values);
+      // Static-type check: encoder takes _Role, returns String.
+      const _Role runtimeValue = _Role.admin;
+      final String? encoded = schema.encode(runtimeValue);
+      expect(encoded, 'admin');
+      expect(schema.encode(_Role.member), 'member');
+    });
+
+    test('round-trips through the codec without losing identity', () {
+      final schema = Ack.enumCodec(_Role.values);
+      for (final value in _Role.values) {
+        final encoded = schema.encode(value);
+        expect(schema.parse(encoded), value);
+      }
+    });
+
+    test('rejects strings outside the allowed values', () {
+      final schema = Ack.enumCodec(_Role.values);
+      final result = schema.safeParse('owner');
+      expect(result.isFail, true);
+    });
+
+    test('rejects non-string boundary input', () {
+      final schema = Ack.enumCodec(_Role.values);
+      final result = schema.safeParse(42);
+      expect(result.isFail, true);
+    });
+  });
+
   group('DefaultSchema wrapper', () {
     test('parse(null) returns runtime default', () {
       final schema = Ack.string().withDefault('fallback');

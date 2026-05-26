@@ -1,6 +1,7 @@
 import 'common_types.dart';
 import 'constraints/pattern_constraint.dart';
 import 'constraints/string_literal_constraint.dart';
+import 'schemas/extensions/ack_schema_extensions.dart';
 import 'schemas/extensions/string_schema_extensions.dart';
 import 'schemas/schema.dart';
 
@@ -52,6 +53,24 @@ final class Ack {
   /// Creates an enum schema for validating enum values.
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
       EnumSchema(values: values);
+
+  /// Creates a bidirectional codec for Dart enums, with boundary `String` and
+  /// runtime [T].
+  ///
+  /// This is a thin wrapper around [enumValues] that returns a
+  /// [CodecSchema] instead of an [EnumSchema], for uniform composition with
+  /// other codecs (e.g. when assembling a registry of `CodecSchema` values
+  /// for many value shapes). The decode and encode functions are identity
+  /// because [EnumSchema] already maps between [T] and the enum's `.name`.
+  ///
+  /// Prefer [enumValues] when you need [EnumSchema]-specific affordances
+  /// (e.g. adding constraints, copying with new flags). Prefer [enumCodec]
+  /// when downstream code expects every value-shape to be a `CodecSchema`.
+  static CodecSchema<String, T> enumCodec<T extends Enum>(List<T> values) =>
+      enumValues(values).codec<T>(
+        decode: (value) => value,
+        encode: (value) => value,
+      );
 
   /// Creates a string schema that only accepts one of the given [values].
   static StringSchema enumString(List<String> values) =>
