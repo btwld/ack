@@ -283,6 +283,81 @@ void main() {
     });
   });
 
+  group('NumberSchemaExtensions', () {
+    test('min and max validate int and double values', () {
+      final schema = NumberSchema().min(1).max(3.5);
+
+      expect(schema.safeParse(1).isOk, isTrue);
+      expect(schema.safeParse(2.5).isOk, isTrue);
+      expect(schema.safeParse(0).isFail, isTrue);
+      expect(schema.safeParse(4).isFail, isTrue);
+    });
+
+    test('exclusive bounds validate numeric values', () {
+      final schema = NumberSchema().greaterThan(1).lessThan(3);
+
+      expect(schema.safeParse(2).isOk, isTrue);
+      expect(schema.safeParse(1).isFail, isTrue);
+      expect(schema.safeParse(3).isFail, isTrue);
+    });
+
+    test('positive and negative validate numeric values', () {
+      expect(NumberSchema().positive().safeParse(1).isOk, isTrue);
+      expect(NumberSchema().positive().safeParse(0).isFail, isTrue);
+      expect(NumberSchema().negative().safeParse(-1).isOk, isTrue);
+      expect(NumberSchema().negative().safeParse(0).isFail, isTrue);
+    });
+
+    test('multipleOf validates numeric values', () {
+      final schema = NumberSchema().multipleOf(0.5);
+
+      expect(schema.safeParse(1).isOk, isTrue);
+      expect(schema.safeParse(1.5).isOk, isTrue);
+      expect(schema.safeParse(1.25).isFail, isTrue);
+    });
+
+    test('finite rejects non-finite values', () {
+      final schema = NumberSchema().finite();
+
+      expect(schema.safeParse(1).isOk, isTrue);
+      expect(schema.safeParse(1.5).isOk, isTrue);
+      expect(schema.safeParse(double.nan).isFail, isTrue);
+      expect(schema.safeParse(double.infinity).isFail, isTrue);
+    });
+
+    test('constraints emit JSON Schema keywords', () {
+      expect(NumberSchema().min(1).toJsonSchema(), {
+        'type': 'number',
+        'minimum': 1,
+      });
+      expect(NumberSchema().max(2.5).toJsonSchema(), {
+        'type': 'number',
+        'maximum': 2.5,
+      });
+      expect(NumberSchema().greaterThan(1).toJsonSchema(), {
+        'type': 'number',
+        'exclusiveMinimum': 1,
+      });
+      expect(NumberSchema().lessThan(2).toJsonSchema(), {
+        'type': 'number',
+        'exclusiveMaximum': 2,
+      });
+      expect(NumberSchema().multipleOf(0.5).toJsonSchema(), {
+        'type': 'number',
+        'multipleOf': 0.5,
+      });
+      expect(NumberSchema().positive().toJsonSchema(), {
+        'type': 'number',
+        'exclusiveMinimum': 0,
+      });
+      expect(NumberSchema().negative().toJsonSchema(), {
+        'type': 'number',
+        'exclusiveMaximum': 0,
+      });
+      expect(NumberSchema().finite().toJsonSchema(), {'type': 'number'});
+    });
+  });
+
   group('IntegerSchemaExtensions', () {
     group('safe', () {
       const maxSafeInteger = 9007199254740991;

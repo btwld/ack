@@ -121,7 +121,10 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ## `IntegerSchema` / `DoubleSchema` / `NumberSchema` (Number Schemas)
 
-Schemas for validating numeric values. `IntegerSchema` only accepts `int`, `DoubleSchema` only accepts `double`, and `NumberSchema` accepts any `num` (either `int` or `double`). See [Number Validation](../core-concepts/validation.mdx#number-constraints-int-and-double).
+Schemas for validating numeric values. `IntegerSchema` only accepts `int`,
+`DoubleSchema` only accepts `double`, and `NumberSchema` accepts any `num`
+(either `int` or `double`). `DoubleSchema` and `NumberSchema` reject non-finite
+values by default. See [Number Validation](../core-concepts/validation.mdx#number-constraints).
 
 - `min(num limit)`: Minimum value (inclusive)
 - `max(num limit)`: Maximum value (inclusive)
@@ -130,7 +133,7 @@ Schemas for validating numeric values. `IntegerSchema` only accepts `int`, `Doub
 - `positive()`: Must be greater than 0
 - `negative()`: Must be less than 0
 - `multipleOf(num factor)`: Must be a multiple of the factor
-- `finite()`: Must be finite (DoubleSchema only)
+- `finite()`: Must be finite (DoubleSchema and NumberSchema; already the default)
 - `safe()`: Must be within safe integer range (IntegerSchema only)
 
 ## `BooleanSchema`

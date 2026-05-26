@@ -57,7 +57,14 @@ AckSchemaModel _build(AckSchema schema) {
   final model = switch (schema) {
     StringSchema() => _string(schema),
     IntegerSchema() => _integer(schema),
-    DoubleSchema() => _number(schema),
+    DoubleSchema() => _number(
+      description: schema.description,
+      nullable: schema.isNullable,
+    ),
+    NumberSchema() => _number(
+      description: schema.description,
+      nullable: schema.isNullable,
+    ),
     BooleanSchema() => _boolean(schema),
     EnumSchema() => _enum(schema),
     ListSchema() => _array(schema),
@@ -88,11 +95,8 @@ AckSchemaModel _integer(IntegerSchema schema) {
   );
 }
 
-AckSchemaModel _number(DoubleSchema schema) {
-  return AckNumberSchemaModel(
-    description: schema.description,
-    nullable: schema.isNullable,
-  );
+AckSchemaModel _number({String? description, required bool nullable}) {
+  return AckNumberSchemaModel(description: description, nullable: nullable);
 }
 
 AckSchemaModel _boolean(BooleanSchema schema) {

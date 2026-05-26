@@ -1,7 +1,8 @@
 import 'constraint.dart';
 
-/// Constraint to validate if a double is finite.
-class NumberFiniteConstraint extends Constraint<double> with Validator<double> {
+/// Constraint to validate if a number is finite.
+class NumberFiniteConstraint<N extends num> extends Constraint<N>
+    with Validator<N> {
   const NumberFiniteConstraint()
     : super(
         constraintKey: 'double.isFinite',
@@ -9,10 +10,10 @@ class NumberFiniteConstraint extends Constraint<double> with Validator<double> {
       );
 
   @override
-  bool isValid(double value) => value.isFinite;
+  bool isValid(N value) => value.isFinite;
 
   @override
-  String buildMessage(double value) => 'Value must be finite, but was not.';
+  String buildMessage(N value) => 'Value must be finite, but was not.';
 
   // No additional fields - base class equality is sufficient.
 }

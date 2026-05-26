@@ -86,6 +86,52 @@ extension DoubleSchemaExtensions on DoubleSchema {
 
   /// Adds a constraint that the double must be a finite number.
   DoubleSchema finite() {
-    return withConstraint(NumberFiniteConstraint());
+    return withConstraint(NumberFiniteConstraint<double>());
+  }
+}
+
+/// Adds fluent validation methods to [NumberSchema].
+extension NumberSchemaExtensions on NumberSchema {
+  /// Adds a constraint that the number must be greater than [n].
+  NumberSchema greaterThan(num n) {
+    return withConstraint(ComparisonConstraint.numberExclusiveMin<num>(n));
+  }
+
+  /// Adds a constraint that the number must be greater than or equal to [n].
+  NumberSchema min(num n) {
+    return withConstraint(ComparisonConstraint.numberMin<num>(n));
+  }
+
+  /// Adds a constraint that the number must be less than [n].
+  NumberSchema lessThan(num n) {
+    return withConstraint(ComparisonConstraint.numberExclusiveMax<num>(n));
+  }
+
+  /// Adds a constraint that the number must be less than or equal to [n].
+  NumberSchema max(num n) {
+    return withConstraint(ComparisonConstraint.numberMax<num>(n));
+  }
+
+  /// Adds a constraint that the number must be positive (> 0).
+  NumberSchema positive() {
+    return withConstraint(ComparisonConstraint.numberPositive<num>());
+  }
+
+  /// Adds a constraint that the number must be negative (< 0).
+  NumberSchema negative() {
+    return withConstraint(ComparisonConstraint.numberNegative<num>());
+  }
+
+  /// Adds a constraint that the number must be a multiple of [n].
+  NumberSchema multipleOf(num n) {
+    return withConstraint(ComparisonConstraint.numberMultipleOf<num>(n));
+  }
+
+  /// Adds a constraint that the number must be finite.
+  ///
+  /// Numbers are finite by default; this method is kept for API symmetry with
+  /// [DoubleSchema.finite].
+  NumberSchema finite() {
+    return withConstraint(NumberFiniteConstraint<num>());
   }
 }
