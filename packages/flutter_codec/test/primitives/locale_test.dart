@@ -43,7 +43,7 @@ void main() {
       expect(
         jsonEncode(localeCodec.toJsonSchema()),
         contains(
-          r'"pattern":"^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|\\d{3})?$"',
+          r'"pattern":"^([a-z]{2,3})(?:-([A-Z][a-z]{3}))?(?:-([A-Z]{2}|\\d{3}))?$"',
         ),
       );
     });

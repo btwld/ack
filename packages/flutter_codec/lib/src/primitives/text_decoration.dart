@@ -23,8 +23,8 @@ TextDecoration _decodeTextDecoration(Object value) {
 
   final decorations = (value as List)
       .cast<_TextDecoration>()
+      .where((atomic) => atomic != _TextDecoration.none)
       .map(_atomicToTextDecoration)
-      .where((decoration) => decoration != TextDecoration.none)
       .toList();
   if (decorations.isEmpty) return TextDecoration.none;
 

@@ -2,7 +2,13 @@ import 'dart:ui' show Locale;
 
 import 'package:ack/ack.dart';
 
-const _localePattern = r'^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|\d{3})?$';
+/// BCP-47 subset: required language (2-3 lowercase), optional script
+/// (4-character title case), optional region (2 uppercase letters or 3 digits).
+/// Capture groups extract each subtag for [_decodeLocale]; the unanchored
+/// pattern matters only for validation, so the groups don't affect matching.
+const _localePattern =
+    r'^([a-z]{2,3})(?:-([A-Z][a-z]{3}))?(?:-([A-Z]{2}|\d{3}))?$';
+final _localeRegex = RegExp(_localePattern);
 
 /// Codec for [Locale] using BCP-47 language tags.
 ///
@@ -11,27 +17,13 @@ const _localePattern = r'^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|\d{3})?$';
 /// [Locale.toLanguageTag].
 final localeCodec = Ack.codec<String, String, Locale>(
   input: Ack.string().matches(_localePattern),
-  decode: _decodeLocale,
+  decode: (value) {
+    final match = _localeRegex.firstMatch(value)!;
+    return Locale.fromSubtags(
+      languageCode: match.group(1)!,
+      scriptCode: match.group(2),
+      countryCode: match.group(3),
+    );
+  },
   encode: (value) => value.toLanguageTag(),
 );
-
-Locale _decodeLocale(String value) {
-  final parts = value.split('-');
-  final languageCode = parts.first;
-  String? scriptCode;
-  String? countryCode;
-
-  for (final part in parts.skip(1)) {
-    if (part.length == 4) {
-      scriptCode = part;
-    } else {
-      countryCode = part;
-    }
-  }
-
-  return Locale.fromSubtags(
-    languageCode: languageCode,
-    scriptCode: scriptCode,
-    countryCode: countryCode,
-  );
-}

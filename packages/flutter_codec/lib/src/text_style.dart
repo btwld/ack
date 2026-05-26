@@ -116,75 +116,53 @@ JsonMap _encodeTextStyle(TextStyle value) {
   };
 }
 
-double? _readNullableDouble(JsonMap map, String key) {
-  final value = map[key];
-  if (value == null) return null;
+double? _readNullableDouble(JsonMap map, String key) =>
+    (map[key] as num?)?.toDouble();
 
-  return (value as num).toDouble();
-}
+List<T>? _readNullableList<T>(JsonMap data, String key) =>
+    (data[key] as List?)?.cast<T>().toList();
 
-List<T>? _readNullableList<T>(JsonMap data, String key) {
-  final value = data[key];
-  if (value == null) return null;
-
-  return (value as List).cast<T>().toList();
-}
-
+/// Unfolds Flutter's internal `packages/<pkg>/<family>` storage back to the
+/// user-supplied `(fontFamily, fontFamilyFallback, package)` triple, when all
+/// referenced families share the same package prefix. Falls back to the
+/// stored (prefixed) form if the prefix is missing or inconsistent.
 ({String? family, List<String>? fallback, String? packageName})
 _encodeFontFamilyFields(TextStyle value) {
-  final fontFamily = value.fontFamily;
-  final fontFamilyFallback = value.fontFamilyFallback;
-  final packageName = _inferPackageName(fontFamily, fontFamilyFallback);
-  if (packageName == null) {
-    return (
-      family: fontFamily,
-      fallback: fontFamilyFallback,
-      packageName: null,
-    );
+  final family = value.fontFamily;
+  final fallback = value.fontFamilyFallback;
+  final pkg = _sharedPackagePrefix([if (family != null) family, ...?fallback]);
+  if (pkg == null) {
+    return (family: family, fallback: fallback, packageName: null);
   }
 
+  final prefix = 'packages/$pkg/';
+  String strip(String f) =>
+      f.startsWith(prefix) ? f.substring(prefix.length) : f;
   return (
-    family: fontFamily == null
-        ? null
-        : _stripPackagePrefix(fontFamily, packageName),
-    fallback: fontFamilyFallback
-        ?.map((family) => _stripPackagePrefix(family, packageName))
-        .toList(),
-    packageName: packageName,
+    family: family == null ? null : strip(family),
+    fallback: fallback?.map(strip).toList(),
+    packageName: pkg,
   );
 }
 
-String? _inferPackageName(String? fontFamily, List<String>? fallback) {
-  final families = [
-    if (fontFamily != null) fontFamily,
-    if (fallback != null) ...fallback,
-  ];
-  if (families.isEmpty) return null;
+/// Returns the package name shared by every `packages/<name>/<family>` entry
+/// in [families], or null if any entry lacks the prefix or disagrees.
+String? _sharedPackagePrefix(List<String> families) {
+  const prefix = 'packages/';
+  String? shared;
+  for (final family in families) {
+    if (!family.startsWith(prefix)) return null;
 
-  final packageName = _packageNameFromPrefixedFamily(families.first);
-  if (packageName == null) return null;
+    final rest = family.substring(prefix.length);
+    final separator = rest.indexOf('/');
+    if (separator <= 0 || separator == rest.length - 1) return null;
 
-  for (final family in families.skip(1)) {
-    if (_packageNameFromPrefixedFamily(family) != packageName) return null;
+    final name = rest.substring(0, separator);
+    if (shared == null) {
+      shared = name;
+    } else if (shared != name) {
+      return null;
+    }
   }
-
-  return packageName;
-}
-
-String? _packageNameFromPrefixedFamily(String fontFamily) {
-  const packagesPrefix = 'packages/';
-  if (!fontFamily.startsWith(packagesPrefix)) return null;
-
-  final packageAndFamily = fontFamily.substring(packagesPrefix.length);
-  final separator = packageAndFamily.indexOf('/');
-  if (separator <= 0 || separator == packageAndFamily.length - 1) return null;
-
-  return packageAndFamily.substring(0, separator);
-}
-
-String _stripPackagePrefix(String fontFamily, String packageName) {
-  final prefix = 'packages/$packageName/';
-  if (!fontFamily.startsWith(prefix)) return fontFamily;
-
-  return fontFamily.substring(prefix.length);
+  return shared;
 }

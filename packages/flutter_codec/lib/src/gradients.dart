@@ -132,14 +132,26 @@ final sweepGradientCodec =
       },
     );
 
-/// Codec for [Gradient], unioning the three concrete gradient codecs via the
-/// `"type"` discriminator. Encoding dispatches by runtime type.
-final gradientCodec =
-    Ack.anyOf([
-      linearGradientCodec,
-      radialGradientCodec,
-      sweepGradientCodec,
-    ]).codec<Gradient>(
-      decode: (value) => value as Gradient,
-      encode: (value) => value,
-    );
+/// Codec for [Gradient], discriminated by a `"type"` key (`"linear"`,
+/// `"radial"`, or `"sweep"`). Each branch is the corresponding concrete
+/// codec, upcast to the union runtime type. The standalone codecs
+/// ([linearGradientCodec], [radialGradientCodec], [sweepGradientCodec]) carry
+/// the same `"type"` literal, so a value encoded through this union round-trips
+/// through them and vice versa.
+final gradientCodec = Ack.discriminated<Gradient>(
+  discriminatorKey: 'type',
+  schemas: {
+    'linear': linearGradientCodec.codec<Gradient>(
+      decode: (value) => value,
+      encode: (value) => value as LinearGradient,
+    ),
+    'radial': radialGradientCodec.codec<Gradient>(
+      decode: (value) => value,
+      encode: (value) => value as RadialGradient,
+    ),
+    'sweep': sweepGradientCodec.codec<Gradient>(
+      decode: (value) => value,
+      encode: (value) => value as SweepGradient,
+    ),
+  },
+);

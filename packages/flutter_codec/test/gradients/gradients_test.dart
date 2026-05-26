@@ -42,8 +42,6 @@ void main() {
 
   group('linearGradientCodec encode', () {
     test('emits a full canonical object with discriminator', () {
-      // .codec<T>() emits optional null fields explicitly (no null-stripping,
-      // unlike .model<T>()).
       final encoded = linearGradientCodec.encode(
         const LinearGradient(colors: _redBlue),
       );
@@ -238,19 +236,22 @@ void main() {
       );
     });
 
+    test('rejects a missing discriminator', () {
+      expect(gradientCodec.safeParse({'colors': _redBlueHex}).isFail, isTrue);
+    });
+
     test('encode dispatches by runtime type', () {
-      final linear = gradientCodec.encode(
-        const LinearGradient(colors: _redBlue),
-      );
-      expect((linear as Map)['type'], 'linear');
+      final linear =
+          gradientCodec.encode(const LinearGradient(colors: _redBlue)) as Map;
+      expect(linear['type'], 'linear');
 
-      final radial = gradientCodec.encode(
-        const RadialGradient(colors: _redBlue),
-      );
-      expect((radial as Map)['type'], 'radial');
+      final radial =
+          gradientCodec.encode(const RadialGradient(colors: _redBlue)) as Map;
+      expect(radial['type'], 'radial');
 
-      final sweep = gradientCodec.encode(const SweepGradient(colors: _redBlue));
-      expect((sweep as Map)['type'], 'sweep');
+      final sweep =
+          gradientCodec.encode(const SweepGradient(colors: _redBlue)) as Map;
+      expect(sweep['type'], 'sweep');
 
       expectJsonSafe(linear);
       expectJsonSafe(radial);
@@ -259,9 +260,10 @@ void main() {
   });
 
   group('gradientCodec JSON Schema', () {
-    test('discriminators and numeric constraints flow through', () {
+    test('discriminator branches and numeric constraints flow through', () {
       final schema = jsonEncode(gradientCodec.toJsonSchema());
-      // Ack.literal emits "const":"<value>" for each branch's type field.
+      // Each branch's Ack.literal still emits "const":"<value>" in the inner
+      // object schema.
       expect(schema, contains('"const":"linear"'));
       expect(schema, contains('"const":"radial"'));
       expect(schema, contains('"const":"sweep"'));
