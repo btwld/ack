@@ -6,3 +6,4 @@ export 'src/enums.dart';
 export 'src/gradients.dart';
 export 'src/primitives.dart';
 export 'src/shadows.dart';
+export 'src/text_style.dart';
