@@ -153,7 +153,7 @@ final borderDirectionalCodec =
       'start': borderSideCodec.withDefault(BorderSide.none),
       'end': borderSideCodec.withDefault(BorderSide.none),
       'bottom': borderSideCodec.withDefault(BorderSide.none),
-    }).model<BorderDirectional>(
+    }).codec<BorderDirectional>(
       decode: (data) => BorderDirectional(
         top: data['top']! as BorderSide,
         start: data['start']! as BorderSide,

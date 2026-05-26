@@ -60,7 +60,7 @@ final edgeInsetsDirectionalCodec =
       'top': Ack.number().withDefault(0.0),
       'end': Ack.number().withDefault(0.0),
       'bottom': Ack.number().withDefault(0.0),
-    }).model<EdgeInsetsDirectional>(
+    }).codec<EdgeInsetsDirectional>(
       decode: (data) => EdgeInsetsDirectional.fromSTEB(
         readDouble(data, 'start'),
         readDouble(data, 'top'),

@@ -3,4 +3,6 @@ library;
 
 export 'src/borders.dart';
 export 'src/enums.dart';
+export 'src/gradients.dart';
 export 'src/primitives.dart';
+export 'src/shadows.dart';

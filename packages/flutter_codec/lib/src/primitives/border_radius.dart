@@ -60,7 +60,7 @@ final borderRadiusDirectionalCodec =
       'topEnd': radiusCodec.withDefault(Radius.zero),
       'bottomStart': radiusCodec.withDefault(Radius.zero),
       'bottomEnd': radiusCodec.withDefault(Radius.zero),
-    }).model<BorderRadiusDirectional>(
+    }).codec<BorderRadiusDirectional>(
       decode: (data) => BorderRadiusDirectional.only(
         topStart: data['topStart']! as Radius,
         topEnd: data['topEnd']! as Radius,
