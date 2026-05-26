@@ -1,6 +1,4 @@
-import '../../common_types.dart';
 import '../schema.dart';
-import 'ack_schema_extensions.dart';
 
 /// Adds fluent validation methods to [ObjectSchema].
 extension ObjectSchemaExtensions on ObjectSchema {
@@ -66,37 +64,5 @@ extension ObjectSchemaExtensions on ObjectSchema {
     );
 
     return copyWith(properties: newProperties);
-  }
-}
-
-/// Extension that turns an [ObjectSchema] into a bidirectional codec mapping
-/// the underlying [JsonMap] to a typed Dart model [Runtime].
-extension ObjectSchemaModelExtension on ObjectSchema {
-  /// Creates a [CodecSchema] that decodes a parsed [JsonMap] into [Runtime]
-  /// and encodes [Runtime] back to [JsonMap].
-  ///
-  /// When [omitNullOptionals] is true, the encoded map drops `null` entries
-  /// whose property schema is marked optional.
-  CodecSchema<JsonMap, Runtime> model<Runtime extends Object>({
-    required Runtime Function(JsonMap data) decode,
-    required JsonMap Function(Runtime value) encode,
-    AckSchema<dynamic, Runtime>? output,
-    bool omitNullOptionals = true,
-  }) {
-    final self = this;
-    return self.codec<Runtime>(
-      output: output ?? InstanceSchema<Runtime>(),
-      decode: decode,
-      encode: (value) {
-        final raw = encode(value);
-        if (!omitNullOptionals) return raw;
-        return {
-          for (final entry in raw.entries)
-            if (!(entry.value == null &&
-                (self.properties[entry.key]?.isOptional ?? false)))
-              entry.key: entry.value,
-        };
-      },
-    );
   }
 }

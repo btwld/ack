@@ -3,8 +3,8 @@ part of 'schema.dart';
 /// Schema for validating `JsonMap` shaped values.
 ///
 /// `ObjectSchema` has identical boundary and runtime types
-/// (`AckSchema<JsonMap, JsonMap>`). Use [ObjectSchemaModelExtension.model] to
-/// map an object shape to a typed Dart model.
+/// (`AckSchema<JsonMap, JsonMap>`). Use [AckSchemaExtensions.codec] to map an
+/// object shape to a typed Dart model.
 ///
 /// ## Optional / nullable semantics
 ///

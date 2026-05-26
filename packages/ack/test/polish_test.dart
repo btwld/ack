@@ -201,7 +201,7 @@ void main() {
         discriminatorKey: 'kind',
         schemas: {
           'cat': Ack.object({'kind': Ack.literal('cat'), 'name': Ack.string()})
-              .model<_Cat>(
+              .codec<_Cat>(
                 decode: (data) => _Cat(data['name'] as String),
                 // Branch encoder lies about its kind.
                 encode: (cat) => {'kind': 'wrong-kind', 'name': cat.name},
@@ -217,7 +217,7 @@ void main() {
         discriminatorKey: 'kind',
         schemas: {
           'cat': Ack.object({'kind': Ack.literal('cat'), 'name': Ack.string()})
-              .model<_Cat>(
+              .codec<_Cat>(
                 decode: (data) => _Cat(data['name'] as String),
                 encode: (cat) => {'kind': 'cat', 'name': cat.name},
               ),
