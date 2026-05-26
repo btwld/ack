@@ -203,8 +203,8 @@ void main() {
   });
 
   group('Object model mapping', () {
-    test('ObjectSchema.model parses model and encodes JsonMap', () {
-      final schema = Ack.object({'createdAt': Ack.datetime()}).model<_Event>(
+    test('ObjectSchema.codec parses model and encodes JsonMap', () {
+      final schema = Ack.object({'createdAt': Ack.datetime()}).codec<_Event>(
         decode: (data) => _Event(data['createdAt'] as DateTime),
         encode: (event) => {'createdAt': event.createdAt},
       );
@@ -219,12 +219,12 @@ void main() {
       expect(encoded, {'createdAt': '2026-05-10T00:00:00.000Z'});
     });
 
-    test('model encoder injects missing defaulted property', () {
+    test('codec encoder injects missing defaulted property', () {
       final schema =
           Ack.object({
             'name': Ack.string(),
             'role': Ack.string().withDefault('user'),
-          }).model<_User>(
+          }).codec<_User>(
             decode: (data) => _User(data['name'] as String),
             encode: (user) => {'name': user.name},
           );
