@@ -10,7 +10,6 @@ workspace:
   - packages/ack_annotations
   - packages/ack_generator
   - packages/ack_firebase_ai
-  - packages/flutter_codec
   - packages/ack_json_schema_builder
   - example
   
@@ -55,7 +54,6 @@ melos:
           - ack
           - ack_generator
           - ack_firebase_ai
-          - flutter_codec
           - ack_json_schema_builder
           - ack_example
           - ack_annotations
