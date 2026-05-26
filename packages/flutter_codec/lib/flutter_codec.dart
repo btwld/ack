@@ -2,6 +2,7 @@
 library;
 
 export 'src/borders.dart';
+export 'src/box_decoration.dart';
 export 'src/enums.dart';
 export 'src/gradients.dart';
 export 'src/primitives.dart';
