@@ -5,7 +5,7 @@ class NumberFiniteConstraint<N extends num> extends Constraint<N>
     with Validator<N> {
   const NumberFiniteConstraint()
     : super(
-        constraintKey: 'double.isFinite',
+        constraintKey: 'number.isFinite',
         description: 'Value must be a finite number.',
       );
 

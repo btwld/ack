@@ -158,6 +158,11 @@ void main() {
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
+
+      test('uses generic number constraint key', () {
+        const constraint = NumberFiniteConstraint();
+        expect(constraint.constraintKey, 'number.isFinite');
+      });
     });
 
     group('NumberSafeIntegerConstraint', () {
