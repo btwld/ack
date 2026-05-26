@@ -3,7 +3,7 @@ import 'package:flutter/painting.dart'
     show Border, BorderDirectional, BorderSide, BorderStyle, BoxBorder, Color;
 
 import 'enums.dart' show borderStyleCodec;
-import 'numbers.dart';
+import 'json_readers.dart';
 import 'primitives/color.dart' show colorCodec;
 
 /// Named [BorderSide.strokeAlign] offsets, encoded as string aliases.
@@ -71,10 +71,10 @@ BorderSide _decodeBorderSide(Object value) {
 
   final map = value as JsonMap;
   return BorderSide(
-    color: map['color']! as Color,
+    color: readValue<Color>(map, 'color'),
     width: readDouble(map, 'width'),
-    style: map['style']! as BorderStyle,
-    strokeAlign: map['strokeAlign']! as double,
+    style: readValue<BorderStyle>(map, 'style'),
+    strokeAlign: readValue<double>(map, 'strokeAlign'),
   );
 }
 
@@ -121,10 +121,10 @@ Border _decodeBorder(Object value) {
 
   final map = value as JsonMap;
   return Border(
-    top: map['top']! as BorderSide,
-    right: map['right']! as BorderSide,
-    bottom: map['bottom']! as BorderSide,
-    left: map['left']! as BorderSide,
+    top: readValue<BorderSide>(map, 'top'),
+    right: readValue<BorderSide>(map, 'right'),
+    bottom: readValue<BorderSide>(map, 'bottom'),
+    left: readValue<BorderSide>(map, 'left'),
   );
 }
 
@@ -155,10 +155,10 @@ final borderDirectionalCodec =
       'bottom': borderSideCodec.withDefault(BorderSide.none),
     }).codec<BorderDirectional>(
       decode: (data) => BorderDirectional(
-        top: data['top']! as BorderSide,
-        start: data['start']! as BorderSide,
-        end: data['end']! as BorderSide,
-        bottom: data['bottom']! as BorderSide,
+        top: readValue<BorderSide>(data, 'top'),
+        start: readValue<BorderSide>(data, 'start'),
+        end: readValue<BorderSide>(data, 'end'),
+        bottom: readValue<BorderSide>(data, 'bottom'),
       ),
       encode: (value) => {
         'top': value.top,

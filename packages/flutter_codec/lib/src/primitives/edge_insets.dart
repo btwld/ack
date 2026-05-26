@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
     show EdgeInsets, EdgeInsetsDirectional, EdgeInsetsGeometry;
 
-import '../numbers.dart';
+import '../json_readers.dart';
 
 /// Codec for [EdgeInsets]. A bare number sets all four sides; an object
 /// `{"left": ..., "top": ..., "right": ..., "bottom": ...}` (each side optional,

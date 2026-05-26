@@ -20,6 +20,7 @@ import 'enums.dart'
         textDecorationStyleCodec,
         textLeadingDistributionCodec,
         textOverflowCodec;
+import 'json_readers.dart';
 import 'primitives/color.dart' show colorCodec;
 import 'primitives/font_weight.dart' show fontWeightCodec;
 import 'primitives/locale.dart' show localeCodec;
@@ -63,28 +64,33 @@ final textStyleCodec = Ack.object({
 
 TextStyle _decodeTextStyle(JsonMap data) {
   return TextStyle(
-    inherit: data['inherit']! as bool,
-    color: data['color'] as Color?,
-    backgroundColor: data['backgroundColor'] as Color?,
-    fontSize: _readNullableDouble(data, 'fontSize'),
-    fontWeight: data['fontWeight'] as FontWeight?,
-    fontStyle: data['fontStyle'] as FontStyle?,
-    letterSpacing: _readNullableDouble(data, 'letterSpacing'),
-    wordSpacing: _readNullableDouble(data, 'wordSpacing'),
-    textBaseline: data['textBaseline'] as TextBaseline?,
-    height: _readNullableDouble(data, 'height'),
-    leadingDistribution:
-        data['leadingDistribution'] as TextLeadingDistribution?,
-    locale: data['locale'] as ui.Locale?,
-    shadows: _readNullableList<ui.Shadow>(data, 'shadows'),
-    decoration: data['decoration'] as TextDecoration?,
-    decorationColor: data['decorationColor'] as Color?,
-    decorationStyle: data['decorationStyle'] as TextDecorationStyle?,
-    decorationThickness: _readNullableDouble(data, 'decorationThickness'),
-    fontFamily: data['fontFamily'] as String?,
-    fontFamilyFallback: _readNullableList<String>(data, 'fontFamilyFallback'),
-    package: data['package'] as String?,
-    overflow: data['overflow'] as TextOverflow?,
+    inherit: readValue<bool>(data, 'inherit'),
+    color: readNullableValue<Color>(data, 'color'),
+    backgroundColor: readNullableValue<Color>(data, 'backgroundColor'),
+    fontSize: readNullableDouble(data, 'fontSize'),
+    fontWeight: readNullableValue<FontWeight>(data, 'fontWeight'),
+    fontStyle: readNullableValue<FontStyle>(data, 'fontStyle'),
+    letterSpacing: readNullableDouble(data, 'letterSpacing'),
+    wordSpacing: readNullableDouble(data, 'wordSpacing'),
+    textBaseline: readNullableValue<TextBaseline>(data, 'textBaseline'),
+    height: readNullableDouble(data, 'height'),
+    leadingDistribution: readNullableValue<TextLeadingDistribution>(
+      data,
+      'leadingDistribution',
+    ),
+    locale: readNullableValue<ui.Locale>(data, 'locale'),
+    shadows: readNullableList<ui.Shadow>(data, 'shadows'),
+    decoration: readNullableValue<TextDecoration>(data, 'decoration'),
+    decorationColor: readNullableValue<Color>(data, 'decorationColor'),
+    decorationStyle: readNullableValue<TextDecorationStyle>(
+      data,
+      'decorationStyle',
+    ),
+    decorationThickness: readNullableDouble(data, 'decorationThickness'),
+    fontFamily: readNullableValue<String>(data, 'fontFamily'),
+    fontFamilyFallback: readNullableList<String>(data, 'fontFamilyFallback'),
+    package: readNullableValue<String>(data, 'package'),
+    overflow: readNullableValue<TextOverflow>(data, 'overflow'),
   );
 }
 
@@ -115,12 +121,6 @@ JsonMap _encodeTextStyle(TextStyle value) {
     'overflow': value.overflow,
   };
 }
-
-double? _readNullableDouble(JsonMap map, String key) =>
-    (map[key] as num?)?.toDouble();
-
-List<T>? _readNullableList<T>(JsonMap data, String key) =>
-    (data[key] as List?)?.cast<T>().toList();
 
 /// Unfolds Flutter's internal `packages/<pkg>/<family>` storage back to the
 /// user-supplied `(fontFamily, fontFamilyFallback, package)` triple, when all

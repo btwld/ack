@@ -13,21 +13,9 @@ import 'package:flutter/painting.dart'
         TileMode;
 
 import 'enums.dart' show tileModeCodec;
-import 'numbers.dart';
+import 'json_readers.dart';
 import 'primitives/alignment.dart' show alignmentGeometryCodec;
 import 'primitives/color.dart' show colorCodec;
-
-/// Reads the `colors` field, validated by the schema as a `List<Color>`.
-List<Color> _readColors(JsonMap data) =>
-    (data['colors']! as List).cast<Color>();
-
-/// Reads the optional `stops` field as `List<double>?`.
-List<double>? _readStops(JsonMap data) {
-  final raw = data['stops'];
-  if (raw == null) return null;
-
-  return (raw as List).map((s) => (s as num).toDouble()).toList();
-}
 
 /// Codec for [LinearGradient]. Tagged with `"type": "linear"`.
 ///
@@ -45,11 +33,11 @@ final linearGradientCodec =
       'tileMode': tileModeCodec.withDefault(TileMode.clamp),
     }).codec<LinearGradient>(
       decode: (data) => LinearGradient(
-        begin: data['begin']! as AlignmentGeometry,
-        end: data['end']! as AlignmentGeometry,
-        colors: _readColors(data),
-        stops: _readStops(data),
-        tileMode: data['tileMode']! as TileMode,
+        begin: readValue<AlignmentGeometry>(data, 'begin'),
+        end: readValue<AlignmentGeometry>(data, 'end'),
+        colors: readList<Color>(data, 'colors'),
+        stops: readNullableDoubleList(data, 'stops'),
+        tileMode: readValue<TileMode>(data, 'tileMode'),
       ),
       encode: (value) => {
         'type': 'linear',
@@ -78,12 +66,12 @@ final radialGradientCodec =
       'focalRadius': Ack.number().min(0).withDefault(0.0),
     }).codec<RadialGradient>(
       decode: (data) => RadialGradient(
-        center: data['center']! as AlignmentGeometry,
+        center: readValue<AlignmentGeometry>(data, 'center'),
         radius: readDouble(data, 'radius'),
-        colors: _readColors(data),
-        stops: _readStops(data),
-        tileMode: data['tileMode']! as TileMode,
-        focal: data['focal'] as AlignmentGeometry?,
+        colors: readList<Color>(data, 'colors'),
+        stops: readNullableDoubleList(data, 'stops'),
+        tileMode: readValue<TileMode>(data, 'tileMode'),
+        focal: readNullableValue<AlignmentGeometry>(data, 'focal'),
         focalRadius: readDouble(data, 'focalRadius'),
       ),
       encode: (value) => {
@@ -114,12 +102,12 @@ final sweepGradientCodec =
       'tileMode': tileModeCodec.withDefault(TileMode.clamp),
     }).codec<SweepGradient>(
       decode: (data) => SweepGradient(
-        center: data['center']! as AlignmentGeometry,
+        center: readValue<AlignmentGeometry>(data, 'center'),
         startAngle: readDouble(data, 'startAngle'),
         endAngle: readDouble(data, 'endAngle'),
-        colors: _readColors(data),
-        stops: _readStops(data),
-        tileMode: data['tileMode']! as TileMode,
+        colors: readList<Color>(data, 'colors'),
+        stops: readNullableDoubleList(data, 'stops'),
+        tileMode: readValue<TileMode>(data, 'tileMode'),
       ),
       encode: (value) => {
         'type': 'sweep',

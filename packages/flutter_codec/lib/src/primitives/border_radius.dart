@@ -2,6 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
     show BorderRadius, BorderRadiusDirectional, BorderRadiusGeometry, Radius;
 
+import '../json_readers.dart';
 import 'radius.dart' show radiusCodec;
 
 /// Codec for [BorderRadius]. A single radius (a number or `{x,y}`) sets all four
@@ -27,10 +28,10 @@ BorderRadius _decodeBorderRadius(Object value) {
 
   final map = value as JsonMap;
   return BorderRadius.only(
-    topLeft: map['topLeft']! as Radius,
-    topRight: map['topRight']! as Radius,
-    bottomLeft: map['bottomLeft']! as Radius,
-    bottomRight: map['bottomRight']! as Radius,
+    topLeft: readValue<Radius>(map, 'topLeft'),
+    topRight: readValue<Radius>(map, 'topRight'),
+    bottomLeft: readValue<Radius>(map, 'bottomLeft'),
+    bottomRight: readValue<Radius>(map, 'bottomRight'),
   );
 }
 
@@ -62,10 +63,10 @@ final borderRadiusDirectionalCodec =
       'bottomEnd': radiusCodec.withDefault(Radius.zero),
     }).codec<BorderRadiusDirectional>(
       decode: (data) => BorderRadiusDirectional.only(
-        topStart: data['topStart']! as Radius,
-        topEnd: data['topEnd']! as Radius,
-        bottomStart: data['bottomStart']! as Radius,
-        bottomEnd: data['bottomEnd']! as Radius,
+        topStart: readValue<Radius>(data, 'topStart'),
+        topEnd: readValue<Radius>(data, 'topEnd'),
+        bottomStart: readValue<Radius>(data, 'bottomStart'),
+        bottomEnd: readValue<Radius>(data, 'bottomEnd'),
       ),
       encode: (value) => {
         'topStart': value.topStart,

@@ -4,7 +4,7 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show BlurStyle, BoxShadow, Color, Offset;
 
 import 'enums.dart' show blurStyleCodec;
-import 'numbers.dart';
+import 'json_readers.dart';
 import 'primitives/color.dart' show colorCodec;
 import 'primitives/offset.dart' show offsetCodec;
 
@@ -18,8 +18,8 @@ final shadowCodec =
       'blurRadius': Ack.number().min(0).withDefault(0.0),
     }).codec<ui.Shadow>(
       decode: (data) => ui.Shadow(
-        color: data['color']! as Color,
-        offset: data['offset']! as Offset,
+        color: readValue<Color>(data, 'color'),
+        offset: readValue<Offset>(data, 'offset'),
         blurRadius: readDouble(data, 'blurRadius'),
       ),
       encode: (value) => {
@@ -43,11 +43,11 @@ final boxShadowCodec =
       'blurStyle': blurStyleCodec.withDefault(BlurStyle.normal),
     }).codec<BoxShadow>(
       decode: (data) => BoxShadow(
-        color: data['color']! as Color,
-        offset: data['offset']! as Offset,
+        color: readValue<Color>(data, 'color'),
+        offset: readValue<Offset>(data, 'offset'),
         blurRadius: readDouble(data, 'blurRadius'),
         spreadRadius: readDouble(data, 'spreadRadius'),
-        blurStyle: data['blurStyle']! as BlurStyle,
+        blurStyle: readValue<BlurStyle>(data, 'blurStyle'),
       ),
       encode: (value) => {
         'color': value.color,

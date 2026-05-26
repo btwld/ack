@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show Offset;
 
-import '../numbers.dart';
+import '../json_readers.dart';
 
 /// Codec for [Offset], represented as `{"x": ..., "y": ...}`.
 final offsetCodec = Ack.object({'x': Ack.number(), 'y': Ack.number()})

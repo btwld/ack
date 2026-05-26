@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
     show Alignment, AlignmentDirectional, AlignmentGeometry;
 
-import '../numbers.dart';
+import '../json_readers.dart';
 
 /// Named [Alignment] constants, encoded as string aliases.
 enum _Alignment {

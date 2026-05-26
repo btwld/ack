@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show Radius;
 
-import '../numbers.dart';
+import '../json_readers.dart';
 
 /// Codec for [Radius]. A single non-negative number is a circular radius;
 /// `{"x": ..., "y": ...}` is elliptical. Circular radii encode back to a number.
