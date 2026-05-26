@@ -47,98 +47,103 @@ import 'package:flutter/rendering.dart'
 import 'package:flutter/services.dart' show TextCapitalization;
 import 'package:flutter/widgets.dart' show ScrollViewKeyboardDismissBehavior;
 
-final axisSchema = Ack.enumValues(Axis.values);
+/// Creates a reusable [CodecSchema] for the Dart enum [T], mapping each value
+/// to and from its `.name` string. Wraps [Ack.enumValues] — which already does
+/// the String↔enum conversion and emits an `enum` JSON Schema — in a codec so
+/// the return type matches the package's other `*Codec` exports.
+CodecSchema<String, T> enumCodec<T extends Enum>(List<T> values) =>
+    Ack.enumValues(
+      values,
+    ).codec<T>(decode: (value) => value, encode: (value) => value);
 
-final axisDirectionSchema = Ack.enumValues(AxisDirection.values);
+final axisCodec = enumCodec(Axis.values);
 
-final blendModeSchema = Ack.enumValues(BlendMode.values);
+final axisDirectionCodec = enumCodec(AxisDirection.values);
 
-final blurStyleSchema = Ack.enumValues(BlurStyle.values);
+final blendModeCodec = enumCodec(BlendMode.values);
 
-final borderStyleSchema = Ack.enumValues(BorderStyle.values);
+final blurStyleCodec = enumCodec(BlurStyle.values);
 
-final boxFitSchema = Ack.enumValues(BoxFit.values);
+final borderStyleCodec = enumCodec(BorderStyle.values);
 
-final boxHeightStyleSchema = Ack.enumValues(BoxHeightStyle.values);
+final boxFitCodec = enumCodec(BoxFit.values);
 
-final boxShapeSchema = Ack.enumValues(BoxShape.values);
+final boxHeightStyleCodec = enumCodec(BoxHeightStyle.values);
 
-final boxWidthStyleSchema = Ack.enumValues(BoxWidthStyle.values);
+final boxShapeCodec = enumCodec(BoxShape.values);
 
-final brightnessSchema = Ack.enumValues(Brightness.values);
+final boxWidthStyleCodec = enumCodec(BoxWidthStyle.values);
 
-final clipSchema = Ack.enumValues(Clip.values);
+final brightnessCodec = enumCodec(Brightness.values);
 
-final crossAxisAlignmentSchema = Ack.enumValues(CrossAxisAlignment.values);
+final clipCodec = enumCodec(Clip.values);
 
-final decorationPositionSchema = Ack.enumValues(DecorationPosition.values);
+final crossAxisAlignmentCodec = enumCodec(CrossAxisAlignment.values);
 
-final dragStartBehaviorSchema = Ack.enumValues(DragStartBehavior.values);
+final decorationPositionCodec = enumCodec(DecorationPosition.values);
 
-final filterQualitySchema = Ack.enumValues(FilterQuality.values);
+final dragStartBehaviorCodec = enumCodec(DragStartBehavior.values);
 
-final flexFitSchema = Ack.enumValues(FlexFit.values);
+final filterQualityCodec = enumCodec(FilterQuality.values);
 
-final fontStyleSchema = Ack.enumValues(FontStyle.values);
+final flexFitCodec = enumCodec(FlexFit.values);
 
-final growthDirectionSchema = Ack.enumValues(GrowthDirection.values);
+final fontStyleCodec = enumCodec(FontStyle.values);
 
-final hitTestBehaviorSchema = Ack.enumValues(HitTestBehavior.values);
+final growthDirectionCodec = enumCodec(GrowthDirection.values);
 
-final imageRepeatSchema = Ack.enumValues(ImageRepeat.values);
+final hitTestBehaviorCodec = enumCodec(HitTestBehavior.values);
 
-final mainAxisAlignmentSchema = Ack.enumValues(MainAxisAlignment.values);
+final imageRepeatCodec = enumCodec(ImageRepeat.values);
 
-final mainAxisSizeSchema = Ack.enumValues(MainAxisSize.values);
+final mainAxisAlignmentCodec = enumCodec(MainAxisAlignment.values);
 
-final materialTapTargetSizeSchema = Ack.enumValues(
-  MaterialTapTargetSize.values,
-);
+final mainAxisSizeCodec = enumCodec(MainAxisSize.values);
 
-final paintingStyleSchema = Ack.enumValues(PaintingStyle.values);
+final materialTapTargetSizeCodec = enumCodec(MaterialTapTargetSize.values);
 
-final pathFillTypeSchema = Ack.enumValues(PathFillType.values);
+final paintingStyleCodec = enumCodec(PaintingStyle.values);
 
-final placeholderAlignmentSchema = Ack.enumValues(PlaceholderAlignment.values);
+final pathFillTypeCodec = enumCodec(PathFillType.values);
 
-final scrollDirectionSchema = Ack.enumValues(ScrollDirection.values);
+final placeholderAlignmentCodec = enumCodec(PlaceholderAlignment.values);
 
-final scrollViewKeyboardDismissBehaviorSchema = Ack.enumValues(
+final scrollDirectionCodec = enumCodec(ScrollDirection.values);
+
+final scrollViewKeyboardDismissBehaviorCodec = enumCodec(
   ScrollViewKeyboardDismissBehavior.values,
 );
 
-final stackFitSchema = Ack.enumValues(StackFit.values);
+final stackFitCodec = enumCodec(StackFit.values);
 
-final strokeCapSchema = Ack.enumValues(StrokeCap.values);
+final strokeCapCodec = enumCodec(StrokeCap.values);
 
-final strokeJoinSchema = Ack.enumValues(StrokeJoin.values);
+final strokeJoinCodec = enumCodec(StrokeJoin.values);
 
-final targetPlatformSchema = Ack.enumValues(TargetPlatform.values);
+final targetPlatformCodec = enumCodec(TargetPlatform.values);
 
-final textAlignSchema = Ack.enumValues(TextAlign.values);
+final textAlignCodec = enumCodec(TextAlign.values);
 
-final textBaselineSchema = Ack.enumValues(TextBaseline.values);
+final textBaselineCodec = enumCodec(TextBaseline.values);
 
-final textCapitalizationSchema = Ack.enumValues(TextCapitalization.values);
+final textCapitalizationCodec = enumCodec(TextCapitalization.values);
 
-final textDecorationStyleSchema = Ack.enumValues(TextDecorationStyle.values);
+final textDecorationStyleCodec = enumCodec(TextDecorationStyle.values);
 
-final textDirectionSchema = Ack.enumValues(TextDirection.values);
+final textDirectionCodec = enumCodec(TextDirection.values);
 
-final textLeadingDistributionSchema = Ack.enumValues(
-  TextLeadingDistribution.values,
-);
+final textLeadingDistributionCodec = enumCodec(TextLeadingDistribution.values);
 
-final textOverflowSchema = Ack.enumValues(TextOverflow.values);
+final textOverflowCodec = enumCodec(TextOverflow.values);
 
-final textWidthBasisSchema = Ack.enumValues(TextWidthBasis.values);
+final textWidthBasisCodec = enumCodec(TextWidthBasis.values);
 
-final themeModeSchema = Ack.enumValues(ThemeMode.values);
+final themeModeCodec = enumCodec(ThemeMode.values);
 
-final tileModeSchema = Ack.enumValues(TileMode.values);
+final tileModeCodec = enumCodec(TileMode.values);
 
-final verticalDirectionSchema = Ack.enumValues(VerticalDirection.values);
+final verticalDirectionCodec = enumCodec(VerticalDirection.values);
 
-final wrapAlignmentSchema = Ack.enumValues(WrapAlignment.values);
+final wrapAlignmentCodec = enumCodec(WrapAlignment.values);
 
-final wrapCrossAlignmentSchema = Ack.enumValues(WrapCrossAlignment.values);
+final wrapCrossAlignmentCodec = enumCodec(WrapCrossAlignment.values);

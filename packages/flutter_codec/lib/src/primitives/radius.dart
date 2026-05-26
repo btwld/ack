@@ -1,21 +1,21 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show Radius;
 
+import '../numbers.dart';
+
+/// Codec for [Radius]. A single non-negative number is a circular radius;
+/// `{"x": ..., "y": ...}` is elliptical. Circular radii encode back to a number.
 final radiusCodec = Ack.codec<Object, Object, Radius>(
   input: Ack.anyOf([
-    _nonNegativeNumber(),
-    Ack.object({'x': _nonNegativeNumber(), 'y': _nonNegativeNumber()}),
+    nonNegativeFiniteNumber(),
+    Ack.object({
+      'x': nonNegativeFiniteNumber(),
+      'y': nonNegativeFiniteNumber(),
+    }),
   ]),
   decode: _decodeRadius,
   encode: _encodeRadius,
 );
-
-NumberSchema _nonNegativeNumber() {
-  return Ack.number().refine(
-    (value) => value >= 0,
-    message: 'Expected a non-negative number.',
-  );
-}
 
 Radius _decodeRadius(Object value) {
   if (value is num) {
@@ -23,9 +23,7 @@ Radius _decodeRadius(Object value) {
   }
 
   final map = value as JsonMap;
-  final x = map['x']! as num;
-  final y = map['y']! as num;
-  return Radius.elliptical(x.toDouble(), y.toDouble());
+  return Radius.elliptical(readDouble(map, 'x'), readDouble(map, 'y'));
 }
 
 Object _encodeRadius(Radius value) {

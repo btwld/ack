@@ -1,6 +1,9 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show Color;
 
+/// Codec for [Color]. Accepts `#RRGGBB`, `#AARRGGBB`, `rgb(r,g,b)`, and
+/// `rgba(r,g,b,a)` strings; encodes to canonical hex (`#RRGGBB`, or `#AARRGGBB`
+/// when translucent).
 final colorCodec = Ack.codec<Object, Object, Color>(
   input: Ack.anyOf([
     Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),

@@ -41,5 +41,13 @@ void main() {
     test('rejects negative elliptical coordinates', () {
       expect(radiusCodec.safeParse({'x': 1, 'y': -1}).isFail, isTrue);
     });
+
+    test('rejects non-finite radii', () {
+      expect(radiusCodec.safeParse(double.infinity).isFail, isTrue);
+      expect(
+        radiusCodec.safeParse({'x': double.infinity, 'y': 1}).isFail,
+        isTrue,
+      );
+    });
   });
 }

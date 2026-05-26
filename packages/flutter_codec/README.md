@@ -2,5 +2,7 @@
 
 Flutter value codecs built on ACK schemas.
 
-Phase 1 includes enum schemas and the leaf `Color`, `Offset`, and `Radius`
-codecs used by higher-level Flutter shape schemas.
+Includes enum codecs and value codecs for `Color`, `Offset`, `Radius`,
+`Alignment` / `AlignmentDirectional` / `AlignmentGeometry`, and
+`EdgeInsets` / `EdgeInsetsDirectional` / `EdgeInsetsGeometry`, plus the composite
+`BorderSide` codec (and its `strokeAlign` codec) that reuse them.

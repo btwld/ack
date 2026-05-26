@@ -18,5 +18,13 @@ void main() {
     test('rejects missing coordinates', () {
       expect(offsetCodec.safeParse({'x': 12}).isFail, isTrue);
     });
+
+    test('rejects non-finite coordinates', () {
+      expect(
+        offsetCodec.safeParse({'x': double.infinity, 'y': 0}).isFail,
+        isTrue,
+      );
+      expect(offsetCodec.safeParse({'x': 0, 'y': double.nan}).isFail, isTrue);
+    });
   });
 }
