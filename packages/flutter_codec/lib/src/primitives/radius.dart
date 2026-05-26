@@ -7,11 +7,8 @@ import '../numbers.dart';
 /// `{"x": ..., "y": ...}` is elliptical. Circular radii encode back to a number.
 final radiusCodec = Ack.codec<Object, Object, Radius>(
   input: Ack.anyOf([
-    nonNegativeFiniteNumber(),
-    Ack.object({
-      'x': nonNegativeFiniteNumber(),
-      'y': nonNegativeFiniteNumber(),
-    }),
+    Ack.number().min(0),
+    Ack.object({'x': Ack.number().min(0), 'y': Ack.number().min(0)}),
   ]),
   decode: _decodeRadius,
   encode: _encodeRadius,

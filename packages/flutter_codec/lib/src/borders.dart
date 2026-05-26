@@ -1,5 +1,6 @@
 import 'package:ack/ack.dart';
-import 'package:flutter/painting.dart' show BorderSide, BorderStyle, Color;
+import 'package:flutter/painting.dart'
+    show Border, BorderDirectional, BorderSide, BorderStyle, BoxBorder, Color;
 
 import 'enums.dart' show borderStyleCodec;
 import 'numbers.dart';
@@ -16,7 +17,7 @@ enum _StrokeAlign { inside, center, outside }
 /// canonicalizes the three named offsets back to their aliases and emits any
 /// other finite value as a number.
 final strokeAlignCodec = Ack.codec<Object, Object, double>(
-  input: Ack.anyOf([Ack.enumCodec(_StrokeAlign.values), finiteNumber()]),
+  input: Ack.anyOf([Ack.enumCodec(_StrokeAlign.values), Ack.number()]),
   decode: _decodeStrokeAlign,
   encode: _encodeStrokeAlign,
 );
@@ -43,29 +44,46 @@ Object _encodeStrokeAlign(double value) {
 /// Codec for [BorderSide], composing [colorCodec], [borderStyleCodec], and
 /// [strokeAlignCodec].
 ///
-/// Missing fields fall back to Flutter's [BorderSide] constructor defaults, so
-/// `{}` decodes to `const BorderSide()`. Encoding always emits a full canonical
-/// object with all four fields.
-final borderSideCodec = Ack.object({
-  'color': colorCodec.withDefault(const Color(0xFF000000)),
-  'width': nonNegativeFiniteNumber().withDefault(1.0),
-  'style': borderStyleCodec.withDefault(BorderStyle.solid),
-  'strokeAlign': strokeAlignCodec.withDefault(BorderSide.strokeAlignInside),
-}).model<BorderSide>(decode: _decodeBorderSide, encode: _encodeBorderSide);
+/// The string `"none"` is a shorthand for [BorderSide.none]. Otherwise an
+/// object `{color, width, style, strokeAlign}` is used, with each field
+/// optional and falling back to the [BorderSide] constructor defaults — so
+/// `{}` decodes to `const BorderSide()` (1px solid black, NOT
+/// [BorderSide.none]; use `"none"` for that).
+///
+/// Encoding canonicalizes [BorderSide.none] to `"none"` and emits a full
+/// canonical `{color, width, style, strokeAlign}` object for any other value.
+final borderSideCodec = Ack.codec<Object, Object, BorderSide>(
+  input: Ack.anyOf([
+    Ack.literal('none'),
+    Ack.object({
+      'color': colorCodec.withDefault(const Color(0xFF000000)),
+      'width': Ack.number().min(0).withDefault(1.0),
+      'style': borderStyleCodec.withDefault(BorderStyle.solid),
+      'strokeAlign': strokeAlignCodec.withDefault(BorderSide.strokeAlignInside),
+    }),
+  ]),
+  decode: _decodeBorderSide,
+  encode: _encodeBorderSide,
+);
 
-BorderSide _decodeBorderSide(JsonMap data) {
+BorderSide _decodeBorderSide(Object value) {
+  if (value == 'none') return BorderSide.none;
+
+  final map = value as JsonMap;
   return BorderSide(
-    color: data['color']! as Color,
-    width: readDouble(data, 'width'),
-    style: data['style']! as BorderStyle,
-    strokeAlign: data['strokeAlign']! as double,
+    color: map['color']! as Color,
+    width: readDouble(map, 'width'),
+    style: map['style']! as BorderStyle,
+    strokeAlign: map['strokeAlign']! as double,
   );
 }
 
 // Returns runtime property values (Color, BorderStyle, double), not JSON. The
 // object schema re-encodes each property through its own schema (colorCodec,
 // borderStyleCodec, strokeAlignCodec) to produce the JSON-safe boundary.
-JsonMap _encodeBorderSide(BorderSide value) {
+Object _encodeBorderSide(BorderSide value) {
+  if (value == BorderSide.none) return 'none';
+
   return {
     'color': value.color,
     'width': value.width,
@@ -73,3 +91,92 @@ JsonMap _encodeBorderSide(BorderSide value) {
     'strokeAlign': value.strokeAlign,
   };
 }
+
+/// Codec for [Border]. A bare [BorderSide] shorthand (via [borderSideCodec])
+/// fans the same side across all four edges via [Border.fromBorderSide]; an
+/// object `{top, right, bottom, left}` (each side optional, defaulting to
+/// [BorderSide.none]) sets them individually. Encoding canonicalizes uniform
+/// borders back to the side shorthand, so `Border()` round-trips through
+/// `"none"` and `Border.all(...)` through a single side object.
+///
+/// Note: `{}` decodes through the side branch to `Border.fromBorderSide(const
+/// BorderSide())` — four 1px solid black sides — *not* `Border()`. Use
+/// `"none"` for an empty border.
+final borderCodec = Ack.codec<Object, Object, Border>(
+  input: Ack.anyOf([
+    borderSideCodec,
+    Ack.object({
+      'top': borderSideCodec.withDefault(BorderSide.none),
+      'right': borderSideCodec.withDefault(BorderSide.none),
+      'bottom': borderSideCodec.withDefault(BorderSide.none),
+      'left': borderSideCodec.withDefault(BorderSide.none),
+    }),
+  ]),
+  decode: _decodeBorder,
+  encode: _encodeBorder,
+);
+
+Border _decodeBorder(Object value) {
+  if (value is BorderSide) return Border.fromBorderSide(value);
+
+  final map = value as JsonMap;
+  return Border(
+    top: map['top']! as BorderSide,
+    right: map['right']! as BorderSide,
+    bottom: map['bottom']! as BorderSide,
+    left: map['left']! as BorderSide,
+  );
+}
+
+Object _encodeBorder(Border value) {
+  if (value.top == value.right &&
+      value.right == value.bottom &&
+      value.bottom == value.left) {
+    return value.top;
+  }
+
+  return {
+    'top': value.top,
+    'right': value.right,
+    'bottom': value.bottom,
+    'left': value.left,
+  };
+}
+
+/// Codec for [BorderDirectional], an object `{top, start, end, bottom}` (each
+/// side optional, defaulting to [BorderSide.none]). Always encodes to the
+/// object form — never a side shorthand — so the directional type round-trips
+/// even when uniform or empty (a bare side is reserved for [Border]).
+final borderDirectionalCodec =
+    Ack.object({
+      'top': borderSideCodec.withDefault(BorderSide.none),
+      'start': borderSideCodec.withDefault(BorderSide.none),
+      'end': borderSideCodec.withDefault(BorderSide.none),
+      'bottom': borderSideCodec.withDefault(BorderSide.none),
+    }).model<BorderDirectional>(
+      decode: (data) => BorderDirectional(
+        top: data['top']! as BorderSide,
+        start: data['start']! as BorderSide,
+        end: data['end']! as BorderSide,
+        bottom: data['bottom']! as BorderSide,
+      ),
+      encode: (value) => {
+        'top': value.top,
+        'start': value.start,
+        'end': value.end,
+        'bottom': value.bottom,
+      },
+    );
+
+/// Codec for [BoxBorder], unioning [borderCodec] and [borderDirectionalCodec].
+///
+/// A bare side shorthand, an `{top, right, bottom, left}` object, and the
+/// `"none"` alias decode to [Border]; objects carrying `start`/`end` decode to
+/// [BorderDirectional] ([borderCodec] is tried first). Encoding dispatches by
+/// runtime type. Mixed borders (the result of adding a [Border] to a
+/// [BorderDirectional]) are not supported.
+final boxBorderCodec = Ack.anyOf([borderCodec, borderDirectionalCodec])
+    .codec<BoxBorder>(
+      decode: (value) => value as BoxBorder,
+      encode: (value) => value,
+    );

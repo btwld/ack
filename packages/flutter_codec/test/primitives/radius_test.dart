@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter_codec/flutter_codec.dart';
@@ -48,6 +49,14 @@ void main() {
         radiusCodec.safeParse({'x': double.infinity, 'y': 1}).isFail,
         isTrue,
       );
+    });
+  });
+
+  group('radiusCodec JSON Schema', () {
+    test('non-negative constraint is reflected as "minimum": 0', () {
+      // Locks in the Ack.number().min(0) JSON-Schema reflection — refine
+      // would silently drop it, the public ComparisonConstraint does not.
+      expect(jsonEncode(radiusCodec.toJsonSchema()), contains('"minimum":0'));
     });
   });
 }

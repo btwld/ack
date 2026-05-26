@@ -10,12 +10,12 @@ import '../numbers.dart';
 /// sides are equal, otherwise the full object.
 final edgeInsetsCodec = Ack.codec<Object, Object, EdgeInsets>(
   input: Ack.anyOf([
-    finiteNumber(),
+    Ack.number(),
     Ack.object({
-      'left': finiteNumber().withDefault(0.0),
-      'top': finiteNumber().withDefault(0.0),
-      'right': finiteNumber().withDefault(0.0),
-      'bottom': finiteNumber().withDefault(0.0),
+      'left': Ack.number().withDefault(0.0),
+      'top': Ack.number().withDefault(0.0),
+      'right': Ack.number().withDefault(0.0),
+      'bottom': Ack.number().withDefault(0.0),
     }),
   ]),
   decode: _decodeEdgeInsets,
@@ -56,10 +56,10 @@ Object _encodeEdgeInsets(EdgeInsets value) {
 /// reserved for [EdgeInsets]).
 final edgeInsetsDirectionalCodec =
     Ack.object({
-      'start': finiteNumber().withDefault(0.0),
-      'top': finiteNumber().withDefault(0.0),
-      'end': finiteNumber().withDefault(0.0),
-      'bottom': finiteNumber().withDefault(0.0),
+      'start': Ack.number().withDefault(0.0),
+      'top': Ack.number().withDefault(0.0),
+      'end': Ack.number().withDefault(0.0),
+      'bottom': Ack.number().withDefault(0.0),
     }).model<EdgeInsetsDirectional>(
       decode: (data) => EdgeInsetsDirectional.fromSTEB(
         readDouble(data, 'start'),

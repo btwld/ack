@@ -27,7 +27,7 @@ enum _Alignment {
 final alignmentCodec = Ack.codec<Object, Object, Alignment>(
   input: Ack.anyOf([
     Ack.enumCodec(_Alignment.values),
-    Ack.object({'x': finiteNumber(), 'y': finiteNumber()}),
+    Ack.object({'x': Ack.number(), 'y': Ack.number()}),
   ]),
   decode: _decodeAlignment,
   encode: _encodeAlignment,
@@ -73,7 +73,7 @@ final alignmentDirectionalCodec =
     Ack.codec<Object, Object, AlignmentDirectional>(
       input: Ack.anyOf([
         Ack.enumCodec(_AlignmentDirectional.values),
-        Ack.object({'start': finiteNumber(), 'y': finiteNumber()}),
+        Ack.object({'start': Ack.number(), 'y': Ack.number()}),
       ]),
       decode: _decodeAlignmentDirectional,
       encode: _encodeAlignmentDirectional,
