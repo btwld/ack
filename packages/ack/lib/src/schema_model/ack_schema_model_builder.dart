@@ -74,8 +74,8 @@ AckSchemaModel _build(AckSchema schema) {
     InstanceSchema() => _instance(schema),
     DiscriminatedObjectSchema() => _discriminated(schema),
     LazySchema() => throw UnsupportedError(
-      'JSON Schema export of recursive schemas (Ack.lazy) is not supported. '
-      'Use a non-recursive schema, or wait for \$ref/\$defs export support.',
+      'JSON Schema export of schemas containing Ack.lazy is not supported yet. '
+      'Inline the deferred schema, or wait for \$ref/\$defs export support.',
     ),
     _ => throw UnsupportedError(
       'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
@@ -230,7 +230,9 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
         'Discriminated branch "${entry.key}" must export as an object schema model.',
       );
     }
-    branches.add(converted);
+    branches.add(
+      _withRequiredDiscriminator(converted, schema.discriminatorKey),
+    );
   }
 
   return AckAnyOfSchemaModel(
@@ -240,6 +242,48 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
     ),
     description: schema.description,
     nullable: schema.isNullable,
+  );
+}
+
+/// Strips the synthetic [DefaultSchema] default from the discriminator
+/// property in an exported branch model and marks the property as required.
+///
+/// `effectiveDiscriminatedObjectBranch` attaches `.withDefault(...)` to the
+/// synthesized literal so encode can inject the discriminator when the branch
+/// runtime omits it; that default is an encode-time convenience, not part of
+/// the published JSON Schema.
+AckObjectSchemaModel _withRequiredDiscriminator(
+  AckObjectSchemaModel model,
+  String discriminatorKey,
+) {
+  final properties = model.properties;
+  if (properties == null || !properties.containsKey(discriminatorKey)) {
+    return model;
+  }
+
+  final discriminator = properties[discriminatorKey]!;
+  final normalizedProperties = discriminator.defaultValue == null
+      ? properties
+      : {...properties, discriminatorKey: discriminator.withDefaultValue(null)};
+  final required = model.required ?? const <String>[];
+  final alreadyRequired = required.contains(discriminatorKey);
+  if (alreadyRequired && identical(normalizedProperties, properties)) {
+    return model;
+  }
+
+  return AckObjectSchemaModel(
+    properties: normalizedProperties,
+    required: alreadyRequired ? required : [discriminatorKey, ...required],
+    propertyOrdering: model.propertyOrdering,
+    minProperties: model.minProperties,
+    maxProperties: model.maxProperties,
+    additionalProperties: model.additionalProperties,
+    title: model.title,
+    description: model.description,
+    nullable: model.nullable,
+    defaultValue: model.defaultValue,
+    warnings: model.warnings,
+    extensions: model.extensions,
   );
 }
 

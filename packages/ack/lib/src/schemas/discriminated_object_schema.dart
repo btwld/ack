@@ -45,8 +45,8 @@ final class DiscriminatedObjectSchema<T extends Object>
         throw ArgumentError.value(
           entry.value,
           'schemas["$label"]',
-          'Discriminated branches cannot be Ack.lazy(...) - recursive '
-              'discriminator property references cannot be analyzed.',
+          'Discriminated branches cannot be Ack.lazy(...) - the discriminator '
+              'property cannot be analyzed through a deferred reference.',
         );
       }
       if (base is! ObjectSchema) {

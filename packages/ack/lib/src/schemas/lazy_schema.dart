@@ -65,12 +65,9 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     Runtime value,
     SchemaContext context,
   ) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-
-    final runtime = validated.getOrNull();
-    if (runtime == null) return SchemaResult.ok(null);
-    return _target.encodeWithContext(runtime, context);
+    final ownChecked = applyConstraintsAndRefinements(value, context);
+    if (ownChecked.isFail) return SchemaResult.fail(ownChecked.getError());
+    return _target.encodeWithContext(ownChecked.getOrThrow()!, context);
   }
 
   @override

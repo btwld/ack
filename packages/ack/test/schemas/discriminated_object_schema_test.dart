@@ -94,6 +94,49 @@ void main() {
         expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
       });
 
+      test('encodes a branch whose runtime omits the discriminator', () {
+        final result = unionOwnedSchema.safeEncode({'bark': false});
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
+      });
+
+      test('encodes a codec-backed branch whose encoder omits the '
+          'discriminator', () {
+        final codecUnion = Ack.discriminated<JsonMap>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.codec<JsonMap, JsonMap, JsonMap>(
+              input: Ack.object({'meow': Ack.boolean()}),
+              decode: (map) => map,
+              encode: (value) =>
+                  {'meow': value['meow']}, // intentionally omits 'type'
+            ),
+          },
+        );
+
+        final result = codecUnion.safeEncode({'meow': true});
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'cat', 'meow': true});
+      });
+
+      test('JSON Schema marks the synthesized discriminator required and '
+          'strips the encode-time default', () {
+        final jsonSchema = unionOwnedSchema.toJsonSchema();
+        final branches = (jsonSchema['anyOf'] as List).cast<Map>();
+
+        for (final branch in branches) {
+          final required = (branch['required'] as List).cast<String>();
+          expect(required, contains('type'));
+
+          final properties = (branch['properties'] as Map)
+              .cast<String, Object?>();
+          final typeProp = (properties['type'] as Map).cast<String, Object?>();
+          expect(typeProp.containsKey('default'), isFalse);
+        }
+      });
+
       test('parse against the wrong branch fails on the literal', () {
         final result = unionOwnedSchema.safeParse({
           'type': 'cat',

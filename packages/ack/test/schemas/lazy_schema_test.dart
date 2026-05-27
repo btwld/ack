@@ -41,7 +41,7 @@ void main() {
     });
 
     const message =
-        'JSON Schema export of recursive schemas (Ack.lazy) is not supported';
+        'JSON Schema export of schemas containing Ack.lazy is not supported';
 
     expect(
       categorySchema.toSchemaModel,
@@ -97,5 +97,48 @@ void main() {
 
     expect(first, equals(first));
     expect(first, isNot(equals(second)));
+  });
+
+  test('encode runs lazy refinement once per nested node (no double '
+      'validation)', () {
+    var calls = 0;
+    late final ObjectSchema categorySchema;
+    final lazy = Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema)
+        .refine((value) {
+          calls++;
+          return true;
+        });
+    categorySchema = Ack.object({
+      'name': Ack.string(),
+      'children': Ack.list(lazy),
+    });
+
+    final json = <String, Object?>{
+      'name': 'root',
+      'children': [
+        {
+          'name': 'a',
+          'children': [
+            {
+              'name': 'b',
+              'children': [
+                {'name': 'c', 'children': <Object?>[]},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    final parsed = categorySchema.parse(json);
+    calls = 0;
+    final encoded = categorySchema.encode(parsed);
+    expect(encoded, equals(json));
+
+    // Parent ObjectSchema/ListSchema validate-then-encode passes already drive
+    // a fixed number of refinement runs per lazy edge. The double-validation
+    // bug added an extra recursive validate inside LazySchema.encodeWithContext
+    // on top of that, inflating this count. Locks in the fixed call profile.
+    expect(calls, 15);
   });
 }
