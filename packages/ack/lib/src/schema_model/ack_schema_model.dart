@@ -83,7 +83,13 @@ final class _AckSchemaModelCommon {
 
   /// Returns the non-hoistable portion (extensions plus type-specific
   /// keywords flow through here) to embed inside the inner branch.
-  Map<String, Object?> toEmbeddedJson() => {...extensions};
+  Map<String, Object?> toEmbeddedJson() {
+    final embedded = {...extensions};
+    embedded.remove(r'$defs');
+    return embedded;
+  }
+
+  Object? get defs => extensions[r'$defs'];
 }
 
 @immutable
@@ -239,6 +245,10 @@ sealed class AckSchemaModel {
         keywords,
         commonHandled,
       ),
+      AckRefSchemaModel schema => schema._withJsonSchemaKeywords(
+        keywords,
+        commonHandled,
+      ),
     };
   }
 
@@ -253,6 +263,7 @@ sealed class AckSchemaModel {
     // branch so consumers see them next to the `type` they constrain.
     return {
       ..._common.toHoistedJson(),
+      if (_common.defs != null) r'$defs': _common.defs,
       'anyOf': [
         {...typeJson, ..._common.toEmbeddedJson()},
         _nullSchemaJson,
@@ -272,6 +283,7 @@ sealed class AckSchemaModel {
       // composed union.
       return {
         ..._common.toHoistedJson(),
+        if (_common.defs != null) r'$defs': _common.defs,
         'anyOf': [
           {..._common.toEmbeddedJson(), keyword: branches},
           _nullSchemaJson,
@@ -313,6 +325,38 @@ sealed class AckSchemaModel {
       deepEq.hash(_metadataEquality),
       deepEq.hash(warnings),
     );
+  }
+}
+
+final class AckRefSchemaModel extends AckSchemaModel {
+  const AckRefSchemaModel({
+    required this.refName,
+    super.title,
+    super.description,
+    super.nullable,
+    super.defaultValue,
+    super.warnings,
+    super.extensions,
+  });
+
+  AckRefSchemaModel._(_AckSchemaModelCommon common, {required this.refName})
+    : super._(common);
+
+  final String refName;
+
+  @override
+  Map<String, Object?> toJsonSchema() =>
+      finishTypeJson({r'$ref': '#/\$defs/$refName'});
+
+  @override
+  AckRefSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
+      AckRefSchemaModel._(common, refName: refName);
+
+  AckSchemaModel _withJsonSchemaKeywords(
+    Map<String, Object?> keywords,
+    Set<String> commonHandled,
+  ) {
+    return _withUnhandledKeywords(keywords, commonHandled);
   }
 }
 

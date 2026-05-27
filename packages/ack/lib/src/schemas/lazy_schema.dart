@@ -25,6 +25,15 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
 
   late final AckSchema<Boundary, Runtime> _target = _builder();
 
+  @internal
+  AckSchema<Boundary, Runtime> get target => _target;
+
+  @internal
+  int get runtimeConstraintCount => _constraints.length;
+
+  @internal
+  int get runtimeRefinementCount => _refinements.length;
+
   @override
   SchemaType get schemaType => SchemaType.lazy;
 
