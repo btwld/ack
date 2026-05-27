@@ -27,7 +27,7 @@ Initial release. JSON value codecs for Flutter's painting layer, built on
 - **Decoration image**: `DecorationImage` (composes `imageProviderCodec`,
   `rectCodec`, and the relevant enum codecs).
 - **Text style**: `TextStyle` (including `fontFeatures` and `fontVariations`
-  lists).
+  lists), `StrutStyle` (sibling layout style), `TextHeightBehavior`.
 - **Decorations** (discriminated by `"type"`): `BoxDecoration`,
   `ShapeDecoration` → `Decoration`.
 

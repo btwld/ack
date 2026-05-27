@@ -10,4 +10,5 @@ export 'src/image_providers.dart';
 export 'src/primitives.dart';
 export 'src/shadows.dart';
 export 'src/shape_borders.dart';
+export 'src/strut_style.dart';
 export 'src/text_style.dart';

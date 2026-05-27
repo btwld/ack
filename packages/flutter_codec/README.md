@@ -53,6 +53,7 @@ assert(roundTripped == decoration);
 | | `FontFeature` | `fontFeatureCodec` | [lib/src/primitives/font_feature.dart](lib/src/primitives/font_feature.dart) |
 | | `FontVariation` | `fontVariationCodec` | [lib/src/primitives/font_variation.dart](lib/src/primitives/font_variation.dart) |
 | | `TextDecoration` | `textDecorationCodec` | [lib/src/primitives/text_decoration.dart](lib/src/primitives/text_decoration.dart) |
+| | `TextHeightBehavior` | `textHeightBehaviorCodec` | [lib/src/primitives/text_height_behavior.dart](lib/src/primitives/text_height_behavior.dart) |
 | | `Locale` | `localeCodec` | [lib/src/primitives/locale.dart](lib/src/primitives/locale.dart) |
 | Enums | 30+ painting/rendering enums (e.g. `blendModeCodec`, `boxShapeCodec`, `tileModeCodec`, `fontStyleCodec`) | see file | [lib/src/enums.dart](lib/src/enums.dart) |
 | Borders | `BorderSide`, `Border`, `BorderDirectional`, `BoxBorder`, `StrokeAlign` | `borderSideCodec`, `borderCodec`, `borderDirectionalCodec`, `boxBorderCodec`, `strokeAlignCodec` | [lib/src/borders.dart](lib/src/borders.dart) |
@@ -62,6 +63,7 @@ assert(roundTripped == decoration);
 | Image providers | `NetworkImage`, `AssetImage`, `ImageProvider` | `networkImageCodec`, `assetImageCodec`, `imageProviderCodec` | [lib/src/image_providers.dart](lib/src/image_providers.dart) |
 | Decoration image | `DecorationImage` | `decorationImageCodec` | [lib/src/decoration_image.dart](lib/src/decoration_image.dart) |
 | Text style | `TextStyle` | `textStyleCodec` | [lib/src/text_style.dart](lib/src/text_style.dart) |
+| Strut style | `StrutStyle` | `strutStyleCodec` | [lib/src/strut_style.dart](lib/src/strut_style.dart) |
 | Decorations | `BoxDecoration`, `ShapeDecoration`, `Decoration` | `boxDecorationCodec`, `shapeDecorationCodec`, `decorationCodec` | [lib/src/decorations.dart](lib/src/decorations.dart) |
 
 ## Discriminated unions

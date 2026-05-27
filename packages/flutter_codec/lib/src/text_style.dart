@@ -22,6 +22,7 @@ import 'enums.dart'
         textDecorationStyleCodec,
         textLeadingDistributionCodec,
         textOverflowCodec;
+import 'font_family_packing.dart' show unpackFontFamily;
 import 'json_readers.dart';
 import 'primitives/color.dart' show colorCodec;
 import 'primitives/font_feature.dart' show fontFeatureCodec;
@@ -106,7 +107,10 @@ TextStyle _decodeTextStyle(JsonMap data) {
 }
 
 JsonMap _encodeTextStyle(TextStyle value) {
-  final fontFamilyFields = _encodeFontFamilyFields(value);
+  final fontFamilyFields = unpackFontFamily(
+    value.fontFamily,
+    value.fontFamilyFallback,
+  );
 
   return {
     'inherit': value.inherit,
@@ -133,49 +137,4 @@ JsonMap _encodeTextStyle(TextStyle value) {
     'fontFeatures': value.fontFeatures,
     'fontVariations': value.fontVariations,
   };
-}
-
-// Unfolds Flutter's internal `packages/<pkg>/<family>` storage back to the
-// user-supplied `(fontFamily, fontFamilyFallback, package)` triple, when all
-// referenced families share the same package prefix. Falls back to the
-// stored (prefixed) form if the prefix is missing or inconsistent.
-({String? family, List<String>? fallback, String? packageName})
-_encodeFontFamilyFields(TextStyle value) {
-  final family = value.fontFamily;
-  final fallback = value.fontFamilyFallback;
-  final pkg = _sharedPackagePrefix([if (family != null) family, ...?fallback]);
-  if (pkg == null) {
-    return (family: family, fallback: fallback, packageName: null);
-  }
-
-  final prefix = 'packages/$pkg/';
-  String strip(String f) =>
-      f.startsWith(prefix) ? f.substring(prefix.length) : f;
-  return (
-    family: family == null ? null : strip(family),
-    fallback: fallback?.map(strip).toList(),
-    packageName: pkg,
-  );
-}
-
-// Returns the package name shared by every `packages/<name>/<family>` entry
-// in `families`, or null if any entry lacks the prefix or disagrees.
-String? _sharedPackagePrefix(List<String> families) {
-  const prefix = 'packages/';
-  String? shared;
-  for (final family in families) {
-    if (!family.startsWith(prefix)) return null;
-
-    final rest = family.substring(prefix.length);
-    final separator = rest.indexOf('/');
-    if (separator <= 0 || separator == rest.length - 1) return null;
-
-    final name = rest.substring(0, separator);
-    if (shared == null) {
-      shared = name;
-    } else if (shared != name) {
-      return null;
-    }
-  }
-  return shared;
 }

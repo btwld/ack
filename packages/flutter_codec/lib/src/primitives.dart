@@ -10,3 +10,4 @@ export 'primitives/offset.dart';
 export 'primitives/radius.dart';
 export 'primitives/rect.dart';
 export 'primitives/text_decoration.dart';
+export 'primitives/text_height_behavior.dart';
