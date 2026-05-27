@@ -150,6 +150,64 @@ void main() {
         );
       });
 
+      test('rejects lazy branches', () {
+        late final ObjectSchema categorySchema;
+        categorySchema = Ack.object({
+          'name': Ack.string(),
+          'children': Ack.list(
+            Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+          ),
+        });
+
+        expect(
+          () => Ack.discriminated<JsonMap>(
+            discriminatorKey: 'type',
+            schemas: {
+              'category': Ack.lazy<JsonMap, JsonMap>(
+                'Category',
+                () => categorySchema,
+              ),
+            },
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('Discriminated branches cannot be Ack.lazy(...)'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects wrapped lazy branches with the lazy-specific error', () {
+        late final ObjectSchema categorySchema;
+        categorySchema = Ack.object({
+          'name': Ack.string(),
+          'children': Ack.list(
+            Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+          ),
+        });
+
+        expect(
+          () => Ack.discriminated<JsonMap>(
+            discriminatorKey: 'type',
+            schemas: {
+              'category': Ack.lazy<JsonMap, JsonMap>(
+                'Category',
+                () => categorySchema,
+              ).withDefault(const {'name': 'root', 'children': <Object?>[]}),
+            },
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('Discriminated branches cannot be Ack.lazy(...)'),
+            ),
+          ),
+        );
+      });
+
       test('defensively copies schemas', () {
         final schemas = {'cat': catSchema};
         final schema = Ack.discriminated<Map<String, Object?>>(

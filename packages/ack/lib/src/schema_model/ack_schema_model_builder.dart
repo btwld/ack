@@ -73,6 +73,10 @@ AckSchemaModel _build(AckSchema schema) {
     AnySchema() => _any(schema),
     InstanceSchema() => _instance(schema),
     DiscriminatedObjectSchema() => _discriminated(schema),
+    LazySchema() => throw UnsupportedError(
+      'JSON Schema export of recursive schemas (Ack.lazy) is not supported. '
+      'Use a non-recursive schema, or wait for \$ref/\$defs export support.',
+    ),
     _ => throw UnsupportedError(
       'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
     ),

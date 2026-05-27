@@ -21,6 +21,7 @@ part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
 part 'instance_schema.dart';
+part 'lazy_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
