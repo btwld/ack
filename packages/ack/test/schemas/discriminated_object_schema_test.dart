@@ -109,8 +109,9 @@ void main() {
             'cat': Ack.codec<JsonMap, JsonMap, JsonMap>(
               input: Ack.object({'meow': Ack.boolean()}),
               decode: (map) => map,
-              encode: (value) =>
-                  {'meow': value['meow']}, // intentionally omits 'type'
+              encode: (value) => {
+                'meow': value['meow'],
+              }, // intentionally omits 'type'
             ),
           },
         );
