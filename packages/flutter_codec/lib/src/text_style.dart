@@ -30,14 +30,18 @@ import 'shadows.dart' show shadowCodec;
 /// Codec for [TextStyle].
 ///
 /// Supported fields are the JSON-safe constructor parameters: colors,
-/// typography scalars, enum fields, [FontWeight], [ui.Locale], shadows,
-/// [TextDecoration], font families, package, and overflow.
+/// typography scalars, enum fields, [FontWeight], [ui.Locale],
+/// [TextStyle.shadows], [TextDecoration], [TextStyle.fontFamily],
+/// [TextStyle.fontFamilyFallback], [TextStyle.package], and
+/// [TextStyle.overflow].
 ///
 /// Unsupported fields are intentionally omitted:
-/// * `foreground` and `background` are `Paint?`, which is not JSON-safe.
-/// * `debugLabel` is debug metadata and is excluded from [TextStyle] equality.
-/// * `fontFeatures` and `fontVariations` are niche typography fields reserved
-///   for a focused follow-up.
+/// * [TextStyle.foreground] and [TextStyle.background] are [Paint]`?`, which
+///   is not JSON-safe.
+/// * [TextStyle.debugLabel] is debug metadata and is excluded from
+///   [TextStyle] equality.
+/// * [TextStyle.fontFeatures] and [TextStyle.fontVariations] are niche
+///   typography fields reserved for a focused follow-up.
 final textStyleCodec = Ack.object({
   'inherit': Ack.boolean().withDefault(true),
   'color': colorCodec.nullable().optional(),
@@ -122,10 +126,10 @@ JsonMap _encodeTextStyle(TextStyle value) {
   };
 }
 
-/// Unfolds Flutter's internal `packages/<pkg>/<family>` storage back to the
-/// user-supplied `(fontFamily, fontFamilyFallback, package)` triple, when all
-/// referenced families share the same package prefix. Falls back to the
-/// stored (prefixed) form if the prefix is missing or inconsistent.
+// Unfolds Flutter's internal `packages/<pkg>/<family>` storage back to the
+// user-supplied `(fontFamily, fontFamilyFallback, package)` triple, when all
+// referenced families share the same package prefix. Falls back to the
+// stored (prefixed) form if the prefix is missing or inconsistent.
 ({String? family, List<String>? fallback, String? packageName})
 _encodeFontFamilyFields(TextStyle value) {
   final family = value.fontFamily;
@@ -145,8 +149,8 @@ _encodeFontFamilyFields(TextStyle value) {
   );
 }
 
-/// Returns the package name shared by every `packages/<name>/<family>` entry
-/// in [families], or null if any entry lacks the prefix or disagrees.
+// Returns the package name shared by every `packages/<name>/<family>` entry
+// in `families`, or null if any entry lacks the prefix or disagrees.
 String? _sharedPackagePrefix(List<String> families) {
   const prefix = 'packages/';
   String? shared;

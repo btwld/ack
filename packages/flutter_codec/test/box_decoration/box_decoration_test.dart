@@ -96,7 +96,7 @@ void main() {
       expectJsonSafe(encoded);
     });
 
-    test('round-trips a full BoxDecoration', () {
+    test('round-trips a full BoxDecoration without image', () {
       final original = BoxDecoration(
         color: const Color(0xFF2196F3),
         border: Border.all(color: const Color(0xFFFF0000), width: 2),
@@ -127,33 +127,35 @@ void main() {
     });
   });
 
-  group('boxDecorationCodec image deferral', () {
+  group('boxDecorationCodec image integration', () {
+    test('decodes an image field via decorationImageCodec', () {
+      final parsed = boxDecorationCodec.parse({
+        'image': {
+          'image': {'type': 'network', 'url': 'https://example.com/foo.png'},
+          'fit': 'cover',
+        },
+      });
+      expect(parsed!.image, isA<DecorationImage>());
+      expect(parsed.image!.image, isA<NetworkImage>());
+      expect(parsed.image!.fit, BoxFit.cover);
+    });
+
     test('accepts an explicit null image', () {
       expect(boxDecorationCodec.parse({'image': null}), const BoxDecoration());
     });
 
-    test('rejects non-null image values with the deferral message', () {
-      for (final input in const [
-        {'image': <String, Object?>{}},
-        {'image': 'anything'},
-      ]) {
-        final result = boxDecorationCodec.safeParse(input);
+    test('round-trips a BoxDecoration with an image', () {
+      final original = BoxDecoration(
+        image: DecorationImage(
+          image: const NetworkImage('https://example.com/foo.png'),
+          fit: BoxFit.cover,
+          alignment: Alignment.topLeft,
+        ),
+      );
 
-        expect(result.isFail, isTrue);
-        expect(
-          jsonEncode(result.getError().toMap()),
-          contains(
-            'DecorationImage is not yet supported by boxDecorationCodec.',
-          ),
-        );
-      }
-    });
-
-    test('always emits image as null', () {
-      final encoded = boxDecorationCodec.encode(const BoxDecoration());
-
-      expect(encoded, isNotNull);
-      expect(encoded!['image'], isNull);
+      final encoded = boxDecorationCodec.encode(original);
+      expect(boxDecorationCodec.parse(encoded), original);
+      expectJsonSafe(encoded);
     });
   });
 
@@ -166,6 +168,11 @@ void main() {
       },
       'invalid gradient discriminator': {
         'gradient': {'type': 'spiral', 'colors': _redBlueHex},
+      },
+      'invalid nested image provider': {
+        'image': {
+          'image': {'type': 'spiral', 'url': 'https://example.com/x.png'},
+        },
       },
     };
 

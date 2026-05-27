@@ -2,12 +2,12 @@ import 'dart:ui' show FontWeight;
 
 import 'package:ack/ack.dart';
 
-/// String aliases accepted for [FontWeight].
-///
-/// The first nine entries (`w100`..`w900`) are deliberately parallel to
-/// [FontWeight.values] so encoding can map between the two by index. The
-/// trailing `normal` and `bold` are accept-only aliases for `w400`/`w700` and
-/// are never emitted on encode.
+// String aliases accepted for FontWeight.
+//
+// The first nine entries (w100..w900) are deliberately parallel to
+// FontWeight.values so encoding can map between the two by index. The
+// trailing `normal` and `bold` are accept-only aliases for w400/w700 and are
+// never emitted on encode.
 enum _FontWeight {
   w100,
   w200,
@@ -26,8 +26,8 @@ enum _FontWeight {
 ///
 /// Accepts `"w100"` through `"w900"` plus the conventional aliases `"normal"`
 /// and `"bold"`. Encoding canonicalizes every value to the numeric `wNNN`
-/// form, since `FontWeight.normal == FontWeight.w400` and
-/// `FontWeight.bold == FontWeight.w700` (same const instances).
+/// form, since [FontWeight.normal] is the same instance as [FontWeight.w400]
+/// (and likewise for [FontWeight.bold] / [FontWeight.w700]).
 final fontWeightCodec = Ack.enumCodec(_FontWeight.values).codec<FontWeight>(
   decode: (value) => switch (value) {
     _FontWeight.normal => FontWeight.normal,

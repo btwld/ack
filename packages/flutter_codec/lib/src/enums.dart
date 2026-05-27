@@ -30,7 +30,8 @@ import 'package:flutter/painting.dart'
         TextOverflow,
         TextWidthBasis,
         TileMode,
-        VerticalDirection;
+        VerticalDirection,
+        WebHtmlElementStrategy;
 import 'package:flutter/rendering.dart'
     show
         CrossAxisAlignment,
@@ -86,6 +87,10 @@ final growthDirectionCodec = Ack.enumCodec(GrowthDirection.values);
 final hitTestBehaviorCodec = Ack.enumCodec(HitTestBehavior.values);
 
 final imageRepeatCodec = Ack.enumCodec(ImageRepeat.values);
+
+final webHtmlElementStrategyCodec = Ack.enumCodec(
+  WebHtmlElementStrategy.values,
+);
 
 final mainAxisAlignmentCodec = Ack.enumCodec(MainAxisAlignment.values);
 

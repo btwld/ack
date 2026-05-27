@@ -2,10 +2,10 @@ import 'dart:ui' show Locale;
 
 import 'package:ack/ack.dart';
 
-/// BCP-47 subset: required language (2-3 lowercase), optional script
-/// (4-character title case), optional region (2 uppercase letters or 3 digits).
-/// Capture groups extract each subtag for [_decodeLocale]; the unanchored
-/// pattern matters only for validation, so the groups don't affect matching.
+// BCP-47 subset: required language (2-3 lowercase), optional script
+// (4-character title case), optional region (2 uppercase letters or 3 digits).
+// Capture groups extract each subtag for the inline decoder on [localeCodec];
+// they don't affect validation behavior.
 const _localePattern =
     r'^([a-z]{2,3})(?:-([A-Z][a-z]{3}))?(?:-([A-Z]{2}|\d{3}))?$';
 final _localeRegex = RegExp(_localePattern);

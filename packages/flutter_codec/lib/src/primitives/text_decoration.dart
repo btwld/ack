@@ -2,7 +2,7 @@ import 'dart:ui' show TextDecoration;
 
 import 'package:ack/ack.dart';
 
-/// Atomic [TextDecoration] aliases, encoded as string names.
+// Atomic TextDecoration aliases, encoded as string names.
 enum _TextDecoration { none, underline, overline, lineThrough }
 
 final _atomicCodec = Ack.enumCodec(_TextDecoration.values);

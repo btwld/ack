@@ -8,9 +8,11 @@ import 'package:flutter/painting.dart'
         BoxShadow,
         BoxShape,
         Color,
+        DecorationImage,
         Gradient;
 
 import 'borders.dart' show boxBorderCodec;
+import 'decoration_image.dart' show decorationImageCodec;
 import 'enums.dart' show blendModeCodec, boxShapeCodec;
 import 'gradients.dart' show gradientCodec;
 import 'json_readers.dart';
@@ -18,26 +20,18 @@ import 'primitives/border_radius.dart' show borderRadiusGeometryCodec;
 import 'primitives/color.dart' show colorCodec;
 import 'shadows.dart' show boxShadowCodec;
 
-const _unsupportedDecorationImageMessage =
-    'DecorationImage is not yet supported by boxDecorationCodec.';
-
 /// Codec for [BoxDecoration].
 ///
-/// Supports the JSON-safe constructor fields: `color`, `border`,
-/// `borderRadius`, `boxShadow`, `gradient`, `backgroundBlendMode`, and
-/// `shape`.
-///
-/// `image` is intentionally deferred until the dedicated
-/// `DecorationImage`/`ImageProvider` plan. Decode accepts only missing or
-/// explicit `null` image values; encode always emits `"image": null` to keep
-/// the canonical object shape stable.
+/// Composes every JSON-safe constructor field: `color` ([colorCodec]),
+/// `image` ([decorationImageCodec]), `border` ([boxBorderCodec]),
+/// `borderRadius` ([borderRadiusGeometryCodec]), `boxShadow`
+/// ([boxShadowCodec]), `gradient` ([gradientCodec]), `backgroundBlendMode`
+/// ([blendModeCodec]), and `shape` ([boxShapeCodec], default
+/// [BoxShape.rectangle]).
 final boxDecorationCodec =
     Ack.object({
       'color': colorCodec.nullable().optional(),
-      'image': Ack.any().nullable().optional().refine(
-        (_) => false,
-        message: _unsupportedDecorationImageMessage,
-      ),
+      'image': decorationImageCodec.nullable().optional(),
       'border': boxBorderCodec.nullable().optional(),
       'borderRadius': borderRadiusGeometryCodec.nullable().optional(),
       'boxShadow': Ack.list(boxShadowCodec).nullable().optional(),
@@ -52,6 +46,7 @@ final boxDecorationCodec =
 BoxDecoration _decodeBoxDecoration(JsonMap data) {
   return BoxDecoration(
     color: readNullableValue<Color>(data, 'color'),
+    image: readNullableValue<DecorationImage>(data, 'image'),
     border: readNullableValue<BoxBorder>(data, 'border'),
     borderRadius: readNullableValue<BorderRadiusGeometry>(data, 'borderRadius'),
     boxShadow: readNullableList<BoxShadow>(data, 'boxShadow'),
@@ -67,7 +62,7 @@ BoxDecoration _decodeBoxDecoration(JsonMap data) {
 JsonMap _encodeBoxDecoration(BoxDecoration value) {
   return {
     'color': value.color,
-    'image': null,
+    'image': value.image,
     'border': value.border,
     'borderRadius': value.borderRadius,
     'boxShadow': value.boxShadow,

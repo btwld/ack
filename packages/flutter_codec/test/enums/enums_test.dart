@@ -87,6 +87,11 @@ final _registry = <_EnumCase<Enum>>[
     HitTestBehavior.values,
   ),
   _EnumCase<ImageRepeat>('ImageRepeat', imageRepeatCodec, ImageRepeat.values),
+  _EnumCase<WebHtmlElementStrategy>(
+    'WebHtmlElementStrategy',
+    webHtmlElementStrategyCodec,
+    WebHtmlElementStrategy.values,
+  ),
   _EnumCase<MainAxisAlignment>(
     'MainAxisAlignment',
     mainAxisAlignmentCodec,
