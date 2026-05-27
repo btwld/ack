@@ -2,6 +2,8 @@ export 'primitives/alignment.dart';
 export 'primitives/border_radius.dart';
 export 'primitives/color.dart';
 export 'primitives/edge_insets.dart';
+export 'primitives/font_feature.dart';
+export 'primitives/font_variation.dart';
 export 'primitives/font_weight.dart';
 export 'primitives/locale.dart';
 export 'primitives/offset.dart';

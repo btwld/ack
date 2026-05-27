@@ -43,6 +43,14 @@ void main() {
           'fontFamilyFallback': ['Roboto', 'Arial'],
           'package': 'my_package',
           'overflow': 'ellipsis',
+          'fontFeatures': [
+            {'feature': 'smcp', 'value': 1},
+            {'feature': 'liga'},
+          ],
+          'fontVariations': [
+            {'axis': 'wght', 'value': 600},
+            {'axis': 'wdth', 'value': 100},
+          ],
         }),
         TextStyle(
           color: const Color(0xFF2196F3),
@@ -74,6 +82,11 @@ void main() {
           fontFamilyFallback: const ['Roboto', 'Arial'],
           package: 'my_package',
           overflow: TextOverflow.ellipsis,
+          fontFeatures: const [FontFeature('smcp'), FontFeature('liga')],
+          fontVariations: const [
+            FontVariation('wght', 600),
+            FontVariation('wdth', 100),
+          ],
         ),
       );
     });
@@ -105,6 +118,8 @@ void main() {
         'fontFamilyFallback': null,
         'package': null,
         'overflow': null,
+        'fontFeatures': null,
+        'fontVariations': null,
       });
       expectJsonSafe(encoded);
     });
@@ -141,6 +156,11 @@ void main() {
         fontFamilyFallback: const ['Roboto', 'Arial'],
         package: 'my_package',
         overflow: TextOverflow.ellipsis,
+        fontFeatures: const [FontFeature('smcp'), FontFeature('cv01', 3)],
+        fontVariations: const [
+          FontVariation('wght', 500),
+          FontVariation('slnt', -10),
+        ],
       );
 
       final encoded = textStyleCodec.encode(original);

@@ -4,7 +4,9 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
     show
         Color,
+        FontFeature,
         FontStyle,
+        FontVariation,
         FontWeight,
         TextBaseline,
         TextDecoration,
@@ -22,6 +24,8 @@ import 'enums.dart'
         textOverflowCodec;
 import 'json_readers.dart';
 import 'primitives/color.dart' show colorCodec;
+import 'primitives/font_feature.dart' show fontFeatureCodec;
+import 'primitives/font_variation.dart' show fontVariationCodec;
 import 'primitives/font_weight.dart' show fontWeightCodec;
 import 'primitives/locale.dart' show localeCodec;
 import 'primitives/text_decoration.dart' show textDecorationCodec;
@@ -32,16 +36,15 @@ import 'shadows.dart' show shadowCodec;
 /// Supported fields are the JSON-safe constructor parameters: colors,
 /// typography scalars, enum fields, [FontWeight], [ui.Locale],
 /// [TextStyle.shadows], [TextDecoration], [TextStyle.fontFamily],
-/// [TextStyle.fontFamilyFallback], [TextStyle.package], and
-/// [TextStyle.overflow].
+/// [TextStyle.fontFamilyFallback], [TextStyle.package],
+/// [TextStyle.overflow], [TextStyle.fontFeatures], and
+/// [TextStyle.fontVariations].
 ///
 /// Unsupported fields are intentionally omitted:
-/// * [TextStyle.foreground] and [TextStyle.background] are [Paint]`?`, which
-///   is not JSON-safe.
+/// * [TextStyle.foreground] and [TextStyle.background] are nullable [Paint]
+///   values, which are not JSON-safe.
 /// * [TextStyle.debugLabel] is debug metadata and is excluded from
 ///   [TextStyle] equality.
-/// * [TextStyle.fontFeatures] and [TextStyle.fontVariations] are niche
-///   typography fields reserved for a focused follow-up.
 final textStyleCodec = Ack.object({
   'inherit': Ack.boolean().withDefault(true),
   'color': colorCodec.nullable().optional(),
@@ -64,6 +67,8 @@ final textStyleCodec = Ack.object({
   'fontFamilyFallback': Ack.list(Ack.string()).nullable().optional(),
   'package': Ack.string().nullable().optional(),
   'overflow': textOverflowCodec.nullable().optional(),
+  'fontFeatures': Ack.list(fontFeatureCodec).nullable().optional(),
+  'fontVariations': Ack.list(fontVariationCodec).nullable().optional(),
 }).codec<TextStyle>(decode: _decodeTextStyle, encode: _encodeTextStyle);
 
 TextStyle _decodeTextStyle(JsonMap data) {
@@ -95,6 +100,8 @@ TextStyle _decodeTextStyle(JsonMap data) {
     fontFamilyFallback: readNullableList<String>(data, 'fontFamilyFallback'),
     package: readNullableValue<String>(data, 'package'),
     overflow: readNullableValue<TextOverflow>(data, 'overflow'),
+    fontFeatures: readNullableList<FontFeature>(data, 'fontFeatures'),
+    fontVariations: readNullableList<FontVariation>(data, 'fontVariations'),
   );
 }
 
@@ -123,6 +130,8 @@ JsonMap _encodeTextStyle(TextStyle value) {
     'fontFamilyFallback': fontFamilyFields.fallback,
     'package': fontFamilyFields.packageName,
     'overflow': value.overflow,
+    'fontFeatures': value.fontFeatures,
+    'fontVariations': value.fontVariations,
   };
 }
 
