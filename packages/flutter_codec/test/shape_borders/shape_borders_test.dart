@@ -78,7 +78,8 @@ void main() {
     });
   });
 
-  group('beveledRectangleBorderCodec / continuousRectangleBorderCodec', () {
+  group('beveledRectangleBorderCodec / continuousRectangleBorderCodec / '
+      'roundedSuperellipseBorderCodec', () {
     test('each decodes its empty default and round-trips', () {
       expect(
         beveledRectangleBorderCodec.parse({}),
@@ -87,6 +88,10 @@ void main() {
       expect(
         continuousRectangleBorderCodec.parse({}),
         const ContinuousRectangleBorder(),
+      );
+      expect(
+        roundedSuperellipseBorderCodec.parse({}),
+        const RoundedSuperellipseBorder(),
       );
 
       final beveled = BeveledRectangleBorder(
@@ -107,6 +112,17 @@ void main() {
           continuousRectangleBorderCodec.encode(continuous),
         ),
         continuous,
+      );
+
+      final superellipse = RoundedSuperellipseBorder(
+        side: const BorderSide(color: Color(0xFFFF0000), width: 2),
+        borderRadius: BorderRadius.circular(8),
+      );
+      expect(
+        roundedSuperellipseBorderCodec.parse(
+          roundedSuperellipseBorderCodec.encode(superellipse),
+        ),
+        superellipse,
       );
     });
   });
@@ -130,6 +146,10 @@ void main() {
         shapeBorderCodec.parse({'type': 'continuousRectangle'}),
         const ContinuousRectangleBorder(),
       );
+      expect(
+        shapeBorderCodec.parse({'type': 'roundedSuperellipse'}),
+        const RoundedSuperellipseBorder(),
+      );
     });
 
     test('encode dispatches by runtime ShapeBorder subtype', () {
@@ -145,6 +165,11 @@ void main() {
       final rounded = shapeBorderCodec.encode(const RoundedRectangleBorder());
       expect(rounded, containsPair('type', 'roundedRectangle'));
       expect(rounded, containsPair('side', 'none'));
+      final superellipse = shapeBorderCodec.encode(
+        const RoundedSuperellipseBorder(),
+      );
+      expect(superellipse, containsPair('type', 'roundedSuperellipse'));
+      expect(superellipse, containsPair('side', 'none'));
     });
 
     test('rejects an unknown discriminator', () {
@@ -155,7 +180,7 @@ void main() {
       expect(shapeBorderCodec.safeParse({}).isFail, isTrue);
     });
 
-    test('JSON Schema surfaces all five discriminator branches', () {
+    test('JSON Schema surfaces all six discriminator branches', () {
       final schema = jsonEncode(shapeBorderCodec.toJsonSchema());
       for (final value in const [
         'circle',
@@ -163,6 +188,7 @@ void main() {
         'roundedRectangle',
         'beveledRectangle',
         'continuousRectangle',
+        'roundedSuperellipse',
       ]) {
         expect(schema, contains('"$value"'));
       }

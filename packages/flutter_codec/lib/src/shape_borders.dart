@@ -9,6 +9,7 @@ import 'package:flutter/painting.dart'
         ContinuousRectangleBorder,
         OutlinedBorder,
         RoundedRectangleBorder,
+        RoundedSuperellipseBorder,
         ShapeBorder,
         StadiumBorder;
 
@@ -16,11 +17,11 @@ import 'borders.dart' show borderSideCodec;
 import 'json_readers.dart';
 import 'primitives/border_radius.dart' show borderRadiusGeometryCodec;
 
-// Shared `{side, borderRadius}` schema for the three corner-rounded
+// Shared `{side, borderRadius}` schema for the four corner-rounded
 // rectangular border codecs ([roundedRectangleBorderCodec],
-// [beveledRectangleBorderCodec], [continuousRectangleBorderCodec]). They
-// accept the same JSON payload and differ only in the runtime [ShapeBorder]
-// subtype they decode to.
+// [beveledRectangleBorderCodec], [continuousRectangleBorderCodec],
+// [roundedSuperellipseBorderCodec]). They accept the same JSON payload and
+// differ only in the runtime [ShapeBorder] subtype they decode to.
 final _rectangleBorderSchema = Ack.object({
   'side': borderSideCodec.withDefault(BorderSide.none),
   'borderRadius': borderRadiusGeometryCodec.withDefault(BorderRadius.zero),
@@ -117,9 +118,29 @@ final continuousRectangleBorderCodec = _rectangleBorderSchema
       },
     );
 
+/// Codec for [RoundedSuperellipseBorder].
+///
+/// Shares the `{side, borderRadius}` shape with the other corner-rounded
+/// rectangle border codecs ([roundedRectangleBorderCodec],
+/// [beveledRectangleBorderCodec], [continuousRectangleBorderCodec]); only the
+/// runtime [ShapeBorder] subtype differs. Requires Flutter 3.27 or later.
+/// The `"type"` discriminator is added by [shapeBorderCodec] when this codec
+/// is used as one of its branches.
+final roundedSuperellipseBorderCodec = _rectangleBorderSchema
+    .codec<RoundedSuperellipseBorder>(
+      decode: (data) => RoundedSuperellipseBorder(
+        side: readValue<BorderSide>(data, 'side'),
+        borderRadius: readValue<BorderRadiusGeometry>(data, 'borderRadius'),
+      ),
+      encode: (value) => {
+        'side': value.side,
+        'borderRadius': value.borderRadius,
+      },
+    );
+
 /// Codec for JSON-safe [ShapeBorder] values, discriminated by `"type"`.
 ///
-/// Covers the five concrete [OutlinedBorder] subtypes Flutter exposes from
+/// Covers the six concrete [OutlinedBorder] subtypes Flutter exposes from
 /// `package:flutter/painting.dart`:
 ///
 /// * `"circle"` → [CircleBorder]
@@ -127,11 +148,11 @@ final continuousRectangleBorderCodec = _rectangleBorderSchema
 /// * `"roundedRectangle"` → [RoundedRectangleBorder]
 /// * `"beveledRectangle"` → [BeveledRectangleBorder]
 /// * `"continuousRectangle"` → [ContinuousRectangleBorder]
+/// * `"roundedSuperellipse"` → [RoundedSuperellipseBorder] (Flutter 3.27+)
 ///
-/// [InputBorder] subtypes (Material), the newer [StarBorder] and
-/// [LinearBorder] shapes, and `RoundedSuperellipseBorder` are intentionally
-/// not covered here — they belong to separate plans because their
-/// constructor surfaces are materially different.
+/// [InputBorder] subtypes (Material) and the newer [StarBorder] / [LinearBorder]
+/// shapes are intentionally not covered here — they belong to separate plans
+/// because their constructor surfaces are materially different.
 ///
 /// `OvalBorder` extends [CircleBorder], so it round-trips as a
 /// [CircleBorder] (the runtime subtype is lost). Its painted output is
@@ -162,6 +183,10 @@ final shapeBorderCodec = Ack.discriminated<ShapeBorder>(
     'continuousRectangle': continuousRectangleBorderCodec.codec<ShapeBorder>(
       decode: (value) => value,
       encode: (value) => value as ContinuousRectangleBorder,
+    ),
+    'roundedSuperellipse': roundedSuperellipseBorderCodec.codec<ShapeBorder>(
+      decode: (value) => value,
+      encode: (value) => value as RoundedSuperellipseBorder,
     ),
   },
 );
