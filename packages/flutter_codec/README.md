@@ -83,11 +83,21 @@ These types have no portable JSON shape, or their JSON representation would
 mislead more than it helps. Each is documented at the call site rather than
 silently falling back.
 
-- **No portable JSON shape**: `Paint`, `Path`, `Shader`, `ColorFilter` (see
-  [Roadmap](#roadmap)), `ImageFilter` (see [Roadmap](#roadmap)),
+- **Opaque `dart:ui` state — encode impossible via public API**:
+  `ColorFilter` and `ImageFilter`. `ColorFilter` keeps `_color`, `_blendMode`,
+  `_matrix`, and `_type` in library-private fields and exposes the same
+  `runtimeType` for all four constructor variants, so an existing instance
+  cannot be inspected back to JSON. `ImageFilter` is abstract with a private
+  constructor (`ImageFilter._()`) and returns library-private subtypes
+  (`_GaussianBlurImageFilter`, `_MatrixImageFilter`, etc.) from its factories
+  — external code cannot `is`-check or downcast them. The only state-revealing
+  surface is `toString()`, which is a debug format Flutter is free to change
+  between releases. A bidirectional codec is not achievable here without
+  introducing parallel descriptor types; the same goes for
+  `DecorationImage.colorFilter` (which embeds a `ColorFilter`).
+- **No portable JSON shape**: `Paint`, `Path`, `Shader`,
   `TextStyle.foreground` / `TextStyle.background`,
-  `DecorationImage.colorFilter`, `DecorationImage.onError`,
-  `FlutterLogoDecoration`.
+  `DecorationImage.onError`, `FlutterLogoDecoration`.
 - **Local or recursive providers**: `FileImage` (local path), `MemoryImage`
   (base64 bloat), `ResizeImage` (wraps another provider), custom
   `AssetBundle` instances on `AssetImage`.
@@ -106,5 +116,7 @@ pattern, gradient discriminator, shape enum, and so on).
 
 ## Roadmap
 
-- `colorFilterCodec` + `imageFilterCodec` — closes the last meaningful
-  semantic gap and unblocks wiring `DecorationImage.colorFilter`.
+The painting-layer surface is feature-complete for the types Flutter exposes
+JSON-safely. Future additions would require either upstream changes to
+`dart:ui` (to expose `ColorFilter`/`ImageFilter` state) or a parallel
+descriptor-type design that we'd own outside the raw Flutter types.

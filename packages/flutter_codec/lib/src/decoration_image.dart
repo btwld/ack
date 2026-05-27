@@ -28,7 +28,13 @@ import 'primitives/rect.dart' show rectCodec;
 /// inputs fail to parse rather than silently clamp.
 ///
 /// Intentionally unsupported:
-/// * `colorFilter` — `ColorFilter` has no portable JSON shape.
+/// * `colorFilter` — `ColorFilter` keeps its constructor arguments
+///   (`color`, `blendMode`, `matrix`, type discriminator) in library-private
+///   fields with no public getters, and exposes the same `runtimeType` for
+///   all four constructor variants. There is no portable, contract-stable
+///   way to inspect an existing instance back to JSON, so a bidirectional
+///   codec is not achievable via the public API. The same constraint applies
+///   to `ImageFilter` (private subtypes, private state).
 /// * `onError` — callback type, not serializable.
 ///
 /// Both are excluded from [DecorationImage]'s `==`, so round-trips remain
