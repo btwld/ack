@@ -10,6 +10,8 @@ const _redBlueHex = ['#FF0000', '#0000FF'];
 const _redBlue = [Color(0xFFFF0000), Color(0xFF0000FF)];
 
 void main() {
+  // --- boxDecorationCodec ----------------------------------------------------
+
   group('boxDecorationCodec decode', () {
     test('decodes an empty object as the default BoxDecoration', () {
       expect(boxDecorationCodec.parse({}), const BoxDecoration());
@@ -190,6 +192,196 @@ void main() {
       expect(schema, contains('"circle"'));
       expect(schema, contains('"const":"linear"'));
       expect(schema, contains(r'^#[0-9A-Fa-f]{6}$'));
+    });
+  });
+
+  // --- shapeDecorationCodec --------------------------------------------------
+
+  group('shapeDecorationCodec decode', () {
+    test('decodes a minimal ShapeDecoration with just a shape', () {
+      expect(
+        shapeDecorationCodec.parse({
+          'shape': {'type': 'circle'},
+        }),
+        const ShapeDecoration(shape: CircleBorder()),
+      );
+    });
+
+    test('decodes a full ShapeDecoration', () {
+      // ShapeDecoration asserts color XOR gradient — exercise the gradient
+      // branch here; color-only is exercised by the encode round-trip below.
+      final decoded = shapeDecorationCodec.parse({
+        'gradient': {'type': 'linear', 'colors': _redBlueHex},
+        'shadows': [
+          {
+            'color': '#55000000',
+            'offset': {'x': 1, 'y': 2},
+            'blurRadius': 3,
+          },
+        ],
+        'shape': {'type': 'roundedRectangle', 'borderRadius': 8},
+      });
+
+      expect(
+        decoded,
+        ShapeDecoration(
+          gradient: const LinearGradient(colors: _redBlue),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x55000000),
+              offset: Offset(1, 2),
+              blurRadius: 3,
+            ),
+          ],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    });
+  });
+
+  group('shapeDecorationCodec encode', () {
+    test('emits a canonical map with explicit nulls for unset fields', () {
+      final encoded = shapeDecorationCodec.encode(
+        const ShapeDecoration(shape: CircleBorder()),
+      );
+
+      expect(encoded, {
+        'color': null,
+        'image': null,
+        'gradient': null,
+        'shadows': null,
+        // Nested codecs re-encode to JSON, so the shape arrives as its
+        // canonical map form (including the discriminator), not as the
+        // runtime CircleBorder instance.
+        'shape': {'type': 'circle', 'side': 'none', 'eccentricity': 0.0},
+      });
+      expectJsonSafe(encoded);
+    });
+
+    test('round-trips a populated ShapeDecoration', () {
+      final original = ShapeDecoration(
+        color: const Color(0xFF2196F3),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x55000000),
+            offset: Offset(1, 2),
+            blurRadius: 3,
+          ),
+        ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      );
+
+      final encoded = shapeDecorationCodec.encode(original);
+      expect(shapeDecorationCodec.parse(encoded), original);
+      expectJsonSafe(encoded);
+    });
+  });
+
+  group('shapeDecorationCodec rejects invalid input', () {
+    test('rejects a missing required shape', () {
+      expect(shapeDecorationCodec.safeParse({}).isFail, isTrue);
+    });
+
+    test('rejects an unknown shape discriminator', () {
+      expect(
+        shapeDecorationCodec.safeParse({
+          'shape': {'type': 'oval'},
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects unknown keys', () {
+      expect(
+        shapeDecorationCodec.safeParse({
+          'shape': {'type': 'circle'},
+          'foo': true,
+        }).isFail,
+        isTrue,
+      );
+    });
+  });
+
+  // --- decorationCodec (union) ----------------------------------------------
+
+  group('decorationCodec decode', () {
+    test('parses {type: box, ...} as a BoxDecoration', () {
+      final decoded = decorationCodec.parse({
+        'type': 'box',
+        'color': '#2196F3',
+      });
+      expect(decoded, isA<BoxDecoration>());
+      expect((decoded as BoxDecoration).color, const Color(0xFF2196F3));
+    });
+
+    test('parses {type: shape, ...} as a ShapeDecoration', () {
+      final decoded = decorationCodec.parse({
+        'type': 'shape',
+        'shape': {'type': 'circle'},
+      });
+      expect(decoded, isA<ShapeDecoration>());
+      expect((decoded as ShapeDecoration).shape, const CircleBorder());
+    });
+  });
+
+  group('decorationCodec encode', () {
+    test('emits {type: box, ...} for a BoxDecoration', () {
+      final encoded =
+          decorationCodec.encode(const BoxDecoration()) as Map<String, Object?>;
+      expect(encoded['type'], 'box');
+      expect(encoded.containsKey('color'), isTrue);
+      expect(encoded.containsKey('shape'), isTrue);
+      expectJsonSafe(encoded);
+    });
+
+    test('emits {type: shape, ...} for a ShapeDecoration', () {
+      final encoded =
+          decorationCodec.encode(const ShapeDecoration(shape: CircleBorder()))
+              as Map<String, Object?>;
+      expect(encoded['type'], 'shape');
+      expect(encoded['shape'], {
+        'type': 'circle',
+        'side': 'none',
+        'eccentricity': 0.0,
+      });
+      expectJsonSafe(encoded);
+    });
+
+    test('round-trips a BoxDecoration through the union', () {
+      final original = const BoxDecoration(
+        color: Color(0xFF2196F3),
+        shape: BoxShape.circle,
+      );
+      expect(decorationCodec.parse(decorationCodec.encode(original)), original);
+    });
+
+    test('round-trips a ShapeDecoration through the union', () {
+      final original = ShapeDecoration(
+        color: const Color(0xFF2196F3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      );
+      expect(decorationCodec.parse(decorationCodec.encode(original)), original);
+    });
+  });
+
+  group('decorationCodec rejects invalid input', () {
+    test('rejects an unknown discriminator', () {
+      expect(
+        decorationCodec.safeParse({'type': 'flutter-logo'}).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects a missing discriminator', () {
+      expect(decorationCodec.safeParse({}).isFail, isTrue);
+    });
+  });
+
+  group('decorationCodec JSON Schema', () {
+    test('surfaces both discriminator branches', () {
+      final schema = jsonEncode(decorationCodec.toJsonSchema());
+      expect(schema, contains('"box"'));
+      expect(schema, contains('"shape"'));
     });
   });
 }
