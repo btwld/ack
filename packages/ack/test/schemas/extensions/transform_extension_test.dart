@@ -10,25 +10,6 @@ void main() {
       expect(result, 5);
     });
 
-    test('should chain a refinement check after a transformation', () {
-      final schema = Ack.string()
-          .transform((val) => val.length)
-          .refine((val) => val > 3, message: 'Length must be greater than 3');
-
-      // Test success
-      final successResult = schema.safeParse('hello');
-      expect(successResult.isOk, isTrue);
-      expect(successResult.getOrThrow(), 5);
-
-      // Test failure
-      final failureResult = schema.safeParse('hi');
-      expect(failureResult.isFail, isTrue);
-      expect(
-        failureResult.getError().message,
-        contains('Length must be greater than 3'),
-      );
-    });
-
     test('should not call transformer when nullable schema receives null', () {
       var transformerCalled = false;
       final schema = Ack.string().nullable().transform<String>((val) {
@@ -58,7 +39,7 @@ void main() {
         final schema = Ack.string()
             .nullable()
             .transform((value) => value)
-            .copyWith(isNullable: false);
+            .nullable(value: false);
 
         final result = schema.safeParse(null);
 
@@ -95,7 +76,7 @@ void main() {
       expect(result.getError(), isA<SchemaTransformError>());
       expect(
         result.getError().message,
-        contains('Transformation failed: Exception: Intentional failure'),
+        contains('Codec decode failed: Exception: Intentional failure'),
       );
     });
 

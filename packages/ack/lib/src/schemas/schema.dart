@@ -3,6 +3,7 @@ import 'package:meta/meta.dart';
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
+import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
@@ -14,59 +15,128 @@ import '../validation/schema_result.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boolean_schema.dart';
+part 'codec_schema.dart';
+part 'default_schema.dart';
 part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
+part 'instance_schema.dart';
 part 'list_schema.dart';
 part 'num_schema.dart';
 part 'object_schema.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
-part 'transformed_schema.dart';
 part 'testing/testing_schemas.dart';
+part 'wrapper_schema.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
 
+/// Type-erased ACK schema used when traversing heterogeneous schema graphs.
+///
+/// Use this when both boundary and runtime types are intentionally unknown,
+/// such as converter traversal, object properties, or wrapper unwrapping.
+/// Keep partially known schemas typed with their specific generic half instead
+/// of widening them to [AnyAckSchema].
+typedef AnyAckSchema = AckSchema<Object, Object>;
+
+/// Indicates whether a schema operation is parsing inbound data or encoding
+/// runtime values back to the boundary representation.
+enum SchemaOperation { parse, encode }
+
+/// The bidirectional schema contract.
+///
+/// Every schema declares two type parameters:
+///
+/// * [Boundary] is the encoded / wire / JSON-facing value type.
+/// * [Runtime] is the parsed Dart application value type.
+///
+/// All schemas implement three internal operations:
+///
+/// * [parseWithContext]:  Boundary → Runtime decoding (plus boundary validation).
+/// * [validateRuntimeWithContext]: runtime type/invariant validation.
+/// * [encodeWithContext]: Runtime → Boundary encoding.
+///
+/// The public [parse]/[safeParse] and [encode]/[safeEncode] APIs are thin
+/// wrappers that build a root [SchemaContext] and delegate to these three
+/// methods. Subclasses override the three methods; they should not override
+/// the public wrappers.
 @immutable
-sealed class AckSchema<DartType extends Object> {
+abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
-  final DartType? defaultValue;
-  final List<Constraint<DartType>> _constraints;
-  final List<Refinement<DartType>> _refinements;
+  final List<Constraint<Runtime>> _constraints;
+  final List<Refinement<Runtime>> _refinements;
 
   /// Returns an unmodifiable view of the constraints for this schema.
-  List<Constraint<DartType>> get constraints => List.unmodifiable(_constraints);
+  List<Constraint<Runtime>> get constraints => List.unmodifiable(_constraints);
 
   /// Returns an unmodifiable view of the refinements for this schema.
-  List<Refinement<DartType>> get refinements => List.unmodifiable(_refinements);
+  List<Refinement<Runtime>> get refinements => List.unmodifiable(_refinements);
+
+  Iterable<Object?> get _constraintsForEquality => _constraints;
+
+  Iterable<Object?> get _refinementsForEquality => _refinements;
 
   const AckSchema({
     this.isNullable = false,
     this.isOptional = false,
     this.description,
-    this.defaultValue,
-    List<Constraint<DartType>> constraints = const [],
-    List<Refinement<DartType>> refinements = const [],
+    List<Constraint<Runtime>> constraints = const [],
+    List<Refinement<Runtime>> refinements = const [],
   }) : _constraints = constraints,
        _refinements = refinements;
 
-  /// Utility method to get the schema type of any value.
-  static SchemaType getSchemaType(Object? value) {
-    return SchemaType.of(value);
-  }
+  // ---------------------------------------------------------------------------
+  // Subclass-facing internal lifecycle
+  // ---------------------------------------------------------------------------
 
-  /// Applies constraints and refinements to a validated value.
+  /// Decodes a boundary value into a runtime value.
   ///
-  /// Checks constraints first, then runs refinements if all constraints pass.
-  /// Schemas call this after type validation and conversion.
+  /// The default delegates to [validateRuntimeWithContext], which is correct
+  /// for schemas whose parse is just runtime validation. Composite and codec
+  /// schemas override this to implement boundary-shape-specific logic.
   @protected
-  SchemaResult<DartType> applyConstraintsAndRefinements(
-    DartType value,
+  SchemaResult<Runtime> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => validateRuntimeWithContext(value, context);
+
+  /// Validates that [value] is a valid runtime value for this schema.
+  ///
+  /// This is the single source of truth for runtime invariants. Subclasses
+  /// MUST implement it; codecs call it on their output to validate decoded /
+  /// pre-encode runtime values, and [encodeWithContext] uses it as a
+  /// precondition.
+  @protected
+  SchemaResult<Runtime> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  );
+
+  /// Encodes a runtime value into a boundary value. The base class strips
+  /// `null` before calling this; subclasses receive a non-null [value].
+  ///
+  /// The default delegates to [encodeAsBoundary], which is correct for schemas
+  /// where `Boundary == Runtime`. Schemas where the two types differ (codecs,
+  /// objects, lists, enums, …) override this to implement encoding logic.
+  @protected
+  SchemaResult<Boundary> encodeWithContext(
+    Runtime value,
+    SchemaContext context,
+  ) => encodeAsBoundary(value, context);
+
+  // ---------------------------------------------------------------------------
+  // Shared helpers used by subclasses
+  // ---------------------------------------------------------------------------
+
+  /// Applies constraints and refinements to a runtime value.
+  @protected
+  SchemaResult<Runtime> applyConstraintsAndRefinements(
+    Runtime value,
     SchemaContext context,
   ) {
-    final constraintViolations = _checkConstraints(value, context);
+    final constraintViolations = _checkConstraints(value);
     if (constraintViolations.isNotEmpty) {
       return SchemaResult.fail(
         SchemaConstraintsError(
@@ -78,31 +148,22 @@ sealed class AckSchema<DartType extends Object> {
     return _runRefinements(value, context);
   }
 
-  @protected
-  List<ConstraintError> _checkConstraints(
-    DartType value,
-    SchemaContext context,
-  ) {
-    if (constraints.isEmpty) return const [];
+  List<ConstraintError> _checkConstraints(Runtime value) {
+    if (_constraints.isEmpty) return const [];
     final errors = <ConstraintError>[];
-    for (final constraint in constraints) {
-      if (constraint is Validator<DartType>) {
+    for (final constraint in _constraints) {
+      if (constraint is Validator<Runtime>) {
         final error = constraint.validate(value);
         if (error != null) {
           errors.add(error);
         }
       }
     }
-
     return errors;
   }
 
-  @protected
-  SchemaResult<DartType> _runRefinements(
-    DartType value,
-    SchemaContext context,
-  ) {
-    for (final refinement in refinements) {
+  SchemaResult<Runtime> _runRefinements(Runtime value, SchemaContext context) {
+    for (final refinement in _refinements) {
       if (!refinement.validate(value)) {
         return SchemaResult.fail(
           SchemaValidationError(message: refinement.message, context: context),
@@ -113,9 +174,22 @@ sealed class AckSchema<DartType extends Object> {
     return SchemaResult.ok(value);
   }
 
-  /// Creates a non-nullable constraint error result.
+  /// Helper for schemas whose boundary == runtime: validates the runtime
+  /// value and, if it passes, returns it as the boundary value unchanged.
+  /// Only safe to call when `Boundary` and `Runtime` are the same type.
   @protected
-  SchemaResult<DartType> failNonNullable(SchemaContext context) {
+  SchemaResult<Boundary> encodeAsBoundary(
+    Runtime value,
+    SchemaContext context,
+  ) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
+    return SchemaResult.ok(value as Boundary);
+  }
+
+  /// Runtime-side non-nullable failure.
+  @protected
+  SchemaResult<Runtime> failNonNullable(SchemaContext context) {
     final constraintError = NonNullableConstraint().validate(null);
     return SchemaResult.fail(
       SchemaConstraintsError(
@@ -125,124 +199,130 @@ sealed class AckSchema<DartType extends Object> {
     );
   }
 
-  /// Handles null input for schemas using the standard null/default flow.
-  ///
-  /// Returns `null` when [inputValue] is non-null so callers can continue parsing.
-  /// For null input, returns a validated clone of [defaultValue] when present,
-  /// otherwise `Ok(null)` if nullable, else a non-nullable failure result.
+  /// Encode-side non-nullable failure.
   @protected
-  SchemaResult<DartType>? handleNullInput(
+  SchemaResult<Boundary> failNonNullableEncode(SchemaContext context) {
+    return SchemaResult.fail(SchemaEncodeError.nonNullable(context: context));
+  }
+
+  /// Centralized null gate for the parse/validate paths. Returns null when
+  /// [inputValue] is non-null; otherwise returns Ok(null) if [acceptsNull]
+  /// is true or a non-nullable failure.
+  @protected
+  SchemaResult<Runtime>? handleNullInput(
     Object? inputValue,
     SchemaContext context,
   ) {
     if (inputValue != null) return null;
 
-    if (defaultValue != null) {
-      // Clone mutable defaults to avoid shared state across parse calls.
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
-    }
-
-    if (isNullable) {
+    if (acceptsNull) {
       return SchemaResult.ok(null);
     }
 
     return failNonNullable(context);
   }
 
+  /// Whether `parse(null)` and `encode(null)` should accept null without
+  /// raising a non-nullable failure. Defaults to [isNullable]; subclasses with
+  /// branch-level null policies (e.g. [AnyOfSchema]) override this hook.
+  @protected
+  bool get acceptsNull => isNullable;
+
   /// The schema type category for this schema.
-  ///
-  /// Subclasses must override to specify their type.
-  /// Primitives return JSON types (string, integer), composites return
-  /// schema categories (anyOf, discriminated).
   @protected
   SchemaType get schemaType;
 
   /// Human-readable type name for error messages and debugging.
   String get schemaTypeName => schemaType.typeName;
 
-  /// Whether this schema uses strict primitive parsing.
-  ///
-  /// When true, only exact type matches are allowed.
-  /// When false, compatible types can be coerced (e.g., "42" → 42).
-  ///
-  /// Subclasses that support strictPrimitiveParsing should override this.
-  @protected
-  bool get strictPrimitiveParsing => false;
+  /// Returns a copy of this schema with runtime-side configuration replaced.
+  AckSchema<Boundary, Runtime> withRuntimeConfig({
+    bool? isNullable,
+    bool? isOptional,
+    String? description,
+    List<Constraint<Runtime>>? constraints,
+    List<Refinement<Runtime>>? refinements,
+  });
 
-  @protected
-  SchemaResult<DartType> parseAndValidate(
-    Object? inputValue,
-    SchemaContext context,
-  ) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
-    if (nullResult != null) return nullResult;
-
-    // After null check, inputValue is guaranteed non-null
-    final nonNullInput = inputValue!;
-    final targetType = schemaType;
-
-    // Get the actual type of the input, catching any errors to maintain
-    // the "never throws" guarantee of safeParse()
-    SchemaType actualType;
-    try {
-      actualType = AckSchema.getSchemaType(nonNullInput);
-    } catch (e) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Unsupported input type: ${nonNullInput.runtimeType}',
-          context: context,
-        ),
-      );
-    }
-
-    // Type compatibility check
-    if (!targetType.canAcceptFrom(actualType, strict: strictPrimitiveParsing)) {
-      return SchemaResult.fail(
-        TypeMismatchError(
-          expectedType: targetType,
-          actualType: actualType,
-          context: context,
-        ),
-      );
-    }
-
-    // Parse using SchemaType's parsing logic
-    final convertedResult = targetType.parse<DartType>(
-      nonNullInput,
-      actualType,
-      context,
-    );
-    if (convertedResult.isFail) return convertedResult;
-
-    final convertedValue = convertedResult.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(convertedValue, context);
+  /// Marks the schema as nullable.
+  AckSchema<Boundary, Runtime> nullable({bool value = true}) {
+    if (isNullable == value) return this;
+    return withRuntimeConfig(isNullable: value);
   }
 
-  /// Parses and validates a value, throwing an [AckException] if validation fails.
-  ///
-  /// This is the primary method for validation when you want exceptions.
-  /// For error handling without exceptions, use [safeParse] instead.
-  ///
-  /// Example:
-  /// ```dart
-  /// final email = emailSchema.parse(input); // throws if invalid
-  /// ```
-  DartType? parse(Object? value, {String? debugName}) {
+  /// Marks the schema as optional so the field can be omitted from an object.
+  AckSchema<Boundary, Runtime> optional({bool value = true}) {
+    if (isOptional == value) return this;
+    return withRuntimeConfig(isOptional: value);
+  }
+
+  /// Sets the description for the schema.
+  AckSchema<Boundary, Runtime> describe(String description) {
+    return withRuntimeConfig(description: description);
+  }
+
+  /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
+  /// the parse input is null. Object encode also injects encoded defaults for
+  /// missing default-wrapped fields.
+  DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
+    return DefaultSchema<Boundary, Runtime>(
+      inner: this,
+      defaultValue: defaultValue,
+    );
+  }
+
+  /// Adds a validation constraint to the schema.
+  AckSchema<Boundary, Runtime> withConstraint(Constraint<Runtime> constraint) {
+    return withRuntimeConfig(constraints: [...constraints, constraint]);
+  }
+
+  /// Adds validation constraints to the schema.
+  AckSchema<Boundary, Runtime> withConstraints(
+    List<Constraint<Runtime>> newConstraints,
+  ) {
+    return withRuntimeConfig(constraints: [...constraints, ...newConstraints]);
+  }
+
+  /// Adds a custom validation check that runs after all other validations have
+  /// passed for this schema.
+  AckSchema<Boundary, Runtime> refine(
+    bool Function(Runtime value) validate, {
+    String message = 'The value did not pass the custom validation.',
+  }) {
+    final newRefinement = (validate: validate, message: message);
+    return withRuntimeConfig(refinements: [...refinements, newRefinement]);
+  }
+
+  /// Adds a raw [constraint] to the schema.
+  AckSchema<Boundary, Runtime> constrain(
+    Constraint<Runtime> constraint, {
+    String? message,
+  }) {
+    if (constraint is! Validator<Runtime>) {
+      throw ArgumentError(
+        'Constraint ${constraint.runtimeType} must implement Validator<Runtime>.',
+      );
+    }
+    final effectiveConstraint = message == null
+        ? constraint
+        : _ConstraintMessageOverride<Runtime>(constraint, message);
+    return withConstraint(effectiveConstraint);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public API (thin wrappers around the internal lifecycle)
+  // ---------------------------------------------------------------------------
+
+  /// Parses and validates a value, throwing an [AckException] if it fails.
+  Runtime? parse(Object? value, {String? debugName}) {
     final result = safeParse(value, debugName: debugName);
     return result.getOrThrow();
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
-  ///
-  /// This method throws an [AckException] when validation fails (same as [parse]).
-  /// Mapper exceptions are wrapped into a [SchemaTransformError] and then thrown
-  /// as part of [AckException] for consistent error handling.
   TOut parseAs<TOut extends Object>(
     Object? value,
-    TOut Function(DartType? validated) map, {
+    TOut Function(Runtime? validated) map, {
     String? debugName,
   }) {
     final result = safeParseAs(value, map, debugName: debugName);
@@ -250,36 +330,19 @@ sealed class AckSchema<DartType extends Object> {
   }
 
   /// Parses and validates a value, returning a [SchemaResult].
-  ///
-  /// This method never throws exceptions. Instead, it returns a [SchemaResult]
-  /// which can be either [Ok] (success) or [Fail] (validation error).
-  ///
-  /// This is the primary method for validation when you want explicit error handling.
-  /// For throwing exceptions on error, use [parse] instead.
-  ///
-  /// Example:
-  /// ```dart
-  /// final result = emailSchema.safeParse(input);
-  /// if (result.isOk) {
-  ///   final email = result.getOrNull();
-  /// } else {
-  ///   print('Error: ${result.getError()}');
-  /// }
-  /// ```
-  SchemaResult<DartType> safeParse(Object? value, {String? debugName}) {
-    final context = _createRootContext(value, debugName: debugName);
-    return parseAndValidate(value, context);
+  SchemaResult<Runtime> safeParse(Object? value, {String? debugName}) {
+    final context = _createRootContext(
+      value,
+      debugName: debugName,
+      operation: SchemaOperation.parse,
+    );
+    return parseWithContext(value, context);
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
-  ///
-  /// Validation failures are returned as [Fail] with the original schema error.
-  /// Mapper exceptions are caught and returned as [SchemaTransformError].
-  ///
-  /// This method never throws exceptions.
   SchemaResult<TOut> safeParseAs<TOut extends Object>(
     Object? value,
-    TOut Function(DartType? validated) map, {
+    TOut Function(Runtime? validated) map, {
     String? debugName,
   }) {
     final result = safeParse(value, debugName: debugName);
@@ -294,7 +357,11 @@ sealed class AckSchema<DartType extends Object> {
       return SchemaResult.fail(
         SchemaTransformError(
           message: 'Transformation failed: ${e.toString()}',
-          context: _createRootContext(value, debugName: debugName),
+          context: _createRootContext(
+            value,
+            debugName: debugName,
+            operation: SchemaOperation.parse,
+          ),
           cause: e,
           stackTrace: st,
         ),
@@ -302,43 +369,65 @@ sealed class AckSchema<DartType extends Object> {
     }
   }
 
-  SchemaContext _createRootContext(Object? value, {String? debugName}) {
-    // Use provided debugName or derive from runtime type (e.g., "StringSchema" -> "string")
+  /// Encodes a runtime value to a boundary value, returning a [SchemaResult].
+  ///
+  /// Null handling lives here so subclass [encodeWithContext] receives
+  /// non-null values. The null gate consults [acceptsNull] so subclasses
+  /// with branch-level null policies (e.g. [AnyOfSchema]) can participate
+  /// without overriding this public wrapper.
+  SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName}) {
+    final context = _createRootContext(
+      value,
+      debugName: debugName,
+      operation: SchemaOperation.encode,
+    );
+    if (value == null) {
+      if (acceptsNull) return SchemaResult.ok(null);
+      return failNonNullableEncode(context);
+    }
+    try {
+      return encodeWithContext(value, context);
+    } catch (e, st) {
+      return SchemaResult.fail(
+        SchemaEncodeError.encoderThrew(
+          message: 'Encoder threw: ${e.toString()}',
+          context: context,
+          cause: e,
+          stackTrace: st,
+        ),
+      );
+    }
+  }
+
+  /// Encodes a runtime value to a boundary value, throwing on failure.
+  Boundary? encode(Runtime? value, {String? debugName}) {
+    final result = safeEncode(value, debugName: debugName);
+    return result.getOrThrow();
+  }
+
+  SchemaContext _createRootContext(
+    Object? value, {
+    String? debugName,
+    required SchemaOperation operation,
+  }) {
     final typeName = runtimeType
         .toString()
         .replaceFirst(RegExp(r'Schema$'), '')
         .toLowerCase();
     final effectiveDebugName = debugName ?? typeName;
-    return SchemaContext(name: effectiveDebugName, schema: this, value: value);
+    return SchemaContext(
+      name: effectiveDebugName,
+      schema: this,
+      value: value,
+      operation: operation,
+    );
   }
 
-  /// Legacy alias for [safeParse].
-  @Deprecated('Use safeParse(...) instead.')
-  SchemaResult<DartType> validate(Object? value, {String? debugName}) =>
-      safeParse(value, debugName: debugName);
-
-  /// Legacy helper that returns the parsed value or `null` when validation fails.
-  @Deprecated('Use safeParse(...).getOrNull() instead.')
-  DartType? tryParse(Object? value, {String? debugName}) {
-    final result = safeParse(value, debugName: debugName);
-    return result.getOrNull();
-  }
-
-  AckSchema<DartType> copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    DartType? defaultValue,
-    List<Constraint<DartType>>? constraints,
-    List<Refinement<DartType>>? refinements,
-  });
-
-  /// Converts this schema to generic Draft-7 JSON Schema.
+  /// Converts this schema to a JSON Schema Draft-7 representation.
   ///
-  /// The sealed [AckSchemaModel] boundary is the single source of truth for the
-  /// exported shape. Adapters should call [toSchemaModel] directly when they
-  /// need the typed intermediate model; this method renders that model as
-  /// generic JSON Schema rather than provider-specific schema metadata.
+  /// Delegates to the sealed [AckSchemaModel] boundary so all renderers share
+  /// the same Draft-7 output. Subclasses should not override this directly;
+  /// instead they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
 
   Map<String, Object?> toMap() {
@@ -346,59 +435,146 @@ sealed class AckSchema<DartType extends Object> {
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue?.toString(),
-      'constraints': constraints.map((c) => c.toMap()).toList(),
+      'constraints': _constraints.map((c) => c.toMap()).toList(),
     };
   }
 
   /// Compares base schema fields for equality.
-  ///
-  /// Subclasses should call this as part of their == implementation
-  /// after the identical() and type checks.
   @protected
-  bool baseFieldsEqual(AckSchema<DartType> other) {
-    const listEq = ListEquality<Object?>();
+  bool baseFieldsEqual(AckSchema<dynamic, dynamic> other) {
+    const iterableEq = IterableEquality<Object?>();
     return isNullable == other.isNullable &&
         isOptional == other.isOptional &&
         description == other.description &&
-        defaultValue == other.defaultValue &&
-        listEq.equals(_constraints, other._constraints) &&
-        listEq.equals(_refinements, other._refinements);
-  }
-
-  /// Compares base schema fields while erasing generic type parameters.
-  ///
-  /// Useful when structural equality should ignore reified type arguments.
-  @protected
-  bool baseFieldsEqualErased(AckSchema other) {
-    const listEq = ListEquality<Object?>();
-    return isNullable == other.isNullable &&
-        isOptional == other.isOptional &&
-        description == other.description &&
-        defaultValue == other.defaultValue &&
-        listEq.equals(
-          _constraints as List<Object?>,
-          other._constraints as List<Object?>,
+        iterableEq.equals(
+          _constraintsForEquality,
+          other._constraintsForEquality,
         ) &&
-        listEq.equals(
-          _refinements as List<Object?>,
-          other._refinements as List<Object?>,
+        iterableEq.equals(
+          _refinementsForEquality,
+          other._refinementsForEquality,
         );
   }
 
   /// Computes hash code for base schema fields.
-  ///
-  /// Subclasses should include this in their hashCode computation.
   @protected
   int get baseFieldsHashCode {
-    const listEq = ListEquality<Object?>();
+    const iterableEq = IterableEquality<Object?>();
     return Object.hash(
       isNullable,
       isOptional,
       description,
-      defaultValue,
-      listEq.hash(_constraints),
-      listEq.hash(_refinements),
+      iterableEq.hash(_constraintsForEquality),
+      iterableEq.hash(_refinementsForEquality),
     );
   }
+}
+
+/// Builds a type-mismatch error without throwing when [actualValue] is an
+/// unsupported Dart runtime object outside ACK's JSON-ish schema categories.
+SchemaError _buildTypeMismatch({
+  required SchemaType expectedType,
+  required Object? actualValue,
+  required SchemaContext context,
+}) {
+  final actualType = SchemaType.tryOf(actualValue);
+  if (actualType == null) {
+    return SchemaValidationError(
+      message:
+          'Expected ${expectedType.typeName}, got ${actualValue.runtimeType}.',
+      context: context,
+    );
+  }
+
+  return TypeMismatchError(
+    expectedType: expectedType,
+    actualType: actualType,
+    context: context,
+  );
+}
+
+class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
+  _ConstraintMessageOverride(this.inner, this.customMessage)
+    : super(constraintKey: inner.constraintKey, description: inner.description);
+
+  final Constraint<T> inner;
+  final String customMessage;
+
+  Validator<T> get _validator => inner as Validator<T>;
+
+  @override
+  bool isValid(T value) => _validator.isValid(value);
+
+  @override
+  String buildMessage(T value) => customMessage;
+
+  @override
+  Map<String, Object?> buildContext(T value) {
+    return _validator.buildContext(value);
+  }
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    if (inner is JsonSchemaSpec<T>) {
+      return (inner as JsonSchemaSpec<T>).toJsonSchema();
+    }
+    return const {};
+  }
+}
+
+/// Returns [value] if it is composed entirely of JSON-safe primitives
+/// (`null`, finite `num`, `bool`, `String`, `List`, string-keyed `Map`),
+/// recursively.
+/// Returns `null` if any nested value is not JSON-safe. Used by
+/// [DefaultSchema] to avoid emitting runtime-only objects (e.g. raw
+/// `DateTime` instances) as JSON Schema defaults.
+Object? _jsonSafeOrNull(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.isFinite ? value : null;
+  if (value is bool || value is String) return value;
+  if (value is List) {
+    final result = <Object?>[];
+    for (final item in value) {
+      if (item == null) {
+        result.add(null);
+        continue;
+      }
+      final converted = _jsonSafeOrNull(item);
+      if (converted == null) return null;
+      result.add(converted);
+    }
+    return result;
+  }
+  if (value is Map) {
+    final result = <String, Object?>{};
+    for (final entry in value.entries) {
+      if (entry.key is! String) return null;
+      if (entry.value == null) {
+        result[entry.key as String] = null;
+        continue;
+      }
+      final converted = _jsonSafeOrNull(entry.value);
+      if (converted == null) return null;
+      result[entry.key as String] = converted;
+    }
+    return result;
+  }
+  return null;
+}
+
+/// Safely converts a value into a [JsonMap]. Returns `null` if the value is
+/// not map-shaped or contains non-string keys. This eager check replaces
+/// `cast<String, Object?>()`, whose lazy semantics can throw at access time
+/// when a non-string key is hit.
+JsonMap? jsonMapOrNull(Object? value) {
+  if (value == null) return null;
+  if (value is JsonMap) return value;
+  if (value is! Map) return null;
+  final result = <String, Object?>{};
+  for (final entry in value.entries) {
+    if (entry.key is! String) return null;
+    result[entry.key as String] = entry.value;
+  }
+  return result;
 }

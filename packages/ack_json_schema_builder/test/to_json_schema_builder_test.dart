@@ -292,8 +292,8 @@ void main() {
 
       test('omits non-Draft-7 date range keywords', () {
         final schema = Ack.date()
-            .min(DateTime.utc(2026))
-            .max(DateTime.utc(2026, 12, 31));
+            .min(DateTime(2026))
+            .max(DateTime(2026, 12, 31));
 
         final result = schema.toJsonSchemaBuilder();
 
@@ -303,29 +303,28 @@ void main() {
         expect(result.value, isNot(contains('formatMaximum')));
       });
 
-      test(
-        'TransformedSchema overrides are applied (description + nullable)',
-        () {
-          final schema = Ack.date().copyWith(
-            description: 'Birth date',
-            isNullable: true,
-          );
+      test('codec overrides are applied (description + nullable)', () {
+        final schema = Ack.date().describe('Birth date').nullable();
 
-          final result = schema.toJsonSchemaBuilder();
-          final anyOf = (result.value['anyOf'] as List)
-              .map(_schemaFrom)
-              .toList(growable: false);
+        final result = schema.toJsonSchemaBuilder();
 
-          // First branch should carry description override and date format
-          final dateBranch = anyOf.first;
-          expect(dateBranch.value['description'], 'Birth date');
-          expect(dateBranch.value['format'], 'date');
+        // Envelope-level metadata: description hoists to the nullable
+        // anyOf envelope, branches carry the type information.
+        expect(result.value['description'], 'Birth date');
 
-          // Second branch represents nullability
-          final nullBranch = anyOf.last;
-          expect(nullBranch.value['type'], 'null');
-        },
-      );
+        final anyOf = (result.value['anyOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
+
+        // First branch carries the date format (no inner description per
+        // the Zod v4 hoist convention).
+        final dateBranch = anyOf.first;
+        expect(dateBranch.value['format'], 'date');
+
+        // Second branch represents nullability.
+        final nullBranch = anyOf.last;
+        expect(nullBranch.value['type'], 'null');
+      });
     });
 
     group('discriminated anyOf composition', () {
@@ -477,18 +476,17 @@ void main() {
 
     group('Discriminated + error wrapping', () {
       test('throws when branch discriminator rejects branch key', () {
-        final schema = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {
-            'circle': Ack.object({
-              'type': Ack.literal('square'),
-              'radius': Ack.double(),
-            }),
-          },
-        );
-
+        // PR #107: rejection happens at construction time, not at conversion.
         expect(
-          () => schema.toJsonSchemaBuilder(),
+          () => Ack.discriminated(
+            discriminatorKey: 'type',
+            schemas: {
+              'circle': Ack.object({
+                'type': Ack.literal('square'),
+                'radius': Ack.double(),
+              }),
+            },
+          ),
           throwsA(
             isA<ArgumentError>().having(
               (e) => e.message,

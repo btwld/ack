@@ -1,18 +1,13 @@
 part of 'schema.dart';
 
-/// Schema that accepts any non-null value without type conversion or validation.
-/// Useful for dynamic content or when you need maximum flexibility.
-///
-/// Unlike composite schemas (List, Object, AnyOf, Discriminated), AnySchema
-/// supports default values and will emit them in JSON Schema output.
+/// Schema that accepts any non-null JSON-safe value.
 @immutable
-final class AnySchema extends AckSchema<Object>
-    with FluentSchema<Object, AnySchema> {
+final class AnySchema extends AckSchema<Object, Object>
+    with FluentSchema<Object, Object, AnySchema> {
   const AnySchema({
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -20,20 +15,24 @@ final class AnySchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.any;
 
-  /// AnySchema accepts all non-null values, so it overrides parseAndValidate directly.
   @override
   @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Object> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
   ) {
-    // Use centralized null handling
-    final nullResult = handleNullInput(inputValue, context);
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-
-    // After null check, inputValue is guaranteed non-null
-    // Accept any non-null value as-is, then use centralized constraints and refinements check
-    return applyConstraintsAndRefinements(inputValue!, context);
+    if (_jsonSafeOrNull(value) == null) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Expected a JSON-safe value composed of finite numbers, strings, booleans, lists, and string-keyed maps.',
+          context: context,
+        ),
+      );
+    }
+    return applyConstraintsAndRefinements(value!, context);
   }
 
   @override
@@ -41,7 +40,6 @@ final class AnySchema extends AckSchema<Object>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
@@ -49,7 +47,6 @@ final class AnySchema extends AckSchema<Object>
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );

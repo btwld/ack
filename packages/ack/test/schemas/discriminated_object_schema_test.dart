@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -10,9 +8,15 @@ void main() {
     late DiscriminatedObjectSchema animalSchema;
 
     setUp(() {
-      catSchema = Ack.object({'meow': Ack.boolean()});
+      catSchema = Ack.object({
+        'type': Ack.literal('cat'),
+        'meow': Ack.boolean(),
+      });
 
-      dogSchema = Ack.object({'bark': Ack.boolean()});
+      dogSchema = Ack.object({
+        'type': Ack.literal('dog'),
+        'bark': Ack.boolean(),
+      });
 
       animalSchema = Ack.discriminated(
         discriminatorKey: 'type',
@@ -41,273 +45,123 @@ void main() {
         expect(result.isOk, isFalse);
       });
 
-      test('fails when schemas map is empty', () {
-        final emptySchema = Ack.discriminated<Map<String, Object?>>(
-          discriminatorKey: 'type',
-          schemas: const <String, AckSchema<Map<String, Object?>>>{},
-        );
+      test('encode rejects missing branch discriminator', () {
+        final result = animalSchema.safeEncode({'meow': true});
 
-        final result = emptySchema.safeParse({'type': 'cat'});
-        expect(result.isOk, isFalse);
+        expect(result.isFail, isTrue);
+      });
+
+      test('encode accepts a matching branch-owned discriminator', () {
+        final result = animalSchema.safeEncode({'type': 'cat', 'meow': true});
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'cat', 'meow': true});
       });
     });
 
-    group('Union-owned discriminator policy', () {
-      test(
-        'branch_without_discriminator_parses_when_union_input_has_discriminator',
-        () {
-          final cat = Ack.object({'lives': Ack.integer()});
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
+    group('Union-owned discriminator (PR #107)', () {
+      // Branches without the discriminator property are valid; the union
+      // synthesizes the literal via `effectiveBranch` for parse and encode.
+      late DiscriminatedObjectSchema unionOwnedSchema;
 
-          final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-          expect(result.isOk, isTrue);
-          expect(result.getOrThrow(), equals({'type': 'cat', 'lives': 9}));
-        },
-      );
-
-      test(
-        'branch_without_discriminator_rejects_missing_discriminator_on_union_input',
-        () {
-          final cat = Ack.object({'lives': Ack.integer()});
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
-
-          final result = pet.safeParse({'lives': 9});
-
-          expect(result.isOk, isFalse);
-        },
-      );
-
-      test('branch_with_matching_literal_discriminator_parses', () {
-        final cat = Ack.object({
-          'type': Ack.literal('cat'),
-          'lives': Ack.integer(),
-        });
-        final pet = Ack.discriminated(
+      setUp(() {
+        unionOwnedSchema = Ack.discriminated<Map<String, Object?>>(
           discriminatorKey: 'type',
-          schemas: {'cat': cat},
+          schemas: {
+            'cat': Ack.object({'meow': Ack.boolean()}),
+            'dog': Ack.object({'bark': Ack.boolean()}),
+          },
         );
+      });
 
-        final result = pet.safeParse({'type': 'cat', 'lives': 9});
+      test('parses a branch whose schema omits the discriminator', () {
+        final result = unionOwnedSchema.safeParse({
+          'type': 'cat',
+          'meow': true,
+        });
 
         expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'cat', 'meow': true});
       });
 
-      test('branch_with_matching_enum_discriminator_parses_and_exports', () {
-        final cat = Ack.object({
-          'type': Ack.enumString(['cat', 'kitty']),
-          'lives': Ack.integer(),
+      test('encodes a branch whose schema omits the discriminator', () {
+        final result = unionOwnedSchema.safeEncode({
+          'type': 'dog',
+          'bark': false,
         });
-        final pet = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {'cat': cat},
-        );
-
-        final result = pet.safeParse({'type': 'cat', 'lives': 9});
-        final jsonSchema = pet.toJsonSchema();
-        final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
-            .cast<String, Object?>();
-        final properties = (branch['properties'] as Map)
-            .cast<String, Object?>();
 
         expect(result.isOk, isTrue);
-        expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
+        expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
       });
 
-      test(
-        'branch_with_broad_string_discriminator_fails_and_export_rejects',
-        () {
-          final cat = Ack.object({
-            'type': Ack.string(),
-            'lives': Ack.integer(),
-          });
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
-
-          final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-          expect(result.isOk, isFalse);
-          expect(() => pet.toJsonSchema(), throwsArgumentError);
-        },
-      );
-
-      test(
-        'transform_discriminator_compatibility_check_is_side_effect_free',
-        () {
-          var transformCalled = false;
-          final cat = Ack.object({
-            'type': Ack.string().transform<String>((value) {
-              transformCalled = true;
-              return value;
-            }),
-            'lives': Ack.integer(),
-          });
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
-
-          final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-          expect(result.isOk, isFalse);
-          expect(transformCalled, isFalse);
-          expect(() => pet.effectiveBranch('cat'), throwsArgumentError);
-          expect(transformCalled, isFalse);
-          expect(() => pet.toJsonSchema(), throwsArgumentError);
-          expect(transformCalled, isFalse);
-        },
-      );
-
-      test('refine_discriminator_compatibility_check_is_side_effect_free', () {
-        var refineCalled = false;
-        final cat = Ack.object({
-          'type': Ack.string().refine((value) {
-            refineCalled = true;
-            return true;
-          }),
-          'lives': Ack.integer(),
+      test('parse against the wrong branch fails on the literal', () {
+        final result = unionOwnedSchema.safeParse({
+          'type': 'cat',
+          'bark': true,
         });
-        final pet = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {'cat': cat},
-        );
 
-        final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-        expect(result.isOk, isFalse);
-        expect(refineCalled, isFalse);
-        expect(() => pet.effectiveBranch('cat'), throwsArgumentError);
-        expect(refineCalled, isFalse);
-        expect(() => pet.toJsonSchema(), throwsArgumentError);
-        expect(refineCalled, isFalse);
+        expect(result.isFail, isTrue);
       });
+    });
 
-      test('branch_with_conflicting_literal_discriminator_fails', () {
-        final cat = Ack.object({
-          'type': Ack.literal('dog'),
-          'lives': Ack.integer(),
-        });
-        final pet = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {'cat': cat},
-        );
-
-        final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-        expect(result.isOk, isFalse);
-      });
-
-      test('branch_with_restrictive_discriminator_chain_fails', () {
-        final cat = Ack.object({
-          'type': Ack.literal('cat').minLength(4),
-          'lives': Ack.integer(),
-        });
-        final pet = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {'cat': cat},
-        );
-
-        final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-        expect(result.isOk, isFalse);
-        expect(() => pet.toJsonSchema(), throwsArgumentError);
-      });
-
-      test(
-        'toJsonSchema_injects_required_literal_discriminator_for_omitted_branch_property',
-        () {
-          final cat = Ack.object({'lives': Ack.integer()});
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
-
-          final jsonSchema = pet.toJsonSchema();
-          final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
-              .cast<String, Object?>();
-          final properties = (branch['properties'] as Map)
-              .cast<String, Object?>();
-
-          expect(
-            properties['type'],
-            equals({'type': 'string', 'const': 'cat'}),
-          );
-          expect(branch['required'], equals(['type', 'lives']));
-        },
-      );
-
-      test(
-        'toJsonSchema_preserves_branch_properties_and_adds_discriminator_first',
-        () {
-          final cat = Ack.object({
-            'lives': Ack.integer(),
-            'name': Ack.string(),
-          });
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
-
-          final jsonSchema = pet.toJsonSchema();
-          final branch = ((jsonSchema['anyOf'] as List<Object?>).single as Map)
-              .cast<String, Object?>();
-          final properties = (branch['properties'] as Map)
-              .cast<String, Object?>();
-
-          expect(properties.keys.toList(), equals(['type', 'lives', 'name']));
-          expect(branch['required'], equals(['type', 'lives', 'name']));
-        },
-      );
-
-      test(
-        'effective_branch_injection_does_not_mutate_original_branch_schema',
-        () {
-          final cat = Ack.object({'lives': Ack.integer()});
-          final pet = Ack.discriminated(
-            discriminatorKey: 'type',
-            schemas: {'cat': cat},
-          );
-
-          final result = pet.safeParse({'type': 'cat', 'lives': 9});
-
-          expect(result.isOk, isTrue);
-          expect(cat.properties, isNot(contains('type')));
-        },
-      );
-
-      test('effectiveBranch validates a specific branch schema', () {
-        final cat = Ack.object({'lives': Ack.integer()});
-        final dog = Ack.object({'breed': Ack.string()});
-        final pet = Ack.discriminated(
-          discriminatorKey: 'type',
-          schemas: {'cat': cat, 'dog': dog},
-        );
-
-        final catBranch = pet.effectiveBranch('cat');
-
-        expect(catBranch.safeParse({'type': 'cat', 'lives': 9}).isOk, isTrue);
+    group('Constructor validation', () {
+      test('rejects an empty discriminator key', () {
         expect(
-          catBranch.safeParse({'type': 'dog', 'breed': 'Poodle'}).isFail,
-          isTrue,
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: '',
+            schemas: {'cat': catSchema},
+          ),
+          throwsArgumentError,
         );
       });
 
-      test('effectiveBranch rejects unknown discriminator values', () {
-        final cat = Ack.object({'lives': Ack.integer()});
-        final pet = Ack.discriminated(
+      test('rejects an empty schemas map', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: const <String, AckSchema<JsonMap, Map<String, Object?>>>{},
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('rejects an empty branch key', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {'': catSchema},
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('rejects a branch whose discriminator literal does not match', () {
+        expect(
+          () => Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({
+                'type': Ack.literal('dog'),
+                'meow': Ack.boolean(),
+              }),
+            },
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('defensively copies schemas', () {
+        final schemas = {'cat': catSchema};
+        final schema = Ack.discriminated<Map<String, Object?>>(
           discriminatorKey: 'type',
-          schemas: {'cat': cat},
+          schemas: schemas,
         );
 
-        expect(() => pet.effectiveBranch('dog'), throwsArgumentError);
+        schemas['dog'] = dogSchema;
+
+        expect(schema.schemas, hasLength(1));
+        expect(schema.schemas, containsPair('cat', catSchema));
+        expect(() => schema.schemas['dog'] = dogSchema, throwsUnsupportedError);
       });
     });
 
@@ -370,7 +224,10 @@ void main() {
       );
 
       test('copyWith updates specific values', () {
-        final birdSchema = Ack.object({'fly': Ack.boolean()});
+        final birdSchema = Ack.object({
+          'type': Ack.literal('bird'),
+          'fly': Ack.boolean(),
+        });
 
         final newSchemas = {
           'cat': catSchema,
@@ -378,7 +235,8 @@ void main() {
           'bird': birdSchema,
         };
 
-        final updated = animalSchema.copyWith(
+        final updated = DiscriminatedObjectSchema<Map<String, Object?>>(
+          discriminatorKey: animalSchema.discriminatorKey,
           schemas: newSchemas,
           isNullable: true,
           description: 'Updated schema',
@@ -437,62 +295,6 @@ void main() {
         expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
         expect(branch['required'], equals(['type', 'name']));
       });
-
-      test('rejects non-object-backed child branches in toJsonSchema', () {
-        final schema = Ack.discriminated<String>(
-          discriminatorKey: 'type',
-          schemas: {'cat': Ack.string()},
-        );
-
-        expect(() => schema.toJsonSchema(), throwsArgumentError);
-      });
-
-      test('rejects non-object-backed child branches in toSchemaModel', () {
-        final schema = Ack.discriminated<String>(
-          discriminatorKey: 'type',
-          schemas: {'cat': Ack.string()},
-        );
-
-        expect(() => schema.toSchemaModel(), throwsArgumentError);
-      });
-
-      test('omits non-JSON defaults for transformed discriminated schemas', () {
-        final schema = Ack.discriminated<Object>(
-          discriminatorKey: 'type',
-          schemas: {
-            'cat': Ack.object({
-              'type': Ack.literal('cat'),
-              'name': Ack.string(),
-            }).transform<Object>((map) => map['name'] as Object),
-          },
-        ).copyWith(defaultValue: Object());
-
-        final jsonSchema = schema.toJsonSchema();
-
-        expect(jsonSchema.containsKey('default'), isFalse);
-        expect(() => jsonEncode(jsonSchema), returnsNormally);
-      });
-
-      test(
-        'omits non-JSON defaults for nullable transformed discriminated schemas',
-        () {
-          final schema = Ack.discriminated<Object>(
-            discriminatorKey: 'type',
-            schemas: {
-              'cat': Ack.object({
-                'type': Ack.literal('cat'),
-                'name': Ack.string(),
-              }).transform<Object>((map) => map['name'] as Object),
-            },
-          ).nullable().copyWith(defaultValue: Object());
-
-          final jsonSchema = schema.toJsonSchema();
-
-          expect(jsonSchema.containsKey('default'), isFalse);
-          expect(jsonSchema, isNot(contains('discriminator')));
-          expect(() => jsonEncode(jsonSchema), returnsNormally);
-        },
-      );
     });
   });
 }

@@ -121,21 +121,29 @@ void main() {
 
   group('EnumValues Schema', () {
     test('userRoleSchema validates and returns enum value', () {
-      final result = userRoleSchema.safeParse(UserRole.admin);
+      final result = userRoleSchema.safeParse('admin');
 
       expect(result.isOk, true);
       final role = result.getOrNull();
       expect(role, isA<UserRole>());
       expect(role, UserRole.admin);
+
+      final encoded = userRoleSchema.safeEncode(UserRole.admin);
+      expect(encoded.isOk, true);
+      expect(encoded.getOrNull(), 'admin');
     });
 
     test('statusEnumSchema validates and returns Status enum', () {
-      final result = statusEnumSchema.safeParse(Status.active);
+      final result = statusEnumSchema.safeParse('active');
 
       expect(result.isOk, true);
       final status = result.getOrNull();
       expect(status, isA<Status>());
       expect(status, Status.active);
+
+      final encoded = statusEnumSchema.safeEncode(Status.active);
+      expect(encoded.isOk, true);
+      expect(encoded.getOrNull(), 'active');
     });
   });
 

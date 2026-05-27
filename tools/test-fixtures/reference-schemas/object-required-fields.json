@@ -19,8 +19,7 @@
   },
   "required": [
     "id",
-    "email",
-    "isActive"
+    "email"
   ],
   "additionalProperties": false
 }

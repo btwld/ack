@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 /// Tests for code snippets in docs/core-concepts/json-serialization.mdx.
 void main() {
   group('Docs /core-concepts/json-serialization.mdx', () {
-    AckSchema<Map<String, Object?>> buildUserSchema() {
+    AckSchema<Map<String, Object?>, Map<String, Object?>> buildUserSchema() {
       return Ack.object({
         'name': Ack.string(),
         'age': Ack.integer().min(0),

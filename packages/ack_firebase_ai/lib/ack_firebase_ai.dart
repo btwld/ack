@@ -10,6 +10,6 @@ import 'package:ack/ack.dart';
 extension FirebaseAiResponseJsonSchemaExtension on AckSchema {
   /// Converts this ACK schema for Firebase AI's `responseJsonSchema` field.
   Map<String, Object?> toFirebaseAiResponseJsonSchema() {
-    return toSchemaModel().toJsonSchema();
+    return toJsonSchema();
   }
 }

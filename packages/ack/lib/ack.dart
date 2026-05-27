@@ -6,9 +6,10 @@ library;
 
 // Main API
 export 'src/ack.dart';
+// Common types
+export 'src/common_types.dart' show JsonMap;
 // Constraints
 export 'src/constraints/constraint.dart';
-export 'src/constraints/datetime_constraint.dart';
 export 'src/constraints/duration_constraint.dart';
 // Context
 export 'src/context.dart';
@@ -23,7 +24,13 @@ export 'src/schemas/extensions/string_schema_extensions.dart';
 // JSON Schema
 export 'src/json_schema.dart';
 // Core schemas
-export 'src/schemas/schema.dart';
+// `WrapperSchema` is internal infrastructure; users compose wrappers via
+// `withDefault`, `codec`, `transform`, etc., not by implementing the mixin.
+// `Refinement`, `SchemaOperation`, and `AnyAckSchema` are traversal
+// plumbing for subclasses; consumers use `.refine(...)`, `safeParse`, and
+// concrete schema types instead.
+export 'src/schemas/schema.dart'
+    hide AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results

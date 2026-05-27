@@ -56,8 +56,7 @@
     "email",
     "name",
     "age",
-    "tags",
-    "isActive"
+    "tags"
   ],
   "additionalProperties": false
 }

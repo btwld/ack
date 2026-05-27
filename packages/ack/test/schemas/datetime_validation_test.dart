@@ -264,8 +264,8 @@ void main() {
         final error = result.getError() as SchemaConstraintsError;
         final context = error.constraints.first.context;
         expect(context?['comparisonType'], 'min');
-        expect(context?['reference'], contains('2025-01-01'));
-        expect(context?['value'], contains('2024-12-31'));
+        expect(context?['reference'], '2025-01-01');
+        expect(context?['value'], '2024-12-31');
       });
 
       test('error message for max constraint is clear', () {
@@ -336,6 +336,96 @@ void main() {
           model.warnings.map((warning) => warning.code),
           everyElement('datetime_constraint_not_draft7'),
         );
+      });
+
+      test('default-wrapped date constraint emits warning once, not twice', () {
+        final schema = Ack.date()
+            .min(DateTime(2026, 1, 1))
+            .withDefault(DateTime(2026, 6, 1));
+        final model = schema.toSchemaModel();
+
+        expect(model.warnings, hasLength(1));
+        expect(model.warnings.single.code, 'datetime_constraint_not_draft7');
+      });
+
+      test('nullable custom date codec keeps date constraint format', () {
+        final schema = Ack.string()
+            .date()
+            .nullable()
+            .codec<DateTime>(
+              decode: DateTime.parse,
+              encode: (value) =>
+                  '${value.year.toString().padLeft(4, '0')}-'
+                  '${value.month.toString().padLeft(2, '0')}-'
+                  '${value.day.toString().padLeft(2, '0')}',
+            )
+            .min(DateTime(2026, 1, 1));
+        final model = schema.toSchemaModel();
+
+        expect(schema.safeParse('2026-01-02').isOk, isTrue);
+        expect(model.warnings.single.context, {
+          'constraint': 'min',
+          'reference': '2026-01-01',
+          'format': 'date',
+        });
+      });
+
+      test(
+        'custom JSON Schema date format controls date constraint format',
+        () {
+          final schema = Ack.string()
+              .withConstraint(const _TestFormatConstraint<String>('date'))
+              .codec<DateTime>(
+                decode: DateTime.parse,
+                encode: (value) =>
+                    '${value.year.toString().padLeft(4, '0')}-'
+                    '${value.month.toString().padLeft(2, '0')}-'
+                    '${value.day.toString().padLeft(2, '0')}',
+              )
+              .min(DateTime(2026, 1, 1));
+          final model = schema.toSchemaModel();
+
+          expect(schema.safeParse('2026-01-02').isOk, isTrue);
+          expect(model.warnings.single.context, {
+            'constraint': 'min',
+            'reference': '2026-01-01',
+            'format': 'date',
+          });
+        },
+      );
+
+      test(
+        'nullable custom datetime codec keeps date-time constraint format',
+        () {
+          final schema = Ack.string()
+              .datetime()
+              .nullable()
+              .codec<DateTime>(
+                decode: DateTime.parse,
+                encode: (value) => value.toIso8601String(),
+              )
+              .min(DateTime.utc(2026, 1, 1));
+          final model = schema.toSchemaModel();
+
+          expect(schema.safeParse('2026-01-02T00:00:00Z').isOk, isTrue);
+          expect(model.warnings.single.context, {
+            'constraint': 'min',
+            'reference': '2026-01-01T00:00:00.000Z',
+            'format': 'date-time',
+          });
+        },
+      );
+
+      test('fluent date-time constraints omit non-Draft-7 keys', () {
+        final dateSchema = Ack.date().min(DateTime(2026, 1, 1)).toJsonSchema();
+        final dateTimeSchema = Ack.datetime()
+            .max(DateTime.utc(2026, 12, 31))
+            .toJsonSchema();
+
+        expect(dateSchema['format'], 'date');
+        expect(dateSchema, isNot(contains('formatMinimum')));
+        expect(dateTimeSchema['format'], 'date-time');
+        expect(dateTimeSchema, isNot(contains('formatMaximum')));
       });
     });
 
@@ -458,4 +548,24 @@ void main() {
       });
     });
   });
+}
+
+final class _TestFormatConstraint<T extends Object> extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
+  const _TestFormatConstraint(this.format)
+    : super(
+        constraintKey: 'test_format',
+        description: 'Adds a test-only JSON Schema format.',
+      );
+
+  final String format;
+
+  @override
+  bool isValid(T value) => true;
+
+  @override
+  String buildMessage(T value) => 'ok';
+
+  @override
+  Map<String, Object?> toJsonSchema() => {'format': format};
 }

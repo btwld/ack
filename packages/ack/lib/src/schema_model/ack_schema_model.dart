@@ -71,6 +71,19 @@ final class _AckSchemaModelCommon {
     if (includeDefault && defaultValue != null) 'default': defaultValue,
     ...extensions,
   };
+
+  /// User-facing metadata that should be hoisted to the top level when a
+  /// schema renders as a nullable wrapper (e.g. `{'description': ..., 'anyOf':
+  /// [...]}`). Constraint-derived keywords stay inside the inner branch.
+  Map<String, Object?> toHoistedJson() => {
+    if (title != null) 'title': title,
+    if (description != null) 'description': description,
+    if (defaultValue != null) 'default': defaultValue,
+  };
+
+  /// Returns the non-hoistable portion (extensions plus type-specific
+  /// keywords flow through here) to embed inside the inner branch.
+  Map<String, Object?> toEmbeddedJson() => {...extensions};
 }
 
 @immutable
@@ -148,9 +161,6 @@ sealed class AckSchemaModel {
 
   @protected
   AckSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common);
-
-  AckSchemaModel withTitle(String? title) =>
-      _rebuildWithCommon(_common.copyWith(title: title));
 
   AckSchemaModel withDescription(String? description) =>
       _rebuildWithCommon(_common.copyWith(description: description));
@@ -237,10 +247,14 @@ sealed class AckSchemaModel {
       return {...typeJson, ..._common.toJson()};
     }
 
+    // Hoist user-facing metadata (title, description, default) to the top
+    // level so generic JSON Schema consumers can find it without descending
+    // into anyOf branches. Constraint-derived keywords stay inside the inner
+    // branch so consumers see them next to the `type` they constrain.
     return {
-      if (defaultValue != null) 'default': defaultValue,
+      ..._common.toHoistedJson(),
       'anyOf': [
-        {...typeJson, ..._common.toJson(includeDefault: false)},
+        {...typeJson, ..._common.toEmbeddedJson()},
         _nullSchemaJson,
       ],
     };
@@ -257,9 +271,9 @@ sealed class AckSchemaModel {
       // the same values but loses the distinction between nullability and the
       // composed union.
       return {
-        if (defaultValue != null) 'default': defaultValue,
+        ..._common.toHoistedJson(),
         'anyOf': [
-          {..._common.toJson(includeDefault: false), keyword: branches},
+          {..._common.toEmbeddedJson(), keyword: branches},
           _nullSchemaJson,
         ],
       };
@@ -863,18 +877,20 @@ final class AckObjectSchemaModel extends AckSchemaModel {
   };
 
   @override
-  Map<String, Object?> toJsonSchema() => finishTypeJson({
-    'type': 'object',
-    if (properties != null)
-      'properties': properties!.map(
-        (key, value) => MapEntry(key, value.toJsonSchema()),
-      ),
-    if (required != null) 'required': required,
-    if (minProperties != null) 'minProperties': minProperties,
-    if (maxProperties != null) 'maxProperties': maxProperties,
-    if (additionalProperties != null)
-      'additionalProperties': additionalProperties!.toJsonSchemaValue(),
-  });
+  Map<String, Object?> toJsonSchema() {
+    return finishTypeJson({
+      'type': 'object',
+      if (properties != null)
+        'properties': properties!.map(
+          (key, value) => MapEntry(key, value.toJsonSchema()),
+        ),
+      if (required != null && required!.isNotEmpty) 'required': required,
+      if (minProperties != null) 'minProperties': minProperties,
+      if (maxProperties != null) 'maxProperties': maxProperties,
+      if (additionalProperties != null)
+        'additionalProperties': additionalProperties!.toJsonSchemaValue(),
+    });
+  }
 
   @override
   AckObjectSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>

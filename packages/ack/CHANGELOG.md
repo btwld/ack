@@ -2,16 +2,36 @@
 
 ### Breaking Changes
 
+* `DoubleSchema` and `NumberSchema` now reject non-finite values (`NaN`,
+  `Infinity`, `-Infinity`) during runtime validation by default, aligning
+  numeric schemas with JSON-safe values.
 * Remove the retired JSON Schema DTO converter APIs.
 * Replace the interim JSON Schema model kind API with sealed
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
+
+### Added
+
+* `Ack.enumCodec<T extends Enum>(List<T> values)` returns a
+  `CodecSchema<String, T>` wrapping `EnumSchema<T>`. Use this when downstream
+  code expects every value-shape to be a `CodecSchema` (e.g. a registry of
+  codecs). Decode/encode are identity since `EnumSchema` already maps between
+  `T` and the enum's `.name`.
+* `NumberSchemaExtensions` adds fluent numeric constraints to `Ack.number()`:
+  `.min`, `.max`, `.greaterThan`, `.lessThan`, `.positive`, `.negative`, and
+  `.multipleOf`.
 
 ### Changed
 
 * Project discriminated schemas through union-owned discriminator branches.
 * Preserve defaults, const values, extension keywords, transformed metadata,
   composition, and JSON Schema constraints through the schema model boundary.
+
+### Migration
+
+* Re-run tests for code paths that parse or encode `double`/`num` values. If a
+  boundary must accept `NaN` or infinities, model that value outside the JSON
+  numeric schema path before validation.
 
 ## 1.0.0-beta.11
 

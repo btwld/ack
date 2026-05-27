@@ -2,46 +2,83 @@ import 'dart:convert';
 
 import '../constraints/constraint.dart';
 import '../constraints/datetime_constraint.dart';
+import '../context.dart';
 import '../json_schema/json_schema_utils.dart';
 import '../schemas/schema.dart';
 import 'ack_schema_model.dart';
 import 'ack_schema_model_warning.dart';
 
-extension AckSchemaModelExtension on AckSchema {
+extension AckSchemaModelExtension<
+  Boundary extends Object,
+  Runtime extends Object
+>
+    on AckSchema<Boundary, Runtime> {
   AckSchemaModel toSchemaModel() => _build(this);
 }
 
 AckSchemaModel _build(AckSchema schema) {
-  if (schema is TransformedSchema) {
-    final base = _build(schema.schema);
-    final transformed = _applyConstraints(
-      base
-          .withDescription(schema.description ?? base.description)
-          .withNullable(schema.isNullable || base.nullable)
-          .withExtensions({...base.extensions, 'x-transformed': true}),
-      schema,
-      boundaryFormat: base.format,
-    );
-    return _withDefaultAndWarnings(transformed, schema);
+  if (schema is WrapperSchema) {
+    final base = _build(schema.inner);
+    // Defaults wrap their inner without transforming the boundary value, so
+    // they should not advertise themselves as a transformed schema.
+    final extensions = schema is DefaultSchema
+        ? base.extensions
+        : {...base.extensions, 'x-transformed': true};
+    final layered = base
+        .withDescription(schema.description ?? base.description)
+        .withNullable(schema.isNullable || base.nullable)
+        .withExtensions(extensions);
+    // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
+    // which `_build(schema.inner)` already applied. Re-running them here
+    // would emit duplicate warnings (e.g. datetime range under a default).
+    var wrapped = schema is DefaultSchema
+        ? layered
+        : _applyConstraints(layered, schema);
+
+    if (schema is DefaultSchema) {
+      final exportDefault = _defaultExportValueOrNull(schema);
+      if (exportDefault != null) {
+        wrapped = wrapped.withDefaultValue(exportDefault);
+      } else {
+        wrapped = wrapped.withWarnings([
+          ...wrapped.warnings,
+          AckSchemaModelWarning(
+            code: 'default_not_export_safe',
+            message:
+                'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
+          ),
+        ]);
+      }
+    }
+
+    return wrapped;
   }
 
   final model = switch (schema) {
     StringSchema() => _string(schema),
     IntegerSchema() => _integer(schema),
-    DoubleSchema() => _number(schema),
+    DoubleSchema() => _number(
+      description: schema.description,
+      nullable: schema.isNullable,
+    ),
+    NumberSchema() => _number(
+      description: schema.description,
+      nullable: schema.isNullable,
+    ),
     BooleanSchema() => _boolean(schema),
     EnumSchema() => _enum(schema),
     ListSchema() => _array(schema),
     ObjectSchema() => _object(schema),
     AnyOfSchema() => _anyOf(schema),
     AnySchema() => _any(schema),
+    InstanceSchema() => _instance(schema),
     DiscriminatedObjectSchema() => _discriminated(schema),
     _ => throw UnsupportedError(
       'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
     ),
   };
 
-  return _withDefaultAndWarnings(_applyConstraints(model, schema), schema);
+  return _applyConstraints(model, schema);
 }
 
 AckSchemaModel _string(StringSchema schema) {
@@ -58,11 +95,8 @@ AckSchemaModel _integer(IntegerSchema schema) {
   );
 }
 
-AckSchemaModel _number(DoubleSchema schema) {
-  return AckNumberSchemaModel(
-    description: schema.description,
-    nullable: schema.isNullable,
-  );
+AckSchemaModel _number({String? description, required bool nullable}) {
+  return AckNumberSchemaModel(description: description, nullable: nullable);
 }
 
 AckSchemaModel _boolean(BooleanSchema schema) {
@@ -81,12 +115,6 @@ AckSchemaModel _enum(EnumSchema schema) {
 }
 
 AckSchemaModel _array(ListSchema schema) {
-  if (schema.itemSchema.isNullable) {
-    throw ArgumentError(
-      'Ack.list(...) does not support nullable item schemas yet.',
-    );
-  }
-
   return AckArraySchemaModel(
     description: schema.description,
     nullable: schema.isNullable,
@@ -105,7 +133,7 @@ AckSchemaModel _object(ObjectSchema schema) {
       entry.key,
       () => _build(entry.value),
     );
-    if (!entry.value.isOptional) {
+    if (_isRequiredObjectProperty(entry.value)) {
       required.add(entry.key);
     }
   }
@@ -130,6 +158,31 @@ AckSchemaModel _anyOf(AnyOfSchema schema) {
   );
 }
 
+AckSchemaModel _instance(InstanceSchema schema) {
+  // InstanceSchema accepts arbitrary Dart instances of a runtime type with no
+  // direct JSON representation. Adapters that flow through a codec see the
+  // boundary schema instead; this is the fallback for a bare instance.
+  return AckAnyOfSchemaModel(
+    schemas: [
+      AckStringSchemaModel(description: schema.description),
+      AckNumberSchemaModel(description: schema.description),
+      AckIntegerSchemaModel(description: schema.description),
+      AckBooleanSchemaModel(description: schema.description),
+      AckObjectSchemaModel(description: schema.description),
+      AckArraySchemaModel(description: schema.description),
+    ],
+    nullable: schema.isNullable,
+    description: schema.description,
+    warnings: const [
+      AckSchemaModelWarning(
+        code: 'ack_instance_json_boundary',
+        message:
+            'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
+      ),
+    ],
+  );
+}
+
 AckSchemaModel _any(AnySchema schema) {
   final description = schema.description;
   final primitiveBranches = [
@@ -149,7 +202,7 @@ AckSchemaModel _any(AnySchema schema) {
       AckSchemaModelWarning(
         code: 'ack_any_json_boundary',
         message:
-            'Ack.any() accepts arbitrary non-null Dart objects at runtime, but JSON-like adapters can only represent JSON-compatible values.',
+            'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
       ),
     ],
   );
@@ -186,19 +239,11 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
   );
 }
 
-AckSchemaModel _applyConstraints(
-  AckSchemaModel model,
-  AckSchema schema, {
-  String? boundaryFormat,
-}) {
+AckSchemaModel _applyConstraints(AckSchemaModel model, AckSchema schema) {
   var next = model;
   for (final constraint in schema.constraints) {
     if (constraint is DateTimeConstraint) {
-      next = _applyDateTimeConstraint(
-        next,
-        constraint,
-        boundaryFormat: boundaryFormat ?? next.format,
-      );
+      next = _applyDateTimeConstraint(next, constraint);
       continue;
     }
 
@@ -213,15 +258,8 @@ AckSchemaModel _applyConstraints(
 
 AckSchemaModel _applyDateTimeConstraint(
   AckSchemaModel model,
-  DateTimeConstraint constraint, {
-  required String? boundaryFormat,
-}) {
-  final formatted = switch (boundaryFormat) {
-    'date' => _dateOnly(constraint.reference),
-    'date-time' => constraint.reference.toIso8601String(),
-    _ => constraint.reference.toIso8601String(),
-  };
-
+  DateTimeConstraint constraint,
+) {
   return model.withWarnings([
     ...model.warnings,
     AckSchemaModelWarning(
@@ -229,60 +267,61 @@ AckSchemaModel _applyDateTimeConstraint(
       message:
           'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',
       context: {
-        'constraint': constraint.type.name,
-        'reference': formatted,
-        if (boundaryFormat != null) 'format': boundaryFormat,
+        'constraint': constraint.comparisonType,
+        'reference': constraint.formattedReference,
+        'format': constraint.jsonSchemaFormat,
       },
     ),
   ]);
 }
 
-AckSchemaModel _withDefaultAndWarnings(AckSchemaModel model, AckSchema schema) {
-  final defaultValue = schema.defaultValue;
-  if (defaultValue == null) return model;
+/// Best-effort export of a [DefaultSchema] default value.
+///
+/// Encodes the runtime default through the wrapped schema so codec
+/// transformations are applied, then verifies the result is JSON-safe before
+/// returning it. Returns `null` when no JSON-safe representation is reachable.
+Object? _defaultExportValueOrNull(DefaultSchema schema) {
+  final resolved = schema.resolveDefaultWithContext(
+    _defaultExportContext(schema),
+  );
+  if (resolved.isFail) return null;
 
-  final exportDefault = _exportSafeDefaultOrNull(schema, defaultValue);
-  if (exportDefault != null) {
-    return model.withDefaultValue(exportDefault);
-  }
+  final defaultValue = resolved.getOrNull();
+  if (defaultValue == null) return null;
 
-  return model.withWarnings([
-    ...model.warnings,
-    AckSchemaModelWarning(
-      code: 'default_not_export_safe',
-      message:
-          'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
-    ),
-  ]);
+  final encoded = schema.inner.safeEncode(defaultValue);
+  if (encoded.isFail) return null;
+
+  return _jsonRoundTripOrNull(encoded.getOrNull());
 }
 
-Object? _exportSafeDefaultOrNull(AckSchema schema, Object defaultValue) {
-  if (schema is TransformedSchema) {
+bool _isRequiredObjectProperty(AckSchema schema) {
+  if (schema.isOptional) return false;
+  if (schema is DefaultSchema &&
+      schema.resolveDefaultWithContext(_defaultExportContext(schema)).isOk) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Throwaway [SchemaContext] used only to drive
+/// [DefaultSchema.resolveDefaultWithContext]. Errors produced through this
+/// context are never surfaced — both callers consume only `.isOk` /
+/// `.getOrNull()` — so the rooted error path is intentional.
+SchemaContext _defaultExportContext(DefaultSchema schema) {
+  return SchemaContext(
+    name: schema.schemaTypeName,
+    schema: schema,
+    value: null,
+  );
+}
+
+Object? _jsonRoundTripOrNull(Object? value) {
+  if (value == null) return null;
+  try {
+    return jsonDecode(jsonEncode(value));
+  } catch (_) {
     return null;
   }
-
-  if (schema is EnumSchema && defaultValue is Enum) {
-    return defaultValue.name;
-  }
-
-  if (defaultValue is String ||
-      defaultValue is num ||
-      defaultValue is bool ||
-      defaultValue is List ||
-      defaultValue is Map) {
-    try {
-      return jsonDecode(jsonEncode(defaultValue));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  return null;
-}
-
-String _dateOnly(DateTime date) {
-  final year = date.year.toString().padLeft(4, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
 }

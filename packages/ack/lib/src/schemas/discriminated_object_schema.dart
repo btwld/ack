@@ -2,48 +2,78 @@ part of 'schema.dart';
 
 /// Schema for validating a discriminated union of objects.
 ///
-/// Based on a `discriminatorKey` (e.g., 'type'), it uses one of the provided
-/// `schemas` to validate the object.
-///
-/// Child schemas may be plain [ObjectSchema] branches that return
-/// `Map<String, Object?>`, or transformed schemas whose base schema is an
-/// [ObjectSchema]. All branches must produce the same output type [T].
-///
-/// ```dart
-/// final schema = Ack.discriminated<Animal>(
-///   discriminatorKey: 'type',
-///   schemas: {
-///     'cat': Ack.object({
-///       'name': Ack.string(),
-///     }).transform<Animal>((map) => Cat(map['name'] as String)),
-///     'dog': Ack.object({
-///       'name': Ack.string(),
-///     }).transform<Animal>((map) => Dog(map['name'] as String)),
-///   },
-/// );
-/// ```
+/// Branches must produce the same runtime type [T]. Boundary type is
+/// [JsonMap]. Encoding selects the first branch whose runtime validation
+/// AND encode succeed. Branch encoders must emit the discriminator key.
 @immutable
-final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
-    with FluentSchema<T, DiscriminatedObjectSchema<T>> {
+final class DiscriminatedObjectSchema<T extends Object>
+    extends AckSchema<JsonMap, T>
+    with FluentSchema<JsonMap, T, DiscriminatedObjectSchema<T>> {
   final String discriminatorKey;
-  final Map<String, AckSchema<T>> schemas;
+  final Map<String, AckSchema<JsonMap, T>> schemas;
 
-  const DiscriminatedObjectSchema({
+  DiscriminatedObjectSchema({
     required this.discriminatorKey,
-    required this.schemas,
+    required Map<String, AckSchema<JsonMap, T>> schemas,
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
-  });
+  }) : schemas = Map.unmodifiable(schemas) {
+    if (discriminatorKey.isEmpty) {
+      throw ArgumentError.value(
+        discriminatorKey,
+        'discriminatorKey',
+        'must not be empty',
+      );
+    }
+    if (schemas.isEmpty) {
+      throw ArgumentError.value(schemas, 'schemas', 'must not be empty');
+    }
+    if (schemas.containsKey('')) {
+      throw ArgumentError.value(
+        schemas,
+        'schemas',
+        'branch keys must not be empty',
+      );
+    }
+    for (final entry in schemas.entries) {
+      final label = entry.key;
+      final base = unwrapDiscriminatedBranchSchema(entry.value);
+      if (base is! ObjectSchema) {
+        throw ArgumentError.value(
+          entry.value,
+          'schemas["$label"]',
+          'Discriminated branches must be object-backed schemas.',
+        );
+      }
+      // Union-owned discriminator (PR #107): if a branch declares the
+      // discriminator property, it must accept the branch label. Otherwise
+      // the union synthesizes the literal automatically via [effectiveBranch].
+      final branchDiscriminator = base.properties[discriminatorKey];
+      if (branchDiscriminator != null &&
+          !discriminatorPropertyAcceptsValue(
+            propertySchema: branchDiscriminator,
+            discriminatorValue: label,
+          )) {
+        throw ArgumentError.value(
+          entry.value,
+          'schemas["$label"]',
+          'Discriminator property "$discriminatorKey" in branch "$label" '
+              'must be Ack.literal("$label") or Ack.enumString containing '
+              '"$label".',
+        );
+      }
+    }
+  }
 
   /// Returns the effective schema for [discriminatorValue].
   ///
   /// The effective schema includes this union's discriminator property as an
-  /// exact branch literal, even when the authored branch omitted it.
-  AckSchema<T> effectiveBranch(String discriminatorValue) {
+  /// exact branch literal, even when the authored branch omitted it. Wrappers
+  /// around the branch (codecs, defaults) are preserved.
+  AckSchema<JsonMap, T> effectiveBranch(String discriminatorValue) {
     final branchSchema = schemas[discriminatorValue];
     if (branchSchema == null) {
       throw ArgumentError.value(
@@ -52,12 +82,12 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         'No discriminated branch is registered for this value.',
       );
     }
-
-    return effectiveDiscriminatedBranch<T>(
-      discriminatorKey: discriminatorKey,
-      discriminatorValue: discriminatorValue,
-      branchSchema: branchSchema,
-    );
+    return effectiveDiscriminatedBranch(
+          discriminatorKey: discriminatorKey,
+          discriminatorValue: discriminatorValue,
+          branchSchema: branchSchema,
+        )
+        as AckSchema<JsonMap, T>;
   }
 
   @override
@@ -65,49 +95,22 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
 
   @override
   @protected
-  SchemaResult<T>? handleNullInput(Object? inputValue, SchemaContext context) {
-    if (inputValue != null) return null;
-
-    if (defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      if (clonedDefault is Map) {
-        return parseAndValidate(clonedDefault, context);
-      }
-
-      final safeDefault = clonedDefault is T ? clonedDefault : defaultValue!;
-      return applyConstraintsAndRefinements(safeDefault, context);
-    }
-
-    if (isNullable) {
-      return SchemaResult.ok(null);
-    }
-
-    return failNonNullable(context);
-  }
-
-  @override
-  @protected
-  SchemaResult<T> parseAndValidate(Object? inputValue, SchemaContext context) {
-    // Use centralized null handling (including cloned default handling).
-    final nullResult = handleNullInput(inputValue, context);
+  SchemaResult<T> parseWithContext(Object? value, SchemaContext context) {
+    final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    // Type guard
-    if (inputValue is! Map) {
-      final actualType = AckSchema.getSchemaType(inputValue);
+    final mapValue = jsonMapOrNull(value);
+    if (mapValue == null) {
       return SchemaResult.fail(
-        TypeMismatchError(
+        _buildTypeMismatch(
           expectedType: schemaType,
-          actualType: actualType,
+          actualValue: value,
           context: context,
         ),
       );
     }
-    final mapValue = inputValue is MapValue
-        ? inputValue
-        : inputValue.cast<String, Object?>();
 
-    final Object? discValueRaw = mapValue[discriminatorKey];
+    final discValueRaw = mapValue[discriminatorKey];
 
     if (discValueRaw == null) {
       final constraintError = ObjectRequiredPropertiesConstraint(
@@ -145,7 +148,7 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       );
     }
 
-    final AckSchema<T>? selectedSubSchema = schemas[discValueRaw];
+    final selectedSubSchema = schemas[discValueRaw];
 
     if (selectedSubSchema == null) {
       final allowed = schemas.keys.toList(growable: false);
@@ -153,7 +156,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
         allowed,
       ).validate(discValueRaw);
 
-      // Error context for discriminator key, but inherit parent path
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: enumError != null ? [enumError] : [],
@@ -161,75 +163,148 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
             name: discriminatorKey,
             schema: const StringSchema(),
             value: discValueRaw,
-            pathSegment:
-                discriminatorKey, // Point directly to the failing field
+            pathSegment: discriminatorKey,
           ),
         ),
       );
     }
 
-    // Validate the selected branch; branch name for debug only
-    var subSchemaContext = context.createChild(
+    // Route through `effectiveBranch` so branches authored without the
+    // discriminator property (per PR #107) still validate the literal at parse
+    // time. The constructor guarantees `selectedSubSchema` unwraps to an
+    // `ObjectSchema`, so `effectiveBranch` is always callable here.
+    final effective = effectiveBranch(discValueRaw);
+
+    final subSchemaContext = context.createChild(
       name: 'when $discriminatorKey="$discValueRaw"',
-      schema: selectedSubSchema,
+      schema: effective,
       value: mapValue,
-      pathSegment: '', // Inherit parent path
+      pathSegment: '',
     );
 
-    final AckSchema<T> effectiveSubSchema;
-    try {
-      effectiveSubSchema = effectiveBranch(discValueRaw);
-    } on ArgumentError catch (error) {
+    final result = effective.parseWithContext(mapValue, subSchemaContext);
+    if (result.isFail) {
+      return SchemaResult.fail(result.getError());
+    }
+    return applyConstraintsAndRefinements(result.getOrThrow()!, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<T> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    if (value is! T) {
       return SchemaResult.fail(
         SchemaValidationError(
-          message: error.message?.toString() ?? error.toString(),
-          context: subSchemaContext,
+          message:
+              'Discriminated runtime is ${value.runtimeType}, expected $T.',
+          context: context,
         ),
       );
     }
+    return applyConstraintsAndRefinements(value, context);
+  }
 
-    subSchemaContext = context.createChild(
-      name: 'when $discriminatorKey="$discValueRaw"',
-      schema: effectiveSubSchema,
-      value: mapValue,
-      pathSegment: '', // Inherit parent path
-    );
-
-    final result = effectiveSubSchema.parseAndValidate(
-      mapValue,
-      subSchemaContext,
-    );
-
-    if (result.isFail) {
-      return result.match(
-        onOk: (_) => throw StateError('Unreachable'),
-        onFail: (error) => SchemaResult.fail(error),
-      );
+  @override
+  @protected
+  SchemaResult<JsonMap> encodeWithContext(T value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) {
+      return SchemaResult.fail(validated.getError());
     }
+    final runtime = validated.getOrNull();
+    if (runtime == null) return SchemaResult.ok(null);
 
-    final validatedValue = result.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(validatedValue, context);
+    final errors = <SchemaError>[];
+    for (final discValue in schemas.keys) {
+      // Use the effective branch so per-PR-#107 the literal discriminator
+      // gates branch selection (validate) and the encoded boundary carries
+      // the discriminator key (encode), even for branches that did not
+      // declare the property themselves.
+      final effective = effectiveBranch(discValue);
+      final branchCtx = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: effective,
+        value: runtime,
+        pathSegment: '',
+        operation: SchemaOperation.encode,
+      );
+      try {
+        final branchValidation = effective.validateRuntimeWithContext(
+          runtime,
+          branchCtx,
+        );
+        if (branchValidation.isFail) {
+          errors.add(branchValidation.getError());
+          continue;
+        }
+        final encoded = effective.encodeWithContext(runtime, branchCtx);
+        if (encoded.isOk) {
+          final boundary = encoded.getOrNull();
+          if (boundary != null) {
+            final emittedDiscriminator = boundary.containsKey(discriminatorKey);
+            if (!emittedDiscriminator) {
+              errors.add(
+                SchemaEncodeError.typeMismatch(
+                  message:
+                      'Discriminated branch "$discValue" must emit '
+                      '"$discriminatorKey".',
+                  context: branchCtx,
+                ),
+              );
+              continue;
+            }
+            if (boundary[discriminatorKey] != discValue) {
+              errors.add(
+                SchemaEncodeError.typeMismatch(
+                  message:
+                      'Discriminated branch "$discValue" emitted a '
+                      'conflicting "$discriminatorKey" value: '
+                      '${boundary[discriminatorKey]}.',
+                  context: branchCtx,
+                ),
+              );
+              continue;
+            }
+            return SchemaResult.ok(Map<String, Object?>.unmodifiable(boundary));
+          }
+        } else {
+          errors.add(encoded.getError());
+        }
+      } catch (e, st) {
+        errors.add(
+          SchemaEncodeError.encoderThrew(
+            message: 'Discriminated branch "$discValue" threw: $e',
+            context: branchCtx,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+      }
+    }
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
   }
 
   @override
   DiscriminatedObjectSchema<T> copyWith({
-    String? discriminatorKey,
-    Map<String, AckSchema<T>>? schemas,
     bool? isNullable,
     bool? isOptional,
     String? description,
-    T? defaultValue,
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
     return DiscriminatedObjectSchema<T>(
-      discriminatorKey: discriminatorKey ?? this.discriminatorKey,
-      schemas: schemas ?? this.schemas,
+      discriminatorKey: discriminatorKey,
+      schemas: schemas,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -241,7 +316,6 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'discriminatorKey': discriminatorKey,
       'schemas': schemas.length,
@@ -251,16 +325,16 @@ final class DiscriminatedObjectSchema<T extends Object> extends AckSchema<T>
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! DiscriminatedObjectSchema) return false;
-    const mapEq = MapEquality<String, AckSchema>();
-    return baseFieldsEqualErased(other) &&
+    if (other is! DiscriminatedObjectSchema<Object>) return false;
+    const mapEq = MapEquality<String, AnyAckSchema>();
+    return baseFieldsEqual(other) &&
         discriminatorKey == other.discriminatorKey &&
         mapEq.equals(schemas, other.schemas);
   }
 
   @override
   int get hashCode {
-    const mapEq = MapEquality<String, AckSchema>();
+    const mapEq = MapEquality<String, AnyAckSchema>();
     return Object.hash(
       baseFieldsHashCode,
       discriminatorKey,

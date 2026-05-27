@@ -19,7 +19,7 @@ abstract class SchemaError {
   });
 
   String get name => context.name;
-  AckSchema get schema => context.schema;
+  AnyAckSchema get schema => context.schema;
   Object? get value => context.value;
   String get path => context.path;
 
@@ -142,4 +142,109 @@ final class SchemaTransformError extends SchemaError {
     super.cause,
     super.stackTrace,
   }) : super(message);
+}
+
+/// Categorizes encode-side failures so callers can react programmatically.
+enum SchemaEncodeFailureKind {
+  nonNullable,
+  typeMismatch,
+  oneWayTransform,
+  encoderThrew,
+  missingRequiredProperty,
+  unexpectedProperty,
+}
+
+/// Errors raised during the encode path (Runtime → Boundary).
+@immutable
+final class SchemaEncodeError extends SchemaError {
+  final SchemaEncodeFailureKind kind;
+  final String? propertyKey;
+
+  const SchemaEncodeError._({
+    required this.kind,
+    required String message,
+    required super.context,
+    super.cause,
+    super.stackTrace,
+    this.propertyKey,
+  }) : super(message);
+
+  factory SchemaEncodeError.nonNullable({required SchemaContext context}) {
+    return SchemaEncodeError._(
+      kind: SchemaEncodeFailureKind.nonNullable,
+      message: 'Cannot encode null value for non-nullable schema.',
+      context: context,
+    );
+  }
+
+  factory SchemaEncodeError.typeMismatch({
+    required String message,
+    required SchemaContext context,
+  }) {
+    return SchemaEncodeError._(
+      kind: SchemaEncodeFailureKind.typeMismatch,
+      message: message,
+      context: context,
+    );
+  }
+
+  factory SchemaEncodeError.oneWayTransform({
+    required SchemaContext context,
+    String message =
+        'This schema is a one-way transform and does not support encode.',
+  }) {
+    return SchemaEncodeError._(
+      kind: SchemaEncodeFailureKind.oneWayTransform,
+      message: message,
+      context: context,
+    );
+  }
+
+  factory SchemaEncodeError.encoderThrew({
+    required String message,
+    required SchemaContext context,
+    Object? cause,
+    StackTrace? stackTrace,
+  }) {
+    return SchemaEncodeError._(
+      kind: SchemaEncodeFailureKind.encoderThrew,
+      message: message,
+      context: context,
+      cause: cause,
+      stackTrace: stackTrace,
+    );
+  }
+
+  factory SchemaEncodeError.missingRequiredProperty({
+    required String propertyKey,
+    required SchemaContext context,
+  }) {
+    return SchemaEncodeError._(
+      kind: SchemaEncodeFailureKind.missingRequiredProperty,
+      message: 'Required property "$propertyKey" missing from encoded value.',
+      context: context,
+      propertyKey: propertyKey,
+    );
+  }
+
+  factory SchemaEncodeError.unexpectedProperty({
+    required String propertyKey,
+    required SchemaContext context,
+  }) {
+    return SchemaEncodeError._(
+      kind: SchemaEncodeFailureKind.unexpectedProperty,
+      message: 'Unexpected property "$propertyKey" in encoded value.',
+      context: context,
+      propertyKey: propertyKey,
+    );
+  }
+
+  @override
+  Map<String, Object?> toMap() {
+    return {
+      ...super.toMap(),
+      'encodeKind': kind.name,
+      if (propertyKey != null) 'propertyKey': propertyKey,
+    };
+  }
 }

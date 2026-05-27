@@ -19,7 +19,7 @@ void main() {
         .matches(r'.*[0-9].*')
         .notEmpty();
 
-    String? runValidator(AckSchema<String> schema, String? value) {
+    String? runValidator(AckSchema<String, String> schema, String? value) {
       final result = schema.safeParse(value);
       return result.isFail ? result.getError().toString() : null;
     }

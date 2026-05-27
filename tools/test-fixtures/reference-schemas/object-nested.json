@@ -32,10 +32,6 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "theme",
-        "notifications"
-      ],
       "additionalProperties": false
     }
   },

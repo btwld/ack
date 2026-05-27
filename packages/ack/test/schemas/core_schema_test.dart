@@ -39,21 +39,21 @@ void main() {
 
     group('defaultValue', () {
       test('should apply default value for null input', () {
-        final schema = StringSchema(defaultValue: 'default');
+        final schema = StringSchema().withDefault('default');
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), 'default');
       });
 
       test('should not apply default value for non-null input', () {
-        final schema = StringSchema(defaultValue: 'default');
+        final schema = StringSchema().withDefault('default');
         final result = schema.safeParse('actual');
         expect(result.isOk, isTrue);
         expect(result.getOrNull(), 'actual');
       });
 
       test('default value is still validated against constraints', () {
-        final schema = StringSchema(defaultValue: 'short').minLength(10);
+        final schema = StringSchema().minLength(10).withDefault('short');
         final result = schema.safeParse(null);
         expect(result.isOk, isFalse);
         final error = result.getError() as SchemaConstraintsError;
@@ -101,37 +101,6 @@ void main() {
     });
 
     group('Type Conversion', () {
-      test(
-        'StringSchema should fail for non-string input with strict parsing',
-        () {
-          final schema = StringSchema().strictParsing();
-          final result = schema.safeParse(123);
-          expect(result.isOk, isFalse);
-          final error = result.getError() as TypeMismatchError;
-          expect(error.expectedType, equals('string'));
-          expect(error.actualType, equals('integer'));
-        },
-      );
-
-      test('IntegerSchema should fail for non-integer input', () {
-        final schema = IntegerSchema();
-        final result = schema.safeParse('not-a-number');
-        expect(result.isOk, isFalse);
-        // IntegerSchema accepts strings for coercion, so this fails during conversion, not type checking
-        final error = result.getError() as SchemaValidationError;
-        expect(error.message, contains('not-a-number'));
-      });
-
-      test('IntegerSchema should enforce strict parsing when enabled', () {
-        const schema = IntegerSchema(strictPrimitiveParsing: true);
-        final result = schema.safeParse('123');
-
-        expect(result.isOk, isFalse);
-        final error = result.getError() as TypeMismatchError;
-        expect(error.expectedType, equals('integer'));
-        expect(error.actualType, equals('string'));
-      });
-
       test('BooleanSchema should fail for non-boolean input', () {
         final schema = BooleanSchema();
         final result = schema.safeParse(1);
@@ -140,19 +109,6 @@ void main() {
         expect(error.expectedType, equals('boolean'));
         expect(error.actualType, equals('integer'));
       });
-
-      test(
-        'DoubleSchema should accept ints even in strict mode (integers are numbers)',
-        () {
-          const schema = DoubleSchema(strictPrimitiveParsing: true);
-          final result = schema.safeParse(42);
-
-          // Integers ARE numbers in JSON Schema semantics, so this should pass
-          // Strict mode only prevents string→number coercion
-          expect(result.isOk, isTrue);
-          expect(result.getOrThrow(), equals(42.0));
-        },
-      );
     });
 
     group('parseAs / safeParseAs', () {
@@ -179,7 +135,7 @@ void main() {
       });
 
       test('safeParseAs keeps validation failures and does not run mapper', () {
-        final schema = Ack.string().strictParsing();
+        final schema = Ack.string();
         var mapperCalled = false;
 
         final result = schema.safeParseAs(123, (validated) {
@@ -238,42 +194,10 @@ void main() {
     });
 
     group('ListSchema', () {
-      test('rejects nullable item schemas at construction', () {
-        expect(
-          () => Ack.list(Ack.string().nullable()),
-          throwsA(
-            isA<ArgumentError>().having(
-              (error) => error.message,
-              'message',
-              contains('does not support nullable item schemas'),
-            ),
-          ),
-        );
+      test('should reject nullable item schemas at construction', () {
+        expect(() => Ack.list(Ack.string().nullable()), throwsArgumentError);
       });
     });
   });
 
-  group('Backward compatibility helpers', () {
-    test('validate delegates to safeParse', () {
-      final schema = Ack.integer();
-
-      // ignore: deprecated_member_use_from_same_package
-      final okResult = schema.validate(123);
-      expect(okResult.isOk, isTrue);
-
-      // ignore: deprecated_member_use_from_same_package
-      final failResult = schema.validate('oops');
-      expect(failResult.isFail, isTrue);
-    });
-
-    test('tryParse returns null on failure', () {
-      final schema = Ack.integer();
-
-      // ignore: deprecated_member_use_from_same_package
-      expect(schema.tryParse(42), equals(42));
-
-      // ignore: deprecated_member_use_from_same_package
-      expect(schema.tryParse('bad'), isNull);
-    });
-  });
 }

@@ -131,10 +131,7 @@ void main() {
     });
 
     test('union examples accept multiple data shapes', () {
-      final stringOrNumber = Ack.anyOf([
-        Ack.string().strictParsing(),
-        Ack.integer(),
-      ]);
+      final stringOrNumber = Ack.anyOf([Ack.string(), Ack.integer()]);
 
       expect(stringOrNumber.safeParse('hello').isOk, isTrue);
       expect(stringOrNumber.safeParse(42).isOk, isTrue);

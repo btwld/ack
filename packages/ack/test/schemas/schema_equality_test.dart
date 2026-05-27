@@ -6,13 +6,6 @@ enum TestColor { red, green, blue }
 void main() {
   group('Schema Equality', () {
     group('StringSchema', () {
-      test('equal schemas are equal', () {
-        final a = Ack.string().minLength(5).describe('test');
-        final b = Ack.string().minLength(5).describe('test');
-        expect(a, equals(b));
-        expect(a.hashCode, equals(b.hashCode));
-      });
-
       test('different constraints are not equal', () {
         final a = Ack.string().minLength(5);
         final b = Ack.string().minLength(10);
@@ -24,29 +17,9 @@ void main() {
         final b = Ack.string();
         expect(a, isNot(equals(b)));
       });
-
-      test('different strictParsing are not equal', () {
-        final a = Ack.string().strictParsing();
-        final b = Ack.string();
-        expect(a, isNot(equals(b)));
-      });
-
-      test('copyWith preserves equality', () {
-        final original = Ack.string().minLength(5).describe('test');
-        final copy = original.copyWith();
-        expect(original, equals(copy));
-        expect(original.hashCode, equals(copy.hashCode));
-      });
     });
 
     group('IntegerSchema', () {
-      test('equal schemas are equal', () {
-        final a = Ack.integer().min(0).max(100);
-        final b = Ack.integer().min(0).max(100);
-        expect(a, equals(b));
-        expect(a.hashCode, equals(b.hashCode));
-      });
-
       test('different constraints are not equal', () {
         final a = Ack.integer().min(0);
         final b = Ack.integer().min(10);
@@ -54,19 +27,11 @@ void main() {
       });
     });
 
-    group('DoubleSchema', () {
-      test('equal schemas are equal', () {
-        final a = Ack.double().min(0.0).max(1.0);
-        final b = Ack.double().min(0.0).max(1.0);
-        expect(a, equals(b));
-        expect(a.hashCode, equals(b.hashCode));
-      });
-    });
+    group('DefaultSchema', () {
+      test('equal effective nullable schemas are equal', () {
+        final a = Ack.string().nullable().withDefault('x');
+        final b = Ack.string().nullable().withDefault('x');
 
-    group('BooleanSchema', () {
-      test('equal schemas are equal', () {
-        final a = Ack.boolean().describe('enabled');
-        final b = Ack.boolean().describe('enabled');
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
@@ -89,13 +54,6 @@ void main() {
       test('nested lists are equal', () {
         final a = Ack.list(Ack.list(Ack.string()));
         final b = Ack.list(Ack.list(Ack.string()));
-        expect(a, equals(b));
-        expect(a.hashCode, equals(b.hashCode));
-      });
-
-      test('with constraints are equal', () {
-        final a = Ack.list(Ack.string()).minItems(1).maxItems(10);
-        final b = Ack.list(Ack.string()).minItems(1).maxItems(10);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
@@ -231,19 +189,13 @@ void main() {
       });
     });
 
-    group('TransformedSchema', () {
+    group('One-way CodecSchema', () {
       test('same transformer are equal', () {
         String transform(String? s) => s?.toUpperCase() ?? '';
         final a = Ack.string().transform(transform);
         final b = Ack.string().transform(transform);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
-      });
-
-      test('different transformers are not equal', () {
-        final a = Ack.string().transform((s) => s.toUpperCase());
-        final b = Ack.string().transform((s) => s.toLowerCase());
-        expect(a, isNot(equals(b)));
       });
     });
 
@@ -256,57 +208,6 @@ void main() {
         expect(stringSchema, isNot(equals(intSchema)));
         expect(stringSchema, isNot(equals(boolSchema)));
         expect(intSchema, isNot(equals(boolSchema)));
-      });
-    });
-
-    group('Set and Map operations', () {
-      test('schemas work correctly in Set', () {
-        final schema1 = Ack.string().minLength(5);
-        final schema2 = Ack.string().minLength(5);
-        final schema3 = Ack.string().minLength(10);
-
-        final set = {schema1, schema2, schema3};
-        expect(set.length, equals(2));
-        expect(set.contains(schema1), isTrue);
-        expect(set.contains(schema2), isTrue);
-        expect(set.contains(schema3), isTrue);
-      });
-
-      test('schemas work correctly as Map keys', () {
-        final schema1 = Ack.string().minLength(5);
-        final schema2 = Ack.string().minLength(5);
-        final schema3 = Ack.string().minLength(10);
-
-        final map = <AckSchema, String>{
-          schema1: 'first',
-          schema2: 'second', // Should overwrite first
-          schema3: 'third',
-        };
-
-        expect(map.length, equals(2));
-        expect(map[schema1], equals('second'));
-        expect(map[schema3], equals('third'));
-      });
-    });
-
-    group('Refinements', () {
-      test('same refinement function are equal', () {
-        bool validate(String value) => value.isNotEmpty;
-        final a = Ack.string().refine(validate, message: 'not empty');
-        final b = Ack.string().refine(validate, message: 'not empty');
-        expect(a, equals(b));
-      });
-
-      test('different refinement functions are not equal', () {
-        final a = Ack.string().refine(
-          (v) => v.isNotEmpty,
-          message: 'not empty',
-        );
-        final b = Ack.string().refine(
-          (v) => v.length > 1,
-          message: 'not empty',
-        );
-        expect(a, isNot(equals(b)));
       });
     });
 

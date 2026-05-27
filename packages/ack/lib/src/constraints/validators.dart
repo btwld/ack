@@ -20,7 +20,7 @@ class NonNullableConstraint extends Constraint<Object?>
 
 /// Constraint for validating that a value is of an expected Dart type.
 ///
-/// Used internally by [AckSchema] during type checking in `parseAndValidate`.
+/// Used internally by [AckSchema] during parse and encode type checking.
 class InvalidTypeConstraint extends Constraint<Object?>
     with Validator<Object?> {
   final Type expectedType;
@@ -32,14 +32,6 @@ class InvalidTypeConstraint extends Constraint<Object?>
         constraintKey: 'core_invalid_type',
         description: 'Value must be of type $expectedType.',
       );
-
-  const InvalidTypeConstraint.withTypes({
-    required this.expectedType,
-    this.actualType,
-  }) : super(
-         constraintKey: 'core_invalid_type',
-         description: 'Value must be of type $expectedType.',
-       );
 
   @override
   bool isValid(Object? value) {

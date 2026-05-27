@@ -61,7 +61,7 @@ void main() {
         message: 'Price must be greater than zero.',
       );
 
-      final result = schema.safeParse(-10);
+      final result = schema.safeParse(-10.0);
       expect(result.isFail, isTrue);
       expect(result.getError().message, contains('greater than zero'));
     });

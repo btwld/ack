@@ -2,19 +2,33 @@ import '../constraints/pattern_constraint.dart';
 import '../constraints/string_literal_constraint.dart';
 import '../schemas/schema.dart';
 
+/// Returns the underlying branch schema by unwrapping wrapper layers.
+///
+/// Discriminated branches may be wrapped while still being object-backed at
+/// their core.
+AnyAckSchema unwrapDiscriminatedBranchSchema(AnyAckSchema schema) {
+  AnyAckSchema current = schema;
+  while (current is WrapperSchema) {
+    current = current.inner;
+  }
+
+  return current;
+}
+
 StringSchema _discriminatorLiteralSchema(String discriminatorValue) {
   return StringSchema(
     constraints: [StringLiteralConstraint(discriminatorValue)],
   );
 }
 
-/// Returns whether [propertySchema] accepts [discriminatorValue].
+/// Returns whether [propertySchema] accepts [discriminatorValue] as a value of
+/// the discriminator field.
 ///
-/// This compatibility check is structural and side-effect-free. It deliberately
-/// does not parse the discriminator value because parsing can execute user
+/// This compatibility check is structural and side-effect-free. It does not
+/// parse the discriminator value because parsing can execute user
 /// transforms/refinements during branch selection or schema export.
 bool discriminatorPropertyAcceptsValue({
-  required AckSchema propertySchema,
+  required AnyAckSchema propertySchema,
   required String discriminatorValue,
 }) {
   if (propertySchema is! StringSchema) return false;
@@ -56,7 +70,7 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
     );
   }
 
-  final properties = <String, AckSchema>{
+  final properties = <String, AnyAckSchema>{
     discriminatorKey: _discriminatorLiteralSchema(discriminatorValue),
     for (final entry in objectSchema.properties.entries)
       if (entry.key != discriminatorKey) entry.key: entry.value,
@@ -67,26 +81,17 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
 
 /// Builds the effective schema for a discriminated-union branch.
 ///
-/// Supports plain object branches and direct object-backed transforms. The
-/// effective schema validates/exports with a union-injected literal
-/// discriminator while preserving the branch output type.
-AckSchema<T> effectiveDiscriminatedBranch<T extends Object>({
+/// Supports plain object branches and wrapper-backed branches (codecs,
+/// defaults). The effective schema validates/exports with a union-injected
+/// literal discriminator while preserving the branch output type.
+///
+/// Returns a type-erased [AnyAckSchema]; callers in a typed context (such as
+/// [DiscriminatedObjectSchema.effectiveBranch]) should cast back to the
+/// schema's specific `AckSchema<Boundary, Runtime>` shape.
+AnyAckSchema effectiveDiscriminatedBranch({
   required String discriminatorKey,
   required String discriminatorValue,
-  required AckSchema<T> branchSchema,
-}) {
-  return _effectiveDiscriminatedBranch(
-        discriminatorKey: discriminatorKey,
-        discriminatorValue: discriminatorValue,
-        branchSchema: branchSchema,
-      )
-      as AckSchema<T>;
-}
-
-AckSchema _effectiveDiscriminatedBranch({
-  required String discriminatorKey,
-  required String discriminatorValue,
-  required AckSchema branchSchema,
+  required AnyAckSchema branchSchema,
 }) {
   if (branchSchema is ObjectSchema) {
     return effectiveDiscriminatedObjectBranch(
@@ -96,13 +101,13 @@ AckSchema _effectiveDiscriminatedBranch({
     );
   }
 
-  if (branchSchema is TransformedSchema<Object, Object>) {
-    final effectiveInputSchema = _effectiveDiscriminatedBranch(
+  if (branchSchema is WrapperSchema) {
+    final effectiveInner = effectiveDiscriminatedBranch(
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
-      branchSchema: branchSchema.schema,
+      branchSchema: branchSchema.inner,
     );
-    return branchSchema.copyWithSchema(effectiveInputSchema);
+    return branchSchema.copyWithInner(effectiveInner);
   }
 
   throw ArgumentError('Discriminated branches must be object-backed schemas');

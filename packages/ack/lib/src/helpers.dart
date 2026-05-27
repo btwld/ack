@@ -1,4 +1,4 @@
-// Re-export shared utilities used across schemas, constraints, and tests.
+// Re-export utilities for backward compatibility
 export 'utils/collection_utils.dart';
 export 'utils/default_utils.dart';
 export 'utils/discriminated_branch_utils.dart';

@@ -1,34 +1,22 @@
 part of 'schema.dart';
 
-/// Schema for validating against a list of schemas.
+/// Schema for validating against a list of schemas (union).
 ///
-/// The input is valid if it matches ANY of the provided schemas.
-/// This is useful for union types where a value can be one of several different types.
+/// Uses broad `Object`/`Object` typing because Dart does not have first-class
+/// union types.
 ///
-/// Example:
-/// ```dart
-/// final schema = Ack.anyOf([
-///   Ack.string(),
-///   Ack.integer(),
-///   Ack.boolean(),
-/// ]);
-///
-/// schema.safeParse('hello');  // Ok
-/// schema.safeParse(42);        // Ok
-/// schema.safeParse(true);      // Ok
-/// schema.safeParse([]);        // Fail - not matching any schema
-/// ```
+/// Nullable semantics are symmetric: an `AnyOfSchema` allows null on both
+/// parse and encode if [isNullable] is true OR any branch is itself nullable.
 @immutable
-final class AnyOfSchema extends AckSchema<Object>
-    with FluentSchema<Object, AnyOfSchema> {
-  final List<AckSchema> schemas;
+final class AnyOfSchema extends AckSchema<Object, Object>
+    with FluentSchema<Object, Object, AnyOfSchema> {
+  final List<AnyAckSchema> schemas;
 
   const AnyOfSchema(
     this.schemas, {
     super.isNullable,
     super.isOptional,
     super.description,
-    super.defaultValue,
     super.constraints,
     super.refinements,
   });
@@ -36,60 +24,115 @@ final class AnyOfSchema extends AckSchema<Object>
   @override
   SchemaType get schemaType => SchemaType.anyOf;
 
+  bool get _anyBranchNullable => schemas.any((s) => s.isNullable);
+
+  @override
+  bool get acceptsNull => super.acceptsNull || _anyBranchNullable;
+
   @override
   @protected
-  SchemaResult<Object> parseAndValidate(
-    Object? inputValue,
+  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
+      _tryBranches(value, context, parse: true);
+
+  @override
+  @protected
+  SchemaResult<Object> validateRuntimeWithContext(
+    Object? value,
     SchemaContext context,
-  ) {
-    // NOTE: AnyOfSchema intentionally does NOT use handleNullInput because
-    // null handling has special semantics for union types:
-    //
-    // 1. If a DEFAULT exists: apply it first (consistent with other schemas)
-    // 2. If NO default: try member schemas first - a nullable member can accept null
-    // 3. AnyOfSchema's own isNullable is only checked AFTER all members fail
-    //
-    // This differs from handleNullInput which checks isNullable before trying validation.
-    if (inputValue == null && defaultValue != null) {
-      final clonedDefault = cloneDefault(defaultValue!);
-      return parseAndValidate(clonedDefault, context);
+  ) => _tryBranches(value, context, parse: false);
+
+  SchemaResult<Object> _tryBranches(
+    Object? value,
+    SchemaContext context, {
+    required bool parse,
+  }) {
+    // On parse we let branches see null first so a member's DefaultSchema or
+    // nullable branch can resolve before the union-level null gate rejects.
+    // Runtime validation keeps the union-level null gate intact.
+    if (!parse) {
+      final nullResult = handleNullInput(value, context);
+      if (nullResult != null) return nullResult;
     }
 
-    // Try all member schemas (including with null input for nullable members)
     final errors = <SchemaError>[];
-
     for (final (index, schema) in schemas.indexed) {
-      // Branch name for debugging; inherit parent path (no segment pollution)
       final childContext = context.createChild(
         name: 'anyOf:$index',
         schema: schema,
-        value: inputValue,
-        pathSegment: '', // Inherit parent path
+        value: value,
+        pathSegment: '',
       );
-
-      final result = schema.parseAndValidate(inputValue, childContext);
-
+      final result = parse
+          ? schema.parseWithContext(value, childContext)
+          : schema.validateRuntimeWithContext(value, childContext);
       if (result.isOk) {
-        final validatedValue = result.getOrNull();
-
-        // Nullable member returned null - pass through
-        if (validatedValue == null) {
-          return SchemaResult.ok(null);
-        }
-
-        // Apply AnyOfSchema's own constraints to non-null values
-        return applyConstraintsAndRefinements(validatedValue, context);
+        final v = result.getOrNull();
+        if (v == null) return SchemaResult.ok(null);
+        return applyConstraintsAndRefinements(v, context);
       }
-
       errors.add(result.getError());
     }
 
-    // No member schema matched; check AnyOfSchema's own nullable flag
-    if (inputValue == null && isNullable) {
-      return SchemaResult.ok(null);
+    if (parse && value == null) {
+      if (acceptsNull) return SchemaResult.ok(null);
+      return failNonNullable(context);
     }
 
-    // Return all errors for debugging
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> encodeWithContext(Object value, SchemaContext context) {
+    final validated = validateRuntimeWithContext(value, context);
+    if (validated.isFail) {
+      return SchemaResult.fail(validated.getError());
+    }
+    final runtime = validated.getOrNull();
+    if (runtime == null) return SchemaResult.ok(null);
+
+    final errors = <SchemaError>[];
+    for (final (index, schema) in schemas.indexed) {
+      final childContext = context.createChild(
+        name: 'anyOf:$index',
+        schema: schema,
+        value: runtime,
+        pathSegment: '',
+        operation: SchemaOperation.encode,
+      );
+      try {
+        // Validate against the branch's runtime first; only attempt encode
+        // when the value plausibly fits this branch.
+        final branchValidation = schema.validateRuntimeWithContext(
+          runtime,
+          childContext,
+        );
+        if (branchValidation.isFail) {
+          errors.add(branchValidation.getError());
+          continue;
+        }
+        final encoded = schema.encodeWithContext(runtime, childContext);
+        if (encoded.isOk) {
+          final boundary = encoded.getOrNull();
+          if (boundary != null) {
+            return SchemaResult.ok(boundary);
+          }
+        } else {
+          errors.add(encoded.getError());
+        }
+      } catch (e, st) {
+        errors.add(
+          SchemaEncodeError.encoderThrew(
+            message: 'AnyOf branch $index threw: $e',
+            context: childContext,
+            cause: e,
+            stackTrace: st,
+          ),
+        );
+      }
+    }
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
@@ -100,16 +143,14 @@ final class AnyOfSchema extends AckSchema<Object>
     bool? isNullable,
     bool? isOptional,
     String? description,
-    Object? defaultValue,
     List<Constraint<Object>>? constraints,
     List<Refinement<Object>>? refinements,
   }) {
     return AnyOfSchema(
-      schemas, // schemas are immutable once created
+      schemas,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      defaultValue: defaultValue ?? this.defaultValue,
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
@@ -121,7 +162,6 @@ final class AnyOfSchema extends AckSchema<Object>
       'type': schemaType.typeName,
       'isNullable': isNullable,
       'description': description,
-      'defaultValue': defaultValue,
       'constraints': constraints.map((c) => c.toMap()).toList(),
       'schemas': schemas.length,
     };
@@ -131,13 +171,13 @@ final class AnyOfSchema extends AckSchema<Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AnyOfSchema) return false;
-    const listEq = ListEquality<AckSchema>();
+    const listEq = ListEquality<AnyAckSchema>();
     return baseFieldsEqual(other) && listEq.equals(schemas, other.schemas);
   }
 
   @override
   int get hashCode {
-    const listEq = ListEquality<AckSchema>();
+    const listEq = ListEquality<AnyAckSchema>();
     return Object.hash(baseFieldsHashCode, listEq.hash(schemas));
   }
 }
