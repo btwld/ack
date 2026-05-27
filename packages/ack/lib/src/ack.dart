@@ -92,8 +92,8 @@ final class Ack {
   /// the closure into a `final` variable lets two calls share equality.
   ///
   /// `toJsonSchema()` and `toSchemaModel()` export lazy references through
-  /// recursive `$defs`/`$ref` JSON Schema definitions. `Ack.lazy` cannot be
-  /// used directly as a discriminated union branch.
+  /// recursive `definitions`/`$ref` JSON Schema definitions. `Ack.lazy` cannot
+  /// be used directly as a discriminated union branch.
   static LazySchema<Boundary, Runtime> lazy<
     Boundary extends Object,
     Runtime extends Object

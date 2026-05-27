@@ -28,7 +28,7 @@ final class _SchemaModelBuilder {
       for (final entry in _defs.entries)
         if (entry.value case final model?) entry.key: model.toJsonSchema(),
     };
-    return root.withExtensions({...root.extensions, r'$defs': defs});
+    return root.withExtensions({...root.extensions, 'definitions': defs});
   }
 
   AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {

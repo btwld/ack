@@ -85,11 +85,11 @@ final class _AckSchemaModelCommon {
   /// keywords flow through here) to embed inside the inner branch.
   Map<String, Object?> toEmbeddedJson() {
     final embedded = {...extensions};
-    embedded.remove(r'$defs');
+    embedded.remove('definitions');
     return embedded;
   }
 
-  Object? get defs => extensions[r'$defs'];
+  Object? get definitions => extensions['definitions'];
 }
 
 @immutable
@@ -263,7 +263,7 @@ sealed class AckSchemaModel {
     // branch so consumers see them next to the `type` they constrain.
     return {
       ..._common.toHoistedJson(),
-      if (_common.defs != null) r'$defs': _common.defs,
+      if (_common.definitions != null) 'definitions': _common.definitions,
       'anyOf': [
         {...typeJson, ..._common.toEmbeddedJson()},
         _nullSchemaJson,
@@ -283,7 +283,7 @@ sealed class AckSchemaModel {
       // composed union.
       return {
         ..._common.toHoistedJson(),
-        if (_common.defs != null) r'$defs': _common.defs,
+        if (_common.definitions != null) 'definitions': _common.definitions,
         'anyOf': [
           {..._common.toEmbeddedJson(), keyword: branches},
           _nullSchemaJson,
@@ -346,7 +346,7 @@ final class AckRefSchemaModel extends AckSchemaModel {
 
   @override
   Map<String, Object?> toJsonSchema() =>
-      finishTypeJson({r'$ref': '#/\$defs/$refName'});
+      finishTypeJson({r'$ref': '#/definitions/$refName'});
 
   @override
   AckRefSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>

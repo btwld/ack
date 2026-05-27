@@ -31,7 +31,7 @@ void main() {
     expect(categorySchema.encode(categorySchema.parse(json)), equals(json));
   });
 
-  test('exports recursive object graph via defs and refs', () {
+  test('exports recursive object graph via definitions and refs', () {
     late final ObjectSchema categorySchema;
     categorySchema = Ack.object({
       'name': Ack.string(),
@@ -43,14 +43,14 @@ void main() {
     final jsonSchema = categorySchema.toJsonSchema();
     final properties = jsonSchema['properties']! as Map;
     final children = properties['children']! as Map;
-    final defs = jsonSchema[r'$defs']! as Map;
-    final categoryDef = defs['Category']! as Map;
+    final definitions = jsonSchema['definitions']! as Map;
+    final categoryDef = definitions['Category']! as Map;
     final categoryProperties = categoryDef['properties']! as Map;
     final nestedChildren = categoryProperties['children']! as Map;
 
-    expect(children['items'], {r'$ref': r'#/$defs/Category'});
-    expect(nestedChildren['items'], {r'$ref': r'#/$defs/Category'});
-    expect(defs.keys, ['Category']);
+    expect(children['items'], {r'$ref': '#/definitions/Category'});
+    expect(nestedChildren['items'], {r'$ref': '#/definitions/Category'});
+    expect(definitions.keys, ['Category']);
   });
 
   test('deduplicates lazies with the same name and same target', () {
@@ -61,11 +61,11 @@ void main() {
 
     final jsonSchema = schema.toJsonSchema();
     final properties = jsonSchema['properties']! as Map;
-    final defs = jsonSchema[r'$defs']! as Map;
+    final definitions = jsonSchema['definitions']! as Map;
 
-    expect(defs.keys, ['Category']);
-    expect(properties['first'], {r'$ref': r'#/$defs/Category'});
-    expect(properties['second'], {r'$ref': r'#/$defs/Category'});
+    expect(definitions.keys, ['Category']);
+    expect(properties['first'], {r'$ref': '#/definitions/Category'});
+    expect(properties['second'], {r'$ref': '#/definitions/Category'});
   });
 
   test('rejects lazies with the same name and different targets', () {
@@ -104,11 +104,11 @@ void main() {
     expect(properties['parent'], {
       'description': 'Parent category',
       'anyOf': [
-        {r'$ref': r'#/$defs/Category'},
+        {r'$ref': '#/definitions/Category'},
         {'type': 'null'},
       ],
     });
-    expect(jsonSchema[r'$defs'], isNotNull);
+    expect(jsonSchema['definitions'], isNotNull);
   });
 
   test('warns when lazy runtime checks cannot be exported', () {
@@ -124,7 +124,7 @@ void main() {
     final model = categorySchema.toSchemaModel() as AckObjectSchemaModel;
     final child = model.properties!['child']!;
 
-    expect(child.toJsonSchema(), {r'$ref': r'#/$defs/Category'});
+    expect(child.toJsonSchema(), {r'$ref': '#/definitions/Category'});
     expect(child.warnings, hasLength(1));
     expect(child.warnings.single.code, 'lazy_runtime_checks_not_export_safe');
     expect(child.warnings.single.context, {
@@ -133,7 +133,7 @@ void main() {
     });
   });
 
-  test('does not add defs to non-lazy schemas', () {
+  test('does not add definitions to non-lazy schemas', () {
     final schema = Ack.object({
       'name': Ack.string().minLength(2),
       'children': Ack.list(Ack.string()),
@@ -151,7 +151,7 @@ void main() {
       'required': ['name', 'children'],
       'additionalProperties': false,
     });
-    expect(schema.toJsonSchema(), isNot(contains(r'$defs')));
+    expect(schema.toJsonSchema(), isNot(contains('definitions')));
   });
 
   test('memoizes the builder result', () {
