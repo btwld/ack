@@ -164,29 +164,11 @@ final roundedSuperellipseBorderCodec = _rectangleBorderSchema
 final shapeBorderCodec = Ack.discriminated<ShapeBorder>(
   discriminatorKey: 'type',
   schemas: {
-    'circle': circleBorderCodec.codec<ShapeBorder>(
-      decode: (value) => value,
-      encode: (value) => value as CircleBorder,
-    ),
-    'stadium': stadiumBorderCodec.codec<ShapeBorder>(
-      decode: (value) => value,
-      encode: (value) => value as StadiumBorder,
-    ),
-    'roundedRectangle': roundedRectangleBorderCodec.codec<ShapeBorder>(
-      decode: (value) => value,
-      encode: (value) => value as RoundedRectangleBorder,
-    ),
-    'beveledRectangle': beveledRectangleBorderCodec.codec<ShapeBorder>(
-      decode: (value) => value,
-      encode: (value) => value as BeveledRectangleBorder,
-    ),
-    'continuousRectangle': continuousRectangleBorderCodec.codec<ShapeBorder>(
-      decode: (value) => value,
-      encode: (value) => value as ContinuousRectangleBorder,
-    ),
-    'roundedSuperellipse': roundedSuperellipseBorderCodec.codec<ShapeBorder>(
-      decode: (value) => value,
-      encode: (value) => value as RoundedSuperellipseBorder,
-    ),
+    'circle': circleBorderCodec,
+    'stadium': stadiumBorderCodec,
+    'roundedRectangle': roundedRectangleBorderCodec,
+    'beveledRectangle': beveledRectangleBorderCodec,
+    'continuousRectangle': continuousRectangleBorderCodec,
+    'roundedSuperellipse': roundedSuperellipseBorderCodec,
   },
 );

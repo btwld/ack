@@ -129,17 +129,8 @@ final sweepGradientCodec =
 final gradientCodec = Ack.discriminated<Gradient>(
   discriminatorKey: 'type',
   schemas: {
-    'linear': linearGradientCodec.codec<Gradient>(
-      decode: (value) => value,
-      encode: (value) => value as LinearGradient,
-    ),
-    'radial': radialGradientCodec.codec<Gradient>(
-      decode: (value) => value,
-      encode: (value) => value as RadialGradient,
-    ),
-    'sweep': sweepGradientCodec.codec<Gradient>(
-      decode: (value) => value,
-      encode: (value) => value as SweepGradient,
-    ),
+    'linear': linearGradientCodec,
+    'radial': radialGradientCodec,
+    'sweep': sweepGradientCodec,
   },
 );

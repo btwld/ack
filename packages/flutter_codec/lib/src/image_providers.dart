@@ -82,14 +82,5 @@ final assetImageCodec =
 /// asset bundles are rejected instead of guessing a non-portable JSON shape.
 final imageProviderCodec = Ack.discriminated<ImageProvider<Object>>(
   discriminatorKey: 'type',
-  schemas: {
-    'network': networkImageCodec.codec<ImageProvider<Object>>(
-      decode: (value) => value,
-      encode: (value) => value as NetworkImage,
-    ),
-    'asset': assetImageCodec.codec<ImageProvider<Object>>(
-      decode: (value) => value,
-      encode: (value) => value as AssetImage,
-    ),
-  },
+  schemas: {'network': networkImageCodec, 'asset': assetImageCodec},
 );

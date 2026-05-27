@@ -138,14 +138,5 @@ JsonMap _encodeShapeDecoration(ShapeDecoration value) {
 /// belong outside the painting layer.
 final decorationCodec = Ack.discriminated<Decoration>(
   discriminatorKey: 'type',
-  schemas: {
-    'box': boxDecorationCodec.codec<Decoration>(
-      decode: (value) => value,
-      encode: (value) => value as BoxDecoration,
-    ),
-    'shape': shapeDecorationCodec.codec<Decoration>(
-      decode: (value) => value,
-      encode: (value) => value as ShapeDecoration,
-    ),
-  },
+  schemas: {'box': boxDecorationCodec, 'shape': shapeDecorationCodec},
 );
