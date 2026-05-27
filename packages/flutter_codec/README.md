@@ -57,7 +57,7 @@ assert(roundTripped == decoration);
 | | `Locale` | `localeCodec` | [lib/src/primitives/locale.dart](lib/src/primitives/locale.dart) |
 | Enums | 30+ painting/rendering enums (e.g. `blendModeCodec`, `boxShapeCodec`, `tileModeCodec`, `fontStyleCodec`) | see file | [lib/src/enums.dart](lib/src/enums.dart) |
 | Borders | `BorderSide`, `Border`, `BorderDirectional`, `BoxBorder`, `StrokeAlign` | `borderSideCodec`, `borderCodec`, `borderDirectionalCodec`, `boxBorderCodec`, `strokeAlignCodec` | [lib/src/borders.dart](lib/src/borders.dart) |
-| Shape borders | `CircleBorder`, `StadiumBorder`, `RoundedRectangleBorder`, `BeveledRectangleBorder`, `ContinuousRectangleBorder`, `RoundedSuperellipseBorder`, `ShapeBorder` | `circleBorderCodec`, `stadiumBorderCodec`, `roundedRectangleBorderCodec`, `beveledRectangleBorderCodec`, `continuousRectangleBorderCodec`, `roundedSuperellipseBorderCodec`, `shapeBorderCodec` | [lib/src/shape_borders.dart](lib/src/shape_borders.dart) |
+| Shape borders | `CircleBorder`, `StadiumBorder`, `RoundedRectangleBorder`, `BeveledRectangleBorder`, `ContinuousRectangleBorder`, `RoundedSuperellipseBorder`, `StarBorder`, `LinearBorder`, `LinearBorderEdge`, `ShapeBorder` | `circleBorderCodec`, `stadiumBorderCodec`, `roundedRectangleBorderCodec`, `beveledRectangleBorderCodec`, `continuousRectangleBorderCodec`, `roundedSuperellipseBorderCodec`, `starBorderCodec`, `linearBorderCodec`, `linearBorderEdgeCodec`, `shapeBorderCodec` | [lib/src/shape_borders.dart](lib/src/shape_borders.dart) |
 | Shadows | `Shadow`, `BoxShadow` | `shadowCodec`, `boxShadowCodec` | [lib/src/shadows.dart](lib/src/shadows.dart) |
 | Gradients | `LinearGradient`, `RadialGradient`, `SweepGradient`, `Gradient` | `linearGradientCodec`, `radialGradientCodec`, `sweepGradientCodec`, `gradientCodec` | [lib/src/gradients.dart](lib/src/gradients.dart) |
 | Image providers | `NetworkImage`, `AssetImage`, `ImageProvider` | `networkImageCodec`, `assetImageCodec`, `imageProviderCodec` | [lib/src/image_providers.dart](lib/src/image_providers.dart) |
@@ -76,7 +76,7 @@ codecs do not require it on input.
 |---|---|---|
 | `gradientCodec` | `"type"` | `"linear"`, `"radial"`, `"sweep"` |
 | `imageProviderCodec` | `"type"` | `"network"`, `"asset"` |
-| `shapeBorderCodec` | `"type"` | `"circle"`, `"stadium"`, `"roundedRectangle"`, `"beveledRectangle"`, `"continuousRectangle"`, `"roundedSuperellipse"` |
+| `shapeBorderCodec` | `"type"` | `"circle"`, `"stadium"`, `"roundedRectangle"`, `"beveledRectangle"`, `"continuousRectangle"`, `"roundedSuperellipse"`, `"star"`, `"linear"` |
 | `decorationCodec` | `"type"` | `"box"`, `"shape"` |
 
 ## Intentionally excluded
@@ -107,7 +107,7 @@ silently falling back.
   as `CircleBorder` — the runtime subtype is lost. The painted output is
   equivalent to `CircleBorder(eccentricity: 1.0)`.
 - **Separate plans**: `InputBorder` family (Material — `OutlineInputBorder`,
-  `UnderlineInputBorder`), `StarBorder`, `LinearBorder`.
+  `UnderlineInputBorder`).
 
 ## JSON Schema export
 

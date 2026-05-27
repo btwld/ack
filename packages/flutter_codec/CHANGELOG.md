@@ -17,8 +17,9 @@ Initial release. JSON value codecs for Flutter's painting layer, built on
   `StrokeAlign`.
 - **Shape borders** (discriminated by `"type"`): `CircleBorder`,
   `StadiumBorder`, `RoundedRectangleBorder`, `BeveledRectangleBorder`,
-  `ContinuousRectangleBorder`, `RoundedSuperellipseBorder` → `ShapeBorder`.
-  Requires Flutter `>=3.27.0` for `RoundedSuperellipseBorder`.
+  `ContinuousRectangleBorder`, `RoundedSuperellipseBorder`, `StarBorder`,
+  `LinearBorder` (with `LinearBorderEdge`) → `ShapeBorder`. Requires Flutter
+  `>=3.27.0` for `RoundedSuperellipseBorder`.
 - **Shadows**: `Shadow`, `BoxShadow`.
 - **Gradients** (discriminated by `"type"`): `LinearGradient`,
   `RadialGradient`, `SweepGradient` → `Gradient`.
