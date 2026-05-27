@@ -226,7 +226,9 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
         'Discriminated branch "${entry.key}" must export as an object schema model.',
       );
     }
-    branches.add(converted);
+    branches.add(
+      _withRequiredDiscriminator(converted, schema.discriminatorKey),
+    );
   }
 
   return AckAnyOfSchemaModel(
@@ -236,6 +238,43 @@ AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
     ),
     description: schema.description,
     nullable: schema.isNullable,
+  );
+}
+
+AckObjectSchemaModel _withRequiredDiscriminator(
+  AckObjectSchemaModel model,
+  String discriminatorKey,
+) {
+  if (model.properties?.containsKey(discriminatorKey) != true) {
+    return model;
+  }
+
+  final properties = model.properties!;
+  final discriminator = properties[discriminatorKey]!;
+  final normalizedProperties = discriminator.defaultValue == null
+      ? properties
+      : {...properties, discriminatorKey: discriminator.withDefaultValue(null)};
+  final required = model.required ?? const <String>[];
+  if (required.contains(discriminatorKey) &&
+      identical(normalizedProperties, properties)) {
+    return model;
+  }
+
+  return AckObjectSchemaModel(
+    properties: normalizedProperties,
+    required: required.contains(discriminatorKey)
+        ? required
+        : [discriminatorKey, ...required],
+    propertyOrdering: model.propertyOrdering,
+    minProperties: model.minProperties,
+    maxProperties: model.maxProperties,
+    additionalProperties: model.additionalProperties,
+    title: model.title,
+    description: model.description,
+    nullable: model.nullable,
+    defaultValue: model.defaultValue,
+    warnings: model.warnings,
+    extensions: model.extensions,
   );
 }
 

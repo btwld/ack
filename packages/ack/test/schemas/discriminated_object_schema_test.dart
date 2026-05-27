@@ -94,6 +94,13 @@ void main() {
         expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
       });
 
+      test('encodes a branch whose runtime omits the discriminator', () {
+        final result = unionOwnedSchema.safeEncode({'bark': false});
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
+      });
+
       test('parse against the wrong branch fails on the literal', () {
         final result = unionOwnedSchema.safeParse({
           'type': 'cat',

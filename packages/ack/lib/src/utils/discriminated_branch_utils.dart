@@ -70,8 +70,14 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
     );
   }
 
+  final discriminatorSchema = existingDiscriminator == null
+      ? _discriminatorLiteralSchema(
+          discriminatorValue,
+        ).withDefault(discriminatorValue)
+      : _discriminatorLiteralSchema(discriminatorValue);
+
   final properties = <String, AnyAckSchema>{
-    discriminatorKey: _discriminatorLiteralSchema(discriminatorValue),
+    discriminatorKey: discriminatorSchema,
     for (final entry in objectSchema.properties.entries)
       if (entry.key != discriminatorKey) entry.key: entry.value,
   };
