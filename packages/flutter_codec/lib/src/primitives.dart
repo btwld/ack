@@ -6,6 +6,7 @@ export 'primitives/font_feature.dart';
 export 'primitives/font_variation.dart';
 export 'primitives/font_weight.dart';
 export 'primitives/locale.dart';
+export 'primitives/matrix4.dart';
 export 'primitives/offset.dart';
 export 'primitives/radius.dart';
 export 'primitives/rect.dart';

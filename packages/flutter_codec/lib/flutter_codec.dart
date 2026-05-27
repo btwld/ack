@@ -2,6 +2,7 @@
 library;
 
 export 'src/borders.dart';
+export 'src/constraints.dart';
 export 'src/decoration_image.dart';
 export 'src/decorations.dart';
 export 'src/enums.dart';
@@ -12,3 +13,4 @@ export 'src/shadows.dart';
 export 'src/shape_borders.dart';
 export 'src/strut_style.dart';
 export 'src/text_style.dart';
+export 'src/widgets.dart';
