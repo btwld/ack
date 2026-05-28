@@ -189,6 +189,9 @@ nullability rules:
   `{ "type": "null" }` branch.
 - `Ack.lazy(name, ...)` is emitted as a Draft-7 `definitions` entry and local
   `$ref` values such as `{ "$ref": "#/definitions/Category" }`.
+- Non-null lazy refs that carry metadata such as `description` use `allOf`
+  around the `$ref` so Draft-7 validators do not ignore that metadata as a
+  `$ref` sibling. Nullable lazy refs keep metadata beside the top-level `anyOf`.
 
 This means nullable enums are represented as:
 

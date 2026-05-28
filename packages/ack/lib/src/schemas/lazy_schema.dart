@@ -1,6 +1,7 @@
 part of 'schema.dart';
 
-/// Defers resolving another schema until parse, validation, or encode time.
+/// Defers resolving another schema until parse, validation, encode, or export
+/// time.
 ///
 /// This enables recursive schema graphs where a child schema needs to refer
 /// back to an outer schema that is assigned after construction.

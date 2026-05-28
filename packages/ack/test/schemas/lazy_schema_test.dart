@@ -82,6 +82,54 @@ void main() {
     expect(properties['node'], {r'$ref': '#/definitions/Tree~1Node~01'});
   });
 
+  test('merges custom root definitions with lazy definitions', () {
+    late final AckSchema<JsonMap, JsonMap> categorySchema;
+    categorySchema =
+        Ack.object({
+          'name': Ack.string(),
+          'slug': Ack.string(),
+          'child': Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+        }).withConstraint(
+          const _TestJsonSchemaKeywordConstraint<JsonMap>({
+            'definitions': {
+              'Slug': {'type': 'string', 'pattern': r'^[a-z0-9-]+$'},
+            },
+          }),
+        );
+
+    final jsonSchema = categorySchema.toJsonSchema();
+    final definitions = jsonSchema['definitions']! as Map;
+
+    expect(definitions['Slug'], {'type': 'string', 'pattern': r'^[a-z0-9-]+$'});
+    expect(definitions['Category'], isA<Map>());
+  });
+
+  test('rejects custom root definitions that collide with lazy names', () {
+    late final AckSchema<JsonMap, JsonMap> categorySchema;
+    categorySchema =
+        Ack.object({
+          'name': Ack.string(),
+          'child': Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+        }).withConstraint(
+          const _TestJsonSchemaKeywordConstraint<JsonMap>({
+            'definitions': {
+              'Category': {'type': 'string'},
+            },
+          }),
+        );
+
+    expect(
+      categorySchema.toJsonSchema,
+      throwsA(
+        isA<ArgumentError>().having(
+          (error) => error.message,
+          'message',
+          contains('collides with an existing root JSON Schema definition'),
+        ),
+      ),
+    );
+  });
+
   test('rejects lazies with the same name and different targets', () {
     final firstTarget = Ack.object({'name': Ack.string()});
     final secondTarget = Ack.object({'title': Ack.string()});
@@ -100,6 +148,28 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('wraps non-null lazy metadata without ref siblings', () {
+    late final ObjectSchema categorySchema;
+    categorySchema = Ack.object({
+      'name': Ack.string(),
+      'child': Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        () => categorySchema,
+      ).describe('Child category'),
+    });
+
+    final jsonSchema = categorySchema.toJsonSchema();
+    final properties = jsonSchema['properties']! as Map;
+
+    expect(properties['child'], {
+      'description': 'Child category',
+      'allOf': [
+        {r'$ref': '#/definitions/Category'},
+      ],
+    });
+    expect(properties['child'], isNot(contains(r'$ref')));
   });
 
   test('exports nullable lazy references with metadata', () {
@@ -244,4 +314,25 @@ void main() {
     // on top of that, inflating this count. Locks in the fixed call profile.
     expect(calls, 15);
   });
+}
+
+final class _TestJsonSchemaKeywordConstraint<T extends Object>
+    extends Constraint<T>
+    with Validator<T>, JsonSchemaSpec<T> {
+  const _TestJsonSchemaKeywordConstraint(this.keywords)
+    : super(
+        constraintKey: 'test_schema_model_keywords',
+        description: 'Adds test-only JSON Schema keywords.',
+      );
+
+  final Map<String, Object?> keywords;
+
+  @override
+  bool isValid(T value) => true;
+
+  @override
+  String buildMessage(T value) => 'ok';
+
+  @override
+  Map<String, Object?> toJsonSchema() => keywords;
 }

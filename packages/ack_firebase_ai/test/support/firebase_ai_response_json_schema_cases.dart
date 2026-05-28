@@ -240,6 +240,12 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       },
     ),
   ),
+  AckSchemaResponseJsonSchemaCase(
+    id: 'ack_schema_recursive_lazy_ref',
+    name: 'recursive lazy reference',
+    features: const ['object', 'array', 'definitions', r'$ref', 'allOf'],
+    schema: _recursiveCategorySchema(),
+  ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_string_common_options',
     name: 'string model common and string-only options',
@@ -400,3 +406,18 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
     ),
   ),
 ];
+
+ObjectSchema _recursiveCategorySchema() {
+  late final ObjectSchema categorySchema;
+  categorySchema = Ack.object({
+    'name': Ack.string(),
+    'children': Ack.list(
+      Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+    ),
+    'featured': Ack.lazy<JsonMap, JsonMap>(
+      'Category',
+      () => categorySchema,
+    ).describe('Featured category'),
+  });
+  return categorySchema;
+}

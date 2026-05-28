@@ -150,6 +150,36 @@ void main() {
         final result = schema.toJsonSchemaBuilder();
         expect(result, isNotNull);
       });
+
+      test('preserves recursive lazy refs and metadata refs', () {
+        late final ObjectSchema categorySchema;
+        categorySchema = Ack.object({
+          'name': Ack.string(),
+          'children': Ack.list(
+            Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+          ),
+          'featured': Ack.lazy<JsonMap, JsonMap>(
+            'Category',
+            () => categorySchema,
+          ).describe('Featured category'),
+        });
+
+        final result = categorySchema.toJsonSchemaBuilder();
+        final definitions = result.value['definitions'] as Map;
+        final properties = result.value['properties'] as Map;
+        final children = _schemaFrom(properties['children']);
+        final childItems = _schemaFrom(children.value['items']);
+        final featured = _schemaFrom(properties['featured']);
+        final featuredAllOf = (featured.value['allOf'] as List)
+            .map(_schemaFrom)
+            .toList(growable: false);
+
+        expect(definitions.keys, contains('Category'));
+        expect(childItems.value[r'$ref'], '#/definitions/Category');
+        expect(featured.value['description'], 'Featured category');
+        expect(featured.value, isNot(contains(r'$ref')));
+        expect(featuredAllOf.single.value[r'$ref'], '#/definitions/Category');
+      });
     });
 
     group('Metadata preservation', () {

@@ -345,8 +345,18 @@ final class AckRefSchemaModel extends AckSchemaModel {
   final String refName;
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      finishTypeJson({r'$ref': '#/definitions/${_jsonPointerToken(refName)}'});
+  Map<String, Object?> toJsonSchema() {
+    final refJson = {r'$ref': '#/definitions/${_jsonPointerToken(refName)}'};
+    if (nullable) return finishTypeJson(refJson);
+
+    final commonJson = _common.toJson();
+    if (commonJson.isEmpty) return refJson;
+
+    return {
+      ...commonJson,
+      'allOf': [refJson],
+    };
+  }
 
   @override
   AckRefSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>

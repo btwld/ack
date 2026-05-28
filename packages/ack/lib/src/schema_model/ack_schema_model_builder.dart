@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
+
 import '../constraints/constraint.dart';
 import '../constraints/datetime_constraint.dart';
 import '../context.dart';
@@ -24,14 +26,52 @@ final class _SchemaModelBuilder {
     final root = _build(schema);
     if (_definitions.isEmpty) return root;
 
-    final definitions = <String, Object?>{
+    return root.withExtensions({
+      ...root.extensions,
+      'definitions': _mergeRootDefinitions(root.extensions['definitions']),
+    });
+  }
+
+  Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
+    final lazyDefinitions = <String, Object?>{
       for (final entry in _definitions.entries)
         if (entry.value case final model?) entry.key: model.toJsonSchema(),
     };
-    return root.withExtensions({
-      ...root.extensions,
-      'definitions': definitions,
-    });
+    if (existingDefinitions == null) return lazyDefinitions;
+    if (existingDefinitions is! Map) {
+      throw ArgumentError(
+        'Root JSON Schema definitions must be a map when Ack.lazy definitions '
+        'are exported.',
+      );
+    }
+
+    final merged = <String, Object?>{};
+    for (final entry in existingDefinitions.entries) {
+      final key = entry.key;
+      if (key is! String) {
+        throw ArgumentError(
+          'Root JSON Schema definitions keys must be strings when Ack.lazy '
+          'definitions are exported.',
+        );
+      }
+      merged[key] = entry.value;
+    }
+
+    const equality = DeepCollectionEquality();
+    for (final entry in lazyDefinitions.entries) {
+      if (merged.containsKey(entry.key)) {
+        if (!equality.equals(merged[entry.key], entry.value)) {
+          throw ArgumentError(
+            'Ack.lazy definition "${entry.key}" collides with an existing root '
+            'JSON Schema definition. Use a unique lazy name or rename the '
+            'existing definition.',
+          );
+        }
+        continue;
+      }
+      merged[entry.key] = entry.value;
+    }
+    return merged;
   }
 
   AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {

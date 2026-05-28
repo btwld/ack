@@ -235,8 +235,8 @@ Schema reference for recursive object graphs.
 - The builder is resolved once and memoized.
 - `toJsonSchema()` and `toSchemaModel()` export Draft-7 `definitions` / `$ref`
   entries using the lazy `name`.
-- Lazy schemas cannot be used directly as discriminated-union branches because
-  the branch discriminator must be analyzable at construction time.
+- Bare or wrapped lazy schemas cannot be used as discriminated-union branches
+  because the branch discriminator must be analyzable at construction time.
 
 ## Code Generation Annotations
 
