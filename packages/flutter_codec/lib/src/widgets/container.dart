@@ -4,7 +4,6 @@ import 'package:flutter/painting.dart'
 import 'package:flutter/rendering.dart' show BoxConstraints;
 import 'package:flutter/widgets.dart' show Clip, Container, Matrix4, Widget;
 
-import '../_lazy_codec.dart';
 import '../constraints.dart' show boxConstraintsCodec;
 import '../decorations.dart' show decorationCodec;
 import '../enums.dart' show clipCodec;
@@ -36,7 +35,10 @@ final CodecSchema<JsonMap, Container> containerWidgetCodec = Ack.object({
   'transform': matrix4Codec.nullable().optional(),
   'transformAlignment': alignmentGeometryCodec.nullable().optional(),
   'clipBehavior': clipCodec.withDefault(Clip.none),
-  'child': lazyCodec<JsonMap, Widget>(() => widgetCodec).nullable().optional(),
+  'child': Ack.lazy<JsonMap, Widget>(
+    'widgetCodec',
+    () => widgetCodec,
+  ).nullable().optional(),
 }).codec<Container>(decode: _decodeContainer, encode: _encodeContainer);
 
 Container _decodeContainer(JsonMap data) {
