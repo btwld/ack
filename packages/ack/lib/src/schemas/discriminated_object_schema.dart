@@ -156,44 +156,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         ),
       );
     }
-    if (value is Map) {
-      final mapValue = jsonMapOrNull(value);
-      if (mapValue != null) {
-        if (mapValue.containsKey(discriminatorKey)) {
-          final discriminatorResult = _validateDiscriminatorKey(
-            mapValue,
-            context,
-          );
-          if (discriminatorResult.isFail) {
-            return SchemaResult.fail(discriminatorResult.getError());
-          }
-        } else if (context.operation != SchemaOperation.encode &&
-            !_matchesAnyBranchRuntime(value, context)) {
-          final discriminatorResult = _validateDiscriminatorKey(
-            mapValue,
-            context,
-          );
-          return SchemaResult.fail(discriminatorResult.getError());
-        }
-      }
-    }
     return applyConstraintsAndRefinements(value, context);
-  }
-
-  bool _matchesAnyBranchRuntime(T value, SchemaContext context) {
-    for (final discValue in schemas.keys) {
-      final effective = effectiveBranch(discValue);
-      final branchCtx = context.createChild(
-        name: 'when $discriminatorKey="$discValue"',
-        schema: effective,
-        value: value,
-        pathSegment: '',
-      );
-      if (effective.validateRuntimeWithContext(value, branchCtx).isOk) {
-        return true;
-      }
-    }
-    return false;
   }
 
   SchemaResult<String> _validateDiscriminatorKey(
@@ -270,10 +233,14 @@ final class DiscriminatedObjectSchema<T extends Object>
     if (runtime == null) return SchemaResult.ok(null);
 
     if (runtime is JsonMap && runtime.containsKey(discriminatorKey)) {
-      // Fast path: the runtime already names its branch. `containsKey` here
-      // implies `validateRuntimeWithContext` accepted a String value above,
-      // so the cast is safe.
-      final discValue = runtime[discriminatorKey] as String;
+      // Fast path: the runtime already names its branch. Validate the
+      // discriminator first so non-string / unknown values produce the
+      // same focused errors as parse instead of crashing the cast below.
+      final discResult = _validateDiscriminatorKey(runtime, context);
+      if (discResult.isFail) {
+        return SchemaResult.fail(discResult.getError());
+      }
+      final discValue = discResult.getOrNull()!;
       final effective = effectiveBranch(discValue);
       final branchCtx = context.createChild(
         name: 'when $discriminatorKey="$discValue"',
