@@ -1,0 +1,9 @@
+{
+  "type": "ARRAY",
+  "items": {
+    "type": "STRING",
+    "format": "uuid"
+  },
+  "minItems": 1,
+  "maxItems": 3
+}

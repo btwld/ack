@@ -1,0 +1,21 @@
+{
+  "anyOf": [
+    {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "enum",
+      "enum": [
+        "ready"
+      ]
+    },
+    {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1.0
+    }
+  ]
+}

@@ -184,6 +184,25 @@ final shapeSchema = Ack.discriminated(
 The union owns the discriminator and injects the exact branch literal at
 parse/export boundaries. Branch schemas usually omit the discriminator field.
 
+### Recursive Schemas
+
+Use `Ack.lazy(...)` when a schema needs to refer to itself:
+
+```dart
+late final ObjectSchema categorySchema;
+
+categorySchema = Ack.object({
+  'name': Ack.string(),
+  'children': Ack.list(
+    Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+  ),
+});
+```
+
+The lazy builder is resolved once and memoized. JSON Schema export renders the
+reference through Draft-7 `definitions` / `$ref`, so recursive children are
+referenced instead of inlined forever.
+
 ### Any
 
 Accept any non-null JSON-safe value without validation (use sparingly):

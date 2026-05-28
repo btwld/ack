@@ -16,6 +16,7 @@ enum SchemaType {
   any('any'),
   anyOf('anyOf'),
   enum_('enum'),
+  lazy('lazy'),
   discriminated('discriminated');
 
   const SchemaType(this.typeName);

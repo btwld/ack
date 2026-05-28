@@ -1,0 +1,5 @@
+{
+  "type": "INTEGER",
+  "minimum": 1000.0,
+  "maximum": 2000.0
+}

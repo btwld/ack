@@ -9,6 +9,8 @@
   backends, Firebase app credentials, location, and model override.
 - Added committed Firebase AI `responseJsonSchema` golden fixtures and a
   fixture generator so converter coverage runs without Firebase credentials.
+- Added Firebase SDK `Schema.toJson()` and `JSONSchema.toJson()` native
+  fixture corpora with adapter capability classifications.
 
 ### Changed
 - Target Firebase AI `^3.12.1` and models that support JSON Schema

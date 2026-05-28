@@ -1,0 +1,17 @@
+{
+  "anyOf": [
+    {
+      "type": "STRING",
+      "format": "enum",
+      "nullable": true,
+      "enum": [
+        "ready"
+      ]
+    },
+    {
+      "type": "INTEGER",
+      "nullable": true,
+      "minimum": 1.0
+    }
+  ]
+}

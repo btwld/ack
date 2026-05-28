@@ -172,6 +172,7 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`Ack.boolean()`](../core-concepts/schemas.mdx#boolean) | `type: boolean` | Type |
 | [`Ack.list(...)`](../core-concepts/schemas.mdx#list) | `type: array`, `items: {...}` | Type |
 | [`Ack.object(...)`](../core-concepts/schemas.mdx#object) | `type: object`, `properties: {...}`, `required: [...]` | Type |
+| [`Ack.lazy(...)`](../core-concepts/schemas.mdx#recursive-schemas) | `definitions`, `$ref` | Recursive type |
 
 ## Shape Stability Notes
 
@@ -186,6 +187,11 @@ nullability rules:
   branches. Each branch contains the exact required discriminator `const`.
 - `Ack.discriminated(...).nullable()` wraps that `anyOf` union with a second
   `{ "type": "null" }` branch.
+- `Ack.lazy(name, ...)` is emitted as a Draft-7 `definitions` entry and local
+  `$ref` values such as `{ "$ref": "#/definitions/Category" }`.
+- Non-null lazy refs that carry metadata such as `description` use `allOf`
+  around the `$ref` so Draft-7 validators do not ignore that metadata as a
+  `$ref` sibling. Nullable lazy refs keep metadata beside the top-level `anyOf`.
 
 This means nullable enums are represented as:
 
@@ -229,6 +235,10 @@ shape should implement that as explicit adapter rendering.
 -   **`Ack.any()`:** Runtime validation accepts non-null JSON-safe values.
     JSON-like adapter exports represent those JSON-compatible values and attach
     an `ack_any_json_boundary` warning to the `AckSchemaModel`.
+-   **`Ack.lazy()` runtime checks:** Recursive structure is exported with
+    Draft-7 `definitions` / `$ref`. Constraints and refinements added directly
+    to the lazy reference are runtime-only and are reported as schema-model
+    warnings rather than emitted beside `$ref`.
 -   **Date/time range constraints:** Draft-7 has no standard `formatMinimum` or
     `formatMaximum` keywords. ACK validates `.min()` and `.max()` at runtime and
     records schema-model warnings instead of rendering non-standard keywords.

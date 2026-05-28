@@ -1,8 +1,11 @@
 {
   "description": "Golden fixtures for ACK to Firebase AI responseJsonSchema conversion.",
   "generatedBy": "dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart",
-  "fixtureCount": 29,
+  "fixtureCount": 30,
   "featureCoverage": {
+    "$ref": [
+      "ack_schema_recursive_lazy_ref"
+    ],
     "additionalProperties": [
       "ack_schema_object_passthrough",
       "ack_schema_object_properties_requiredness"
@@ -11,6 +14,7 @@
       "schema_model_object_schema_additional_properties"
     ],
     "allOf": [
+      "ack_schema_recursive_lazy_ref",
       "schema_model_allof"
     ],
     "any": [
@@ -27,6 +31,7 @@
     ],
     "array": [
       "ack_schema_array_constraints",
+      "ack_schema_recursive_lazy_ref",
       "schema_model_array_without_item_schema"
     ],
     "boolean": [
@@ -52,6 +57,9 @@
       "ack_schema_number_constraints",
       "schema_model_anyof_common_fields_explicit_null",
       "schema_model_nullable_default_extensions"
+    ],
+    "definitions": [
+      "ack_schema_recursive_lazy_ref"
     ],
     "description": [
       "schema_model_string_common_options"
@@ -146,6 +154,7 @@
     "object": [
       "ack_schema_object_passthrough",
       "ack_schema_object_properties_requiredness",
+      "ack_schema_recursive_lazy_ref",
       "schema_model_object_schema_additional_properties"
     ],
     "oneOf": [
@@ -394,6 +403,19 @@
         "unionOwnedDiscriminator"
       ],
       "fixture": "ack_schema_discriminated_union.json"
+    },
+    {
+      "id": "ack_schema_recursive_lazy_ref",
+      "name": "recursive lazy reference",
+      "source": "ack_schema",
+      "features": [
+        "object",
+        "array",
+        "definitions",
+        "$ref",
+        "allOf"
+      ],
+      "fixture": "ack_schema_recursive_lazy_ref.json"
     },
     {
       "id": "schema_model_string_common_options",

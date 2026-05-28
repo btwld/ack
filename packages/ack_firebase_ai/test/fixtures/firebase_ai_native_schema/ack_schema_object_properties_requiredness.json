@@ -1,0 +1,41 @@
+{
+  "type": "OBJECT",
+  "description": "User payload",
+  "properties": {
+    "name": {
+      "type": "STRING",
+      "description": "Full name"
+    },
+    "age": {
+      "type": "INTEGER",
+      "minimum": 0.0,
+      "maximum": 120.0
+    },
+    "role": {
+      "type": "STRING",
+      "format": "enum",
+      "enum": [
+        "admin",
+        "member"
+      ]
+    },
+    "tags": {
+      "type": "ARRAY",
+      "items": {
+        "type": "STRING"
+      },
+      "minItems": 1,
+      "maxItems": 5
+    }
+  },
+  "required": [
+    "name",
+    "role"
+  ],
+  "propertyOrdering": [
+    "name",
+    "age",
+    "role",
+    "tags"
+  ]
+}

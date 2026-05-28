@@ -10,7 +10,6 @@ workspace:
   - packages/ack_annotations
   - packages/ack_generator
   - packages/ack_firebase_ai
-  - packages/flutter_codec
   - packages/ack_json_schema_builder
   - example
   
@@ -55,7 +54,6 @@ melos:
           - ack
           - ack_generator
           - ack_firebase_ai
-          - flutter_codec
           - ack_json_schema_builder
           - ack_example
           - ack_annotations
@@ -149,7 +147,7 @@ melos:
 
     firebase-ai-fixtures:
       run: cd packages/ack_firebase_ai && dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
-      description: Regenerate Firebase AI responseJsonSchema golden fixtures
+      description: Regenerate Firebase AI adapter and native schema fixtures
 
     test:golden:
       run: melos exec -c 1 -- dart test test/golden_test.dart

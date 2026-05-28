@@ -1,4 +1,6 @@
 import 'package:ack/ack.dart';
+import 'package:ack/src/constraints/pattern_constraint.dart';
+import 'package:ack/src/constraints/validators.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -57,6 +59,29 @@ void main() {
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), {'type': 'cat', 'meow': true});
       });
+
+      test('parse and encode missing-discriminator errors stay aligned', () {
+        final input = {'meow': true};
+
+        final parseResult = animalSchema.safeParse(input);
+        final encodeResult = animalSchema.safeEncode(input);
+
+        expect(parseResult.isFail, isTrue);
+        expect(encodeResult.isFail, isTrue);
+
+        final parseError = parseResult.getError();
+        final encodeError = encodeResult.getError();
+        expect(encodeError.runtimeType, parseError.runtimeType);
+
+        final parseConstraint =
+            (parseError as SchemaConstraintsError).constraints.first;
+        final encodeConstraint =
+            (encodeError as SchemaConstraintsError).constraints.first;
+        expect(
+          encodeConstraint.constraint.runtimeType,
+          parseConstraint.constraint.runtimeType,
+        );
+      });
     });
 
     group('Union-owned discriminator (PR #107)', () {
@@ -94,11 +119,20 @@ void main() {
         expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
       });
 
-      test('encodes a branch whose runtime omits the discriminator', () {
-        final result = unionOwnedSchema.safeEncode({'bark': false});
+      test('JSON Schema marks the synthesized discriminator required and '
+          'does not export a discriminator default', () {
+        final jsonSchema = unionOwnedSchema.toJsonSchema();
+        final branches = (jsonSchema['anyOf'] as List).cast<Map>();
 
-        expect(result.isOk, isTrue);
-        expect(result.getOrThrow(), {'type': 'dog', 'bark': false});
+        for (final branch in branches) {
+          final required = (branch['required'] as List).cast<String>();
+          expect(required, contains('type'));
+
+          final properties = (branch['properties'] as Map)
+              .cast<String, Object?>();
+          final typeProp = (properties['type'] as Map).cast<String, Object?>();
+          expect(typeProp.containsKey('default'), isFalse);
+        }
       });
 
       test('parse against the wrong branch fails on the literal', () {
@@ -108,6 +142,85 @@ void main() {
         });
 
         expect(result.isFail, isTrue);
+      });
+
+      test(
+        'encodes a map-runtime branch codec that emits the discriminator',
+        () {
+          final codecSchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()})
+                  .codec<Map<String, Object?>>(
+                    decode: (data) => {'name': data['name']!},
+                    encode: (cat) => {'type': 'cat', 'name': cat['name']},
+                  ),
+            },
+          );
+
+          final result = codecSchema.safeEncode({'name': 'Mittens'});
+
+          expect(result.isOk, isTrue);
+          expect(result.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
+        },
+      );
+
+      group('Encode error messages (union-owned)', () {
+        test(
+          'fails with a required-property constraint when type is missing',
+          () {
+            final result = unionOwnedSchema.safeEncode({'bark': false});
+
+            expect(result.isFail, isTrue);
+            final error = result.getError() as SchemaConstraintsError;
+            final constraint = error.constraints.first;
+
+            expect(
+              constraint.constraint,
+              isA<ObjectRequiredPropertiesConstraint>(),
+            );
+            expect(constraint.message, contains('"type"'));
+          },
+        );
+
+        test(
+          'fails with an invalid-type constraint when type is not a string',
+          () {
+            final result = unionOwnedSchema.safeEncode({
+              'type': 123,
+              'bark': false,
+            });
+
+            expect(result.isFail, isTrue);
+            final error = result.getError() as SchemaConstraintsError;
+            final constraint = error.constraints.first;
+
+            expect(constraint.constraint, isA<InvalidTypeConstraint>());
+            expect(
+              (constraint.constraint as InvalidTypeConstraint).expectedType,
+              String,
+            );
+          },
+        );
+
+        test(
+          'fails with an enum constraint when type names an unknown branch',
+          () {
+            final result = unionOwnedSchema.safeEncode({
+              'type': 'bird',
+              'fly': true,
+            });
+
+            expect(result.isFail, isTrue);
+            final error = result.getError() as SchemaConstraintsError;
+            final constraint = error.constraints.first;
+
+            expect(constraint.constraint, isA<PatternConstraint>());
+            final pattern = constraint.constraint as PatternConstraint;
+            expect(pattern.type, PatternType.enumString);
+            expect(pattern.allowedValues, ['cat', 'dog']);
+          },
+        );
       });
     });
 
@@ -154,6 +267,64 @@ void main() {
             },
           ),
           throwsArgumentError,
+        );
+      });
+
+      test('rejects lazy branches', () {
+        late final ObjectSchema categorySchema;
+        categorySchema = Ack.object({
+          'name': Ack.string(),
+          'children': Ack.list(
+            Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+          ),
+        });
+
+        expect(
+          () => Ack.discriminated<JsonMap>(
+            discriminatorKey: 'type',
+            schemas: {
+              'category': Ack.lazy<JsonMap, JsonMap>(
+                'Category',
+                () => categorySchema,
+              ),
+            },
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('Discriminated branches cannot be Ack.lazy(...)'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects wrapped lazy branches with the lazy-specific error', () {
+        late final ObjectSchema categorySchema;
+        categorySchema = Ack.object({
+          'name': Ack.string(),
+          'children': Ack.list(
+            Ack.lazy<JsonMap, JsonMap>('Category', () => categorySchema),
+          ),
+        });
+
+        expect(
+          () => Ack.discriminated<JsonMap>(
+            discriminatorKey: 'type',
+            schemas: {
+              'category': Ack.lazy<JsonMap, JsonMap>(
+                'Category',
+                () => categorySchema,
+              ).withDefault(const {'name': 'root', 'children': <Object?>[]}),
+            },
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('Discriminated branches cannot be Ack.lazy(...)'),
+            ),
+          ),
         );
       });
 
