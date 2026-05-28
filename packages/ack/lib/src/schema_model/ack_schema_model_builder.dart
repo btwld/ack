@@ -285,9 +285,7 @@ final class _SchemaModelBuilder {
           'Discriminated branch "${entry.key}" must export as an object schema model.',
         );
       }
-      branches.add(
-        _withRequiredDiscriminator(converted, schema.discriminatorKey),
-      );
+      branches.add(converted);
     }
 
     return AckAnyOfSchemaModel(
@@ -345,48 +343,6 @@ final class _SchemaModelBuilder {
       ),
     ]);
   }
-}
-
-/// Strips the synthetic [DefaultSchema] default from the discriminator
-/// property in an exported branch model and marks the property as required.
-///
-/// `effectiveDiscriminatedObjectBranch` attaches `.withDefault(...)` to the
-/// synthesized literal so encode can inject the discriminator when the branch
-/// runtime omits it; that default is an encode-time convenience, not part of
-/// the published JSON Schema.
-AckObjectSchemaModel _withRequiredDiscriminator(
-  AckObjectSchemaModel model,
-  String discriminatorKey,
-) {
-  final properties = model.properties;
-  if (properties == null || !properties.containsKey(discriminatorKey)) {
-    return model;
-  }
-
-  final discriminator = properties[discriminatorKey]!;
-  final normalizedProperties = discriminator.defaultValue == null
-      ? properties
-      : {...properties, discriminatorKey: discriminator.withDefaultValue(null)};
-  final required = model.required ?? const <String>[];
-  final alreadyRequired = required.contains(discriminatorKey);
-  if (alreadyRequired && identical(normalizedProperties, properties)) {
-    return model;
-  }
-
-  return AckObjectSchemaModel(
-    properties: normalizedProperties,
-    required: alreadyRequired ? required : [discriminatorKey, ...required],
-    propertyOrdering: model.propertyOrdering,
-    minProperties: model.minProperties,
-    maxProperties: model.maxProperties,
-    additionalProperties: model.additionalProperties,
-    title: model.title,
-    description: model.description,
-    nullable: model.nullable,
-    defaultValue: model.defaultValue,
-    warnings: model.warnings,
-    extensions: model.extensions,
-  );
 }
 
 AckSchemaModel _applyConstraints(
