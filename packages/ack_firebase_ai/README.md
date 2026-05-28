@@ -178,8 +178,10 @@ FIREBASE_AI_LOCATION=global
 
 The committed fixture tests are the normal adapter contract and do not require
 Firebase credentials. They compare ACK conversion output against JSON fixtures
-under `test/fixtures/firebase_ai_response_json_schema/` and verify the same
-maps serialize through Firebase AI's `GenerationConfig.responseJsonSchema`.
+under `test/fixtures/firebase_ai_response_json_schema/`, capture Firebase SDK
+`Schema.toJson()` and `JSONSchema.toJson()` native fixture output, and verify
+the same maps serialize through Firebase AI's
+`GenerationConfig.responseJsonSchema`.
 
 Regenerate the fixtures after an intentional schema-output change:
 

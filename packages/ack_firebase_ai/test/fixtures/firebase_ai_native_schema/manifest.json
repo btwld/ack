@@ -1,6 +1,9 @@
 {
-  "description": "Golden fixtures for ACK to Firebase AI responseJsonSchema conversion.",
+  "description": "Firebase AI Schema.toJson() fixtures for native SDK schema comparison.",
   "generatedBy": "dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart",
+  "sourcePackage": "firebase_ai",
+  "sourceVersion": "3.12.1",
+  "sourceClass": "Schema",
   "fixtureCount": 30,
   "featureCoverage": {
     "$ref": [
@@ -214,6 +217,8 @@
         "maxLength",
         "pattern"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_string_constraints.json"
     },
     {
@@ -224,6 +229,8 @@
         "string",
         "const"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_string_literal.json"
     },
     {
@@ -235,6 +242,8 @@
         "enum",
         "default"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_enum_values_default.json"
     },
     {
@@ -250,6 +259,8 @@
         "multipleOf",
         "default"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_integer_constraints.json"
     },
     {
@@ -265,6 +276,8 @@
         "multipleOf",
         "default"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_number_constraints.json"
     },
     {
@@ -277,6 +290,8 @@
         "anyOf",
         "default"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_nullable_boolean_default.json"
     },
     {
@@ -293,6 +308,8 @@
         "uniqueItems",
         "default"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_array_constraints.json"
     },
     {
@@ -306,6 +323,8 @@
         "optional",
         "additionalProperties"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_object_properties_requiredness.json"
     },
     {
@@ -318,7 +337,9 @@
         "anyOf",
         "optional"
       ],
-      "fixture": "ack_schema_object_passthrough.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema cannot represent Ack.any() or open additional properties."
     },
     {
       "id": "ack_schema_anyof_nullable_composition",
@@ -328,6 +349,8 @@
         "anyOf",
         "nullable"
       ],
+      "status": "generated",
+      "comparison": "equivalent",
       "fixture": "ack_schema_anyof_nullable_composition.json"
     },
     {
@@ -339,6 +362,8 @@
         "extension",
         "minLength"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_generic_transform.json"
     },
     {
@@ -349,7 +374,9 @@
         "any",
         "anyOf"
       ],
-      "fixture": "ack_schema_any_json_compatible_branches.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema has no unconstrained JSON value representation."
     },
     {
       "id": "ack_schema_date_transform_constraints",
@@ -359,6 +386,8 @@
         "transform",
         "format"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_date_transform_constraints.json"
     },
     {
@@ -369,6 +398,8 @@
         "transform",
         "format"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_datetime_transform.json"
     },
     {
@@ -379,6 +410,8 @@
         "transform",
         "format"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_uri_transform.json"
     },
     {
@@ -391,6 +424,8 @@
         "minimum",
         "maximum"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_duration_transform_constraints.json"
     },
     {
@@ -402,6 +437,8 @@
         "const",
         "unionOwnedDiscriminator"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "ack_schema_discriminated_union.json"
     },
     {
@@ -415,7 +452,9 @@
         "$ref",
         "allOf"
       ],
-      "fixture": "ack_schema_recursive_lazy_ref.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema does not support reusable definitions or references."
     },
     {
       "id": "schema_model_string_common_options",
@@ -432,6 +471,8 @@
         "pattern",
         "extension"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_string_common_options.json"
     },
     {
@@ -443,6 +484,8 @@
         "format",
         "const"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_integer_const_format.json"
     },
     {
@@ -454,6 +497,8 @@
         "format",
         "const"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_number_const_format.json"
     },
     {
@@ -464,7 +509,9 @@
         "boolean",
         "const"
       ],
-      "fixture": "schema_model_boolean_const.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema cannot represent a boolean const value."
     },
     {
       "id": "schema_model_nullable_default_extensions",
@@ -478,6 +525,8 @@
         "default",
         "extension"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_nullable_default_extensions.json"
     },
     {
@@ -489,7 +538,9 @@
         "minItems",
         "maxItems"
       ],
-      "fixture": "schema_model_array_without_item_schema.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema.array requires an item schema."
     },
     {
       "id": "schema_model_object_schema_additional_properties",
@@ -503,6 +554,8 @@
         "maxProperties",
         "additionalPropertiesSchema"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_object_schema_additional_properties.json"
     },
     {
@@ -513,7 +566,9 @@
         "null",
         "title"
       ],
-      "fixture": "schema_model_null.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema has no null-only schema type."
     },
     {
       "id": "schema_model_anyof_common_fields_explicit_null",
@@ -526,6 +581,8 @@
         "extension",
         "null"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_anyof_common_fields_explicit_null.json"
     },
     {
@@ -538,6 +595,8 @@
         "const",
         "null"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_oneof_nullable_composition.json"
     },
     {
@@ -548,6 +607,8 @@
         "oneOf",
         "const"
       ],
+      "status": "generated",
+      "comparison": "adapter_transform_needed",
       "fixture": "schema_model_oneof_discriminator.json"
     },
     {
@@ -557,7 +618,9 @@
       "features": [
         "allOf"
       ],
-      "fixture": "schema_model_allof.json"
+      "status": "unsupported",
+      "comparison": "unsupported_by_firebase_schema",
+      "unsupportedReason": "Firebase Schema has no allOf composition builder."
     }
   ]
 }

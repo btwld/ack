@@ -67,10 +67,9 @@ final class Ack {
   /// (e.g. adding constraints, copying with new flags). Prefer [enumCodec]
   /// when downstream code expects every value-shape to be a `CodecSchema`.
   static CodecSchema<String, T> enumCodec<T extends Enum>(List<T> values) =>
-      enumValues(values).codec<T>(
-        decode: (value) => value,
-        encode: (value) => value,
-      );
+      enumValues(
+        values,
+      ).codec<T>(decode: (value) => value, encode: (value) => value);
 
   /// Creates a string schema that only accepts one of the given [values].
   static StringSchema enumString(List<String> values) =>
@@ -85,6 +84,22 @@ final class Ack {
   /// and lists recursively composed from those values. Mark the schema nullable
   /// to accept `null`.
   static AnySchema any() => const AnySchema();
+
+  /// Creates a schema reference that is resolved lazily on first use.
+  ///
+  /// The [builder] is called once and memoized. Two `Ack.lazy` instances are
+  /// equal only when their `builder` closure is the same reference -- pulling
+  /// the closure into a `final` variable lets two calls share equality.
+  ///
+  /// `toJsonSchema()` and `toSchemaModel()` export lazy references through
+  /// recursive `definitions`/`$ref` JSON Schema definitions. Bare or wrapped
+  /// `Ack.lazy` schemas cannot be used as discriminated union branches.
+  static LazySchema<Boundary, Runtime> lazy<
+    Boundary extends Object,
+    Runtime extends Object
+  >(String name, AckSchema<Boundary, Runtime> Function() builder) {
+    return LazySchema<Boundary, Runtime>(name, builder);
+  }
 
   /// Creates a schema for a specific Dart instance type [T], with [T] as
   /// both boundary and runtime type.

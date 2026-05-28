@@ -1,0 +1,12 @@
+{
+  "anyOf": [
+    {
+      "type": "STRING",
+      "nullable": true
+    },
+    {
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ]
+}

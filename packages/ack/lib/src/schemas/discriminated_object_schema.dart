@@ -44,6 +44,14 @@ final class DiscriminatedObjectSchema<T extends Object>
     for (final entry in schemas.entries) {
       final label = entry.key;
       final base = unwrapDiscriminatedBranchSchema(entry.value);
+      if (base is LazySchema) {
+        throw ArgumentError.value(
+          entry.value,
+          'schemas["$label"]',
+          'Discriminated branches cannot be Ack.lazy(...) - the discriminator '
+              'property cannot be analyzed through a deferred reference.',
+        );
+      }
       if (base is! ObjectSchema) {
         throw ArgumentError.value(
           entry.value,

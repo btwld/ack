@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Category"
+      }
+    },
+    "featured": {
+      "description": "Featured category",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Category"
+        }
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "children",
+    "featured"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "Category": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Category"
+          }
+        },
+        "featured": {
+          "description": "Featured category",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Category"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "children",
+        "featured"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

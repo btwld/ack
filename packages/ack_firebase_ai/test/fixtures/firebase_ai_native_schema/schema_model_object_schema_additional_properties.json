@@ -1,0 +1,14 @@
+{
+  "type": "OBJECT",
+  "properties": {
+    "id": {
+      "type": "STRING"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "propertyOrdering": [
+    "id"
+  ]
+}

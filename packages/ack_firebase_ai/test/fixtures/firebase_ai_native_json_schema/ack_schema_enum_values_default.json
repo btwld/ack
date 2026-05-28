@@ -1,0 +1,8 @@
+{
+  "type": "string",
+  "format": "enum",
+  "enum": [
+    "admin",
+    "member"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "anyOf": [
+    {
+      "type": "OBJECT",
+      "properties": {
+        "type": {
+          "type": "STRING",
+          "format": "enum",
+          "enum": [
+            "circle"
+          ]
+        },
+        "radius": {
+          "type": "NUMBER",
+          "minimum": 0.0
+        }
+      },
+      "required": [
+        "type",
+        "radius"
+      ]
+    },
+    {
+      "type": "OBJECT",
+      "properties": {
+        "type": {
+          "type": "STRING",
+          "format": "enum",
+          "enum": [
+            "square"
+          ]
+        },
+        "side": {
+          "type": "NUMBER",
+          "minimum": 0.0
+        }
+      },
+      "required": [
+        "type",
+        "side"
+      ]
+    }
+  ]
+}
