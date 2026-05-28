@@ -24,10 +24,13 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
   final Map<String, AnyAckSchema> properties;
   final bool additionalProperties;
+  @internal
+  final Map<String, Object?> encodeOnlyDefaults;
 
   ObjectSchema(
     Map<String, AnyAckSchema>? properties, {
     this.additionalProperties = false,
+    this.encodeOnlyDefaults = const {},
     super.isNullable,
     super.isOptional,
     super.description,
@@ -184,7 +187,10 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional || (isEncode && schema is DefaultSchema)) {
+        if (schema.isOptional ||
+            (isEncode &&
+                (schema is DefaultSchema ||
+                    encodeOnlyDefaults.containsKey(key)))) {
           continue;
         }
         final propertyCtx = context.createChild(
@@ -315,6 +321,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           continue;
         }
         propertyValue = defaultResult.getOrNull();
+      } else if (encodeOnlyDefaults.containsKey(key)) {
+        propertyValue = encodeOnlyDefaults[key];
       } else {
         continue;
       }
@@ -362,6 +370,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
   ObjectSchema copyWith({
     Map<String, AnyAckSchema>? properties,
     bool? additionalProperties,
+    Map<String, Object?>? encodeOnlyDefaults,
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -371,6 +380,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     return ObjectSchema(
       properties ?? this.properties,
       additionalProperties: additionalProperties ?? this.additionalProperties,
+      encodeOnlyDefaults: encodeOnlyDefaults ?? this.encodeOnlyDefaults,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,

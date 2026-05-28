@@ -3,6 +3,18 @@ import 'package:ack/src/constraints/pattern_constraint.dart';
 import 'package:ack/src/constraints/validators.dart';
 import 'package:test/test.dart';
 
+final class _Cat {
+  const _Cat(this.name);
+
+  final String name;
+}
+
+final class _Dog {
+  const _Dog(this.name);
+
+  final String name;
+}
+
 void main() {
   group('DiscriminatedObjectSchema', () {
     late ObjectSchema catSchema;
@@ -162,6 +174,181 @@ void main() {
 
           expect(result.isOk, isTrue);
           expect(result.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
+        },
+      );
+
+      test(
+        'encodes a map-runtime branch codec that omits the discriminator',
+        () {
+          final codecSchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()})
+                  .codec<Map<String, Object?>>(
+                    decode: (data) => {'name': data['name']!},
+                    encode: (cat) => {'name': cat['name']},
+                  ),
+            },
+          );
+
+          final result = codecSchema.safeEncode({'name': 'Mittens'});
+
+          expect(result.isOk, isTrue);
+          expect(result.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
+        },
+      );
+
+      test('round-trips through a map-runtime branch codec that omits the '
+          'discriminator', () {
+        final codecSchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .codec<Map<String, Object?>>(
+                  decode: (data) => {'name': data['name']!},
+                  encode: (cat) => {'name': cat['name']},
+                ),
+          },
+        );
+
+        final parsed = codecSchema.parse({'type': 'cat', 'name': 'Mittens'});
+        final encoded = codecSchema.safeEncode(parsed);
+
+        expect(encoded.isOk, isTrue);
+        expect(encoded.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
+      });
+
+      test('encodes passthrough extras once for a branch codec that omits the '
+          'discriminator', () {
+        final codecSchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .passthrough()
+                .codec<Map<String, Object?>>(
+                  decode: (data) => Map<String, Object?>.from(data),
+                  encode: (cat) => Map<String, Object?>.from(cat),
+                ),
+          },
+        );
+
+        final result = codecSchema.safeEncode({
+          'name': 'Mittens',
+          'color': 'tabby',
+        });
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {
+          'type': 'cat',
+          'name': 'Mittens',
+          'color': 'tabby',
+        });
+      });
+
+      test('encodes the matching typed codec branch when codecs omit the '
+          'discriminator', () {
+        final codecSchema = Ack.discriminated<Object>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}).codec<_Cat>(
+              decode: (data) => _Cat(data['name']! as String),
+              encode: (cat) => {'name': cat.name},
+            ),
+            'dog': Ack.object({'name': Ack.string()}).codec<_Dog>(
+              decode: (data) => _Dog(data['name']! as String),
+              encode: (dog) => {'name': dog.name},
+            ),
+          },
+        );
+
+        final result = codecSchema.safeEncode(const _Dog('Spot'));
+
+        expect(result.isOk, isTrue);
+        expect(result.getOrThrow(), {'type': 'dog', 'name': 'Spot'});
+      });
+
+      test(
+        'nested default and codec wrappers synthesize the discriminator only '
+        'under codecs',
+        () {
+          final defaultCodecSchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()})
+                  .codec<Map<String, Object?>>(
+                    decode: (data) => {'name': data['name']!},
+                    encode: (cat) => {'name': cat['name']},
+                  )
+                  .withDefault(const {'name': 'Default'}),
+            },
+          );
+          final codecDefaultSchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()})
+                  .withDefault(const {'name': 'Default'})
+                  .codec<Map<String, Object?>>(
+                    decode: (data) => {'name': data['name']!},
+                    encode: (cat) => {'name': cat['name']},
+                  ),
+            },
+          );
+          final defaultOnlySchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({
+                'name': Ack.string(),
+              }).withDefault(const {'name': 'Default'}),
+            },
+          );
+
+          final defaultCodecResult = defaultCodecSchema.safeEncode({
+            'name': 'Mittens',
+          });
+          final codecDefaultResult = codecDefaultSchema.safeEncode({
+            'name': 'Mittens',
+          });
+          final defaultOnlyResult = defaultOnlySchema.safeEncode({
+            'name': 'Mittens',
+          });
+
+          expect(defaultCodecResult.isOk, isTrue);
+          expect(defaultCodecResult.getOrThrow(), {
+            'type': 'cat',
+            'name': 'Mittens',
+          });
+          expect(codecDefaultResult.isOk, isTrue);
+          expect(codecDefaultResult.getOrThrow(), {
+            'type': 'cat',
+            'name': 'Mittens',
+          });
+          expect(defaultOnlyResult.isFail, isTrue);
+          final error = defaultOnlyResult.getError() as SchemaConstraintsError;
+          expect(
+            error.constraints.first.constraint,
+            isA<ObjectRequiredPropertiesConstraint>(),
+          );
+        },
+      );
+
+      test(
+        'plain branch still rejects encode input missing the discriminator',
+        () {
+          final plainSchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()}),
+            },
+          );
+
+          final result = plainSchema.safeEncode({'name': 'Mittens'});
+
+          expect(result.isFail, isTrue);
+          final error = result.getError() as SchemaConstraintsError;
+          expect(
+            error.constraints.first.constraint,
+            isA<ObjectRequiredPropertiesConstraint>(),
+          );
         },
       );
 
