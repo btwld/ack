@@ -68,6 +68,20 @@ void main() {
     expect(properties['second'], {r'$ref': '#/definitions/Category'});
   });
 
+  test('escapes lazy names in JSON Pointer refs', () {
+    final target = Ack.object({'name': Ack.string()});
+    final schema = Ack.object({
+      'node': Ack.lazy<JsonMap, JsonMap>('Tree/Node~1', () => target),
+    });
+
+    final jsonSchema = schema.toJsonSchema();
+    final properties = jsonSchema['properties']! as Map;
+    final definitions = jsonSchema['definitions']! as Map;
+
+    expect(definitions.keys, ['Tree/Node~1']);
+    expect(properties['node'], {r'$ref': '#/definitions/Tree~1Node~01'});
+  });
+
   test('rejects lazies with the same name and different targets', () {
     final firstTarget = Ack.object({'name': Ack.string()});
     final secondTarget = Ack.object({'title': Ack.string()});

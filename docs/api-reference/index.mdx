@@ -30,6 +30,9 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
+- `Ack.lazy(String name, AckSchema Function() builder)`: Creates a memoized
+  deferred schema reference for recursive schema graphs. JSON Schema export
+  renders Draft-7 `definitions` / `$ref` entries using `name`.
 - `Ack.discriminated<T extends Object>(...)`: Creates a discriminated union
   schema. Branches may be plain `ObjectSchema` or transformed schemas whose
   base is an `ObjectSchema`. The union owns the discriminator: branches normally
@@ -223,6 +226,17 @@ Schema for polymorphic validation based on a string discriminator property.
   literal.
 - Generated subtype `parse()` and `safeParse()` methods validate through the
   union's effective branch.
+
+### `Ack.lazy(...)`
+
+Schema reference for recursive object graphs.
+
+- Created using `Ack.lazy<Boundary, Runtime>(name, builder)`.
+- The builder is resolved once and memoized.
+- `toJsonSchema()` and `toSchemaModel()` export Draft-7 `definitions` / `$ref`
+  entries using the lazy `name`.
+- Lazy schemas cannot be used directly as discriminated-union branches because
+  the branch discriminator must be analyzable at construction time.
 
 ## Code Generation Annotations
 

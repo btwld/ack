@@ -17,18 +17,21 @@ extension AckSchemaModelExtension<
 }
 
 final class _SchemaModelBuilder {
-  final _defs = <String, AckSchemaModel?>{};
+  final _definitions = <String, AckSchemaModel?>{};
   final _targets = <String, Object>{};
 
   AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
     final root = _build(schema);
-    if (_defs.isEmpty) return root;
+    if (_definitions.isEmpty) return root;
 
-    final defs = <String, Object?>{
-      for (final entry in _defs.entries)
+    final definitions = <String, Object?>{
+      for (final entry in _definitions.entries)
         if (entry.value case final model?) entry.key: model.toJsonSchema(),
     };
-    return root.withExtensions({...root.extensions, 'definitions': defs});
+    return root.withExtensions({
+      ...root.extensions,
+      'definitions': definitions,
+    });
   }
 
   AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
@@ -272,8 +275,8 @@ final class _SchemaModelBuilder {
     }
 
     _targets[name] = target;
-    _defs[name] = null;
-    _defs[name] = _build(target);
+    _definitions[name] = null;
+    _definitions[name] = _build(target);
     return _lazyRef(schema);
   }
 

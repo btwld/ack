@@ -346,7 +346,7 @@ final class AckRefSchemaModel extends AckSchemaModel {
 
   @override
   Map<String, Object?> toJsonSchema() =>
-      finishTypeJson({r'$ref': '#/definitions/$refName'});
+      finishTypeJson({r'$ref': '#/definitions/${_jsonPointerToken(refName)}'});
 
   @override
   AckRefSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
@@ -1158,4 +1158,8 @@ int? _readIntKeyword(Map<String, Object?> keywords, String key) {
 num? _readNumKeyword(Map<String, Object?> keywords, String key) {
   final value = keywords[key];
   return value is num ? value : null;
+}
+
+String _jsonPointerToken(String value) {
+  return value.replaceAll('~', '~0').replaceAll('/', '~1');
 }
