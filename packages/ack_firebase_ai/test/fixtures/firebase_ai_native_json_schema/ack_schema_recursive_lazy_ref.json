@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "$defs": {
+    "Category": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Category"
+          }
+        },
+        "featured": {
+          "$ref": "#/$defs/Category"
+        }
+      },
+      "required": [
+        "name",
+        "children",
+        "featured"
+      ]
+    }
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Category"
+      }
+    },
+    "featured": {
+      "$ref": "#/$defs/Category"
+    }
+  },
+  "required": [
+    "name",
+    "children",
+    "featured"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "anyOf": [
+    {
+      "type": "OBJECT",
+      "properties": {
+        "type": {
+          "type": "STRING",
+          "format": "enum",
+          "enum": [
+            "email"
+          ]
+        },
+        "address": {
+          "type": "STRING",
+          "format": "email"
+        }
+      },
+      "required": [
+        "type",
+        "address"
+      ]
+    },
+    {
+      "type": "OBJECT",
+      "properties": {
+        "type": {
+          "type": "STRING",
+          "format": "enum",
+          "enum": [
+            "sms"
+          ]
+        },
+        "number": {
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "type",
+        "number"
+      ]
+    }
+  ]
+}

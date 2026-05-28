@@ -1,0 +1,6 @@
+{
+  "type": "STRING",
+  "format": "custom-format",
+  "description": "Current status",
+  "title": "Status"
+}

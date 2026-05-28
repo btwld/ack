@@ -1,0 +1,7 @@
+{
+  "type": "STRING",
+  "format": "enum",
+  "enum": [
+    "ready"
+  ]
+}
