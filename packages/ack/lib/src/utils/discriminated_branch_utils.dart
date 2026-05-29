@@ -57,7 +57,7 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
   required String discriminatorKey,
   required String discriminatorValue,
   required ObjectSchema objectSchema,
-  bool synthesizeOnEncode = false,
+  bool optionalDiscriminator = false,
 }) {
   final existingDiscriminator = objectSchema.properties[discriminatorKey];
   if (existingDiscriminator != null &&
@@ -71,21 +71,14 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
     );
   }
 
+  final literal = _discriminatorLiteralSchema(discriminatorValue);
   final properties = <String, AnyAckSchema>{
-    discriminatorKey: _discriminatorLiteralSchema(discriminatorValue),
+    discriminatorKey: optionalDiscriminator ? literal.optional() : literal,
     for (final entry in objectSchema.properties.entries)
       if (entry.key != discriminatorKey) entry.key: entry.value,
   };
 
-  return objectSchema.copyWith(
-    properties: properties,
-    encodeOnlyDefaults: synthesizeOnEncode
-        ? {
-            ...objectSchema.encodeOnlyDefaults,
-            discriminatorKey: discriminatorValue,
-          }
-        : null,
-  );
+  return objectSchema.copyWith(properties: properties);
 }
 
 /// Builds the effective schema for a discriminated-union branch.
@@ -101,27 +94,25 @@ AnyAckSchema effectiveDiscriminatedBranch({
   required String discriminatorKey,
   required String discriminatorValue,
   required AnyAckSchema branchSchema,
-  bool underCodec = false,
+  bool optionalDiscriminator = false,
 }) {
   if (branchSchema is ObjectSchema) {
     return effectiveDiscriminatedObjectBranch(
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
       objectSchema: branchSchema,
-      synthesizeOnEncode: underCodec,
+      optionalDiscriminator: optionalDiscriminator,
     );
   }
 
   if (branchSchema is WrapperSchema) {
-    // Synthesize only for the branch-root object when a CodecSchema appears
-    // above it on the wrapper spine. This recursion follows `.inner` only, so
-    // nested property objects are unaffected.
     final effectiveInner = effectiveDiscriminatedBranch(
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
       branchSchema: branchSchema.inner,
-      underCodec: underCodec || branchSchema is CodecSchema,
+      optionalDiscriminator: optionalDiscriminator,
     );
+
     return branchSchema.copyWithInner(effectiveInner);
   }
 

@@ -24,22 +24,16 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
   final Map<String, AnyAckSchema> properties;
   final bool additionalProperties;
-  @internal
-  final Map<String, Object?> encodeOnlyDefaults;
 
   ObjectSchema(
     Map<String, AnyAckSchema>? properties, {
     this.additionalProperties = false,
-    this.encodeOnlyDefaults = const {},
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
   }) : properties = properties ?? const {};
-
-  @override
-  SchemaType get schemaType => SchemaType.object;
 
   @override
   @protected
@@ -153,7 +147,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     }
 
     return applyConstraintsAndRefinements(
-      Map<String, Object?>.unmodifiable(validatedMap),
+      Map.unmodifiable(validatedMap),
       context,
     );
   }
@@ -187,10 +181,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional ||
-            (isEncode &&
-                (schema is DefaultSchema ||
-                    encodeOnlyDefaults.containsKey(key)))) {
+        if (schema.isOptional || (isEncode && schema is DefaultSchema)) {
           continue;
         }
         final propertyCtx = context.createChild(
@@ -321,8 +312,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           continue;
         }
         propertyValue = defaultResult.getOrNull();
-      } else if (encodeOnlyDefaults.containsKey(key)) {
-        propertyValue = encodeOnlyDefaults[key];
       } else {
         continue;
       }
@@ -363,14 +352,13 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
-    return SchemaResult.ok(Map<String, Object?>.unmodifiable(encoded));
+    return SchemaResult.ok(Map.unmodifiable(encoded));
   }
 
   @override
   ObjectSchema copyWith({
     Map<String, AnyAckSchema>? properties,
     bool? additionalProperties,
-    Map<String, Object?>? encodeOnlyDefaults,
     bool? isNullable,
     bool? isOptional,
     String? description,
@@ -380,7 +368,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     return ObjectSchema(
       properties ?? this.properties,
       additionalProperties: additionalProperties ?? this.additionalProperties,
-      encodeOnlyDefaults: encodeOnlyDefaults ?? this.encodeOnlyDefaults,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -406,14 +393,19 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     if (identical(this, other)) return true;
     if (other is! ObjectSchema) return false;
     const mapEq = MapEquality<String, AnyAckSchema>();
+
     return baseFieldsEqual(other) &&
         additionalProperties == other.additionalProperties &&
         mapEq.equals(properties, other.properties);
   }
 
   @override
+  SchemaType get schemaType => SchemaType.object;
+
+  @override
   int get hashCode {
     const mapEq = MapEquality<String, AnyAckSchema>();
+
     return Object.hash(
       baseFieldsHashCode,
       additionalProperties,
