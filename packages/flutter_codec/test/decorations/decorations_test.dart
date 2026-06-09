@@ -176,6 +176,10 @@ void main() {
           'image': {'type': 'spiral', 'url': 'https://example.com/x.png'},
         },
       },
+      // backgroundBlendMode requires a color or gradient (release-safe refine).
+      'backgroundBlendMode without color or gradient': {
+        'backgroundBlendMode': 'multiply',
+      },
     };
 
     invalidCases.forEach((name, input) {
@@ -275,6 +279,20 @@ void main() {
       expect(shapeDecorationCodec.parse(encoded), original);
       expectJsonSafe(encoded);
     });
+
+    test('round-trips a ShapeDecoration carrying a DecorationImage', () {
+      final original = ShapeDecoration(
+        shape: const CircleBorder(),
+        image: const DecorationImage(
+          image: NetworkImage('https://example.com/image.png'),
+          fit: BoxFit.cover,
+        ),
+      );
+
+      final encoded = shapeDecorationCodec.encode(original);
+      expect(shapeDecorationCodec.parse(encoded), original);
+      expectJsonSafe(encoded);
+    });
   });
 
   group('shapeDecorationCodec rejects invalid input', () {
@@ -286,6 +304,17 @@ void main() {
       expect(
         shapeDecorationCodec.safeParse({
           'shape': {'type': 'oval'},
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects both color and gradient (release-safe refine)', () {
+      expect(
+        shapeDecorationCodec.safeParse({
+          'shape': {'type': 'circle'},
+          'color': '#FF0000',
+          'gradient': {'type': 'linear', 'colors': _redBlueHex},
         }).isFail,
         isTrue,
       );

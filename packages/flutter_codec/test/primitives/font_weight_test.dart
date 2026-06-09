@@ -28,6 +28,16 @@ void main() {
       expect(fontWeightCodec.parse('normal'), FontWeight.normal);
       expect(fontWeightCodec.parse('bold'), FontWeight.bold);
     });
+
+    test('decodes an integer variable-font weight', () {
+      expect(fontWeightCodec.parse(550), const FontWeight(550));
+      expect(fontWeightCodec.parse(1), const FontWeight(1));
+      expect(fontWeightCodec.parse(1000), const FontWeight(1000));
+    });
+
+    test('decodes a canonical integer weight to the standard instance', () {
+      expect(fontWeightCodec.parse(400), FontWeight.w400);
+    });
   });
 
   group('fontWeightCodec encode', () {
@@ -55,10 +65,23 @@ void main() {
       expect(fontWeightCodec.encode(FontWeight.normal), 'w400');
       expect(fontWeightCodec.encode(FontWeight.bold), 'w700');
     });
+
+    test('encodes a non-canonical variable-font weight as an integer', () {
+      final encoded = fontWeightCodec.encode(const FontWeight(550));
+      expect(encoded, 550);
+      expectJsonSafe(encoded);
+    });
+
+    test('round-trips a variable-font weight', () {
+      const weight = FontWeight(550);
+      expect(fontWeightCodec.parse(fontWeightCodec.encode(weight)), weight);
+    });
   });
 
   group('fontWeightCodec rejects invalid input', () {
-    for (final input in ['heavy', 400, null]) {
+    // Out-of-range integers (the constructor asserts [1, 1000]) and
+    // non-weight values are rejected; in-range integers are now accepted.
+    for (final input in ['heavy', 0, 1001, null]) {
       test('rejects $input', () {
         expect(fontWeightCodec.safeParse(input).isFail, isTrue);
       });

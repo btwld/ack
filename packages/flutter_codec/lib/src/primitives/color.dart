@@ -4,6 +4,13 @@ import 'package:flutter/painting.dart' show Color;
 /// Codec for [Color]. Accepts `#RRGGBB`, `#AARRGGBB`, `rgb(r,g,b)`, and
 /// `rgba(r,g,b,a)` strings; encodes to canonical hex (`#RRGGBB`, or `#AARRGGBB`
 /// when translucent).
+///
+/// The wire format is 8-bit sRGB (via [Color.toARGB32]). Integer-constructed
+/// sRGB colors ([Color.new], `Colors.*`, [Color.fromARGB]) round-trip exactly.
+/// Two losses are intentional and not preserved: sub-8-bit float-channel
+/// precision (e.g. from [Color.withValues] or [Color.lerp]) is quantized, and
+/// a non-sRGB [Color.colorSpace] (display P3, extended sRGB) is flattened to
+/// sRGB. See `test/primitives/color_test.dart` for the pinned behavior.
 final colorCodec = Ack.codec<Object, Object, Color>(
   input: Ack.anyOf([
     Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),

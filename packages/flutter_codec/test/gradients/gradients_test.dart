@@ -271,4 +271,28 @@ void main() {
       expect(schema, contains('"minimum":0'));
     });
   });
+
+  group('gradient transform is rejected on encode', () {
+    final transform = GradientRotation(math.pi / 4);
+
+    test('linearGradientCodec fails on a transformed gradient', () {
+      final gradient = LinearGradient(colors: _redBlue, transform: transform);
+      expect(linearGradientCodec.safeEncode(gradient).isFail, isTrue);
+    });
+
+    test('radialGradientCodec fails on a transformed gradient', () {
+      final gradient = RadialGradient(colors: _redBlue, transform: transform);
+      expect(radialGradientCodec.safeEncode(gradient).isFail, isTrue);
+    });
+
+    test('sweepGradientCodec fails on a transformed gradient', () {
+      final gradient = SweepGradient(colors: _redBlue, transform: transform);
+      expect(sweepGradientCodec.safeEncode(gradient).isFail, isTrue);
+    });
+
+    test('gradientCodec fails on a transformed gradient', () {
+      final gradient = LinearGradient(colors: _redBlue, transform: transform);
+      expect(gradientCodec.safeEncode(gradient).isFail, isTrue);
+    });
+  });
 }

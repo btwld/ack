@@ -140,4 +140,16 @@ void main() {
       expect(schema, contains('"maximum":1'));
     });
   });
+
+  group('decorationImageCodec colorFilter', () {
+    test('rejects a DecorationImage with a non-null colorFilter on encode', () {
+      // colorFilter is part of DecorationImage equality but has no portable
+      // JSON shape, so encoding must fail loudly rather than drop it silently.
+      final image = DecorationImage(
+        image: const NetworkImage(_networkUrl),
+        colorFilter: const ColorFilter.mode(Color(0xFFFF0000), BlendMode.srcIn),
+      );
+      expect(decorationImageCodec.safeEncode(image).isFail, isTrue);
+    });
+  });
 }

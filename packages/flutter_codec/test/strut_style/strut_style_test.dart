@@ -82,6 +82,19 @@ void main() {
       expect(encoded['fontFamily'], 'Roboto');
       expect(encoded['package'], 'my_pkg');
     });
+
+    test('round-trips a package-prefixed fallback with a null fontFamily', () {
+      // A package must not be inferred from the fallback alone: re-folding a
+      // null fontFamily with a package yields the literal 'packages/<pkg>/null'.
+      const original = StrutStyle(
+        fontFamilyFallback: ['packages/foo/Bar', 'packages/foo/Baz'],
+      );
+      final roundTripped = strutStyleCodec.parse(
+        strutStyleCodec.encode(original),
+      );
+      expect(roundTripped, original);
+      expect(roundTripped!.fontFamily, isNull);
+    });
   });
 
   group('strutStyleCodec rejects invalid input', () {

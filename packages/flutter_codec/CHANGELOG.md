@@ -2,8 +2,9 @@
 
 ## 0.1.0
 
-Initial release. JSON value codecs for Flutter's painting layer, built on
-[`ack`](../ack/README.md).
+Initial release. JSON value codecs for Flutter's painting and rendering layers,
+plus a small set of widget codecs, built on [`ack`](../ack/README.md).
+Requires Flutter `>=3.32.0`.
 
 - **Primitives**: `Color`, `Offset`, `Radius`, `Rect`, `Alignment` /
   `AlignmentDirectional` / `AlignmentGeometry`, `EdgeInsets` /
@@ -18,8 +19,7 @@ Initial release. JSON value codecs for Flutter's painting layer, built on
 - **Shape borders** (discriminated by `"type"`): `CircleBorder`,
   `StadiumBorder`, `RoundedRectangleBorder`, `BeveledRectangleBorder`,
   `ContinuousRectangleBorder`, `RoundedSuperellipseBorder`, `StarBorder`,
-  `LinearBorder` (with `LinearBorderEdge`) → `ShapeBorder`. Requires Flutter
-  `>=3.27.0` for `RoundedSuperellipseBorder`.
+  `LinearBorder` (with `LinearBorderEdge`) → `ShapeBorder`.
 - **Shadows**: `Shadow`, `BoxShadow`.
 - **Gradients** (discriminated by `"type"`): `LinearGradient`,
   `RadialGradient`, `SweepGradient` → `Gradient`.
@@ -31,5 +31,13 @@ Initial release. JSON value codecs for Flutter's painting layer, built on
   lists), `StrutStyle` (sibling layout style), `TextHeightBehavior`.
 - **Decorations** (discriminated by `"type"`): `BoxDecoration`,
   `ShapeDecoration` → `Decoration`.
+- **Constraints**: `BoxConstraints`, `Constraints` (discriminated by `"type"`).
+- **Matrix**: `Matrix4`.
+- **Widgets**: `Container`, `Text`, and portable `Key` / `ValueKey` codecs,
+  plus a `widgetCodec` union (discriminated by `"type"`).
+
+`FontWeight` accepts and emits arbitrary integer weights (`[1, 1000]`) for
+variable fonts in addition to the `"w100"`–`"w900"` / `"normal"` / `"bold"`
+aliases.
 
 Every codec exposes `.parse`, `.safeParse`, `.encode`, and `.toJsonSchema`.

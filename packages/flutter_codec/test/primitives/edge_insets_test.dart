@@ -160,6 +160,16 @@ void main() {
       );
     });
 
+    test('rejects encoding a mixed geometry', () {
+      // Combining EdgeInsets with EdgeInsetsDirectional yields a private
+      // _MixedEdgeInsets that matches neither branch, so encode fails loudly
+      // rather than coercing it.
+      final mixed = const EdgeInsets.only(
+        left: 8,
+      ).add(const EdgeInsetsDirectional.only(start: 4));
+      expect(edgeInsetsGeometryCodec.safeEncode(mixed).isFail, isTrue);
+    });
+
     group('rejects invalid input', () {
       const invalidCases = <String, Object>{
         'mixed keys': {'left': 8, 'start': 8},

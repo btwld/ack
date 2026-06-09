@@ -168,6 +168,31 @@ void main() {
       expect(textStyleCodec.parse(encoded), original);
       expectJsonSafe(encoded);
     });
+
+    test('round-trips a package-prefixed fallback with a null fontFamily', () {
+      // A package must not be inferred from the fallback alone: re-folding a
+      // null fontFamily with a package yields the literal 'packages/<pkg>/null'.
+      const original = TextStyle(
+        fontFamilyFallback: ['packages/foo/Bar', 'packages/foo/Baz'],
+      );
+      final roundTripped = textStyleCodec.parse(
+        textStyleCodec.encode(original),
+      );
+      expect(roundTripped, original);
+      expect(roundTripped!.fontFamily, isNull);
+    });
+
+    test('preserves a literal packages/<pkg>/<x> fontFamily string', () {
+      // A literal 'packages/...' family supplied without a package: argument is
+      // intentionally read back as package-qualified (the common case). The
+      // resolved font family string is preserved, though TextStyle equality
+      // does not hold because the private _package differs.
+      const original = TextStyle(fontFamily: 'packages/foo/Bar');
+      final roundTripped = textStyleCodec.parse(
+        textStyleCodec.encode(original),
+      );
+      expect(roundTripped!.fontFamily, 'packages/foo/Bar');
+    });
   });
 
   group('textStyleCodec rejects invalid input', () {

@@ -7,7 +7,9 @@ resolution: workspace
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
-  flutter: '>=3.27.0'
+  # Floor is 3.32.0: RoundedSuperellipseBorder and Text.semanticsIdentifier
+  # first shipped stable in 3.32.0 (WebHtmlElementStrategy in 3.29.0).
+  flutter: '>=3.32.0'
 
 dependencies:
   ack: ^1.0.0-beta.12-wip

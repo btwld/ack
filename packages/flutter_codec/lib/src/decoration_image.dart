@@ -37,8 +37,12 @@ import 'primitives/rect.dart' show rectCodec;
 ///   to `ImageFilter` (private subtypes, private state).
 /// * `onError` — callback type, not serializable.
 ///
-/// Both are excluded from [DecorationImage]'s `==`, so round-trips remain
-/// stable.
+/// Both are dropped because the schema has no field for them. [onError] is
+/// excluded from [DecorationImage]'s `==`, so its loss is invisible. But
+/// `colorFilter` *is* compared by `==` and `hashCode`, so a [DecorationImage]
+/// with a non-null `colorFilter` cannot round-trip: encoding one throws
+/// (rather than silently producing an unequal value), mirroring the
+/// `assetImageCodec` `bundle` guard.
 final decorationImageCodec =
     Ack.object({
       'image': imageProviderCodec,
@@ -66,17 +70,27 @@ final decorationImageCodec =
         invertColors: readValue<bool>(data, 'invertColors'),
         isAntiAlias: readValue<bool>(data, 'isAntiAlias'),
       ),
-      encode: (value) => {
-        'image': value.image,
-        'fit': value.fit,
-        'alignment': value.alignment,
-        'centerSlice': value.centerSlice,
-        'repeat': value.repeat,
-        'matchTextDirection': value.matchTextDirection,
-        'scale': value.scale,
-        'opacity': value.opacity,
-        'filterQuality': value.filterQuality,
-        'invertColors': value.invertColors,
-        'isAntiAlias': value.isAntiAlias,
+      encode: (value) {
+        if (value.colorFilter != null) {
+          throw UnsupportedError(
+            'DecorationImage.colorFilter cannot be encoded: ColorFilter keeps '
+            'its state in library-private fields with no public getters, so it '
+            'has no portable JSON shape, and it is part of DecorationImage '
+            'equality. Remove the colorFilter before encoding.',
+          );
+        }
+        return {
+          'image': value.image,
+          'fit': value.fit,
+          'alignment': value.alignment,
+          'centerSlice': value.centerSlice,
+          'repeat': value.repeat,
+          'matchTextDirection': value.matchTextDirection,
+          'scale': value.scale,
+          'opacity': value.opacity,
+          'filterQuality': value.filterQuality,
+          'invertColors': value.invertColors,
+          'isAntiAlias': value.isAntiAlias,
+        };
       },
     );

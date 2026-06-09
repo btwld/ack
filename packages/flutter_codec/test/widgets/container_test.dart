@@ -175,6 +175,13 @@ void main() {
         isTrue,
       );
     });
+
+    test('rejects clipBehavior without a decoration', () {
+      expect(
+        containerWidgetCodec.safeParse({'clipBehavior': 'antiAlias'}).isFail,
+        isTrue,
+      );
+    });
   });
 
   group('widgetCodec', () {

@@ -35,18 +35,29 @@ import 'shape_borders.dart' show shapeBorderCodec;
 /// [decorationCodec] when this codec is used as one of its branches.
 final boxDecorationCodec =
     Ack.object({
-      'color': colorCodec.nullable().optional(),
-      'image': decorationImageCodec.nullable().optional(),
-      'border': boxBorderCodec.nullable().optional(),
-      'borderRadius': borderRadiusGeometryCodec.nullable().optional(),
-      'boxShadow': Ack.list(boxShadowCodec).nullable().optional(),
-      'gradient': gradientCodec.nullable().optional(),
-      'backgroundBlendMode': blendModeCodec.nullable().optional(),
-      'shape': boxShapeCodec.withDefault(BoxShape.rectangle),
-    }).codec<BoxDecoration>(
-      decode: _decodeBoxDecoration,
-      encode: _encodeBoxDecoration,
-    );
+          'color': colorCodec.nullable().optional(),
+          'image': decorationImageCodec.nullable().optional(),
+          'border': boxBorderCodec.nullable().optional(),
+          'borderRadius': borderRadiusGeometryCodec.nullable().optional(),
+          'boxShadow': Ack.list(boxShadowCodec).nullable().optional(),
+          'gradient': gradientCodec.nullable().optional(),
+          'backgroundBlendMode': blendModeCodec.nullable().optional(),
+          'shape': boxShapeCodec.withDefault(BoxShape.rectangle),
+        })
+        // Enforced here (not just by the constructor's debug assert) so the
+        // check holds in release builds.
+        .refine(
+          (data) =>
+              data['backgroundBlendMode'] == null ||
+              data['color'] != null ||
+              data['gradient'] != null,
+          message:
+              'BoxDecoration.backgroundBlendMode requires a color or gradient.',
+        )
+        .codec<BoxDecoration>(
+          decode: _decodeBoxDecoration,
+          encode: _encodeBoxDecoration,
+        );
 
 BoxDecoration _decodeBoxDecoration(JsonMap data) {
   return BoxDecoration(
@@ -88,18 +99,24 @@ JsonMap _encodeBoxDecoration(BoxDecoration value) {
 /// used as one of its branches.
 ///
 /// [ShapeDecoration] asserts that `color` and `gradient` cannot both be
-/// non-null; this codec leaves that check to the constructor.
+/// non-null; this codec enforces the same rule with a refinement so it holds
+/// in release builds (where the constructor assert is stripped).
 final shapeDecorationCodec =
     Ack.object({
-      'color': colorCodec.nullable().optional(),
-      'image': decorationImageCodec.nullable().optional(),
-      'gradient': gradientCodec.nullable().optional(),
-      'shadows': Ack.list(boxShadowCodec).nullable().optional(),
-      'shape': shapeBorderCodec,
-    }).codec<ShapeDecoration>(
-      decode: _decodeShapeDecoration,
-      encode: _encodeShapeDecoration,
-    );
+          'color': colorCodec.nullable().optional(),
+          'image': decorationImageCodec.nullable().optional(),
+          'gradient': gradientCodec.nullable().optional(),
+          'shadows': Ack.list(boxShadowCodec).nullable().optional(),
+          'shape': shapeBorderCodec,
+        })
+        .refine(
+          (data) => data['color'] == null || data['gradient'] == null,
+          message: 'ShapeDecoration cannot set both color and gradient.',
+        )
+        .codec<ShapeDecoration>(
+          decode: _decodeShapeDecoration,
+          encode: _encodeShapeDecoration,
+        );
 
 ShapeDecoration _decodeShapeDecoration(JsonMap data) {
   return ShapeDecoration(

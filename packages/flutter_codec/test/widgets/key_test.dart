@@ -93,6 +93,21 @@ void main() {
           'valueType': 'string',
           'value': 1,
         },
+        'int valueType with a double value': {
+          'type': 'value',
+          'valueType': 'int',
+          'value': 1.5,
+        },
+        'bool valueType with an int value': {
+          'type': 'value',
+          'valueType': 'bool',
+          'value': 1,
+        },
+        'double valueType with a non-numeric value': {
+          'type': 'value',
+          'valueType': 'double',
+          'value': 'oops',
+        },
       };
 
       invalidCases.forEach((name, input) {

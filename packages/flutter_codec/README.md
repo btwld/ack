@@ -1,6 +1,7 @@
 # flutter_codec
 
-JSON value codecs for Flutter's painting layer, built on
+JSON value codecs for Flutter's painting and rendering layers — plus a small,
+growing set of widget codecs (`Container`, `Text`, `Key`) — built on
 [`ack`](../ack/README.md).
 
 Every codec is an Ack `CodecSchema` and exposes the same surface:
@@ -65,12 +66,17 @@ assert(roundTripped == decoration);
 | Text style | `TextStyle` | `textStyleCodec` | [lib/src/text_style.dart](lib/src/text_style.dart) |
 | Strut style | `StrutStyle` | `strutStyleCodec` | [lib/src/strut_style.dart](lib/src/strut_style.dart) |
 | Decorations | `BoxDecoration`, `ShapeDecoration`, `Decoration` | `boxDecorationCodec`, `shapeDecorationCodec`, `decorationCodec` | [lib/src/decorations.dart](lib/src/decorations.dart) |
+| Constraints | `BoxConstraints`, `Constraints` | `boxConstraintsCodec`, `constraintsCodec` | [lib/src/constraints.dart](lib/src/constraints.dart) |
+| Matrix | `Matrix4` | `matrix4Codec` | [lib/src/primitives/matrix4.dart](lib/src/primitives/matrix4.dart) |
+| Widgets | `Container`, `Text`, `Key` (`ValueKey`) | `containerWidgetCodec`, `textWidgetCodec`, `keyCodec`, `widgetCodec` | [lib/src/widgets/](lib/src/widgets/) |
 
 ## Discriminated unions
 
 Polymorphic types are encoded as `{ "type": "<branch>", ...fields }`. The
-discriminator key is injected by the union at encode time; standalone branch
-codecs do not require it on input.
+discriminator key is injected by the union at encode time. Most standalone
+branch codecs do not require it on input; the gradient branches are the
+exception — they embed a `"type"` literal in their own schema, so they self-tag
+and accept (and require) the key on input as well.
 
 | Union | Discriminator key | Branches |
 |---|---|---|
@@ -78,6 +84,9 @@ codecs do not require it on input.
 | `imageProviderCodec` | `"type"` | `"network"`, `"asset"` |
 | `shapeBorderCodec` | `"type"` | `"circle"`, `"stadium"`, `"roundedRectangle"`, `"beveledRectangle"`, `"continuousRectangle"`, `"roundedSuperellipse"`, `"star"`, `"linear"` |
 | `decorationCodec` | `"type"` | `"box"`, `"shape"` |
+| `keyCodec` | `"type"` | `"value"` |
+| `widgetCodec` | `"type"` | `"container"`, `"text"` |
+| `constraintsCodec` | `"type"` | `"box"` |
 
 ## Intentionally excluded
 
@@ -96,16 +105,33 @@ silently falling back.
   surface is `toString()`, which is a debug format Flutter is free to change
   between releases. A bidirectional codec is not achievable here without
   introducing parallel descriptor types; the same goes for
-  `DecorationImage.colorFilter` (which embeds a `ColorFilter`).
+  `DecorationImage.colorFilter` (which embeds a `ColorFilter`). Because
+  `colorFilter` *is* part of `DecorationImage` equality, encoding a
+  `DecorationImage` that carries one **throws** rather than silently dropping it.
+- **No portable JSON shape (encode throws)**: `Gradient.transform`
+  (`GradientTransform` is an open abstract type — encoding a transformed
+  gradient throws rather than dropping it silently).
 - **No portable JSON shape**: `Paint`, `Path`, `Shader`,
   `TextStyle.foreground` / `TextStyle.background`,
   `DecorationImage.onError`, `FlutterLogoDecoration`.
 - **Local or recursive providers**: `FileImage` (local path), `MemoryImage`
   (base64 bloat), `ResizeImage` (wraps another provider), custom
   `AssetBundle` instances on `AssetImage`.
+- **8-bit sRGB color**: `Color` encodes as `#RRGGBB` / `#AARRGGBB`. Integer sRGB
+  colors round-trip exactly, but sub-8-bit float-channel precision (from
+  `Color.withValues` / `Color.lerp`) is quantized and a non-sRGB `colorSpace`
+  (display P3, extended sRGB) is flattened to sRGB.
 - **Lossy narrowing**: `OvalBorder` extends `CircleBorder`, so it round-trips
   as `CircleBorder` — the runtime subtype is lost. The painted output is
-  equivalent to `CircleBorder(eccentricity: 1.0)`.
+  equivalent to `CircleBorder(eccentricity: 1.0)`. Likewise `StarBorder.polygon`
+  round-trips as the equivalent regular `StarBorder` (its null
+  `innerRadiusRatio` becomes the resolved value), and `StarBorder.rotation`
+  survives only to floating-point precision (degrees↔radians). Both are
+  painted-equivalent but not `==`-equal.
+- **Font-family `packages/` ambiguity**: a literal `fontFamily:
+  'packages/<pkg>/<x>'` supplied without a `package:` argument is read back as
+  package-qualified (the common case), so it does not round-trip under
+  `TextStyle` equality although the resolved family string is preserved.
 - **Separate plans**: `InputBorder` family (Material — `OutlineInputBorder`,
   `UnderlineInputBorder`).
 
@@ -118,7 +144,9 @@ pattern, gradient discriminator, shape enum, and so on).
 
 ## Roadmap
 
-The painting-layer surface is feature-complete for the types Flutter exposes
-JSON-safely. Future additions would require either upstream changes to
-`dart:ui` (to expose `ColorFilter`/`ImageFilter` state) or a parallel
-descriptor-type design that we'd own outside the raw Flutter types.
+The painting- and rendering-layer surface is feature-complete for the types
+Flutter exposes JSON-safely. The widget codecs (`Container`, `Text`, `Key`) are
+a deliberately small surface that will grow over time. Further additions to the
+painting layer would require either upstream changes to `dart:ui` (to expose
+`ColorFilter` / `ImageFilter` state) or a parallel descriptor-type design that
+we'd own outside the raw Flutter types.

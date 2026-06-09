@@ -165,6 +165,11 @@ final roundedSuperellipseBorderCodec = _rectangleBorderSchema
 /// `valleyRounding` (always `0` for polygons), so the painted output is
 /// identical even though the runtime "this came from `.polygon`"
 /// information is lost.
+///
+/// `rotation` is stored internally as radians and compared exactly by
+/// `StarBorder` equality, while this codec round-trips it as degrees. The
+/// degrees↔radians conversion is not bit-stable, so some rotations are
+/// painted-equivalent but not `==`-equal after a round-trip.
 final starBorderCodec =
     Ack.object({
       'side': borderSideCodec.withDefault(BorderSide.none),

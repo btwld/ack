@@ -39,5 +39,13 @@ void main() {
       expect(matrix4Codec.safeParse(List<double>.filled(15, 0)).isFail, isTrue);
       expect(matrix4Codec.safeParse(List<double>.filled(17, 0)).isFail, isTrue);
     });
+
+    test('rejects non-finite entries (JSON has no NaN/Infinity literal)', () {
+      final withNaN = List<double>.filled(16, 0.0)..[0] = double.nan;
+      final withInfinity = List<double>.filled(16, 0.0)..[5] = double.infinity;
+
+      expect(matrix4Codec.safeParse(withNaN).isFail, isTrue);
+      expect(matrix4Codec.safeParse(withInfinity).isFail, isTrue);
+    });
   });
 }

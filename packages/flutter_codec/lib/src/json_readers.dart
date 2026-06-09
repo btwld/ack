@@ -18,12 +18,23 @@ double? readNullableDouble(JsonMap map, String key) =>
     (map[key] as num?)?.toDouble();
 
 /// Reads the required list field [key] from a decoded [map] as `List<T>`.
+///
+/// Not for numeric `T`: `cast<double>()` does not coerce JSON ints and would
+/// throw on iteration. Use [readDoubleList] / [readNullableDoubleList] for
+/// numeric lists.
 List<T> readList<T>(JsonMap map, String key) =>
     (map[key]! as List).cast<T>().toList();
 
 /// Reads the optional list field [key] from a decoded [map] as `List<T>`.
 List<T>? readNullableList<T>(JsonMap map, String key) =>
     (map[key] as List?)?.cast<T>().toList();
+
+/// Reads the required numeric list field [key] as `List<double>`.
+///
+/// Coerces JSON ints to doubles (unlike `readList<double>`, whose `cast` would
+/// throw on a JSON int).
+List<double> readDoubleList(JsonMap map, String key) =>
+    (map[key]! as List).map((value) => (value as num).toDouble()).toList();
 
 /// Reads the optional numeric list field [key] as `List<double>`.
 List<double>? readNullableDoubleList(JsonMap map, String key) {

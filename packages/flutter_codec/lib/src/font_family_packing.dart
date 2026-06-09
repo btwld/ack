@@ -12,10 +12,24 @@
 /// `(fontFamily, fontFamilyFallback, package)` triple when all referenced
 /// families share the same prefix. Falls back to the stored (prefixed) form
 /// when the prefix is missing or inconsistent.
+///
+/// A package is only recovered when the primary [family] is non-null. With a
+/// null family the constructor would re-fold `package` into the literal string
+/// `'packages/<pkg>/null'` (it interpolates the null family), corrupting the
+/// round-trip; keeping the fallback verbatim with `package: null` reproduces
+/// the original exactly because decode then performs no folding.
+///
+/// Note: a literal `fontFamily: 'packages/<pkg>/<x>'` supplied without a
+/// `package:` argument is indistinguishable from the folded
+/// `(fontFamily: '<x>', package: '<pkg>')` form (the original `_package` is
+/// private and is compared by `TextStyle` equality). It is intentionally
+/// interpreted as package-qualified — the common case — so such a literal
+/// does not round-trip under `TextStyle` equality, though the resolved font
+/// family string is preserved.
 ({String? family, List<String>? fallback, String? packageName})
 unpackFontFamily(String? family, List<String>? fallback) {
   final pkg = _sharedPackagePrefix([if (family != null) family, ...?fallback]);
-  if (pkg == null) {
+  if (pkg == null || family == null) {
     return (family: family, fallback: fallback, packageName: null);
   }
 
@@ -23,7 +37,7 @@ unpackFontFamily(String? family, List<String>? fallback) {
   String strip(String f) =>
       f.startsWith(prefix) ? f.substring(prefix.length) : f;
   return (
-    family: family == null ? null : strip(family),
+    family: strip(family),
     fallback: fallback?.map(strip).toList(),
     packageName: pkg,
   );

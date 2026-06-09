@@ -93,4 +93,14 @@ void main() {
       expect(readNullableDoubleList(map, 'values'), [1.0, 2.5]);
     });
   });
+
+  group('readDoubleList', () {
+    test('coerces JSON ints to doubles', () {
+      final map = {
+        'values': [1, 2.5, 3],
+      };
+
+      expect(readDoubleList(map, 'values'), [1.0, 2.5, 3.0]);
+    });
+  });
 }

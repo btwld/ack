@@ -7,6 +7,7 @@ import 'package:flutter/painting.dart'
         AlignmentGeometry,
         Color,
         Gradient,
+        GradientTransform,
         LinearGradient,
         RadialGradient,
         SweepGradient,
@@ -16,6 +17,18 @@ import 'enums.dart' show tileModeCodec;
 import 'json_readers.dart';
 import 'primitives/alignment.dart' show alignmentGeometryCodec;
 import 'primitives/color.dart' show colorCodec;
+
+// Gradients accept an arbitrary [GradientTransform] — an open abstract type
+// with no public, portable representation. Encoding one would silently drop it
+// (`Gradient.==` compares `transform`), so it is rejected loudly instead.
+void _requireEncodableTransform(GradientTransform? transform) {
+  if (transform != null) {
+    throw UnsupportedError(
+      'Gradient.transform cannot be encoded: GradientTransform has no portable '
+      'JSON shape. Apply gradient transforms outside the codec layer.',
+    );
+  }
+}
 
 /// Codec for [LinearGradient]. Tagged with `"type": "linear"`.
 ///
@@ -39,13 +52,16 @@ final linearGradientCodec =
         stops: readNullableDoubleList(data, 'stops'),
         tileMode: readValue<TileMode>(data, 'tileMode'),
       ),
-      encode: (value) => {
-        'type': 'linear',
-        'begin': value.begin,
-        'end': value.end,
-        'colors': value.colors,
-        'stops': value.stops,
-        'tileMode': value.tileMode,
+      encode: (value) {
+        _requireEncodableTransform(value.transform);
+        return {
+          'type': 'linear',
+          'begin': value.begin,
+          'end': value.end,
+          'colors': value.colors,
+          'stops': value.stops,
+          'tileMode': value.tileMode,
+        };
       },
     );
 
@@ -74,15 +90,18 @@ final radialGradientCodec =
         focal: readNullableValue<AlignmentGeometry>(data, 'focal'),
         focalRadius: readDouble(data, 'focalRadius'),
       ),
-      encode: (value) => {
-        'type': 'radial',
-        'center': value.center,
-        'radius': value.radius,
-        'colors': value.colors,
-        'stops': value.stops,
-        'tileMode': value.tileMode,
-        'focal': value.focal,
-        'focalRadius': value.focalRadius,
+      encode: (value) {
+        _requireEncodableTransform(value.transform);
+        return {
+          'type': 'radial',
+          'center': value.center,
+          'radius': value.radius,
+          'colors': value.colors,
+          'stops': value.stops,
+          'tileMode': value.tileMode,
+          'focal': value.focal,
+          'focalRadius': value.focalRadius,
+        };
       },
     );
 
@@ -109,14 +128,17 @@ final sweepGradientCodec =
         stops: readNullableDoubleList(data, 'stops'),
         tileMode: readValue<TileMode>(data, 'tileMode'),
       ),
-      encode: (value) => {
-        'type': 'sweep',
-        'center': value.center,
-        'startAngle': value.startAngle,
-        'endAngle': value.endAngle,
-        'colors': value.colors,
-        'stops': value.stops,
-        'tileMode': value.tileMode,
+      encode: (value) {
+        _requireEncodableTransform(value.transform);
+        return {
+          'type': 'sweep',
+          'center': value.center,
+          'startAngle': value.startAngle,
+          'endAngle': value.endAngle,
+          'colors': value.colors,
+          'stops': value.stops,
+          'tileMode': value.tileMode,
+        };
       },
     );
 

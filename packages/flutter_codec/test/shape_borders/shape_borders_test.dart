@@ -169,6 +169,31 @@ void main() {
       expect(encoded['innerRadiusRatio'], closeTo(0.866, 0.001));
     });
 
+    test('StarBorder.polygon narrows to a regular StarBorder (lossy ==)', () {
+      // .polygon stores a null innerRadiusRatio; the codec re-decodes through
+      // the regular constructor with the resolved value, so == does not hold,
+      // but the result is painted-equivalent and itself round-trips stably.
+      final polygon = StarBorder.polygon(sides: 6);
+      final roundTripped = starBorderCodec.parse(
+        starBorderCodec.encode(polygon),
+      )!;
+      expect(roundTripped, isNot(polygon));
+      expect(
+        starBorderCodec.parse(starBorderCodec.encode(roundTripped)),
+        roundTripped,
+      );
+    });
+
+    test('StarBorder.rotation is preserved to float precision (lossy ==)', () {
+      // rotation is stored internally as radians; degrees->radians->degrees is
+      // not bit-stable, so == may not hold, but the painted rotation survives.
+      const original = StarBorder(rotation: 12);
+      final roundTripped = starBorderCodec.parse(
+        starBorderCodec.encode(original),
+      )!;
+      expect(roundTripped.rotation, closeTo(12, 1e-9));
+    });
+
     test('rejects fewer than two points', () {
       expect(starBorderCodec.safeParse({'points': 1}).isFail, isTrue);
     });
@@ -302,6 +327,17 @@ void main() {
 
     test('rejects a missing discriminator', () {
       expect(shapeBorderCodec.safeParse({}).isFail, isTrue);
+    });
+
+    test('narrows OvalBorder to the circle branch (documented narrowing)', () {
+      // OvalBorder extends CircleBorder, so the union routes it to "circle"
+      // and it round-trips as the painted-equivalent CircleBorder(ecc: 1.0).
+      final encoded = shapeBorderCodec.encode(const OvalBorder())!;
+      expect(encoded, containsPair('type', 'circle'));
+      expect(
+        shapeBorderCodec.parse(encoded),
+        const CircleBorder(eccentricity: 1.0),
+      );
     });
 
     test('JSON Schema surfaces all eight discriminator branches', () {
