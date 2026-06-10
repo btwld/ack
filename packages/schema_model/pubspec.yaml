@@ -1,5 +1,5 @@
 name: schema_model
-description: Vendor-neutral schema model and standard schema contracts for Dart
+description: Standard Schema contracts for Dart validators and converters
 version: 1.0.0-beta.12-wip
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
@@ -9,10 +9,6 @@ resolution: workspace
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
-
-dependencies:
-  collection: ^1.18.0
-  meta: ^1.15.0
 
 dev_dependencies:
   lints: ^5.0.0

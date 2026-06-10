@@ -6,7 +6,7 @@ part of 'schema.dart';
 /// Wrappers add runtime behavior (e.g. codecs, defaults) while preserving an
 /// inner schema for boundary-shape traversal, schema-model export, and
 /// discriminated-branch rewriting. The canonical JSON export path is
-/// `AckSchema → SchemaModel → JSON`; wrappers do not render JSON directly.
+/// `AckSchema → AckSchemaModel → JSON`; wrappers do not render JSON directly.
 ///
 /// The fluent API (`nullable`, `describe`, `withConstraint`, …) is provided by
 /// [FluentSchema], which this mixin requires via its `on` clause; wrappers only

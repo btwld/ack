@@ -8,9 +8,9 @@ import 'package:test/test.dart';
 /// Used to verify that constraints are properly merged in JSON Schema output
 /// for AnyOfSchema, which uses `AckSchema<Object>` and has no natural
 /// JsonSchemaSpec constraints.
-class _TestSchemaModelConstraint extends Constraint<Object>
+class _TestAckSchemaModelConstraint extends Constraint<Object>
     with Validator<Object>, JsonSchemaSpec<Object> {
-  const _TestSchemaModelConstraint()
+  const _TestAckSchemaModelConstraint()
     : super(
         constraintKey: 'test_marker',
         description: 'Test constraint for JSON Schema merging verification',
@@ -105,7 +105,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.string(),
           Ack.integer(),
-        ]).withConstraint(const _TestSchemaModelConstraint());
+        ]).withConstraint(const _TestAckSchemaModelConstraint());
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -118,7 +118,7 @@ void main() {
         final schema = Ack.anyOf([
           Ack.string(),
           Ack.integer(),
-        ]).nullable().withConstraint(const _TestSchemaModelConstraint());
+        ]).nullable().withConstraint(const _TestAckSchemaModelConstraint());
 
         final jsonSchema = schema.toJsonSchema();
 

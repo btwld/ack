@@ -302,7 +302,7 @@ void main() {
       });
 
       test('preserves model defaults, const values, and extensions', () {
-        const schema = BooleanSchemaModel(
+        const schema = AckBooleanSchemaModel(
           constValue: true,
           defaultValue: true,
           extensions: {
@@ -565,9 +565,9 @@ void main() {
       });
 
       test('additionalProperties schema converts recursively', () {
-        const schema = ObjectSchemaModel(
-          additionalProperties: AdditionalPropertiesSchema(
-            StringSchemaModel(minLength: 1),
+        const schema = AckObjectSchemaModel(
+          additionalProperties: AckAdditionalPropertiesSchema(
+            AckStringSchemaModel(minLength: 1),
           ),
         );
 
@@ -581,10 +581,10 @@ void main() {
 
     group('allOf composition', () {
       test('allOf converts to allOf in json_schema_builder', () {
-        const jsonSchema = AllOfSchemaModel(
+        const jsonSchema = AckAllOfSchemaModel(
           schemas: [
-            ObjectSchemaModel(properties: {'name': StringSchemaModel()}),
-            ObjectSchemaModel(properties: {'age': IntegerSchemaModel()}),
+            AckObjectSchemaModel(properties: {'name': AckStringSchemaModel()}),
+            AckObjectSchemaModel(properties: {'age': AckIntegerSchemaModel()}),
           ],
         );
 
@@ -608,10 +608,10 @@ void main() {
       });
 
       test('allOf preserves branch schemas', () {
-        const jsonSchema = AllOfSchemaModel(
+        const jsonSchema = AckAllOfSchemaModel(
           schemas: [
-            StringSchemaModel(minLength: 5),
-            StringSchemaModel(maxLength: 10),
+            AckStringSchemaModel(minLength: 5),
+            AckStringSchemaModel(maxLength: 10),
           ],
         );
 
@@ -627,8 +627,8 @@ void main() {
 
     group('Object property count constraints', () {
       test('minProperties is preserved in conversion', () {
-        const jsonSchema = ObjectSchemaModel(
-          properties: {'name': StringSchemaModel()},
+        const jsonSchema = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
           minProperties: 2,
         );
 
@@ -638,8 +638,8 @@ void main() {
       });
 
       test('maxProperties is preserved in conversion', () {
-        const jsonSchema = ObjectSchemaModel(
-          properties: {'name': StringSchemaModel()},
+        const jsonSchema = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
           maxProperties: 5,
         );
 
@@ -649,8 +649,8 @@ void main() {
       });
 
       test('both minProperties and maxProperties together', () {
-        const jsonSchema = ObjectSchemaModel(
-          properties: {'name': StringSchemaModel()},
+        const jsonSchema = AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
           minProperties: 1,
           maxProperties: 10,
         );

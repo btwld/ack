@@ -14,13 +14,16 @@ void main() {
 
       final model = schema.toSchemaModel();
 
-      expect(model, isA<ObjectSchemaModel>());
-      final object = model as ObjectSchemaModel;
+      expect(model, isA<AckObjectSchemaModel>());
+      final object = model as AckObjectSchemaModel;
       expect(object.description, 'User payload');
-      expect(object.properties!['name'], isA<StringSchemaModel>());
-      expect((object.properties!['name']! as StringSchemaModel).minLength, 2);
+      expect(object.properties!['name'], isA<AckStringSchemaModel>());
+      expect(
+        (object.properties!['name']! as AckStringSchemaModel).minLength,
+        2,
+      );
       expect(object.properties!['name']!.defaultValue, 'Ada');
-      expect((object.properties!['role']! as StringSchemaModel).enumValues, [
+      expect((object.properties!['role']! as AckStringSchemaModel).enumValues, [
         'admin',
         'member',
       ]);
@@ -33,16 +36,6 @@ void main() {
       final model = Ack.string().withDefault('draft').toSchemaModel();
 
       expect(model.toJsonSchema(), {'type': 'string', 'default': 'draft'});
-    });
-
-    test('rendered schema model JSON imports back to the same JSON', () {
-      final model = Ack.object({
-        'name': Ack.string().minLength(2),
-        'tags': Ack.list(Ack.string()).optional(),
-      }).toSchemaModel();
-      final json = model.toJsonSchema();
-
-      expect(SchemaModel.fromJsonSchema(json).toJsonSchema(), json);
     });
 
     test('omits defaults that cannot be encoded through wrapped schema', () {
@@ -77,7 +70,7 @@ void main() {
         'age': Ack.integer().min(10).withDefault(5),
       });
 
-      final model = schema.toSchemaModel() as ObjectSchemaModel;
+      final model = schema.toSchemaModel() as AckObjectSchemaModel;
       final json = model.toJsonSchema();
       final properties = json['properties'] as Map<Object?, Object?>;
 
@@ -98,7 +91,7 @@ void main() {
         expect(
           schema.toJsonSchema(),
           equals(schema.toSchemaModel().toJsonSchema()),
-          reason: '${schema.runtimeType} should render from SchemaModel',
+          reason: '${schema.runtimeType} should render from AckSchemaModel',
         );
       }
 
@@ -154,9 +147,9 @@ void main() {
         },
       );
 
-      final model = schema.toSchemaModel() as AnyOfSchemaModel;
-      final branch = model.schemas.single as ObjectSchemaModel;
-      final discriminator = branch.properties!['type'] as StringSchemaModel;
+      final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
+      final branch = model.schemas.single as AckObjectSchemaModel;
+      final discriminator = branch.properties!['type'] as AckStringSchemaModel;
 
       expect(model.discriminator!.propertyName, 'type');
       expect(discriminator.constValue, 'cat');
@@ -180,9 +173,10 @@ void main() {
           },
         );
 
-        final model = schema.toSchemaModel() as AnyOfSchemaModel;
-        final branch = model.schemas.single as ObjectSchemaModel;
-        final discriminator = branch.properties!['type'] as StringSchemaModel;
+        final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
+        final branch = model.schemas.single as AckObjectSchemaModel;
+        final discriminator =
+            branch.properties!['type'] as AckStringSchemaModel;
 
         expect(model.discriminator!.propertyName, 'type');
         expect(discriminator.constValue, 'cat');
@@ -199,8 +193,8 @@ void main() {
         },
       );
 
-      final model = schema.toSchemaModel() as AnyOfSchemaModel;
-      final branch = model.schemas.single as ObjectSchemaModel;
+      final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
+      final branch = model.schemas.single as AckObjectSchemaModel;
 
       expect(branch.properties!.keys, ['type', 'name']);
       expect(branch.required, ['type', 'name']);
@@ -239,9 +233,10 @@ void main() {
           },
         );
 
-        final model = schema.toSchemaModel() as AnyOfSchemaModel;
-        final branch = model.schemas.single as ObjectSchemaModel;
-        final discriminator = branch.properties!['type'] as StringSchemaModel;
+        final model = schema.toSchemaModel() as AckAnyOfSchemaModel;
+        final branch = model.schemas.single as AckObjectSchemaModel;
+        final discriminator =
+            branch.properties!['type'] as AckStringSchemaModel;
 
         expect(discriminator.constValue, 'cat');
         expect(branch.extensions['x-transformed'], isTrue);
@@ -270,8 +265,8 @@ void main() {
     test('records Ack.any JSON export limitation as a warning', () {
       final model = Ack.any().toSchemaModel();
 
-      expect(model, isA<AnyOfSchemaModel>());
-      expect((model as AnyOfSchemaModel).schemas, isNotEmpty);
+      expect(model, isA<AckAnyOfSchemaModel>());
+      expect((model as AckAnyOfSchemaModel).schemas, isNotEmpty);
       expect(model.warnings, hasLength(1));
       expect(model.warnings.single.message, contains('JSON-safe values'));
     });
@@ -305,7 +300,7 @@ void main() {
           )
           .toSchemaModel();
 
-      expect((model as StringSchemaModel).minLength, isNull);
+      expect((model as AckStringSchemaModel).minLength, isNull);
       expect(model.extensions, {'minLength': 1.5});
       expect(model.toJsonSchema()['minLength'], 1.5);
     });

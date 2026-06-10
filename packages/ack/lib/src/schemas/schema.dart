@@ -360,25 +360,24 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
       ),
     },
     jsonSchema: StandardJsonSchemaConverter(
-      input: (options) {
-        if (options.target != JsonSchemaTarget.draft07) {
-          throw UnsupportedError('ack supports draft-07 only');
-        }
-        return toJsonSchema();
-      },
-      output: (options) {
-        if (options.target != JsonSchemaTarget.draft07) {
-          throw UnsupportedError('ack supports draft-07 only');
-        }
-        if (this is CodecSchema) {
-          throw UnsupportedError(
-            'codec Runtime side is not JSON-representable',
-          );
-        }
-        return toJsonSchema();
-      },
+      input: (options) => _renderJsonSchema(options.target),
+      output: (options) => this is CodecSchema
+          ? throw UnsupportedError(
+              'codec Runtime side is not JSON-representable',
+            )
+          : _renderJsonSchema(options.target),
     ),
   );
+
+  /// Renders this schema as a Draft-7 JSON Schema map, throwing for any other
+  /// [target] (ack only supports Draft-7 — spec permits throwing for
+  /// unsupported targets).
+  Map<String, Object?> _renderJsonSchema(JsonSchemaTarget target) {
+    if (target != JsonSchemaTarget.draft07) {
+      throw UnsupportedError('ack supports draft-07 only');
+    }
+    return toJsonSchema();
+  }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
   SchemaResult<TOut> safeParseAs<TOut extends Object>(
@@ -466,7 +465,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
 
   /// Converts this schema to a JSON Schema Draft-7 representation.
   ///
-  /// Delegates to the sealed [SchemaModel] boundary so all renderers share
+  /// Delegates to the sealed [AckSchemaModel] boundary so all renderers share
   /// the same Draft-7 output. Subclasses should not override this directly;
   /// instead they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();

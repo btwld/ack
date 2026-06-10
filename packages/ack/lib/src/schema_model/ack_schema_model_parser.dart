@@ -1,11 +1,11 @@
-part of 'schema_model.dart';
+part of 'ack_schema_model.dart';
 
 final class _JsonSchemaParser {
-  SchemaModel parse(Map<String, Object?> json) {
+  AckSchemaModel parse(Map<String, Object?> json) {
     return _parse(json, path: '');
   }
 
-  SchemaModel _parse(
+  AckSchemaModel _parse(
     Map<String, Object?> json, {
     required String path,
     bool nullable = false,
@@ -23,7 +23,7 @@ final class _JsonSchemaParser {
     final wrappedRefName = _readWrappedDefinitionsRef(json);
     if (wrappedRefName != null) {
       return _applyKeywords(
-        RefSchemaModel(refName: wrappedRefName, nullable: nullable),
+        AckRefSchemaModel(refName: wrappedRefName, nullable: nullable),
         json,
         const {'allOf'},
       );
@@ -33,7 +33,7 @@ final class _JsonSchemaParser {
       final refName = _definitionsRefName(ref);
       if (refName != null) {
         return _applyKeywords(
-          RefSchemaModel(refName: refName, nullable: nullable),
+          AckRefSchemaModel(refName: refName, nullable: nullable),
           json,
           const {r'$ref'},
         );
@@ -88,28 +88,30 @@ final class _JsonSchemaParser {
     if (json['type'] case final String type) {
       return switch (type) {
         'string' => _applyKeywords(
-          StringSchemaModel(nullable: nullable),
+          AckStringSchemaModel(nullable: nullable),
           json,
           const {'type'},
         ),
         'integer' => _applyKeywords(
-          IntegerSchemaModel(nullable: nullable),
+          AckIntegerSchemaModel(nullable: nullable),
           json,
           const {'type'},
         ),
         'number' => _applyKeywords(
-          NumberSchemaModel(nullable: nullable),
+          AckNumberSchemaModel(nullable: nullable),
           json,
           const {'type'},
         ),
         'boolean' => _applyKeywords(
-          BooleanSchemaModel(nullable: nullable),
+          AckBooleanSchemaModel(nullable: nullable),
           json,
           const {'type'},
         ),
         'array' => _parseArray(json, path: path, nullable: nullable),
         'object' => _parseObject(json, path: path, nullable: nullable),
-        'null' => _applyKeywords(const NullSchemaModel(), json, const {'type'}),
+        'null' => _applyKeywords(const AckNullSchemaModel(), json, const {
+          'type',
+        }),
         _ => _fallback(
           json,
           path: path,
@@ -130,19 +132,19 @@ final class _JsonSchemaParser {
       nullable: nullable,
       warning: _warning(
         code: 'unsupported_schema_shape',
-        message: 'JSON Schema shape could not be mapped to a SchemaModel.',
+        message: 'JSON Schema shape could not be mapped to a AckSchemaModel.',
         path: path,
       ),
     );
   }
 
-  SchemaModel _parseArray(
+  AckSchemaModel _parseArray(
     Map<String, Object?> json, {
     required String path,
     required bool nullable,
   }) {
-    final warnings = <SchemaModelWarning>[];
-    SchemaModel? items;
+    final warnings = <AckSchemaModelWarning>[];
+    AckSchemaModel? items;
 
     if (json.containsKey('items')) {
       final itemMap = _asStringMap(json['items']);
@@ -161,26 +163,26 @@ final class _JsonSchemaParser {
     }
 
     return _applyKeywords(
-      ArraySchemaModel(items: items, nullable: nullable, warnings: warnings),
+      AckArraySchemaModel(items: items, nullable: nullable, warnings: warnings),
       json,
       const {'type', 'items'},
     );
   }
 
-  SchemaModel _parseObject(
+  AckSchemaModel _parseObject(
     Map<String, Object?> json, {
     required String path,
     required bool nullable,
   }) {
-    final warnings = <SchemaModelWarning>[];
-    Map<String, SchemaModel>? properties;
+    final warnings = <AckSchemaModelWarning>[];
+    Map<String, AckSchemaModel>? properties;
     List<String>? required;
     List<String>? propertyOrdering;
-    AdditionalPropertiesModel? additionalProperties;
+    AckAdditionalPropertiesModel? additionalProperties;
 
     final propertiesJson = _asStringMap(json['properties']);
     if (propertiesJson != null) {
-      final parsed = <String, SchemaModel>{};
+      final parsed = <String, AckSchemaModel>{};
       for (final entry in propertiesJson.entries) {
         final propertyJson = _asStringMap(entry.value);
         parsed[entry.key] = propertyJson == null
@@ -213,11 +215,11 @@ final class _JsonSchemaParser {
     if (json.containsKey('additionalProperties')) {
       switch (json['additionalProperties']) {
         case true:
-          additionalProperties = const AdditionalPropertiesAllowed();
+          additionalProperties = const AckAdditionalPropertiesAllowed();
         case false:
-          additionalProperties = const AdditionalPropertiesDisallowed();
+          additionalProperties = const AckAdditionalPropertiesDisallowed();
         case final Object? value when _asStringMap(value) != null:
-          additionalProperties = AdditionalPropertiesSchema(
+          additionalProperties = AckAdditionalPropertiesSchema(
             _parse(
               _asStringMap(value)!,
               path: _joinPath(path, 'additionalProperties'),
@@ -236,7 +238,7 @@ final class _JsonSchemaParser {
     }
 
     return _applyKeywords(
-      ObjectSchemaModel(
+      AckObjectSchemaModel(
         properties: properties,
         required: required,
         propertyOrdering: propertyOrdering,
@@ -249,15 +251,15 @@ final class _JsonSchemaParser {
     );
   }
 
-  SchemaModel _parseComposition(
+  AckSchemaModel _parseComposition(
     String keyword,
     List<Object?> schemas,
     Map<String, Object?> json, {
     required String path,
     required bool nullable,
   }) {
-    final parsedSchemas = <SchemaModel>[];
-    final warnings = <SchemaModelWarning>[];
+    final parsedSchemas = <AckSchemaModel>[];
+    final warnings = <AckSchemaModelWarning>[];
 
     for (var i = 0; i < schemas.length; i += 1) {
       final schema = _asStringMap(schemas[i]);
@@ -275,17 +277,17 @@ final class _JsonSchemaParser {
     }
 
     final model = switch (keyword) {
-      'anyOf' => AnyOfSchemaModel(
+      'anyOf' => AckAnyOfSchemaModel(
         schemas: parsedSchemas,
         nullable: nullable,
         warnings: warnings,
       ),
-      'oneOf' => OneOfSchemaModel(
+      'oneOf' => AckOneOfSchemaModel(
         schemas: parsedSchemas,
         nullable: nullable,
         warnings: warnings,
       ),
-      'allOf' => AllOfSchemaModel(
+      'allOf' => AckAllOfSchemaModel(
         schemas: parsedSchemas,
         nullable: nullable,
         warnings: warnings,
@@ -296,14 +298,14 @@ final class _JsonSchemaParser {
     return _applyKeywords(model, json, {keyword});
   }
 
-  SchemaModel _parseTypeList(
+  AckSchemaModel _parseTypeList(
     Map<String, Object?> json,
     List<Object?> types, {
     required String path,
     required bool nullable,
   }) {
     final hasNull = types.contains('null');
-    final schemas = <SchemaModel>[];
+    final schemas = <AckSchemaModel>[];
 
     for (final type in types) {
       if (type is! String || type == 'null') continue;
@@ -326,27 +328,27 @@ final class _JsonSchemaParser {
       ).withWarnings([warning]);
     }
 
-    return AnyOfSchemaModel(
+    return AckAnyOfSchemaModel(
       schemas: schemas,
       nullable: nullable || hasNull,
       warnings: [warning],
     );
   }
 
-  SchemaModel _fallback(
+  AckSchemaModel _fallback(
     Map<String, Object?> json, {
     required String path,
     bool nullable = false,
-    SchemaModelWarning? warning,
+    AckSchemaModelWarning? warning,
   }) {
-    final fallback = AnyOfSchemaModel(
+    final fallback = AckAnyOfSchemaModel(
       schemas: const [
-        StringSchemaModel(),
-        NumberSchemaModel(),
-        IntegerSchemaModel(),
-        BooleanSchemaModel(),
-        ObjectSchemaModel(),
-        ArraySchemaModel(),
+        AckStringSchemaModel(),
+        AckNumberSchemaModel(),
+        AckIntegerSchemaModel(),
+        AckBooleanSchemaModel(),
+        AckObjectSchemaModel(),
+        AckArraySchemaModel(),
       ],
       nullable: nullable,
       warnings: [if (warning != null) warning],
@@ -354,8 +356,8 @@ final class _JsonSchemaParser {
     return json.isEmpty ? fallback : fallback.withJsonSchemaKeywords(json);
   }
 
-  SchemaModel _applyKeywords(
-    SchemaModel model,
+  AckSchemaModel _applyKeywords(
+    AckSchemaModel model,
     Map<String, Object?> json,
     Set<String> handled,
   ) {
@@ -418,13 +420,13 @@ final class _JsonSchemaParser {
     return result;
   }
 
-  SchemaModelWarning _warning({
+  AckSchemaModelWarning _warning({
     required String code,
     required String message,
     required String path,
     Map<String, Object?> context = const {},
   }) {
-    return SchemaModelWarning(
+    return AckSchemaModelWarning(
       code: code,
       message: message,
       path: path.isEmpty ? null : path,

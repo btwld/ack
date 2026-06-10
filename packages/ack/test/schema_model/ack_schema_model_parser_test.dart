@@ -1,36 +1,36 @@
-import 'package:schema_model/schema_model.dart';
+import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('SchemaModel.fromJsonSchema', () {
+  group('AckSchemaModel.fromJsonSchema', () {
     test('parses typed scalar keywords', () {
-      final string = SchemaModel.fromJsonSchema({
+      final string = AckSchemaModel.fromJsonSchema({
         'type': 'string',
         'format': 'email',
         'minLength': 3,
         'maxLength': 64,
         'pattern': r'.+@.+',
       });
-      final integer = SchemaModel.fromJsonSchema({
+      final integer = AckSchemaModel.fromJsonSchema({
         'type': 'integer',
         'minimum': 1,
         'maximum': 10,
         'multipleOf': 2,
       });
-      final number = SchemaModel.fromJsonSchema({
+      final number = AckSchemaModel.fromJsonSchema({
         'type': 'number',
         'exclusiveMinimum': 0,
         'exclusiveMaximum': 1,
       });
-      final boolean = SchemaModel.fromJsonSchema({
+      final boolean = AckSchemaModel.fromJsonSchema({
         'type': 'boolean',
         'const': true,
       });
 
-      expect(string, isA<StringSchemaModel>());
-      expect(integer, isA<IntegerSchemaModel>());
-      expect(number, isA<NumberSchemaModel>());
-      expect(boolean, isA<BooleanSchemaModel>());
+      expect(string, isA<AckStringSchemaModel>());
+      expect(integer, isA<AckIntegerSchemaModel>());
+      expect(number, isA<AckNumberSchemaModel>());
+      expect(boolean, isA<AckBooleanSchemaModel>());
       expect(string.toJsonSchema(), {
         'type': 'string',
         'format': 'email',
@@ -55,7 +55,7 @@ void main() {
     test(
       'parses arrays, objects, required fields, and additional properties',
       () {
-        final model = SchemaModel.fromJsonSchema({
+        final model = AckSchemaModel.fromJsonSchema({
           'type': 'object',
           'properties': {
             'name': {'type': 'string'},
@@ -69,12 +69,15 @@ void main() {
           'additionalProperties': {'type': 'string'},
         });
 
-        final object = model as ObjectSchemaModel;
+        final object = model as AckObjectSchemaModel;
         expect(object.propertyOrdering, ['name', 'tags']);
-        expect(object.properties!['name'], isA<StringSchemaModel>());
-        expect(object.properties!['tags'], isA<ArraySchemaModel>());
+        expect(object.properties!['name'], isA<AckStringSchemaModel>());
+        expect(object.properties!['tags'], isA<AckArraySchemaModel>());
         expect(object.required, ['name']);
-        expect(object.additionalProperties, isA<AdditionalPropertiesSchema>());
+        expect(
+          object.additionalProperties,
+          isA<AckAdditionalPropertiesSchema>(),
+        );
         expect(model.toJsonSchema(), {
           'type': 'object',
           'properties': {
@@ -104,9 +107,9 @@ void main() {
         ],
       };
 
-      final model = SchemaModel.fromJsonSchema(json);
+      final model = AckSchemaModel.fromJsonSchema(json);
 
-      expect(model, isA<StringSchemaModel>());
+      expect(model, isA<AckStringSchemaModel>());
       expect(model.nullable, isTrue);
       expect(model.description, 'nickname');
       expect(model.defaultValue, 'leo');
@@ -117,19 +120,19 @@ void main() {
     });
 
     test('parses refs in bare and metadata-wrapped forms', () {
-      final bare = SchemaModel.fromJsonSchema({
+      final bare = AckSchemaModel.fromJsonSchema({
         r'$ref': '#/definitions/Foo~0Bar~1Baz',
       });
-      final wrapped = SchemaModel.fromJsonSchema({
+      final wrapped = AckSchemaModel.fromJsonSchema({
         'title': 'Node',
         'allOf': [
           {r'$ref': '#/definitions/Node'},
         ],
       });
 
-      expect((bare as RefSchemaModel).refName, 'Foo~Bar/Baz');
+      expect((bare as AckRefSchemaModel).refName, 'Foo~Bar/Baz');
       expect(bare.toJsonSchema(), {r'$ref': '#/definitions/Foo~0Bar~1Baz'});
-      expect((wrapped as RefSchemaModel).refName, 'Node');
+      expect((wrapped as AckRefSchemaModel).refName, 'Node');
       expect(wrapped.title, 'Node');
       expect(wrapped.toJsonSchema(), {
         'title': 'Node',
@@ -140,15 +143,15 @@ void main() {
     });
 
     test('warns instead of throwing for unsupported shapes', () {
-      final unknown = SchemaModel.fromJsonSchema({'x-custom': true});
-      final unsupportedRef = SchemaModel.fromJsonSchema({
+      final unknown = AckSchemaModel.fromJsonSchema({'x-custom': true});
+      final unsupportedRef = AckSchemaModel.fromJsonSchema({
         r'$ref': 'https://example.com/schema.json',
       });
-      final typeList = SchemaModel.fromJsonSchema({
+      final typeList = AckSchemaModel.fromJsonSchema({
         'type': ['string', 'null'],
         'minLength': 1,
       });
-      final booleanItems = SchemaModel.fromJsonSchema({
+      final booleanItems = AckSchemaModel.fromJsonSchema({
         'type': 'array',
         'items': true,
       });
@@ -163,47 +166,47 @@ void main() {
     });
 
     test('round-trips rendered JSON for model variants', () {
-      final corpus = <SchemaModel>[
-        const StringSchemaModel(
+      final corpus = <AckSchemaModel>[
+        const AckStringSchemaModel(
           format: 'email',
           minLength: 3,
           nullable: true,
           defaultValue: 'a@b.com',
         ),
-        const IntegerSchemaModel(minimum: 1, maximum: 10),
-        const NumberSchemaModel(multipleOf: 0.5),
-        const BooleanSchemaModel(constValue: false),
-        const ArraySchemaModel(items: StringSchemaModel(minLength: 1)),
-        const ObjectSchemaModel(
-          properties: {'name': StringSchemaModel()},
+        const AckIntegerSchemaModel(minimum: 1, maximum: 10),
+        const AckNumberSchemaModel(multipleOf: 0.5),
+        const AckBooleanSchemaModel(constValue: false),
+        const AckArraySchemaModel(items: AckStringSchemaModel(minLength: 1)),
+        const AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
           required: ['name'],
-          additionalProperties: AdditionalPropertiesSchema(
-            IntegerSchemaModel(),
+          additionalProperties: AckAdditionalPropertiesSchema(
+            AckIntegerSchemaModel(),
           ),
         ),
-        const NullSchemaModel(title: 'Nothing'),
-        const AnyOfSchemaModel(
-          schemas: [StringSchemaModel(), IntegerSchemaModel()],
+        const AckNullSchemaModel(title: 'Nothing'),
+        const AckAnyOfSchemaModel(
+          schemas: [AckStringSchemaModel(), AckIntegerSchemaModel()],
         ),
-        const OneOfSchemaModel(
+        const AckOneOfSchemaModel(
           schemas: [
-            StringSchemaModel(constValue: 'x'),
-            IntegerSchemaModel(),
+            AckStringSchemaModel(constValue: 'x'),
+            AckIntegerSchemaModel(),
           ],
           nullable: true,
         ),
-        const AllOfSchemaModel(
+        const AckAllOfSchemaModel(
           schemas: [
-            StringSchemaModel(minLength: 2),
-            StringSchemaModel(maxLength: 8),
+            AckStringSchemaModel(minLength: 2),
+            AckStringSchemaModel(maxLength: 8),
           ],
         ),
-        const RefSchemaModel(refName: 'Node'),
+        const AckRefSchemaModel(refName: 'Node'),
       ];
 
       for (final model in corpus) {
         final json = model.toJsonSchema();
-        final parsed = SchemaModel.fromJsonSchema(json);
+        final parsed = AckSchemaModel.fromJsonSchema(json);
 
         expect(
           parsed.toJsonSchema(),

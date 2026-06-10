@@ -55,7 +55,7 @@ final class SchemaModelResponseJsonSchemaCase
     required this.model,
   });
 
-  final SchemaModel model;
+  final AckSchemaModel model;
 
   @override
   String get source => 'schema_model';
@@ -260,7 +260,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       'pattern',
       'extension',
     ],
-    model: StringSchemaModel(
+    model: AckStringSchemaModel(
       title: 'Status',
       description: 'Current status',
       format: 'custom-format',
@@ -277,25 +277,25 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
     id: 'schema_model_integer_const_format',
     name: 'integer model const and format',
     features: ['integer', 'format', 'const'],
-    model: IntegerSchemaModel(format: 'int32', constValue: 7),
+    model: AckIntegerSchemaModel(format: 'int32', constValue: 7),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_number_const_format',
     name: 'number model const and format',
     features: ['number', 'format', 'const'],
-    model: NumberSchemaModel(format: 'double', constValue: 1.5),
+    model: AckNumberSchemaModel(format: 'double', constValue: 1.5),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_boolean_const',
     name: 'boolean model const',
     features: ['boolean', 'const'],
-    model: BooleanSchemaModel(constValue: true),
+    model: AckBooleanSchemaModel(constValue: true),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_nullable_default_extensions',
     name: 'nullable model default and extensions',
     features: ['string', 'nullable', 'anyOf', 'const', 'default', 'extension'],
-    model: StringSchemaModel(
+    model: AckStringSchemaModel(
       constValue: 'ready',
       nullable: true,
       defaultValue: 'ready',
@@ -306,7 +306,7 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
     id: 'schema_model_array_without_item_schema',
     name: 'array model without item schema',
     features: ['array', 'minItems', 'maxItems'],
-    model: ArraySchemaModel(minItems: 0, maxItems: 2),
+    model: AckArraySchemaModel(minItems: 0, maxItems: 2),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_object_schema_additional_properties',
@@ -319,34 +319,36 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       'maxProperties',
       'additionalPropertiesSchema',
     ],
-    model: ObjectSchemaModel(
-      properties: {'id': StringSchemaModel()},
+    model: AckObjectSchemaModel(
+      properties: {'id': AckStringSchemaModel()},
       required: ['id'],
       propertyOrdering: ['id'],
       minProperties: 1,
       maxProperties: 3,
-      additionalProperties: AdditionalPropertiesSchema(StringSchemaModel()),
+      additionalProperties: AckAdditionalPropertiesSchema(
+        AckStringSchemaModel(),
+      ),
     ),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_null',
     name: 'null model',
     features: ['null', 'title'],
-    model: NullSchemaModel(title: 'Nothing'),
+    model: AckNullSchemaModel(title: 'Nothing'),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_anyof_common_fields_explicit_null',
     name: 'anyOf model common fields and explicit null branch',
     features: ['anyOf', 'nullable', 'default', 'extension', 'null'],
-    model: AnyOfSchemaModel(
+    model: AckAnyOfSchemaModel(
       title: 'Flexible value',
       defaultValue: 'fallback',
       nullable: true,
       extensions: {'x-ack-test': true},
       schemas: [
-        StringSchemaModel(minLength: 1),
-        IntegerSchemaModel(minimum: 1),
-        NullSchemaModel(),
+        AckStringSchemaModel(minLength: 1),
+        AckIntegerSchemaModel(minimum: 1),
+        AckNullSchemaModel(),
       ],
     ),
   ),
@@ -354,11 +356,11 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
     id: 'schema_model_oneof_nullable_composition',
     name: 'oneOf model nullable composition',
     features: ['oneOf', 'nullable', 'const', 'null'],
-    model: OneOfSchemaModel(
+    model: AckOneOfSchemaModel(
       nullable: true,
       schemas: [
-        StringSchemaModel(constValue: 'ready'),
-        IntegerSchemaModel(minimum: 1),
+        AckStringSchemaModel(constValue: 'ready'),
+        AckIntegerSchemaModel(minimum: 1),
       ],
     ),
   ),
@@ -366,38 +368,38 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
     id: 'schema_model_oneof_discriminator',
     name: 'oneOf model discriminator metadata',
     features: ['oneOf', 'const'],
-    model: OneOfSchemaModel(
+    model: AckOneOfSchemaModel(
       schemas: [
-        ObjectSchemaModel(
+        AckObjectSchemaModel(
           properties: {
-            'type': StringSchemaModel(constValue: 'email'),
-            'address': StringSchemaModel(format: 'email'),
+            'type': AckStringSchemaModel(constValue: 'email'),
+            'address': AckStringSchemaModel(format: 'email'),
           },
           required: ['type', 'address'],
         ),
-        ObjectSchemaModel(
+        AckObjectSchemaModel(
           properties: {
-            'type': StringSchemaModel(constValue: 'sms'),
-            'number': StringSchemaModel(),
+            'type': AckStringSchemaModel(constValue: 'sms'),
+            'number': AckStringSchemaModel(),
           },
           required: ['type', 'number'],
         ),
       ],
-      discriminator: SchemaDiscriminatorModel(propertyName: 'type'),
+      discriminator: AckSchemaDiscriminatorModel(propertyName: 'type'),
     ),
   ),
   const SchemaModelResponseJsonSchemaCase(
     id: 'schema_model_allof',
     name: 'allOf model',
     features: ['allOf'],
-    model: AllOfSchemaModel(
+    model: AckAllOfSchemaModel(
       schemas: [
-        ObjectSchemaModel(
-          properties: {'id': StringSchemaModel()},
+        AckObjectSchemaModel(
+          properties: {'id': AckStringSchemaModel()},
           required: ['id'],
         ),
-        ObjectSchemaModel(
-          properties: {'name': StringSchemaModel()},
+        AckObjectSchemaModel(
+          properties: {'name': AckStringSchemaModel()},
           required: ['name'],
         ),
       ],

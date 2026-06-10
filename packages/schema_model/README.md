@@ -1,27 +1,58 @@
 # schema_model
 
-Vendor-neutral schema model and standard schema contracts for Dart.
+Standard Schema contracts for Dart validators and converters.
 
-`schema_model` has two layers:
+`schema_model` is a Dart port of the contracts described by
+[standardschema.dev](https://standardschema.dev). It defines the small
+`StandardSchema` surface that validation libraries can implement and consumers
+can call without depending on a vendor-specific schema tree.
 
-- `SchemaModel`: a structured description tree that can render Draft-7 JSON
-  Schema and import JSON Schema with `SchemaModel.fromJsonSchema`.
-- `StandardSchema`: a small validation contract for libraries that want to
-  expose `validate(value)` results and optional JSON Schema converters.
+The package intentionally does not define a schema model, parser, renderer, or
+warning system. Libraries keep those implementation details in their own
+packages and expose this contract at their boundary.
+
+## Implement a schema
 
 ```dart
 import 'package:schema_model/schema_model.dart';
 
-final model = SchemaModel.fromJsonSchema({
-  'type': 'object',
-  'properties': {
-    'name': {'type': 'string', 'minLength': 2},
-  },
-  'required': ['name'],
-});
+final class RequiredStringSchema implements StandardSchema<Object?, String> {
+  const RequiredStringSchema();
 
-final jsonSchema = model.toJsonSchema();
+  @override
+  StandardSchemaProps<Object?, String> get standard => StandardSchemaProps(
+    vendor: 'example',
+    validate: (value, [options]) {
+      if (value is String && value.isNotEmpty) {
+        return StandardSuccess(value);
+      }
+
+      return const StandardFailure([
+        StandardIssue(message: 'Expected a non-empty string'),
+      ]);
+    },
+  );
+}
 ```
 
-Validator packages can implement `StandardSchema<Input, Output>` and expose
-their contract through `standard`.
+## Expose JSON Schema conversion
+
+```dart
+final schema = StandardSchemaProps<Object?, String>(
+  vendor: 'example',
+  validate: (value, [options]) => const StandardSuccess('value'),
+  jsonSchema: StandardJsonSchemaConverter(
+    input: (options) {
+      if (options.target != JsonSchemaTarget.draft07) {
+        throw UnsupportedError('Only Draft-7 is supported.');
+      }
+
+      return {'type': 'string'};
+    },
+    output: (options) => {'type': 'string'},
+  ),
+);
+```
+
+Converters return plain JSON Schema maps (`Map<String, Object?>`). They may
+throw when a schema cannot be represented for the requested target.
