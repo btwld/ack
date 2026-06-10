@@ -73,7 +73,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
         name: '$i',
         schema: itemSchema,
         value: item,
-        pathSegment: '$i',
+        pathSegment: SchemaPathSegment.index(i),
       );
       final r = parse
           ? itemSchema.parseWithContext(item, itemCtx)
@@ -125,7 +125,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
         name: '$i',
         schema: itemSchema,
         value: item,
-        pathSegment: '$i',
+        pathSegment: SchemaPathSegment.index(i),
         operation: SchemaOperation.encode,
       );
       try {

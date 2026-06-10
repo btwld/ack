@@ -9,6 +9,9 @@
 * Replace the interim JSON Schema model kind API with sealed
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
+* `SchemaContext.createChild(pathSegment: ...)` now takes a
+  `SchemaPathSegment` so standard issue paths can distinguish string object
+  keys from integer list indexes.
 
 ### Added
 
@@ -20,11 +23,12 @@
 * `NumberSchemaExtensions` adds fluent numeric constraints to `Ack.number()`:
   `.min`, `.max`, `.greaterThan`, `.lessThan`, `.positive`, `.negative`, and
   `.multipleOf`.
-* `AckSchema.standard` implements the `StandardSchema` validation contract with
-  flat `StandardIssue` failures and a Draft-7 JSON Schema converter.
+* `AckSchema.standard` implements the combined `StandardSchemaWithJsonSchema`
+  contract with flat `StandardIssue` failures and a Draft-7 JSON Schema
+  converter.
 * `SchemaContext.pathSegments` exposes raw path segments with list indices as
-  integers, and `SchemaError.toStandardIssues()` maps ACK errors to standard
-  issues.
+  integers while preserving numeric-looking object keys as strings, and
+  `SchemaError.toStandardIssues()` maps ACK errors to standard issues.
 * `AckSchemaModel.fromJsonSchema(...)` imports supported Draft-7 JSON Schema
   maps into ACK's existing schema model as a best-effort Ack feature.
 

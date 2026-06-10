@@ -2,6 +2,48 @@ import 'package:meta/meta.dart';
 
 import 'schemas/schema.dart';
 
+enum _SchemaPathSegmentKind { property, listIndex, passThrough }
+
+/// A typed path segment used by [SchemaContext].
+///
+/// String object keys and integer list indexes must stay distinct for standard
+/// issue paths. Use [SchemaPathSegment.passThrough] for composition branches
+/// that should not add a user-visible path segment.
+@immutable
+final class SchemaPathSegment {
+  const SchemaPathSegment.property(String key)
+    : _kind = _SchemaPathSegmentKind.property,
+      _value = key;
+
+  const SchemaPathSegment.index(int index)
+    : assert(index >= 0, 'List path indexes must be non-negative.'),
+      _kind = _SchemaPathSegmentKind.listIndex,
+      _value = index;
+
+  const SchemaPathSegment.passThrough()
+    : _kind = _SchemaPathSegmentKind.passThrough,
+      _value = null;
+
+  final _SchemaPathSegmentKind _kind;
+  final Object? _value;
+
+  Object? get _issueValue {
+    return switch (_kind) {
+      _SchemaPathSegmentKind.property => _value as String,
+      _SchemaPathSegmentKind.listIndex => _value as int,
+      _SchemaPathSegmentKind.passThrough => null,
+    };
+  }
+
+  String? get _jsonPointerValue {
+    return switch (_kind) {
+      _SchemaPathSegmentKind.property => _value as String,
+      _SchemaPathSegmentKind.listIndex => (_value as int).toString(),
+      _SchemaPathSegmentKind.passThrough => null,
+    };
+  }
+}
+
 /// Represents the context in which a schema operation is occurring.
 @immutable
 class SchemaContext {
@@ -9,7 +51,7 @@ class SchemaContext {
   final Object? value;
   final AnyAckSchema schema;
   final SchemaContext? parent;
-  final String? pathSegment;
+  final SchemaPathSegment? pathSegment;
   final SchemaOperation operation;
 
   const SchemaContext({
@@ -34,12 +76,13 @@ class SchemaContext {
 
     final parentPath = parent!.path;
 
-    if (pathSegment == '') {
+    final segment = pathSegment ?? SchemaPathSegment.property(name);
+    final pointerValue = segment._jsonPointerValue;
+    if (pointerValue == null) {
       return parentPath;
     }
 
-    final segment = pathSegment ?? name;
-    final escapedSegment = _escapeJsonPointerSegment(segment);
+    final escapedSegment = _escapeJsonPointerSegment(pointerValue);
 
     return parentPath == '#'
         ? '#/$escapedSegment'
@@ -48,16 +91,15 @@ class SchemaContext {
 
   /// Raw path segments from root to this context.
   ///
-  /// Numeric segments are exposed as integer indices to match the standard
-  /// schema path shape. Empty path segments are branch pass-through markers and
-  /// do not add to the path.
+  /// Object keys are exposed as strings and list indexes as integers. Branch
+  /// pass-through segments do not add to the path.
   List<Object> get pathSegments {
     final parentSegments = parent?.pathSegments ?? const <Object>[];
-    if (parent == null || pathSegment == '') return parentSegments;
+    if (parent == null) return parentSegments;
 
-    final segment = pathSegment ?? name;
-    final index = int.tryParse(segment);
-    final pathValue = index != null && index >= 0 ? index : segment;
+    final segment = pathSegment ?? SchemaPathSegment.property(name);
+    final pathValue = segment._issueValue;
+    if (pathValue == null) return parentSegments;
     return [...parentSegments, pathValue];
   }
 
@@ -68,7 +110,7 @@ class SchemaContext {
     required String name,
     required AnyAckSchema schema,
     required Object? value,
-    String? pathSegment,
+    SchemaPathSegment? pathSegment,
     SchemaOperation? operation,
   }) {
     return SchemaContext(

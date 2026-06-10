@@ -9,11 +9,10 @@ Future<StandardResult<T>> _resolve<T>(
   return result;
 }
 
-final class _FakeSchema implements StandardSchema<String, int> {
-  const _FakeSchema({this.async = false, this.includeJsonSchema = true});
+final class _ValidationOnlySchema implements StandardSchema<String, int> {
+  const _ValidationOnlySchema({this.async = false});
 
   final bool async;
-  final bool includeJsonSchema;
 
   @override
   StandardSchemaProps<String, int> get standard => StandardSchemaProps(
@@ -27,27 +26,52 @@ final class _FakeSchema implements StandardSchema<String, int> {
         StandardIssue(message: 'Not ok', path: ['items', 1]),
       ]);
     },
-    jsonSchema: includeJsonSchema
-        ? StandardJsonSchemaConverter(
-            input: (options) => {
-              r'$schema': options.target,
-              'type': 'string',
-              if (options.libraryOptions case final options?)
-                'x-options': options,
-            },
-            output: (options) => {'type': 'integer'},
-          )
-        : null,
   );
+}
+
+final class _JsonSchemaOnlySchema implements StandardJsonSchema<String, int> {
+  const _JsonSchemaOnlySchema();
+
+  @override
+  StandardJsonSchemaProps<String, int> get standard => StandardJsonSchemaProps(
+    vendor: 'fake-json',
+    jsonSchema: StandardJsonSchemaConverter(
+      input: (options) => {
+        r'$schema': options.target,
+        'type': 'string',
+        if (options.libraryOptions case final options?) 'x-options': options,
+      },
+      output: (options) => {'type': 'integer'},
+    ),
+  );
+}
+
+final class _CombinedSchema
+    implements StandardSchemaWithJsonSchema<String, int> {
+  const _CombinedSchema();
+
+  @override
+  StandardSchemaWithJsonSchemaProps<String, int> get standard =>
+      StandardSchemaWithJsonSchemaProps(
+        vendor: 'fake-combined',
+        validate: (value, [options]) => value == 'ok'
+            ? const StandardSuccess(1)
+            : const StandardFailure([StandardIssue(message: 'Not ok')]),
+        jsonSchema: StandardJsonSchemaConverter(
+          input: (options) => {'type': 'string'},
+          output: (options) => {'type': 'integer'},
+        ),
+      );
 }
 
 void main() {
   group('StandardSchema', () {
     test('carries vendor, version, and success or failure results', () async {
-      const schema = _FakeSchema();
+      const schema = _ValidationOnlySchema();
 
       expect(schema.standard.vendor, 'fake');
       expect(schema.standard.version, 1);
+      expect(schema, isNot(isA<StandardJsonSchema<String, int>>()));
 
       final success = await _resolve(schema.standard.validate('ok'));
       final failure = await _resolve(schema.standard.validate('bad'));
@@ -60,7 +84,7 @@ void main() {
     });
 
     test('allows async validation and validate options', () async {
-      const schema = _FakeSchema(async: true);
+      const schema = _ValidationOnlySchema(async: true);
 
       final result = await _resolve(
         schema.standard.validate(
@@ -72,13 +96,14 @@ void main() {
       expect(result, isA<StandardSuccess<int>>());
     });
 
-    test('models optional JSON Schema converters', () {
-      const withConverter = _FakeSchema();
-      const withoutConverter = _FakeSchema(includeJsonSchema: false);
+    test('models JSON Schema converters as a separate trait', () {
+      const schema = _JsonSchemaOnlySchema();
 
-      expect(withoutConverter.standard.jsonSchema, isNull);
+      expect(schema.standard.vendor, 'fake-json');
+      expect(schema.standard.version, 1);
+      expect(schema, isNot(isA<StandardSchema<String, int>>()));
       expect(
-        withConverter.standard.jsonSchema!.input(
+        schema.standard.jsonSchema.input(
           const StandardJsonSchemaOptions(
             target: JsonSchemaTarget.draft07,
             libraryOptions: {'dialect': 'draft7'},
@@ -91,11 +116,29 @@ void main() {
         },
       );
       expect(
-        withConverter.standard.jsonSchema!.output(
+        schema.standard.jsonSchema.output(
           const StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07),
         ),
         {'type': 'integer'},
       );
     });
+
+    test(
+      'allows a schema to implement validation and JSON Schema together',
+      () {
+        const schema = _CombinedSchema();
+
+        expect(schema, isA<StandardSchema<String, int>>());
+        expect(schema, isA<StandardJsonSchema<String, int>>());
+        expect(schema.standard.vendor, 'fake-combined');
+        expect(schema.standard.validate('ok'), isA<StandardSuccess<int>>());
+        expect(
+          schema.standard.jsonSchema.input(
+            const StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07),
+          ),
+          {'type': 'string'},
+        );
+      },
+    );
   });
 }

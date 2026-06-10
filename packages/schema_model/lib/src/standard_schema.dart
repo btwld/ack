@@ -1,15 +1,46 @@
 import 'dart:async';
 
-/// A schema that conforms to the Standard Schema spec.
+/// An entity that exposes Standard Schema family metadata.
 ///
-/// Implementers expose a single [standard] property carrying the validate tier
-/// (always) and, optionally, the JSON Schema tier. Port of `StandardSchemaV1`
-/// from [standardschema.dev](https://standardschema.dev); the `~standard` key
-/// is spelled [standard] (the tilde is a JS autocomplete hack) and the phantom
-/// `types` field is dropped because Dart generics carry that information.
-abstract interface class StandardSchema<Input, Output> {
-  /// The Standard Schema properties.
+/// This is the Dart spelling of upstream `StandardTypedV1`: the upstream
+/// `~standard` key is exposed as [standard], and the TypeScript-only phantom
+/// `types` field is omitted because Dart generics carry input/output types.
+abstract interface class StandardTyped<Input, Output> {
+  /// The standard typed properties.
+  StandardTypedProps<Input, Output> get standard;
+}
+
+/// A schema that validates unknown values.
+///
+/// This is the Dart spelling of upstream `StandardSchemaV1`.
+abstract interface class StandardSchema<Input, Output>
+    implements StandardTyped<Input, Output> {
+  /// The standard schema properties.
+  @override
   StandardSchemaProps<Input, Output> get standard;
+}
+
+/// An entity that can convert its input/output sides to JSON Schema.
+///
+/// This is the Dart spelling of upstream `StandardJSONSchemaV1`. It is
+/// intentionally separate from [StandardSchema]; an object may implement one
+/// or both traits.
+abstract interface class StandardJsonSchema<Input, Output>
+    implements StandardTyped<Input, Output> {
+  /// The standard JSON Schema properties.
+  @override
+  StandardJsonSchemaProps<Input, Output> get standard;
+}
+
+/// Convenience interface for entities that implement both standard validation
+/// and standard JSON Schema conversion with one [standard] property.
+abstract interface class StandardSchemaWithJsonSchema<Input, Output>
+    implements
+        StandardSchema<Input, Output>,
+        StandardJsonSchema<Input, Output> {
+  /// The combined standard properties.
+  @override
+  StandardSchemaWithJsonSchemaProps<Input, Output> get standard;
 }
 
 /// Validates an unknown value, synchronously or asynchronously.
@@ -28,14 +59,9 @@ typedef StandardValidate<Output> =
 typedef StandardJsonSchemaConvert =
     Map<String, Object?> Function(StandardJsonSchemaOptions options);
 
-/// The properties of a [StandardSchema].
-final class StandardSchemaProps<Input, Output> {
-  const StandardSchemaProps({
-    required this.vendor,
-    required this.validate,
-    this.version = 1,
-    this.jsonSchema,
-  });
+/// The properties shared by every standard trait.
+class StandardTypedProps<Input, Output> {
+  const StandardTypedProps({required this.vendor, this.version = 1});
 
   /// The vendor name of the schema library.
   final String vendor;
@@ -43,13 +69,48 @@ final class StandardSchemaProps<Input, Output> {
   /// The version of the standard. Always `1` for this spec revision (Dart
   /// cannot pin the literal type the way TypeScript's `version: 1` does).
   final int version;
+}
+
+/// The properties of a [StandardSchema].
+class StandardSchemaProps<Input, Output>
+    extends StandardTypedProps<Input, Output> {
+  const StandardSchemaProps({
+    required super.vendor,
+    required this.validate,
+    super.version,
+  });
 
   /// Validates an unknown input value.
   final StandardValidate<Output> validate;
+}
 
-  /// The JSON Schema tier converter, or `null` if this vendor does not
-  /// implement the JSON Schema spec.
-  final StandardJsonSchemaConverter? jsonSchema;
+/// The properties of a [StandardJsonSchema].
+class StandardJsonSchemaProps<Input, Output>
+    extends StandardTypedProps<Input, Output> {
+  const StandardJsonSchemaProps({
+    required super.vendor,
+    required this.jsonSchema,
+    super.version,
+  });
+
+  /// The JSON Schema tier converter.
+  final StandardJsonSchemaConverter jsonSchema;
+}
+
+/// The properties of a [StandardSchemaWithJsonSchema].
+class StandardSchemaWithJsonSchemaProps<Input, Output>
+    extends StandardSchemaProps<Input, Output>
+    implements StandardJsonSchemaProps<Input, Output> {
+  const StandardSchemaWithJsonSchemaProps({
+    required super.vendor,
+    required super.validate,
+    required this.jsonSchema,
+    super.version,
+  });
+
+  /// The JSON Schema tier converter.
+  @override
+  final StandardJsonSchemaConverter jsonSchema;
 }
 
 /// Optional parameters passed to [StandardValidate].
@@ -88,16 +149,16 @@ final class StandardIssue {
   /// The error message of the issue.
   final String message;
 
-  /// The path to the offending value, as `PropertyKey` segments: a [String]
+  /// The path to the offending value, as property-key segments: a [String]
   /// object key or an [int] list index. Empty for a root-level issue.
   final List<Object> path;
 }
 
-/// The JSON Schema tier converter (`StandardJSONSchemaV1`).
+/// The JSON Schema tier converter.
 ///
 /// The [input]/[output] split exists because validators transform: [input]
-/// describes the value accepted (the boundary side), [output] the value
-/// produced (the runtime side).
+/// describes the value accepted at the boundary, while [output] describes the
+/// value produced at runtime.
 final class StandardJsonSchemaConverter {
   const StandardJsonSchemaConverter({
     required this.input,
@@ -126,11 +187,8 @@ final class StandardJsonSchemaOptions {
 ///
 /// Mirrors the spec's
 /// `Target = 'draft-2020-12' | 'draft-07' | 'openapi-3.0' | (string & {})`: a
-/// zero-cost extension type over [String] where the constants are the
-/// recommended targets, but any string is accepted via the constructor
-/// (`JsonSchemaTarget('my-target')`). Because it `implements String`, a
-/// `JsonSchemaTarget` is usable wherever a `String` is and compares equal to
-/// its underlying value.
+/// zero-cost extension type over [String] where the constants are recommended
+/// targets, but any string is accepted via the constructor.
 extension type const JsonSchemaTarget(String value) implements String {
   /// JSON Schema Draft 2020-12.
   static const draft202012 = JsonSchemaTarget('draft-2020-12');

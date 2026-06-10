@@ -95,7 +95,7 @@ final class DiscriminatedObjectSchema<T extends Object>
             name: discriminatorKey,
             schema: const StringSchema(),
             value: null,
-            pathSegment: discriminatorKey,
+            pathSegment: SchemaPathSegment.property(discriminatorKey),
           ),
         ),
       );
@@ -114,7 +114,7 @@ final class DiscriminatedObjectSchema<T extends Object>
             name: discriminatorKey,
             schema: const StringSchema(),
             value: discValueRaw,
-            pathSegment: discriminatorKey,
+            pathSegment: SchemaPathSegment.property(discriminatorKey),
           ),
         ),
       );
@@ -133,7 +133,7 @@ final class DiscriminatedObjectSchema<T extends Object>
             name: discriminatorKey,
             schema: const StringSchema(),
             value: discValueRaw,
-            pathSegment: discriminatorKey,
+            pathSegment: SchemaPathSegment.property(discriminatorKey),
           ),
         ),
       );
@@ -249,7 +249,7 @@ final class DiscriminatedObjectSchema<T extends Object>
       name: 'when $discriminatorKey="$discValue"',
       schema: effective,
       value: mapValue,
-      pathSegment: '',
+      pathSegment: const SchemaPathSegment.passThrough(),
     );
 
     final result = effective.parseWithContext(mapValue, subSchemaContext);
@@ -305,7 +305,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         name: 'when $discriminatorKey="$discValue"',
         schema: effective,
         value: runtime,
-        pathSegment: '',
+        pathSegment: const SchemaPathSegment.passThrough(),
         operation: SchemaOperation.encode,
       );
 
@@ -341,7 +341,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         name: 'when $discriminatorKey="$discValue"',
         schema: effective,
         value: runtime,
-        pathSegment: '',
+        pathSegment: const SchemaPathSegment.passThrough(),
         operation: SchemaOperation.encode,
       );
 

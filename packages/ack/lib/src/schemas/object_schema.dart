@@ -66,7 +66,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
             name: key,
             schema: schema,
             value: null,
-            pathSegment: key,
+            pathSegment: SchemaPathSegment.property(key),
           );
           schema
               .resolveDefaultWithContext(childCtx)
@@ -88,7 +88,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
                   name: key,
                   schema: schema,
                   value: null,
-                  pathSegment: key,
+                  pathSegment: SchemaPathSegment.property(key),
                 ),
               ),
             );
@@ -102,7 +102,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         name: key,
         schema: schema,
         value: propertyValue,
-        pathSegment: key,
+        pathSegment: SchemaPathSegment.property(key),
       );
       schema
           .parseWithContext(propertyValue, propertyCtx)
@@ -133,7 +133,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
               name: key,
               schema: this,
               value: mapValue[key],
-              pathSegment: key,
+              pathSegment: SchemaPathSegment.property(key),
             ),
           ),
         );
@@ -188,7 +188,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           name: key,
           schema: schema,
           value: null,
-          pathSegment: key,
+          pathSegment: SchemaPathSegment.property(key),
         );
         if (isEncode) {
           errors.add(
@@ -215,7 +215,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         name: key,
         schema: schema,
         value: propertyValue,
-        pathSegment: key,
+        pathSegment: SchemaPathSegment.property(key),
       );
 
       if (propertyValue == null) {
@@ -244,7 +244,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         name: key,
         schema: this,
         value: mapValue[key],
-        pathSegment: key,
+        pathSegment: SchemaPathSegment.property(key),
       );
       if (isEncode) {
         errors.add(
@@ -299,7 +299,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         name: key,
         schema: schema,
         value: hasValue ? value[key] : null,
-        pathSegment: key,
+        pathSegment: SchemaPathSegment.property(key),
         operation: SchemaOperation.encode,
       );
       final Object? propertyValue;
