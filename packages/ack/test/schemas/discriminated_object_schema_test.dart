@@ -247,6 +247,25 @@ void main() {
         expect(encoded.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
       });
 
+      test('parsed map-backed codec output is unmodifiable even when the '
+          'codec includes the discriminator', () {
+        final codecSchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .codec<Map<String, Object?>>(
+                  decode: (data) => {'type': 'cat', 'name': data['name']},
+                  encode: (cat) => {'type': 'cat', 'name': cat['name']},
+                ),
+          },
+        );
+
+        final parsed = codecSchema.parse({'type': 'cat', 'name': 'Mittens'});
+
+        expect(parsed, {'type': 'cat', 'name': 'Mittens'});
+        expect(() => parsed!['type'] = 'dog', throwsUnsupportedError);
+      });
+
       test(
         'rejects a decoded map runtime with a conflicting discriminator',
         () {
@@ -346,6 +365,27 @@ void main() {
 
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), {'type': 'dog', 'name': 'Spot'});
+      });
+
+      test('rejects an ambiguous typed runtime that matches multiple '
+          'branches', () {
+        final codecSchema = Ack.discriminated<Object>(
+          discriminatorKey: 'type',
+          schemas: {
+            'a': Ack.object({'name': Ack.string()}).codec<_Cat>(
+              decode: (data) => _Cat(data['name']! as String),
+              encode: (cat) => {'name': cat.name},
+            ),
+            'b': Ack.object({'name': Ack.string()}).codec<_Cat>(
+              decode: (data) => _Cat(data['name']! as String),
+              encode: (cat) => {'name': cat.name},
+            ),
+          },
+        );
+
+        final result = codecSchema.safeEncode(const _Cat('Mittens'));
+
+        expect(result.isFail, isTrue);
       });
 
       test(

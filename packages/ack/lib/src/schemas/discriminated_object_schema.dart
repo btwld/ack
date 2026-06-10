@@ -4,11 +4,12 @@ part of 'schema.dart';
 ///
 /// Branches must produce the same runtime type [T]. Boundary type is
 /// [JsonMap]. Encoding map runtimes requires the configured discriminator and
-/// selects the named branch directly. Non-map model-backed runtimes keep the
-/// existing branch-probing behavior. The union writes the discriminator key
-/// after branch encoding; if a branch encoder emits it, the value must match
-/// the selected branch. Parsed map-backed codec outputs are normalized with the
-/// selected discriminator so they remain round-trippable.
+/// selects the named branch directly. Non-map model-backed runtimes are probed
+/// by runtime type; a runtime that matches more than one branch is rejected as
+/// ambiguous. The union writes the discriminator key after branch encoding; if
+/// a branch encoder emits it, the value must match the selected branch. Parsed
+/// map-backed codec outputs are normalized with the selected discriminator so
+/// they remain round-trippable and consistently immutable.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
@@ -153,18 +154,22 @@ final class DiscriminatedObjectSchema<T extends Object>
 
     if (mapValue.containsKey(discriminatorKey)) {
       final existing = mapValue[discriminatorKey];
-      if (existing == discValue) return SchemaResult.ok(parsed);
-
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message:
-              'Discriminated branch "$discValue" decoded a map runtime with '
-              'conflicting "$discriminatorKey" value: $existing.',
-          context: context,
-        ),
-      );
+      if (existing != discValue) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message:
+                'Discriminated branch "$discValue" decoded a map runtime with '
+                'conflicting "$discriminatorKey" value: $existing.',
+            context: context,
+          ),
+        );
+      }
     }
 
+    // Always rebuild as an unmodifiable map carrying the discriminator, whether
+    // or not the decoded map already included it. This keeps parsed map-backed
+    // codec outputs consistently immutable (like object branches) so the
+    // discriminator cannot be mutated post-parse into a different encode branch.
     final Object normalized = switch (parsed) {
       Map<String, String>() => Map<String, String>.unmodifiable({
         discriminatorKey: discValue,
@@ -384,9 +389,13 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    // Slow path: try each typed/model branch. The first whose runtime
-    // validation and encoder both succeed wins.
+    // Slow path: a non-map runtime (typed/model) names no branch, so probe by
+    // runtime validation. Require exactly one branch to validate and encode;
+    // reject a runtime that matches more than one branch instead of silently
+    // picking the first.
     final errors = <SchemaError>[];
+    JsonMap? matchedBoundary;
+    String? matchedDiscValue;
     for (final discValue in schemas.keys) {
       // Select the branch via the effective schema (its literal discriminator
       // gates selection per PR #107); the union itself writes the discriminator
@@ -414,9 +423,25 @@ final class DiscriminatedObjectSchema<T extends Object>
         continue;
       }
       final boundary = encoded.getOrNull();
-      if (boundary != null) {
-        return SchemaResult.ok(Map.unmodifiable(boundary));
+      if (boundary == null) continue;
+
+      if (matchedBoundary != null) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message:
+                'Discriminated encode is ambiguous: the runtime matches both '
+                'the "$matchedDiscValue" and "$discValue" branches. Encode a '
+                'value whose runtime type selects a single branch.',
+            context: context,
+          ),
+        );
       }
+      matchedBoundary = boundary;
+      matchedDiscValue = discValue;
+    }
+
+    if (matchedBoundary != null) {
+      return SchemaResult.ok(Map.unmodifiable(matchedBoundary));
     }
 
     return SchemaResult.fail(
