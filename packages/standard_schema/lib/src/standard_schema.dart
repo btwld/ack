@@ -32,8 +32,14 @@ abstract interface class StandardJsonSchema<Input, Output>
   StandardJsonSchemaProps<Input, Output> get standard;
 }
 
-/// Convenience interface for entities that implement both standard validation
+/// Dart-only convenience for entities that implement both standard validation
 /// and standard JSON Schema conversion with one [standard] property.
+///
+/// Not a separate upstream interface. Upstream defines exactly two interfaces
+/// (`StandardSchemaV1`, `StandardJSONSchemaV1`), each with its own `~standard`.
+/// A TypeScript schema implementing both has one `~standard` that structurally
+/// satisfies both Props. This interface models that intersection for Dart,
+/// where one getter cannot return two unrelated types.
 abstract interface class StandardSchemaWithJsonSchema<Input, Output>
     implements
         StandardSchema<Input, Output>,

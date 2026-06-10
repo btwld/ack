@@ -31,6 +31,9 @@
   `SchemaError.toStandardIssues()` maps ACK errors to standard issues.
 * `AckSchemaModel.fromJsonSchema(...)` imports supported Draft-7 JSON Schema
   maps into ACK's existing schema model as a best-effort Ack feature.
+* `package:ack/ack.dart` now re-exports the `standard_schema` contract types
+  (`StandardSchema`, `StandardResult`, `StandardIssue`, `JsonSchemaTarget`,
+  …) so they can be used without depending on `standard_schema` directly.
 
 ### Changed
 
@@ -44,6 +47,15 @@
 * Re-run tests for code paths that parse or encode `double`/`num` values. If a
   boundary must accept `NaN` or infinities, model that value outside the JSON
   numeric schema path before validation.
+* Custom schema authors and manual `SchemaContext` callers should replace raw
+  `pathSegment` strings with typed segments:
+
+  ```dart
+  // Migrating manual SchemaContext.createChild(pathSegment: ...) calls:
+  pathSegment: SchemaPathSegment.property(key)        // object key (String)
+  pathSegment: SchemaPathSegment.index(i)             // list index (int)
+  pathSegment: const SchemaPathSegment.passThrough()  // composition branch routing
+  ```
 
 ## 1.0.0-beta.11
 

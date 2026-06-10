@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:schema_model/schema_model.dart';
 import 'package:test/test.dart';
 
 void main() {

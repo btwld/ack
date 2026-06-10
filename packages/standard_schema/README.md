@@ -1,21 +1,23 @@
-# schema_model
+# standard_schema
 
 Standard Schema contracts for Dart validators and converters.
 
-`schema_model` is a Dart port of the contract family described by
-[standardschema.dev](https://standardschema.dev). It defines small
-`StandardTyped`, `StandardSchema`, and `StandardJsonSchema` surfaces that
-libraries can implement and consumers can call without depending on a
-vendor-specific schema tree.
+`standard_schema` is a Dart port of the contract family described by
+[standardschema.dev](https://standardschema.dev). It ports the two official
+interfaces — `StandardSchemaV1` and `StandardJSONSchemaV1` — as
+`StandardSchema` and `StandardJsonSchema`, plus a Dart-only combined convenience
+(`StandardSchemaWithJsonSchema`) for implementers that satisfy both with one
+`standard` getter.
 
-The package intentionally does not define a schema model, parser, renderer, or
-warning system. Libraries keep those implementation details in their own
-packages and expose this contract at their boundary.
+Libraries implement these small surfaces and consumers call them without
+depending on a vendor-specific schema tree. The package does not define a JSON
+schema model, parser, renderer, or warning system; those stay in vendor
+packages (for example, Ack's `AckSchemaModel` in `package:ack`).
 
 ## Implement a schema
 
 ```dart
-import 'package:schema_model/schema_model.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 final class RequiredStringSchema implements StandardSchema<Object?, String> {
   const RequiredStringSchema();
@@ -39,7 +41,7 @@ final class RequiredStringSchema implements StandardSchema<Object?, String> {
 ## Expose JSON Schema conversion
 
 ```dart
-import 'package:schema_model/schema_model.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 final class RequiredStringJsonSchema
     implements StandardJsonSchema<Object?, String> {
@@ -68,8 +70,12 @@ throw when a schema cannot be represented for the requested target.
 
 ## Implement both traits
 
+`StandardSchemaWithJsonSchema` is a Dart-only convenience — not a separate
+upstream interface. It models the structural intersection of the two official
+`~standard` Props when one getter must satisfy both traits.
+
 ```dart
-import 'package:schema_model/schema_model.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 final class RequiredStringSchemaWithJson
     implements StandardSchemaWithJsonSchema<Object?, String> {
@@ -99,5 +105,34 @@ final class RequiredStringSchemaWithJson
           output: (options) => {'type': 'string'},
         ),
       );
+}
+```
+
+## Utilities
+
+Optional helpers for consuming validation issues live in a separate, opt-in
+library, mirroring upstream's `@standard-schema/utils` package. Import it
+explicitly:
+
+```dart
+import 'package:standard_schema/utils.dart';
+```
+
+- `getDotPath(issue)` renders an issue's `path` in dot notation (for example
+  `user.tags.1`), or returns `null` when the issue has no path.
+- `StandardSchemaError(issues)` wraps a failure's issues as a throwable whose
+  `message` is the first issue's message.
+
+```dart
+final result = schema.standard.validate(value);
+
+if (result is StandardFailure) {
+  // Render each issue's path in dot notation:
+  for (final issue in result.issues) {
+    print('${getDotPath(issue) ?? '<root>'}: ${issue.message}');
+  }
+
+  // Or throw the whole failure as a single error:
+  throw StandardSchemaError(result.issues);
 }
 ```

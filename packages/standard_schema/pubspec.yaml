@@ -1,6 +1,6 @@
-name: schema_model
+name: standard_schema
 description: Standard Schema contracts for Dart validators and converters
-version: 1.0.0-beta.12-wip
+version: 0.0.1-dev.0
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 homepage: https://docs.page/btwld/ack

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:schema_model/schema_model.dart';
+import 'package:standard_schema/standard_schema.dart';
 import 'package:test/test.dart';
 
 Future<StandardResult<T>> _resolve<T>(

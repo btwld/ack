@@ -23,7 +23,7 @@ For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with fluent schema building API
-- **[schema_model](./packages/schema_model)**: Standard Schema contracts for Dart validators and converters
+- **[standard_schema](./packages/standard_schema)**: Standard Schema contracts for Dart validators and converters
 - **[ack_generator](./packages/ack_generator)**: Code generator for `@AckType()` extension-type wrappers
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured output generation
 - **[example](./example)**: Example projects demonstrating usage of all packages

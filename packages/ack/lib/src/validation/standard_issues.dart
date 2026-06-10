@@ -1,4 +1,4 @@
-import 'package:schema_model/schema_model.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 import 'schema_error.dart';
 

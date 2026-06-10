@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:schema_model/schema_model.dart'
+import 'package:standard_schema/standard_schema.dart'
     show
         JsonSchemaTarget,
         StandardFailure,

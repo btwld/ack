@@ -34,5 +34,9 @@ export 'src/schemas/schema.dart'
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 export 'src/validation/standard_issues.dart';
+// Re-export the Standard Schema contract types so consumers of package:ack
+// can name AckSchema.standard's result/contract types without a separate
+// dependency on package:standard_schema.
+export 'package:standard_schema/standard_schema.dart';
 // Validation results
 export 'src/validation/schema_result.dart';

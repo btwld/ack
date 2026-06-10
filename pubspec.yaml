@@ -11,7 +11,7 @@ workspace:
   - packages/ack_generator
   - packages/ack_firebase_ai
   - packages/ack_json_schema_builder
-  - packages/schema_model
+  - packages/standard_schema
   - example
   
 dependencies:
@@ -56,7 +56,7 @@ melos:
           - ack_generator
           - ack_firebase_ai
           - ack_json_schema_builder
-          - schema_model
+          - standard_schema
           - ack_example
           - ack_annotations
 
@@ -68,7 +68,7 @@ melos:
           - ack
           - ack_generator
           - ack_json_schema_builder
-          - schema_model
+          - standard_schema
           - ack_example
         dependsOn:
           - "ack"  # This will ensure 'ack' is prioritized

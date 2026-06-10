@@ -21,4 +21,4 @@ jobs:
         ack_generator
         ack_json_schema_builder
         ack_firebase_ai
-        schema_model
+        standard_schema
