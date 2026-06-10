@@ -8,8 +8,9 @@ part of 'schema.dart';
 /// map-backed codecs that synthesize the discriminator, tries every branch and
 /// requires exactly one to both runtime-validate and encode; a runtime that
 /// fits two or more branches is rejected as ambiguous rather than silently
-/// encoded through whichever branch is declared first. Branch encoders must
-/// emit the discriminator key.
+/// encoded through whichever branch is declared first. The union writes the
+/// discriminator key after branch encoding; if a branch encoder emits it, the
+/// value must match the selected branch.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
