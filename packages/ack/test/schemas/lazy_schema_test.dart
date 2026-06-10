@@ -205,7 +205,7 @@ void main() {
       ).refine((value) => true),
     });
 
-    final model = categorySchema.toSchemaModel() as AckObjectSchemaModel;
+    final model = categorySchema.toSchemaModel() as ObjectSchemaModel;
     final child = model.properties!['child']!;
 
     expect(child.toJsonSchema(), {r'$ref': '#/definitions/Category'});

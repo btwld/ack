@@ -1,10 +1,10 @@
-import 'package:ack/ack.dart';
+import 'package:schema_model/schema_model.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('AckSchemaModel sealed variants', () {
+  group('SchemaModel sealed variants', () {
     test('renders string constraints and const literals', () {
-      const model = AckStringSchemaModel(
+      const model = StringSchemaModel(
         constValue: 'cat',
         minLength: 3,
         maxLength: 12,
@@ -21,18 +21,15 @@ void main() {
     });
 
     test('keeps number and integer as distinct variants', () {
-      const integer = AckIntegerSchemaModel(minimum: 1);
-      const number = AckNumberSchemaModel(minimum: 1.5);
+      const integer = IntegerSchemaModel(minimum: 1);
+      const number = NumberSchemaModel(minimum: 1.5);
 
       expect(integer.toJsonSchema(), {'type': 'integer', 'minimum': 1});
       expect(number.toJsonSchema(), {'type': 'number', 'minimum': 1.5});
     });
 
     test('wraps nullable primitive schemas without nullable keyword', () {
-      const model = AckStringSchemaModel(
-        description: 'nickname',
-        nullable: true,
-      );
+      const model = StringSchemaModel(description: 'nickname', nullable: true);
 
       // Description is hoisted to the top level so generic JSON Schema
       // consumers can discover it without descending into anyOf branches.
@@ -46,9 +43,9 @@ void main() {
     });
 
     test('composition nullable adds one null branch', () {
-      const model = AckAnyOfSchemaModel(
+      const model = AnyOfSchemaModel(
         nullable: true,
-        schemas: [AckStringSchemaModel(), AckNullSchemaModel()],
+        schemas: [StringSchemaModel(), NullSchemaModel()],
       );
 
       expect(model.toJsonSchema(), {
@@ -60,10 +57,10 @@ void main() {
     });
 
     test('renders object additional properties as one typed policy', () {
-      const model = AckObjectSchemaModel(
-        properties: {'name': AckStringSchemaModel()},
+      const model = ObjectSchemaModel(
+        properties: {'name': StringSchemaModel()},
         required: ['name'],
-        additionalProperties: AckAdditionalPropertiesDisallowed(),
+        additionalProperties: AdditionalPropertiesDisallowed(),
       );
 
       expect(model.toJsonSchema(), {
@@ -79,8 +76,8 @@ void main() {
     test(
       'renders explicit object required fields even with property default',
       () {
-        const model = AckObjectSchemaModel(
-          properties: {'name': AckStringSchemaModel(defaultValue: 'guest')},
+        const model = ObjectSchemaModel(
+          properties: {'name': StringSchemaModel(defaultValue: 'guest')},
           required: ['name'],
         );
 
@@ -95,10 +92,10 @@ void main() {
     );
 
     test('renders allOf directly for adapter tests', () {
-      const model = AckAllOfSchemaModel(
+      const model = AllOfSchemaModel(
         schemas: [
-          AckStringSchemaModel(minLength: 2),
-          AckStringSchemaModel(maxLength: 8),
+          StringSchemaModel(minLength: 2),
+          StringSchemaModel(maxLength: 8),
         ],
       );
 
@@ -111,18 +108,18 @@ void main() {
     });
 
     test('uses structural warnings in equality and hashCode', () {
-      const left = AckStringSchemaModel(
+      const left = StringSchemaModel(
         warnings: [
-          AckSchemaModelWarning(
+          SchemaModelWarning(
             code: 'test_warning',
             message: 'A test warning.',
             context: {'path': 'left'},
           ),
         ],
       );
-      const right = AckStringSchemaModel(
+      const right = StringSchemaModel(
         warnings: [
-          AckSchemaModelWarning(
+          SchemaModelWarning(
             code: 'test_warning',
             message: 'A test warning.',
             context: {'path': 'left'},
@@ -135,17 +132,17 @@ void main() {
     });
 
     test('uses non-rendered metadata in equality and hashCode', () {
-      const left = AckAnyOfSchemaModel(
-        schemas: [AckStringSchemaModel()],
-        discriminator: AckSchemaDiscriminatorModel(propertyName: 'type'),
+      const left = AnyOfSchemaModel(
+        schemas: [StringSchemaModel()],
+        discriminator: SchemaDiscriminatorModel(propertyName: 'type'),
       );
-      const same = AckAnyOfSchemaModel(
-        schemas: [AckStringSchemaModel()],
-        discriminator: AckSchemaDiscriminatorModel(propertyName: 'type'),
+      const same = AnyOfSchemaModel(
+        schemas: [StringSchemaModel()],
+        discriminator: SchemaDiscriminatorModel(propertyName: 'type'),
       );
-      const different = AckAnyOfSchemaModel(
-        schemas: [AckStringSchemaModel()],
-        discriminator: AckSchemaDiscriminatorModel(propertyName: 'kind'),
+      const different = AnyOfSchemaModel(
+        schemas: [StringSchemaModel()],
+        discriminator: SchemaDiscriminatorModel(propertyName: 'kind'),
       );
 
       expect(left.toJsonSchema(), same.toJsonSchema());
@@ -154,22 +151,22 @@ void main() {
       expect(left.hashCode, same.hashCode);
       expect(left, isNot(different));
 
-      const ordered = AckObjectSchemaModel(
-        properties: {'name': AckStringSchemaModel()},
+      const ordered = ObjectSchemaModel(
+        properties: {'name': StringSchemaModel()},
         propertyOrdering: ['name'],
       );
-      const unordered = AckObjectSchemaModel(
-        properties: {'name': AckStringSchemaModel()},
+      const unordered = ObjectSchemaModel(
+        properties: {'name': StringSchemaModel()},
       );
 
       expect(ordered.toJsonSchema(), unordered.toJsonSchema());
       expect(ordered, isNot(unordered));
 
-      const dateBounded = AckStringSchemaModel(
+      const dateBounded = StringSchemaModel(
         format: 'date',
         formatMinimum: '2026-01-01',
       );
-      const dateUnbounded = AckStringSchemaModel(format: 'date');
+      const dateUnbounded = StringSchemaModel(format: 'date');
 
       expect(dateBounded.toJsonSchema(), dateUnbounded.toJsonSchema());
       expect(dateBounded, isNot(dateUnbounded));

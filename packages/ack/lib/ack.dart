@@ -33,5 +33,6 @@ export 'src/schemas/schema.dart'
     hide AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
+export 'src/validation/standard_issues.dart';
 // Validation results
 export 'src/validation/schema_result.dart';

@@ -19,7 +19,7 @@ Before creating a release:
 1. Ensure all changes are committed and pushed to the `main` branch
 2. Verify that all tests pass by running `melos test` (include `melos run validate-jsonschema` and `melos run test:gen` for full coverage)
 3. Check that the documentation is up to date across the repo and docs site
-4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`, `ack_firebase_ai`, `ack_json_schema_builder`)
+4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`, `ack_firebase_ai`, `ack_json_schema_builder`, `schema_model`)
 5. Ensure package CHANGELOG entries are finalized before tagging. If you want a link-only entry for a version, you can run `dart scripts/update_release_changelog.dart <version> [tag]` after `melos version`.
 
 ### 2. Create a GitHub Release
@@ -101,13 +101,22 @@ If you need to publish packages manually:
 
 ```bash
 # Dry-run each package (validation only)
-for pkg in ack ack_annotations ack_generator ack_json_schema_builder ack_firebase_ai; do
+for pkg in ack ack_annotations ack_generator ack_json_schema_builder ack_firebase_ai schema_model; do
   (cd packages/$pkg && dart pub publish --dry-run) || exit 1
 done
 
 # Actual publish (no dry-run)
 melos run publish
 ```
+
+### First publish for `schema_model`
+
+`schema_model` is a new package. Pub.dev automated publishing can only be
+enabled after the package exists, so the first version must be published
+manually with `dart pub publish` from `packages/schema_model` before the
+release tag. After that first upload, enable GitHub Actions publishing in the
+package's pub.dev admin settings so future tagged releases can use the
+workflow.
 
 ## Troubleshooting
 

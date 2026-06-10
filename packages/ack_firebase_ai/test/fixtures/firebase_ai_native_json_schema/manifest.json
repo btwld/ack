@@ -2,7 +2,7 @@
   "description": "Firebase AI JSONSchema.toJson() fixtures for native SDK schema comparison.",
   "generatedBy": "dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart",
   "sourcePackage": "firebase_ai",
-  "sourceVersion": "3.12.1",
+  "sourceVersion": "3.12.2",
   "sourceClass": "JSONSchema",
   "fixtureCount": 30,
   "featureCoverage": {

@@ -9,6 +9,9 @@
 * Replace the interim JSON Schema model kind API with sealed
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
+* Move the schema description model to `package:schema_model` and rename
+  public model types from `Ack*` to neutral names such as `SchemaModel`,
+  `StringSchemaModel`, and `ObjectSchemaModel`.
 
 ### Added
 
@@ -20,18 +23,28 @@
 * `NumberSchemaExtensions` adds fluent numeric constraints to `Ack.number()`:
   `.min`, `.max`, `.greaterThan`, `.lessThan`, `.positive`, `.negative`, and
   `.multipleOf`.
+* `AckSchema.standard` implements the `StandardSchema` validation contract with
+  flat `StandardIssue` failures and a Draft-7 JSON Schema converter.
+* `SchemaContext.pathSegments` exposes raw path segments with list indices as
+  integers, and `SchemaError.toStandardIssues()` maps ACK errors to standard
+  issues.
 
 ### Changed
 
 * Project discriminated schemas through union-owned discriminator branches.
 * Preserve defaults, const values, extension keywords, transformed metadata,
   composition, and JSON Schema constraints through the schema model boundary.
+* Deprecated `Ack*SchemaModel` typedef aliases remain exported from `ack` for
+  source compatibility; new in-repo code uses `package:schema_model` names.
 
 ### Migration
 
 * Re-run tests for code paths that parse or encode `double`/`num` values. If a
   boundary must accept `NaN` or infinities, model that value outside the JSON
   numeric schema path before validation.
+* Replace `AckSchemaModel` type annotations with `SchemaModel` from
+  `package:schema_model` when updating code. The old names continue to compile
+  through deprecated aliases.
 
 ## 1.0.0-beta.11
 

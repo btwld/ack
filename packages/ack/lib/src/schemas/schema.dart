@@ -1,5 +1,13 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:schema_model/schema_model.dart'
+    show
+        JsonSchemaTarget,
+        StandardFailure,
+        StandardJsonSchemaConverter,
+        StandardSchema,
+        StandardSchemaProps,
+        StandardSuccess;
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
@@ -11,6 +19,7 @@ import '../helpers.dart';
 import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
+import '../validation/standard_issues.dart';
 
 part 'any_of_schema.dart';
 part 'any_schema.dart';
@@ -62,7 +71,8 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+abstract class AckSchema<Boundary extends Object, Runtime extends Object>
+    implements StandardSchema<Object?, Runtime?> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
@@ -340,6 +350,36 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return parseWithContext(value, context);
   }
 
+  @override
+  StandardSchemaProps<Object?, Runtime?> get standard => StandardSchemaProps(
+    vendor: 'ack',
+    validate: (value, [options]) => switch (safeParse(value)) {
+      Ok(value: final value) => StandardSuccess<Runtime?>(value),
+      Fail(error: final error) => StandardFailure<Runtime?>(
+        error.toStandardIssues(),
+      ),
+    },
+    jsonSchema: StandardJsonSchemaConverter(
+      input: (options) {
+        if (options.target != JsonSchemaTarget.draft07) {
+          throw UnsupportedError('ack supports draft-07 only');
+        }
+        return toJsonSchema();
+      },
+      output: (options) {
+        if (options.target != JsonSchemaTarget.draft07) {
+          throw UnsupportedError('ack supports draft-07 only');
+        }
+        if (this is CodecSchema) {
+          throw UnsupportedError(
+            'codec Runtime side is not JSON-representable',
+          );
+        }
+        return toJsonSchema();
+      },
+    ),
+  );
+
   /// Parses and validates a value, then maps the validated value to [TOut].
   SchemaResult<TOut> safeParseAs<TOut extends Object>(
     Object? value,
@@ -426,7 +466,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   /// Converts this schema to a JSON Schema Draft-7 representation.
   ///
-  /// Delegates to the sealed [AckSchemaModel] boundary so all renderers share
+  /// Delegates to the sealed [SchemaModel] boundary so all renderers share
   /// the same Draft-7 output. Subclasses should not override this directly;
   /// instead they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();

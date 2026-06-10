@@ -176,7 +176,7 @@ Future<Object?> _generateLiveFirebaseJson({
     schemaCase.schema.toSchemaModel().toJsonSchema(),
     reason:
         'Firebase live tests must exercise the canonical sealed '
-        'AckSchemaModel rendering path.',
+        'SchemaModel rendering path.',
   );
 
   final generationConfig = GenerationConfig(

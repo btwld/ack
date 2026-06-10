@@ -2,8 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 @immutable
-final class AckSchemaModelWarning {
-  const AckSchemaModelWarning({
+final class SchemaModelWarning {
+  const SchemaModelWarning({
     required this.code,
     required this.message,
     this.path,
@@ -25,7 +25,7 @@ final class AckSchemaModelWarning {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! AckSchemaModelWarning) return false;
+    if (other is! SchemaModelWarning) return false;
     return code == other.code &&
         message == other.message &&
         path == other.path &&

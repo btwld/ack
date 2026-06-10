@@ -8,6 +8,8 @@
   metadata, and composition.
 * Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
   adapter boundary.
+* Accept the renamed `SchemaModel` type from `package:schema_model` in
+  `convertAckSchemaModelToBuilder` while keeping the existing function name.
 
 ### Removed
 

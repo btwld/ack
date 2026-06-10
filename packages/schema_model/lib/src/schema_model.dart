@@ -1,14 +1,16 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
-import 'ack_schema_model_warning.dart';
+import 'schema_model_warning.dart';
+
+part 'schema_model_parser.dart';
 
 const _unset = Object();
 const _nullSchemaJson = <String, Object?>{'type': 'null'};
 
 @immutable
-final class AckSchemaDiscriminatorModel {
-  const AckSchemaDiscriminatorModel({required this.propertyName});
+final class SchemaDiscriminatorModel {
+  const SchemaDiscriminatorModel({required this.propertyName});
 
   final String propertyName;
 
@@ -17,7 +19,7 @@ final class AckSchemaDiscriminatorModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! AckSchemaDiscriminatorModel) return false;
+    if (other is! SchemaDiscriminatorModel) return false;
     return propertyName == other.propertyName;
   }
 
@@ -26,8 +28,8 @@ final class AckSchemaDiscriminatorModel {
 }
 
 @immutable
-final class _AckSchemaModelCommon {
-  const _AckSchemaModelCommon({
+final class _SchemaModelCommon {
+  const _SchemaModelCommon({
     this.title,
     this.description,
     this.nullable = false,
@@ -40,18 +42,18 @@ final class _AckSchemaModelCommon {
   final String? description;
   final bool nullable;
   final Object? defaultValue;
-  final List<AckSchemaModelWarning> warnings;
+  final List<SchemaModelWarning> warnings;
   final Map<String, Object?> extensions;
 
-  _AckSchemaModelCommon copyWith({
+  _SchemaModelCommon copyWith({
     Object? title = _unset,
     Object? description = _unset,
     bool? nullable,
     Object? defaultValue = _unset,
-    List<AckSchemaModelWarning>? warnings,
+    List<SchemaModelWarning>? warnings,
     Map<String, Object?>? extensions,
   }) {
-    return _AckSchemaModelCommon(
+    return _SchemaModelCommon(
       title: identical(title, _unset) ? this.title : title as String?,
       description: identical(description, _unset)
           ? this.description
@@ -93,40 +95,38 @@ final class _AckSchemaModelCommon {
 }
 
 @immutable
-sealed class AckAdditionalPropertiesModel {
-  const AckAdditionalPropertiesModel();
+sealed class AdditionalPropertiesModel {
+  const AdditionalPropertiesModel();
 
   Object? toJsonSchemaValue();
 }
 
-final class AckAdditionalPropertiesAllowed
-    extends AckAdditionalPropertiesModel {
-  const AckAdditionalPropertiesAllowed();
+final class AdditionalPropertiesAllowed extends AdditionalPropertiesModel {
+  const AdditionalPropertiesAllowed();
 
   @override
   Object toJsonSchemaValue() => true;
 }
 
-final class AckAdditionalPropertiesDisallowed
-    extends AckAdditionalPropertiesModel {
-  const AckAdditionalPropertiesDisallowed();
+final class AdditionalPropertiesDisallowed extends AdditionalPropertiesModel {
+  const AdditionalPropertiesDisallowed();
 
   @override
   Object toJsonSchemaValue() => false;
 }
 
-final class AckAdditionalPropertiesSchema extends AckAdditionalPropertiesModel {
-  const AckAdditionalPropertiesSchema(this.schema);
+final class AdditionalPropertiesSchema extends AdditionalPropertiesModel {
+  const AdditionalPropertiesSchema(this.schema);
 
-  final AckSchemaModel schema;
+  final SchemaModel schema;
 
   @override
   Map<String, Object?> toJsonSchemaValue() => schema.toJsonSchema();
 }
 
 @immutable
-sealed class AckSchemaModel {
-  const AckSchemaModel({
+sealed class SchemaModel {
+  const SchemaModel({
     this.title,
     this.description,
     this.nullable = false,
@@ -135,7 +135,11 @@ sealed class AckSchemaModel {
     this.extensions = const {},
   });
 
-  AckSchemaModel._(_AckSchemaModelCommon common)
+  factory SchemaModel.fromJsonSchema(Map<String, Object?> json) {
+    return _JsonSchemaParser().parse(json);
+  }
+
+  SchemaModel._(_SchemaModelCommon common)
     : title = common.title,
       description = common.description,
       nullable = common.nullable,
@@ -147,10 +151,10 @@ sealed class AckSchemaModel {
   final String? description;
   final bool nullable;
   final Object? defaultValue;
-  final List<AckSchemaModelWarning> warnings;
+  final List<SchemaModelWarning> warnings;
   final Map<String, Object?> extensions;
 
-  _AckSchemaModelCommon get _common => _AckSchemaModelCommon(
+  _SchemaModelCommon get _common => _SchemaModelCommon(
     title: title,
     description: description,
     nullable: nullable,
@@ -166,24 +170,24 @@ sealed class AckSchemaModel {
   Object? get _metadataEquality => null;
 
   @protected
-  AckSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common);
+  SchemaModel _rebuildWithCommon(_SchemaModelCommon common);
 
-  AckSchemaModel withDescription(String? description) =>
+  SchemaModel withDescription(String? description) =>
       _rebuildWithCommon(_common.copyWith(description: description));
 
-  AckSchemaModel withNullable(bool nullable) =>
+  SchemaModel withNullable(bool nullable) =>
       _rebuildWithCommon(_common.copyWith(nullable: nullable));
 
-  AckSchemaModel withDefaultValue(Object? defaultValue) =>
+  SchemaModel withDefaultValue(Object? defaultValue) =>
       _rebuildWithCommon(_common.copyWith(defaultValue: defaultValue));
 
-  AckSchemaModel withWarnings(List<AckSchemaModelWarning> warnings) =>
+  SchemaModel withWarnings(List<SchemaModelWarning> warnings) =>
       _rebuildWithCommon(_common.copyWith(warnings: warnings));
 
-  AckSchemaModel withExtensions(Map<String, Object?> extensions) =>
+  SchemaModel withExtensions(Map<String, Object?> extensions) =>
       _rebuildWithCommon(_common.copyWith(extensions: extensions));
 
-  AckSchemaModel withJsonSchemaKeywords(Map<String, Object?> keywords) {
+  SchemaModel withJsonSchemaKeywords(Map<String, Object?> keywords) {
     final commonHandled = <String>{};
     var common = _common;
 
@@ -205,47 +209,47 @@ sealed class AckSchemaModel {
     }
 
     return switch (_rebuildWithCommon(common)) {
-      AckStringSchemaModel schema => schema._withJsonSchemaKeywords(
+      StringSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckIntegerSchemaModel schema => schema._withJsonSchemaKeywords(
+      IntegerSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckNumberSchemaModel schema => schema._withJsonSchemaKeywords(
+      NumberSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckBooleanSchemaModel schema => schema._withJsonSchemaKeywords(
+      BooleanSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckArraySchemaModel schema => schema._withJsonSchemaKeywords(
+      ArraySchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckObjectSchemaModel schema => schema._withJsonSchemaKeywords(
+      ObjectSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckAnyOfSchemaModel schema => schema._withJsonSchemaKeywords(
+      AnyOfSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckOneOfSchemaModel schema => schema._withJsonSchemaKeywords(
+      OneOfSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckAllOfSchemaModel schema => schema._withJsonSchemaKeywords(
+      AllOfSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckNullSchemaModel schema => schema._withJsonSchemaKeywords(
+      NullSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
-      AckRefSchemaModel schema => schema._withJsonSchemaKeywords(
+      RefSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
       ),
@@ -273,10 +277,10 @@ sealed class AckSchemaModel {
 
   Map<String, Object?> finishCompositionJson(
     String keyword,
-    List<AckSchemaModel> schemas,
+    List<SchemaModel> schemas,
   ) {
     final branches = schemas.map((schema) => schema.toJsonSchema()).toList();
-    if (nullable && !schemas.any((schema) => schema is AckNullSchemaModel)) {
+    if (nullable && !schemas.any((schema) => schema is NullSchemaModel)) {
       // Match Zod v4's Draft-7 nullable-union shape: keep the composition as
       // one branch, then add null as the other branch. Flattening would validate
       // the same values but loses the distinction between nullability and the
@@ -294,7 +298,7 @@ sealed class AckSchemaModel {
     return {..._common.toJson(), keyword: branches};
   }
 
-  AckSchemaModel _withUnhandledKeywords(
+  SchemaModel _withUnhandledKeywords(
     Map<String, Object?> keywords,
     Set<String> handled,
   ) {
@@ -308,7 +312,7 @@ sealed class AckSchemaModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! AckSchemaModel) return false;
+    if (other is! SchemaModel) return false;
     const deepEq = DeepCollectionEquality();
     return runtimeType == other.runtimeType &&
         deepEq.equals(toJsonSchema(), other.toJsonSchema()) &&
@@ -328,8 +332,8 @@ sealed class AckSchemaModel {
   }
 }
 
-final class AckRefSchemaModel extends AckSchemaModel {
-  const AckRefSchemaModel({
+final class RefSchemaModel extends SchemaModel {
+  const RefSchemaModel({
     required this.refName,
     super.title,
     super.description,
@@ -339,8 +343,7 @@ final class AckRefSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckRefSchemaModel._(_AckSchemaModelCommon common, {required this.refName})
-    : super._(common);
+  RefSchemaModel._(super.common, {required this.refName}) : super._();
 
   final String refName;
 
@@ -359,10 +362,10 @@ final class AckRefSchemaModel extends AckSchemaModel {
   }
 
   @override
-  AckRefSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckRefSchemaModel._(common, refName: refName);
+  RefSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      RefSchemaModel._(common, refName: refName);
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -370,8 +373,8 @@ final class AckRefSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckStringSchemaModel extends AckSchemaModel {
-  const AckStringSchemaModel({
+final class StringSchemaModel extends SchemaModel {
+  const StringSchemaModel({
     this.format,
     this.enumValues,
     this.constValue,
@@ -388,8 +391,8 @@ final class AckStringSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckStringSchemaModel._(
-    _AckSchemaModelCommon common, {
+  StringSchemaModel._(
+    super.common, {
     this.format,
     this.enumValues,
     this.constValue,
@@ -398,7 +401,7 @@ final class AckStringSchemaModel extends AckSchemaModel {
     this.pattern,
     this.formatMinimum,
     this.formatMaximum,
-  }) : super._(common);
+  }) : super._();
 
   @override
   final String? format;
@@ -435,8 +438,8 @@ final class AckStringSchemaModel extends AckSchemaModel {
   });
 
   @override
-  AckStringSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckStringSchemaModel._(
+  StringSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      StringSchemaModel._(
         common,
         format: format,
         enumValues: enumValues,
@@ -448,7 +451,7 @@ final class AckStringSchemaModel extends AckSchemaModel {
         formatMaximum: formatMaximum,
       );
 
-  AckStringSchemaModel _copyWith({
+  StringSchemaModel _copyWith({
     String? format,
     List<Object?>? enumValues,
     Object? constValue = _unset,
@@ -458,7 +461,7 @@ final class AckStringSchemaModel extends AckSchemaModel {
     String? formatMinimum,
     String? formatMaximum,
   }) {
-    return AckStringSchemaModel._(
+    return StringSchemaModel._(
       _common,
       format: format ?? this.format,
       enumValues: enumValues ?? this.enumValues,
@@ -473,7 +476,7 @@ final class AckStringSchemaModel extends AckSchemaModel {
     );
   }
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -484,9 +487,9 @@ final class AckStringSchemaModel extends AckSchemaModel {
       handled.add('format');
       next = next._copyWith(format: value);
     }
-    if (keywords['enum'] case final List values) {
+    if (keywords['enum'] case final List<Object?> values) {
       handled.add('enum');
-      next = next._copyWith(enumValues: List<Object?>.from(values));
+      next = next._copyWith(enumValues: values);
     }
     if (keywords['const'] case final String value) {
       handled.add('const');
@@ -517,8 +520,8 @@ final class AckStringSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckIntegerSchemaModel extends AckSchemaModel {
-  const AckIntegerSchemaModel({
+final class IntegerSchemaModel extends SchemaModel {
+  const IntegerSchemaModel({
     this.format,
     this.constValue,
     this.minimum,
@@ -534,8 +537,8 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckIntegerSchemaModel._(
-    _AckSchemaModelCommon common, {
+  IntegerSchemaModel._(
+    super.common, {
     this.format,
     this.constValue,
     this.minimum,
@@ -543,7 +546,7 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
     this.exclusiveMinimum,
     this.exclusiveMaximum,
     this.multipleOf,
-  }) : super._(common);
+  }) : super._();
 
   @override
   final String? format;
@@ -567,8 +570,8 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
   });
 
   @override
-  AckIntegerSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckIntegerSchemaModel._(
+  IntegerSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      IntegerSchemaModel._(
         common,
         format: format,
         constValue: constValue,
@@ -579,7 +582,7 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
         multipleOf: multipleOf,
       );
 
-  AckIntegerSchemaModel _copyWith({
+  IntegerSchemaModel _copyWith({
     String? format,
     Object? constValue = _unset,
     num? minimum,
@@ -588,7 +591,7 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
     num? exclusiveMaximum,
     num? multipleOf,
   }) {
-    return AckIntegerSchemaModel._(
+    return IntegerSchemaModel._(
       _common,
       format: format ?? this.format,
       constValue: identical(constValue, _unset)
@@ -602,7 +605,7 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
     );
   }
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -642,8 +645,8 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckNumberSchemaModel extends AckSchemaModel {
-  const AckNumberSchemaModel({
+final class NumberSchemaModel extends SchemaModel {
+  const NumberSchemaModel({
     this.format,
     this.constValue,
     this.minimum,
@@ -659,8 +662,8 @@ final class AckNumberSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckNumberSchemaModel._(
-    _AckSchemaModelCommon common, {
+  NumberSchemaModel._(
+    super.common, {
     this.format,
     this.constValue,
     this.minimum,
@@ -668,7 +671,7 @@ final class AckNumberSchemaModel extends AckSchemaModel {
     this.exclusiveMinimum,
     this.exclusiveMaximum,
     this.multipleOf,
-  }) : super._(common);
+  }) : super._();
 
   @override
   final String? format;
@@ -692,8 +695,8 @@ final class AckNumberSchemaModel extends AckSchemaModel {
   });
 
   @override
-  AckNumberSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckNumberSchemaModel._(
+  NumberSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      NumberSchemaModel._(
         common,
         format: format,
         constValue: constValue,
@@ -704,7 +707,7 @@ final class AckNumberSchemaModel extends AckSchemaModel {
         multipleOf: multipleOf,
       );
 
-  AckNumberSchemaModel _copyWith({
+  NumberSchemaModel _copyWith({
     String? format,
     Object? constValue = _unset,
     num? minimum,
@@ -713,7 +716,7 @@ final class AckNumberSchemaModel extends AckSchemaModel {
     num? exclusiveMaximum,
     num? multipleOf,
   }) {
-    return AckNumberSchemaModel._(
+    return NumberSchemaModel._(
       _common,
       format: format ?? this.format,
       constValue: identical(constValue, _unset)
@@ -727,7 +730,7 @@ final class AckNumberSchemaModel extends AckSchemaModel {
     );
   }
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -767,8 +770,8 @@ final class AckNumberSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckBooleanSchemaModel extends AckSchemaModel {
-  const AckBooleanSchemaModel({
+final class BooleanSchemaModel extends SchemaModel {
+  const BooleanSchemaModel({
     this.constValue,
     super.title,
     super.description,
@@ -778,8 +781,7 @@ final class AckBooleanSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckBooleanSchemaModel._(_AckSchemaModelCommon common, {this.constValue})
-    : super._(common);
+  BooleanSchemaModel._(super.common, {this.constValue}) : super._();
 
   final bool? constValue;
 
@@ -790,10 +792,10 @@ final class AckBooleanSchemaModel extends AckSchemaModel {
   });
 
   @override
-  AckBooleanSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckBooleanSchemaModel._(common, constValue: constValue);
+  BooleanSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      BooleanSchemaModel._(common, constValue: constValue);
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -801,14 +803,14 @@ final class AckBooleanSchemaModel extends AckSchemaModel {
     var next = this;
     if (keywords['const'] case final bool value) {
       handled.add('const');
-      next = AckBooleanSchemaModel._(_common, constValue: value);
+      next = BooleanSchemaModel._(_common, constValue: value);
     }
     return next._withUnhandledKeywords(keywords, handled);
   }
 }
 
-final class AckArraySchemaModel extends AckSchemaModel {
-  const AckArraySchemaModel({
+final class ArraySchemaModel extends SchemaModel {
+  const ArraySchemaModel({
     this.items,
     this.minItems,
     this.maxItems,
@@ -821,15 +823,15 @@ final class AckArraySchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckArraySchemaModel._(
-    _AckSchemaModelCommon common, {
+  ArraySchemaModel._(
+    super.common, {
     this.items,
     this.minItems,
     this.maxItems,
     this.uniqueItems,
-  }) : super._(common);
+  }) : super._();
 
-  final AckSchemaModel? items;
+  final SchemaModel? items;
   final int? minItems;
   final int? maxItems;
   final bool? uniqueItems;
@@ -844,8 +846,8 @@ final class AckArraySchemaModel extends AckSchemaModel {
   });
 
   @override
-  AckArraySchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckArraySchemaModel._(
+  ArraySchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      ArraySchemaModel._(
         common,
         items: items,
         minItems: minItems,
@@ -853,13 +855,13 @@ final class AckArraySchemaModel extends AckSchemaModel {
         uniqueItems: uniqueItems,
       );
 
-  AckArraySchemaModel _copyWith({
-    AckSchemaModel? items,
+  ArraySchemaModel _copyWith({
+    SchemaModel? items,
     int? minItems,
     int? maxItems,
     bool? uniqueItems,
   }) {
-    return AckArraySchemaModel._(
+    return ArraySchemaModel._(
       _common,
       items: items ?? this.items,
       minItems: minItems ?? this.minItems,
@@ -868,7 +870,7 @@ final class AckArraySchemaModel extends AckSchemaModel {
     );
   }
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -892,8 +894,8 @@ final class AckArraySchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckObjectSchemaModel extends AckSchemaModel {
-  const AckObjectSchemaModel({
+final class ObjectSchemaModel extends SchemaModel {
+  const ObjectSchemaModel({
     this.properties,
     this.required,
     this.propertyOrdering,
@@ -908,22 +910,22 @@ final class AckObjectSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckObjectSchemaModel._(
-    _AckSchemaModelCommon common, {
+  ObjectSchemaModel._(
+    super.common, {
     this.properties,
     this.required,
     this.propertyOrdering,
     this.minProperties,
     this.maxProperties,
     this.additionalProperties,
-  }) : super._(common);
+  }) : super._();
 
-  final Map<String, AckSchemaModel>? properties;
+  final Map<String, SchemaModel>? properties;
   final List<String>? required;
   final List<String>? propertyOrdering;
   final int? minProperties;
   final int? maxProperties;
-  final AckAdditionalPropertiesModel? additionalProperties;
+  final AdditionalPropertiesModel? additionalProperties;
 
   @override
   Object? get _metadataEquality => {
@@ -947,8 +949,8 @@ final class AckObjectSchemaModel extends AckSchemaModel {
   }
 
   @override
-  AckObjectSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckObjectSchemaModel._(
+  ObjectSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      ObjectSchemaModel._(
         common,
         properties: properties,
         required: required,
@@ -958,15 +960,15 @@ final class AckObjectSchemaModel extends AckSchemaModel {
         additionalProperties: additionalProperties,
       );
 
-  AckObjectSchemaModel _copyWith({
-    Map<String, AckSchemaModel>? properties,
+  ObjectSchemaModel _copyWith({
+    Map<String, SchemaModel>? properties,
     List<String>? required,
     List<String>? propertyOrdering,
     int? minProperties,
     int? maxProperties,
-    AckAdditionalPropertiesModel? additionalProperties,
+    AdditionalPropertiesModel? additionalProperties,
   }) {
-    return AckObjectSchemaModel._(
+    return ObjectSchemaModel._(
       _common,
       properties: properties ?? this.properties,
       required: required ?? this.required,
@@ -977,7 +979,7 @@ final class AckObjectSchemaModel extends AckSchemaModel {
     );
   }
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -996,8 +998,8 @@ final class AckObjectSchemaModel extends AckSchemaModel {
       handled.add('additionalProperties');
       next = next._copyWith(
         additionalProperties: value
-            ? const AckAdditionalPropertiesAllowed()
-            : const AckAdditionalPropertiesDisallowed(),
+            ? const AdditionalPropertiesAllowed()
+            : const AdditionalPropertiesDisallowed(),
       );
     }
 
@@ -1005,8 +1007,8 @@ final class AckObjectSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckNullSchemaModel extends AckSchemaModel {
-  const AckNullSchemaModel({
+final class NullSchemaModel extends SchemaModel {
+  const NullSchemaModel({
     super.title,
     super.description,
     super.defaultValue,
@@ -1014,16 +1016,16 @@ final class AckNullSchemaModel extends AckSchemaModel {
     super.extensions,
   }) : super(nullable: false);
 
-  AckNullSchemaModel._(_AckSchemaModelCommon common) : super._(common);
+  NullSchemaModel._(super.common) : super._();
 
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'null', ..._common.toJson()};
 
   @override
-  AckNullSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckNullSchemaModel._(common.copyWith(nullable: false));
+  NullSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      NullSchemaModel._(common.copyWith(nullable: false));
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -1031,8 +1033,8 @@ final class AckNullSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckAnyOfSchemaModel extends AckSchemaModel {
-  const AckAnyOfSchemaModel({
+final class AnyOfSchemaModel extends SchemaModel {
+  const AnyOfSchemaModel({
     required this.schemas,
     this.discriminator,
     super.title,
@@ -1043,14 +1045,11 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckAnyOfSchemaModel._(
-    _AckSchemaModelCommon common, {
-    required this.schemas,
-    this.discriminator,
-  }) : super._(common);
+  AnyOfSchemaModel._(super.common, {required this.schemas, this.discriminator})
+    : super._();
 
-  final List<AckSchemaModel> schemas;
-  final AckSchemaDiscriminatorModel? discriminator;
+  final List<SchemaModel> schemas;
+  final SchemaDiscriminatorModel? discriminator;
 
   @override
   Object? get _metadataEquality => {
@@ -1062,14 +1061,14 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
       finishCompositionJson('anyOf', schemas);
 
   @override
-  AckAnyOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckAnyOfSchemaModel._(
+  AnyOfSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      AnyOfSchemaModel._(
         common,
         schemas: schemas,
         discriminator: discriminator,
       );
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -1077,8 +1076,8 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckOneOfSchemaModel extends AckSchemaModel {
-  const AckOneOfSchemaModel({
+final class OneOfSchemaModel extends SchemaModel {
+  const OneOfSchemaModel({
     required this.schemas,
     this.discriminator,
     super.title,
@@ -1089,14 +1088,11 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckOneOfSchemaModel._(
-    _AckSchemaModelCommon common, {
-    required this.schemas,
-    this.discriminator,
-  }) : super._(common);
+  OneOfSchemaModel._(super.common, {required this.schemas, this.discriminator})
+    : super._();
 
-  final List<AckSchemaModel> schemas;
-  final AckSchemaDiscriminatorModel? discriminator;
+  final List<SchemaModel> schemas;
+  final SchemaDiscriminatorModel? discriminator;
 
   @override
   Object? get _metadataEquality => {
@@ -1108,14 +1104,14 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
       finishCompositionJson('oneOf', schemas);
 
   @override
-  AckOneOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckOneOfSchemaModel._(
+  OneOfSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      OneOfSchemaModel._(
         common,
         schemas: schemas,
         discriminator: discriminator,
       );
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
@@ -1123,8 +1119,8 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
   }
 }
 
-final class AckAllOfSchemaModel extends AckSchemaModel {
-  const AckAllOfSchemaModel({
+final class AllOfSchemaModel extends SchemaModel {
+  const AllOfSchemaModel({
     required this.schemas,
     super.title,
     super.description,
@@ -1134,20 +1130,19 @@ final class AckAllOfSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckAllOfSchemaModel._(_AckSchemaModelCommon common, {required this.schemas})
-    : super._(common);
+  AllOfSchemaModel._(super.common, {required this.schemas}) : super._();
 
-  final List<AckSchemaModel> schemas;
+  final List<SchemaModel> schemas;
 
   @override
   Map<String, Object?> toJsonSchema() =>
       finishCompositionJson('allOf', schemas);
 
   @override
-  AckAllOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckAllOfSchemaModel._(common, schemas: schemas);
+  AllOfSchemaModel _rebuildWithCommon(_SchemaModelCommon common) =>
+      AllOfSchemaModel._(common, schemas: schemas);
 
-  AckSchemaModel _withJsonSchemaKeywords(
+  SchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {

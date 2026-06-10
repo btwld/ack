@@ -7,22 +7,21 @@ import '../constraints/datetime_constraint.dart';
 import '../context.dart';
 import '../json_schema/json_schema_utils.dart';
 import '../schemas/schema.dart';
-import 'ack_schema_model.dart';
-import 'ack_schema_model_warning.dart';
+import 'package:schema_model/schema_model.dart';
 
 extension AckSchemaModelExtension<
   Boundary extends Object,
   Runtime extends Object
 >
     on AckSchema<Boundary, Runtime> {
-  AckSchemaModel toSchemaModel() => _SchemaModelBuilder().build(this);
+  SchemaModel toSchemaModel() => _SchemaModelBuilder().build(this);
 }
 
 final class _SchemaModelBuilder {
-  final _definitions = <String, AckSchemaModel?>{};
+  final _definitions = <String, SchemaModel?>{};
   final _targets = <String, Object>{};
 
-  AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
+  SchemaModel build(AckSchema<dynamic, dynamic> schema) {
     final root = _build(schema);
     if (_definitions.isEmpty) return root;
 
@@ -74,7 +73,7 @@ final class _SchemaModelBuilder {
     return merged;
   }
 
-  AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
+  SchemaModel _build(AckSchema<dynamic, dynamic> schema) {
     if (schema is WrapperSchema) {
       final base = _build(schema.inner);
       // Defaults wrap their inner without transforming the boundary value, so
@@ -100,7 +99,7 @@ final class _SchemaModelBuilder {
         } else {
           wrapped = wrapped.withWarnings([
             ...wrapped.warnings,
-            AckSchemaModelWarning(
+            SchemaModelWarning(
               code: 'default_not_export_safe',
               message:
                   'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
@@ -133,56 +132,56 @@ final class _SchemaModelBuilder {
       DiscriminatedObjectSchema() => _discriminated(schema),
       LazySchema<dynamic, dynamic>() => _lazy(schema),
       _ => throw UnsupportedError(
-        'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
+        'Schema type ${schema.runtimeType} is not supported for SchemaModel conversion.',
       ),
     };
 
     return schema is LazySchema ? model : _applyConstraints(model, schema);
   }
 
-  AckSchemaModel _string(StringSchema schema) {
-    return AckStringSchemaModel(
+  SchemaModel _string(StringSchema schema) {
+    return StringSchemaModel(
       description: schema.description,
       nullable: schema.isNullable,
     );
   }
 
-  AckSchemaModel _integer(IntegerSchema schema) {
-    return AckIntegerSchemaModel(
+  SchemaModel _integer(IntegerSchema schema) {
+    return IntegerSchemaModel(
       description: schema.description,
       nullable: schema.isNullable,
     );
   }
 
-  AckSchemaModel _number({String? description, required bool nullable}) {
-    return AckNumberSchemaModel(description: description, nullable: nullable);
+  SchemaModel _number({String? description, required bool nullable}) {
+    return NumberSchemaModel(description: description, nullable: nullable);
   }
 
-  AckSchemaModel _boolean(BooleanSchema schema) {
-    return AckBooleanSchemaModel(
+  SchemaModel _boolean(BooleanSchema schema) {
+    return BooleanSchemaModel(
       description: schema.description,
       nullable: schema.isNullable,
     );
   }
 
-  AckSchemaModel _enum(EnumSchema schema) {
-    return AckStringSchemaModel(
+  SchemaModel _enum(EnumSchema schema) {
+    return StringSchemaModel(
       description: schema.description,
       enumValues: [for (final value in schema.values) value.name],
       nullable: schema.isNullable,
     );
   }
 
-  AckSchemaModel _array(ListSchema schema) {
-    return AckArraySchemaModel(
+  SchemaModel _array(ListSchema schema) {
+    return ArraySchemaModel(
       description: schema.description,
       nullable: schema.isNullable,
       items: _build(schema.itemSchema),
     );
   }
 
-  AckSchemaModel _object(ObjectSchema schema) {
-    final properties = <String, AckSchemaModel>{};
+  SchemaModel _object(ObjectSchema schema) {
+    final properties = <String, SchemaModel>{};
     final required = <String>[];
     final ordering = <String>[];
 
@@ -197,43 +196,43 @@ final class _SchemaModelBuilder {
       }
     }
 
-    return AckObjectSchemaModel(
+    return ObjectSchemaModel(
       description: schema.description,
       nullable: schema.isNullable,
       properties: properties.isEmpty ? null : properties,
       required: required.isEmpty ? null : required,
       propertyOrdering: ordering.isEmpty ? null : ordering,
       additionalProperties: schema.additionalProperties
-          ? const AckAdditionalPropertiesAllowed()
-          : const AckAdditionalPropertiesDisallowed(),
+          ? const AdditionalPropertiesAllowed()
+          : const AdditionalPropertiesDisallowed(),
     );
   }
 
-  AckSchemaModel _anyOf(AnyOfSchema schema) {
-    return AckAnyOfSchemaModel(
+  SchemaModel _anyOf(AnyOfSchema schema) {
+    return AnyOfSchemaModel(
       schemas: schema.schemas.map(_build).toList(growable: false),
       nullable: schema.isNullable,
       description: schema.description,
     );
   }
 
-  AckSchemaModel _instance(InstanceSchema schema) {
+  SchemaModel _instance(InstanceSchema schema) {
     // InstanceSchema accepts arbitrary Dart instances of a runtime type with no
     // direct JSON representation. Adapters that flow through a codec see the
     // boundary schema instead; this is the fallback for a bare instance.
-    return AckAnyOfSchemaModel(
+    return AnyOfSchemaModel(
       schemas: [
-        AckStringSchemaModel(description: schema.description),
-        AckNumberSchemaModel(description: schema.description),
-        AckIntegerSchemaModel(description: schema.description),
-        AckBooleanSchemaModel(description: schema.description),
-        AckObjectSchemaModel(description: schema.description),
-        AckArraySchemaModel(description: schema.description),
+        StringSchemaModel(description: schema.description),
+        NumberSchemaModel(description: schema.description),
+        IntegerSchemaModel(description: schema.description),
+        BooleanSchemaModel(description: schema.description),
+        ObjectSchemaModel(description: schema.description),
+        ArraySchemaModel(description: schema.description),
       ],
       nullable: schema.isNullable,
       description: schema.description,
       warnings: const [
-        AckSchemaModelWarning(
+        SchemaModelWarning(
           code: 'ack_instance_json_boundary',
           message:
               'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
@@ -242,23 +241,23 @@ final class _SchemaModelBuilder {
     );
   }
 
-  AckSchemaModel _any(AnySchema schema) {
+  SchemaModel _any(AnySchema schema) {
     final description = schema.description;
     final primitiveBranches = [
-      AckStringSchemaModel(description: description),
-      AckNumberSchemaModel(description: description),
-      AckIntegerSchemaModel(description: description),
-      AckBooleanSchemaModel(description: description),
-      AckObjectSchemaModel(description: description),
-      AckArraySchemaModel(description: description),
+      StringSchemaModel(description: description),
+      NumberSchemaModel(description: description),
+      IntegerSchemaModel(description: description),
+      BooleanSchemaModel(description: description),
+      ObjectSchemaModel(description: description),
+      ArraySchemaModel(description: description),
     ];
 
-    return AckAnyOfSchemaModel(
+    return AnyOfSchemaModel(
       schemas: primitiveBranches,
       nullable: schema.isNullable,
       description: description,
       warnings: const [
-        AckSchemaModelWarning(
+        SchemaModelWarning(
           code: 'ack_any_json_boundary',
           message:
               'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
@@ -267,9 +266,9 @@ final class _SchemaModelBuilder {
     );
   }
 
-  AckSchemaModel _discriminated(DiscriminatedObjectSchema schema) {
+  SchemaModel _discriminated(DiscriminatedObjectSchema schema) {
     if (schema.schemas.isEmpty) {
-      return AckObjectSchemaModel(
+      return ObjectSchemaModel(
         properties: const {},
         required: const [],
         nullable: schema.isNullable,
@@ -277,10 +276,10 @@ final class _SchemaModelBuilder {
       );
     }
 
-    final branches = <AckSchemaModel>[];
+    final branches = <SchemaModel>[];
     for (final entry in schema.schemas.entries) {
       final converted = _build(schema.effectiveBranch(entry.key));
-      if (converted is! AckObjectSchemaModel) {
+      if (converted is! ObjectSchemaModel) {
         throw ArgumentError(
           'Discriminated branch "${entry.key}" must export as an object schema model.',
         );
@@ -288,9 +287,9 @@ final class _SchemaModelBuilder {
       branches.add(converted);
     }
 
-    return AckAnyOfSchemaModel(
+    return AnyOfSchemaModel(
       schemas: branches,
-      discriminator: AckSchemaDiscriminatorModel(
+      discriminator: SchemaDiscriminatorModel(
         propertyName: schema.discriminatorKey,
       ),
       description: schema.description,
@@ -298,7 +297,7 @@ final class _SchemaModelBuilder {
     );
   }
 
-  AckSchemaModel _lazy(LazySchema<dynamic, dynamic> schema) {
+  SchemaModel _lazy(LazySchema<dynamic, dynamic> schema) {
     final name = schema.name;
     final target = schema.target;
     final priorTarget = _targets[name];
@@ -318,8 +317,8 @@ final class _SchemaModelBuilder {
     return _lazyRef(schema);
   }
 
-  AckSchemaModel _lazyRef(LazySchema<dynamic, dynamic> schema) {
-    var model = AckRefSchemaModel(
+  SchemaModel _lazyRef(LazySchema<dynamic, dynamic> schema) {
+    var model = RefSchemaModel(
       refName: schema.name,
       description: schema.description,
       nullable: schema.isNullable,
@@ -332,7 +331,7 @@ final class _SchemaModelBuilder {
 
     return model.withWarnings([
       ...model.warnings,
-      AckSchemaModelWarning(
+      SchemaModelWarning(
         code: 'lazy_runtime_checks_not_export_safe',
         message:
             'Ack.lazy constraints and refinements were omitted because JSON Schema refs cannot safely carry runtime-only validation checks.',
@@ -345,8 +344,8 @@ final class _SchemaModelBuilder {
   }
 }
 
-AckSchemaModel _applyConstraints(
-  AckSchemaModel model,
+SchemaModel _applyConstraints(
+  SchemaModel model,
   AckSchema<dynamic, dynamic> schema,
 ) {
   var next = model;
@@ -364,13 +363,13 @@ AckSchemaModel _applyConstraints(
   return next;
 }
 
-AckSchemaModel _applyDateTimeConstraint(
-  AckSchemaModel model,
+SchemaModel _applyDateTimeConstraint(
+  SchemaModel model,
   DateTimeConstraint constraint,
 ) {
   return model.withWarnings([
     ...model.warnings,
-    AckSchemaModelWarning(
+    SchemaModelWarning(
       code: 'datetime_constraint_not_draft7',
       message:
           'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',

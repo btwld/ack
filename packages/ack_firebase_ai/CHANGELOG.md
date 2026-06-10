@@ -18,6 +18,7 @@
 - Default Firebase AI examples and live tests to `gemini-3.5-flash`.
 - Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
   adapter boundary.
+- Update schema-model fixture coverage to use the renamed `SchemaModel` API.
 - Keep `firebase_ai` and Flutter as explicit package dependencies so package
   tests and workspace orchestration use the Firebase AI SDK runtime.
 

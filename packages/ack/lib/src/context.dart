@@ -46,6 +46,21 @@ class SchemaContext {
         : '$parentPath/$escapedSegment';
   }
 
+  /// Raw path segments from root to this context.
+  ///
+  /// Numeric segments are exposed as integer indices to match the standard
+  /// schema path shape. Empty path segments are branch pass-through markers and
+  /// do not add to the path.
+  List<Object> get pathSegments {
+    final parentSegments = parent?.pathSegments ?? const <Object>[];
+    if (parent == null || pathSegment == '') return parentSegments;
+
+    final segment = pathSegment ?? name;
+    final index = int.tryParse(segment);
+    final pathValue = index != null && index >= 0 ? index : segment;
+    return [...parentSegments, pathValue];
+  }
+
   /// Creates a child context for nested validation.
   ///
   /// The child inherits the parent's [operation] unless overridden.
