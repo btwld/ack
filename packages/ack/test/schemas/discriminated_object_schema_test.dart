@@ -170,7 +170,10 @@ void main() {
             },
           );
 
-          final result = codecSchema.safeEncode({'name': 'Mittens'});
+          final result = codecSchema.safeEncode({
+            'type': 'cat',
+            'name': 'Mittens',
+          });
 
           expect(result.isOk, isTrue);
           expect(result.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
@@ -191,7 +194,10 @@ void main() {
             },
           );
 
-          final result = codecSchema.safeEncode({'name': 'Mittens'});
+          final result = codecSchema.safeEncode({
+            'type': 'cat',
+            'name': 'Mittens',
+          });
 
           expect(result.isOk, isTrue);
           expect(result.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
@@ -214,8 +220,108 @@ void main() {
         final parsed = codecSchema.parse({'type': 'cat', 'name': 'Mittens'});
         final encoded = codecSchema.safeEncode(parsed);
 
+        expect(parsed, {'type': 'cat', 'name': 'Mittens'});
+        expect(() => parsed!['type'] = 'dog', throwsUnsupportedError);
         expect(encoded.isOk, isTrue);
         expect(encoded.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
+      });
+
+      test('normalizes narrower map-backed codec outputs during parse', () {
+        final codecSchema = Ack.discriminated<Map<String, String>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .codec<Map<String, String>>(
+                  decode: (data) => {'name': data['name']! as String},
+                  encode: (cat) => {'name': cat['name']!},
+                ),
+          },
+        );
+
+        final parsed = codecSchema.parse({'type': 'cat', 'name': 'Mittens'});
+        final encoded = codecSchema.safeEncode(parsed);
+
+        expect(parsed, {'type': 'cat', 'name': 'Mittens'});
+        expect(() => parsed!['type'] = 'dog', throwsUnsupportedError);
+        expect(encoded.isOk, isTrue);
+        expect(encoded.getOrThrow(), {'type': 'cat', 'name': 'Mittens'});
+      });
+
+      test(
+        'rejects a decoded map runtime with a conflicting discriminator',
+        () {
+          final codecSchema = Ack.discriminated<Map<String, Object?>>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()})
+                  .codec<Map<String, Object?>>(
+                    decode: (data) => {'type': 'dog', 'name': data['name']!},
+                    encode: (cat) => {'name': cat['name']},
+                  ),
+            },
+          );
+
+          final result = codecSchema.safeParse({
+            'type': 'cat',
+            'name': 'Mittens',
+          });
+
+          expect(result.isFail, isTrue);
+          final error = result.getError();
+          expect(error, isA<SchemaValidationError>());
+          expect(
+            (error as SchemaValidationError).message,
+            contains('conflicting "type" value: dog'),
+          );
+        },
+      );
+
+      test('rejects a map-runtime branch codec missing the discriminator', () {
+        final codecSchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .codec<Map<String, Object?>>(
+                  decode: (data) => {'name': data['name']!},
+                  encode: (cat) => {'name': cat['name']},
+                ),
+          },
+        );
+
+        final result = codecSchema.safeEncode({'name': 'Mittens'});
+
+        expect(result.isFail, isTrue);
+        final error = result.getError() as SchemaConstraintsError;
+        expect(
+          error.constraints.first.constraint,
+          isA<ObjectRequiredPropertiesConstraint>(),
+        );
+      });
+
+      test('rejects a map-shaped object runtime missing the discriminator', () {
+        final codecSchema = Ack.discriminated<Object>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()}).codec<Object>(
+              decode: (data) => <Object?, Object?>{'name': data['name']},
+              encode: (value) {
+                final map = value as Map<Object?, Object?>;
+                return {'name': map['name']};
+              },
+            ),
+          },
+        );
+
+        final result = codecSchema.safeEncode(<Object?, Object?>{
+          'name': 'Mittens',
+        });
+
+        expect(result.isFail, isTrue);
+        final error = result.getError() as SchemaConstraintsError;
+        expect(
+          error.constraints.first.constraint,
+          isA<ObjectRequiredPropertiesConstraint>(),
+        );
       });
 
       test('encodes passthrough extras once for a branch codec that omits the '
@@ -233,6 +339,7 @@ void main() {
         );
 
         final result = codecSchema.safeEncode({
+          'type': 'cat',
           'name': 'Mittens',
           'color': 'tabby',
         });
@@ -267,34 +374,35 @@ void main() {
         expect(result.getOrThrow(), {'type': 'dog', 'name': 'Spot'});
       });
 
-      test('rejects a runtime that matches multiple branches as ambiguous', () {
-        // Two map-runtime codec branches share a shape, so a runtime that omits
-        // the discriminator validates and encodes through both. The union must
-        // refuse to guess instead of silently encoding through the first.
-        final ambiguousSchema = Ack.discriminated<Map<String, Object?>>(
-          discriminatorKey: 'type',
-          schemas: {
-            'cat': Ack.object({'name': Ack.string()})
-                .codec<Map<String, Object?>>(
-                  decode: (data) => {'name': data['name']!},
-                  encode: (cat) => {'name': cat['name']},
-                ),
-            'dog': Ack.object({'name': Ack.string()})
-                .codec<Map<String, Object?>>(
-                  decode: (data) => {'name': data['name']!},
-                  encode: (dog) => {'name': dog['name']},
-                ),
-          },
-        );
+      test(
+        'rejects a typed runtime that matches multiple branches as ambiguous',
+        () {
+          // Two typed codec branches share the same runtime type, so branch
+          // probing must still reject the runtime instead of silently encoding
+          // through whichever branch is declared first.
+          final ambiguousSchema = Ack.discriminated<Object>(
+            discriminatorKey: 'type',
+            schemas: {
+              'cat': Ack.object({'name': Ack.string()}).codec<_Cat>(
+                decode: (data) => _Cat(data['name']! as String),
+                encode: (cat) => {'name': cat.name},
+              ),
+              'dog': Ack.object({'name': Ack.string()}).codec<_Cat>(
+                decode: (data) => _Cat(data['name']! as String),
+                encode: (cat) => {'name': cat.name},
+              ),
+            },
+          );
 
-        final result = ambiguousSchema.safeEncode({'name': 'Mittens'});
+          final result = ambiguousSchema.safeEncode(const _Cat('Mittens'));
 
-        expect(result.isFail, isTrue);
-        final error = result.getError();
-        expect(error, isA<SchemaEncodeError>());
-        expect((error as SchemaEncodeError).message, contains('"cat"'));
-        expect(error.message, contains('"dog"'));
-      });
+          expect(result.isFail, isTrue);
+          final error = result.getError();
+          expect(error, isA<SchemaEncodeError>());
+          expect((error as SchemaEncodeError).message, contains('"cat"'));
+          expect(error.message, contains('"dog"'));
+        },
+      );
 
       test(
         'nested default and codec wrappers synthesize the discriminator only '
@@ -332,9 +440,11 @@ void main() {
           );
 
           final defaultCodecResult = defaultCodecSchema.safeEncode({
+            'type': 'cat',
             'name': 'Mittens',
           });
           final codecDefaultResult = codecDefaultSchema.safeEncode({
+            'type': 'cat',
             'name': 'Mittens',
           });
           final defaultOnlyResult = defaultOnlySchema.safeEncode({
