@@ -1,0 +1,95 @@
+{
+  "circleBorder": {
+    "side": "none",
+    "eccentricity": 0.0
+  },
+  "circleBorderSided": {
+    "side": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "eccentricity": 0.5
+  },
+  "stadiumBorder": {
+    "side": {
+      "color": "#FF0000",
+      "width": 3.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    }
+  },
+  "roundedRectangleBorder": {
+    "side": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "borderRadius": 12.0
+  },
+  "beveledRectangleBorder": {
+    "side": "none",
+    "borderRadius": 4.0
+  },
+  "continuousRectangleBorder": {
+    "side": "none",
+    "borderRadius": 4.0
+  },
+  "roundedSuperellipseBorder": {
+    "side": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "borderRadius": 8.0
+  },
+  "starBorder": {
+    "side": "none",
+    "points": 7.0,
+    "innerRadiusRatio": 0.3,
+    "pointRounding": 0.0,
+    "valleyRounding": 0.0,
+    "rotation": 0.0,
+    "squash": 0.0
+  },
+  "linearBorderEdge": {
+    "size": 0.5,
+    "alignment": -0.25
+  },
+  "linearBorder": {
+    "side": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "start": {
+      "size": 0.5,
+      "alignment": 0.0
+    },
+    "end": null,
+    "top": {
+      "size": 1.0,
+      "alignment": -1.0
+    },
+    "bottom": null
+  },
+  "shapeBorderStar": {
+    "type": "star",
+    "side": "none",
+    "points": 5.0,
+    "innerRadiusRatio": 0.4,
+    "pointRounding": 0.0,
+    "valleyRounding": 0.0,
+    "rotation": 0.0,
+    "squash": 0.0
+  },
+  "shapeBorderOval": {
+    "type": "circle",
+    "side": "none",
+    "eccentricity": 1.0
+  }
+}

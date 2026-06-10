@@ -1,0 +1,241 @@
+{
+  "containerDefault": {
+    "key": null,
+    "alignment": null,
+    "padding": null,
+    "color": null,
+    "isAntiAlias": true,
+    "decoration": null,
+    "foregroundDecoration": null,
+    "width": null,
+    "height": null,
+    "constraints": null,
+    "margin": null,
+    "transform": null,
+    "transformAlignment": null,
+    "clipBehavior": "none",
+    "child": null
+  },
+  "containerFull": {
+    "key": {
+      "type": "value",
+      "valueType": "string",
+      "value": "shell"
+    },
+    "alignment": "centerRight",
+    "padding": 8.0,
+    "color": null,
+    "isAntiAlias": false,
+    "decoration": {
+      "type": "box",
+      "color": "#E0F2F1",
+      "image": null,
+      "border": null,
+      "borderRadius": 6.0,
+      "boxShadow": null,
+      "gradient": null,
+      "backgroundBlendMode": null,
+      "shape": "rectangle"
+    },
+    "foregroundDecoration": {
+      "type": "box",
+      "color": null,
+      "image": null,
+      "border": {
+        "color": "#004D40",
+        "width": 1.0,
+        "style": "solid",
+        "strokeAlign": "inside"
+      },
+      "borderRadius": null,
+      "boxShadow": null,
+      "gradient": null,
+      "backgroundBlendMode": null,
+      "shape": "rectangle"
+    },
+    "width": null,
+    "height": null,
+    "constraints": {
+      "minWidth": 10.0,
+      "maxWidth": 100.0,
+      "minHeight": 20.0,
+      "maxHeight": 200.0
+    },
+    "margin": {
+      "start": 2.0,
+      "top": 0.0,
+      "end": 4.0,
+      "bottom": 0.0
+    },
+    "transform": [
+      2.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      3.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      10.0,
+      20.0,
+      30.0,
+      1.0
+    ],
+    "transformAlignment": "bottomLeft",
+    "clipBehavior": "antiAlias",
+    "child": {
+      "type": "container",
+      "key": null,
+      "alignment": null,
+      "padding": null,
+      "color": "#FF0000",
+      "isAntiAlias": true,
+      "decoration": null,
+      "foregroundDecoration": null,
+      "width": null,
+      "height": null,
+      "constraints": null,
+      "margin": null,
+      "transform": null,
+      "transformAlignment": null,
+      "clipBehavior": "none",
+      "child": null
+    }
+  },
+  "textWidgetDefault": {
+    "key": null,
+    "data": "hello",
+    "style": null,
+    "strutStyle": null,
+    "textAlign": null,
+    "textDirection": null,
+    "locale": null,
+    "softWrap": null,
+    "overflow": null,
+    "maxLines": null,
+    "semanticsLabel": null,
+    "semanticsIdentifier": null,
+    "textWidthBasis": null,
+    "textHeightBehavior": null,
+    "selectionColor": null
+  },
+  "textWidgetFull": {
+    "key": {
+      "type": "value",
+      "valueType": "string",
+      "value": "copy"
+    },
+    "data": "hello",
+    "style": {
+      "inherit": true,
+      "color": "#102030",
+      "backgroundColor": null,
+      "fontSize": 18.0,
+      "fontWeight": "w600",
+      "fontStyle": null,
+      "letterSpacing": null,
+      "wordSpacing": null,
+      "textBaseline": null,
+      "height": null,
+      "leadingDistribution": null,
+      "locale": null,
+      "shadows": null,
+      "decoration": null,
+      "decorationColor": null,
+      "decorationStyle": null,
+      "decorationThickness": null,
+      "fontFamily": null,
+      "fontFamilyFallback": null,
+      "package": null,
+      "overflow": null,
+      "fontFeatures": null,
+      "fontVariations": null
+    },
+    "strutStyle": {
+      "fontFamily": null,
+      "fontFamilyFallback": null,
+      "package": null,
+      "fontSize": 18.0,
+      "height": 1.25,
+      "leadingDistribution": null,
+      "leading": null,
+      "fontWeight": null,
+      "fontStyle": null,
+      "forceStrutHeight": null
+    },
+    "textAlign": "center",
+    "textDirection": "rtl",
+    "locale": "en-US",
+    "softWrap": false,
+    "overflow": "ellipsis",
+    "maxLines": 2,
+    "semanticsLabel": "label",
+    "semanticsIdentifier": "copy-id",
+    "textWidthBasis": "longestLine",
+    "textHeightBehavior": {
+      "applyHeightToFirstAscent": false,
+      "applyHeightToLastDescent": true,
+      "leadingDistribution": "proportional"
+    },
+    "selectionColor": "#330000FF"
+  },
+  "widgetUnionContainerWithText": {
+    "type": "container",
+    "key": null,
+    "alignment": null,
+    "padding": 8.0,
+    "color": null,
+    "isAntiAlias": true,
+    "decoration": null,
+    "foregroundDecoration": null,
+    "width": null,
+    "height": null,
+    "constraints": null,
+    "margin": null,
+    "transform": null,
+    "transformAlignment": null,
+    "clipBehavior": "none",
+    "child": {
+      "type": "text",
+      "key": null,
+      "data": "hi",
+      "style": null,
+      "strutStyle": null,
+      "textAlign": "center",
+      "textDirection": null,
+      "locale": null,
+      "softWrap": null,
+      "overflow": null,
+      "maxLines": null,
+      "semanticsLabel": null,
+      "semanticsIdentifier": null,
+      "textWidthBasis": null,
+      "textHeightBehavior": null,
+      "selectionColor": null
+    }
+  },
+  "keyString": {
+    "type": "value",
+    "valueType": "string",
+    "value": "foo"
+  },
+  "keyInt": {
+    "type": "value",
+    "valueType": "int",
+    "value": 1
+  },
+  "keyDouble": {
+    "type": "value",
+    "valueType": "double",
+    "value": 1.5
+  },
+  "keyBool": {
+    "type": "value",
+    "valueType": "bool",
+    "value": true
+  }
+}

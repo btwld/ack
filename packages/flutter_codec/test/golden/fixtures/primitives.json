@@ -1,0 +1,128 @@
+{
+  "color": "#2196F3",
+  "colorTranslucent": "#802196F3",
+  "offset": {
+    "x": 12.0,
+    "y": 4.5
+  },
+  "radiusCircular": 8.0,
+  "radiusElliptical": {
+    "x": 8.0,
+    "y": 12.5
+  },
+  "rect": {
+    "left": 1.0,
+    "top": 2.0,
+    "right": 30.0,
+    "bottom": 40.0
+  },
+  "alignmentNamed": "topLeft",
+  "alignmentXY": {
+    "x": 0.25,
+    "y": -0.5
+  },
+  "alignmentDirectional": {
+    "start": 0.25,
+    "y": -0.5
+  },
+  "alignmentGeometryDirectional": {
+    "start": 0.25,
+    "y": -0.5
+  },
+  "borderRadiusCircular": 8.0,
+  "borderRadiusPerCorner": {
+    "topLeft": 8.0,
+    "topRight": 0.0,
+    "bottomLeft": 0.0,
+    "bottomRight": 0.0
+  },
+  "borderRadiusDirectional": {
+    "topStart": 8.0,
+    "topEnd": 0.0,
+    "bottomStart": 0.0,
+    "bottomEnd": 0.0
+  },
+  "borderRadiusGeometryDirectional": {
+    "topStart": 8.0,
+    "topEnd": 8.0,
+    "bottomStart": 8.0,
+    "bottomEnd": 8.0
+  },
+  "edgeInsetsAll": 16.0,
+  "edgeInsetsOnly": {
+    "left": 8.0,
+    "top": 4.0,
+    "right": 0.0,
+    "bottom": 0.0
+  },
+  "edgeInsetsDirectional": {
+    "start": 8.0,
+    "top": 0.0,
+    "end": 0.0,
+    "bottom": 0.0
+  },
+  "edgeInsetsGeometryDirectional": {
+    "start": 8.0,
+    "top": 0.0,
+    "end": 0.0,
+    "bottom": 0.0
+  },
+  "matrix4Identity": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "matrix4Transformed": [
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    3.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    10.0,
+    20.0,
+    30.0,
+    1.0
+  ],
+  "locale": "en-US",
+  "localeWithScript": "zh-Hans-CN",
+  "fontFeature": {
+    "feature": "smcp",
+    "value": 1
+  },
+  "fontVariation": {
+    "axis": "wght",
+    "value": 600.0
+  },
+  "fontWeightNamed": "w600",
+  "fontWeightVariable": 550,
+  "textDecorationAtomic": "underline",
+  "textDecorationCombined": [
+    "underline",
+    "lineThrough"
+  ],
+  "textHeightBehavior": {
+    "applyHeightToFirstAscent": false,
+    "applyHeightToLastDescent": true,
+    "leadingDistribution": "even"
+  }
+}

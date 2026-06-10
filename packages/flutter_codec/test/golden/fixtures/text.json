@@ -1,0 +1,118 @@
+{
+  "textStyleDefault": {
+    "inherit": true,
+    "color": null,
+    "backgroundColor": null,
+    "fontSize": null,
+    "fontWeight": null,
+    "fontStyle": null,
+    "letterSpacing": null,
+    "wordSpacing": null,
+    "textBaseline": null,
+    "height": null,
+    "leadingDistribution": null,
+    "locale": null,
+    "shadows": null,
+    "decoration": null,
+    "decorationColor": null,
+    "decorationStyle": null,
+    "decorationThickness": null,
+    "fontFamily": null,
+    "fontFamilyFallback": null,
+    "package": null,
+    "overflow": null,
+    "fontFeatures": null,
+    "fontVariations": null
+  },
+  "textStyleFull": {
+    "inherit": false,
+    "color": "#2196F3",
+    "backgroundColor": "#FFFDE7",
+    "fontSize": 18.0,
+    "fontWeight": "w700",
+    "fontStyle": "italic",
+    "letterSpacing": 0.25,
+    "wordSpacing": 1.5,
+    "textBaseline": "alphabetic",
+    "height": 1.3,
+    "leadingDistribution": "even",
+    "locale": "zh-CN",
+    "shadows": [
+      {
+        "color": "#55000000",
+        "offset": {
+          "x": 1.0,
+          "y": 2.0
+        },
+        "blurRadius": 3.0
+      }
+    ],
+    "decoration": null,
+    "decorationColor": "#FF0000",
+    "decorationStyle": "dashed",
+    "decorationThickness": 2.0,
+    "fontFamily": "Inter",
+    "fontFamilyFallback": [
+      "Roboto",
+      "Arial"
+    ],
+    "package": "my_package",
+    "overflow": "ellipsis",
+    "fontFeatures": [
+      {
+        "feature": "smcp",
+        "value": 1
+      },
+      {
+        "feature": "cv01",
+        "value": 3
+      }
+    ],
+    "fontVariations": [
+      {
+        "axis": "wght",
+        "value": 500.0
+      },
+      {
+        "axis": "slnt",
+        "value": -10.0
+      }
+    ]
+  },
+  "strutStyleDefault": {
+    "fontFamily": null,
+    "fontFamilyFallback": null,
+    "package": null,
+    "fontSize": null,
+    "height": null,
+    "leadingDistribution": null,
+    "leading": null,
+    "fontWeight": null,
+    "fontStyle": null,
+    "forceStrutHeight": null
+  },
+  "strutStyleFull": {
+    "fontFamily": "Roboto",
+    "fontFamilyFallback": null,
+    "package": null,
+    "fontSize": 16.0,
+    "height": 1.5,
+    "leadingDistribution": null,
+    "leading": null,
+    "fontWeight": "w700",
+    "fontStyle": null,
+    "forceStrutHeight": false
+  },
+  "strutStylePackage": {
+    "fontFamily": "Roboto",
+    "fontFamilyFallback": null,
+    "package": "my_pkg",
+    "fontSize": null,
+    "height": null,
+    "leadingDistribution": null,
+    "leading": null,
+    "fontWeight": null,
+    "fontStyle": null,
+    "forceStrutHeight": null
+  }
+}

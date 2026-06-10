@@ -1,0 +1,56 @@
+{
+  "strokeAlignNamed": "outside",
+  "strokeAlignNumeric": 0.5,
+  "borderSideNone": "none",
+  "borderSideFull": {
+    "color": "#FF0000",
+    "width": 2.0,
+    "style": "none",
+    "strokeAlign": "center"
+  },
+  "borderNone": "none",
+  "borderUniform": {
+    "color": "#FF0000",
+    "width": 2.0,
+    "style": "solid",
+    "strokeAlign": "inside"
+  },
+  "borderMixed": {
+    "top": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "right": "none",
+    "bottom": {
+      "color": "#0000FF",
+      "width": 3.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "left": "none"
+  },
+  "borderDirectional": {
+    "top": "none",
+    "start": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "end": "none",
+    "bottom": "none"
+  },
+  "boxBorderDirectional": {
+    "top": "none",
+    "start": {
+      "color": "#FF0000",
+      "width": 1.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "end": "none",
+    "bottom": "none"
+  }
+}

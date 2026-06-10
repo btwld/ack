@@ -1,0 +1,27 @@
+{
+  "boxConstraintsDefault": {
+    "minWidth": 0.0,
+    "maxWidth": null,
+    "minHeight": 0.0,
+    "maxHeight": null
+  },
+  "boxConstraintsFinite": {
+    "minWidth": 1.0,
+    "maxWidth": 10.0,
+    "minHeight": 2.0,
+    "maxHeight": 20.0
+  },
+  "boxConstraintsExpand": {
+    "minWidth": null,
+    "maxWidth": null,
+    "minHeight": null,
+    "maxHeight": null
+  },
+  "constraintsUnionBox": {
+    "type": "box",
+    "minWidth": 1.0,
+    "maxWidth": 10.0,
+    "minHeight": 2.0,
+    "maxHeight": 20.0
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "linearGradient": {
+    "type": "linear",
+    "begin": "centerLeft",
+    "end": "centerRight",
+    "colors": [
+      "#FF0000",
+      "#0000FF"
+    ],
+    "stops": null,
+    "tileMode": "clamp"
+  },
+  "linearGradientFull": {
+    "type": "linear",
+    "begin": "topLeft",
+    "end": "bottomRight",
+    "colors": [
+      "#FF0000",
+      "#0000FF"
+    ],
+    "stops": [
+      0.0,
+      1.0
+    ],
+    "tileMode": "mirror"
+  },
+  "radialGradient": {
+    "type": "radial",
+    "center": "center",
+    "radius": 0.5,
+    "colors": [
+      "#FF0000",
+      "#0000FF"
+    ],
+    "stops": null,
+    "tileMode": "clamp",
+    "focal": null,
+    "focalRadius": 0.0
+  },
+  "radialGradientFocal": {
+    "type": "radial",
+    "center": "center",
+    "radius": 0.5,
+    "colors": [
+      "#FF0000",
+      "#0000FF"
+    ],
+    "stops": null,
+    "tileMode": "clamp",
+    "focal": "topLeft",
+    "focalRadius": 0.25
+  },
+  "sweepGradient": {
+    "type": "sweep",
+    "center": "center",
+    "startAngle": 0.0,
+    "endAngle": 6.283185307179586,
+    "colors": [
+      "#FF0000",
+      "#0000FF"
+    ],
+    "stops": null,
+    "tileMode": "clamp"
+  },
+  "gradientUnionLinear": {
+    "type": "linear",
+    "begin": "centerLeft",
+    "end": "centerRight",
+    "colors": [
+      "#FF0000",
+      "#0000FF"
+    ],
+    "stops": null,
+    "tileMode": "clamp"
+  }
+}

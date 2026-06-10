@@ -1,0 +1,43 @@
+{
+  "decorationImageMinimal": {
+    "image": {
+      "type": "network",
+      "url": "https://example.com/image.png",
+      "scale": 1.0,
+      "headers": null,
+      "webHtmlElementStrategy": "never"
+    },
+    "fit": null,
+    "alignment": "center",
+    "centerSlice": null,
+    "repeat": "noRepeat",
+    "matchTextDirection": false,
+    "scale": 1.0,
+    "opacity": 1.0,
+    "filterQuality": "medium",
+    "invertColors": false,
+    "isAntiAlias": false
+  },
+  "decorationImageFull": {
+    "image": {
+      "type": "asset",
+      "assetName": "icons/foo.png",
+      "package": "my_pkg"
+    },
+    "fit": "cover",
+    "alignment": "bottomRight",
+    "centerSlice": {
+      "left": 1.0,
+      "top": 2.0,
+      "right": 3.0,
+      "bottom": 4.0
+    },
+    "repeat": "repeatX",
+    "matchTextDirection": true,
+    "scale": 1.5,
+    "opacity": 0.75,
+    "filterQuality": "low",
+    "invertColors": true,
+    "isAntiAlias": true
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "shadowDefault": {
+    "color": "#000000",
+    "offset": {
+      "x": 0.0,
+      "y": 0.0
+    },
+    "blurRadius": 0.0
+  },
+  "shadow": {
+    "color": "#FF0000",
+    "offset": {
+      "x": 2.0,
+      "y": 4.0
+    },
+    "blurRadius": 6.0
+  },
+  "boxShadowDefault": {
+    "color": "#000000",
+    "offset": {
+      "x": 0.0,
+      "y": 0.0
+    },
+    "blurRadius": 0.0,
+    "spreadRadius": 0.0,
+    "blurStyle": "normal"
+  },
+  "boxShadow": {
+    "color": "#FF0000",
+    "offset": {
+      "x": 2.0,
+      "y": 4.0
+    },
+    "blurRadius": 6.0,
+    "spreadRadius": 1.0,
+    "blurStyle": "outer"
+  }
+}

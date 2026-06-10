@@ -1,0 +1,272 @@
+{
+  "Axis": [
+    "horizontal",
+    "vertical"
+  ],
+  "AxisDirection": [
+    "up",
+    "right",
+    "down",
+    "left"
+  ],
+  "BlendMode": [
+    "clear",
+    "src",
+    "dst",
+    "srcOver",
+    "dstOver",
+    "srcIn",
+    "dstIn",
+    "srcOut",
+    "dstOut",
+    "srcATop",
+    "dstATop",
+    "xor",
+    "plus",
+    "modulate",
+    "screen",
+    "overlay",
+    "darken",
+    "lighten",
+    "colorDodge",
+    "colorBurn",
+    "hardLight",
+    "softLight",
+    "difference",
+    "exclusion",
+    "multiply",
+    "hue",
+    "saturation",
+    "color",
+    "luminosity"
+  ],
+  "BlurStyle": [
+    "normal",
+    "solid",
+    "outer",
+    "inner"
+  ],
+  "BorderStyle": [
+    "none",
+    "solid"
+  ],
+  "BoxFit": [
+    "fill",
+    "contain",
+    "cover",
+    "fitWidth",
+    "fitHeight",
+    "none",
+    "scaleDown"
+  ],
+  "BoxHeightStyle": [
+    "tight",
+    "max",
+    "includeLineSpacingMiddle",
+    "includeLineSpacingTop",
+    "includeLineSpacingBottom",
+    "strut"
+  ],
+  "BoxShape": [
+    "rectangle",
+    "circle"
+  ],
+  "BoxWidthStyle": [
+    "tight",
+    "max"
+  ],
+  "Brightness": [
+    "dark",
+    "light"
+  ],
+  "Clip": [
+    "none",
+    "hardEdge",
+    "antiAlias",
+    "antiAliasWithSaveLayer"
+  ],
+  "CrossAxisAlignment": [
+    "start",
+    "end",
+    "center",
+    "stretch",
+    "baseline"
+  ],
+  "DecorationPosition": [
+    "background",
+    "foreground"
+  ],
+  "DragStartBehavior": [
+    "down",
+    "start"
+  ],
+  "FilterQuality": [
+    "none",
+    "low",
+    "medium",
+    "high"
+  ],
+  "FlexFit": [
+    "tight",
+    "loose"
+  ],
+  "FontStyle": [
+    "normal",
+    "italic"
+  ],
+  "GrowthDirection": [
+    "forward",
+    "reverse"
+  ],
+  "HitTestBehavior": [
+    "deferToChild",
+    "opaque",
+    "translucent"
+  ],
+  "ImageRepeat": [
+    "repeat",
+    "repeatX",
+    "repeatY",
+    "noRepeat"
+  ],
+  "WebHtmlElementStrategy": [
+    "never",
+    "fallback",
+    "prefer"
+  ],
+  "MainAxisAlignment": [
+    "start",
+    "end",
+    "center",
+    "spaceBetween",
+    "spaceAround",
+    "spaceEvenly"
+  ],
+  "MainAxisSize": [
+    "min",
+    "max"
+  ],
+  "MaterialTapTargetSize": [
+    "padded",
+    "shrinkWrap"
+  ],
+  "PaintingStyle": [
+    "fill",
+    "stroke"
+  ],
+  "PathFillType": [
+    "nonZero",
+    "evenOdd"
+  ],
+  "PlaceholderAlignment": [
+    "baseline",
+    "aboveBaseline",
+    "belowBaseline",
+    "top",
+    "bottom",
+    "middle"
+  ],
+  "ScrollDirection": [
+    "idle",
+    "forward",
+    "reverse"
+  ],
+  "ScrollViewKeyboardDismissBehavior": [
+    "manual",
+    "onDrag"
+  ],
+  "StackFit": [
+    "loose",
+    "expand",
+    "passthrough"
+  ],
+  "StrokeCap": [
+    "butt",
+    "round",
+    "square"
+  ],
+  "StrokeJoin": [
+    "miter",
+    "round",
+    "bevel"
+  ],
+  "TargetPlatform": [
+    "android",
+    "fuchsia",
+    "iOS",
+    "linux",
+    "macOS",
+    "windows"
+  ],
+  "TextAlign": [
+    "left",
+    "right",
+    "center",
+    "justify",
+    "start",
+    "end"
+  ],
+  "TextBaseline": [
+    "alphabetic",
+    "ideographic"
+  ],
+  "TextCapitalization": [
+    "words",
+    "sentences",
+    "characters",
+    "none"
+  ],
+  "TextDecorationStyle": [
+    "solid",
+    "double",
+    "dotted",
+    "dashed",
+    "wavy"
+  ],
+  "TextDirection": [
+    "rtl",
+    "ltr"
+  ],
+  "TextLeadingDistribution": [
+    "proportional",
+    "even"
+  ],
+  "TextOverflow": [
+    "clip",
+    "fade",
+    "ellipsis",
+    "visible"
+  ],
+  "TextWidthBasis": [
+    "parent",
+    "longestLine"
+  ],
+  "ThemeMode": [
+    "system",
+    "light",
+    "dark"
+  ],
+  "TileMode": [
+    "clamp",
+    "repeated",
+    "mirror",
+    "decal"
+  ],
+  "VerticalDirection": [
+    "up",
+    "down"
+  ],
+  "WrapAlignment": [
+    "start",
+    "end",
+    "center",
+    "spaceBetween",
+    "spaceAround",
+    "spaceEvenly"
+  ],
+  "WrapCrossAlignment": [
+    "start",
+    "end",
+    "center"
+  ]
+}

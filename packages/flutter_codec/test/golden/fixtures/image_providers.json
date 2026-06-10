@@ -1,0 +1,36 @@
+{
+  "networkImageMinimal": {
+    "url": "https://example.com/image.png",
+    "scale": 1.0,
+    "headers": null,
+    "webHtmlElementStrategy": "never"
+  },
+  "networkImage": {
+    "url": "https://example.com/image.png",
+    "scale": 2.0,
+    "headers": {
+      "Authorization": "Bearer token"
+    },
+    "webHtmlElementStrategy": "fallback"
+  },
+  "assetImageMinimal": {
+    "assetName": "assets/image.png",
+    "package": null
+  },
+  "assetImage": {
+    "assetName": "assets/image.png",
+    "package": "design_system"
+  },
+  "imageProviderNetwork": {
+    "type": "network",
+    "url": "https://example.com/image.png",
+    "scale": 1.0,
+    "headers": null,
+    "webHtmlElementStrategy": "never"
+  },
+  "imageProviderAsset": {
+    "type": "asset",
+    "assetName": "assets/image.png",
+    "package": null
+  }
+}

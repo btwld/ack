@@ -1,0 +1,164 @@
+{
+  "boxDecorationDefault": {
+    "color": null,
+    "image": null,
+    "border": null,
+    "borderRadius": null,
+    "boxShadow": null,
+    "gradient": null,
+    "backgroundBlendMode": null,
+    "shape": "rectangle"
+  },
+  "boxDecorationFull": {
+    "color": "#2196F3",
+    "image": null,
+    "border": {
+      "color": "#FF0000",
+      "width": 2.0,
+      "style": "solid",
+      "strokeAlign": "inside"
+    },
+    "borderRadius": 8.0,
+    "boxShadow": [
+      {
+        "color": "#55000000",
+        "offset": {
+          "x": 1.0,
+          "y": 2.0
+        },
+        "blurRadius": 3.0,
+        "spreadRadius": 4.0,
+        "blurStyle": "outer"
+      }
+    ],
+    "gradient": {
+      "type": "linear",
+      "begin": "topLeft",
+      "end": "bottomRight",
+      "colors": [
+        "#FF0000",
+        "#0000FF"
+      ],
+      "stops": [
+        0.0,
+        1.0
+      ],
+      "tileMode": "mirror"
+    },
+    "backgroundBlendMode": "multiply",
+    "shape": "rectangle"
+  },
+  "boxDecorationImage": {
+    "color": null,
+    "image": {
+      "image": {
+        "type": "network",
+        "url": "https://example.com/foo.png",
+        "scale": 1.0,
+        "headers": null,
+        "webHtmlElementStrategy": "never"
+      },
+      "fit": "cover",
+      "alignment": "topLeft",
+      "centerSlice": null,
+      "repeat": "noRepeat",
+      "matchTextDirection": false,
+      "scale": 1.0,
+      "opacity": 1.0,
+      "filterQuality": "medium",
+      "invertColors": false,
+      "isAntiAlias": false
+    },
+    "border": null,
+    "borderRadius": null,
+    "boxShadow": null,
+    "gradient": null,
+    "backgroundBlendMode": null,
+    "shape": "rectangle"
+  },
+  "shapeDecorationCircle": {
+    "color": null,
+    "image": null,
+    "gradient": null,
+    "shadows": null,
+    "shape": {
+      "type": "circle",
+      "side": "none",
+      "eccentricity": 0.0
+    }
+  },
+  "shapeDecorationFull": {
+    "color": "#2196F3",
+    "image": null,
+    "gradient": null,
+    "shadows": [
+      {
+        "color": "#55000000",
+        "offset": {
+          "x": 1.0,
+          "y": 2.0
+        },
+        "blurRadius": 3.0,
+        "spreadRadius": 0.0,
+        "blurStyle": "normal"
+      }
+    ],
+    "shape": {
+      "type": "roundedRectangle",
+      "side": "none",
+      "borderRadius": 8.0
+    }
+  },
+  "shapeDecorationImage": {
+    "color": null,
+    "image": {
+      "image": {
+        "type": "network",
+        "url": "https://example.com/image.png",
+        "scale": 1.0,
+        "headers": null,
+        "webHtmlElementStrategy": "never"
+      },
+      "fit": "cover",
+      "alignment": "center",
+      "centerSlice": null,
+      "repeat": "noRepeat",
+      "matchTextDirection": false,
+      "scale": 1.0,
+      "opacity": 1.0,
+      "filterQuality": "medium",
+      "invertColors": false,
+      "isAntiAlias": false
+    },
+    "gradient": null,
+    "shadows": null,
+    "shape": {
+      "type": "circle",
+      "side": "none",
+      "eccentricity": 0.0
+    }
+  },
+  "decorationUnionBox": {
+    "type": "box",
+    "color": "#2196F3",
+    "image": null,
+    "border": null,
+    "borderRadius": null,
+    "boxShadow": null,
+    "gradient": null,
+    "backgroundBlendMode": null,
+    "shape": "rectangle"
+  },
+  "decorationUnionShape": {
+    "type": "shape",
+    "color": null,
+    "image": null,
+    "gradient": null,
+    "shadows": null,
+    "shape": {
+      "type": "circle",
+      "side": "none",
+      "eccentricity": 0.0
+    }
+  }
+}
