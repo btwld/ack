@@ -2,13 +2,17 @@ part of 'schema.dart';
 
 /// Schema for validating a discriminated union of objects.
 ///
-/// Branches must produce the same runtime type [T]. Boundary type is
-/// [JsonMap]. Encoding map runtimes requires the configured discriminator and
-/// selects the named branch directly. Non-map model-backed runtimes keep the
-/// existing branch-probing behavior. The union writes the discriminator key
-/// after branch encoding; if a branch encoder emits it, the value must match
-/// the selected branch. Parsed map-backed codec outputs are normalized with the
-/// selected discriminator so they remain round-trippable.
+/// Branches must produce the same runtime type [T]; the boundary type is
+/// [JsonMap]. Each branch is treated as if it were extended with the configured
+/// discriminator as an exact `Ack.literal` (see [effectiveBranch]), so authoring
+/// a branch without the discriminator is purely a convenience.
+///
+/// At runtime the union is a thin router: the value must carry the discriminator
+/// key for both parse input and encode input. The union reads the discriminator,
+/// selects the named branch, and validates/encodes the value against that single
+/// branch. It never injects, synthesizes, or probes the discriminator. A
+/// non-[JsonMap] runtime, or a map missing the discriminator, fails with a
+/// focused error.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
@@ -143,111 +147,13 @@ final class DiscriminatedObjectSchema<T extends Object>
     return SchemaResult.ok(discValueRaw);
   }
 
-  SchemaResult<T> _normalizeParsedMapRuntime(
-    T parsed,
-    String discValue,
-    SchemaContext context,
-  ) {
-    final mapValue = jsonMapOrNull(parsed);
-    if (mapValue == null) return SchemaResult.ok(parsed);
-
-    if (mapValue.containsKey(discriminatorKey)) {
-      final existing = mapValue[discriminatorKey];
-      if (existing == discValue) return SchemaResult.ok(parsed);
-
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message:
-              'Discriminated branch "$discValue" decoded a map runtime with '
-              'conflicting "$discriminatorKey" value: $existing.',
-          context: context,
-        ),
-      );
-    }
-
-    final Object normalized = switch (parsed) {
-      Map<String, String>() => Map<String, String>.unmodifiable({
-        discriminatorKey: discValue,
-        ...parsed,
-      }),
-      Map<String, Object>() => Map<String, Object>.unmodifiable({
-        discriminatorKey: discValue,
-        ...parsed,
-      }),
-      _ => Map<String, Object?>.unmodifiable({
-        discriminatorKey: discValue,
-        ...mapValue,
-      }),
-    };
-
-    if (normalized is T) return SchemaResult.ok(normalized);
-
-    return SchemaResult.fail(
-      SchemaValidationError(
-        message:
-            'Discriminated branch "$discValue" decoded a map runtime that '
-            'cannot carry "$discriminatorKey".',
-        context: context,
-      ),
-    );
-  }
-
-  /// Encodes [runtime] through [encodeThrough], then writes the union-owned
-  /// discriminator onto the boundary. Wraps a thrown encoder in
-  /// [SchemaEncodeError.encoderThrew] and rejects a branch that emitted a
-  /// conflicting discriminator value.
-  SchemaResult<JsonMap> _encodeBranch(
-    AckSchema<JsonMap, T> encodeThrough,
-    T runtime,
-    SchemaContext branchCtx,
-    String discValue,
-  ) {
-    final SchemaResult<JsonMap> encoded;
-    try {
-      encoded = encodeThrough.encodeWithContext(runtime, branchCtx);
-    } catch (e, st) {
-      return SchemaResult.fail(
-        SchemaEncodeError.encoderThrew(
-          message: 'Discriminated branch "$discValue" threw: $e',
-          context: branchCtx,
-          cause: e,
-          stackTrace: st,
-        ),
-      );
-    }
-    if (encoded.isFail) return encoded;
-    final boundary = encoded.getOrNull();
-    if (boundary == null) return encoded;
-    final existing = boundary[discriminatorKey];
-    if (existing != null && existing != discValue) {
-      return SchemaResult.fail(
-        SchemaEncodeError.typeMismatch(
-          message:
-              'Discriminated branch "$discValue" emitted a '
-              'conflicting "$discriminatorKey" value: $existing.',
-          context: branchCtx,
-        ),
-      );
-    }
-
-    return SchemaResult.ok({discriminatorKey: discValue, ...boundary});
-  }
-
   /// Returns the effective schema for [discriminatorValue].
   ///
   /// The effective schema includes this union's discriminator property as an
-  /// exact branch literal, even when the authored branch omitted it. Wrappers
-  /// around the branch (codecs, defaults) are preserved.
-  ///
-  /// When [optionalDiscriminator] is true the injected literal is optional.
-  /// This is used only on the encode path, where a branch encoder may legally
-  /// omit the union-owned discriminator (the union supplies it afterwards) or
-  /// emit it (validated against the literal). Parse, branch selection, and JSON
-  /// Schema export keep the discriminator required.
-  AckSchema<JsonMap, T> effectiveBranch(
-    String discriminatorValue, {
-    bool optionalDiscriminator = false,
-  }) {
+  /// exact, required branch literal, even when the authored branch omitted it.
+  /// Wrappers around the branch (codecs, defaults) are preserved. A value
+  /// flowing through the branch must carry the discriminator.
+  AckSchema<JsonMap, T> effectiveBranch(String discriminatorValue) {
     final branchSchema = schemas[discriminatorValue];
     if (branchSchema == null) {
       throw ArgumentError.value(
@@ -261,7 +167,6 @@ final class DiscriminatedObjectSchema<T extends Object>
           discriminatorKey: discriminatorKey,
           discriminatorValue: discriminatorValue,
           branchSchema: branchSchema,
-          optionalDiscriminator: optionalDiscriminator,
         )
         as AckSchema<JsonMap, T>;
   }
@@ -307,17 +212,7 @@ final class DiscriminatedObjectSchema<T extends Object>
       return SchemaResult.fail(result.getError());
     }
 
-    final normalized = _normalizeParsedMapRuntime(
-      result.getOrThrow()!,
-      discValue,
-      context,
-    );
-    if (normalized.isFail) {
-      return SchemaResult.fail(normalized.getError());
-    }
-    final runtime = normalized.getOrThrow()!;
-
-    return applyConstraintsAndRefinements(runtime, context);
+    return applyConstraintsAndRefinements(result.getOrThrow()!, context);
   }
 
   @override
@@ -351,77 +246,47 @@ final class DiscriminatedObjectSchema<T extends Object>
     final runtime = validated.getOrNull();
     if (runtime == null) return SchemaResult.ok(null);
 
+    // The runtime value must carry the discriminator. A non-map runtime cannot,
+    // so it fails directly instead of being branch-probed.
     final mapRuntime = jsonMapOrNull(runtime);
-    if (mapRuntime != null) {
-      // Map runtimes must name their branch explicitly. Validate the
-      // discriminator first so missing / non-string / unknown values produce
-      // the same focused errors as parse instead of falling back to inference.
-      final discResult = _validateDiscriminatorKey(mapRuntime, context);
-      if (discResult.isFail) {
-        return SchemaResult.fail(discResult.getError());
-      }
-      final discValue = discResult.getOrNull()!;
-      final effective = effectiveBranch(discValue, optionalDiscriminator: true);
-      final branchCtx = context.createChild(
-        name: 'when $discriminatorKey="$discValue"',
-        schema: effective,
-        value: runtime,
-        pathSegment: '',
-        operation: SchemaOperation.encode,
+    if (mapRuntime == null) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Discriminated encode requires a Map carrying '
+              '"$discriminatorKey"; got ${runtime.runtimeType}.',
+          context: context,
+        ),
       );
+    }
 
-      final encoded = _encodeBranch(effective, runtime, branchCtx, discValue);
-      if (encoded.isFail) return SchemaResult.fail(encoded.getError());
-      final boundary = encoded.getOrNull();
-      if (boundary != null) {
-        return SchemaResult.ok(Map.unmodifiable(boundary));
-      }
+    // Validate the discriminator first so missing / non-string / unknown values
+    // produce the same focused errors as parse, then encode through the single
+    // named branch. The branch's required literal rejects a mismatched value.
+    final discResult = _validateDiscriminatorKey(mapRuntime, context);
+    if (discResult.isFail) {
+      return SchemaResult.fail(discResult.getError());
+    }
+    final discValue = discResult.getOrNull()!;
+    final effective = effectiveBranch(discValue);
+    final branchCtx = context.createChild(
+      name: 'when $discriminatorKey="$discValue"',
+      schema: effective,
+      value: runtime,
+      pathSegment: '',
+      operation: SchemaOperation.encode,
+    );
 
-      // Null boundary from a successful encode is not expected here; surface
-      // a matching nested error to preserve the original fallback.
+    final encoded = effective.encodeWithContext(runtime, branchCtx);
+    if (encoded.isFail) return SchemaResult.fail(encoded.getError());
+    final boundary = encoded.getOrNull();
+    if (boundary == null) {
       return SchemaResult.fail(
         SchemaNestedError(errors: const [], context: context),
       );
     }
 
-    // Slow path: try each typed/model branch. The first whose runtime
-    // validation and encoder both succeed wins.
-    final errors = <SchemaError>[];
-    for (final discValue in schemas.keys) {
-      // Select the branch via the effective schema (its literal discriminator
-      // gates selection per PR #107); the union itself writes the discriminator
-      // onto the encoded boundary in [_encodeBranch].
-      final effective = effectiveBranch(discValue, optionalDiscriminator: true);
-      final branchCtx = context.createChild(
-        name: 'when $discriminatorKey="$discValue"',
-        schema: effective,
-        value: runtime,
-        pathSegment: '',
-        operation: SchemaOperation.encode,
-      );
-
-      final branchValidation = effective.validateRuntimeWithContext(
-        runtime,
-        branchCtx,
-      );
-      if (branchValidation.isFail) {
-        errors.add(branchValidation.getError());
-        continue;
-      }
-      final encoded = _encodeBranch(effective, runtime, branchCtx, discValue);
-      if (encoded.isFail) {
-        errors.add(encoded.getError());
-        continue;
-      }
-      final boundary = encoded.getOrNull();
-      if (boundary != null) {
-        return SchemaResult.ok(Map.unmodifiable(boundary));
-      }
-    }
-
-    return SchemaResult.fail(
-      SchemaNestedError(errors: errors, context: context),
-    );
+    return SchemaResult.ok(Map.unmodifiable(boundary));
   }
 
   @override

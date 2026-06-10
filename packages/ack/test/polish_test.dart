@@ -3,11 +3,6 @@ import 'dart:convert';
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-final class _Cat {
-  _Cat(this.name);
-  final String name;
-}
-
 void main() {
   group('0. Safe API unsupported runtime objects', () {
     test(
@@ -197,33 +192,34 @@ void main() {
   group('4. Discriminated branch reject conflicting discriminator', () {
     test('encode fails when a branch encoder emits a conflicting '
         'discriminator', () {
-      final schema = Ack.discriminated<_Cat>(
+      final schema = Ack.discriminated<Map<String, Object?>>(
         discriminatorKey: 'kind',
         schemas: {
           'cat': Ack.object({'kind': Ack.literal('cat'), 'name': Ack.string()})
-              .codec<_Cat>(
-                decode: (data) => _Cat(data['name'] as String),
-                // Branch encoder lies about its kind.
-                encode: (cat) => {'kind': 'wrong-kind', 'name': cat.name},
+              .codec<Map<String, Object?>>(
+                decode: (data) => {'kind': 'cat', 'name': data['name']},
+                // Branch encoder lies about its kind; the union-owned literal
+                // rejects the conflicting value.
+                encode: (cat) => {'kind': 'wrong-kind', 'name': cat['name']},
               ),
         },
       );
-      final result = schema.safeEncode(_Cat('Mittens'));
+      final result = schema.safeEncode({'kind': 'cat', 'name': 'Mittens'});
       expect(result.isFail, true);
     });
 
     test('encode succeeds when branch emits a matching discriminator', () {
-      final schema = Ack.discriminated<_Cat>(
+      final schema = Ack.discriminated<Map<String, Object?>>(
         discriminatorKey: 'kind',
         schemas: {
           'cat': Ack.object({'kind': Ack.literal('cat'), 'name': Ack.string()})
-              .codec<_Cat>(
-                decode: (data) => _Cat(data['name'] as String),
-                encode: (cat) => {'kind': 'cat', 'name': cat.name},
+              .codec<Map<String, Object?>>(
+                decode: (data) => {'kind': 'cat', 'name': data['name']},
+                encode: (cat) => {'kind': 'cat', 'name': cat['name']},
               ),
         },
       );
-      final encoded = schema.encode(_Cat('Mittens'));
+      final encoded = schema.encode({'kind': 'cat', 'name': 'Mittens'});
       expect(encoded, {'kind': 'cat', 'name': 'Mittens'});
     });
   });
