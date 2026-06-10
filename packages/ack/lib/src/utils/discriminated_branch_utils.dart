@@ -57,6 +57,7 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
   required String discriminatorKey,
   required String discriminatorValue,
   required ObjectSchema objectSchema,
+  bool optionalDiscriminator = false,
 }) {
   final existingDiscriminator = objectSchema.properties[discriminatorKey];
   if (existingDiscriminator != null &&
@@ -70,11 +71,9 @@ ObjectSchema effectiveDiscriminatedObjectBranch({
     );
   }
 
-  // Extend the authored branch with the union-owned discriminator as an exact
-  // literal. Keep it first so exported property order stays stable.
   final literal = _discriminatorLiteralSchema(discriminatorValue);
   final properties = <String, AnyAckSchema>{
-    discriminatorKey: literal,
+    discriminatorKey: optionalDiscriminator ? literal.optional() : literal,
     for (final entry in objectSchema.properties.entries)
       if (entry.key != discriminatorKey) entry.key: entry.value,
   };
@@ -95,12 +94,14 @@ AnyAckSchema effectiveDiscriminatedBranch({
   required String discriminatorKey,
   required String discriminatorValue,
   required AnyAckSchema branchSchema,
+  bool optionalDiscriminator = false,
 }) {
   if (branchSchema is ObjectSchema) {
     return effectiveDiscriminatedObjectBranch(
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
       objectSchema: branchSchema,
+      optionalDiscriminator: optionalDiscriminator,
     );
   }
 
@@ -109,6 +110,7 @@ AnyAckSchema effectiveDiscriminatedBranch({
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
       branchSchema: branchSchema.inner,
+      optionalDiscriminator: optionalDiscriminator,
     );
 
     return branchSchema.copyWithInner(effectiveInner);

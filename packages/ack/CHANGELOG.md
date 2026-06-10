@@ -9,13 +9,6 @@
 * Replace the interim JSON Schema model kind API with sealed
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
-* Discriminated unions are now a strict router: the configured
-  `discriminatorKey` must be present on the runtime value for both parse and
-  encode. The union no longer synthesizes, injects, or infers the discriminator
-  at runtime, and no longer branch-probes non-map runtimes. A branch codec
-  whose `encode` omits the discriminator now fails - emit the discriminator in
-  the codec. A non-map runtime passed to encode now fails with a clear error
-  instead of being probed.
 
 ### Added
 
@@ -30,10 +23,7 @@
 
 ### Changed
 
-* Discriminated unions inject the discriminator literal into each branch's
-  effective schema (parse, branch selection, and JSON Schema export), so a
-  branch may be authored without the discriminator property. See Breaking
-  Changes for the strict runtime contract.
+* Project discriminated schemas through union-owned discriminator branches.
 * Preserve defaults, const values, extension keywords, transformed metadata,
   composition, and JSON Schema constraints through the schema model boundary.
 
