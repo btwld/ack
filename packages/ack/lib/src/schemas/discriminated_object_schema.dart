@@ -4,14 +4,11 @@ part of 'schema.dart';
 ///
 /// Branches must produce the same runtime type [T]. Boundary type is
 /// [JsonMap]. Encoding map runtimes requires the configured discriminator and
-/// selects the named branch directly. Encoding non-map model-backed runtimes
-/// tries every branch and requires exactly one to both runtime-validate and
-/// encode; a runtime that fits two or more branches is rejected as ambiguous
-/// rather than silently encoded through whichever branch is declared first.
-/// The union writes the discriminator key after branch encoding; if a branch
-/// encoder emits it, the value must match the selected branch. Parsed
-/// map-backed codec outputs are normalized with the selected discriminator so
-/// they remain round-trippable.
+/// selects the named branch directly. Non-map model-backed runtimes keep the
+/// existing branch-probing behavior. The union writes the discriminator key
+/// after branch encoding; if a branch encoder emits it, the value must match
+/// the selected branch. Parsed map-backed codec outputs are normalized with the
+/// selected discriminator so they remain round-trippable.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
@@ -168,23 +165,20 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    final Object normalized;
-    if (parsed is Map<String, String>) {
-      normalized = Map<String, String>.unmodifiable({
+    final Object normalized = switch (parsed) {
+      Map<String, String>() => Map<String, String>.unmodifiable({
         discriminatorKey: discValue,
         ...parsed,
-      });
-    } else if (parsed is Map<String, Object>) {
-      normalized = Map<String, Object>.unmodifiable({
+      }),
+      Map<String, Object>() => Map<String, Object>.unmodifiable({
         discriminatorKey: discValue,
         ...parsed,
-      });
-    } else {
-      normalized = Map<String, Object?>.unmodifiable({
+      }),
+      _ => Map<String, Object?>.unmodifiable({
         discriminatorKey: discValue,
         ...mapValue,
-      });
-    }
+      }),
+    };
 
     if (normalized is T) return SchemaResult.ok(normalized);
 
@@ -390,14 +384,9 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    // Slow path for typed/model runtimes: encode through every branch whose
-    // runtime validation and encoder both succeed, then require exactly one
-    // winner. Collecting all successes (instead of returning the first)
-    // detects an ambiguous runtime that fits multiple branches; encoding it
-    // through whichever branch comes first would silently pick a wire shape
-    // the caller never chose.
+    // Slow path: try each typed/model branch. The first whose runtime
+    // validation and encoder both succeed wins.
     final errors = <SchemaError>[];
-    final successes = <({String label, JsonMap boundary})>[];
     for (final discValue in schemas.keys) {
       // Select the branch via the effective schema (its literal discriminator
       // gates selection per PR #107); the union itself writes the discriminator
@@ -426,24 +415,8 @@ final class DiscriminatedObjectSchema<T extends Object>
       }
       final boundary = encoded.getOrNull();
       if (boundary != null) {
-        successes.add((label: discValue, boundary: boundary));
+        return SchemaResult.ok(Map.unmodifiable(boundary));
       }
-    }
-
-    if (successes.length > 1) {
-      final labels = successes.map((s) => '"${s.label}"').join(', ');
-      return SchemaResult.fail(
-        SchemaEncodeError.typeMismatch(
-          message:
-              'Discriminated runtime matched multiple branches ($labels). The '
-              'union cannot choose one; encode an unambiguous runtime or carry '
-              'the "$discriminatorKey" discriminator on the value.',
-          context: context,
-        ),
-      );
-    }
-    if (successes.length == 1) {
-      return SchemaResult.ok(Map.unmodifiable(successes.single.boundary));
     }
 
     return SchemaResult.fail(

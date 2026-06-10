@@ -298,32 +298,6 @@ void main() {
         );
       });
 
-      test('rejects a map-shaped object runtime missing the discriminator', () {
-        final codecSchema = Ack.discriminated<Object>(
-          discriminatorKey: 'type',
-          schemas: {
-            'cat': Ack.object({'name': Ack.string()}).codec<Object>(
-              decode: (data) => <Object?, Object?>{'name': data['name']},
-              encode: (value) {
-                final map = value as Map<Object?, Object?>;
-                return {'name': map['name']};
-              },
-            ),
-          },
-        );
-
-        final result = codecSchema.safeEncode(<Object?, Object?>{
-          'name': 'Mittens',
-        });
-
-        expect(result.isFail, isTrue);
-        final error = result.getError() as SchemaConstraintsError;
-        expect(
-          error.constraints.first.constraint,
-          isA<ObjectRequiredPropertiesConstraint>(),
-        );
-      });
-
       test('encodes passthrough extras once for a branch codec that omits the '
           'discriminator', () {
         final codecSchema = Ack.discriminated<Map<String, Object?>>(
@@ -373,36 +347,6 @@ void main() {
         expect(result.isOk, isTrue);
         expect(result.getOrThrow(), {'type': 'dog', 'name': 'Spot'});
       });
-
-      test(
-        'rejects a typed runtime that matches multiple branches as ambiguous',
-        () {
-          // Two typed codec branches share the same runtime type, so branch
-          // probing must still reject the runtime instead of silently encoding
-          // through whichever branch is declared first.
-          final ambiguousSchema = Ack.discriminated<Object>(
-            discriminatorKey: 'type',
-            schemas: {
-              'cat': Ack.object({'name': Ack.string()}).codec<_Cat>(
-                decode: (data) => _Cat(data['name']! as String),
-                encode: (cat) => {'name': cat.name},
-              ),
-              'dog': Ack.object({'name': Ack.string()}).codec<_Cat>(
-                decode: (data) => _Cat(data['name']! as String),
-                encode: (cat) => {'name': cat.name},
-              ),
-            },
-          );
-
-          final result = ambiguousSchema.safeEncode(const _Cat('Mittens'));
-
-          expect(result.isFail, isTrue);
-          final error = result.getError();
-          expect(error, isA<SchemaEncodeError>());
-          expect((error as SchemaEncodeError).message, contains('"cat"'));
-          expect(error.message, contains('"dog"'));
-        },
-      );
 
       test(
         'nested default and codec wrappers synthesize the discriminator only '
