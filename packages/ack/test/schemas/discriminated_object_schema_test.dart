@@ -267,6 +267,35 @@ void main() {
         expect(result.getOrThrow(), {'type': 'dog', 'name': 'Spot'});
       });
 
+      test('rejects a runtime that matches multiple branches as ambiguous', () {
+        // Two map-runtime codec branches share a shape, so a runtime that omits
+        // the discriminator validates and encodes through both. The union must
+        // refuse to guess instead of silently encoding through the first.
+        final ambiguousSchema = Ack.discriminated<Map<String, Object?>>(
+          discriminatorKey: 'type',
+          schemas: {
+            'cat': Ack.object({'name': Ack.string()})
+                .codec<Map<String, Object?>>(
+                  decode: (data) => {'name': data['name']!},
+                  encode: (cat) => {'name': cat['name']},
+                ),
+            'dog': Ack.object({'name': Ack.string()})
+                .codec<Map<String, Object?>>(
+                  decode: (data) => {'name': data['name']!},
+                  encode: (dog) => {'name': dog['name']},
+                ),
+          },
+        );
+
+        final result = ambiguousSchema.safeEncode({'name': 'Mittens'});
+
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaEncodeError>());
+        expect((error as SchemaEncodeError).message, contains('"cat"'));
+        expect(error.message, contains('"dog"'));
+      });
+
       test(
         'nested default and codec wrappers synthesize the discriminator only '
         'under codecs',

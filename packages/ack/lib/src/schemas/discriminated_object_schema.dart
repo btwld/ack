@@ -5,9 +5,11 @@ part of 'schema.dart';
 /// Branches must produce the same runtime type [T]. Boundary type is
 /// [JsonMap]. Encoding map runtimes that carry the discriminator selects the
 /// named branch directly. Encoding model-backed runtimes, including
-/// map-backed codecs that synthesize the discriminator, tries branches until
-/// runtime validation and encode succeed. Branch encoders must emit the
-/// discriminator key.
+/// map-backed codecs that synthesize the discriminator, tries every branch and
+/// requires exactly one to both runtime-validate and encode; a runtime that
+/// fits two or more branches is rejected as ambiguous rather than silently
+/// encoded through whichever branch is declared first. Branch encoders must
+/// emit the discriminator key.
 @immutable
 final class DiscriminatedObjectSchema<T extends Object>
     extends AckSchema<JsonMap, T>
@@ -328,10 +330,14 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    // Slow path: try each branch. The first whose runtime validation and
-    // encoder both succeed wins.
+    // Slow path: encode through every branch whose runtime validation and
+    // encoder both succeed, then require exactly one winner. Collecting all
+    // successes (instead of returning the first) detects an ambiguous runtime
+    // that fits multiple branches; encoding it through whichever branch comes
+    // first would silently pick a wire shape the caller never chose.
     final errors = <SchemaError>[];
     var matchedBranch = false;
+    final successes = <({String label, JsonMap boundary})>[];
     for (final discValue in schemas.keys) {
       // Select the branch via the effective schema (its literal discriminator
       // gates selection per PR #107); the union itself writes the discriminator
@@ -367,9 +373,26 @@ final class DiscriminatedObjectSchema<T extends Object>
       }
       final boundary = encoded.getOrNull();
       if (boundary != null) {
-        return SchemaResult.ok(Map.unmodifiable(boundary));
+        successes.add((label: discValue, boundary: boundary));
       }
     }
+
+    if (successes.length > 1) {
+      final labels = successes.map((s) => '"${s.label}"').join(', ');
+      return SchemaResult.fail(
+        SchemaEncodeError.typeMismatch(
+          message:
+              'Discriminated runtime matched multiple branches ($labels). The '
+              'union cannot choose one; encode an unambiguous runtime or carry '
+              'the "$discriminatorKey" discriminator on the value.',
+          context: context,
+        ),
+      );
+    }
+    if (successes.length == 1) {
+      return SchemaResult.ok(Map.unmodifiable(successes.single.boundary));
+    }
+
     if (!matchedBranch &&
         runtime is JsonMap &&
         !runtime.containsKey(discriminatorKey)) {
