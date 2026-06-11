@@ -1,0 +1,62 @@
+# Shared analyzer + DCM configuration for every package in the ACK workspace.
+#
+# Each package includes this file via `include: ../../analysis_options.yaml`
+# (or `../analysis_options.yaml` for top-level packages such as `example`).
+# Top-level packages without their own file inherit this one automatically.
+# Package-specific tweaks belong in each package's own analysis_options.yaml
+# as overrides on top of this include.
+include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.mocks.dart"
+
+dart_code_metrics:
+  extends:
+    - package:dart_code_metrics_presets/recommended.yaml
+    - package:dart_code_metrics_presets/metrics_recommended.yaml
+  metrics-exclude:
+    - test/**
+  rules-exclude:
+    - test/**
+  rules:
+    newline-before-return: true
+    avoid-importing-entrypoint-exports:
+      only-in-src: true
+    prefer-match-file-name: false
+    prefer-overriding-parent-equality: false
+    prefer-correct-callback-field-name: false
+    prefer-single-widget-per-file: false
+    match-getter-setter-field-names: false
+    prefer-dedicated-media-query-methods: false
+    avoid-shadowing: false
+    enum-constants-ordering: false
+    avoid-unsafe-collection-methods: false
+    prefer-prefixed-global-constants: false
+    avoid-returning-widgets: false
+    prefer-trailing-comma: false
+    # Enum dot-shorthands require Dart 3.10; the workspace SDK floor is 3.8.
+    prefer-shorthands-with-enums: false
+    # Schema classes extend a non-const AckSchema base, so they cannot declare
+    # const constructors.
+    prefer-declaring-const-constructor: false
+    avoid-nested-conditional-expressions:
+      acceptable-level: 3
+    member-ordering:
+      order:
+        - public-fields
+        - private-fields
+        - constructors
+        - static-methods
+        - private-methods
+        - private-getters
+        - private-setters
+        - public-getters
+        - public-setters
+        - public-methods
+        - overridden-public-methods
+        - overridden-public-getters
+        - build-method
+    prefer-named-boolean-parameters:
+      ignore-single: true

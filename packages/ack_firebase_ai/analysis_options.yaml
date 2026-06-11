@@ -1,9 +1,10 @@
-include: package:lints/recommended.yaml
+# Inherits the shared workspace config (lints + DCM presets/rules).
+# See /analysis_options.yaml at the workspace root.
+include: ../../analysis_options.yaml
 
 analyzer:
-  exclude:
-    - "**/*.g.dart"
   language:
+    # This package enforces stricter typing than the workspace default.
     strict-casts: true
     strict-inference: true
     strict-raw-types: true

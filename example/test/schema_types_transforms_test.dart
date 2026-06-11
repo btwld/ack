@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 
-import '../lib/schema_types_transforms.dart';
+import 'package:ack_example/schema_types_transforms.dart';
 
 void main() {
   group('Transform schema examples', () {

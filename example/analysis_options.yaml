@@ -1,0 +1,3 @@
+# Inherits the shared workspace config (lints + DCM presets/rules).
+# See /analysis_options.yaml at the workspace root.
+include: ../analysis_options.yaml
