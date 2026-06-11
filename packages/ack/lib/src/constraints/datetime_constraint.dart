@@ -10,7 +10,6 @@ import 'constraint.dart';
 class DateTimeConstraint extends Constraint<DateTime>
     with Validator<DateTime>, JsonSchemaSpec<DateTime> {
   final DateTime reference;
-  final bool _isMinimum;
 
   /// The JSON Schema format associated with the boundary schema.
   ///
@@ -20,6 +19,8 @@ class DateTimeConstraint extends Constraint<DateTime>
 
   /// The reference value rendered in the boundary schema's format.
   final String formattedReference;
+
+  final bool _isMinimum;
 
   const DateTimeConstraint._({
     required this.reference,
@@ -78,6 +79,14 @@ class DateTimeConstraint extends Constraint<DateTime>
     );
   }
 
+  String _formatValue(DateTime value) {
+    if (jsonSchemaFormat == 'date') return _dateOnly(value);
+
+    return value.toIso8601String();
+  }
+
+  String get comparisonType => _isMinimum ? 'min' : 'max';
+
   @override
   bool isValid(DateTime value) =>
       _isMinimum ? !value.isBefore(reference) : !value.isAfter(reference);
@@ -96,8 +105,6 @@ class DateTimeConstraint extends Constraint<DateTime>
     };
   }
 
-  String get comparisonType => _isMinimum ? 'min' : 'max';
-
   @override
   // `formatMinimum`/`formatMaximum` are Draft 2019-09+ extensions that
   // Draft-7 consumers do not understand. The model builder surfaces these
@@ -111,6 +118,7 @@ class DateTimeConstraint extends Constraint<DateTime>
     if (identical(this, other)) return true;
     if (other is! DateTimeConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         _isMinimum == other._isMinimum &&
@@ -129,11 +137,6 @@ class DateTimeConstraint extends Constraint<DateTime>
     jsonSchemaFormat,
     formattedReference,
   );
-
-  String _formatValue(DateTime value) {
-    if (jsonSchemaFormat == 'date') return _dateOnly(value);
-    return value.toIso8601String();
-  }
 }
 
 String _dateOnly(DateTime reference) {

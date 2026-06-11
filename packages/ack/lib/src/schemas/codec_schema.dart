@@ -50,7 +50,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     List<Constraint<Runtime>> constraints = const [],
     List<Refinement<Runtime>> refinements = const [],
   }) {
-    return CodecSchema<Boundary, Runtime>._(
+    return CodecSchema._(
       inputSchema: inputSchema,
       outputSchema: outputSchema,
       decoder: (value) => decoder(value as InputRuntime),
@@ -62,12 +62,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       refinements: refinements,
     );
   }
-
-  @override
-  AnyAckSchema get inner => inputSchema as AnyAckSchema;
-
-  @override
-  SchemaType get schemaType => inputSchema.schemaType;
 
   @override
   @protected
@@ -117,6 +111,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     }
 
     final validated = outputResult.getOrNull()!;
+
     return applyConstraintsAndRefinements(validated, context);
   }
 
@@ -156,7 +151,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
 
   @override
   CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
-    return CodecSchema<Boundary, Runtime>._(
+    return CodecSchema._(
       inputSchema: newInner as AckSchema<Boundary, Object>,
       outputSchema: outputSchema,
       decoder: _decoder,
@@ -177,7 +172,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     List<Constraint<Runtime>>? constraints,
     List<Refinement<Runtime>>? refinements,
   }) {
-    return CodecSchema<Boundary, Runtime>._(
+    return CodecSchema._(
       inputSchema: inputSchema,
       outputSchema: outputSchema,
       decoder: _decoder,
@@ -194,10 +189,17 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! CodecSchema<Boundary, Runtime>) return false;
+
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema;
   }
+
+  @override
+  AnyAckSchema get inner => inputSchema as AnyAckSchema;
+
+  @override
+  SchemaType get schemaType => inputSchema.schemaType;
 
   @override
   int get hashCode =>

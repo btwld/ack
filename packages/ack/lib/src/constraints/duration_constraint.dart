@@ -93,6 +93,7 @@ class DurationConstraint extends Constraint<Duration>
     if (identical(this, other)) return true;
     if (other is! DurationConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         type == other.type &&

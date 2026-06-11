@@ -30,23 +30,6 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
     }
   }
 
-  @override
-  SchemaType get schemaType => SchemaType.array;
-
-  @override
-  @protected
-  SchemaResult<List<ItemRuntime>> parseWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => _processItems(value, context, parse: true);
-
-  @override
-  @protected
-  SchemaResult<List<ItemRuntime>> validateRuntimeWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => _processItems(value, context, parse: false);
-
   SchemaResult<List<ItemRuntime>> _processItems(
     Object? value,
     SchemaContext context, {
@@ -110,6 +93,20 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
 
   @override
   @protected
+  SchemaResult<List<ItemRuntime>> parseWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => _processItems(value, context, parse: true);
+
+  @override
+  @protected
+  SchemaResult<List<ItemRuntime>> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => _processItems(value, context, parse: false);
+
+  @override
+  @protected
   SchemaResult<List<ItemBoundary>> encodeWithContext(
     List<ItemRuntime> value,
     SchemaContext context,
@@ -161,6 +158,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
         SchemaNestedError(errors: errors, context: context),
       );
     }
+
     return SchemaResult.ok(List<ItemBoundary>.unmodifiable(encoded));
   }
 
@@ -172,7 +170,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
     List<Constraint<List<ItemRuntime>>>? constraints,
     List<Refinement<List<ItemRuntime>>>? refinements,
   }) {
-    return ListSchema<ItemBoundary, ItemRuntime>(
+    return ListSchema(
       itemSchema,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
@@ -197,8 +195,12 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ListSchema<ItemBoundary, ItemRuntime>) return false;
+
     return baseFieldsEqual(other) && itemSchema == other.itemSchema;
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.array;
 
   @override
   int get hashCode => Object.hash(baseFieldsHashCode, itemSchema);

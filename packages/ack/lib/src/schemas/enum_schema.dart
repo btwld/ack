@@ -17,9 +17,6 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.enum_;
-
-  @override
   @protected
   SchemaResult<T> parseWithContext(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
@@ -93,6 +90,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
         ),
       );
     }
+
     return applyConstraintsAndRefinements(value, context);
   }
 
@@ -101,6 +99,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
   SchemaResult<String> encodeWithContext(T value, SchemaContext context) {
     final validated = validateRuntimeWithContext(value, context);
     if (validated.isFail) return SchemaResult.fail(validated.getError());
+
     return SchemaResult.ok(value.name);
   }
 
@@ -112,7 +111,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
-    return EnumSchema<T>(
+    return EnumSchema(
       values: values,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
@@ -127,12 +126,17 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
     if (identical(this, other)) return true;
     if (other is! EnumSchema<T>) return false;
     final listEq = ListEquality<T>();
+
     return baseFieldsEqual(other) && listEq.equals(values, other.values);
   }
 
   @override
+  SchemaType get schemaType => SchemaType.enum_;
+
+  @override
   int get hashCode {
     final listEq = ListEquality<T>();
+
     return Object.hash(baseFieldsHashCode, listEq.hash(values));
   }
 }
@@ -153,6 +157,7 @@ class _EnumValuesConstraint extends Constraint<Object?> {
     if (other is! _EnumValuesConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
     const listEq = ListEquality<String>();
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         listEq.equals(allowed, other.allowed);
@@ -161,6 +166,7 @@ class _EnumValuesConstraint extends Constraint<Object?> {
   @override
   int get hashCode {
     const listEq = ListEquality<String>();
+
     return Object.hash(
       runtimeType,
       constraintKey,

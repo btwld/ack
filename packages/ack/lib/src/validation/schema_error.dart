@@ -51,6 +51,9 @@ abstract class SchemaError {
 
 @immutable
 class TypeMismatchError extends SchemaError {
+  final SchemaType _expectedJsonType;
+
+  final SchemaType _actualJsonType;
   TypeMismatchError({
     required SchemaType expectedType,
     required SchemaType actualType,
@@ -61,9 +64,6 @@ class TypeMismatchError extends SchemaError {
          'Expected ${expectedType.typeName}, got ${actualType.typeName}',
          context: context,
        );
-
-  final SchemaType _expectedJsonType;
-  final SchemaType _actualJsonType;
 
   String get expectedType => _expectedJsonType.typeName;
   String get actualType => _actualJsonType.typeName;
@@ -97,6 +97,7 @@ class SchemaConstraintsError extends SchemaError {
         return constraintError;
       }
     }
+
     return null;
   }
 

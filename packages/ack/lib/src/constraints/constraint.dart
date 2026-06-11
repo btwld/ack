@@ -25,6 +25,7 @@ abstract class Constraint<T> {
     if (identical(this, other)) return true;
     if (other is! Constraint<T>) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description;
   }

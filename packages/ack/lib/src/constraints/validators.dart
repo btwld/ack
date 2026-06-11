@@ -65,6 +65,7 @@ class InvalidTypeConstraint extends Constraint<Object?>
     if (identical(this, other)) return true;
     if (other is! InvalidTypeConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         expectedType == other.expectedType &&
@@ -114,6 +115,7 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
     if (identical(this, other)) return true;
     if (other is! ObjectNoAdditionalPropertiesConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         unexpectedPropertyKey == other.unexpectedPropertyKey;
@@ -154,6 +156,7 @@ class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
     if (identical(this, other)) return true;
     if (other is! ObjectRequiredPropertiesConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         missingPropertyKey == other.missingPropertyKey;

@@ -26,6 +26,7 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
     }
 
     final joined = uniqueDuplicates.map((e) => '"$e"').join(', ');
+
     return 'List items must be unique. Duplicates found: $joined.';
   }
 
@@ -97,6 +98,7 @@ int _deepHashCode(Object? value) {
     for (final item in value) {
       hash = Object.hash(hash, _deepHashCode(item));
     }
+
     return hash;
   }
 
@@ -108,6 +110,7 @@ int _deepHashCode(Object? value) {
       final h = _deepHashCode(item);
       combined ^= h ^ (h >>> 16);
     }
+
     return Object.hash(value.runtimeType, value.length, combined);
   }
 
@@ -120,6 +123,7 @@ int _deepHashCode(Object? value) {
       final entryHash = Object.hash(keyHash, valueHash);
       combined ^= entryHash ^ (entryHash >>> 16);
     }
+
     return Object.hash(value.runtimeType, value.length, combined);
   }
 
@@ -128,6 +132,7 @@ int _deepHashCode(Object? value) {
     for (final item in value) {
       hash = Object.hash(hash, _deepHashCode(item));
     }
+
     return hash;
   }
 
@@ -135,8 +140,8 @@ int _deepHashCode(Object? value) {
 }
 
 class _DuplicateGroup<T> {
-  _DuplicateGroup(this.value);
-
   final T value;
+
   int count = 1;
+  _DuplicateGroup(this.value);
 }

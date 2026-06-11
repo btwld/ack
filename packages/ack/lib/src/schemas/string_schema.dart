@@ -13,9 +13,6 @@ final class StringSchema extends AckSchema<String, String>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.string;
-
-  @override
   @protected
   SchemaResult<String> validateRuntimeWithContext(
     Object? value,
@@ -58,8 +55,12 @@ final class StringSchema extends AckSchema<String, String>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! StringSchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.string;
 
   @override
   int get hashCode => baseFieldsHashCode;

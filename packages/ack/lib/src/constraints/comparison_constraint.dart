@@ -18,6 +18,7 @@ _ConstraintCategory _categorize(String constraintKey) {
   if (constraintKey.startsWith('object_')) {
     return _ConstraintCategory.objectProperties;
   }
+
   return _ConstraintCategory.numeric;
 }
 
@@ -145,6 +146,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
         'multipleOf value cannot be zero',
       );
     }
+
     return ComparisonConstraint<N>(
       type: ComparisonType.eq,
       threshold: 0,
@@ -241,6 +243,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   @override
   bool isValid(T value) {
     final num extracted = valueExtractor(value);
+
     return switch (type) {
       ComparisonType.gt => extracted > threshold,
       ComparisonType.gte => extracted >= threshold,
@@ -253,9 +256,11 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
           // - Close to the multiple itself (e.g., 0.6 % 0.1 = 0.0999... ≈ 0.1)
           final rem = extracted.abs();
           final multiple = multipleValue!.abs();
+
           return rem < _multipleOfEpsilon ||
               (multiple - rem).abs() < _multipleOfEpsilon;
         }
+
         return extracted == threshold;
       }(),
       ComparisonType.range =>
@@ -271,6 +276,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     if (customMessageBuilder != null) {
       return customMessageBuilder!(nonNullValue, extracted);
     }
+
     // Default messages
     return switch (type) {
       ComparisonType.gt => 'Must be greater than $threshold, got $extracted.',
@@ -322,6 +328,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
             'maxLength': threshold.toInt(),
           };
         }
+
         return {'const': threshold};
       }(),
       ComparisonType.range => switch (category) {
@@ -350,6 +357,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     if (identical(this, other)) return true;
     if (other is! ComparisonConstraint<T>) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         type == other.type &&
