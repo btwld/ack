@@ -20,6 +20,9 @@ dev_dependencies:
   melos: ^7.3.0
   test: ^1.25.15
   very_good_analysis: ^9.0.0
+  # Shared lint config consumed by /analysis_options.yaml (workspace-wide).
+  lints: ^5.0.0
+  dart_code_metrics_presets: ^2.22.0
 
 melos:
   bootstrap:

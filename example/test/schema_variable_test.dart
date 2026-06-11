@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../lib/schema_types_simple.dart';
+import 'package:ack_example/schema_types_simple.dart';
 
 void main() {
   group('Schema Variable Extension Types', () {
