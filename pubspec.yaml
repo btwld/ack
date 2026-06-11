@@ -61,14 +61,6 @@ melos:
     fix:
       run: melos exec -- "dart fix --apply"
       description: Apply fixes to all packages
-      packageFilters:
-        scope:
-          - ack
-          - ack_generator
-          - ack_json_schema_builder
-          - ack_example
-        dependsOn:
-          - "ack"  # This will ensure 'ack' is prioritized
 
     test:
       run: melos run analyze --no-select && melos run test:dart --no-select && melos run test:flutter --no-select
@@ -89,7 +81,7 @@ melos:
         dirExists: test
 
     format:
-      run: melos exec -- "dart format . --fix"
+      run: melos exec -- "dart format ."
       description: Format code for all packages
 
     deps-outdated:
