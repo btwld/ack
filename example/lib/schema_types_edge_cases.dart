@@ -1,12 +1,13 @@
 /// Edge case examples for schema variable type extraction
 ///
 /// This file demonstrates complex scenarios that should work with @AckType:
-/// - Lists with typed elements (List<String> not List<dynamic>)
+/// - Lists with typed elements (`List<String>` not `List<dynamic>`)
 /// - Nested schema references
 /// - Complex method chains
 /// - Optional and nullable combinations
 ///
 /// These examples serve as both documentation and integration tests.
+library;
 
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
@@ -20,9 +21,9 @@ part 'schema_types_edge_cases.g.dart';
 /// Schema with various list types
 ///
 /// EXPECTED BEHAVIOR:
-/// - tags field should be List<String>, not List<dynamic>
-/// - scores field should be List<int>, not List<dynamic>
-/// - flags field should be List<bool>, not List<dynamic>
+/// - tags field should be `List<String>`, not `List<dynamic>`
+/// - scores field should be `List<int>`, not `List<dynamic>`
+/// - flags field should be `List<bool>`, not `List<dynamic>`
 @AckType()
 final productSchema = Ack.object({
   'name': Ack.string(),
@@ -34,7 +35,7 @@ final productSchema = Ack.object({
 /// Schema with nested lists (matrix/grid data)
 ///
 /// EXPECTED BEHAVIOR:
-/// - matrix field should be List<List<int>>
+/// - matrix field should be `List<List<int>>`
 @AckType()
 final gridSchema = Ack.object({
   'name': Ack.string(),
@@ -60,7 +61,7 @@ final addressSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - address field should NOT be null/missing
-/// - Should generate: AddressType get address (or Map<String, dynamic>)
+/// - Should generate: AddressType get address (or `Map<String, dynamic>`)
 @AckType()
 final personSchema = Ack.object({
   'name': Ack.string(),
@@ -108,8 +109,8 @@ final modifierSchema = Ack.object({
 /// Schema combining lists and optional modifiers
 ///
 /// EXPECTED BEHAVIOR:
-/// - optionalTags: List<String>?, isRequired=false
-/// - requiredTags: List<String>, isRequired=true
+/// - optionalTags: `List<String>?`, isRequired=false
+/// - requiredTags: `List<String>`, isRequired=true
 @AckType()
 final taggedItemSchema = Ack.object({
   'name': Ack.string(),
@@ -121,7 +122,7 @@ final taggedItemSchema = Ack.object({
 /// Schema with list of nested objects
 ///
 /// EXPECTED BEHAVIOR:
-/// - addresses: List<AddressType> (eager list with typed elements)
+/// - addresses: `List<AddressType>` (eager list with typed elements)
 @AckType()
 final contactListSchema = Ack.object({
   'name': Ack.string(),

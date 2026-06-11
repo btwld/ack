@@ -20,6 +20,7 @@ sealed class NumSchema<T extends num> extends AckSchema<T, T> {
     if (value is double && !value.isFinite) {
       final constraint = NumberFiniteConstraint<T>();
       final error = constraint.validate(value);
+
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: error != null ? [error] : const [],
@@ -47,9 +48,6 @@ final class IntegerSchema extends NumSchema<int>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.integer;
-
-  @override
   @protected
   SchemaResult<int> validateRuntimeWithContext(
     Object? value,
@@ -67,6 +65,7 @@ final class IntegerSchema extends NumSchema<int>
         ),
       );
     }
+
     return applyConstraintsAndRefinements(value, context);
   }
 
@@ -91,8 +90,12 @@ final class IntegerSchema extends NumSchema<int>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! IntegerSchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.integer;
 
   @override
   int get hashCode => baseFieldsHashCode;
@@ -113,9 +116,6 @@ final class DoubleSchema extends NumSchema<double>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.number;
-
-  @override
   @protected
   SchemaResult<double> validateRuntimeWithContext(
     Object? value,
@@ -133,6 +133,7 @@ final class DoubleSchema extends NumSchema<double>
         ),
       );
     }
+
     return applyConstraintsAndRefinements(value, context);
   }
 
@@ -157,8 +158,12 @@ final class DoubleSchema extends NumSchema<double>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DoubleSchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.number;
 
   @override
   int get hashCode => baseFieldsHashCode;
@@ -179,9 +184,6 @@ final class NumberSchema extends NumSchema<num>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.number;
-
-  @override
   @protected
   SchemaResult<num> validateRuntimeWithContext(
     Object? value,
@@ -198,6 +200,7 @@ final class NumberSchema extends NumSchema<num>
         ),
       );
     }
+
     return applyConstraintsAndRefinements(value, context);
   }
 
@@ -222,8 +225,12 @@ final class NumberSchema extends NumSchema<num>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! NumberSchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.number;
 
   @override
   int get hashCode => baseFieldsHashCode;

@@ -14,9 +14,6 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.any;
-
-  @override
   @protected
   SchemaResult<Object> validateRuntimeWithContext(
     Object? value,
@@ -24,6 +21,7 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object>
   ) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
+
     return applyConstraintsAndRefinements(value!, context);
   }
 
@@ -48,8 +46,12 @@ final class TestUnsupportedAckSchema extends AckSchema<Object, Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! TestUnsupportedAckSchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.any;
 
   @override
   int get hashCode => baseFieldsHashCode;

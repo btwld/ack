@@ -18,7 +18,7 @@ Map<String, Object?> deepMerge(
   Map<String, Object?> map1,
   Map<String, Object?> map2,
 ) {
-  final result = Map<String, Object?>.from(map1);
+  final result = Map<String, Object?>.of(map1);
   for (final key in map2.keys) {
     final value1 = result[key];
     final value2 = map2[key];

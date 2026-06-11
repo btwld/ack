@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 
-import '../lib/schema_types_edge_cases.dart';
+import 'package:ack_example/schema_types_edge_cases.dart';
 
 void main() {
   group('Edge case schema examples', () {

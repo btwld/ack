@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 
-import '../lib/args_getter_example.dart';
+import 'package:ack_example/args_getter_example.dart';
 
 void main() {
   group('Args getter examples', () {

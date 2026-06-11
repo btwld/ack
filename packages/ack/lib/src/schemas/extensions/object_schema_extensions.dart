@@ -17,6 +17,7 @@ extension ObjectSchemaExtensions on ObjectSchema {
   /// Merges this schema with another [ObjectSchema].
   ObjectSchema merge(ObjectSchema other) {
     final newProperties = {...properties, ...other.properties};
+
     return copyWith(properties: newProperties);
   }
 

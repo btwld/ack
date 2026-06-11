@@ -26,7 +26,7 @@ final profileSchema = Ack.object({
   'timeout': Ack.duration(),
   'links': Ack.list(Ack.uri()),
   'favoriteColor': Ack.string().transform<Color>((value) => Color(value)),
-  'slug': Ack.string().transform<String>((value) => value + '#'),
+  'slug': Ack.string().transform<String>((value) => '$value#'),
   'accent': colorSchema,
   'colors': Ack.list(colorSchema),
   'customColors': Ack.list(

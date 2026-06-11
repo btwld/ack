@@ -27,6 +27,7 @@ bool deepEquals(Object? a, Object? b) {
     for (var i = 0; i < a.length; i++) {
       if (!deepEquals(a[i], b[i])) return false;
     }
+
     return true;
   }
 
@@ -44,6 +45,7 @@ bool deepEquals(Object? a, Object? b) {
       }
       if (!found) return false;
     }
+
     return true;
   }
 
@@ -54,6 +56,7 @@ bool deepEquals(Object? a, Object? b) {
       if (!b.containsKey(key)) return false;
       if (!deepEquals(a[key], b[key])) return false;
     }
+
     return true;
   }
 
@@ -65,6 +68,7 @@ bool deepEquals(Object? a, Object? b) {
       if (!iterB.moveNext()) return false;
       if (!deepEquals(iterA.current, iterB.current)) return false;
     }
+
     return !iterB.moveNext(); // Ensure b has no more elements
   }
 

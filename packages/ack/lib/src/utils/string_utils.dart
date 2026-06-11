@@ -89,6 +89,7 @@ String buildDidYouMeanSuggestion(String value, List<String> allowedValues) {
   if (closest != null && closest != value) {
     return ' Did you mean "$closest"?';
   }
+
   return '';
 }
 
@@ -109,8 +110,8 @@ int _levenshteinDistance(String s1, String s2) {
   if (s1.isEmpty) return s2.length;
   if (s2.isEmpty) return s1.length;
 
-  List<int> v0 = List<int>.filled(s2.length + 1, 0, growable: false);
-  List<int> v1 = List<int>.filled(s2.length + 1, 0, growable: false);
+  List<int> v0 = List.filled(s2.length + 1, 0, growable: false);
+  List<int> v1 = List.filled(s2.length + 1, 0, growable: false);
 
   for (int i = 0; i <= s2.length; i++) {
     v0[i] = i;

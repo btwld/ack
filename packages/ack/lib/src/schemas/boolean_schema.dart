@@ -13,9 +13,6 @@ final class BooleanSchema extends AckSchema<bool, bool>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.boolean;
-
-  @override
   @protected
   SchemaResult<bool> validateRuntimeWithContext(
     Object? value,
@@ -58,8 +55,12 @@ final class BooleanSchema extends AckSchema<bool, bool>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! BooleanSchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.boolean;
 
   @override
   int get hashCode => baseFieldsHashCode;

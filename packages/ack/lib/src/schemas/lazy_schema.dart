@@ -9,6 +9,13 @@ part of 'schema.dart';
 final class LazySchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
     with FluentSchema<Boundary, Runtime, LazySchema<Boundary, Runtime>> {
+  /// Human-readable name for this deferred schema reference.
+  final String name;
+
+  final AckSchema<Boundary, Runtime> Function() _builder;
+
+  late final AckSchema<Boundary, Runtime> _target = _builder();
+
   LazySchema(
     this.name,
     this._builder, {
@@ -19,13 +26,6 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     super.refinements,
   });
 
-  /// Human-readable name for this deferred schema reference.
-  final String name;
-
-  final AckSchema<Boundary, Runtime> Function() _builder;
-
-  late final AckSchema<Boundary, Runtime> _target = _builder();
-
   @internal
   AckSchema<Boundary, Runtime> get target => _target;
 
@@ -34,9 +34,6 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
 
   @internal
   int get runtimeRefinementCount => _refinements.length;
-
-  @override
-  SchemaType get schemaType => SchemaType.lazy;
 
   @override
   @protected
@@ -49,6 +46,7 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
 
     final runtime = result.getOrNull();
     if (runtime == null) return SchemaResult.ok(null);
+
     return applyConstraintsAndRefinements(runtime, context);
   }
 
@@ -66,6 +64,7 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
 
     final runtime = result.getOrNull();
     if (runtime == null) return SchemaResult.ok(null);
+
     return applyConstraintsAndRefinements(runtime, context);
   }
 
@@ -77,6 +76,7 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   ) {
     final ownChecked = applyConstraintsAndRefinements(value, context);
     if (ownChecked.isFail) return SchemaResult.fail(ownChecked.getError());
+
     return _target.encodeWithContext(ownChecked.getOrThrow()!, context);
   }
 
@@ -88,7 +88,7 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     List<Constraint<Runtime>>? constraints,
     List<Refinement<Runtime>>? refinements,
   }) {
-    return LazySchema<Boundary, Runtime>(
+    return LazySchema(
       name,
       _builder,
       isNullable: isNullable ?? this.isNullable,
@@ -106,10 +106,14 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! LazySchema<Boundary, Runtime>) return false;
+
     return baseFieldsEqual(other) &&
         name == other.name &&
         identical(_builder, other._builder);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.lazy;
 
   @override
   int get hashCode {

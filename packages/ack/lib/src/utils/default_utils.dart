@@ -27,6 +27,7 @@ Object? cloneDefault(Object? value) {
       value.forEach((key, entryValue) {
         cloned[key as String] = cloneDefault(entryValue);
       });
+
       return Map<String, Object?>.unmodifiable(cloned);
     }
 
@@ -34,6 +35,7 @@ Object? cloneDefault(Object? value) {
     value.forEach((key, entryValue) {
       cloned[key] = cloneDefault(entryValue);
     });
+
     return Map<Object?, Object?>.unmodifiable(cloned);
   }
 
