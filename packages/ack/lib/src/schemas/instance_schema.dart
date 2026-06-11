@@ -23,9 +23,6 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.any;
-
-  @override
   @protected
   SchemaResult<T> validateRuntimeWithContext(
     Object? value,
@@ -41,6 +38,7 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
         ),
       );
     }
+
     return applyConstraintsAndRefinements(value, context);
   }
 
@@ -52,7 +50,7 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
     List<Constraint<T>>? constraints,
     List<Refinement<T>>? refinements,
   }) {
-    return InstanceSchema<T>(
+    return InstanceSchema(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -65,8 +63,12 @@ final class InstanceSchema<T extends Object> extends AckSchema<T, T>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! InstanceSchema<T>) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.any;
 
   @override
   int get hashCode => baseFieldsHashCode;

@@ -21,26 +21,6 @@ final class AnyOfSchema extends AckSchema<Object, Object>
     super.refinements,
   });
 
-  @override
-  SchemaType get schemaType => SchemaType.anyOf;
-
-  bool get _anyBranchNullable => schemas.any((s) => s.isNullable);
-
-  @override
-  bool get acceptsNull => super.acceptsNull || _anyBranchNullable;
-
-  @override
-  @protected
-  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
-      _tryBranches(value, context, parse: true);
-
-  @override
-  @protected
-  SchemaResult<Object> validateRuntimeWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => _tryBranches(value, context, parse: false);
-
   SchemaResult<Object> _tryBranches(
     Object? value,
     SchemaContext context, {
@@ -68,6 +48,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
       if (result.isOk) {
         final v = result.getOrNull();
         if (v == null) return SchemaResult.ok(null);
+
         return applyConstraintsAndRefinements(v, context);
       }
       errors.add(result.getError());
@@ -75,6 +56,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
 
     if (parse && value == null) {
       if (acceptsNull) return SchemaResult.ok(null);
+
       return failNonNullable(context);
     }
 
@@ -82,6 +64,20 @@ final class AnyOfSchema extends AckSchema<Object, Object>
       SchemaNestedError(errors: errors, context: context),
     );
   }
+
+  bool get _anyBranchNullable => schemas.any((s) => s.isNullable);
+
+  @override
+  @protected
+  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) =>
+      _tryBranches(value, context, parse: true);
+
+  @override
+  @protected
+  SchemaResult<Object> validateRuntimeWithContext(
+    Object? value,
+    SchemaContext context,
+  ) => _tryBranches(value, context, parse: false);
 
   @override
   @protected
@@ -133,6 +129,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         );
       }
     }
+
     return SchemaResult.fail(
       SchemaNestedError(errors: errors, context: context),
     );
@@ -172,12 +169,20 @@ final class AnyOfSchema extends AckSchema<Object, Object>
     if (identical(this, other)) return true;
     if (other is! AnyOfSchema) return false;
     const listEq = ListEquality<AnyAckSchema>();
+
     return baseFieldsEqual(other) && listEq.equals(schemas, other.schemas);
   }
 
   @override
+  SchemaType get schemaType => SchemaType.anyOf;
+
+  @override
+  bool get acceptsNull => super.acceptsNull || _anyBranchNullable;
+
+  @override
   int get hashCode {
     const listEq = ListEquality<AnyAckSchema>();
+
     return Object.hash(baseFieldsHashCode, listEq.hash(schemas));
   }
 }

@@ -3,17 +3,17 @@ import 'package:meta/meta.dart';
 
 @immutable
 final class AckSchemaModelWarning {
+  final String code;
+
+  final String message;
+  final String? path;
+  final Map<String, Object?> context;
   const AckSchemaModelWarning({
     required this.code,
     required this.message,
     this.path,
     this.context = const {},
   });
-
-  final String code;
-  final String message;
-  final String? path;
-  final Map<String, Object?> context;
 
   Map<String, Object?> toJson() => {
     'code': code,
@@ -26,6 +26,7 @@ final class AckSchemaModelWarning {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AckSchemaModelWarning) return false;
+
     return code == other.code &&
         message == other.message &&
         path == other.path &&

@@ -33,6 +33,7 @@ class StringLiteralConstraint extends Constraint<String>
     if (identical(this, other)) return true;
     if (other is! StringLiteralConstraint) return false;
     if (runtimeType != other.runtimeType) return false;
+
     return constraintKey == other.constraintKey &&
         description == other.description &&
         expectedValue == other.expectedValue;

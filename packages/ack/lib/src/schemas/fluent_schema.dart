@@ -65,6 +65,7 @@ mixin FluentSchema<
     String message = 'The value did not pass the custom validation.',
   }) {
     final newRefinement = (validate: validate, message: message);
+
     return copyWith(refinements: [...refinements, newRefinement]);
   }
 

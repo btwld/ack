@@ -11,6 +11,10 @@ enum _SchemaPathSegmentKind { property, listIndex, passThrough }
 /// that should not add a user-visible path segment.
 @immutable
 final class SchemaPathSegment {
+  final _SchemaPathSegmentKind _kind;
+
+  final Object? _value;
+
   const SchemaPathSegment.property(String key)
     : _kind = _SchemaPathSegmentKind.property,
       _value = key;
@@ -23,9 +27,6 @@ final class SchemaPathSegment {
   const SchemaPathSegment.passThrough()
     : _kind = _SchemaPathSegmentKind.passThrough,
       _value = null;
-
-  final _SchemaPathSegmentKind _kind;
-  final Object? _value;
 
   Object? get _issueValue {
     return switch (_kind) {
@@ -100,6 +101,7 @@ class SchemaContext {
     final segment = pathSegment ?? SchemaPathSegment.property(name);
     final pathValue = segment._issueValue;
     if (pathValue == null) return parentSegments;
+
     return [...parentSegments, pathValue];
   }
 

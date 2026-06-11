@@ -22,16 +22,6 @@ final class _SchemaModelBuilder {
   final _definitions = <String, AckSchemaModel?>{};
   final _targets = <String, Object>{};
 
-  AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
-    final root = _build(schema);
-    if (_definitions.isEmpty) return root;
-
-    return root.withExtensions({
-      ...root.extensions,
-      'definitions': _mergeRootDefinitions(root.extensions['definitions']),
-    });
-  }
-
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
     final lazyDefinitions = <String, Object?>{
       for (final entry in _definitions.entries)
@@ -71,6 +61,7 @@ final class _SchemaModelBuilder {
       }
       merged[entry.key] = entry.value;
     }
+
     return merged;
   }
 
@@ -309,12 +300,14 @@ final class _SchemaModelBuilder {
           'schemas. Use unique names per recursive target.',
         );
       }
+
       return _lazyRef(schema);
     }
 
     _targets[name] = target;
     _definitions[name] = null;
     _definitions[name] = _build(target);
+
     return _lazyRef(schema);
   }
 
@@ -342,6 +335,16 @@ final class _SchemaModelBuilder {
         },
       ),
     ]);
+  }
+
+  AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
+    final root = _build(schema);
+    if (_definitions.isEmpty) return root;
+
+    return root.withExtensions({
+      ...root.extensions,
+      'definitions': _mergeRootDefinitions(root.extensions['definitions']),
+    });
   }
 }
 

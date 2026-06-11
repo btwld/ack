@@ -31,7 +31,7 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
     required Runtime Function(R value) encode,
     AckSchema<dynamic, R>? output,
   }) {
-    return CodecSchema.create<Boundary, Runtime, R>(
+    return CodecSchema.create(
       inputSchema: this,
       outputSchema: output ?? InstanceSchema<R>(),
       decoder: decode,

@@ -13,9 +13,6 @@ final class AnySchema extends AckSchema<Object, Object>
   });
 
   @override
-  SchemaType get schemaType => SchemaType.any;
-
-  @override
   @protected
   SchemaResult<Object> validateRuntimeWithContext(
     Object? value,
@@ -32,6 +29,7 @@ final class AnySchema extends AckSchema<Object, Object>
         ),
       );
     }
+
     return applyConstraintsAndRefinements(value!, context);
   }
 
@@ -56,8 +54,12 @@ final class AnySchema extends AckSchema<Object, Object>
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AnySchema) return false;
+
     return baseFieldsEqual(other);
   }
+
+  @override
+  SchemaType get schemaType => SchemaType.any;
 
   @override
   int get hashCode => baseFieldsHashCode;

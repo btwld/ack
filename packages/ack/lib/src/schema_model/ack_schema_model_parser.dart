@@ -1,10 +1,6 @@
 part of 'ack_schema_model.dart';
 
 final class _JsonSchemaParser {
-  AckSchemaModel parse(Map<String, Object?> json) {
-    return _parse(json, path: '');
-  }
-
   AckSchemaModel _parse(
     Map<String, Object?> json, {
     required String path,
@@ -17,6 +13,7 @@ final class _JsonSchemaParser {
         path: _joinPath(path, 'anyOf/${nullableUnion.schemaIndex}'),
         nullable: true,
       );
+
       return _applyKeywords(parsed, json, const {'anyOf'});
     }
 
@@ -353,6 +350,7 @@ final class _JsonSchemaParser {
       nullable: nullable,
       warnings: [if (warning != null) warning],
     );
+
     return json.isEmpty ? fallback : fallback.withJsonSchemaKeywords(json);
   }
 
@@ -364,6 +362,7 @@ final class _JsonSchemaParser {
     final keywords = Map<String, Object?>.fromEntries(
       json.entries.where((entry) => !handled.contains(entry.key)),
     );
+
     return keywords.isEmpty ? model : model.withJsonSchemaKeywords(keywords);
   }
 
@@ -382,6 +381,7 @@ final class _JsonSchemaParser {
         return _NullableUnion(schema: first, schemaIndex: 0);
       }
     }
+
     return null;
   }
 
@@ -394,6 +394,7 @@ final class _JsonSchemaParser {
         return _definitionsRefName(ref);
       }
     }
+
     return null;
   }
 
@@ -404,6 +405,7 @@ final class _JsonSchemaParser {
   String? _definitionsRefName(String ref) {
     const prefix = '#/definitions/';
     if (!ref.startsWith(prefix)) return null;
+
     return _unescapeJsonPointerToken(ref.substring(prefix.length));
   }
 
@@ -417,6 +419,7 @@ final class _JsonSchemaParser {
       if (key is! String) return null;
       result[key] = entry.value;
     }
+
     return result;
   }
 
@@ -436,17 +439,22 @@ final class _JsonSchemaParser {
 
   String _joinPath(String parent, String child) {
     if (parent.isEmpty) return child;
+
     return '$parent/$child';
   }
 
   String _unescapeJsonPointerToken(String value) {
     return value.replaceAll('~1', '/').replaceAll('~0', '~');
   }
+
+  AckSchemaModel parse(Map<String, Object?> json) {
+    return _parse(json, path: '');
+  }
 }
 
 final class _NullableUnion {
-  const _NullableUnion({required this.schema, required this.schemaIndex});
-
   final Map<String, Object?> schema;
+
   final int schemaIndex;
+  const _NullableUnion({required this.schema, required this.schemaIndex});
 }
