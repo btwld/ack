@@ -12,8 +12,8 @@ const _axisPattern = r'^[\x20-\x7E]{4}$';
 ///
 /// Serializes the public [FontVariation.axis] (a 4-character OpenType
 /// variation axis tag, e.g. `"wght"` or `"wdth"`) and [FontVariation.value]
-/// (a [double]; the codec accepts any finite value, leaving the
-/// [-32768, 32768) 16.16 fixed-point range check to the Flutter constructor).
+/// (a [double] constrained to the `[-32768, 32768)` 16.16 fixed-point range
+/// that the [FontVariation] constructor requires).
 ///
 /// Convenience constructors like [FontVariation.weight] are not preserved on
 /// round-trip because they all materialize as the same `(axis, value)` pair
@@ -21,7 +21,7 @@ const _axisPattern = r'^[\x20-\x7E]{4}$';
 final fontVariationCodec =
     Ack.object({
       'axis': Ack.string().matches(_axisPattern),
-      'value': Ack.number(),
+      'value': Ack.number().min(-32768).lessThan(32768),
     }).codec<FontVariation>(
       decode: (data) => FontVariation(
         readValue<String>(data, 'axis'),

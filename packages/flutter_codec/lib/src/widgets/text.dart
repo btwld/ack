@@ -30,9 +30,10 @@ import 'key.dart' show keyCodec;
 /// Codec for plain [Text].
 ///
 /// [Text.rich] is intentionally excluded until inline span trees have their own
-/// codec. `textScaler` is also excluded because Flutter exposes no stable
-/// public state for its concrete implementations. The deprecated
-/// `textScaleFactor` constructor parameter is not encoded.
+/// codec. `textScaler` has no portable JSON shape (Flutter exposes no stable
+/// public state for its concrete implementations); encoding a [Text] that sets
+/// it throws [UnsupportedError] rather than dropping it silently. The
+/// deprecated `textScaleFactor` constructor parameter is not encoded.
 final CodecSchema<JsonMap, Text> textWidgetCodec = Ack.object({
   'key': keyCodec.nullable().optional(),
   'data': Ack.string(),
@@ -75,6 +76,16 @@ Text _decodeText(JsonMap data) {
 }
 
 JsonMap _encodeText(Text value) {
+  // Flutter exposes no stable public state for a [TextScaler] implementation,
+  // so it has no portable JSON shape. Fail loudly when one is set instead of
+  // dropping it and decoding back an unscaled [Text].
+  if (value.textScaler != null) {
+    throw UnsupportedError(
+      'Text.textScaler has no portable JSON shape and cannot be encoded. '
+      'Resolve text scaling outside the codec, or omit textScaler.',
+    );
+  }
+
   return {
     'key': value.key,
     'data': value.data,

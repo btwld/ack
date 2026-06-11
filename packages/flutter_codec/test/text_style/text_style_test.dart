@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:ui' as ui show Locale, Shadow;
+import 'dart:ui' as ui show Locale, Paint, Shadow;
 
 import 'package:flutter/painting.dart';
 import 'package:flutter_codec/flutter_codec.dart';
@@ -207,6 +207,24 @@ void main() {
       test('rejects $name', () {
         expect(textStyleCodec.safeParse(input).isFail, isTrue);
       });
+    });
+  });
+
+  group('textStyleCodec rejects unsupported paint fields on encode', () {
+    test('fails to encode a foreground Paint', () {
+      // foreground is a Paint with no JSON shape; it must fail loudly rather
+      // than drop to a colorless style.
+      final result = textStyleCodec.safeEncode(
+        TextStyle(foreground: ui.Paint()),
+      );
+      expect(result.isFail, isTrue);
+    });
+
+    test('fails to encode a background Paint', () {
+      final result = textStyleCodec.safeEncode(
+        TextStyle(background: ui.Paint()),
+      );
+      expect(result.isFail, isTrue);
     });
   });
 

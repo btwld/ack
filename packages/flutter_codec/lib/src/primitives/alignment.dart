@@ -94,19 +94,63 @@ Object _encodeAlignmentDirectional(AlignmentDirectional value) {
   return {'start': value.start, 'y': value.y};
 }
 
-/// Codec for [AlignmentGeometry], unioning [alignmentCodec] and
-/// [alignmentDirectionalCodec].
+/// Codec for [AlignmentGeometry].
 ///
-/// `{x, y}` and the regular names decode to [Alignment]; `{start, y}` and the
-/// directional names decode to [AlignmentDirectional]. The shared center-column
-/// names (`"center"`, `"topCenter"`, `"bottomCenter"`) decode to [Alignment],
-/// since [alignmentCodec] is tried first. Mixed alignments (the result of
-/// adding an [Alignment] to an [AlignmentDirectional]) are not supported.
-final alignmentGeometryCodec =
-    Ack.anyOf([
-      alignmentCodec,
-      alignmentDirectionalCodec,
-    ]).codec<AlignmentGeometry>(
-      decode: (value) => value as AlignmentGeometry,
-      encode: (value) => value,
-    );
+/// Decoding: the regular names and `{x, y}` produce [Alignment]; the
+/// directional names and `{start, y}` produce [AlignmentDirectional]. The
+/// shared center-column names (`"center"`, `"topCenter"`, `"bottomCenter"`)
+/// decode to [Alignment], since the [Alignment] forms are tried first.
+///
+/// Encoding: an [Alignment] uses its name or `{x, y}`. An [AlignmentDirectional]
+/// uses its name too, except the three center-column constants
+/// ([AlignmentDirectional.topCenter], `.center`, `.bottomCenter`) whose names
+/// collide with [Alignment] and would otherwise decode back as [Alignment];
+/// those are emitted as `{start, y}` so they round-trip as directional values.
+/// (The standalone [alignmentDirectionalCodec] has no such collision and keeps
+/// emitting names.)
+///
+/// Mixed alignments (the result of adding an [Alignment] to an
+/// [AlignmentDirectional]) are not supported.
+final alignmentGeometryCodec = Ack.codec<Object, Object, AlignmentGeometry>(
+  input: Ack.anyOf([
+    Ack.enumCodec(_Alignment.values),
+    Ack.object({'x': Ack.number(), 'y': Ack.number()}),
+    Ack.enumCodec(_AlignmentDirectional.values),
+    Ack.object({'start': Ack.number(), 'y': Ack.number()}),
+  ]),
+  decode: _decodeAlignmentGeometry,
+  encode: _encodeAlignmentGeometry,
+);
+
+AlignmentGeometry _decodeAlignmentGeometry(Object value) {
+  final isDirectional =
+      value is _AlignmentDirectional ||
+      (value is JsonMap && value.containsKey('start'));
+  return isDirectional
+      ? _decodeAlignmentDirectional(value)
+      : _decodeAlignment(value);
+}
+
+/// The center-column directional constants share a spelling with [Alignment]
+/// names, so they must not be emitted as names through [alignmentGeometryCodec].
+/// (Not `const`: [AlignmentDirectional] overrides `==`.)
+final _centerColumnDirectionals = <AlignmentDirectional>{
+  AlignmentDirectional.topCenter,
+  AlignmentDirectional.center,
+  AlignmentDirectional.bottomCenter,
+};
+
+Object _encodeAlignmentGeometry(AlignmentGeometry value) {
+  if (value is Alignment) return _encodeAlignment(value);
+  if (value is AlignmentDirectional) {
+    // The center-column names would decode back as Alignment; emit the
+    // {start, y} object form for them so they stay directional.
+    return _centerColumnDirectionals.contains(value)
+        ? {'start': value.start, 'y': value.y}
+        : _encodeAlignmentDirectional(value);
+  }
+  throw UnsupportedError(
+    'alignmentGeometryCodec cannot encode ${value.runtimeType}; only '
+    'Alignment and AlignmentDirectional are supported.',
+  );
+}

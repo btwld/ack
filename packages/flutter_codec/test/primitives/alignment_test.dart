@@ -192,6 +192,27 @@ void main() {
       expectJsonSafe(encoded);
     });
 
+    test('encodes center-column AlignmentDirectional as {start, y}', () {
+      // topCenter/center/bottomCenter share a spelling with Alignment names and
+      // would decode back as Alignment if emitted as names, so the union emits
+      // the object form to keep them directional on round-trip.
+      const directionals = <AlignmentDirectional>[
+        AlignmentDirectional.topCenter,
+        AlignmentDirectional.center,
+        AlignmentDirectional.bottomCenter,
+      ];
+
+      for (final value in directionals) {
+        final encoded = alignmentGeometryCodec.encode(value);
+        expect(encoded, {'start': value.start, 'y': value.y});
+        expectJsonSafe(encoded);
+
+        final parsed = alignmentGeometryCodec.parse(encoded);
+        expect(parsed, value);
+        expect(parsed, isA<AlignmentDirectional>());
+      }
+    });
+
     group('rejects invalid input', () {
       const invalidCases = <String, Object>{
         'unknown name': 'middle',

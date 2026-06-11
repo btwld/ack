@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter_codec/flutter_codec.dart';
@@ -77,6 +78,16 @@ void main() {
       );
       final roundTripped = colorCodec.parse(colorCodec.encode(wideGamut))!;
       expect(roundTripped.colorSpace, ColorSpace.sRGB);
+    });
+  });
+
+  group('colorCodec JSON Schema', () {
+    test('rgb/rgba channel patterns admit 0-255 only, not 256+', () {
+      final schema = jsonEncode(colorCodec.toJsonSchema());
+      // The tightened 0-255 channel alternation replaces the loose `\d{1,3}`
+      // so the generated schema does not admit out-of-range channels.
+      expect(schema, contains('25[0-5]'));
+      expect(schema, isNot(contains(r'\\d{1,3}')));
     });
   });
 }

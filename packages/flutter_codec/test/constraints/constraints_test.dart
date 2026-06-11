@@ -81,6 +81,45 @@ void main() {
     });
   });
 
+  group('boxConstraintsCodec rejects inverted bounds', () {
+    test('rejects minWidth greater than maxWidth on decode', () {
+      expect(
+        boxConstraintsCodec.safeParse({'minWidth': 100, 'maxWidth': 50}).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects minHeight greater than maxHeight on decode', () {
+      expect(
+        boxConstraintsCodec.safeParse({
+          'minHeight': 100,
+          'maxHeight': 50,
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects an infinite min against a finite max (null min bound)', () {
+      // A null minWidth resolves to infinity, which exceeds a finite maxWidth.
+      expect(
+        boxConstraintsCodec.safeParse({
+          'minWidth': null,
+          'maxWidth': 50,
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('fails to encode an inverted BoxConstraints', () {
+      expect(
+        boxConstraintsCodec
+            .safeEncode(const BoxConstraints(minWidth: 100, maxWidth: 50))
+            .isFail,
+        isTrue,
+      );
+    });
+  });
+
   group('constraintsCodec', () {
     test('parses a box constraints branch', () {
       final parsed = constraintsCodec.parse({

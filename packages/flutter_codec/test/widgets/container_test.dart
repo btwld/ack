@@ -182,6 +182,18 @@ void main() {
         isTrue,
       );
     });
+
+    // Negative insets are exercised on the decode path: the Container
+    // constructor itself asserts non-negative padding/margin, so a negative
+    // value can only reach the codec as untrusted JSON. A bare number sets all
+    // four EdgeInsets sides.
+    test('rejects negative padding on decode', () {
+      expect(containerWidgetCodec.safeParse({'padding': -4}).isFail, isTrue);
+    });
+
+    test('rejects negative margin on decode', () {
+      expect(containerWidgetCodec.safeParse({'margin': -4}).isFail, isTrue);
+    });
   });
 
   group('widgetCodec', () {

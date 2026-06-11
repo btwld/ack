@@ -70,6 +70,15 @@ void main() {
       }
     });
 
+    test('rejects ValueKey subclasses such as PageStorageKey on encode', () {
+      // PageStorageKey<String> is a ValueKey<String> subclass; encoding it as a
+      // plain ValueKey would silently drop the subclass on decode.
+      _expectEncodeFailureContains(
+        const PageStorageKey<String>('x'),
+        'PageStorageKey<String>',
+      );
+    });
+
     test('rejects invalid value-key payloads', () {
       final invalidCases = <String, Object>{
         'unknown valueType': {

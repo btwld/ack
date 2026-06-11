@@ -52,6 +52,16 @@ final CodecSchema<JsonMap, Container> containerWidgetCodec =
               data['decoration'] != null || data['clipBehavior'] == Clip.none,
           message: 'Container clipBehavior requires a decoration.',
         )
+        // Reject negative insets: Flutter's Padding/margin handling asserts
+        // non-negative edges in debug, and the assert is stripped in release.
+        .refine((data) {
+          final padding = data['padding'];
+          return padding is! EdgeInsetsGeometry || padding.isNonNegative;
+        }, message: 'Container padding must not be negative.')
+        .refine((data) {
+          final margin = data['margin'];
+          return margin is! EdgeInsetsGeometry || margin.isNonNegative;
+        }, message: 'Container margin must not be negative.')
         .codec<Container>(decode: _decodeContainer, encode: _encodeContainer);
 
 Container _decodeContainer(JsonMap data) {

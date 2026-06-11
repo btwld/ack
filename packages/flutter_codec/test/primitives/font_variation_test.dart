@@ -71,6 +71,36 @@ void main() {
     });
   });
 
+  group('fontVariationCodec value range', () {
+    test('accepts the inclusive lower bound -32768', () {
+      expect(
+        fontVariationCodec.parse({'axis': 'wght', 'value': -32768}),
+        const FontVariation('wght', -32768),
+      );
+    });
+
+    test('accepts a value just below the exclusive upper bound', () {
+      expect(
+        fontVariationCodec.parse({'axis': 'wght', 'value': 32767}),
+        const FontVariation('wght', 32767),
+      );
+    });
+
+    test('rejects a value below -32768', () {
+      expect(
+        fontVariationCodec.safeParse({'axis': 'wght', 'value': -32769}).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects the exclusive upper bound 32768', () {
+      expect(
+        fontVariationCodec.safeParse({'axis': 'wght', 'value': 32768}).isFail,
+        isTrue,
+      );
+    });
+  });
+
   group('fontVariationCodec JSON Schema', () {
     test('reflects the 4-character pattern on axis', () {
       final schema = jsonEncode(fontVariationCodec.toJsonSchema());

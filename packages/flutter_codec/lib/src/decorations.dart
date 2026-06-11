@@ -54,6 +54,14 @@ final boxDecorationCodec =
           message:
               'BoxDecoration.backgroundBlendMode requires a color or gradient.',
         )
+        // BoxDecoration asserts a circle has no borderRadius; enforce it here
+        // too so the rule holds in release builds.
+        .refine(
+          (data) =>
+              data['shape'] != BoxShape.circle || data['borderRadius'] == null,
+          message:
+              'BoxDecoration with shape BoxShape.circle cannot set borderRadius.',
+        )
         .codec<BoxDecoration>(
           decode: _decodeBoxDecoration,
           encode: _encodeBoxDecoration,

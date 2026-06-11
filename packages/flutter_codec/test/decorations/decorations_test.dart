@@ -41,7 +41,7 @@ void main() {
             'tileMode': 'mirror',
           },
           'backgroundBlendMode': 'multiply',
-          'shape': 'circle',
+          'shape': 'rectangle',
         }),
         BoxDecoration(
           color: const Color(0xFF2196F3),
@@ -64,8 +64,20 @@ void main() {
             tileMode: TileMode.mirror,
           ),
           backgroundBlendMode: BlendMode.multiply,
-          shape: BoxShape.circle,
+          shape: BoxShape.rectangle,
         ),
+      );
+    });
+
+    test('rejects shape circle combined with a borderRadius', () {
+      // BoxDecoration.debugAssertIsValid forbids a borderRadius on a circle;
+      // enforce it at the codec boundary so it holds in release builds too.
+      expect(
+        boxDecorationCodec.safeParse({
+          'shape': 'circle',
+          'borderRadius': 8,
+        }).isFail,
+        isTrue,
       );
     });
 

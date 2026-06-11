@@ -9,9 +9,11 @@ enum _ValueKeyValueType { string, int, double, bool }
 
 /// Codec for portable [Key] values.
 ///
-/// Only scalar [ValueKey] values are supported. Identity-based keys
+/// Only the exact scalar [ValueKey] types are supported. Identity-based keys
 /// (`ObjectKey`, `UniqueKey`, and `GlobalKey` variants) cannot be serialized
 /// because their equality depends on object identity or Flutter runtime state.
+/// [ValueKey] subclasses such as `PageStorageKey` are also rejected on encode:
+/// re-encoding them as a plain [ValueKey] would silently drop the subclass.
 final keyCodec = Ack.discriminated<Key>(
   discriminatorKey: 'type',
   schemas: {_valueKeyType: _valueKeyCodec},
@@ -42,23 +44,40 @@ Key _decodeKey(JsonMap data) {
 }
 
 JsonMap _encodeKey(Key value) {
-  if (value is ValueKey<String>) {
-    return _encodeValueKey(_ValueKeyValueType.string, value.value);
+  // Match the exact runtime type, not `is`: `ValueKey` subclasses such as
+  // `PageStorageKey<String>` satisfy `is ValueKey<String>` and would otherwise
+  // be silently re-encoded as a plain `ValueKey`, losing the subclass on
+  // decode.
+  final type = value.runtimeType;
+  if (type == ValueKey<String>) {
+    return _encodeValueKey(
+      _ValueKeyValueType.string,
+      (value as ValueKey<String>).value,
+    );
   }
-  if (value is ValueKey<int>) {
-    return _encodeValueKey(_ValueKeyValueType.int, value.value);
+  if (type == ValueKey<int>) {
+    return _encodeValueKey(
+      _ValueKeyValueType.int,
+      (value as ValueKey<int>).value,
+    );
   }
-  if (value is ValueKey<double>) {
-    return _encodeValueKey(_ValueKeyValueType.double, value.value);
+  if (type == ValueKey<double>) {
+    return _encodeValueKey(
+      _ValueKeyValueType.double,
+      (value as ValueKey<double>).value,
+    );
   }
-  if (value is ValueKey<bool>) {
-    return _encodeValueKey(_ValueKeyValueType.bool, value.value);
+  if (type == ValueKey<bool>) {
+    return _encodeValueKey(
+      _ValueKeyValueType.bool,
+      (value as ValueKey<bool>).value,
+    );
   }
 
   throw FormatException(
-    'keyCodec can only encode ValueKey<String|int|double|bool>; '
-    '${value.runtimeType} cannot be serialized because it is identity-based '
-    'or has no portable JSON shape.',
+    'keyCodec can only encode exactly ValueKey<String|int|double|bool>; '
+    '${value.runtimeType} cannot be serialized because it is identity-based, '
+    'a ValueKey subclass, or has no portable JSON shape.',
   );
 }
 

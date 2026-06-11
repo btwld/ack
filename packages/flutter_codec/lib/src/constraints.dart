@@ -9,24 +9,39 @@ import 'package:flutter/rendering.dart' show BoxConstraints, Constraints;
 /// Omitted or null max bounds decode to `double.infinity`.
 final boxConstraintsCodec =
     Ack.object({
-      'minWidth': Ack.number().min(0).nullable().optional(),
-      'maxWidth': Ack.number().min(0).nullable().optional(),
-      'minHeight': Ack.number().min(0).nullable().optional(),
-      'maxHeight': Ack.number().min(0).nullable().optional(),
-    }).codec<BoxConstraints>(
-      decode: (data) => BoxConstraints(
-        minWidth: _readMinBound(data, 'minWidth'),
-        maxWidth: _readMaxBound(data, 'maxWidth'),
-        minHeight: _readMinBound(data, 'minHeight'),
-        maxHeight: _readMaxBound(data, 'maxHeight'),
-      ),
-      encode: (value) => {
-        'minWidth': _encodeBound(value.minWidth),
-        'maxWidth': _encodeBound(value.maxWidth),
-        'minHeight': _encodeBound(value.minHeight),
-        'maxHeight': _encodeBound(value.maxHeight),
-      },
-    );
+          'minWidth': Ack.number().min(0).nullable().optional(),
+          'maxWidth': Ack.number().min(0).nullable().optional(),
+          'minHeight': Ack.number().min(0).nullable().optional(),
+          'maxHeight': Ack.number().min(0).nullable().optional(),
+        })
+        // Reject inverted bounds. The same null/infinity resolution the decoder
+        // uses is applied first, so this matches the BoxConstraints actually
+        // produced (and keeps the invariant in release builds, where Flutter's
+        // own `isNormalized` assert is stripped).
+        .refine(
+          (data) =>
+              _readMinBound(data, 'minWidth') <=
+                  _readMaxBound(data, 'maxWidth') &&
+              _readMinBound(data, 'minHeight') <=
+                  _readMaxBound(data, 'maxHeight'),
+          message:
+              'BoxConstraints require minWidth <= maxWidth and '
+              'minHeight <= maxHeight.',
+        )
+        .codec<BoxConstraints>(
+          decode: (data) => BoxConstraints(
+            minWidth: _readMinBound(data, 'minWidth'),
+            maxWidth: _readMaxBound(data, 'maxWidth'),
+            minHeight: _readMinBound(data, 'minHeight'),
+            maxHeight: _readMaxBound(data, 'maxHeight'),
+          ),
+          encode: (value) => {
+            'minWidth': _encodeBound(value.minWidth),
+            'maxWidth': _encodeBound(value.maxWidth),
+            'minHeight': _encodeBound(value.minHeight),
+            'maxHeight': _encodeBound(value.maxHeight),
+          },
+        );
 
 /// Codec for Flutter [Constraints], discriminated by `"type"`.
 ///

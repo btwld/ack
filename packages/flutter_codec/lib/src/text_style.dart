@@ -41,9 +41,10 @@ import 'shadows.dart' show shadowCodec;
 /// [TextStyle.overflow], [TextStyle.fontFeatures], and
 /// [TextStyle.fontVariations].
 ///
-/// Unsupported fields are intentionally omitted:
+/// Unsupported fields:
 /// * [TextStyle.foreground] and [TextStyle.background] are nullable [Paint]
-///   values, which are not JSON-safe.
+///   values, which are not JSON-safe. Encoding a [TextStyle] that sets either
+///   throws [UnsupportedError] rather than dropping the paint silently.
 /// * [TextStyle.debugLabel] is debug metadata and is excluded from
 ///   [TextStyle] equality.
 final textStyleCodec = Ack.object({
@@ -107,6 +108,24 @@ TextStyle _decodeTextStyle(JsonMap data) {
 }
 
 JsonMap _encodeTextStyle(TextStyle value) {
+  // [TextStyle.foreground]/[TextStyle.background] are [Paint]s with no portable
+  // JSON shape. They are mutually exclusive with color/backgroundColor, so a
+  // value that sets them carries paint state this codec cannot represent.
+  // Fail loudly instead of silently dropping it to a colorless style.
+  if (value.foreground != null) {
+    throw UnsupportedError(
+      'TextStyle.foreground is a Paint with no portable JSON shape and cannot '
+      'be encoded. Use TextStyle.color, or apply the Paint outside the codec.',
+    );
+  }
+  if (value.background != null) {
+    throw UnsupportedError(
+      'TextStyle.background is a Paint with no portable JSON shape and cannot '
+      'be encoded. Use TextStyle.backgroundColor, or apply the Paint outside '
+      'the codec.',
+    );
+  }
+
   final fontFamilyFields = unpackFontFamily(
     value.fontFamily,
     value.fontFamilyFallback,

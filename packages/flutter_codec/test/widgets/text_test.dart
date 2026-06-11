@@ -89,14 +89,14 @@ void main() {
       expectJsonSafe(encoded);
     });
 
-    test('does not encode opaque textScaler state', () {
-      final encoded = textWidgetCodec.encode(
+    test('fails to encode opaque textScaler state', () {
+      // textScaler has no portable JSON shape, so encoding a Text that sets it
+      // fails loudly instead of silently dropping the scaler.
+      final result = textWidgetCodec.safeEncode(
         Text('scaled', textScaler: TextScaler.linear(1.5)),
       );
 
-      expect(encoded!.containsKey('textScaler'), isFalse);
-      expect(textWidgetCodec.parse(encoded)!.textScaler, isNull);
-      expectJsonSafe(encoded);
+      expect(result.isFail, isTrue);
     });
   });
 

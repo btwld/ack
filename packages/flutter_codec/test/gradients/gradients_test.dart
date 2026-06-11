@@ -295,4 +295,48 @@ void main() {
       expect(gradientCodec.safeEncode(gradient).isFail, isTrue);
     });
   });
+
+  group('gradient rejects mismatched stops', () {
+    test('linearGradientCodec rejects fewer stops than colors on decode', () {
+      expect(
+        linearGradientCodec.safeParse({
+          'type': 'linear',
+          'colors': _redBlueHex,
+          'stops': [0.0],
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('radialGradientCodec rejects fewer stops than colors on decode', () {
+      expect(
+        radialGradientCodec.safeParse({
+          'type': 'radial',
+          'colors': _redBlueHex,
+          'stops': [0.0],
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('sweepGradientCodec rejects fewer stops than colors on decode', () {
+      expect(
+        sweepGradientCodec.safeParse({
+          'type': 'sweep',
+          'colors': _redBlueHex,
+          'stops': [0.0],
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('fails to encode a gradient with mismatched stops', () {
+      expect(
+        linearGradientCodec
+            .safeEncode(const LinearGradient(colors: _redBlue, stops: [0.0]))
+            .isFail,
+        isTrue,
+      );
+    });
+  });
 }

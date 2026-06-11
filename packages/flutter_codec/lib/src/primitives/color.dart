@@ -1,6 +1,28 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart' show Color;
 
+// Matches a single 0–255 color channel. The decoder also range-checks, but the
+// JSON Schema pattern must not admit channels (256+) the codec rejects.
+const _rgbChannel = r'(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)';
+
+final _rgbPattern =
+    r'^rgb\(\s*' +
+    _rgbChannel +
+    r'\s*,\s*' +
+    _rgbChannel +
+    r'\s*,\s*' +
+    _rgbChannel +
+    r'\s*\)$';
+
+final _rgbaPattern =
+    r'^rgba\(\s*' +
+    _rgbChannel +
+    r'\s*,\s*' +
+    _rgbChannel +
+    r'\s*,\s*' +
+    _rgbChannel +
+    r'\s*,\s*(?:0|1|0?\.\d+|1\.0+)\s*\)$';
+
 /// Codec for [Color]. Accepts `#RRGGBB`, `#AARRGGBB`, `rgb(r,g,b)`, and
 /// `rgba(r,g,b,a)` strings; encodes to canonical hex (`#RRGGBB`, or `#AARRGGBB`
 /// when translucent).
@@ -15,10 +37,8 @@ final colorCodec = Ack.codec<Object, Object, Color>(
   input: Ack.anyOf([
     Ack.string().matches(r'^#[0-9A-Fa-f]{6}$'),
     Ack.string().matches(r'^#[0-9A-Fa-f]{8}$'),
-    Ack.string().matches(r'^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$'),
-    Ack.string().matches(
-      r'^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(?:0|1|0?\.\d+|1\.0+)\s*\)$',
-    ),
+    Ack.string().matches(_rgbPattern),
+    Ack.string().matches(_rgbaPattern),
   ]),
   decode: (value) => _parseColor(value as String),
   encode: _encodeColor,
