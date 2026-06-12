@@ -22,7 +22,7 @@ final class _ValidationOnlySchema implements StandardSchema<String, int> {
         final result = const StandardSuccess(1);
         return async ? Future<StandardResult<int>>.value(result) : result;
       }
-      return const StandardFailure<int>([
+      return StandardFailure<int>([
         StandardIssue(message: 'Not ok', path: ['items', 1]),
       ]);
     },
@@ -56,7 +56,7 @@ final class _CombinedSchema
         vendor: 'fake-combined',
         validate: (value, [options]) => value == 'ok'
             ? const StandardSuccess(1)
-            : const StandardFailure([StandardIssue(message: 'Not ok')]),
+            : StandardFailure([StandardIssue(message: 'Not ok')]),
         jsonSchema: StandardJsonSchemaConverter(
           input: (options) => {'type': 'string'},
           output: (options) => {'type': 'integer'},
@@ -66,6 +66,67 @@ final class _CombinedSchema
 
 void main() {
   group('StandardSchema', () {
+    test(
+      'does not accept constructor overrides for the fixed spec version',
+      () {
+        StandardResult<int> validate(
+          Object? value, [
+          StandardValidateOptions? _,
+        ]) {
+          return const StandardSuccess(1);
+        }
+
+        Map<String, Object?> convert(StandardJsonSchemaOptions _) => {};
+
+        expect(
+          () => Function.apply(StandardTypedProps<Object?, int>.new, const [], {
+            #vendor: 'fake',
+            #version: 2,
+          }),
+          throwsNoSuchMethodError,
+        );
+        expect(
+          () => Function.apply(
+            StandardSchemaProps<Object?, int>.new,
+            const [],
+            {#vendor: 'fake', #validate: validate, #version: 2},
+          ),
+          throwsNoSuchMethodError,
+        );
+        expect(
+          () => Function.apply(
+            StandardJsonSchemaProps<Object?, int>.new,
+            const [],
+            {
+              #vendor: 'fake',
+              #jsonSchema: StandardJsonSchemaConverter(
+                input: convert,
+                output: convert,
+              ),
+              #version: 2,
+            },
+          ),
+          throwsNoSuchMethodError,
+        );
+        expect(
+          () => Function.apply(
+            StandardSchemaWithJsonSchemaProps<Object?, int>.new,
+            const [],
+            {
+              #vendor: 'fake',
+              #validate: validate,
+              #jsonSchema: StandardJsonSchemaConverter(
+                input: convert,
+                output: convert,
+              ),
+              #version: 2,
+            },
+          ),
+          throwsNoSuchMethodError,
+        );
+      },
+    );
+
     test('carries vendor, version, and success or failure results', () async {
       const schema = _ValidationOnlySchema();
 
@@ -140,5 +201,45 @@ void main() {
         );
       },
     );
+
+    test('stores validation failure issues as an unmodifiable snapshot', () {
+      final issues = [StandardIssue(message: 'first')];
+      final failure = StandardFailure<int>(issues);
+
+      issues.add(StandardIssue(message: 'second'));
+
+      expect(failure.issues, hasLength(1));
+      expect(failure.issues.single.message, 'first');
+      expect(
+        () => failure.issues.add(StandardIssue(message: 'third')),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('stores issue paths as unmodifiable snapshots', () {
+      final path = <Object>['user'];
+      final issue = StandardIssue(message: 'Required', path: path);
+
+      path.add('email');
+
+      expect(issue.path, ['user']);
+      expect(() => issue.path.add('name'), throwsUnsupportedError);
+    });
+
+    test('supports README-style async validation consumption', () async {
+      final schema = StandardSchemaProps<Object?, int>(
+        vendor: 'fake',
+        validate: (value, [options]) async {
+          return StandardFailure<int>([
+            StandardIssue(message: 'Not ok', path: ['value']),
+          ]);
+        },
+      );
+
+      final result = await Future.value(schema.validate('bad'));
+
+      expect(result, isA<StandardFailure<int>>());
+      expect((result as StandardFailure<int>).issues.single.message, 'Not ok');
+    });
   });
 }

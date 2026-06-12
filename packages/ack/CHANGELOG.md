@@ -1,4 +1,4 @@
-## 1.0.0-beta.12-wip
+## Unreleased
 
 ### Breaking Changes
 
@@ -9,9 +9,6 @@
 * Replace the interim JSON Schema model kind API with sealed
   `AckSchemaModel` variants and canonical `AckSchema.toSchemaModel()`
   adapter conversion.
-* `SchemaContext.createChild(pathSegment: ...)` now takes a
-  `SchemaPathSegment` so standard issue paths can distinguish string object
-  keys from integer list indexes.
 
 ### Added
 
@@ -23,39 +20,18 @@
 * `NumberSchemaExtensions` adds fluent numeric constraints to `Ack.number()`:
   `.min`, `.max`, `.greaterThan`, `.lessThan`, `.positive`, `.negative`, and
   `.multipleOf`.
-* `AckSchema.standard` implements the combined `StandardSchemaWithJsonSchema`
-  contract with flat `StandardIssue` failures and a Draft-7 JSON Schema
-  converter.
-* `SchemaContext.pathSegments` exposes raw path segments with list indices as
-  integers while preserving numeric-looking object keys as strings, and
-  `SchemaError.toStandardIssues()` maps ACK errors to standard issues.
-* `AckSchemaModel.fromJsonSchema(...)` imports supported Draft-7 JSON Schema
-  maps into ACK's existing schema model as a best-effort Ack feature.
-* `package:ack/ack.dart` now re-exports the `standard_schema` contract types
-  (`StandardSchema`, `StandardResult`, `StandardIssue`, `JsonSchemaTarget`,
-  …) so they can be used without depending on `standard_schema` directly.
 
 ### Changed
 
 * Project discriminated schemas through union-owned discriminator branches.
 * Preserve defaults, const values, extension keywords, transformed metadata,
-  composition, and JSON Schema constraints through the `AckSchemaModel`
-  boundary.
+  composition, and JSON Schema constraints through the schema model boundary.
 
 ### Migration
 
 * Re-run tests for code paths that parse or encode `double`/`num` values. If a
   boundary must accept `NaN` or infinities, model that value outside the JSON
   numeric schema path before validation.
-* Custom schema authors and manual `SchemaContext` callers should replace raw
-  `pathSegment` strings with typed segments:
-
-  ```dart
-  // Migrating manual SchemaContext.createChild(pathSegment: ...) calls:
-  pathSegment: SchemaPathSegment.property(key)        // object key (String)
-  pathSegment: SchemaPathSegment.index(i)             // list index (int)
-  pathSegment: const SchemaPathSegment.passThrough()  // composition branch routing
-  ```
 
 ## 1.0.0-beta.11
 

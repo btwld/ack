@@ -30,7 +30,7 @@ final class RequiredStringSchema implements StandardSchema<Object?, String> {
         return StandardSuccess(value);
       }
 
-      return const StandardFailure([
+      return StandardFailure([
         StandardIssue(message: 'Expected a non-empty string'),
       ]);
     },
@@ -90,7 +90,7 @@ final class RequiredStringSchemaWithJson
             return StandardSuccess(value);
           }
 
-          return const StandardFailure([
+          return StandardFailure([
             StandardIssue(message: 'Expected a non-empty string'),
           ]);
         },
@@ -118,13 +118,14 @@ explicitly:
 import 'package:standard_schema/utils.dart';
 ```
 
-- `getDotPath(issue)` renders an issue's `path` in dot notation (for example
-  `user.tags.1`), or returns `null` when the issue has no path.
+- `getDotPath(issue)` renders raw path keys and `StandardPathSegment(key: ...)`
+  entries in dot notation (for example `user.tags.1`), or returns `null` when
+  the issue has no path or contains a key that is not a string or number.
 - `StandardSchemaError(issues)` wraps a failure's issues as a throwable whose
   `message` is the first issue's message.
 
 ```dart
-final result = schema.standard.validate(value);
+final result = await Future.value(schema.standard.validate(value));
 
 if (result is StandardFailure) {
   // Render each issue's path in dot notation:

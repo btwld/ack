@@ -67,24 +67,20 @@ typedef StandardJsonSchemaConvert =
 
 /// The properties shared by every standard trait.
 class StandardTypedProps<Input, Output> {
-  const StandardTypedProps({required this.vendor, this.version = 1});
+  const StandardTypedProps({required this.vendor});
 
   /// The vendor name of the schema library.
   final String vendor;
 
   /// The version of the standard. Always `1` for this spec revision (Dart
   /// cannot pin the literal type the way TypeScript's `version: 1` does).
-  final int version;
+  final int version = 1;
 }
 
 /// The properties of a [StandardSchema].
 class StandardSchemaProps<Input, Output>
     extends StandardTypedProps<Input, Output> {
-  const StandardSchemaProps({
-    required super.vendor,
-    required this.validate,
-    super.version,
-  });
+  const StandardSchemaProps({required super.vendor, required this.validate});
 
   /// Validates an unknown input value.
   final StandardValidate<Output> validate;
@@ -96,7 +92,6 @@ class StandardJsonSchemaProps<Input, Output>
   const StandardJsonSchemaProps({
     required super.vendor,
     required this.jsonSchema,
-    super.version,
   });
 
   /// The JSON Schema tier converter.
@@ -111,7 +106,6 @@ class StandardSchemaWithJsonSchemaProps<Input, Output>
     required super.vendor,
     required super.validate,
     required this.jsonSchema,
-    super.version,
   });
 
   /// The JSON Schema tier converter.
@@ -142,7 +136,8 @@ final class StandardSuccess<Output> extends StandardResult<Output> {
 
 /// A failed validation result carrying one or more [issues].
 final class StandardFailure<Output> extends StandardResult<Output> {
-  const StandardFailure(this.issues);
+  StandardFailure(List<StandardIssue> issues)
+    : issues = List.unmodifiable(issues);
 
   /// The issues describing why validation failed.
   final List<StandardIssue> issues;
@@ -150,14 +145,28 @@ final class StandardFailure<Output> extends StandardResult<Output> {
 
 /// A single validation issue.
 final class StandardIssue {
-  const StandardIssue({required this.message, this.path = const []});
+  StandardIssue({required this.message, List<Object> path = const []})
+    : path = List.unmodifiable(path);
 
   /// The error message of the issue.
   final String message;
 
-  /// The path to the offending value, as property-key segments: a [String]
-  /// object key or an [int] list index. Empty for a root-level issue.
+  /// The path to the offending value, if any.
+  ///
+  /// Each entry is either a raw property key (for example a [String] object key
+  /// or [num] index) or a [StandardPathSegment] object with a [key]. Empty for a
+  /// root-level issue.
   final List<Object> path;
+}
+
+/// An object path segment in a [StandardIssue.path].
+///
+/// This is the Dart spelling of upstream `StandardSchemaV1.PathSegment`.
+final class StandardPathSegment {
+  const StandardPathSegment({required this.key});
+
+  /// The key representing a path segment.
+  final Object key;
 }
 
 /// The JSON Schema tier converter.

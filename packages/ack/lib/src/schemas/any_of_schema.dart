@@ -40,7 +40,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         name: 'anyOf:$index',
         schema: schema,
         value: value,
-        pathSegment: const SchemaPathSegment.passThrough(),
+        pathSegment: '',
       );
       final result = parse
           ? schema.parseWithContext(value, childContext)
@@ -95,7 +95,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         name: 'anyOf:$index',
         schema: schema,
         value: runtime,
-        pathSegment: const SchemaPathSegment.passThrough(),
+        pathSegment: '',
         operation: SchemaOperation.encode,
       );
       try {

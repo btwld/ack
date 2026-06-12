@@ -3,17 +3,15 @@ import 'standard_schema.dart';
 /// Returns the dot-notation path of an [issue] (for example `user.tags.1`), or
 /// `null` when the issue has no path or any segment is not a string or number.
 ///
-/// Direct port of `getDotPath` from `@standard-schema/utils`. Ack emits issue
-/// paths as bare property keys ([String] object keys and [int] list indexes —
-/// the spec's `PropertyKey` form), so the upstream `{key}`-object segment branch
-/// is unreachable here; the type check is kept for faithfulness to the source.
+/// Direct port of `getDotPath` from `@standard-schema/utils`.
 String? getDotPath(StandardIssue issue) {
   if (issue.path.isEmpty) return null;
   final dotPath = StringBuffer();
   for (final segment in issue.path) {
-    if (segment is String || segment is num) {
+    final key = segment is StandardPathSegment ? segment.key : segment;
+    if (key is String || key is num) {
       if (dotPath.isNotEmpty) dotPath.write('.');
-      dotPath.write(segment);
+      dotPath.write(key);
     } else {
       return null;
     }
@@ -29,10 +27,11 @@ String? getDotPath(StandardIssue issue) {
 class StandardSchemaError implements Exception {
   /// Wraps [issues]. Throws [ArgumentError] when [issues] is empty: a failure
   /// always carries at least one issue, and [message] is taken from the first.
-  StandardSchemaError(this.issues)
+  StandardSchemaError(List<StandardIssue> issues)
     : message = issues.isEmpty
           ? throw ArgumentError.value(issues, 'issues', 'must not be empty')
-          : issues.first.message;
+          : issues.first.message,
+      issues = List.unmodifiable(issues);
 
   /// The issues describing why validation failed. Never empty.
   final List<StandardIssue> issues;

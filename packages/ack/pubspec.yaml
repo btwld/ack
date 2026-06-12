@@ -12,7 +12,6 @@ environment:
 dependencies:
   meta: ^1.15.0
   collection: ^1.18.0
-  standard_schema: '>=0.0.1-dev.0 <0.1.0'
 
 dev_dependencies:
   test: ^1.25.15

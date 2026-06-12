@@ -17,10 +17,7 @@ void main() {
           final sourceCases = firebaseAiResponseJsonSchemaCases();
 
           expect(fixtures.sourcePackage, 'firebase_ai');
-          // `sourceVersion` is recorded as provenance only; the per-case tests
-          // below compare live firebase_ai output to the golden fixtures, which
-          // is the real staleness guard. Asserting the exact resolved version
-          // only produces false CI failures on benign firebase_ai patch bumps.
+          expect(fixtures.sourceVersion, firebaseAiPackageVersion());
           expect(fixtures.sourceClass, family.sourceClass);
           expect(fixtures.fixtureCount, cases.length);
           expect(fixtures.ids, sourceCases.map((schemaCase) => schemaCase.id));

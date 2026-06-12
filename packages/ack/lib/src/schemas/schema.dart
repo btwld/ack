@@ -1,13 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:standard_schema/standard_schema.dart'
-    show
-        JsonSchemaTarget,
-        StandardFailure,
-        StandardJsonSchemaConverter,
-        StandardSchemaWithJsonSchema,
-        StandardSchemaWithJsonSchemaProps,
-        StandardSuccess;
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
@@ -19,7 +11,6 @@ import '../helpers.dart';
 import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
-import '../validation/standard_issues.dart';
 
 part 'any_of_schema.dart';
 part 'any_schema.dart';
@@ -71,8 +62,7 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object>
-    implements StandardSchemaWithJsonSchema<Object?, Runtime?> {
+abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
@@ -348,36 +338,6 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
       operation: SchemaOperation.parse,
     );
     return parseWithContext(value, context);
-  }
-
-  @override
-  StandardSchemaWithJsonSchemaProps<Object?, Runtime?> get standard =>
-      StandardSchemaWithJsonSchemaProps(
-        vendor: 'ack',
-        validate: (value, [options]) => switch (safeParse(value)) {
-          Ok(value: final value) => StandardSuccess<Runtime?>(value),
-          Fail(error: final error) => StandardFailure<Runtime?>(
-            error.toStandardIssues(),
-          ),
-        },
-        jsonSchema: StandardJsonSchemaConverter(
-          input: (options) => _renderJsonSchema(options.target),
-          output: (options) => this is CodecSchema
-              ? throw UnsupportedError(
-                  'codec Runtime side is not JSON-representable',
-                )
-              : _renderJsonSchema(options.target),
-        ),
-      );
-
-  /// Renders this schema as a Draft-7 JSON Schema map, throwing for any other
-  /// [target] (ack only supports Draft-7 — spec permits throwing for
-  /// unsupported targets).
-  Map<String, Object?> _renderJsonSchema(JsonSchemaTarget target) {
-    if (target != JsonSchemaTarget.draft07) {
-      throw UnsupportedError('ack supports draft-07 only');
-    }
-    return toJsonSchema();
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].

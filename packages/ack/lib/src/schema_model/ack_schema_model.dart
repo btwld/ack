@@ -3,8 +3,6 @@ import 'package:meta/meta.dart';
 
 import 'ack_schema_model_warning.dart';
 
-part 'ack_schema_model_parser.dart';
-
 const _unset = Object();
 const _nullSchemaJson = <String, Object?>{'type': 'null'};
 
@@ -136,10 +134,6 @@ sealed class AckSchemaModel {
     this.warnings = const [],
     this.extensions = const {},
   });
-
-  factory AckSchemaModel.fromJsonSchema(Map<String, Object?> json) {
-    return _JsonSchemaParser().parse(json);
-  }
 
   AckSchemaModel._(_AckSchemaModelCommon common)
     : title = common.title,
