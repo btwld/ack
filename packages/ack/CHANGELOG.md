@@ -20,6 +20,9 @@
 * `NumberSchemaExtensions` adds fluent numeric constraints to `Ack.number()`:
   `.min`, `.max`, `.greaterThan`, `.lessThan`, `.positive`, `.negative`, and
   `.multipleOf`.
+* `AckSchema.standard` exposes the Standard Schema validation and JSON Schema
+  converter contracts, and `package:ack/ack.dart` re-exports the
+  `standard_schema` contract types.
 
 ### Changed
 

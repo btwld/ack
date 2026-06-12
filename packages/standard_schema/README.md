@@ -14,6 +14,40 @@ depending on a vendor-specific schema tree. The package does not define a JSON
 schema model, parser, renderer, or warning system; those stay in vendor
 packages (for example, Ack's `AckSchemaModel` in `package:ack`).
 
+## Compatibility checks
+
+In Dart, compatibility is nominal: a value is a Standard Schema when it
+implements the shared interface from this package.
+
+```dart
+if (schema is StandardSchema<Object?, Object?>) {
+  final result = await Future.value(schema.standard.validate(value));
+}
+
+if (schema is StandardJsonSchema<Object?, Object?>) {
+  final json = schema.standard.jsonSchema.input(
+    const StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07),
+  );
+}
+```
+
+The JSON Schema maps returned by converters are owned by the implementing
+library. Consumers should treat them as JSON Schema for the requested target,
+not as canonical byte-for-byte output shared by every vendor.
+
+## Dart mapping notes
+
+This package intentionally maps the upstream TypeScript contract into Dart
+idioms:
+
+- `~standard` is exposed as the normal Dart getter `standard`.
+- TypeScript's phantom `types` field is omitted because Dart generics carry
+  input and output types.
+- A missing issue path is represented as an empty list, which is also the root
+  path.
+- Path keys are permissive `Object` values. Utilities such as `getDotPath`
+  render only string and number keys and return `null` for other keys.
+
 ## Implement a schema
 
 ```dart
@@ -67,6 +101,8 @@ final class RequiredStringJsonSchema
 
 Converters return plain JSON Schema maps (`Map<String, Object?>`). They may
 throw when a schema cannot be represented for the requested target.
+The concrete JSON Schema output is owned by the implementing library; this
+package only defines the converter contract.
 
 ## Implement both traits
 

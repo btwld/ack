@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
@@ -8,6 +9,7 @@ import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
+import '../schema_model/ack_schema_model.dart';
 import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
@@ -62,7 +64,8 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+abstract class AckSchema<Boundary extends Object, Runtime extends Object>
+    implements StandardSchemaWithJsonSchema<Boundary?, Runtime?> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
@@ -228,6 +231,88 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// branch-level null policies (e.g. [AnyOfSchema]) override this hook.
   @protected
   bool get acceptsNull => isNullable;
+
+  @override
+  StandardSchemaWithJsonSchemaProps<Boundary?, Runtime?> get standard =>
+      StandardSchemaWithJsonSchemaProps(
+        vendor: 'ack',
+        validate: _validateStandard,
+        jsonSchema: StandardJsonSchemaConverter(
+          input: _standardJsonSchemaInput,
+          output: _standardJsonSchemaOutput,
+        ),
+      );
+
+  StandardResult<Runtime?> _validateStandard(
+    Object? value, [
+    StandardValidateOptions? options,
+  ]) {
+    return switch (safeParse(value)) {
+      Ok(value: final value) => StandardSuccess<Runtime?>(value),
+      Fail(error: final error) => StandardFailure<Runtime?>(
+        error.toStandardIssues(),
+      ),
+    };
+  }
+
+  Map<String, Object?> _standardJsonSchemaInput(
+    StandardJsonSchemaOptions options,
+  ) {
+    _checkStandardJsonSchemaTarget(options);
+    return toJsonSchema();
+  }
+
+  Map<String, Object?> _standardJsonSchemaOutput(
+    StandardJsonSchemaOptions options,
+  ) {
+    _checkStandardJsonSchemaTarget(options);
+
+    if (this case CodecSchema(outputSchema: final outputSchema)) {
+      final runtimeOutputSchema = outputSchema as AckSchema<Object, Runtime>;
+      final model = runtimeOutputSchema.toSchemaModel();
+      if (_hasRuntimeOnlyJsonBoundary(model)) {
+        throw UnsupportedError(
+          'Ack cannot represent this codec output as JSON Schema.',
+        );
+      }
+      return model.toJsonSchema();
+    }
+
+    return toJsonSchema();
+  }
+
+  static void _checkStandardJsonSchemaTarget(
+    StandardJsonSchemaOptions options,
+  ) {
+    if (options.target == JsonSchemaTarget.draft07) return;
+    throw UnsupportedError(
+      'Ack only supports Standard JSON Schema target '
+      '${JsonSchemaTarget.draft07}; got ${options.target}.',
+    );
+  }
+
+  static bool _hasRuntimeOnlyJsonBoundary(AckSchemaModel model) {
+    if (model.warnings.any(
+      (warning) => warning.code == 'ack_instance_json_boundary',
+    )) {
+      return true;
+    }
+
+    return switch (model) {
+      AckArraySchemaModel(:final items) =>
+        items != null && _hasRuntimeOnlyJsonBoundary(items),
+      AckObjectSchemaModel(:final properties, :final additionalProperties) =>
+        (properties?.values.any(_hasRuntimeOnlyJsonBoundary) ?? false) ||
+            (additionalProperties is AckAdditionalPropertiesSchema &&
+                _hasRuntimeOnlyJsonBoundary(additionalProperties.schema)),
+      AckAnyOfSchemaModel(:final schemas) ||
+      AckOneOfSchemaModel(:final schemas) ||
+      AckAllOfSchemaModel(
+        :final schemas,
+      ) => schemas.any(_hasRuntimeOnlyJsonBoundary),
+      _ => false,
+    };
+  }
 
   /// The schema type category for this schema.
   @protected

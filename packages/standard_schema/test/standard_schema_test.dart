@@ -184,6 +184,50 @@ void main() {
       );
     });
 
+    test('allows open-ended JSON Schema target strings', () {
+      const customTarget = JsonSchemaTarget('draft-next');
+      final converter = StandardJsonSchemaConverter(
+        input: (options) => {r'$schema': options.target},
+        output: (options) => {'target': options.target},
+      );
+
+      expect(
+        converter.input(const StandardJsonSchemaOptions(target: customTarget)),
+        {r'$schema': 'draft-next'},
+      );
+      expect(
+        converter.output(const StandardJsonSchemaOptions(target: customTarget)),
+        {'target': 'draft-next'},
+      );
+    });
+
+    test('allows converters to throw for unsupported JSON Schema targets', () {
+      Map<String, Object?> convert(StandardJsonSchemaOptions options) {
+        if (options.target != JsonSchemaTarget.draft07) {
+          throw UnsupportedError('Unsupported target: ${options.target}');
+        }
+        return {'type': 'string'};
+      }
+
+      final converter = StandardJsonSchemaConverter(
+        input: convert,
+        output: convert,
+      );
+
+      expect(
+        () => converter.input(
+          const StandardJsonSchemaOptions(target: JsonSchemaTarget.openapi30),
+        ),
+        throwsUnsupportedError,
+      );
+      expect(
+        converter.output(
+          const StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07),
+        ),
+        {'type': 'string'},
+      );
+    });
+
     test(
       'allows a schema to implement validation and JSON Schema together',
       () {
@@ -238,6 +282,12 @@ void main() {
 
       expect(issue.path, ['user']);
       expect(() => issue.path.add('name'), throwsUnsupportedError);
+    });
+
+    test('preserves path keys that consumers cannot render as dot paths', () {
+      final issue = StandardIssue(message: 'Required', path: [#field]);
+
+      expect(issue.path, [#field]);
     });
 
     test('accepts iterable issue paths', () {

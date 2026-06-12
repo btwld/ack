@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 import '../constraints/constraint.dart';
 import '../context.dart';
@@ -124,6 +125,58 @@ class SchemaNestedError extends SchemaError {
       'nestedErrors': errors.map((e) => e.toMap()).toList(),
     };
   }
+}
+
+extension StandardIssueConversion on SchemaError {
+  /// Converts this Ack error tree into flat Standard Schema issues.
+  List<StandardIssue> toStandardIssues() =>
+      _standardIssuesFor(this).toList(growable: false);
+}
+
+Iterable<StandardIssue> _standardIssuesFor(SchemaError error) sync* {
+  switch (error) {
+    case SchemaNestedError(errors: final errors) when errors.isNotEmpty:
+      for (final nested in errors) {
+        yield* _standardIssuesFor(nested);
+      }
+    case SchemaConstraintsError(:final constraints) when constraints.isNotEmpty:
+      for (final constraint in constraints) {
+        yield StandardIssue(
+          message: constraint.message,
+          path: _standardPath(error.context),
+        );
+      }
+    default:
+      yield StandardIssue(
+        message: error.message,
+        path: _standardPath(error.context),
+      );
+  }
+}
+
+List<Object> _standardPath(SchemaContext context) {
+  final reversed = <Object>[];
+  var cursor = context;
+
+  while (cursor.parent != null) {
+    final parent = cursor.parent!;
+    final segment = cursor.pathSegment;
+
+    if (segment != null && segment.isNotEmpty) {
+      reversed.add(_standardPathKey(parent, segment));
+    }
+
+    cursor = parent;
+  }
+
+  return reversed.reversed.toList(growable: false);
+}
+
+Object _standardPathKey(SchemaContext parent, String segment) {
+  if (parent.schema is ListSchema) {
+    return int.tryParse(segment) ?? segment;
+  }
+  return segment;
 }
 
 @immutable
