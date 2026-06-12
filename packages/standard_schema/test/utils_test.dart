@@ -89,6 +89,20 @@ void main() {
       );
     });
 
+    test('accepts iterable issues', () {
+      Iterable<StandardIssue> issues() sync* {
+        yield StandardIssue(message: 'first');
+      }
+
+      final error = StandardSchemaError(issues());
+
+      expect(error.issues.single.message, 'first');
+      expect(
+        () => error.issues.add(StandardIssue(message: 'second')),
+        throwsUnsupportedError,
+      );
+    });
+
     test('throws when constructed with no issues', () {
       expect(() => StandardSchemaError(const []), throwsArgumentError);
     });

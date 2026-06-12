@@ -136,7 +136,7 @@ final class StandardSuccess<Output> extends StandardResult<Output> {
 
 /// A failed validation result carrying one or more [issues].
 final class StandardFailure<Output> extends StandardResult<Output> {
-  StandardFailure(List<StandardIssue> issues)
+  StandardFailure(Iterable<StandardIssue> issues)
     : issues = List.unmodifiable(issues);
 
   /// The issues describing why validation failed.
@@ -145,7 +145,7 @@ final class StandardFailure<Output> extends StandardResult<Output> {
 
 /// A single validation issue.
 final class StandardIssue {
-  StandardIssue({required this.message, List<Object> path = const []})
+  StandardIssue({required this.message, Iterable<Object> path = const []})
     : path = List.unmodifiable(path);
 
   /// The error message of the issue.
@@ -154,8 +154,8 @@ final class StandardIssue {
   /// The path to the offending value, if any.
   ///
   /// Each entry is either a raw property key (for example a [String] object key
-  /// or [num] index) or a [StandardPathSegment] object with a [key]. Empty for a
-  /// root-level issue.
+  /// or [num] index) or a [StandardPathSegment] object with a
+  /// [StandardPathSegment.key]. Empty for a root-level issue.
   final List<Object> path;
 }
 

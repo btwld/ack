@@ -216,6 +216,20 @@ void main() {
       );
     });
 
+    test('accepts iterable validation failure issues', () {
+      Iterable<StandardIssue> issues() sync* {
+        yield StandardIssue(message: 'first');
+      }
+
+      final failure = StandardFailure<int>(issues());
+
+      expect(failure.issues.single.message, 'first');
+      expect(
+        () => failure.issues.add(StandardIssue(message: 'second')),
+        throwsUnsupportedError,
+      );
+    });
+
     test('stores issue paths as unmodifiable snapshots', () {
       final path = <Object>['user'];
       final issue = StandardIssue(message: 'Required', path: path);
@@ -223,6 +237,18 @@ void main() {
       path.add('email');
 
       expect(issue.path, ['user']);
+      expect(() => issue.path.add('name'), throwsUnsupportedError);
+    });
+
+    test('accepts iterable issue paths', () {
+      Iterable<Object> path() sync* {
+        yield 'user';
+        yield 'email';
+      }
+
+      final issue = StandardIssue(message: 'Required', path: path());
+
+      expect(issue.path, ['user', 'email']);
       expect(() => issue.path.add('name'), throwsUnsupportedError);
     });
 

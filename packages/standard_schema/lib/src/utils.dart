@@ -27,11 +27,18 @@ String? getDotPath(StandardIssue issue) {
 class StandardSchemaError implements Exception {
   /// Wraps [issues]. Throws [ArgumentError] when [issues] is empty: a failure
   /// always carries at least one issue, and [message] is taken from the first.
-  StandardSchemaError(List<StandardIssue> issues)
-    : message = issues.isEmpty
-          ? throw ArgumentError.value(issues, 'issues', 'must not be empty')
-          : issues.first.message,
-      issues = List.unmodifiable(issues);
+  StandardSchemaError(Iterable<StandardIssue> issues)
+    : this._(_snapshotIssues(issues));
+
+  StandardSchemaError._(this.issues) : message = issues.first.message;
+
+  static List<StandardIssue> _snapshotIssues(Iterable<StandardIssue> issues) {
+    final issueList = List<StandardIssue>.unmodifiable(issues);
+    if (issueList.isEmpty) {
+      throw ArgumentError.value(issues, 'issues', 'must not be empty');
+    }
+    return issueList;
+  }
 
   /// The issues describing why validation failed. Never empty.
   final List<StandardIssue> issues;
