@@ -92,7 +92,7 @@ final class _SchemaModelBuilder {
           wrapped = wrapped.withWarnings([
             ...wrapped.warnings,
             AckSchemaModelWarning(
-              code: 'default_not_export_safe',
+              code: AckSchemaModelWarning.defaultNotExportSafe,
               message:
                   'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
             ),
@@ -225,7 +225,7 @@ final class _SchemaModelBuilder {
       description: schema.description,
       warnings: const [
         AckSchemaModelWarning(
-          code: 'ack_instance_json_boundary',
+          code: AckSchemaModelWarning.instanceJsonBoundary,
           message:
               'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
         ),
@@ -250,7 +250,7 @@ final class _SchemaModelBuilder {
       description: description,
       warnings: const [
         AckSchemaModelWarning(
-          code: 'ack_any_json_boundary',
+          code: AckSchemaModelWarning.anyJsonBoundary,
           message:
               'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
         ),
@@ -326,7 +326,7 @@ final class _SchemaModelBuilder {
     return model.withWarnings([
       ...model.warnings,
       AckSchemaModelWarning(
-        code: 'lazy_runtime_checks_not_export_safe',
+        code: AckSchemaModelWarning.lazyRuntimeChecksNotExportSafe,
         message:
             'Ack.lazy constraints and refinements were omitted because JSON Schema refs cannot safely carry runtime-only validation checks.',
         context: {
@@ -374,7 +374,7 @@ AckSchemaModel _applyDateTimeConstraint(
   return model.withWarnings([
     ...model.warnings,
     AckSchemaModelWarning(
-      code: 'datetime_constraint_not_draft7',
+      code: AckSchemaModelWarning.datetimeConstraintNotDraft7,
       message:
           'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',
       context: {

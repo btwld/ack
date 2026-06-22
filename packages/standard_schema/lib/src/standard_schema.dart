@@ -74,7 +74,7 @@ class StandardTypedProps<Input, Output> {
 
   /// The version of the standard. Always `1` for this spec revision (Dart
   /// cannot pin the literal type the way TypeScript's `version: 1` does).
-  final int version = 1;
+  int get version => 1;
 }
 
 /// The properties of a [StandardSchema].

@@ -54,6 +54,54 @@ void main() {
       expect(failure.issues.single.message, contains('Minimum 3'));
     });
 
+    test('fans out every failing constraint into its own issue', () async {
+      final schema = Ack.string().minLength(5).matches(r'^\d+$');
+
+      final result = await Future.value(schema.standard.validate('ab'));
+
+      final failure = result as StandardFailure<String?>;
+      expect(failure.issues, hasLength(2));
+      expect(failure.issues.map((i) => i.path), everyElement(isEmpty));
+      expect(
+        failure.issues.map((i) => i.message),
+        containsAll([contains('Minimum 5'), contains('match')]),
+      );
+    });
+
+    test('fans out sibling object field failures into distinct paths', () async {
+      final schema = Ack.object({'a': Ack.string(), 'b': Ack.integer()});
+
+      final result = await Future.value(
+        schema.standard.validate({'a': 1, 'b': 'x'}),
+      );
+
+      final failure = result as StandardFailure<JsonMap?>;
+      expect(failure.issues, hasLength(2));
+      expect(
+        failure.issues.map((i) => i.path),
+        containsAll([
+          ['a'],
+          ['b'],
+        ]),
+      );
+    });
+
+    test('fans out sibling list item failures into indexed paths', () async {
+      final schema = Ack.list(Ack.string());
+
+      final result = await Future.value(schema.standard.validate([1, 'ok', 2]));
+
+      final failure = result as StandardFailure<List<String>?>;
+      expect(failure.issues, hasLength(2));
+      expect(
+        failure.issues.map((i) => i.path),
+        containsAll([
+          [0],
+          [2],
+        ]),
+      );
+    });
+
     test('converts Draft-7 input JSON Schema through AckSchemaModel', () {
       final schema = Ack.object({
         'name': Ack.string(),
@@ -65,6 +113,18 @@ void main() {
           const StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07),
         ),
         schema.toJsonSchema(),
+      );
+    });
+
+    test('aliases input on the output side for non-codec transforms', () {
+      // EnumSchema is String->enum (Boundary != Runtime) but not a codec, so
+      // its output JSON Schema intentionally reuses the boundary schema.
+      final schema = Ack.enumValues(_Role.values);
+      const options = StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07);
+
+      expect(
+        schema.standard.jsonSchema.output(options),
+        schema.standard.jsonSchema.input(options),
       );
     });
 
