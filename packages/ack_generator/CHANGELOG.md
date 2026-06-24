@@ -1,4 +1,4 @@
-## 1.0.0-beta.12-wip
+## 1.0.0-beta.12
 
 ### Breaking
 

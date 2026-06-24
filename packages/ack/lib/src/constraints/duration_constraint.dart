@@ -9,7 +9,7 @@ enum DurationComparisonType { min, max }
 /// inclusive range checking (on or after for min, on or before for max, in
 /// milliseconds).
 ///
-/// Used internally by [Ack.duration()] schemas when applying [.min()] or [.max()]
+/// Used internally by [Ack.duration] schemas when applying `min()` or `max()`
 /// constraints.
 class DurationConstraint extends Constraint<Duration>
     with Validator<Duration>, JsonSchemaSpec<Duration> {

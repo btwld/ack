@@ -130,7 +130,7 @@ extension NumberSchemaExtensions on NumberSchema {
   /// Adds a constraint that the number must be finite.
   ///
   /// Numbers are finite by default; this method is kept for API symmetry with
-  /// [DoubleSchema.finite].
+  /// [DoubleSchemaExtensions.finite].
   NumberSchema finite() {
     return withConstraint(NumberFiniteConstraint<num>());
   }

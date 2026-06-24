@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
       
       - name: Install docs.page CLI
         run: npm install -g @docs.page/cli
