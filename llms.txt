@@ -1,6 +1,6 @@
 # Ack
 
-> A schema validation library for Dart and Flutter with a fluent runtime API and `@AckType()`-driven extension-type generation. Version 1.0.0-beta.12-wip.
+> A schema validation library for Dart and Flutter with a fluent runtime API and `@AckType()`-driven extension-type generation. Version 1.0.0-beta.12.
 
 Ack validates external data with hand-written schemas built using the `Ack`
 factory. When you want typed wrappers over validated values, annotate top-level
