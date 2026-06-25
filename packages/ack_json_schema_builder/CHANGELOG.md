@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.0-beta.12
 
 ### Changed
 
@@ -6,7 +6,7 @@
   Draft-7 JSON Schema renderer.
 * Preserve model defaults, const values, extension keywords, transformed
   metadata, and composition.
-* Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
+* Require `ack` `^1.0.0-beta.12` for the sealed `AckSchemaModel`
   adapter boundary.
 
 ### Removed

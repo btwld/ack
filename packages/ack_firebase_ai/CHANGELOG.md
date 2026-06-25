@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.0-beta.12
 
 ### Added
 - Added `toFirebaseAiResponseJsonSchema()` for Firebase AI's
@@ -16,7 +16,7 @@
 - Target Firebase AI `^3.12.1` and models that support JSON Schema
   structured output.
 - Default Firebase AI examples and live tests to `gemini-3.5-flash`.
-- Require `ack` `^1.0.0-beta.12-wip` for the sealed `AckSchemaModel`
+- Require `ack` `^1.0.0-beta.12` for the sealed `AckSchemaModel`
   adapter boundary.
 - Keep `firebase_ai` and Flutter as explicit package dependencies so package
   tests and workspace orchestration use the Firebase AI SDK runtime.
