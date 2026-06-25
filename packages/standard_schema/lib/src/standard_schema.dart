@@ -2,22 +2,22 @@ import 'dart:async';
 
 /// An entity that exposes Standard Schema family metadata.
 ///
-/// This is the Dart spelling of upstream `StandardTypedV1`: the upstream
-/// `~standard` key is exposed as [standard], and the TypeScript-only phantom
-/// `types` field is omitted because Dart generics carry input/output types.
-abstract interface class StandardTyped<Input, Output> {
+/// The Dart spelling of upstream `StandardTypedV1`: the upstream `~standard`
+/// key is exposed as [standard], and the TypeScript-only phantom `types` field
+/// is omitted because Dart generics carry input/output types.
+abstract interface class StandardTypedV1<Input, Output> {
   /// The standard typed properties.
-  StandardTypedProps<Input, Output> get standard;
+  StandardTypedPropsV1<Input, Output> get standard;
 }
 
 /// A schema that validates unknown values.
 ///
 /// This is the Dart spelling of upstream `StandardSchemaV1`.
-abstract interface class StandardSchema<Input, Output>
-    implements StandardTyped<Input, Output> {
+abstract interface class StandardSchemaV1<Input, Output>
+    implements StandardTypedV1<Input, Output> {
   /// The standard schema properties.
   @override
-  StandardSchemaProps<Input, Output> get standard;
+  StandardSchemaPropsV1<Input, Output> get standard;
 }
 
 /// An entity that can convert its input/output sides to JSON Schema.
@@ -25,11 +25,11 @@ abstract interface class StandardSchema<Input, Output>
 /// This is the Dart spelling of upstream `StandardJSONSchemaV1`. It is
 /// intentionally separate from [StandardSchema]; an object may implement one
 /// or both traits.
-abstract interface class StandardJsonSchema<Input, Output>
-    implements StandardTyped<Input, Output> {
+abstract interface class StandardJsonSchemaV1<Input, Output>
+    implements StandardTypedV1<Input, Output> {
   /// The standard JSON Schema properties.
   @override
-  StandardJsonSchemaProps<Input, Output> get standard;
+  StandardJsonSchemaPropsV1<Input, Output> get standard;
 }
 
 /// Dart-only convenience for entities that implement both standard validation
@@ -40,14 +40,27 @@ abstract interface class StandardJsonSchema<Input, Output>
 /// A TypeScript schema implementing both has one `~standard` that structurally
 /// satisfies both Props. This interface models that intersection for Dart,
 /// where one getter cannot return two unrelated types.
-abstract interface class StandardSchemaWithJsonSchema<Input, Output>
+abstract interface class StandardSchemaWithJsonSchemaV1<Input, Output>
     implements
-        StandardSchema<Input, Output>,
-        StandardJsonSchema<Input, Output> {
+        StandardSchemaV1<Input, Output>,
+        StandardJsonSchemaV1<Input, Output> {
   /// The combined standard properties.
   @override
-  StandardSchemaWithJsonSchemaProps<Input, Output> get standard;
+  StandardSchemaWithJsonSchemaPropsV1<Input, Output> get standard;
 }
+
+/// Backward-compatible convenience alias for [StandardTypedV1].
+typedef StandardTyped<Input, Output> = StandardTypedV1<Input, Output>;
+
+/// Backward-compatible convenience alias for [StandardSchemaV1].
+typedef StandardSchema<Input, Output> = StandardSchemaV1<Input, Output>;
+
+/// Backward-compatible convenience alias for [StandardJsonSchemaV1].
+typedef StandardJsonSchema<Input, Output> = StandardJsonSchemaV1<Input, Output>;
+
+/// Backward-compatible convenience alias for [StandardSchemaWithJsonSchemaV1].
+typedef StandardSchemaWithJsonSchema<Input, Output> =
+    StandardSchemaWithJsonSchemaV1<Input, Output>;
 
 /// Validates an unknown value, synchronously or asynchronously.
 ///
@@ -66,8 +79,8 @@ typedef StandardJsonSchemaConvert =
     Map<String, Object?> Function(StandardJsonSchemaOptions options);
 
 /// The properties shared by every standard trait.
-class StandardTypedProps<Input, Output> {
-  const StandardTypedProps({required this.vendor});
+final class StandardTypedPropsV1<Input, Output> {
+  const StandardTypedPropsV1({required this.vendor});
 
   /// The vendor name of the schema library.
   final String vendor;
@@ -78,18 +91,18 @@ class StandardTypedProps<Input, Output> {
 }
 
 /// The properties of a [StandardSchema].
-class StandardSchemaProps<Input, Output>
-    extends StandardTypedProps<Input, Output> {
-  const StandardSchemaProps({required super.vendor, required this.validate});
+final class StandardSchemaPropsV1<Input, Output>
+    extends StandardTypedPropsV1<Input, Output> {
+  const StandardSchemaPropsV1({required super.vendor, required this.validate});
 
   /// Validates an unknown input value.
   final StandardValidate<Output> validate;
 }
 
 /// The properties of a [StandardJsonSchema].
-class StandardJsonSchemaProps<Input, Output>
-    extends StandardTypedProps<Input, Output> {
-  const StandardJsonSchemaProps({
+final class StandardJsonSchemaPropsV1<Input, Output>
+    extends StandardTypedPropsV1<Input, Output> {
+  const StandardJsonSchemaPropsV1({
     required super.vendor,
     required this.jsonSchema,
   });
@@ -99,10 +112,10 @@ class StandardJsonSchemaProps<Input, Output>
 }
 
 /// The properties of a [StandardSchemaWithJsonSchema].
-class StandardSchemaWithJsonSchemaProps<Input, Output>
-    extends StandardSchemaProps<Input, Output>
-    implements StandardJsonSchemaProps<Input, Output> {
-  const StandardSchemaWithJsonSchemaProps({
+final class StandardSchemaWithJsonSchemaPropsV1<Input, Output>
+    extends StandardSchemaPropsV1<Input, Output>
+    implements StandardJsonSchemaPropsV1<Input, Output> {
+  const StandardSchemaWithJsonSchemaPropsV1({
     required super.vendor,
     required super.validate,
     required this.jsonSchema,
@@ -112,6 +125,22 @@ class StandardSchemaWithJsonSchemaProps<Input, Output>
   @override
   final StandardJsonSchemaConverter jsonSchema;
 }
+
+/// Backward-compatible convenience alias for [StandardTypedPropsV1].
+typedef StandardTypedProps<Input, Output> = StandardTypedPropsV1<Input, Output>;
+
+/// Backward-compatible convenience alias for [StandardSchemaPropsV1].
+typedef StandardSchemaProps<Input, Output> =
+    StandardSchemaPropsV1<Input, Output>;
+
+/// Backward-compatible convenience alias for [StandardJsonSchemaPropsV1].
+typedef StandardJsonSchemaProps<Input, Output> =
+    StandardJsonSchemaPropsV1<Input, Output>;
+
+/// Backward-compatible convenience alias for
+/// [StandardSchemaWithJsonSchemaPropsV1].
+typedef StandardSchemaWithJsonSchemaProps<Input, Output> =
+    StandardSchemaWithJsonSchemaPropsV1<Input, Output>;
 
 /// Optional parameters passed to [StandardValidate].
 final class StandardValidateOptions {

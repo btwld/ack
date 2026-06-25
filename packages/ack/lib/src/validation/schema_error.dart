@@ -159,24 +159,16 @@ List<Object> _standardPath(SchemaContext context) {
   var cursor = context;
 
   while (cursor.parent != null) {
-    final parent = cursor.parent!;
     final segment = cursor.pathSegment;
 
-    if (segment != null && segment.isNotEmpty) {
-      reversed.add(_standardPathKey(parent, segment));
+    if (segment != null && segment != '') {
+      reversed.add(segment);
     }
 
-    cursor = parent;
+    cursor = cursor.parent!;
   }
 
   return reversed.reversed.toList(growable: false);
-}
-
-Object _standardPathKey(SchemaContext parent, String segment) {
-  if (parent.schema is ListSchema) {
-    return int.tryParse(segment) ?? segment;
-  }
-  return segment;
 }
 
 @immutable

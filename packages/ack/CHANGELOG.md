@@ -29,6 +29,11 @@
 * Project discriminated schemas through union-owned discriminator branches.
 * Preserve defaults, const values, extension keywords, transformed metadata,
   composition, and JSON Schema constraints through the schema model boundary.
+* Standard JSON Schema `output()` conversion now describes the value returned
+  by `standard.validate()` and throws when the runtime value is not faithfully
+  JSON-representable.
+* Standard Schema issue paths now preserve list indexes as integer path
+  segments even when lists are wrapped by defaults or codecs.
 
 ### Migration
 

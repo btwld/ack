@@ -9,13 +9,13 @@ Future<StandardResult<T>> _resolve<T>(
   return result;
 }
 
-final class _ValidationOnlySchema implements StandardSchema<String, int> {
+final class _ValidationOnlySchema implements StandardSchemaV1<String, int> {
   const _ValidationOnlySchema({this.async = false});
 
   final bool async;
 
   @override
-  StandardSchemaProps<String, int> get standard => StandardSchemaProps(
+  StandardSchemaPropsV1<String, int> get standard => StandardSchemaPropsV1(
     vendor: 'fake',
     validate: (value, [options]) {
       if (value == 'ok') {
@@ -29,30 +29,32 @@ final class _ValidationOnlySchema implements StandardSchema<String, int> {
   );
 }
 
-final class _JsonSchemaOnlySchema implements StandardJsonSchema<String, int> {
+final class _JsonSchemaOnlySchema implements StandardJsonSchemaV1<String, int> {
   const _JsonSchemaOnlySchema();
 
   @override
-  StandardJsonSchemaProps<String, int> get standard => StandardJsonSchemaProps(
-    vendor: 'fake-json',
-    jsonSchema: StandardJsonSchemaConverter(
-      input: (options) => {
-        r'$schema': options.target,
-        'type': 'string',
-        if (options.libraryOptions case final options?) 'x-options': options,
-      },
-      output: (options) => {'type': 'integer'},
-    ),
-  );
+  StandardJsonSchemaPropsV1<String, int> get standard =>
+      StandardJsonSchemaPropsV1(
+        vendor: 'fake-json',
+        jsonSchema: StandardJsonSchemaConverter(
+          input: (options) => {
+            r'$schema': options.target,
+            'type': 'string',
+            if (options.libraryOptions case final options?)
+              'x-options': options,
+          },
+          output: (options) => {'type': 'integer'},
+        ),
+      );
 }
 
 final class _CombinedSchema
-    implements StandardSchemaWithJsonSchema<String, int> {
+    implements StandardSchemaWithJsonSchemaV1<String, int> {
   const _CombinedSchema();
 
   @override
-  StandardSchemaWithJsonSchemaProps<String, int> get standard =>
-      StandardSchemaWithJsonSchemaProps(
+  StandardSchemaWithJsonSchemaPropsV1<String, int> get standard =>
+      StandardSchemaWithJsonSchemaPropsV1(
         vendor: 'fake-combined',
         validate: (value, [options]) => value == 'ok'
             ? const StandardSuccess(1)
@@ -142,6 +144,37 @@ void main() {
       expect(failure, isA<StandardFailure<int>>());
       expect((failure as StandardFailure<int>).issues.single.message, 'Not ok');
       expect(failure.issues.single.path, ['items', 1]);
+    });
+
+    test('exposes canonical V1 names and unversioned aliases', () {
+      const schema = _ValidationOnlySchema();
+      const jsonSchema = _JsonSchemaOnlySchema();
+      const combined = _CombinedSchema();
+
+      expect(schema, isA<StandardSchemaV1<String, int>>());
+      expect(schema, isA<StandardSchema<String, int>>());
+      expect(schema.standard, isA<StandardSchemaPropsV1<String, int>>());
+      expect(schema.standard, isA<StandardSchemaProps<String, int>>());
+      expect(schema.standard.version, 1);
+
+      expect(jsonSchema, isA<StandardJsonSchemaV1<String, int>>());
+      expect(jsonSchema, isA<StandardJsonSchema<String, int>>());
+      expect(
+        jsonSchema.standard,
+        isA<StandardJsonSchemaPropsV1<String, int>>(),
+      );
+      expect(jsonSchema.standard, isA<StandardJsonSchemaProps<String, int>>());
+
+      expect(combined, isA<StandardSchemaWithJsonSchemaV1<String, int>>());
+      expect(combined, isA<StandardSchemaWithJsonSchema<String, int>>());
+      expect(
+        combined.standard,
+        isA<StandardSchemaWithJsonSchemaPropsV1<String, int>>(),
+      );
+      expect(
+        combined.standard,
+        isA<StandardSchemaWithJsonSchemaProps<String, int>>(),
+      );
     });
 
     test('allows async validation and validate options', () async {

@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:standard_schema/standard_schema.dart';
 import 'package:standard_schema/utils.dart';
 
-final class RequiredStringSchema implements StandardSchema<Object?, String> {
+final class RequiredStringSchema implements StandardSchemaV1<Object?, String> {
   const RequiredStringSchema();
 
   @override
-  StandardSchemaProps<Object?, String> get standard => StandardSchemaProps(
+  StandardSchemaPropsV1<Object?, String> get standard => StandardSchemaPropsV1(
     vendor: 'example',
     validate: (value, [options]) {
       if (value is String && value.isNotEmpty) {
@@ -24,11 +24,11 @@ final class RequiredStringSchema implements StandardSchema<Object?, String> {
   );
 }
 
-final class StringToIntSchema implements StandardSchema<Object?, int> {
+final class StringToIntSchema implements StandardSchemaV1<Object?, int> {
   const StringToIntSchema();
 
   @override
-  StandardSchemaProps<Object?, int> get standard => StandardSchemaProps(
+  StandardSchemaPropsV1<Object?, int> get standard => StandardSchemaPropsV1(
     vendor: 'example',
     validate: (value, [options]) {
       if (value is String) {
@@ -46,12 +46,12 @@ final class StringToIntSchema implements StandardSchema<Object?, int> {
 }
 
 final class RequiredStringWithJsonSchema
-    implements StandardSchemaWithJsonSchema<Object?, String> {
+    implements StandardSchemaWithJsonSchemaV1<Object?, String> {
   const RequiredStringWithJsonSchema();
 
   @override
-  StandardSchemaWithJsonSchemaProps<Object?, String> get standard =>
-      StandardSchemaWithJsonSchemaProps(
+  StandardSchemaWithJsonSchemaPropsV1<Object?, String> get standard =>
+      StandardSchemaWithJsonSchemaPropsV1(
         vendor: 'example',
         validate: const RequiredStringSchema().standard.validate,
         jsonSchema: StandardJsonSchemaConverter(

@@ -9,9 +9,7 @@ import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
-import '../schema_model/ack_schema_model.dart';
 import '../schema_model/ack_schema_model_builder.dart';
-import '../schema_model/ack_schema_model_warning.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
@@ -234,8 +232,8 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
   bool get acceptsNull => isNullable;
 
   @override
-  StandardSchemaWithJsonSchemaProps<Boundary?, Runtime?> get standard =>
-      StandardSchemaWithJsonSchemaProps(
+  StandardSchemaWithJsonSchemaPropsV1<Boundary?, Runtime?> get standard =>
+      StandardSchemaWithJsonSchemaPropsV1(
         vendor: 'ack',
         validate: _validateStandard,
         jsonSchema: StandardJsonSchemaConverter(
@@ -267,27 +265,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
     StandardJsonSchemaOptions options,
   ) {
     _checkStandardJsonSchemaTarget(options);
-
-    if (this case CodecSchema(outputSchema: final outputSchema)) {
-      final model =
-          (outputSchema as AckSchema<Object, Runtime>).toSchemaModel();
-      if (_hasRuntimeOnlyJsonBoundary(model)) {
-        throw UnsupportedError(
-          'Ack cannot represent this codec output as JSON Schema.',
-        );
-      }
-      return model.toJsonSchema();
-    }
-
-    // [CodecSchema] is the only Ack schema that carries a distinct output
-    // schema, so it is the only case handled above. Every other schema — even
-    // those where `Boundary != Runtime` (e.g. [EnumSchema] String→enum,
-    // [DiscriminatedObjectSchema] JsonMap→model) — reuses the boundary schema
-    // here: their runtime value projects back onto the same JSON wire shape
-    // (an enum encodes to its `.name` String), so the input/boundary schema IS
-    // the faithful output projection. Do not route these through the codec
-    // branch above; they have no separate output schema and would wrongly throw.
-    return toJsonSchema();
+    return toStandardOutputSchemaModel().toJsonSchema();
   }
 
   static void _checkStandardJsonSchemaTarget(
@@ -298,29 +276,6 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
       'Ack only supports Standard JSON Schema target '
       '${JsonSchemaTarget.draft07}; got ${options.target}.',
     );
-  }
-
-  static bool _hasRuntimeOnlyJsonBoundary(AckSchemaModel model) {
-    if (model.warnings.any(
-      (warning) => warning.code == AckSchemaModelWarning.instanceJsonBoundary,
-    )) {
-      return true;
-    }
-
-    return switch (model) {
-      AckArraySchemaModel(:final items) =>
-        items != null && _hasRuntimeOnlyJsonBoundary(items),
-      AckObjectSchemaModel(:final properties, :final additionalProperties) =>
-        (properties?.values.any(_hasRuntimeOnlyJsonBoundary) ?? false) ||
-            (additionalProperties is AckAdditionalPropertiesSchema &&
-                _hasRuntimeOnlyJsonBoundary(additionalProperties.schema)),
-      AckAnyOfSchemaModel(:final schemas) ||
-      AckOneOfSchemaModel(:final schemas) ||
-      AckAllOfSchemaModel(
-        :final schemas,
-      ) => schemas.any(_hasRuntimeOnlyJsonBoundary),
-      _ => false,
-    };
   }
 
   /// The schema type category for this schema.

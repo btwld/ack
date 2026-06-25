@@ -5,9 +5,10 @@ Standard Schema contracts for Dart validators and converters.
 `standard_schema` is a Dart port of the contract family described by
 [standardschema.dev](https://standardschema.dev). It ports the two official
 interfaces — `StandardSchemaV1` and `StandardJSONSchemaV1` — as
-`StandardSchema` and `StandardJsonSchema`, plus a Dart-only combined convenience
-(`StandardSchemaWithJsonSchema`) for implementers that satisfy both with one
-`standard` getter.
+`StandardSchemaV1` and `StandardJsonSchemaV1`, plus a Dart-only combined
+convenience (`StandardSchemaWithJsonSchemaV1`) for implementers that satisfy
+both with one `standard` getter. Unversioned aliases are kept for convenience,
+but public compatibility checks should prefer the V1 names.
 
 Libraries implement these small surfaces and consumers call them without
 depending on a vendor-specific schema tree. The package does not define a JSON
@@ -20,11 +21,11 @@ In Dart, compatibility is nominal: a value is a Standard Schema when it
 implements the shared interface from this package.
 
 ```dart
-if (schema is StandardSchema<Object?, Object?>) {
+if (schema is StandardSchemaV1<Object?, Object?>) {
   final result = await Future.value(schema.standard.validate(value));
 }
 
-if (schema is StandardJsonSchema<Object?, Object?>) {
+if (schema is StandardJsonSchemaV1<Object?, Object?>) {
   final json = schema.standard.jsonSchema.input(
     const StandardJsonSchemaOptions(target: JsonSchemaTarget.draft07),
   );
@@ -53,11 +54,11 @@ idioms:
 ```dart
 import 'package:standard_schema/standard_schema.dart';
 
-final class RequiredStringSchema implements StandardSchema<Object?, String> {
+final class RequiredStringSchema implements StandardSchemaV1<Object?, String> {
   const RequiredStringSchema();
 
   @override
-  StandardSchemaProps<Object?, String> get standard => StandardSchemaProps(
+  StandardSchemaPropsV1<Object?, String> get standard => StandardSchemaPropsV1(
     vendor: 'example',
     validate: (value, [options]) {
       if (value is String && value.isNotEmpty) {
@@ -78,12 +79,12 @@ final class RequiredStringSchema implements StandardSchema<Object?, String> {
 import 'package:standard_schema/standard_schema.dart';
 
 final class RequiredStringJsonSchema
-    implements StandardJsonSchema<Object?, String> {
+    implements StandardJsonSchemaV1<Object?, String> {
   const RequiredStringJsonSchema();
 
   @override
-  StandardJsonSchemaProps<Object?, String> get standard =>
-      StandardJsonSchemaProps(
+  StandardJsonSchemaPropsV1<Object?, String> get standard =>
+      StandardJsonSchemaPropsV1(
         vendor: 'example',
         jsonSchema: StandardJsonSchemaConverter(
           input: (options) {
@@ -106,7 +107,7 @@ package only defines the converter contract.
 
 ## Implement both traits
 
-`StandardSchemaWithJsonSchema` is a Dart-only convenience — not a separate
+`StandardSchemaWithJsonSchemaV1` is a Dart-only convenience — not a separate
 upstream interface. It models the structural intersection of the two official
 `~standard` Props when one getter must satisfy both traits.
 
@@ -114,12 +115,12 @@ upstream interface. It models the structural intersection of the two official
 import 'package:standard_schema/standard_schema.dart';
 
 final class RequiredStringSchemaWithJson
-    implements StandardSchemaWithJsonSchema<Object?, String> {
+    implements StandardSchemaWithJsonSchemaV1<Object?, String> {
   const RequiredStringSchemaWithJson();
 
   @override
-  StandardSchemaWithJsonSchemaProps<Object?, String> get standard =>
-      StandardSchemaWithJsonSchemaProps(
+  StandardSchemaWithJsonSchemaPropsV1<Object?, String> get standard =>
+      StandardSchemaWithJsonSchemaPropsV1(
         vendor: 'example',
         validate: (value, [options]) {
           if (value is String && value.isNotEmpty) {
