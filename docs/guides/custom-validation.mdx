@@ -6,13 +6,11 @@ While Ack provides many [built-in validation rules](../core-concepts/validation.
 
 ## Prerequisites
 
-Before creating custom validation, you should understand:
-
 - **[Validation Rules](/core-concepts/validation)**: Built-in constraints and how they work
 - **[Schema Types](/core-concepts/schemas)**: Different schema types and their behavior
 - **[Error Handling](/core-concepts/error-handling)**: How validation errors are structured
 
-## Creating a Value Constraint
+## Creating a value constraint
 
 To add reusable validation that only depends on the field value, implement a `Constraint<T>` that mixes in `Validator<T>`.
 
@@ -39,7 +37,7 @@ print(priceSchema.safeParse(10.5).isOk); // true
 print(priceSchema.safeParse(-5).isFail); // true
 ```
 
-## Cross-Field Rules with `.refine()`
+## Cross-field rules with `.refine()`
 
 When validation depends on multiple fields, use `.refine()` on the parent object schema.
 
@@ -59,7 +57,7 @@ final result = signUpSchema.safeParse({
 print(result.isFail); // true
 ```
 
-## Overriding Error Messages
+## Overriding error messages
 
 The optional `message` parameter on `.constrain()` lets you customize the failure message.
 
@@ -67,10 +65,13 @@ The optional `message` parameter on `.constrain()` lets you customize the failur
 final schema = Ack.double()
     .constrain(IsPositiveConstraint(), message: 'Price must be greater than zero.');
 
-print(schema.safeParse(-10).getError().toString()); // Price must be greater than zero.
+final result = schema.safeParse(-10);
+if (result.isFail) {
+  print(result.getError().message); // Price must be greater than zero.
+}
 ```
 
-## Organizing Reusable Constraints
+## Organizing reusable constraints
 
 Place frequently used constraints in utility files so they can be shared across schemas.
 
@@ -92,11 +93,17 @@ final userSchema = Ack.object({
 });
 ```
 
-## When to Use Custom Logic
+## When to use custom logic
 
-- **Complex Business Rules:** Domain-specific checks that built-ins don’t cover.
-- **Cross-Field Relationships:** e.g. comparing password and confirmation fields.
-- **Reusable Patterns:** Common rules you apply across multiple schemas.
-- **External Service Checks:** Validating against APIs or databases (beware of performance/latency).
+- **Complex business rules:** Domain-specific checks that built-ins don’t cover.
+- **Cross-field relationships:** Comparing password and confirmation fields, for example.
+- **Reusable patterns:** Common rules applied across multiple schemas.
+- **External service checks:** Validating against APIs or databases (beware of latency).
 
-For simple cases, chaining built-in constraints is often enough. Reach for custom constraints/refinements when you need extra flexibility.
+Chaining built-in constraints is often enough for simple cases. Use custom constraints or refinements when you need extra flexibility.
+
+## Next steps
+
+- [Common Recipes](./common-recipes.mdx) — custom constraints in real-world schemas
+- [Flutter Form Validation](./flutter-form-validation.mdx) — surface custom messages in forms
+- [Error Handling](../core-concepts/error-handling.mdx) — read `SchemaConstraintsError`

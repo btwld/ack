@@ -6,19 +6,17 @@ This guide shows how to use Ack for validating forms in Flutter applications.
 
 ## Prerequisites
 
-Before following this guide, you should be familiar with:
-
 - **Flutter basics**: Creating widgets, managing state, and using forms
 - **Ack fundamentals**: Creating schemas and validation (see [Quickstart Tutorial](/getting-started/quickstart-tutorial))
 - **Validation rules**: Built-in constraints (see [Validation Rules](/core-concepts/validation))
 
-You should have Ack installed in your Flutter project:
+Install Ack in your Flutter project:
 
 ```bash
 flutter pub add ack
 ```
 
-## Basic Form Validation with `TextFormField`
+## Basic form validation with `TextFormField`
 
 Ack works with Flutter form APIs by running `safeParse` inside
 `TextFormField.validator` and returning a `String?` error message
@@ -148,17 +146,11 @@ class _SignUpFormState extends State<SignUpForm> {
 }
 ```
 
-**Key Points:**
+Key steps: define an `AckSchema` per field; in `TextFormField.validator`, call `schema.safeParse(value)` and return `result.getError().toString()` on failure; trigger full-form validation via `_formKey.currentState!.validate()`; set `autovalidateMode: AutovalidateMode.onUserInteraction` for real-time feedback. Pass `message:` inside the schema definition for [custom error messages](../core-concepts/error-handling.mdx#custom-error-messages).
 
-1.  **Define Schemas:** Create `AckSchema` instances for each form field using rules from [Validation Rules](../core-concepts/validation.mdx).
-2.  **`TextFormField.validator`:** Inside the `validator` function, call `schema.safeParse(value)`. If `result.isFail`, return `result.getError().message` to display the error (see [Error Handling](../core-concepts/error-handling.mdx)).
-3.  **`GlobalKey<FormState>`:** Use a key to manage the form and trigger validation on submission via `_formKey.currentState!.validate()`.
-4.  **`AutovalidateMode`:** Set `autovalidateMode` (e.g., `AutovalidateMode.onUserInteraction`) on `TextFormField` for real-time feedback as the user types or interacts.
-5.  **Custom Error Messages:** Provide custom error messages directly within the schema definition using the `message:` parameter (see [Error Handling](../core-concepts/error-handling.mdx#custom-error-messages)).
+## Real-time validation with `TextField`
 
-## Real-time Validation with `TextField`
-
-If you are not using a `Form` widget or prefer manual state management for errors, you can listen to controller changes and update the error state directly.
+Without a `Form` widget, listen to controller changes and update the error state directly.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -230,17 +222,11 @@ class _RealtimeValidationFieldState extends State<RealtimeValidationField> {
 }
 ```
 
-**Key Points:**
+Key steps: hold a state variable for the error message; add a listener to `TextEditingController` in `initState`; call `schema.safeParse()` inside the listener and `setState` with the result; remove the listener in `dispose`.
 
-1.  **State Variable:** Maintain a state variable (e.g., `_emailErrorText`) to hold the current error message for the field.
-2.  **Controller Listener:** Add a listener to the `TextEditingController` in `initState`.
-3.  **Validation Logic:** Inside the listener, call `schema.safeParse()` with the controller's text.
-4.  **`setState`:** Call `setState` to update the error state variable based on the validation result. This triggers a UI rebuild to show/hide the error.
-5.  **Dispose:** Remember to remove the listener in `dispose`.
+## Validating entire forms on submission
 
-## Validating Entire Models/Forms on Submission
-
-Instead of validating field by field, you can validate a complete data structure (like a map representing the whole form) on submission using [`Ack.object`](../core-concepts/schemas.mdx#object).
+Instead of validating field by field, validate the complete data structure on submission using [`Ack.object`](../core-concepts/schemas.mdx#object).
 
 ```dart
 // Define a schema for the whole form data
@@ -279,10 +265,4 @@ void _submitForm() {
 }
 ```
 
-**Key Points:**
-
-1.  **Object Schema:** Create an [`Ack.object`](../core-concepts/schemas.mdx#object) schema representing the entire form's data structure.
-2.  **Reuse Schemas:** Reuse the individual field schemas within the object schema.
-3.  **Cross-Field Validation:** Use object-level [`.refine()`](./custom-validation.mdx#cross-field-rules-with-refine) for rules that depend on multiple fields.
-4.  **Centralized Validation:** Validate the complete `formData` map against the `_formSchema` on submission.
-5.  **Error Handling:** If validation fails, you might need logic to map the [`error.path`](../core-concepts/error-handling.mdx#understanding-schemaerror) back to the specific UI field(s) causing the error, especially if not using `TextFormField`'s built-in validation display.
+Key steps: build an [`Ack.object`](../core-concepts/schemas.mdx#object) schema that reuses your field schemas; add [`.refine()`](./custom-validation.mdx#cross-field-rules-with-refine) for cross-field rules; call `safeParse` on the full form map at submission. On failure, use [`error.path`](../core-concepts/error-handling.mdx#understanding-schemaerror) to map errors back to specific fields when not using `TextFormField`'s built-in display.

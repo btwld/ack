@@ -2,15 +2,14 @@
 title: JSON Serialization
 ---
 
-Ack schemas validate JSON data and let you work with validated data directly,
-wrap it with generated types, or hand it off to your own model layer.
+Ack schemas validate JSON data and let you work with the validated data directly, wrap it with generated types, or pass it to your own model layer.
 
-## Validating JSON Data
+## Validating JSON data
 
-The most common use case is validating incoming JSON data (e.g., from an API response). This typically involves two steps:
+Validating incoming JSON data involves two steps:
 
 1.  **Decode JSON:** Use `dart:convert` to parse the JSON string into a Dart object (usually `Map<String, dynamic>` or `List`).
-2.  **Validate:** Pass the decoded Dart object to your [Ack schema](./schemas.mdx)'s `safeParse()` method.
+2.  **Validate:** Pass the decoded object to your [Ack schema](./schemas.mdx)'s `safeParse()` method.
 
 ```dart
 import 'dart:convert';
@@ -38,18 +37,15 @@ void processApiResponse(String jsonString) {
   final result = userSchema.safeParse(jsonData);
 
   if (result.isOk) {
-    // Data structure and types are valid according to the schema.
+    // Structure and types are valid.
     final validDataMap = result.getOrThrow();
     print('Valid JSON received: $validDataMap');
-    
-    // Optionally hand the validated map to your own model layer
-    // or use an AckType-generated wrapper (see next section).
 
+    // Pass the validated map to your own model layer,
+    // or use an AckType-generated wrapper (see next section).
   } else {
-    // Handle validation errors (see Error Handling guide)
+    // Handle validation errors (see the Error Handling guide).
     print('Invalid JSON data: ${result.getError()}');
-    // Log the full error for debugging if needed:
-    // print('Error details: ${result.getError()}');
   }
 }
 
@@ -62,12 +58,9 @@ processApiResponse('not valid json'); // Decoding error
 
 *Learn more about [Error Handling](./error-handling.mdx).*
 
-## Working with Validated Data
+## Working with validated data
 
-After successful validation, `result.getOrThrow()` returns a
-`Map<String, Object?>` whose structure and types match your schema. You can
-work with this validated data directly, pass it into your own model class, or
-use a generated typed wrapper:
+After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with it directly, pass it into a model class, or use a generated typed wrapper:
 
 ```dart
 final result = userSchema.safeParse(jsonData);
@@ -88,58 +81,25 @@ if (result.isOk) {
 }
 ```
 
-## Generating Extension Types with `@AckType()`
+## Parsing JSON into typed wrappers
 
-When you write schemas manually, annotate the variable or getter with
-`@AckType()` to generate a typed wrapper around the validated data.
-
-```dart
-// user_schema.dart
-import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'user_schema.g.dart';
-
-@AckType()
-final userSchema = Ack.object({
-  'name': Ack.string(),
-  'email': Ack.string().email().nullable(),
-});
-```
-
-Running `dart run build_runner build` generates in `user_schema.g.dart`:
-
-- **The original schema constant** stays in your source file (`user_schema.dart`)
-- **Extension type** `UserType` with `parse`/`safeParse` and typed getters
-
-The type name is derived from the variable name by removing "Schema" suffix and adding "Type" (e.g., `userSchema` → `UserType`).
+Once a schema is annotated with `@AckType()` (see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup), parse JSON straight into typed getters — no manual casting:
 
 ```dart
 import 'dart:convert';
 
-final jsonString = '{"name": "Alice", "email": "alice@example.com"}';
-final jsonData = jsonDecode(jsonString);
-
+final jsonData = jsonDecode('{"name": "Alice", "email": "alice@example.com"}');
 final result = UserType.safeParse(jsonData);
 
 if (result.isOk) {
-  final user = result.getOrThrow();
-  print(user.name);   // Type-safe String access
-  print(user.email);  // Type-safe String? access
+  final user = result.getOrThrow()!;
+  print(user.name);  // typed String
+  print(user.email); // typed String?
 }
 ```
 
-**Note**: Nested schemas annotated with `@AckType()` generate their own
-extension types. Object/list references must be statically resolvable for typed
-generation; unsupported or unresolved references fail generation instead of
-falling back to `Map<String, Object?>`. For current `Ack.discriminated(...)`
-limits, see
-[Type-safe Schemas](./typesafe-schemas.mdx#discriminated-schemas).
+## Key considerations
 
-## Key Considerations
-
--   **`dart:convert`:** Use the standard `dart:convert` library (`jsonEncode`, `jsonDecode`) for JSON string conversion. Ack handles validation only.
--   **Type Safety:** While `jsonDecode` produces `dynamic`, successful validation gives you confidence in the structure and types of the resulting `Map<String, Object?>`.
--   **App-Level Model Conversion:** After validation, how you turn the validated
-    Map into an app-specific model is up to you. Ack keeps validation and
-    wrapper generation separate from your own model layer.
+- **`dart:convert`:** Use `jsonEncode`/`jsonDecode` for JSON string conversion. Ack handles validation only.
+- **Type safety:** `jsonDecode` produces `dynamic`, but successful validation guarantees the structure and types of the resulting `Map<String, Object?>`.
+- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Ack keeps validation and wrapper generation separate from your model layer.

@@ -2,19 +2,13 @@
 title: Configuration
 ---
 
-Ack allows for some configuration settings, although most behavior is controlled directly through the schema definitions when they are created.
+Ack has no global configuration object. All behavior is configured at the schema level through the fluent API.
 
-## Global Settings (Less Common)
+## Schema-level configuration
 
-In general, Ack prefers configuration per schema definition rather than global settings. However, if needed, you might manage global aspects like custom format registries or shared validation logic through your own application structure (e.g., dependency injection or service patterns).
+Define behavior when you create your schemas.
 
-*Currently, Ack does not expose a dedicated global configuration object. Configuration is primarily done at the schema level.*
-
-## Schema-Level Configuration
-
-Most "configuration" happens when you define your schemas using the fluent API provided by Ack.
-
-### Required Fields
+### Required fields
 
 Fields in [`Ack.object`](./schemas.mdx#object) are required by default. Mark a field as optional with `.optional()`.
 
@@ -26,42 +20,33 @@ Ack.object({
 }); // id and name are required by default
 ```
 
-### Additional Properties
+### Additional properties
 
-Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object).
+Control how extra fields are handled with the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object).
 
 ```dart
-// Disallow any extra properties (default behavior)
-Ack.object({
-  'id': Ack.integer()
-}, additionalProperties: false);
-// or simply:
-Ack.object({
-  'id': Ack.integer()
-});
+// Reject extra properties (default)
+Ack.object({'id': Ack.integer()});
+// or explicitly:
+Ack.object({'id': Ack.integer()}, additionalProperties: false);
 
-// Allow any extra properties
-Ack.object({
-  'id': Ack.integer()
-}, additionalProperties: true);
+// Allow extra properties
+Ack.object({'id': Ack.integer()}, additionalProperties: true);
 ```
 
-### Custom Error Messages
+### Custom error messages
 
-Built-in validation rules provide default error messages. For custom error messages, use custom constraints with the `.constrain()` method.
+Built-in constraints provide default messages. To override them, use `.constrain()`.
 See also: [Custom Error Messages in Error Handling](./error-handling.mdx#custom-error-messages).
 
 ```dart
-// Built-in constraints use default messages
 Ack.string().minLength(5); // Default: "Too short, min 5 characters"
-Ack.integer().min(18); // Default: "Must be at least 18"
-
-// For custom messages, use custom constraints (see Custom Validation section below)
+Ack.integer().min(18);     // Default: "Must be at least 18"
 ```
 
-### Custom Validation Logic
+### Custom validation logic
 
-Use `.constrain()` to add reusable validation logic for value-level checks, or `.refine()` for cross-field rules.
+Use `.constrain()` for reusable value-level checks, or `.refine()` for cross-field rules.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -91,13 +76,12 @@ final signUpSchema = Ack.object({
   message: 'Passwords do not match',
 );
 ```
-*See the [Custom Validation Guide](../guides/custom-validation.mdx) for additional patterns.*
+*See the [Custom Validation Guide](../guides/custom-validation.mdx) for more patterns.*
 
-## AckType Generation
+## AckType generation
 
 `ack_generator` works with top-level schemas annotated with `@AckType()`. Write
-the schema directly, then generate an extension type wrapper around its
-validated representation:
+the schema, then generate an extension type wrapper around its validated representation:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -113,15 +97,6 @@ final userSchema = Ack.object({
 }, additionalProperties: true);
 ```
 
-After running `dart run build_runner build`, the generated part adds a typed
-wrapper such as `UserType` with `parse()` / `safeParse()` helpers and typed
-getters for the schema fields.
+After running `dart run build_runner build`, the generated part adds `UserType` with `parse()` / `safeParse()` helpers and typed getters.
 
-*See [TypeSafe Schemas](./typesafe-schemas.mdx) and the generator README for
-setup details and supported schema shapes.*
-
-## Summary
-
-- Ack primarily uses **schema-level configuration** through methods and parameters like `.minLength()`, `.optional()`, `additionalProperties: ...`.
-- **Manual schema definition** is the recommended approach for production applications.
-- There is currently no central **global configuration** object provided by Ack itself.
+*See [TypeSafe Schemas](./typesafe-schemas.mdx) and the generator README for setup details and supported schema shapes.*

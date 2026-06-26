@@ -31,33 +31,53 @@
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "Essentials",
       "pages": [
         { "title": "Schema Types", "href": "/core-concepts/schemas" },
         { "title": "Validation Rules", "href": "/core-concepts/validation" },
-        {
-          "title": "TypeSafe Schemas",
-          "href": "/core-concepts/typesafe-schemas"
-        },
         { "title": "Error Handling", "href": "/core-concepts/error-handling" },
         {
           "title": "JSON Serialization",
           "href": "/core-concepts/json-serialization"
+        }
+      ]
+    },
+    {
+      "group": "How-To Guides",
+      "pages": [
+        {
+          "title": "Flutter Form Validation",
+          "href": "/guides/flutter-form-validation"
+        },
+        { "title": "Common Recipes", "href": "/guides/common-recipes" },
+        { "title": "Custom Validation", "href": "/guides/custom-validation" }
+      ]
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        { "title": "Codecs", "href": "/core-concepts/codecs" },
+        {
+          "title": "TypeSafe Schemas",
+          "href": "/core-concepts/typesafe-schemas"
+        },
+        {
+          "title": "JSON Schema Integration",
+          "href": "/guides/json-schema-integration"
         },
         { "title": "Configuration", "href": "/core-concepts/configuration" }
       ]
     },
     {
-      "group": "Guides",
+      "group": "For Package Authors",
       "pages": [
-        { "title": "Custom Validation", "href": "/guides/custom-validation" },
         {
-          "title": "JSON Schema Integration",
-          "href": "/guides/json-schema-integration"
+          "title": "Schema Converter Quickstart",
+          "href": "/guides/schema-converter-quickstart"
         },
         {
-          "title": "Flutter Form Validation",
-          "href": "/guides/flutter-form-validation"
+          "title": "Creating Schema Converters",
+          "href": "/guides/creating-schema-converter-packages"
         }
       ]
     },

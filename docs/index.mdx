@@ -1,98 +1,66 @@
 ---
 title: Overview
 ---
-Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API. Ack is short for "acknowledgment".
 
-## LLM Context
+External data can't be trusted. APIs change, users mistype, and JSON drifts from what your code expects. Ack is a schema validation library for Dart and Flutter that puts a guardrail at those boundaries: describe the shape you expect once, then check untrusted data against it. You get a clear error when it doesn't match — and your data, validated, when it does.
 
-For AI agents, start with the project index at:
+("Ack" is short for "acknowledgment.")
 
-- [llms.txt](/llms.txt) (redirects to canonical static text)
+```dart
+import 'package:ack/ack.dart';
 
-## Why Use Ack?
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2).maxLength(50),
+  'age': Ack.integer().min(0).max(120),
+  'email': Ack.string().email().nullable(),
+});
 
-- **Simplify Validation**: Easily handle complex data validation logic.
-- **Validate external payloads**: Enforce required fields, type constraints,
-  and schema rules at input/output boundaries.
-- **Single Source of Truth**: Define data structures and rules in one place.
-- **Reduce Boilerplate**: Minimize repetitive validation code.
+final result = userSchema.safeParse({
+  'name': 'Ada',
+  'age': 36,
+  'email': 'ada@example.com',
+});
 
-## What Ack Does
+if (result.isOk) {
+  print('Welcome, ${result.getOrThrow()!['name']}');
+} else {
+  print(result.getError()); // tells you exactly which field failed, and why
+}
+```
 
-- Validates data against defined schemas
-- Provides detailed error messages for validation failures
-- Generates JSON Schema specifications
-- Works directly with JSON data from APIs
+On success, `getOrThrow()` returns your **validated data** as a `Map<String, Object?>`. Ack checks and shapes the data — opt into [code generation](/core-concepts/typesafe-schemas) when you'd rather have typed getters than map access.
 
-## Quick Start
+## Why Ack?
 
-Add Ack to your project:
+- **Guard your boundaries.** Catch bad API responses, user input, and config before they reach your logic.
+- **Define each shape once.** Reuse one schema for validation, JSON Schema export, and typed models.
+- **Errors you can act on.** Every failure points at the exact field and the reason it failed.
+- **Just Dart.** A fluent API with no required build step — reach for code generation only when you want it.
+
+## What do you want to do?
+
+- **Validate an API response** — [Quickstart Tutorial](/getting-started/quickstart-tutorial), then [JSON Serialization](/core-concepts/json-serialization)
+- **Show field errors in a Flutter form** — [Flutter Form Validation](/guides/flutter-form-validation)
+- **Make a field optional or nullable** — [Optional vs nullable](/core-concepts/schemas#optional-vs-nullable)
+- **Parse dates, URIs, and durations** — [Codecs](/core-concepts/codecs)
+- **Add custom validation logic** — [Custom Validation](/guides/custom-validation)
+- **Generate typed models (no manual casts)** — [TypeSafe Schemas](/core-concepts/typesafe-schemas)
+- **Reuse and compose schemas** — [Common Recipes](/guides/common-recipes)
+
+## Install
 
 ```bash
 dart pub add ack
 ```
 
-### Basic Usage
+New here? The [Quickstart Tutorial](/getting-started/quickstart-tutorial) takes you from install to handling every validation outcome in a few minutes.
 
-```dart
-import 'package:ack/ack.dart';
+## Learn more
 
-// Define the structure and rules for a user object.
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50), // Name must be a string between 2 and 50 chars.
-  'age': Ack.integer().min(0).max(120),            // Age must be an integer between 0 and 120.
-  'email': Ack.string().email().nullable(),        // Email must be a valid format, but can be null.
-}); // All fields are required by default
+- [Schema Types](/core-concepts/schemas) — every schema type and how to compose them
+- [Validation Rules](/core-concepts/validation) — built-in constraints
+- [Error Handling](/core-concepts/error-handling) — read and display structured errors
+- [JSON Serialization](/core-concepts/json-serialization) — validate and encode JSON
+- [API Reference](/api-reference/) — the full surface
 
-// Data to validate.
-final dataToValidate = {
-  'name': 'John',
-  'age': 30,
-  'email': 'john@example.com'
-};
-
-// Perform the validation against the schema.
-final result = userSchema.safeParse(dataToValidate);
-
-// Check the validation outcome.
-if (result.isOk) {
-  // Validation passed, safely access the validated data.
-  final validData = result.getOrThrow();
-  print('Valid data: $validData');
-} else {
-  // Validation failed, access the detailed error.
-  final error = result.getError();
-  print('Validation Error: $error'); // Use error.toString() for full details.
-}
-```
-
-## Core Features
-
-Ack includes these core capabilities for data validation and transformation:
-
-- **[Schema Types](/core-concepts/schemas)**: Define data structures with strings, numbers, booleans, lists, objects, and more
-- **[Validation Rules](/core-concepts/validation)**: Apply constraints like length, range, pattern matching, and custom validators
-- **[Error Handling](/core-concepts/error-handling)**: Get detailed, structured error messages for validation failures
-- **[JSON Serialization](/core-concepts/json-serialization)**: Validate JSON payloads, work with validated data, and add typed wrappers when needed
-- **[Configuration](/core-concepts/configuration)**: Schema-level configuration options
-
-## Next Steps
-
-Ready to dive deeper? Start with the [Quickstart Tutorial](/getting-started/quickstart-tutorial) for a step-by-step guide, or explore specific topics:
-
-- [Schema Types](/core-concepts/schemas) - Learn about all available schema types
-- [Validation Rules](/core-concepts/validation) - Master validation constraints
-- [Error Handling](/core-concepts/error-handling) - Handle validation errors effectively
-- [Flutter Integration](/guides/flutter-form-validation) - Validate Flutter forms
-
-## Advanced Features
-
-Ack supports these advanced patterns for complex validation scenarios:
-
-- **[Nested validation](/core-concepts/schemas#object)**: Validate deeply nested objects and lists
-- **[Custom validation](/guides/custom-validation)**: Add custom logic with `.refine()` and constraints
-- **[Union types](/core-concepts/schemas#union-types)**: Handle polymorphic data with `anyOf()` and discriminated unions
-- **[Data transformation](/core-concepts/schemas#transformations)**: Transform validated data with `.transform()`
-- **[JSON Schema generation](/guides/json-schema-integration)**: Generate JSON Schema specs for API documentation
-
-For detailed examples and usage patterns, see the [Common Recipes guide](/guides/common-recipes).
+*Building with an AI agent? Start at [`/llms.txt`](/llms.txt) for a compact, machine-readable index.*
