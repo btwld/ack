@@ -46,57 +46,8 @@ Ack.integer().min(18);     // Default: "Must be at least 18"
 
 ### Custom validation logic
 
-Use `.constrain()` for reusable value-level checks, or `.refine()` for cross-field rules.
+Use `.constrain()` for reusable value-level checks and `.refine()` for cross-field rules — see [Custom Validation](../guides/custom-validation.mdx).
 
-```dart
-import 'package:ack/ack.dart';
+## Code generation
 
-class IsPositiveConstraint extends Constraint<double> with Validator<double> {
-  IsPositiveConstraint()
-      : super(
-          constraintKey: 'is_positive',
-          description: 'Number must be positive',
-        );
-
-  @override
-  bool isValid(double value) => value > 0;
-
-  @override
-  String buildMessage(double value) => 'Number must be positive';
-}
-
-final priceSchema = Ack.double().constrain(IsPositiveConstraint());
-
-// Cross-field validation (e.g., password confirmation)
-final signUpSchema = Ack.object({
-  'password': Ack.string().minLength(8),
-  'confirmPassword': Ack.string().minLength(8),
-}).refine(
-  (data) => data['password'] == data['confirmPassword'],
-  message: 'Passwords do not match',
-);
-```
-*See the [Custom Validation Guide](../guides/custom-validation.mdx) for more patterns.*
-
-## AckType generation
-
-`ack_generator` works with top-level schemas annotated with `@AckType()`. Write
-the schema, then generate an extension type wrapper around its validated representation:
-
-```dart
-import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'user.g.dart';
-
-@AckType()
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50),
-  'email': Ack.string().email(),
-  'age': Ack.integer().min(18).optional().nullable(),
-}, additionalProperties: true);
-```
-
-After running `dart run build_runner build`, the generated part adds `UserType` with `parse()` / `safeParse()` helpers and typed getters.
-
-*See [TypeSafe Schemas](./typesafe-schemas.mdx) and the generator README for setup details and supported schema shapes.*
+Annotate a top-level schema with `@AckType()` to generate a typed wrapper — see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup and supported shapes.

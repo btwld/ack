@@ -2,6 +2,7 @@
 title: Installing Ack
 ---
 
+Ack is a pure-Dart package with no required build step. Add the core library — and, optionally, the code generator for typed wrappers.
 
 ## Add to your project
 
@@ -64,26 +65,11 @@ Run the generator:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-See the [generator documentation](https://docs.page/btwld/ack) for more `@AckType` examples and supported schema shapes.
+See [TypeSafe Schemas](../core-concepts/typesafe-schemas.mdx) for more `@AckType` examples and supported schema shapes.
 
-## Basic usage
+## Next step
 
-Import Ack in your Dart files:
-
-```dart
-import 'package:ack/ack.dart';
-
-final nameSchema = Ack.string().minLength(3);
-final result = nameSchema.safeParse('John');
-
-if (result.isOk) {
-  print('Valid: ${result.getOrThrow()}');
-} else {
-  print('Invalid: ${result.getError()}');
-}
-```
-
-See the [Quickstart Tutorial](./quickstart-tutorial.mdx) for a complete example.
+Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./quickstart-tutorial.mdx) takes you from your first schema to handling every validation outcome.
 
 ## Requirements
 

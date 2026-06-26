@@ -2,12 +2,7 @@
 title: JSON Schema Integration
 ---
 
-Ack [schemas](../core-concepts/schemas.mdx) can be converted into JSON Schema objects, letting you generate API documentation directly from your validation schemas.
-
-> **Building an adapter package?** Most users only need `toJsonSchema()`. If you
-> convert Ack schemas to another target format, render from
-> `schema.toSchemaModel()` (the canonical `AckSchemaModel`) rather than the JSON
-> Schema map — see [Creating Schema Converters](./creating-schema-converter-packages.md).
+Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can export it as JSON Schema (Draft-7) and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth.
 
 ## Generating JSON schemas
 
@@ -37,6 +32,8 @@ void main() {
   print(jsonEncoder.convert(jsonSchemaMap));
 }
 ```
+
+> **Building an adapter package?** Most users only need `toJsonSchema()` (above). To convert Ack schemas to another target format, render from `schema.toSchemaModel()` (the canonical `AckSchemaModel`) rather than the JSON Schema map — see [Creating Schema Converters](./creating-schema-converter-packages.md).
 
 ## Adapter model
 
