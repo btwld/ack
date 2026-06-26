@@ -1,3 +1,11 @@
+## 1.0.0
+
+### Changed
+
+* Marked top-level `@AckType()` schema generation stable for Ack 1.0.
+* Updated generator documentation around supported schemas, discriminated
+  unions, typed getters, and stable dependency constraints.
+
 ## 1.0.0-beta.12
 
 ### Breaking

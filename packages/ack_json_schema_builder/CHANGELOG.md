@@ -1,3 +1,10 @@
+## 1.0.0
+
+### Changed
+
+* Marked the json_schema_builder adapter stable for Ack 1.0.
+* Updated installation snippets and docs to use stable Ack package constraints.
+
 ## 1.0.0-beta.12
 
 ### Changed

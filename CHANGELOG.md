@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.0.0 - 2026-06-26
+
+Stable 1.0 release for the Ack workspace.
+
+### Highlights
+
+- Finalized the core validation API, codecs, JSON Schema export, Firebase AI
+  adapter, json_schema_builder adapter, and `@AckType()` extension-type
+  generation docs for the stable release.
+- Removed deprecated public helpers and the internal legacy `MapValue` alias so
+  the 1.0 API surface is clean.
+- Reworked the documentation site around task-first guides, validated examples,
+  and concise API reference material.
+
 ## 2026-03-02
 
 ### Changes
@@ -547,4 +561,3 @@ Packages with other changes:
 #### `ack` - `v0.2.0`
 
  - Bump "ack" to 0.2.0 with improved SchemaModel API and enhanced string validation
-

@@ -6,7 +6,8 @@
 
 ## Repository layout
 - `packages/ack`: core runtime validation library.
-- `packages/ack_annotations`: source annotations (`@AckModel`, `@AckType`).
+- `packages/ack_annotations`: source annotation for `@AckType()` schema
+  generation.
 - `packages/ack_generator`: build_runner generator + golden tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.

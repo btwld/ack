@@ -12,7 +12,7 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 - **Validate external payloads**: Guard API and user inputs by validating required fields, types, and constraints at boundaries
 - **Single Source of Truth**: Define data structures and rules in one place
 - **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion
-- **Type Safety**: Generate type-safe schema classes from your Dart models
+- **Type Safety**: Generate typed wrappers for hand-written Ack schemas
 
 ## Quick Start
 
@@ -55,6 +55,6 @@ Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a
 
 ## Related Packages
 
-- [ack_generator](https://pub.dev/packages/ack_generator) — Code generator for creating schema classes from annotated Dart models
+- [ack_generator](https://pub.dev/packages/ack_generator) — Code generator for typed wrappers from `@AckType()` schemas
 - [ack_firebase_ai](https://pub.dev/packages/ack_firebase_ai) — Firebase AI (Gemini) schema converter
 - [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — JSON Schema converter
