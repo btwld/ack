@@ -1,10 +1,6 @@
 ## 1.0.0
 
-### Changed
-
-* Marked the `@AckType()` annotation package stable for Ack 1.0.
-* Updated examples and installation snippets to use stable Ack package
-  constraints.
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
 
 ## 1.0.0-beta.12
 
