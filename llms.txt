@@ -31,6 +31,20 @@ final result = userSchema.safeParse({
 });
 ```
 
+## Codecs
+
+Codecs decode a boundary value (wire shape) into a runtime value and encode it
+back. `parse`/`safeParse` decode; `encode`/`safeEncode` encode.
+
+- Built-in: `Ack.date()` (ISO `YYYY-MM-DD` <-> local-midnight `DateTime`),
+  `Ack.datetime()` (ISO 8601 <-> UTC `DateTime`), `Ack.uri()` (`String` <-> `Uri`),
+  `Ack.duration()` (milliseconds `int` <-> `Duration`), `Ack.enumCodec(values)`
+  (enum-name `String` <-> enum value).
+- Custom: `Ack.codec(input: ..., decode: ..., encode: ...)`, or
+  `schema.codec<R>(decode: ..., encode: ...)` on an existing schema.
+- `schema.transform<R>(fn)` is one-way (parse only); encoding it fails.
+- A codec exports the JSON Schema of its boundary (input) schema.
+
 ## AckType generation
 
 `@AckType()` is supported only on:

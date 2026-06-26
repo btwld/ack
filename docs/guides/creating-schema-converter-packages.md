@@ -330,6 +330,12 @@ class <Target>SchemaConverter {
       AckOneOfSchemaModel() => _convertOneOf(schema),
       AckAllOfSchemaModel() => _convertAllOf(schema),
       AckNullSchemaModel() => _buildNullSchema(),
+      // Lazy/recursive schemas (Ack.lazy) surface as references by name.
+      // Map schema.refName to your target's reference mechanism, or throw if
+      // the target cannot express recursion.
+      AckRefSchemaModel() => throw UnsupportedError(
+        'Reference schemas (Ack.lazy) are not supported by this target.',
+      ),
     };
   }
 
@@ -1181,6 +1187,7 @@ TargetSchema _convert(AckSchemaModel schema) {
     AckOneOfSchemaModel() => _convertOneOf(schema),
     AckAllOfSchemaModel() => _convertAllOf(schema),
     AckNullSchemaModel() => TargetSchema.nullValue(),
+    AckRefSchemaModel() => TargetSchema.ref(schema.refName),
   };
 }
 

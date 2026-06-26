@@ -1,0 +1,111 @@
+---
+title: Codecs
+---
+
+Your API sends a timestamp as an ISO string, but your code wants a `DateTime`. A codec handles that round-trip: it validates the incoming string, decodes it into the Dart type you actually use, and encodes it back when you send data out.
+
+```dart
+final when = Ack.datetime(); // CodecSchema<String, DateTime>
+
+final dt = when.parse('2026-01-01T00:00:00Z'); // decode: String -> DateTime
+final iso = when.encode(dt);                    // encode: DateTime -> String
+```
+
+Ack calls the wire shape the **boundary** (JSON-safe primitives like `String` or `int`) and the Dart value the **runtime** (a `DateTime`, `Uri`, `Duration`, or your own type). Parsing decodes boundary → runtime; encoding goes the other way.
+
+## Transform vs. codec
+
+| Helper | Direction | Returns |
+| --- | --- | --- |
+| `schema.transform<R>(fn)` | one-way (parse only) | `CodecSchema<Boundary, R>` |
+| `schema.codec<R>(decode: ..., encode: ...)` | bidirectional | `CodecSchema<Boundary, R>` |
+
+Use `transform` when you only ever decode. Encoding a transformed schema fails
+with a `SchemaEncodeError` (a one-way transform has no encoder). Use `codec`
+when you need a reversible encode path.
+
+## Built-in codecs
+
+Ack ships codecs for the most common boundary conversions:
+
+| Factory | Boundary ↔ Runtime | Runtime invariant |
+| --- | --- | --- |
+| `Ack.date()` | ISO `YYYY-MM-DD` `String` ↔ `DateTime` | local midnight (no time-of-day) |
+| `Ack.datetime()` | ISO 8601 `String` ↔ `DateTime` | must be UTC |
+| `Ack.uri()` | `String` ↔ `Uri` | absolute URI (scheme + host) |
+| `Ack.duration()` | milliseconds `int` ↔ `Duration` | whole milliseconds |
+| `Ack.enumCodec(values)` | enum-name `String` ↔ enum value | one of `values` |
+
+```dart
+final schema = Ack.object({
+  'startsAt': Ack.datetime(),
+  'website': Ack.uri(),
+  'timeout': Ack.duration(),
+});
+
+final event = schema.parse({
+  'startsAt': '2026-01-01T09:00:00Z',
+  'website': 'https://example.com',
+  'timeout': 5000,
+});
+
+// event['startsAt'] is a DateTime (UTC)
+// event['website']  is a Uri
+// event['timeout']  is a Duration (5 seconds)
+```
+
+Each built-in enforces a runtime invariant on encode. `Ack.datetime()` requires a UTC `DateTime`; convert local values with `.toUtc()` before encoding.
+
+## Custom codecs
+
+Create a codec from any input schema with `Ack.codec(...)`, providing a `decode` function (boundary → runtime) and an `encode` function (runtime → boundary):
+
+```dart
+final csv = Ack.codec<String, String, List<String>>(
+  input: Ack.string(),
+  decode: (s) => s.split(','),
+  encode: (list) => list.join(','),
+);
+
+csv.parse('a,b,c');          // ['a', 'b', 'c']
+csv.encode(['a', 'b', 'c']); // 'a,b,c'
+```
+
+The three type arguments are the boundary type, the input schema's runtime type, and the final runtime type. The optional `output` schema validates the decoded value (defaults to a type check on the runtime type).
+
+Call `.codec<R>(...)` on an existing schema to add a reversible conversion:
+
+```dart
+final trimmed = Ack.string().codec<String>(
+  decode: (s) => s.trim(),
+  encode: (s) => s,
+);
+```
+
+## Encoding back to the boundary
+
+Use `encode` (throws on failure) or `safeEncode` (returns a `SchemaResult`):
+
+```dart
+final result = Ack.datetime().safeEncode(DateTime.utc(2026));
+if (result.isOk) {
+  print(result.getOrThrow()); // 2026-01-01T00:00:00.000Z
+}
+```
+
+Errors surface as typed [`SchemaError`](./error-handling.mdx) values:
+
+- `SchemaTransformError` — a `decode` function threw during parsing.
+- `SchemaEncodeError` — encoding failed (for example, a one-way `transform`, or a
+  runtime invariant violation such as a non-UTC `DateTime` for `Ack.datetime()`).
+
+## Codecs and JSON Schema
+
+A codec exports the JSON Schema of its **boundary** (input) schema — that is the shape that crosses the wire. For example, `Ack.datetime()` exports as `string` with `format: date-time`. The runtime type and decode/encode logic are not part of the exported schema. See [JSON Serialization](./json-serialization.mdx).
+
+## Next steps
+
+- **[Schema Types](./schemas.mdx)**: Schema types and the `transform` helper
+- **[Validation Rules](./validation.mdx)**: Built-in constraints
+- **[Error Handling](./error-handling.mdx)**: `SchemaError` and `SchemaResult`
+- **[JSON Serialization](./json-serialization.mdx)**: Exporting schemas

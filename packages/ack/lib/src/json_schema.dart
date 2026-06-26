@@ -4,7 +4,6 @@
 /// renderer for that model.
 library;
 
-export 'json_schema/json_schema_utils.dart';
 export 'schema_model/ack_schema_model.dart';
 export 'schema_model/ack_schema_model_builder.dart';
 export 'schema_model/ack_schema_model_warning.dart';

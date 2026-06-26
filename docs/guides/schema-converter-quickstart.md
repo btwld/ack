@@ -111,6 +111,9 @@ class <Target>SchemaConverter {
       AckOneOfSchemaModel() => _convertOneOf(schema),
       AckAllOfSchemaModel() => _convertAllOf(schema),
       AckNullSchemaModel() => {'type': 'null'},
+      AckRefSchemaModel(refName: final name) => {
+        r'$ref': '#/definitions/$name',
+      },
     };
   }
 

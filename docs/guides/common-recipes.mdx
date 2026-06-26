@@ -2,9 +2,9 @@
 title: Common Recipes
 ---
 
-This page provides quick solutions to common validation scenarios. Each recipe shows a complete, working example you can copy and adapt.
+Quick solutions to common validation scenarios. Each recipe is a complete, working example you can copy and adapt.
 
-## Email and Password Validation
+## Email and password validation
 
 Validate user credentials with proper constraints:
 
@@ -42,7 +42,7 @@ if (result.isOk) {
 }
 ```
 
-## Nested Object Validation
+## Nested object validation
 
 Validate nested data structures like addresses:
 
@@ -74,7 +74,7 @@ final result = userWithAddressSchema.safeParse({
 });
 ```
 
-## List Validation
+## List validation
 
 Validate lists with constraints on items and length:
 
@@ -97,7 +97,7 @@ final postSchema = Ack.object({
 });
 ```
 
-## Enum Validation
+## Enum validation
 
 Validate values against a set of allowed options using Dart enums:
 
@@ -119,7 +119,7 @@ final result = orderSchema.safeParse({
 });
 ```
 
-## Custom Validation
+## Custom validation
 
 Create reusable custom validators for domain-specific rules:
 
@@ -156,7 +156,7 @@ final registrationSchema = Ack.object({
 );
 ```
 
-## API Response Validation
+## API response validation
 
 Validate external API responses before using the payload:
 
@@ -193,9 +193,11 @@ Future<void> fetchUser(String username) async {
 }
 ```
 
-## See Also
+## See also
 
-- [Custom Validation Guide](./custom-validation.mdx) - Deep dive into custom validators
-- [Flutter Form Validation](./flutter-form-validation.mdx) - Integrate with Flutter forms
-- [Schema Types](../core-concepts/schemas.mdx) - All available schema types
-- [Validation Rules](../core-concepts/validation.mdx) - Complete constraint reference
+- [Custom validation guide](./custom-validation.mdx) — deep dive into custom validators
+- [Flutter form validation](./flutter-form-validation.mdx) — integrate with Flutter forms
+- [Codecs](../core-concepts/codecs.mdx) — date, URI, and custom value conversions
+- [JSON Schema integration](./json-schema-integration.mdx) — export schemas for API docs and tools
+- [Schema types](../core-concepts/schemas.mdx) — all available schema types
+- [Validation rules](../core-concepts/validation.mdx) — complete constraint reference

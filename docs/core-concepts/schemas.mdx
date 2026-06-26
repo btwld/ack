@@ -2,11 +2,7 @@
 title: Schemas
 ---
 
-This guide covers schema types, validation, and working with validated data in Ack.
-
-## Overview
-
-Ack provides a schema validation system built around the `AckSchema` base class. Use the `Ack` factory to create schemas, then validate data with the `safeParse()` method.
+A schema describes the shape your data should have. You build one with the `Ack` factory, then validate input against it. This page tours every schema type and how to compose them.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -33,7 +29,7 @@ if (result.isOk) {
 }
 ```
 
-## Schema Types
+## Schema types
 
 ### String
 
@@ -62,6 +58,11 @@ enum Role { admin, user, guest }
 final roleSchema = Ack.enumValues(Role.values);
 ```
 
+> **`Ack.string().date()` vs `Ack.date()`:** `Ack.string().date()` checks the
+> format and keeps the value a `String`. [`Ack.date()`](./codecs.mdx) (a codec)
+> validates the same format but returns a `DateTime`. The same applies to
+> `Ack.string().datetime()` vs `Ack.datetime()`.
+
 ### Number
 
 Numeric schemas are strict about their Dart runtime type. `Ack.integer()`
@@ -83,7 +84,6 @@ final priceSchema = Ack.double()
 // Either int or double
 final amountSchema = Ack.number().positive();
 
-// Negative/positive
 final temperatureSchema = Ack.integer(); // Any integer
 final scoreSchema = Ack.double().positive(); // > 0
 final debtSchema = Ack.double().negative(); // < 0
@@ -126,7 +126,7 @@ final userSchema = Ack.object({
 });
 ```
 
-**Nested Objects:**
+**Nested objects:**
 
 ```dart
 final userSchema = Ack.object({
@@ -139,7 +139,7 @@ final userSchema = Ack.object({
 });
 ```
 
-**Working with Validated Data:**
+**Working with validated data:**
 
 ```dart
 final result = userSchema.safeParse(data);
@@ -154,7 +154,7 @@ if (result.isOk) {
 }
 ```
 
-### Union Types
+### Union types
 
 Validate against multiple possible schemas:
 
@@ -184,7 +184,7 @@ final shapeSchema = Ack.discriminated(
 The union owns the discriminator and injects the exact branch literal at
 parse/export boundaries. Branch schemas usually omit the discriminator field.
 
-### Recursive Schemas
+### Recursive schemas
 
 Use `Ack.lazy(...)` when a schema needs to refer to itself:
 
@@ -201,11 +201,11 @@ categorySchema = Ack.object({
 
 The lazy builder is resolved once and memoized. JSON Schema export renders the
 reference through Draft-7 `definitions` / `$ref`, so recursive children are
-referenced instead of inlined forever.
+referenced rather than inlined forever.
 
 ### Any
 
-Accept any non-null JSON-safe value without validation (use sparingly):
+Accepts any non-null JSON-safe value without validation (use sparingly):
 
 ```dart
 final flexibleSchema = Ack.object({
@@ -214,13 +214,11 @@ final flexibleSchema = Ack.object({
 });
 ```
 
-Use `Ack.any().nullable()` to accept `null`.
+Use `Ack.any().nullable()` to also accept `null`.
 
-## Optional vs Nullable
+## Optional vs nullable
 
-Understanding the difference is crucial:
-
-**`.nullable()`** - Field must be present but can be `null`:
+**`.nullable()`** — Field must be present but can be `null`:
 
 ```dart
 final userSchema = Ack.object({
@@ -236,7 +234,7 @@ final userSchema = Ack.object({
 {'name': 'John'}
 ```
 
-**`.optional()`** - Field can be completely omitted (but is still validated when present):
+**`.optional()`** — Field can be omitted (but is still validated when present):
 
 ```dart
 final userSchema = Ack.object({
@@ -252,7 +250,7 @@ final userSchema = Ack.object({
 {'name': 'John', 'age': null} // Use .nullable() if null should be allowed
 ```
 
-**Combining both** - Field can be missing OR null:
+**Combining both** — Field can be missing or `null`:
 
 ```dart
 final userSchema = Ack.object({
@@ -266,7 +264,7 @@ final userSchema = Ack.object({
 {'name': 'John', 'bio': 'Developer'}
 ```
 
-## Object Schema Operations
+## Object schema operations
 
 ### Extension
 
@@ -290,7 +288,7 @@ final modifiedSchema = baseSchema.extend({
 });
 ```
 
-### Pick and Omit
+### Pick and omit
 
 Select or exclude properties:
 
@@ -330,11 +328,11 @@ partialSchema.safeParse({'name': 'John'});
 partialSchema.safeParse({'email': 'john@example.com', 'age': 30});
 ```
 
-### Additional Properties
+### Additional properties
 
-Control handling of extra properties not defined in the schema. By default, objects are **strict** and reject additional properties.
+By default, objects are **strict** and reject additional properties.
 
-#### Using Constructor Parameter
+#### Using the constructor parameter
 
 ```dart
 // Strict mode (default) - rejects additional properties
@@ -354,7 +352,7 @@ final flexibleSchema = Ack.object({
 flexibleSchema.safeParse({'id': '1', 'name': 'John', 'extra': 'allowed'}); // ✅ Passes
 ```
 
-#### Using Extension Methods
+#### Using extension methods
 
 ```dart
 final baseSchema = Ack.object({
@@ -371,12 +369,12 @@ final passthrough = baseSchema.passthrough();
 passthrough.safeParse({'id': '1', 'name': 'John', 'role': 'admin'}); // ✅ Passes
 ```
 
-**Common Use Cases:**
+**Common use cases:**
 
-- **Strict mode**: API request validation, form validation where only known fields are allowed
-- **Passthrough mode**: Working with dynamic data or when extra metadata is acceptable
+- **Strict mode**: API request validation and form validation where only known fields are allowed
+- **Passthrough mode**: Dynamic data or cases where extra metadata is acceptable
 
-## Custom Validation
+## Custom validation
 
 ### Refinements
 
@@ -417,7 +415,7 @@ final orderSchema = Ack.object({
 
 ### Transformations
 
-Transform validated data:
+Transform validated data after parsing:
 
 ```dart
 // Transform to uppercase. The callback receives the non-null validated
@@ -437,39 +435,17 @@ final userWithAgeSchema = Ack.object({
 // Type transformation
 final dateSchema = Ack.string()
   .matches(r'\d{4}-\d{2}-\d{2}')
-  .transform<DateTime>((s) => DateTime.parse(s!));
+  .transform<DateTime>((s) => DateTime.parse(s));
 ```
 
-## Validation Result
+## Validation result
 
-The `safeParse()` method returns a `SchemaResult`:
+Every `safeParse()` returns a `SchemaResult` holding the validated value or a `SchemaError`. See [Error Handling](./error-handling.mdx) for reading values and errors.
 
-```dart
-final result = schema.safeParse(data);
+## Next steps
 
-// Check success
-if (result.isOk) {
-  final data = result.getOrThrow();
-}
-
-// Check failure
-if (result.isFail) {
-  final error = result.getError();
-}
-
-// Other methods
-final data = result.getOrNull(); // null if failed
-final data = result.getOrElse(() => defaultValue); // default if failed
-```
-
-*See the [Error Handling](./error-handling.mdx) guide for details on working with errors.*
-
-## Next Steps
-
-Explore related topics to deepen your understanding:
-
-- **[Validation Rules](./validation.mdx)**: Master all built-in constraints and strict parsing
-- **[Error Handling](./error-handling.mdx)**: Handle validation errors effectively
-- **[Custom Validation](../guides/custom-validation.mdx)**: Create custom constraints and refinements
-- **[JSON Serialization](./json-serialization.mdx)**: Validate and transform JSON data
-- **[Common Recipes](../guides/common-recipes)**: See practical schema patterns
+- **[Validation rules](./validation.mdx)**: All built-in constraints and strict parsing
+- **[Error handling](./error-handling.mdx)**: Handle validation errors effectively
+- **[Custom validation](../guides/custom-validation.mdx)**: Create custom constraints and refinements
+- **[JSON serialization](./json-serialization.mdx)**: Validate and transform JSON data
+- **[Common recipes](../guides/common-recipes)**: Practical schema patterns

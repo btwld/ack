@@ -2,9 +2,7 @@
 title: API Reference
 ---
 
-This page provides a quick reference for the core Ack classes, methods, and
-annotations. For detailed explanations and usage examples, refer to the
-specific guides linked below.
+Quick reference for the core Ack classes, methods, and annotations. For detailed explanations and examples, see the specific guides linked below.
 
 ## Core `Ack` Class
 
@@ -30,6 +28,11 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
+- `Ack.instance<T extends Object>()`: Creates a schema that checks a value is a
+  Dart instance of `T` (runtime type check; handy as a codec `output` schema).
+- `Ack.codec(...)` / `Ack.date()` / `Ack.datetime()` / `Ack.uri()` /
+  `Ack.duration()` / `Ack.enumCodec(...)`: Create codecs. See
+  [Codecs](../core-concepts/codecs.mdx).
 - `Ack.lazy(String name, AckSchema Function() builder)`: Creates a memoized
   deferred schema reference for recursive schema graphs. JSON Schema export
   renders Draft-7 `definitions` / `$ref` entries using `name`.
@@ -46,33 +49,32 @@ Base class for all schema types.
 
 ### Primary Validation Methods
 
-- `SchemaResult<Runtime> safeParse(Object? data, {String? debugName})`: Validates the input data and returns a result. Never throws exceptions - returns `SchemaResult` with either success or failure. Use `safeParse(...).getOrNull()` to obtain the validated value with no exception.
-- `Runtime? parse(Object? data, {String? debugName})`: Validates the input data and returns the value. Throws `AckException` if validation fails.
-- `SchemaResult<TOut> safeParseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Parses and maps the validated value to another type.
+- `SchemaResult<Runtime> safeParse(Object? data, {String? debugName})`: Validates `data` and returns a `SchemaResult`. Never throws; use `.getOrNull()` to get the value without risk of an exception.
+- `Runtime? parse(Object? data, {String? debugName})`: Validates `data` and returns the value; throws `AckException` on failure.
+- `SchemaResult<TOut> safeParseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Parses and maps the validated value to `TOut`.
 - `TOut parseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Throwing variant of `safeParseAs`.
-- `SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName})`: Encodes a runtime value back to the boundary representation.
+- `SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName})`: Encodes a runtime value to the boundary representation.
 - `Boundary? encode(Runtime? value, {String? debugName})`: Throwing variant of `safeEncode`.
 
 ### Schema Modification Methods
 
-- `AckSchema<Boundary, Runtime> nullable({bool value = true})`: Returns a new schema that also accepts `null` values.
+- `AckSchema<Boundary, Runtime> nullable({bool value = true})`: Returns a new schema that also accepts `null`.
 - `AckSchema<Boundary, Runtime> optional({bool value = true})`: Returns a new schema marked as optional (for object fields).
-- `AckSchema<Boundary, Runtime> describe(String description)`: Adds a description for documentation and JSON Schema generation.
+- `AckSchema<Boundary, Runtime> describe(String description)`: Attaches a description for documentation and JSON Schema generation.
 - `DefaultSchema<Boundary, Runtime> withDefault(Runtime value)`: Wraps the schema in a `DefaultSchema` that supplies `value` when the parse input is `null`.
 
 Primitive schemas (`StringSchema`, `IntegerSchema`, `DoubleSchema`, `NumberSchema`, `BooleanSchema`) are strict — they reject values whose Dart runtime type doesn't match. `IntegerSchema` and `DoubleSchema` do not overlap (`42.0` fails `Ack.integer()`, `42` fails `Ack.double()`); use `Ack.number()` when either is acceptable. For non-`num` boundary types (e.g. numeric strings), use [`transform`](../core-concepts/schemas.mdx#transformations) or [`codec`](#codecschemaboundary-runtime) to convert before validation.
 
 ### Custom Validation Methods
 
-- `AckSchema<Boundary, Runtime> constrain(Constraint<Runtime> constraint, {String? message})`: Applies a custom validation constraint.
-- `AckSchema<Boundary, Runtime> withConstraint(Constraint<Runtime> constraint)`: Applies a custom validation constraint (alias for `constrain`).
-- `AckSchema<Boundary, Runtime> refine(bool Function(Runtime) validate, {String message})`: Adds custom validation logic with an optional custom error message.
-- `CodecSchema<Boundary, R> transform<R>(R Function(Runtime) transformer)`: Transforms validated runtime values to a different type.
+- `AckSchema<Boundary, Runtime> constrain(Constraint<Runtime> constraint, {String? message})`: Adds a constraint and optionally overrides its message. The constraint must mix in `Validator<Runtime>`, or an `ArgumentError` is thrown.
+- `AckSchema<Boundary, Runtime> withConstraint(Constraint<Runtime> constraint)`: Adds a constraint directly (no message override; `constrain` delegates here).
+- `AckSchema<Boundary, Runtime> refine(bool Function(Runtime) validate, {String message = 'The value did not pass the custom validation.'})`: Adds a custom validation predicate with an optional error message.
+- `CodecSchema<Boundary, R> transform<R>(R Function(Runtime) transformer)`: Transforms validated runtime values to `R` (parse-only; encode fails).
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Renders generic Draft-7 JSON Schema
-  through the canonical `AckSchemaModel` boundary.
+- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via the canonical `AckSchemaModel` boundary.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
@@ -90,10 +92,10 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 
 ### Pattern Matching
 
-- `matches(String pattern, {String? example, String? message})`: Must match regex pattern. **Note**: Patterns are NOT automatically anchored - use `^...$` for full-string matching. See [String Validation](../core-concepts/validation.mdx#string-constraints) for details.
-- `contains(String pattern, {String? example, String? message})`: Must contain pattern anywhere in string (partial matching)
-- `startsWith(String value)`: Must start with specified value
-- `endsWith(String value)`: Must end with specified value
+- `matches(String pattern, {String? example, String? message})`: Must match a regex pattern. Patterns are not automatically anchored — use `^...$` for full-string matching. See [String validation](../core-concepts/validation.mdx#string-constraints) for details.
+- `contains(String pattern, {String? example, String? message})`: Must contain the pattern anywhere in the string.
+- `startsWith(String value)`: Must start with `value`.
+- `endsWith(String value)`: Must end with `value`.
 
 ### Format Validation
 
@@ -111,11 +113,6 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 - `datetime()`: Must be valid ISO 8601 datetime
 - `time()`: Must be valid time format (HH:MM:SS)
 
-### Value Restrictions
-
-- `literal(String value)`: Must exactly match the given value
-- `enumString(List<String> values)`: Must be one of the specified values
-
 ### Transformations
 
 - `trim()`: Removes leading and trailing whitespace
@@ -129,15 +126,17 @@ Schemas for validating numeric values. `IntegerSchema` only accepts `int`,
 (either `int` or `double`). `DoubleSchema` and `NumberSchema` reject non-finite
 values by default. See [Number Validation](../core-concepts/validation.mdx#number-constraints).
 
-- `min(num limit)`: Minimum value (inclusive)
-- `max(num limit)`: Maximum value (inclusive)
-- `greaterThan(num limit)`: Must be greater than limit (exclusive)
-- `lessThan(num limit)`: Must be less than limit (exclusive)
+Each method's parameter type matches the schema's runtime type: `int` for `IntegerSchema`, `double` for `DoubleSchema`, and `num` for `NumberSchema`.
+
+- `min(N limit)`: Minimum value (inclusive)
+- `max(N limit)`: Maximum value (inclusive)
+- `greaterThan(N limit)`: Must be greater than limit (exclusive)
+- `lessThan(N limit)`: Must be less than limit (exclusive)
 - `positive()`: Must be greater than 0
 - `negative()`: Must be less than 0
-- `multipleOf(num factor)`: Must be a multiple of the factor
-- `finite()`: Must be finite (DoubleSchema and NumberSchema; already the default)
-- `safe()`: Must be within safe integer range (IntegerSchema only)
+- `multipleOf(N factor)`: Must be a multiple of the factor
+- `finite()`: Must be finite (`DoubleSchema` and `NumberSchema`; already the default)
+- `safe()`: Must be within safe integer range (`IntegerSchema` only)
 
 ## `BooleanSchema`
 
@@ -170,47 +169,51 @@ Schema for validating objects (maps). See [Object Validation](../core-concepts/s
 
 Object returned by `safeParse()`. See [Error Handling](../core-concepts/error-handling.mdx).
 
-- `bool isOk`: True if validation succeeded
-- `bool isFail`: True if validation failed
-- `T? getOrThrow()`: Returns the validated value (nullable for nullable schemas) or throws an exception
-- `T? getOrNull()`: Returns the validated value or null if validation failed
-- `SchemaError getError()`: Returns the validation error (only valid when `isFail` is true)
-- `T? getOrElse(T? Function() orElse)`: Returns the validated value or the fallback result
+- `bool isOk`: `true` if validation succeeded.
+- `bool isFail`: `true` if validation failed.
+- `T? getOrThrow()`: Returns the validated value (which can be `null` for a nullable schema), or throws `AckException` on failure.
+- `T? getOrNull()`: Returns the validated value, or `null` on failure.
+- `SchemaError getError()`: Returns the validation error; only valid when `isFail` is `true`.
+- `T? getOrElse(T? Function() orElse)`: Returns the validated value, or calls `orElse` on failure.
+- `SchemaResult<R> map<R>(R Function(T?) transform)`: Maps the successful value to a new result type; propagates failures unchanged.
+- `R match<R>({required R Function(T?) onOk, required R Function(SchemaError) onFail})`: Pattern-matches on success or failure.
+- `void ifOk(void Function(T?) action)`: Executes `action` only when the result is successful.
+- `void ifFail(void Function(SchemaError) action)`: Executes `action` only when the result is a failure.
 
-## `SchemaError` (and Subclasses)
+## `SchemaError` (and subclasses)
 
-Object representing a validation failure. See [Error Handling](../core-concepts/error-handling.mdx).
+Represents a validation failure. See [Error handling](../core-concepts/error-handling.mdx).
 
-- `String message`: Human-readable error message
-- `SchemaContext context`: Context information about where the error occurred
+- `String message`: Human-readable error message.
+- `SchemaContext context`: Context about where the error occurred.
 
 **Subclasses:**
-- `SchemaConstraintsError`: Constraint validation failures
-- `SchemaNestedError`: Nested validation failures (for objects/arrays)
-- `SchemaValidationError`: Custom refinement failures
+- `SchemaConstraintsError`: One or more constraint violations.
+- `SchemaNestedError`: Validation failures in nested objects or arrays.
+- `SchemaValidationError`: Custom refinement failures.
+- `SchemaEncodeError`: Encode-path failures (non-nullable null, one-way transform, encoder threw, etc.).
 
 ## `Constraint<T>`
 
-Base class for creating custom validation rules. See [Custom Validation](../guides/custom-validation.mdx).
+Base class for custom validation rules. See [Custom validation](../guides/custom-validation.mdx).
 
-- `String constraintKey`: Unique key for the constraint
-- `String description`: Human-readable description
-- `Map<String, Object?> toMap()`: Serializes the constraint for debugging
+- `String constraintKey`: Unique identifier for the constraint.
+- `String description`: Human-readable description.
+- `Map<String, Object?> toMap()`: Serializes the constraint for debugging.
 
-## `Validator<T>` (Mixin)
+## `Validator<T>` (mixin)
 
 Validation behavior mixin used with `Constraint<T>`.
 
-- `bool isValid(T value)`: Returns `true` when the value passes validation
-- `String buildMessage(T value)`: Builds the validation failure message
-- `ConstraintError? validate(T value)`: Validates a value and returns an error if invalid
+- `bool isValid(T value)`: Returns `true` when the value passes validation.
+- `String buildMessage(T value)`: Builds the validation failure message.
+- `ConstraintError? validate(T value)`: Validates a value and returns an error if invalid.
 
-## Additional Schema Types
+## Additional schema types
 
 Ack ships with a broad set of schema factories beyond what is listed here.
-See [Schema Types](../core-concepts/schemas.mdx) for the full catalogue,
-including helpers like `Ack.date()`, `Ack.literal()`, and rich list/object
-combinators.
+See [Schema types](../core-concepts/schemas.mdx) for the full catalogue,
+including `Ack.date()`, `Ack.literal()`, and list/object combinators.
 
 ### `Ack.discriminated(...)`
 
@@ -238,14 +241,12 @@ Schema reference for recursive object graphs.
 - Bare or wrapped lazy schemas cannot be used as discriminated-union branches
   because the branch discriminator must be analyzable at construction time.
 
-## Code Generation Annotations
+## Code generation annotations
 
-Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to
-turn annotations into extension types. After adding
-the annotations below, run:
+Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to turn annotations into extension types. After adding the annotations below, run:
 
 ```bash
-dart run build_runner build
+dart run build_runner build --delete-conflicting-outputs
 ```
 
 ### `@AckType()`
@@ -254,7 +255,7 @@ dart run build_runner build
 
 **Generates**: An extension type wrapper around the existing schema
 
-Annotate an existing schema variable or getter to generate an extension type wrapper. The schema itself stays in your source file.
+Annotate a schema variable or getter to generate an extension type wrapper. The schema stays in your source file.
 
 **Supported schema types:**
 - `Ack.object({...})` → Object extension types
@@ -288,15 +289,11 @@ print(user.email); // Type-safe String access
 
 ### `EnumSchema<T>`
 
-Schema for validating enum values.
-
-- Created using `Ack.enumValues(List<T> values)` where T extends Enum
+Schema for validating enum values. Created using `Ack.enumValues(List<T> values)` where `T extends Enum`.
 
 ### `AnyOfSchema`
 
-Schema for union types (value must match one of several schemas).
-
-- Created using `Ack.anyOf(List<AckSchema> schemas)`
+Schema for union types; the value must match one of several schemas. Created using `Ack.anyOf(List<AckSchema> schemas)`.
 
 ### `DiscriminatedObjectSchema`
 
@@ -312,37 +309,45 @@ Schema for polymorphic validation based on a discriminator field.
 
 Canonical export model for Ack schemas.
 
-- Created using `schema.toSchemaModel()`
-- Represents the boundary/export shape, JSON-compatible defaults,
-  discriminator metadata, target-independent constraints, and export warnings
-- Render generic Draft-7 JSON Schema with
-  `schema.toSchemaModel().toJsonSchema()`, the same output returned by
-  `schema.toJsonSchema()`
-- Adapter packages that need a JSON map can call `schema.toJsonSchema()`;
-  adapters for non-JSON targets should convert from `AckSchemaModel` rather
-  than traversing `AckSchema` subclasses directly
+- Created by `schema.toSchemaModel()`.
+- Represents the boundary/export shape, JSON-compatible defaults, discriminator metadata, target-independent constraints, and export warnings.
+- `schema.toSchemaModel().toJsonSchema()` returns the same Draft-7 map as `schema.toJsonSchema()`.
+- Adapters that need a JSON map should call `schema.toJsonSchema()`; adapters for non-JSON targets should convert from `AckSchemaModel` rather than traversing `AckSchema` subclasses directly.
 
 ### `AnySchema`
 
-Schema that accepts any non-null JSON-safe value without validation.
+Accepts any non-null JSON-safe value without further validation.
 
-- Created using `Ack.any()`
-- Useful for dynamic payloads or pass-through metadata
+- Created by `Ack.any()`.
+- Useful for dynamic payloads or pass-through metadata.
 
 ### `CodecSchema<Boundary, Runtime>`
 
 Schema that decodes boundary values into runtime values and encodes runtime
-values back to the boundary representation.
+values back to the boundary representation. Use `encode` / `safeEncode` for the
+reverse direction. See [Codecs](../core-concepts/codecs.mdx).
 
-- Created using `schema.transform<R>(R Function(Runtime) transformer)` or
-  `schema.codec<R>(decode: ..., encode: ...)`
+- `schema.transform<R>(R Function(Runtime) transformer)`: one-way transform
+  (parse only; `encode` fails with a one-way error).
+- `schema.codec<R>({required R Function(Runtime) decode, required Runtime Function(R) encode, AckSchema<dynamic, R>? output})`:
+  bidirectional codec; the optional `output` schema validates the runtime value.
+- `Ack.codec<Boundary, InputRuntime, Runtime>({required input, required decode, required encode, output})`:
+  builds a codec from an `input` schema.
 
-### Optional Schemas
+**Built-in codecs:**
 
-Every schema can be marked optional through the `optional({bool value = true})` fluent API.
+- `Ack.date()` → `CodecSchema<String, DateTime>` (ISO `YYYY-MM-DD` ↔ local-midnight `DateTime`)
+- `Ack.datetime()` → `CodecSchema<String, DateTime>` (ISO 8601 ↔ UTC `DateTime`)
+- `Ack.uri()` → `CodecSchema<String, Uri>` (absolute URI string ↔ `Uri`)
+- `Ack.duration()` → `CodecSchema<int, Duration>` (milliseconds ↔ `Duration`)
+- `Ack.enumCodec(List<T> values)` → `CodecSchema<String, T>` (enum `.name` ↔ enum value)
 
-- Calling `schema.optional()` sets `isOptional` to `true` without wrapping the schema.
-- Use `schema.optional(value: false)` to clear the optional flag.
+### Optional schemas
+
+Every schema can be marked optional via the `optional({bool value = true})` fluent API.
+
+- `schema.optional()` sets `isOptional` to `true` without wrapping the schema.
+- `schema.optional(value: false)` clears the optional flag.
 - Optional affects object-field presence only; combine with `.nullable()` to also allow explicit `null`.
 
-*Refer to the [Schema Types](../core-concepts/schemas.mdx) guide for detailed usage and examples.*
+*See the [Schema types](../core-concepts/schemas.mdx) guide for detailed usage and examples.*

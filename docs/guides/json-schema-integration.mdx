@@ -2,18 +2,11 @@
 title: JSON Schema Integration
 ---
 
-Ack [schemas](../core-concepts/schemas.mdx) can be automatically converted into JSON Schema objects, allowing you to generate API documentation directly from your validation schemas.
+Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can export it as JSON Schema (Draft-7) and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth.
 
-Ack also exposes `AckSchemaModel`, the canonical export model used by schema
-adapter packages. Use `schema.toSchemaModel()` when you are building a
-converter to another target format; JSON Schema is one renderer of that model,
-not the source of truth for adapter behavior.
+## Generating JSON schemas
 
-## Generating JSON Schemas
-
-Use the `toJsonSchema()` method available on any `AckSchema` instance. This is
-the same generic Draft-7 renderer used by
-`schema.toSchemaModel().toJsonSchema()`.
+Call `toJsonSchema()` on any `AckSchema` instance. This is the same generic Draft-7 renderer used by `schema.toSchemaModel().toJsonSchema()`.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -40,10 +33,11 @@ void main() {
 }
 ```
 
-## Adapter Model
+> **Building an adapter package?** Most users only need `toJsonSchema()` (above). To convert Ack schemas to another target format, render from `schema.toSchemaModel()` (the canonical `AckSchemaModel`) rather than the JSON Schema map — see the [adapter authoring guide on GitHub](https://github.com/btwld/ack/blob/main/docs/guides/creating-schema-converter-packages.md).
 
-Use `toSchemaModel()` when you need a reusable, target-independent view of an
-Ack schema:
+## Adapter model
+
+Use `toSchemaModel()` for a reusable, target-independent view of an Ack schema:
 
 ```dart
 final model = userSchema.toSchemaModel();
@@ -54,10 +48,7 @@ for (final warning in model.warnings) {
 }
 ```
 
-`AckSchemaModel` describes the boundary values a schema accepts and exports. It
-keeps adapter metadata such as object property ordering and discriminator
-metadata. Its JSON Schema renderer emits only generic Draft-7-compatible
-output; provider-specific hints belong in adapter renderers.
+`AckSchemaModel` describes the boundary values a schema accepts and exports, keeping adapter metadata such as property ordering and discriminator info. Its JSON Schema renderer emits only generic Draft-7-compatible output; provider-specific hints belong in adapter renderers.
 
 **Output JSON (JSON Schema Object):**
 
@@ -137,9 +128,9 @@ output; provider-specific hints belong in adapter renderers.
 }
 ```
 
-## How Constraints Map to JSON Schema
+## How constraints map to JSON Schema
 
-Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) to corresponding JSON Schema keywords:
+Ack maps its [built-in constraints](../core-concepts/validation.mdx) to corresponding JSON Schema keywords:
 
 | Ack Constraint or Schema | JSON Schema Keyword | Notes |
 | :----------------------- | :------------------ | :---- |
@@ -154,7 +145,7 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`uuid()`](../core-concepts/validation.mdx#string-constraints) | `format: uuid` | String |
 | [`ipv4()`](../core-concepts/validation.mdx#string-constraints) | `format: ipv4` | String |
 | [`ipv6()`](../core-concepts/validation.mdx#string-constraints) | `format: ipv6` | String |
-| [`enumString([...])`](../core-concepts/validation.mdx#string-constraints) | `enum: [...]` | String |
+| [`Ack.enumString([...])`](../core-concepts/validation.mdx#string-constraints) | `enum: [...]` | String |
 | [`min(n)`](../core-concepts/validation.mdx#number-constraints) | `minimum: n` | Number |
 | [`max(n)`](../core-concepts/validation.mdx#number-constraints) | `maximum: n` | Number |
 | [`greaterThan(n)`](../core-concepts/validation.mdx#number-constraints) | `exclusiveMinimum: n` | Number (exclusive) |
@@ -163,7 +154,7 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`minLength(n)`](../core-concepts/validation.mdx#list-constraints) | `minItems: n` | List (array) |
 | [`maxLength(n)`](../core-concepts/validation.mdx#list-constraints) | `maxItems: n` | List (array) |
 | [`unique()`](../core-concepts/validation.mdx#list-constraints) | `uniqueItems: true` | List (array) |
-| [`nullable()`](../core-concepts/validation.mdx#nullable) | `anyOf: [<schema>, {type: null}]` | Any schema |
+| [`nullable()`](../core-concepts/schemas.mdx#optional-vs-nullable) | `anyOf: [<schema>, {type: null}]` | Any schema |
 | `withDefault(v)` | `default: v` | JSON/export-safe defaults only in `AckSchemaModel`; unsupported defaults are omitted with a warning |
 | `describe(d)` | `description: d` | Any schema |
 | [`Ack.integer()`](../core-concepts/schemas.mdx#number) | `type: integer` | Type |
@@ -174,10 +165,9 @@ Ack attempts to map its [built-in constraints](../core-concepts/validation.mdx) 
 | [`Ack.object(...)`](../core-concepts/schemas.mdx#object) | `type: object`, `properties: {...}`, `required: [...]` | Type |
 | [`Ack.lazy(...)`](../core-concepts/schemas.mdx#recursive-schemas) | `definitions`, `$ref` | Recursive type |
 
-## Shape Stability Notes
+## Shape stability notes
 
-`toJsonSchema()` renders generic Draft-7 JSON Schema and uses stable
-nullability rules:
+`toJsonSchema()` renders generic Draft-7 JSON Schema with stable nullability rules:
 
 - Primitive/object/list/enum schemas marked with `.nullable()` are emitted as:
   - `anyOf: [<base-schema>, { "type": "null" }]`
@@ -215,14 +205,9 @@ And nullable discriminated unions are represented as:
 }
 ```
 
-If you build consumers that inspect generated schemas, treat nullability and
-union composition as separate concerns and avoid assuming enum values always
-live at the top level.
+If you build consumers that inspect generated schemas, treat nullability and union composition as separate concerns and don't assume enum values always live at the top level.
 
-The nested nullable-union shape is intentional for generic Draft-7 output and
-matches Zod v4's `toJSONSchema()` renderer. Do not flatten it in
-`AckSchema.toJsonSchema()`; provider-specific adapters that require a different
-shape should implement that as explicit adapter rendering.
+The nested nullable-union shape is intentional for generic Draft-7 output and matches Zod v4's `toJSONSchema()` renderer. Don't flatten it in `AckSchema.toJsonSchema()`; provider-specific adapters that need a different shape should implement explicit adapter rendering.
 
 **Limitations:**
 
@@ -250,9 +235,9 @@ shape should implement that as explicit adapter rendering.
     `Ack.enumString(...)` fields are accepted; generated branches expose the
     exact branch value as `const`.
 
-## Integrating into API Documentation
+## Integrating into API documentation
 
-You can use the generated JSON Schema map within a larger API documentation structure.
+Use the generated JSON Schema map within a larger API documentation structure.
 
 ```dart
 // Assume you have a function to build the full API spec
@@ -289,11 +274,11 @@ final fullApiSpec = buildApiSpecification();
 print(JsonEncoder.withIndent('  ').convert(fullApiSpec));
 ```
 
-This allows you to maintain your validation logic and API documentation source in one place (your Ack schemas).
+This keeps your validation logic and API documentation in one place.
 
-## Advanced JSON Schema Features
+## Advanced JSON Schema features
 
-### Schema Descriptions and Metadata
+### Schema descriptions and metadata
 
 Add descriptions and metadata to your schemas for better documentation:
 
@@ -306,12 +291,12 @@ final userSchema = Ack.object({
 }).describe('Represents a user in the system');
 
 final jsonSchema = userSchema.toJsonSchema();
-// Generated schema will include description fields
+// Output includes description fields
 ```
 
-### Default Values in JSON Schema
+### Default values in JSON Schema
 
-Schemas with default values will include them in the generated JSON Schema:
+Schemas with default values include them in the generated JSON Schema:
 
 ```dart
 final configSchema = Ack.object({
@@ -321,10 +306,10 @@ final configSchema = Ack.object({
 });
 
 final jsonSchema = configSchema.toJsonSchema();
-// Will include "default" properties in the JSON Schema
+// Output includes "default" properties
 ```
 
-### Complex Schema Patterns
+### Complex schema patterns
 
 JSON Schema generation works with all Ack schema types:
 
@@ -359,7 +344,7 @@ final complexSchema = Ack.object({
   }).optional(),
 });
 
-// All generate valid JSON Schema
+// All produce valid JSON Schema
 final mixedJson = mixedValueSchema.toJsonSchema();
 final shapeJson = shapeSchema.toJsonSchema();
 final complexJson = complexSchema.toJsonSchema();

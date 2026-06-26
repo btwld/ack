@@ -2,24 +2,19 @@
 title: Validation Rules
 ---
 
-Ack provides a rich set of built-in validation rules (constraints) that you can chain onto schema types to enforce specific requirements. Built-in constraints provide default error messages. For custom error messages, use custom constraints (see [Custom Validation Guide](../guides/custom-validation.mdx)).
+Constraints turn "a string" into "an email between 2 and 50 characters." Chain them onto any schema — each comes with a sensible default error message, and you can supply your own (see [Custom Validation](../guides/custom-validation.mdx)).
 
-## Common Constraints (Applicable to Multiple Types)
+## Common constraints
 
-### `nullable()`
+### `nullable()` and `optional()`
 
-Allows the value to be `null` in addition to the type's constraints.
-
-```dart
-final optionalName = Ack.string().nullable();
-final optionalAge = Ack.integer().nullable();
-```
+`.nullable()` lets a present field hold `null`; `.optional()` lets it be omitted. These are field-presence modifiers rather than constraints — see [Optional vs nullable](./schemas.mdx#optional-vs-nullable).
 
 ### `constrain(Constraint<T> constraint, {String? message})`
 
 Applies a custom `Constraint<T>` that also implements `Validator<T>`. See the [Custom Validation](../guides/custom-validation.mdx) guide.
 
-## String Constraints
+## String constraints
 
 Apply these to [`Ack.string()`](./schemas.mdx#string) schemas.
 
@@ -35,11 +30,10 @@ Requires at most `max` characters.
 Ack.string().maxLength(100)
 ```
 
-### Exact Length
-To ensure a string has exactly a specific length, combine `minLength()` and `maxLength()`:
+### `length(int n)`
+Requires exactly `n` characters.
 ```dart
-// String must be exactly 10 characters
-Ack.string().minLength(10).maxLength(10)
+Ack.string().length(10)
 ```
 
 ### `notEmpty()`
@@ -51,7 +45,7 @@ Ack.string().notEmpty()
 ### `matches(String pattern, {String? example, String? message})`
 Requires the string to match a regular expression `pattern`.
 
-**Important**: Patterns are NOT automatically anchored. The pattern will match if found anywhere in the string (substring matching). To require full-string matching, explicitly add anchors: `^...$`
+Patterns are **not** automatically anchored. The pattern matches if found anywhere in the string. To require a full-string match, add anchors: `^...$`
 
 ```dart
 // Simple alphanumeric pattern (full-string match with anchors)
@@ -80,8 +74,6 @@ Requires a valid email address format.
 ```dart
 Ack.string().email()
 ```
-
-
 
 ### `date()`
 Requires a valid date string in `YYYY-MM-DD` format.
@@ -127,14 +119,14 @@ Ack.string().ipv6()
 
 
 
-### `enumString(List<String> allowedValues)`
-Requires the value to be one of `allowedValues`. Use this only for ad-hoc string lists. When a Dart enum exists, prefer `Ack.enumValues(MyEnum.values)` for type-safe validation.
+### `Ack.enumString(List<String> allowedValues)`
+An `Ack` factory (not a fluent method) that creates a `StringSchema` accepting only values in `allowedValues`. Use for ad-hoc string lists; prefer `Ack.enumValues(MyEnum.values)` when a Dart enum exists.
 ```dart
 Ack.enumString(['active', 'inactive', 'pending'])
 ```
 
-### `literal(String value)`
-Requires an exact string match.
+### `Ack.literal(String value)`
+An `Ack` factory (not a fluent method) that creates a `StringSchema` requiring an exact string match.
 ```dart
 Ack.literal('admin')
 ```
@@ -158,19 +150,19 @@ Ack.string().url()
 ```
 
 ### `ip({int? version})`
-Requires a valid IP address. Set `version` to restrict to IPv4 or IPv6.
+Requires a valid IP address. Set `version` to `4` or `6` to restrict the version.
 ```dart
-Ack.string().ip()          // Any IP (v4 or v6)
+Ack.string().ip()           // Any IP (v4 or v6)
 Ack.string().ip(version: 4) // IPv4 only
 Ack.string().ip(version: 6) // IPv6 only
 ```
 
-## String Transformations
+## String transformations
 
-These methods transform the string value during parsing. They don't add validation constraints but modify the output value.
+These methods modify the output value during parsing rather than adding a validation constraint.
 
 ### `trim()`
-Removes leading and trailing whitespace from the string.
+Removes leading and trailing whitespace.
 ```dart
 Ack.string().trim()
 // "  hello  " → "hello"
@@ -190,7 +182,7 @@ Ack.string().toUpperCase()
 // "hello" → "HELLO"
 ```
 
-## Number Constraints
+## Number constraints
 
 Apply these to [`Ack.integer()`](./schemas.mdx#number), [`Ack.double()`](./schemas.mdx#number), or [`Ack.number()`](./schemas.mdx#number) schemas.
 
@@ -250,7 +242,7 @@ Ack.double().negative() // < 0.0
 Ack.number().negative() // < 0
 ```
 
-### `safe()` (Integer only)
+### `safe()` (integer only)
 Requires an integer within JavaScript's safe range (`-2^53+1` to `2^53-1`).
 ```dart
 Ack.integer().safe()
@@ -258,14 +250,14 @@ Ack.integer().safe()
 
 ### `finite()`
 Requires a finite number (rejects `infinity` and `NaN`). `Ack.double()` and
-`Ack.number()` already enforce this by default; the method is available for
+`Ack.number()` enforce this by default; `finite()` is available for
 explicitness and API symmetry.
 ```dart
 Ack.double().finite()
 Ack.number().finite()
 ```
 
-## List Constraints
+## List constraints
 
 Apply these to [`Ack.list()`](./schemas.mdx#list) schemas.
 
@@ -294,14 +286,14 @@ Ack.list(Ack.object({})).notEmpty()
 ```
 
 ### `unique()`
-Requires all items to be unique. Uses deep structural equality, so nested maps/lists are compared by value.
+Requires all items to be unique. Uses deep structural equality, so nested maps and lists are compared by value.
 ```dart
 Ack.list(Ack.string()).unique()
 ```
 
-## Primitive Type Strictness
+## Primitive type strictness
 
-Primitive schemas (`Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`) are strict: a value must already match the expected Dart runtime type. Mismatched inputs surface as a `TypeMismatchError` instead of being silently coerced.
+Primitive schemas (`Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`) are strict: a value must already match the expected Dart runtime type. Mismatched inputs surface as a `TypeMismatchError` rather than being silently coerced.
 
 Each schema maps to a specific runtime type:
 
@@ -334,9 +326,9 @@ numberSchema.safeParse(3.14);  // ✅ OK (double is num)
 numberSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
 ```
 
-Because `Ack.integer()` and `Ack.double()` do not overlap, use `Ack.number()` when a field may legitimately be either an int or a double. Reach for `transform`/`codec` only when the boundary value isn't already a `num` (for example, a numeric string).
+Because `Ack.integer()` and `Ack.double()` do not overlap, use `Ack.number()` when a field may be either an `int` or a `double`. Use `transform`/`codec` only when the boundary value isn't already a `num` (for example, a numeric string).
 
-This strictness makes `anyOf` and discriminated unions reliable — they can distinguish, for example, the string `"42"` from the integer `42` without configuration:
+This strictness makes `anyOf` and discriminated unions reliable — they can distinguish the string `"42"` from the integer `42` without configuration:
 
 ```dart
 final stringOrNumber = Ack.anyOf([
@@ -348,14 +340,13 @@ stringOrNumber.safeParse('42');  // ✅ Matches string branch
 stringOrNumber.safeParse(42);    // ✅ Matches integer branch
 ```
 
-### Converting Boundary Types
+### Converting boundary types
 
-When your boundary payload uses a different shape from your runtime model (for example, ISO strings → `DateTime`, or `"true"`/`"false"` → `bool`), express the conversion explicitly with [`transform`](./schemas.mdx#transformations) or a `codec`:
+When your boundary payload uses a different shape than your runtime model (for example, ISO strings → `DateTime`, or `"true"`/`"false"` → `bool`), express the conversion explicitly with [`transform`](./schemas.mdx#transformations) or a `codec`:
 
 ```dart
 // Boundary "true"/"false" string → runtime bool
-final boolFromString = Ack.string()
-  .enumString(['true', 'false'])
+final boolFromString = Ack.enumString(['true', 'false'])
   .transform((s) => s == 'true');
 
 boolFromString.safeParse('true');   // ✅ runtime value: true
@@ -365,29 +356,27 @@ boolFromString.safeParse(true);     // ❌ FAIL: string schema rejects bool
 
 Use `schema.codec<R>(decode: ..., encode: ...)` when you also need a reversible encode path back to the boundary type.
 
-## Combining Constraints
+## Combining constraints
 
-You can chain multiple constraints together. Ack evaluates them in the order you apply them.
+You can chain multiple constraints. Ack evaluates them in the order you apply them.
 
 ```dart
 final usernameSchema = Ack.string()
-  .minLength(3)        // First: check min length
-  .maxLength(20)       // Second: check max length
+  .minLength(3)           // First: check min length
+  .maxLength(20)          // Second: check max length
   .matches(r'[a-z0-9_]+') // Third: check pattern (lowercase alphanumeric/underscore)
-  .notEmpty();       // Redundant if minLength(>0) is used, but illustrates chaining
+  .notEmpty();            // Redundant if minLength(>0) is used, but illustrates chaining
 
 final quantitySchema = Ack.integer()
-  .min(1)              // Must be at least 1
-  .max(100)            // Must be at most 100
-  .multipleOf(1);     // Must be an integer (redundant for Ack.integer)
+  .min(1)         // Must be at least 1
+  .max(100)       // Must be at most 100
+  .multipleOf(1); // Must be an integer (redundant for Ack.integer)
 ```
 
-## Next Steps
+## Next steps
 
-Now that you understand validation rules, explore these related topics:
-
-- **[Error Handling](/core-concepts/error-handling)**: Learn how to handle and display validation errors
-- **[Custom Validation](/guides/custom-validation)**: Create custom constraints and refinement logic
-- **[Schema Types](/core-concepts/schemas)**: Explore all available schema types and their operations
-- **[Common Recipes](/guides/common-recipes)**: See practical validation patterns and solutions
-- **[Flutter Forms](/guides/flutter-form-validation)**: Integrate validation with Flutter form widgets
+- **[Error handling](/core-concepts/error-handling)**: Handle and display validation errors
+- **[Custom validation](/guides/custom-validation)**: Create custom constraints and refinement logic
+- **[Schema types](/core-concepts/schemas)**: All available schema types and their operations
+- **[Common recipes](/guides/common-recipes)**: Practical validation patterns and solutions
+- **[Flutter forms](/guides/flutter-form-validation)**: Integrate validation with Flutter form widgets

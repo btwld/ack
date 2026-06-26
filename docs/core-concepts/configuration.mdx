@@ -2,19 +2,13 @@
 title: Configuration
 ---
 
-Ack allows for some configuration settings, although most behavior is controlled directly through the schema definitions when they are created.
+Ack has no global configuration object. All behavior is configured at the schema level through the fluent API.
 
-## Global Settings (Less Common)
+## Schema-level configuration
 
-In general, Ack prefers configuration per schema definition rather than global settings. However, if needed, you might manage global aspects like custom format registries or shared validation logic through your own application structure (e.g., dependency injection or service patterns).
+Define behavior when you create your schemas.
 
-*Currently, Ack does not expose a dedicated global configuration object. Configuration is primarily done at the schema level.*
-
-## Schema-Level Configuration
-
-Most "configuration" happens when you define your schemas using the fluent API provided by Ack.
-
-### Required Fields
+### Required fields
 
 Fields in [`Ack.object`](./schemas.mdx#object) are required by default. Mark a field as optional with `.optional()`.
 
@@ -26,102 +20,34 @@ Ack.object({
 }); // id and name are required by default
 ```
 
-### Additional Properties
+### Additional properties
 
-Control how extra fields (not defined in the schema) are handled using the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object).
+Control how extra fields are handled with the `additionalProperties` parameter in [`Ack.object`](./schemas.mdx#object).
 
 ```dart
-// Disallow any extra properties (default behavior)
-Ack.object({
-  'id': Ack.integer()
-}, additionalProperties: false);
-// or simply:
-Ack.object({
-  'id': Ack.integer()
-});
+// Reject extra properties (default)
+Ack.object({'id': Ack.integer()});
+// or explicitly:
+Ack.object({'id': Ack.integer()}, additionalProperties: false);
 
-// Allow any extra properties
-Ack.object({
-  'id': Ack.integer()
-}, additionalProperties: true);
+// Allow extra properties
+Ack.object({'id': Ack.integer()}, additionalProperties: true);
 ```
 
-### Custom Error Messages
+### Custom error messages
 
-Built-in validation rules provide default error messages. For custom error messages, use custom constraints with the `.constrain()` method.
+Built-in constraints provide default messages. To override them, use `.constrain()`.
 See also: [Custom Error Messages in Error Handling](./error-handling.mdx#custom-error-messages).
 
 ```dart
-// Built-in constraints use default messages
 Ack.string().minLength(5); // Default: "Too short, min 5 characters"
-Ack.integer().min(18); // Default: "Must be at least 18"
-
-// For custom messages, use custom constraints (see Custom Validation section below)
+Ack.integer().min(18);     // Default: "Must be at least 18"
 ```
 
-### Custom Validation Logic
+### Custom validation logic
 
-Use `.constrain()` to add reusable validation logic for value-level checks, or `.refine()` for cross-field rules.
+Use `.constrain()` for reusable value-level checks and `.refine()` for cross-field rules — see [Custom Validation](../guides/custom-validation.mdx).
 
-```dart
-import 'package:ack/ack.dart';
+## Code generation
 
-class IsPositiveConstraint extends Constraint<double> with Validator<double> {
-  IsPositiveConstraint()
-      : super(
-          constraintKey: 'is_positive',
-          description: 'Number must be positive',
-        );
-
-  @override
-  bool isValid(double value) => value > 0;
-
-  @override
-  String buildMessage(double value) => 'Number must be positive';
-}
-
-final priceSchema = Ack.double().constrain(IsPositiveConstraint());
-
-// Cross-field validation (e.g., password confirmation)
-final signUpSchema = Ack.object({
-  'password': Ack.string().minLength(8),
-  'confirmPassword': Ack.string().minLength(8),
-}).refine(
-  (data) => data['password'] == data['confirmPassword'],
-  message: 'Passwords do not match',
-);
-```
-*See the [Custom Validation Guide](../guides/custom-validation.mdx) for additional patterns.*
-
-## AckType Generation
-
-`ack_generator` works with top-level schemas annotated with `@AckType()`. Write
-the schema directly, then generate an extension type wrapper around its
-validated representation:
-
-```dart
-import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'user.g.dart';
-
-@AckType()
-final userSchema = Ack.object({
-  'name': Ack.string().minLength(2).maxLength(50),
-  'email': Ack.string().email(),
-  'age': Ack.integer().min(18).optional().nullable(),
-}, additionalProperties: true);
-```
-
-After running `dart run build_runner build`, the generated part adds a typed
-wrapper such as `UserType` with `parse()` / `safeParse()` helpers and typed
-getters for the schema fields.
-
-*See [TypeSafe Schemas](./typesafe-schemas.mdx) and the generator README for
-setup details and supported schema shapes.*
-
-## Summary
-
-- Ack primarily uses **schema-level configuration** through methods and parameters like `.minLength()`, `.optional()`, `additionalProperties: ...`.
-- **Manual schema definition** is the recommended approach for production applications.
-- There is currently no central **global configuration** object provided by Ack itself.
+Annotate a top-level schema with `@AckType()` to generate a typed wrapper — see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup and supported shapes.

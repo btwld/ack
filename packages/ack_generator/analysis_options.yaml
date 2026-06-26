@@ -4,7 +4,9 @@ include: ../../analysis_options.yaml
 
 analyzer:
   errors:
-    # Suppress deprecated analyzer API warnings while we maintain compatibility.
+    # Suppresses deprecations from the EXTERNAL `analyzer` package (mid-migration
+    # from the `Element2` API back to `Element`). Not related to Ack's own API,
+    # which has no deprecations. Remove once ack_generator migrates off Element2.
     deprecated_member_use: ignore
 
 linter:

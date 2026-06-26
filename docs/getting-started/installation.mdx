@@ -2,8 +2,9 @@
 title: Installing Ack
 ---
 
+Ack is a pure-Dart package with no required build step. Add the core library — and, optionally, the code generator for typed wrappers.
 
-## Add to Your Project
+## Add to your project
 
 Add Ack to your project using the Dart CLI:
 
@@ -15,17 +16,16 @@ dart pub add ack
 flutter pub add ack
 ```
 
-Or manually add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for the latest version):
+Or add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for the latest version):
 
 ```yaml
 dependencies:
   ack: ^1.0.0 # Replace with latest version
 ```
 
-## Code Generator (`@AckType()`)
+## Code generator (`@AckType()`)
 
-If you want typed wrappers for hand-written schemas, add the annotation and
-generator packages alongside `ack`:
+To generate typed wrappers for hand-written schemas, add the annotation and generator packages alongside `ack`:
 
 ```bash
 dart pub add ack ack_annotations
@@ -44,9 +44,7 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-`ack_generator` does not generate schemas from classes. It reads top-level Ack
-schema variables and getters annotated with `@AckType()` and emits typed
-extension wrappers with `parse()` / `safeParse()` helpers.
+`ack_generator` does not generate schemas from classes. It reads top-level Ack schema variables and getters annotated with `@AckType()` and emits typed extension wrappers with `parse()`/`safeParse()` helpers.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -61,37 +59,17 @@ final userSchema = Ack.object({
 });
 ```
 
-Run the generator with:
+Run the generator:
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-See the [generator documentation](https://docs.page/btwld/ack) for more
-AckType examples and supported schema shapes.
+See [TypeSafe Schemas](../core-concepts/typesafe-schemas.mdx) for more `@AckType` examples and supported schema shapes.
 
-## Basic Usage after Installation
+## Next step
 
-Import Ack in your Dart files:
-
-```dart
-import 'package:ack/ack.dart';
-
-// 1. Define a simple schema (e.g., for a name)
-final nameSchema = Ack.string().minLength(3);
-
-// 2. Validate some data against the schema
-final result = nameSchema.safeParse('John');
-
-// 3. Check the result
-if (result.isOk) {
-  print('Valid: ${result.getOrThrow()}'); // Access the valid data
-} else {
-  print('Invalid: ${result.getError()}'); // Get the error details
-}
-```
-
-See the [Quickstart Tutorial](./quickstart-tutorial.mdx) for a more complete example.
+Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./quickstart-tutorial.mdx) takes you from your first schema to handling every validation outcome.
 
 ## Requirements
 
