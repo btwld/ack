@@ -11,6 +11,7 @@ workspace:
   - packages/ack_generator
   - packages/ack_firebase_ai
   - packages/ack_json_schema_builder
+  - packages/standard_schema
   - example
   
 dependencies:
@@ -58,6 +59,7 @@ melos:
           - ack_generator
           - ack_firebase_ai
           - ack_json_schema_builder
+          - standard_schema
           - ack_example
           - ack_annotations
 

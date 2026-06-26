@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:standard_schema/standard_schema.dart';
 
 import '../common_types.dart';
 import '../constraints/constraint.dart';
@@ -62,7 +63,8 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+abstract class AckSchema<Boundary extends Object, Runtime extends Object>
+    implements StandardSchemaWithJsonSchema<Boundary?, Runtime?> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
@@ -228,6 +230,53 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// branch-level null policies (e.g. [AnyOfSchema]) override this hook.
   @protected
   bool get acceptsNull => isNullable;
+
+  @override
+  StandardSchemaWithJsonSchemaPropsV1<Boundary?, Runtime?> get standard =>
+      StandardSchemaWithJsonSchemaPropsV1(
+        vendor: 'ack',
+        validate: _validateStandard,
+        jsonSchema: StandardJsonSchemaConverter(
+          input: _standardJsonSchemaInput,
+          output: _standardJsonSchemaOutput,
+        ),
+      );
+
+  StandardResult<Runtime?> _validateStandard(
+    Object? value, [
+    StandardValidateOptions? options,
+  ]) {
+    return switch (safeParse(value)) {
+      Ok(value: final value) => StandardSuccess<Runtime?>(value),
+      Fail(error: final error) => StandardFailure<Runtime?>(
+        error.toStandardIssues(),
+      ),
+    };
+  }
+
+  Map<String, Object?> _standardJsonSchemaInput(
+    StandardJsonSchemaOptions options,
+  ) {
+    _checkStandardJsonSchemaTarget(options);
+    return toJsonSchema();
+  }
+
+  Map<String, Object?> _standardJsonSchemaOutput(
+    StandardJsonSchemaOptions options,
+  ) {
+    _checkStandardJsonSchemaTarget(options);
+    return toStandardOutputSchemaModel().toJsonSchema();
+  }
+
+  static void _checkStandardJsonSchemaTarget(
+    StandardJsonSchemaOptions options,
+  ) {
+    if (options.target == JsonSchemaTarget.draft07) return;
+    throw UnsupportedError(
+      'Ack only supports Standard JSON Schema target '
+      '${JsonSchemaTarget.draft07}; got ${options.target}.',
+    );
+  }
 
   /// The schema type category for this schema.
   @protected

@@ -9,7 +9,13 @@ class SchemaContext {
   final Object? value;
   final AnyAckSchema schema;
   final SchemaContext? parent;
-  final String? pathSegment;
+
+  /// Raw path key for this context.
+  ///
+  /// Object properties use string keys, list items use integer indexes, and
+  /// transparent wrapper branches use `''` so JSON Pointer rendering can skip
+  /// an implementation-only schema layer.
+  final Object? pathSegment;
   final SchemaOperation operation;
 
   const SchemaContext({
@@ -34,11 +40,12 @@ class SchemaContext {
 
     final parentPath = parent!.path;
 
+    final pathSegment = this.pathSegment;
     if (pathSegment == '') {
       return parentPath;
     }
 
-    final segment = pathSegment ?? name;
+    final segment = (pathSegment ?? name).toString();
     final escapedSegment = _escapeJsonPointerSegment(segment);
 
     return parentPath == '#'
@@ -53,7 +60,7 @@ class SchemaContext {
     required String name,
     required AnyAckSchema schema,
     required Object? value,
-    String? pathSegment,
+    Object? pathSegment,
     SchemaOperation? operation,
   }) {
     return SchemaContext(
