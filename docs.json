@@ -69,19 +69,6 @@
       ]
     },
     {
-      "group": "For Package Authors",
-      "pages": [
-        {
-          "title": "Schema Converter Quickstart",
-          "href": "/guides/schema-converter-quickstart"
-        },
-        {
-          "title": "Creating Schema Converters",
-          "href": "/guides/creating-schema-converter-packages"
-        }
-      ]
-    },
-    {
       "group": "Reference",
       "pages": [{ "title": "API Reference", "href": "/api-reference/" }]
     }
