@@ -21,7 +21,7 @@ Object? cloneDefault(Object? value) {
   // Handle any Map (not just Map<String, Object?>) so we don't skip cloned defaults
   // for literals inferred as Map<String, int> or similar.
   if (value is Map) {
-    // Preserve String-keyed maps to keep compatibility with MapValue casts.
+    // Preserve String-keyed maps for JsonMap casts.
     if (value.keys.every((key) => key is String)) {
       final cloned = <String, Object?>{};
       value.forEach((key, entryValue) {

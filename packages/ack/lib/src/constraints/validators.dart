@@ -43,7 +43,7 @@ class InvalidTypeConstraint extends Constraint<Object?>
     if (t == int) return value is int;
     if (t == double) return value is double;
     if (t == bool) return value is bool;
-    if (t == MapValue || t == Map) return value is Map;
+    if (t == JsonMap || t == Map) return value is Map;
     if (t == List) return value is List;
 
     // Conservative fallback for other types
@@ -88,8 +88,8 @@ class InvalidTypeConstraint extends Constraint<Object?>
 
 /// Placeholder: Constraint for when an object has properties not defined in its schema
 /// and `allowAdditionalProperties` is false.
-class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
-    with Validator<MapValue> {
+class ObjectNoAdditionalPropertiesConstraint extends Constraint<JsonMap>
+    with Validator<JsonMap> {
   final String unexpectedPropertyKey;
   ObjectNoAdditionalPropertiesConstraint({required this.unexpectedPropertyKey})
     : super(
@@ -99,14 +99,14 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
       );
 
   @override
-  bool isValid(MapValue value) {
+  bool isValid(JsonMap value) {
     // This logic is handled in ObjectSchema, so this validation is conceptual.
     // We return false to ensure an error is always generated when this is used.
     return false;
   }
 
   @override
-  String buildMessage(MapValue value) {
+  String buildMessage(JsonMap value) {
     return 'Unexpected property found: "$unexpectedPropertyKey".';
   }
 
@@ -132,8 +132,8 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<MapValue>
 
 /// Placeholder: Constraint for when an object is missing a required property.
 /// Logic is in ObjectSchema.
-class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
-    with Validator<MapValue> {
+class ObjectRequiredPropertiesConstraint extends Constraint<JsonMap>
+    with Validator<JsonMap> {
   final String missingPropertyKey;
   ObjectRequiredPropertiesConstraint({required this.missingPropertyKey})
     : super(
@@ -142,12 +142,12 @@ class ObjectRequiredPropertiesConstraint extends Constraint<MapValue>
       );
 
   @override
-  bool isValid(MapValue value) {
+  bool isValid(JsonMap value) {
     return value.containsKey(missingPropertyKey);
   }
 
   @override
-  String buildMessage(MapValue value) {
+  String buildMessage(JsonMap value) {
     return 'Required property "$missingPropertyKey" is missing.';
   }
 

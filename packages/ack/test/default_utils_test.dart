@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('cloneDefault', () {
-    test('clones Map<String, int> literals into an unmodifiable MapValue', () {
+    test('clones Map<String, int> literals into an unmodifiable JsonMap', () {
       final original = <String, int>{'count': 1};
 
       final cloned = cloneDefault(original) as Map<String, Object?>;

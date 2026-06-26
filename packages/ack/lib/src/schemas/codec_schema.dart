@@ -12,10 +12,14 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     with
         FluentSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>>,
         WrapperSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>> {
+  /// The boundary input schema. Internal codec plumbing; not part of the
+  /// public API surface.
+  @internal
   final AckSchema<Boundary, Object> inputSchema;
 
   /// The output schema applied to the runtime value after decoding and before
-  /// encoding.
+  /// encoding. Internal codec plumbing; not part of the public API surface.
+  @internal
   final AckSchema<dynamic, Runtime> outputSchema;
 
   final Runtime Function(Object value) _decoder;
