@@ -5,17 +5,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 1.0.0 - 2026-06-26
 
-Stable 1.0 release for the Ack workspace.
-
-### Highlights
-
-- Finalized the core validation API, codecs, JSON Schema export, Firebase AI
-  adapter, json_schema_builder adapter, and `@AckType()` extension-type
-  generation docs for the stable release.
-- Removed deprecated public helpers and the internal legacy `MapValue` alias so
-  the 1.0 API surface is clean.
-- Reworked the documentation site around task-first guides, validated examples,
-  and concise API reference material.
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
 
 ## 2026-03-02
 

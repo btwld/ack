@@ -1,9 +1,6 @@
 ## 1.0.0
 
-### Changed
-
-* Marked the Firebase AI `responseJsonSchema` adapter stable for Ack 1.0.
-* Updated installation snippets and docs to use stable Ack package constraints.
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
 
 ## 1.0.0-beta.12
 
