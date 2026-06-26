@@ -1,3 +1,24 @@
+## 1.0.0
+
+### Added
+
+* Documented codecs as a stable API for bidirectional conversions between wire
+  values and Dart runtime values.
+* Added and tested codec examples for built-in codecs and custom `Ack.codec`
+  round trips.
+
+### Changed
+
+* Prepared the documentation site and README for the stable 1.0 release with a
+  task-first quickstart, clearer guide flow, and validated API examples.
+
+### Removed
+
+* Removed the deprecated `StringSchema.enumString()` and
+  `StringSchema.literal()` instance helpers. Use the stable
+  `Ack.enumString(...)` and `Ack.literal(...)` factories instead.
+* Removed the internal legacy `MapValue` alias in favor of `JsonMap`.
+
 ## 1.0.0-beta.12
 
 ### Breaking Changes
