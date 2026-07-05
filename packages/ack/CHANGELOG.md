@@ -1,3 +1,12 @@
+## 1.1.0
+
+### Added
+
+* Add optional `maxDepth` support to `Ack.lazy` / `LazySchema`, letting
+  recursive schemas fail parse, runtime validation, and encode paths with a
+  bounded schema constraint error instead of recursing without a package-level
+  cap.
+
 ## 1.0.0
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.

@@ -314,6 +314,79 @@ void main() {
     // on top of that, inflating this count. Locks in the fixed call profile.
     expect(calls, 15);
   });
+
+  group('maxDepth', () {
+    test('allows input at the cap and fails one level deeper', () {
+      const maxDepth = 3;
+      late final ObjectSchema categorySchema;
+      final child = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        () => categorySchema,
+        maxDepth: maxDepth,
+      ).nullable().optional();
+      categorySchema = Ack.object({'name': Ack.string(), 'child': child});
+
+      final atLimit = _nestedCategoryJson(maxDepth);
+      final tooDeep = _nestedCategoryJson(maxDepth + 1);
+
+      expect(categorySchema.safeParse(atLimit).isOk, isTrue);
+      expect(categorySchema.safeParse(tooDeep).isFail, isTrue);
+      expect(categorySchema.safeEncode(atLimit).isOk, isTrue);
+      expect(categorySchema.safeEncode(tooDeep).isFail, isTrue);
+    });
+
+    test('defaults to unlimited recursion depth', () {
+      late final ObjectSchema categorySchema;
+      final child = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        () => categorySchema,
+      ).nullable().optional();
+      categorySchema = Ack.object({'name': Ack.string(), 'child': child});
+
+      expect(categorySchema.safeParse(_nestedCategoryJson(12)).isOk, isTrue);
+    });
+
+    test('preserves maxDepth through fluent copies', () {
+      final target = Ack.object({'name': Ack.string()});
+      final lazy = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        () => target,
+        maxDepth: 2,
+      );
+
+      expect(lazy.maxDepth, 2);
+      expect(lazy.nullable().optional().maxDepth, 2);
+    });
+
+    test('includes maxDepth in equality and hashCode', () {
+      final target = Ack.object({'name': Ack.string()});
+      AckSchema<JsonMap, JsonMap> builder() => target;
+
+      final uncapped = Ack.lazy<JsonMap, JsonMap>('Category', builder);
+      final capped = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        builder,
+        maxDepth: 2,
+      );
+      final matchingCap = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        builder,
+        maxDepth: 2,
+      );
+
+      expect(capped, matchingCap);
+      expect(capped.hashCode, matchingCap.hashCode);
+      expect(capped, isNot(uncapped));
+    });
+  });
+}
+
+JsonMap _nestedCategoryJson(int childDepth) {
+  JsonMap node = {'name': 'node-$childDepth'};
+  for (var depth = childDepth - 1; depth >= 0; depth--) {
+    node = {'name': 'node-$depth', 'child': node};
+  }
+  return node;
 }
 
 final class _TestJsonSchemaKeywordConstraint<T extends Object>

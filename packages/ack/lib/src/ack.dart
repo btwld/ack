@@ -87,18 +87,22 @@ final class Ack {
 
   /// Creates a schema reference that is resolved lazily on first use.
   ///
-  /// The [builder] is called once and memoized. Two `Ack.lazy` instances are
-  /// equal only when their `builder` closure is the same reference -- pulling
-  /// the closure into a `final` variable lets two calls share equality.
+  /// The [builder] is called once and memoized. Set [maxDepth] to fail recursive
+  /// parse, runtime validation, or encode paths before they can grow without
+  /// bound. Two `Ack.lazy` instances are equal only when their `builder` closure
+  /// is the same reference -- pulling the closure into a `final` variable lets
+  /// two calls share equality.
   ///
   /// `toJsonSchema()` and `toSchemaModel()` export lazy references through
   /// recursive `definitions`/`$ref` JSON Schema definitions. Bare or wrapped
   /// `Ack.lazy` schemas cannot be used as discriminated union branches.
-  static LazySchema<Boundary, Runtime> lazy<
-    Boundary extends Object,
-    Runtime extends Object
-  >(String name, AckSchema<Boundary, Runtime> Function() builder) {
-    return LazySchema<Boundary, Runtime>(name, builder);
+  static LazySchema<Boundary, Runtime>
+  lazy<Boundary extends Object, Runtime extends Object>(
+    String name,
+    AckSchema<Boundary, Runtime> Function() builder, {
+    int? maxDepth,
+  }) {
+    return LazySchema<Boundary, Runtime>(name, builder, maxDepth: maxDepth);
   }
 
   /// Creates a schema for a specific Dart instance type [T], with [T] as
