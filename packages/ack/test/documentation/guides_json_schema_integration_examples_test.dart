@@ -91,6 +91,30 @@ void main() {
       expect(innerAnyOf, hasLength(2));
     });
 
+    test('reference bundle validates the documented message shape', () {
+      final AckSchema<Object, Object> schema = Ack.fromJsonSchema(
+        {r'$ref': r'types.json#/$defs/message'},
+        baseUri: Uri.parse('https://example.com/protocol/root.json'),
+        documents: {
+          Uri.parse('types.json'): {
+            r'$defs': {
+              'message': {
+                'type': 'object',
+                'properties': {
+                  'text': {'type': 'string'},
+                },
+                'required': ['text'],
+              },
+            },
+          },
+        },
+      );
+
+      expect(schema.safeParse({'text': 'hello'}).isOk, isTrue);
+      expect(schema.safeParse(<String, Object?>{}).isFail, isTrue);
+      expect(schema.safeParse({'text': 1}).isFail, isTrue);
+    });
+
     test('API specification example includes referenced schema', () {
       Map<String, Object?> buildApiSpecification() {
         final userJsonSchema = buildUserSchema().toJsonSchema();

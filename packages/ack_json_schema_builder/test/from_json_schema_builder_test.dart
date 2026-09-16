@@ -233,4 +233,22 @@ void main() {
       }
     },
   );
+
+  test(
+    'ordinary lazy and imported schemas retain independent validation',
+    () async {
+      final imported = importJsonSchema(true).schema.nullable(value: false);
+      final schema = Ack.object({
+        'a': imported,
+        'b': Ack.lazy('native', () => imported),
+      });
+      final value = {'a': 'ok', 'b': null};
+
+      expect(schema.safeParse(value).isFail, isTrue);
+      expect(
+        (await schema.toJsonSchemaBuilder().validate(value)).isEmpty,
+        isFalse,
+      );
+    },
+  );
 }

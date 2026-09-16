@@ -128,6 +128,41 @@ void main() {
       );
     });
 
+    test('rejects an imported definition reused as a lazy target', () {
+      final imported = importJsonSchema(true).schema.nullable(value: false);
+      final schema = Ack.object({
+        'a': imported,
+        'b': Ack.lazy('_ack_import_0_0', () => imported),
+      });
+
+      expect(schema.toJsonSchema, throwsArgumentError);
+    });
+
+    test('rejects a lazy name occupied by a nested imported definition', () {
+      final imported = importJsonSchema({
+        'type': 'object',
+        'properties': {
+          'value': {'type': 'string'},
+        },
+      }).schema;
+      final schema = Ack.object({
+        'a': imported,
+        'b': Ack.lazy('_ack_import_0_1', () => imported),
+      });
+
+      expect(schema.toJsonSchema, throwsArgumentError);
+    });
+
+    test('rejects an import generated name occupied by an earlier lazy', () {
+      final imported = importJsonSchema(true).schema;
+      final schema = Ack.object({
+        'a': Ack.lazy('_ack_import_0_0', Ack.string),
+        'b': imported,
+      });
+
+      expect(schema.toJsonSchema, throwsArgumentError);
+    });
+
     test('rejects nullable list item schemas at construction', () {
       expect(
         () => Ack.list(Ack.string().nullable()),

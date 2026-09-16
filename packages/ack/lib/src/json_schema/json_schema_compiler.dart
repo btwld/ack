@@ -165,9 +165,9 @@ final class _JsonSchemaCompiler {
     }
     final node = _ImportedNode(source, document, pointer, base);
     locations[(document, pointer)] = node;
-    if (isRoot) _register(resources, document, node);
+    if (isRoot) _register(resources, document, node, r'$id');
     if (isRoot || (source is Map && source.containsKey(r'$id'))) {
-      _register(resources, base, node);
+      _register(resources, base, node, r'$id');
     }
     if (source is! Map<String, Object?>) return node;
     if (source.containsKey(r'$schema')) {
@@ -189,7 +189,7 @@ final class _JsonSchemaCompiler {
           !RegExp(r'^[A-Za-z_][-A-Za-z0-9._]*$').hasMatch(anchor)) {
         _fail(node, r'$anchor', 'Invalid anchor name.');
       }
-      _register(anchors, base.replace(fragment: anchor), node);
+      _register(anchors, base.replace(fragment: anchor), node, r'$anchor');
     }
     for (final entry in source.entries) {
       final key = entry.key;
@@ -233,10 +233,11 @@ final class _JsonSchemaCompiler {
     Map<Uri, _ImportedNode> registry,
     Uri uri,
     _ImportedNode node,
+    String keyword,
   ) {
     if (registry[uri] case final prior?) {
       if (!identical(prior, node)) {
-        _fail(node, r'$id', 'Duplicate schema identifier: $uri.');
+        _fail(node, keyword, 'Duplicate schema identifier: $uri.');
       }
     }
     registry[uri] = node;

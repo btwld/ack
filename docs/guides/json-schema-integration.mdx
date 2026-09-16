@@ -78,8 +78,10 @@ keywords include `format`, `pattern`, `multipleOf`, `patternProperties`,
 `prefixItems`, `contains`, conditional/dependent/unevaluated keywords, dynamic
 references, and custom vocabulary declarations. Unknown extension keywords are
 also reported. `format` is not enforced, even for formats Ack's native string
-schemas can validate. References to the 2020-12 meta-schema are reported as
-unsupported: they are **not** treated as equivalent to accepting any JSON value.
+schemas can validate. References to the 2020-12 meta-schema fail strict import.
+Explicit partial import reports their omission, and only the remaining
+supported assertions constrain the value; the meta-schema itself is not
+validated.
 
 ### References and bundles
 
@@ -90,7 +92,7 @@ never reads files or fetches URLs.
 
 ```dart
 final AckSchema<Object, Object> schema = Ack.fromJsonSchema(
-  {r'$ref': 'types.json#/$defs/message'},
+  {r'$ref': r'types.json#/$defs/message'},
   baseUri: Uri.parse('https://example.com/protocol/root.json'),
   documents: {
     Uri.parse('types.json'): {

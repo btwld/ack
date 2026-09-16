@@ -10,7 +10,8 @@ void main() {
     for (final file in Directory(
       'test/fixtures/a2ui_v0_9',
     ).listSync().whereType<File>())
-      if (file.path.endsWith('.json') && !file.path.endsWith('/example.json'))
+      if (file.path.endsWith('.json') &&
+          file.uri.pathSegments.last != 'example.json')
         base.resolve(file.uri.pathSegments.last): jsonDecode(
           file.readAsStringSync(),
         ),
@@ -23,6 +24,23 @@ void main() {
         documents: documents,
         allowUnsupported: allowUnsupported,
       );
+
+  test('fixture inventory includes eleven protocol schemas and catalog', () {
+    expect(documents.keys.map((uri) => uri.pathSegments.last).toSet(), {
+      'catalog.json',
+      'client_capabilities.json',
+      'client_data_model.json',
+      'client_to_server.json',
+      'client_to_server_list.json',
+      'client_to_server_list_wrapper.json',
+      'common_types.json',
+      'sample.json',
+      'server_capabilities.json',
+      'server_to_client.json',
+      'server_to_client_list.json',
+      'server_to_client_list_wrapper.json',
+    });
+  });
 
   test('all eleven upstream protocol documents resolve offline', () {
     for (final entry in documents.entries) {
@@ -117,5 +135,27 @@ void main() {
     };
     expect(imported.schema.safeParse(extra).isOk, isTrue);
     expect(roundTrip.safeParse(extra).isOk, isTrue);
+  });
+
+  test('sample schema partially validates the full example envelope', () {
+    final schema = load('sample.json', allowUnsupported: true).schema;
+    final example =
+        jsonDecode(
+              File('test/fixtures/a2ui_v0_9/example.json').readAsStringSync(),
+            )
+            as Map<String, Object?>;
+    final messages = example['messages'] as List<Object?>;
+
+    expect(messages, hasLength(2));
+    expect(schema.safeParse(example).isOk, isTrue);
+    expect(schema.safeParse({...example}..remove('name')).isFail, isTrue);
+    expect(schema.safeParse({...example, 'description': 1}).isFail, isTrue);
+    expect(
+      schema.safeParse({
+        ...example,
+        'messages': <Object?>[{}],
+      }).isFail,
+      isTrue,
+    );
   });
 }

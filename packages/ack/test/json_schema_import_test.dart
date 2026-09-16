@@ -120,6 +120,21 @@ void main() {
         // Draft-7 ignores every sibling of $ref. A root reference here would
         // silently discard the additional, exported `type: string` assertion.
         expect(exported.containsKey(r'$ref'), isFalse);
+        final branches = exported['anyOf'] as List<Object?>;
+        final constrained = branches
+            .whereType<Map<String, Object?>>()
+            .singleWhere((branch) => branch['type'] == 'string');
+        expect(constrained, isNot(contains(r'$ref')));
+        final referenceEnvelope = constrained['allOf'] as List<Object?>;
+        expect(referenceEnvelope, hasLength(1));
+        expect(
+          referenceEnvelope.single,
+          isA<Map<String, Object?>>().having(
+            (reference) => reference[r'$ref'],
+            r'$ref',
+            isA<String>(),
+          ),
+        );
         expect(importJsonSchema(exported).schema.safeParse(1).isFail, isTrue);
         expect(importJsonSchema(exported).schema.safeParse(null).isOk, isTrue);
         expect(schema.toSchemaModel().toJsonSchema(), exported);
@@ -234,6 +249,68 @@ void main() {
           throwsA(isA<JsonSchemaImportException>()),
         );
       }
+    });
+
+    test('attributes duplicate anchors to the second anchor keyword', () {
+      final documentUri = Uri.parse('https://example.test/anchors.json');
+      for (final allowUnsupported in [false, true]) {
+        expect(
+          () => importJsonSchema(
+            {
+              r'$defs': {
+                'a': {r'$anchor': 'dup'},
+                'b': {r'$anchor': 'dup'},
+              },
+            },
+            baseUri: documentUri,
+            allowUnsupported: allowUnsupported,
+          ),
+          throwsA(
+            isA<JsonSchemaImportException>().having(
+              (error) => error.diagnostics.last,
+              'diagnostic',
+              isA<JsonSchemaImportDiagnostic>()
+                  .having((issue) => issue.keyword, 'keyword', r'$anchor')
+                  .having(
+                    (issue) => issue.pointer,
+                    'pointer',
+                    r'#/$defs/b/$anchor',
+                  )
+                  .having(
+                    (issue) => issue.documentUri,
+                    'documentUri',
+                    documentUri,
+                  ),
+            ),
+          ),
+        );
+      }
+    });
+
+    test('attributes duplicate resource IDs to the second id keyword', () {
+      final documentUri = Uri.parse('https://example.test/resources.json');
+      expect(
+        () => importJsonSchema({
+          r'$defs': {
+            'a': {r'$id': 'duplicate.json'},
+            'b': {r'$id': 'duplicate.json'},
+          },
+        }, baseUri: documentUri),
+        throwsA(
+          isA<JsonSchemaImportException>().having(
+            (error) => error.diagnostics.last,
+            'diagnostic',
+            isA<JsonSchemaImportDiagnostic>()
+                .having((issue) => issue.keyword, 'keyword', r'$id')
+                .having((issue) => issue.pointer, 'pointer', r'#/$defs/b/$id')
+                .having(
+                  (issue) => issue.documentUri,
+                  'documentUri',
+                  documentUri,
+                ),
+          ),
+        ),
+      );
     });
 
     test('loss propagates through recursive references before negation', () {
