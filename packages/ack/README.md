@@ -70,7 +70,9 @@ The source document is a decoded map or boolean, not a JSON string.
 semantics. `importJsonSchema()` returns a `JsonSchemaImportResult` containing
 `schema`, immutable `diagnostics`, and `isExact`; partial conversion requires
 `allowUnsupported: true`. Supply reference bundles with `documents` and
-`baseUri`; no references are fetched automatically.
+`baseUri`; no references are fetched automatically. Malformed schemas,
+unresolved references, reference cycles, and resource-identity conflicts remain
+errors even when partial conversion is enabled.
 
 Exports preserve supported validation behavior, not textual document identity.
 Full A2UI coverage is not supported; partial imports must be evaluated using

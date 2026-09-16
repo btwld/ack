@@ -45,7 +45,9 @@ The builder model is the source document; `JsonSchemaImportResult` is the
 immutable diagnostic report with a validator; `AckSchema<Object, Object>` is
 the executable validator. `importToAck()` is also strict unless partial
 conversion is explicitly requested. Exports preserve supported validation
-behavior, not textual round-trip identity or omitted assertions.
+behavior, not textual round-trip identity or omitted assertions. Partial import
+only omits reported unsupported assertions; malformed schemas, unresolved
+references, reference cycles, and resource-identity conflicts still throw.
 
 The subset includes objects, arrays, primitives, enum/const, numeric bounds,
 length constraints, `anyOf`/`allOf`/exclusive `oneOf`/`not`, and recursive

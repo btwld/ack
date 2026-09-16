@@ -135,7 +135,16 @@ void main() {
         'b': Ack.lazy('_ack_import_0_0', () => imported),
       });
 
-      expect(schema.toJsonSchema, throwsArgumentError);
+      expect(
+        schema.toJsonSchema,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('collides with an imported definition'),
+          ),
+        ),
+      );
     });
 
     test('rejects a lazy name occupied by a nested imported definition', () {
@@ -150,7 +159,16 @@ void main() {
         'b': Ack.lazy('_ack_import_0_1', () => imported),
       });
 
-      expect(schema.toJsonSchema, throwsArgumentError);
+      expect(
+        schema.toJsonSchema,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('collides with an imported definition'),
+          ),
+        ),
+      );
     });
 
     test('rejects an import generated name occupied by an earlier lazy', () {
@@ -160,7 +178,16 @@ void main() {
         'b': imported,
       });
 
-      expect(schema.toJsonSchema, throwsArgumentError);
+      expect(
+        schema.toJsonSchema,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('Imported definition collides with'),
+          ),
+        ),
+      );
     });
 
     test('rejects nullable list item schemas at construction', () {

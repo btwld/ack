@@ -21,7 +21,12 @@ extension AckSchemaModelExtension<
 }
 
 final class _SchemaModelBuilder {
+  // Every emitted definition name is reserved here. A null value marks a lazy
+  // target that is currently being built.
   final _definitions = <String, AckSchemaModel?>{};
+
+  // Lazy-target identity is tracked separately because imported definitions
+  // are complete schema bodies, not recursive lazy targets.
   final _lazyTargets = <String, Object>{};
   var _importCount = 0;
 

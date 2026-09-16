@@ -19,6 +19,11 @@
 * Reject conflicting bundle documents with the same resolved retrieval URI,
   including conflicting copies of the root document.
 * Accept the draft 2020-12 meta-schema URI with an empty fragment (`#`).
+* Reject generated-definition name collisions between imported schemas and
+  `Ack.lazy()` targets instead of exporting a reference to the wrong schema.
+* Report duplicate anchors at the conflicting `$anchor` keyword rather than at
+  the enclosing resource identifier.
+* Correct the executable reference-bundle example in the JSON Schema guide.
 
 ### Compatibility / release handoff
 

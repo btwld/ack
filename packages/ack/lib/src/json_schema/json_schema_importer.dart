@@ -61,7 +61,8 @@ final class JsonSchemaImportResult {
 /// [allowUnsupported], unsupported assertions are omitted and reported. The
 /// resulting schema may accept more values, but never intentionally fewer.
 /// Invalid supported keywords, missing references, unsupported dialects, and
-/// reference cycles that do not descend into an instance always throw.
+/// reference cycles that do not descend into an instance always throw, as do
+/// conflicting retrieval documents and duplicate resource identifiers.
 JsonSchemaImportResult importJsonSchema(
   Object document, {
   Uri? baseUri,
