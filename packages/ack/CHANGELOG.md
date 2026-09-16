@@ -24,6 +24,8 @@
 * Report duplicate anchors at the conflicting `$anchor` keyword rather than at
   the enclosing resource identifier.
 * Correct the executable reference-bundle example in the JSON Schema guide.
+* Document `AckImportedSchemaModel` in converter-author exhaustive switches,
+  with convert-or-reject guidance for imported JSON Schema fragments.
 
 ### Compatibility / release handoff
 
