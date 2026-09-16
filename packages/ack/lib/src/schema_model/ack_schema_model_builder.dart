@@ -23,6 +23,7 @@ extension AckSchemaModelExtension<
 final class _SchemaModelBuilder {
   final _definitions = <String, AckSchemaModel?>{};
   final _targets = <String, Object>{};
+  var _importCount = 0;
 
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
     final lazyDefinitions = <String, Object?>{
@@ -125,12 +126,31 @@ final class _SchemaModelBuilder {
       InstanceSchema() => _instance(schema),
       DiscriminatedObjectSchema() => _discriminated(schema),
       LazySchema<dynamic, dynamic>() => _lazy(schema),
+      ImportedJsonSchema() => _imported(schema),
       _ => throw UnsupportedError(
         'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
       ),
     };
 
     return schema is LazySchema ? model : _applyConstraints(model, schema);
+  }
+
+  AckSchemaModel _imported(ImportedJsonSchema schema) {
+    final prefix = '_ack_import_${_importCount++}_';
+    for (final entry in schema.exportDefinitions(prefix).entries) {
+      if (_definitions.containsKey(entry.key)) {
+        throw ArgumentError(
+          'Imported definition collides with "${entry.key}".',
+        );
+      }
+      _targets[entry.key] = schema;
+      _definitions[entry.key] = AckImportedSchemaModel(extensions: entry.value);
+    }
+    return AckImportedSchemaModel(
+      description: schema.description,
+      extensions: schema.exportRoot(prefix),
+      nullable: schema.isNullable,
+    );
   }
 
   AckSchemaModel _string(StringSchema schema) {

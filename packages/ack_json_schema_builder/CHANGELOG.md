@@ -1,3 +1,15 @@
+## Unreleased
+
+### Added
+
+* Add strict `Schema.toAckSchema()` returning `AckSchema<Object, Object>` and
+  report-producing `Schema.importToAck()`, with supplied reference bundles.
+  Only `importToAck(allowUnsupported: true)` permits partial conversion.
+  Both complement the existing `AckSchema.toJsonSchemaBuilder()` export bridge.
+* Release handoff: advance this bridge's minimum Ack dependency to the first
+  release containing the importer. Package versions, publishing, and any
+  sealed-model compatibility-version adjustment are separate release work.
+
 ## 1.5.0
 
 ### Changed

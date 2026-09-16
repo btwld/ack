@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
@@ -12,6 +14,8 @@ import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
+part '../json_schema/json_schema_compiler.dart';
+part '../json_schema/json_schema_importer.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boundary_schema.dart';
@@ -22,6 +26,7 @@ part 'discriminated_object_schema.dart';
 part 'enum_schema.dart';
 part 'fluent_schema.dart';
 part 'instance_schema.dart';
+part 'imported_json_schema.dart';
 part 'lazy_schema.dart';
 part 'list_schema.dart';
 part 'map_schema.dart';

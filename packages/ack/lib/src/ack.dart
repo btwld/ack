@@ -7,6 +7,19 @@ import 'schemas/schema.dart';
 
 /// The main entry point for creating schemas with the Ack validation library.
 final class Ack {
+  /// Compiles a decoded draft 2020-12 JSON Schema into an ACK validator.
+  ///
+  /// [document] must be a map or boolean, not a JSON string. Referenced
+  /// [documents] are supplied by retrieval URI; no files or URLs are fetched.
+  /// Unsupported semantics throw [JsonSchemaImportException]. Use
+  /// [importJsonSchema] for a report or explicit partial conversion.
+  static AckSchema<Object, Object> fromJsonSchema(
+    Object document, {
+    Uri? baseUri,
+    Map<Uri, Object> documents = const {},
+  }) =>
+      importJsonSchema(document, baseUri: baseUri, documents: documents).schema;
+
   /// Creates a string schema. Boundary and runtime are both `String`.
   static StringSchema string() => const StringSchema();
 

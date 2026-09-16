@@ -41,11 +41,17 @@ jobs:
       - name: Analyze and test every package
         run: dart run melos run ci --no-select
 
-      - name: Test numeric parity in Chrome
+      - name: Test numeric parity and JSON Schema imports in Chrome
         working-directory: packages/ack
         run: |
           dart test --platform chrome \
             test/schemas/numeric_platform_parity_test.dart \
             test/schemas/extensions/numeric_extensions_test.dart \
             test/schemas/extensions/list_schema_extensions_test.dart \
-            test/utils/collection_utils_test.dart
+            test/utils/collection_utils_test.dart \
+            test/json_schema_import_test.dart \
+            test/json_schema_import_api_test.dart
+
+      - name: Test JSON Schema import bridge in Chrome
+        working-directory: packages/ack_json_schema_builder
+        run: dart test --platform chrome test/from_json_schema_builder_test.dart

@@ -4,6 +4,200 @@ title: JSON Schema Integration
 
 Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can export it as JSON Schema (Draft-7) and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth.
 
+## Importing published schemas
+
+Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
+(a map or boolean, not a JSON string) into an `AckSchema<Object, Object>`. The input dialect is draft 2020-12, including when
+`$schema` is absent. Other explicitly declared dialects are rejected.
+
+```dart
+import 'package:ack/ack.dart';
+
+final AckSchema<Object, Object> schema = Ack.fromJsonSchema({
+  'type': 'object',
+  'properties': {
+    'name': {'type': 'string'},
+    'age': {'type': 'integer', 'minimum': 0},
+  },
+  'required': ['name'],
+  'additionalProperties': false,
+});
+
+final user = schema.parse({'name': 'Ada', 'age': 36});
+final exported = schema.toJsonSchema();
+```
+
+The returned abstract `AckSchema<Object, Object>` composes with native
+Ack schemas; its runtime implementation is internal. It validates JSON values without injecting defaults or applying
+coercions. Parsing returns a detached, recursively unmodifiable value.
+Required means **key present**, not **non-null**; an omitted `type` does not
+implicitly require an object, string, or array. Integral numbers such as `1.0`
+match `integer`, and null array elements are supported.
+
+### Design: reuse the existing export boundary
+
+`AckSchema.toJsonSchema()` remains the export API. Imported schemas participate
+in the same `AckSchema` → `AckSchemaModel` → JSON Schema path as native schemas;
+the builder bridge delegates to that path too. There is no second public
+exporter or dependency on a Flutter runtime.
+
+You can import an existing export directly:
+
+```dart
+final document = Ack.object({'name': Ack.string()}).toJsonSchema();
+final AckSchema<Object, Object> schema = Ack.fromJsonSchema(document);
+final exportedAgain = schema.toJsonSchema();
+```
+
+The source document, import report, and executable validator are distinct:
+`Ack.fromJsonSchema()` returns the validator; `importJsonSchema()` returns a
+`JsonSchemaImportResult` with an abstract `schema`, immutable `diagnostics`,
+and `isExact`. Both are strict by default. Only the report-producing API accepts
+`allowUnsupported: true`. All entry points delegate to the same compiler.
+The importer preserves supported JSON validation semantics,
+not the original Dart declaration: JSON cannot recover codecs, Dart model
+types, custom callbacks, or refinements that were absent from the export.
+Exports containing unsupported keywords still follow the strictness policy.
+
+### Supported import subset
+
+| Area | Keywords |
+| --- | --- |
+| Schemas and types | Boolean schemas, `type` (including lists and `null`) |
+| Equality | `enum`, `const`, including nested JSON values and empty enums |
+| Objects | `properties`, `required`, boolean/schema `additionalProperties`, `minProperties`, `maxProperties` |
+| Arrays | Single-schema `items`, `minItems`, `maxItems`, `uniqueItems` |
+| Strings | `minLength`, `maxLength` (Unicode code points) |
+| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
+| Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
+| References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
+| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
+
+This is deliberately not a complete JSON Schema validator. Unsupported
+keywords include `format`, `pattern`, `multipleOf`, `patternProperties`,
+`prefixItems`, `contains`, conditional/dependent/unevaluated keywords, dynamic
+references, and custom vocabulary declarations. Unknown extension keywords are
+also reported. `format` is not enforced, even for formats Ack's native string
+schemas can validate. References to the 2020-12 meta-schema are reported as
+unsupported: they are **not** treated as equivalent to accepting any JSON value.
+
+### References and bundles
+
+Supply decoded documents by retrieval URI. Relative keys and references resolve
+against `baseUri`; nested `$id` values establish new resource scopes. When no
+base is provided, the importer uses `ack-import:///root.json`. The importer
+never reads files or fetches URLs.
+
+```dart
+final AckSchema<Object, Object> schema = Ack.fromJsonSchema(
+  {r'$ref': 'types.json#/$defs/message'},
+  baseUri: Uri.parse('https://example.com/protocol/root.json'),
+  documents: {
+    Uri.parse('types.json'): {
+      r'$defs': {
+        'message': {
+          'type': 'object',
+          'properties': {'text': {'type': 'string'}},
+          'required': ['text'],
+        },
+      },
+    },
+  },
+);
+```
+
+Exports are self-contained, Draft-7-compatible documents with root-scoped
+`definitions` and rewritten references. Original IDs, reference spellings,
+and document layout are not preserved. Validation equivalence is the contract,
+not textual identity. Imported schemas can be nested inside native objects and
+combined with other imported or lazy schemas without losing reference scope.
+Explicit JSON Pointers may also target schemas inside extension containers,
+such as A2UI's `#/components/Text`. Such containers are not scanned as schemas
+unless referenced. Empty and duplicate enums are normalized to valid Draft-7
+representations without changing the values they accept.
+
+### Strict imports and partial imports
+
+Strict import is the default. Unsupported features throw
+`JsonSchemaImportException`, whose `diagnostics` identify each source document,
+keyword, JSON Pointer, reason code, and explanation. Assertion diagnostics
+cover the validation graph reachable from the imported root. Unsupported
+assertions in unused definitions or unrelated supplied documents do not make
+the imported validator lossy. Schema resource IDs still need to be unambiguous.
+
+To explicitly accept a partial import:
+
+```dart
+final JsonSchemaImportResult imported = importJsonSchema(
+  {'type': 'string', 'format': 'email'},
+  allowUnsupported: true,
+);
+assert(!imported.isExact);
+for (final issue in imported.diagnostics) {
+  print('${issue.documentUri}${issue.pointer}: ${issue.message}');
+}
+// Enforces string, not email. Export also omits format.
+```
+
+Partial import can accept more values than the original. Unsupported assertions
+are not retained in exports. To avoid accidentally accepting fewer values, an
+incomplete `not` is omitted. An incomplete `oneOf` becomes an inclusive `anyOf`,
+preserving its branch shapes but dropping exclusivity, with a diagnostic.
+Similarly, `additionalProperties` is omitted alongside unsupported
+`patternProperties`, and `items` alongside unsupported `prefixItems`.
+
+Malformed supported keywords, unresolved references, duplicate resource IDs,
+unsupported dialects, and reference cycles that do not descend into an instance
+are errors even in partial mode. The importer checks schema structure and the
+keywords it compiles; it is not full meta-schema validation of unused definitions
+or unsupported vocabularies. Structural recursion is supported without adding
+an arbitrary validation-depth constraint.
+
+### Importing json_schema_builder models
+
+The existing bridge works in both directions:
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_json_schema_builder/ack_json_schema_builder.dart';
+import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
+
+final AckSchema<Object, Object> ackSchema =
+    jsb.Schema.string(minLength: 2).toAckSchema();
+final builderSchema = ackSchema.toJsonSchemaBuilder();
+```
+
+`toAckSchema({baseUri, documents})` is strict and returns the validator directly.
+`importToAck({baseUri, documents, allowUnsupported = false})` returns the report.
+Both accept `Map<Uri, jsb.Schema>` bundles. Partial conversion is available only
+through `importToAck(allowUnsupported: true)`; inspect its diagnostics before
+using its validator.
+
+MCP registration compatibility is deferred to separate work; importing a
+schema does not establish compatibility with a tool-registration API.
+
+### A2UI compatibility and verification
+
+Offline regression fixtures pin the eleven A2UI v0.9 protocol files and basic
+catalog to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
+For this catalog, register the catalog document under
+`https://a2ui.org/specification/v0_9/catalog.json`, in addition to the eleven
+protocol documents under their retrieval URIs. Its own `$id` is registered
+automatically; no source files need to be rewritten.
+
+The basic catalog is **not an exact supported import**: it additionally uses
+unevaluated-property checks, conditionals, patterns, formats, and an extension
+keyword. Strict import reports them. Explicit partial import retains message
+and component shapes, but may accept extra component properties. The client
+event schema reports its date-time format, and client capabilities report the
+three meta-schema references. Test the specific catalog your application uses;
+successful validation of examples does not prove complete catalog conformance.
+
+The committed conformance tests contain 600 upstream JSON Schema instance cases
+across 178 groups in the supported subset, including supplied remote documents.
+They check parse, encode, and re-imported exports without network access.
+Unsupported cases are not silently skipped within those fixtures.
+
 ## Generating JSON schemas
 
 Call `toJsonSchema()` on any `AckSchema` instance. This is the same generic Draft-7 renderer used by `schema.toSchemaModel().toJsonSchema()`.

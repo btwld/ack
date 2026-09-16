@@ -1,3 +1,34 @@
+## Unreleased
+
+### Added
+
+* Add strict `Ack.fromJsonSchema()` returning `AckSchema<Object, Object>` and
+  report-producing `importJsonSchema()` for a documented draft 2020-12 subset.
+  The runtime implementation is internal; diagnostics remain immutable.
+  Supports supplied reference bundles, recursion, JSON-specific null/presence
+  semantics, and exact `allOf`, `oneOf`, and `not` composition. Partial imports
+  explicitly report omissions; exports are self-contained and reflect only
+  enforced assertions.
+* Verify imports against 600 pinned upstream JSON Schema cases and the A2UI
+  v0.9 protocol bundle. Support catalog JSON Pointer targets outside `$defs`,
+  preserve branch shapes in partial exclusive unions, and normalize enums for
+  valid Draft-7 output. Only reachable assertions contribute loss diagnostics.
+
+### Fixed
+
+* Reject conflicting bundle documents with the same resolved retrieval URI,
+  including conflicting copies of the root document.
+* Accept the draft 2020-12 meta-schema URI with an empty fragment (`#`).
+
+### Compatibility / release handoff
+
+* Keep `AckImportedSchemaModel` public as a variant of sealed `AckSchemaModel`.
+  Consumers with exhaustive switches over the previous variants must add this
+  case (or a fallback). Although dart_apitool categorizes the new class as an
+  additive API change, this exhaustive-switch source compatibility impact
+  requires review during release version selection. No version adjustment or
+  publishing is included here.
+
 ## 1.5.0
 
 ### Added

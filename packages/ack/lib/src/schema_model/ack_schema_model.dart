@@ -249,6 +249,10 @@ sealed class AckSchemaModel {
         keywords,
         commonHandled,
       ),
+      AckImportedSchemaModel schema => schema._withUnhandledKeywords(
+        keywords,
+        commonHandled,
+      ),
     };
   }
 
@@ -326,6 +330,26 @@ sealed class AckSchemaModel {
       deepEq.hash(warnings),
     );
   }
+}
+
+/// A compiled JSON Schema fragment whose keyword applicability must be kept.
+///
+/// Unlike the typed models, this does not infer or emit a `type` keyword.
+final class AckImportedSchemaModel extends AckSchemaModel {
+  const AckImportedSchemaModel({
+    super.description,
+    super.nullable,
+    super.extensions,
+  });
+
+  AckImportedSchemaModel._(super.common) : super._();
+
+  @override
+  Map<String, Object?> toJsonSchema() => finishTypeJson(const {});
+
+  @override
+  AckImportedSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
+      AckImportedSchemaModel._(common);
 }
 
 final class AckRefSchemaModel extends AckSchemaModel {

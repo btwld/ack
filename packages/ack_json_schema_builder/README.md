@@ -6,7 +6,57 @@ JSON Schema Builder converter for the [ACK](https://pub.dev/packages/ack) valida
 
 ## Overview
 
-Converts ACK schemas to json_schema_builder format via `.toJsonSchemaBuilder()`. Assumes familiarity with [ACK](https://pub.dev/packages/ack) and [json_schema_builder](https://pub.dev/packages/json_schema_builder).
+Converts ACK schemas to json_schema_builder format via `.toJsonSchemaBuilder()`
+and imports builder models via `.toAckSchema()`.
+
+## Importing a schema
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_json_schema_builder/ack_json_schema_builder.dart';
+import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
+
+final AckSchema<Object, Object> schema = jsb.Schema.object(
+  properties: {'name': jsb.Schema.string()},
+  required: ['name'],
+).toAckSchema();
+
+final value = schema.parse({'name': 'Ada'});
+final exported = schema.toJsonSchemaBuilder();
+```
+
+Imports use ACK's draft 2020-12 `importJsonSchema()` implementation. Supply
+cross-document references through `documents: <Uri, jsb.Schema>{...}` and an
+optional `baseUri`; no network requests are made. Strict imports reject
+unsupported features: `toAckSchema()` returns an executable validator and has
+no partial-conversion option. For a report, use `importToAck()`:
+
+```dart
+final JsonSchemaImportResult report = jsb.Schema.fromMap({
+  'type': 'string',
+  'format': 'email',
+}).importToAck(allowUnsupported: true);
+final AckSchema<Object, Object> partial = report.schema;
+assert(!report.isExact);
+print(report.diagnostics);
+```
+
+The builder model is the source document; `JsonSchemaImportResult` is the
+immutable diagnostic report with a validator; `AckSchema<Object, Object>` is
+the executable validator. `importToAck()` is also strict unless partial
+conversion is explicitly requested. Exports preserve supported validation
+behavior, not textual round-trip identity or omitted assertions.
+
+The subset includes objects, arrays, primitives, enum/const, numeric bounds,
+length constraints, `anyOf`/`allOf`/exclusive `oneOf`/`not`, and recursive
+references. Formats, patterns, multiples, dynamic references, and meta-schema
+validation are not supported. Exports contain only enforced assertions.
+The published A2UI basic catalog also requires unsupported unevaluated-property
+checks and conditionals: import it partially only when its diagnostics are
+acceptable for your application. Full A2UI support and MCP registration
+compatibility remain separate work.
+See the [import guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
+for the complete support matrix and reference/diagnostic behavior.
 
 ## Installation
 

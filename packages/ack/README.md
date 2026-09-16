@@ -49,6 +49,35 @@ if (result.isOk) {
 
 Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
 
+## Import JSON Schema
+
+Import a decoded draft 2020-12 schema without re-declaring it in Dart:
+
+```dart
+import 'package:ack/ack.dart';
+
+final AckSchema<Object, Object> schema = Ack.fromJsonSchema({
+  'type': 'object',
+  'properties': {'name': {'type': 'string'}},
+  'required': ['name'],
+});
+final value = schema.parse({'name': 'Ada'});
+final jsonSchema = schema.toJsonSchema();
+```
+
+The source document is a decoded map or boolean, not a JSON string.
+`Ack.fromJsonSchema()` returns an executable validator and rejects unsupported
+semantics. `importJsonSchema()` returns a `JsonSchemaImportResult` containing
+`schema`, immutable `diagnostics`, and `isExact`; partial conversion requires
+`allowUnsupported: true`. Supply reference bundles with `documents` and
+`baseUri`; no references are fetched automatically.
+
+Exports preserve supported validation behavior, not textual document identity.
+Full A2UI coverage is not supported; partial imports must be evaluated using
+their diagnostics. MCP registration compatibility remains separate. See the
+[JSON Schema guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
+for the supported subset, recursive bundles, and round-trip guarantees.
+
 ## Documentation
 
 - [Full documentation](https://concepta.dev/ack)
@@ -58,4 +87,4 @@ Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a
 
 - [ack_generator](https://pub.dev/packages/ack_generator) — Generates models from `@AckInfer()` schemas and schemas from `@AckModel()` classes
 - [ack_firebase_ai](https://pub.dev/packages/ack_firebase_ai) — Firebase AI (Gemini) schema converter
-- [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — JSON Schema converter
+- [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — bidirectional JSON Schema bridge
