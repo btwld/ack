@@ -23,7 +23,7 @@ extension AckSchemaModelExtension<
 final class _SchemaModelBuilder {
   // Every emitted definition name is reserved here. A null value marks a lazy
   // target that is currently being built.
-  final _definitions = <String, AckSchemaModel?>{};
+  final _definitions = <String, Object?>{};
 
   // Lazy-target identity is tracked separately because imported definitions
   // are complete schema bodies, not recursive lazy targets.
@@ -31,10 +31,19 @@ final class _SchemaModelBuilder {
   var _importCount = 0;
 
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
-    final schemaDefinitions = <String, Object?>{
-      for (final entry in _definitions.entries)
-        if (entry.value case final model?) entry.key: model.toJsonSchema(),
-    };
+    final schemaDefinitions = <String, Object?>{};
+    for (final entry in _definitions.entries) {
+      switch (entry.value) {
+        case final AckSchemaModel model:
+          schemaDefinitions[entry.key] = model.toJsonSchema();
+        case final Map<String, Object?> schema:
+          schemaDefinitions[entry.key] = schema;
+        case null:
+          break;
+        default:
+          throw StateError('Invalid schema definition for "${entry.key}".');
+      }
+    }
     if (existingDefinitions == null) return schemaDefinitions;
     if (existingDefinitions is! Map) {
       throw ArgumentError(
@@ -148,11 +157,15 @@ final class _SchemaModelBuilder {
           'Imported definition collides with "${entry.key}".',
         );
       }
-      _definitions[entry.key] = AckImportedSchemaModel(extensions: entry.value);
+      _definitions[entry.key] = entry.value;
     }
-    return AckImportedSchemaModel(
+    final sourceNullable = schema.sourceAllowsNull;
+    return AckAllOfSchemaModel(
+      schemas: [AckRefSchemaModel(refName: '${prefix}0')],
       description: schema.description,
-      extensions: schema.exportRoot(prefix),
+      extensions: {
+        if (!schema.isNullable && sourceNullable) 'not': const {'type': 'null'},
+      },
       nullable: schema.isNullable,
     );
   }

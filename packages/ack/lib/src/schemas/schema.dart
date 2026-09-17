@@ -10,6 +10,7 @@ import '../constraints/pattern_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
+import '../json_schema/json_schema.dart';
 import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
@@ -492,7 +493,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Delegates to the sealed [AckSchemaModel] boundary so all renderers share
   /// the same Draft-7 output. Subclasses should not override this directly;
   /// instead they are dispatched in `ack_schema_model_builder.dart`.
-  Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
+  JsonSchema toJsonSchema() => toSchemaModel().toJsonSchema();
 
   Map<String, Object?> toMap() {
     return {

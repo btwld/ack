@@ -33,7 +33,7 @@ Current converter packages should use Ack's canonical export surface:
 
 ```dart
 final model = schema.toSchemaModel();
-final jsonSchema = schema.toJsonSchema();
+final JsonSchema jsonSchema = schema.toJsonSchema();
 ```
 
 `AckSchemaModel` describes the boundary shape, constraints, export-safe
@@ -42,11 +42,12 @@ non-JSON targets. JSON-map adapters can call `schema.toJsonSchema()` directly.
 Adapters should not traverse `AckSchema` subclasses or parse rendered JSON
 Schema output as their source of truth for non-JSON formats.
 
-Imported JSON Schema values surface as `AckImportedSchemaModel`. That variant
-preserves original keyword applicability instead of inferring a `type`. JSON-map
-targets should emit `schema.toJsonSchema()`. Targets without a generic JSON
-Schema fragment should reject the case explicitly, the same way they handle
-unsupported `AckRefSchemaModel` recursion.
+`JsonSchema` is ACK's concrete, zero-cost JSON Schema value type. It remains
+usable as a `Map<String, Object?>`, so JSON-map targets should call
+`schema.toJsonSchema()` directly. Imported schemas use the existing
+`AckAllOfSchemaModel` and `AckRefSchemaModel` variants, with their preserved
+definition bodies attached to the root model. They do not introduce an
+import-only variant into the sealed model hierarchy.
 
 ### Package Naming Convention
 
@@ -344,12 +345,6 @@ class <Target>SchemaConverter {
       // the target cannot express recursion.
       AckRefSchemaModel() => throw UnsupportedError(
         'Reference schemas (Ack.lazy) are not supported by this target.',
-      ),
-      // Imported fragments keep original JSON Schema keywords. JSON-map
-      // targets should return schema.toJsonSchema(); typed builder APIs
-      // that cannot represent an untyped keyword bag should reject.
-      AckImportedSchemaModel() => throw UnsupportedError(
-        'Imported JSON Schema fragments are not supported by this target.',
       ),
     };
   }
@@ -1203,9 +1198,6 @@ TargetSchema _convert(AckSchemaModel schema) {
     AckAllOfSchemaModel() => _convertAllOf(schema),
     AckNullSchemaModel() => TargetSchema.nullValue(),
     AckRefSchemaModel() => TargetSchema.ref(schema.refName),
-    // Emit the generic Draft-7 map when the target can consume JSON Schema.
-    // If it cannot represent an untyped fragment, throw UnsupportedError.
-    AckImportedSchemaModel() => TargetSchema.jsonSchema(schema.toJsonSchema()),
   };
 }
 

@@ -9,6 +9,8 @@
   semantics, and exact `allOf`, `oneOf`, and `not` composition. Partial imports
   explicitly report omissions; exports are self-contained and reflect only
   enforced assertions.
+* Add `JsonSchema`, a zero-cost core value type over decoded JSON Schema maps,
+  and return it from `AckSchema.toJsonSchema()`.
 * Verify imports against 600 pinned upstream JSON Schema cases and the A2UI
   v0.9 protocol bundle. Support catalog JSON Pointer targets outside `$defs`,
   preserve branch shapes in partial exclusive unions, and normalize enums for
@@ -24,17 +26,16 @@
 * Report duplicate anchors at the conflicting `$anchor` keyword rather than at
   the enclosing resource identifier.
 * Correct the executable reference-bundle example in the JSON Schema guide.
-* Document `AckImportedSchemaModel` in converter-author exhaustive switches,
-  with convert-or-reject guidance for imported JSON Schema fragments.
+* Preserve imported JSON Schema definitions without adding an import-specific
+  variant to the sealed `AckSchemaModel` hierarchy. Imported roots use the
+  existing composition and reference models.
 
 ### Compatibility / release handoff
 
-* Keep `AckImportedSchemaModel` public as a variant of sealed `AckSchemaModel`.
-  Consumers with exhaustive switches over the previous variants must add this
-  case (or a fallback). Although dart_apitool categorizes the new class as an
-  additive API change, this exhaustive-switch source compatibility impact
-  requires review during release version selection. No version adjustment or
-  publishing is included here.
+* `toJsonSchema()` now returns `JsonSchema`, an extension type implementing
+  `Map<String, Object?>`. Existing map consumers remain compatible. Custom
+  `AckSchema` subclasses that override this method with the wider `Map` return
+  type must update the override to return `JsonSchema`.
 
 ## 1.5.0
 

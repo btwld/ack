@@ -24,6 +24,11 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   final _ImportedNode _root;
 
+  /// Whether the source document itself accepts `null`, before fluent
+  /// nullability overrides are applied.
+  @internal
+  bool get sourceAllowsNull => _checkImportedNode(_root, null) == null;
+
   @override
   @protected
   SchemaResult<Object> validateRuntimeWithContext(
@@ -76,7 +81,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   /// Builds root-scoped definitions for the shared schema-model renderer.
   @internal
-  Map<String, Map<String, Object?>> exportDefinitions(String prefix) {
+  Map<String, JsonSchema> exportDefinitions(String prefix) {
     final names = <_ImportedNode, String>{};
     void visit(_ImportedNode node) {
       if (names.containsKey(node)) return;
@@ -89,28 +94,9 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     visit(_root);
     return {
       for (final entry in names.entries)
-        entry.value: entry.key.render((node) => names[node]!),
-    };
-  }
-
-  /// Renders the root reference, including fluent nullability overrides.
-  @internal
-  Map<String, Object?> exportRoot(String prefix) {
-    final ref = {r'$ref': '#/definitions/${prefix}0'};
-    final sourceNullable = _checkImportedNode(_root, null) == null;
-    // The common schema model adds nullable wrappers around constraints.
-    if (isNullable || !sourceNullable) {
-      return {
-        'allOf': [ref],
-      };
-    }
-    return {
-      'allOf': [
-        ref,
-        {
-          'not': {'type': 'null'},
-        },
-      ],
+        entry.value: JsonSchema.fromMap(
+          entry.key.render((node) => names[node]!),
+        ),
     };
   }
 

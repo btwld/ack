@@ -2,6 +2,20 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('JsonSchema is the concrete core JSON Schema value type', () {
+    final input = JsonSchema.fromMap({'type': 'string', 'minLength': 2});
+
+    final schema = Ack.fromJsonSchema(input);
+    final JsonSchema exported = schema.toJsonSchema();
+    final JsonSchema modelExport = schema.toSchemaModel().toJsonSchema();
+
+    expect(exported['type'], isNull);
+    expect(exported['definitions'], isA<Map<String, Object?>>());
+    expect(modelExport, exported);
+    expect(schema.safeParse('Ada').isOk, isTrue);
+    expect(schema.safeParse('A').isFail, isTrue);
+  });
+
   test('strict factory returns an executable abstract schema', () {
     final AckSchema<Object, Object> schema = Ack.fromJsonSchema({
       'type': 'string',

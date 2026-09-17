@@ -128,6 +128,18 @@ void main() {
       );
     });
 
+    test('uses existing composition models for imported JSON Schema', () {
+      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+
+      final model = schema.toSchemaModel();
+
+      expect(model, isA<AckAllOfSchemaModel>());
+      final allOf = model as AckAllOfSchemaModel;
+      expect(allOf.schemas, hasLength(1));
+      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
+      expect(model.toJsonSchema(), schema.toJsonSchema());
+    });
+
     test('rejects an imported definition reused as a lazy target', () {
       final imported = importJsonSchema(true).schema.nullable(value: false);
       final schema = Ack.object({

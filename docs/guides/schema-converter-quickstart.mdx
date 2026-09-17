@@ -116,10 +116,6 @@ class <Target>SchemaConverter {
       AckRefSchemaModel(refName: final name) => {
         r'$ref': '#/definitions/$name',
       },
-      // Imported fragments keep original JSON Schema keywords. Map targets
-      // should emit the generic Draft-7 document; typed builder APIs that
-      // cannot represent an untyped keyword bag should throw instead.
-      AckImportedSchemaModel() => schema.toJsonSchema(),
     };
   }
 

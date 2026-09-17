@@ -1,13 +1,8 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-/// Mirrors the documented converter-author choice for imported fragments:
-/// emit the generic Draft-7 map, or reject when the target cannot represent
-/// an untyped JSON Schema keyword bag.
-Object convertImportedFragment(
-  AckSchemaModel schema, {
-  required bool emitJsonSchema,
-}) {
+/// Mirrors the documented exhaustive converter over ACK's typed model.
+Object convertSchemaModel(AckSchemaModel schema) {
   return switch (schema) {
     AckStringSchemaModel() => 'string',
     AckIntegerSchemaModel() => 'integer',
@@ -20,49 +15,32 @@ Object convertImportedFragment(
     AckAllOfSchemaModel() => 'allOf',
     AckNullSchemaModel() => 'null',
     AckRefSchemaModel() => 'ref',
-    AckImportedSchemaModel() =>
-      emitJsonSchema
-          ? schema.toJsonSchema()
-          : throw UnsupportedError(
-              'Imported JSON Schema fragments are not supported by this target.',
-            ),
   };
 }
 
 void main() {
-  group('Docs converter imported-fragment handling', () {
+  group('Docs converter imported-schema handling', () {
+    late AckSchema<Object, Object> schema;
     late AckSchemaModel imported;
 
     setUp(() {
-      imported = importJsonSchema({
-        'type': 'string',
-        'minLength': 1,
-      }).schema.toSchemaModel();
+      schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 1});
+      imported = schema.toSchemaModel();
     });
 
-    test('imported schemas surface as AckImportedSchemaModel', () {
-      expect(imported, isA<AckImportedSchemaModel>());
+    test('imported schemas use existing composition and reference models', () {
+      expect(imported, isA<AckAllOfSchemaModel>());
+      final allOf = imported as AckAllOfSchemaModel;
+      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
+      expect(convertSchemaModel(imported), 'allOf');
     });
 
-    test('JSON-map targets emit the generic Draft-7 fragment', () {
-      final emitted = convertImportedFragment(imported, emitJsonSchema: true);
+    test('JSON-map targets use the concrete JsonSchema export', () {
+      final JsonSchema emitted = schema.toJsonSchema();
 
       expect(emitted, isA<Map<String, Object?>>());
       expect(emitted, equals(imported.toJsonSchema()));
-      expect(imported.toJsonSchema(), isNotEmpty);
-    });
-
-    test('typed targets can reject imported fragments', () {
-      expect(
-        () => convertImportedFragment(imported, emitJsonSchema: false),
-        throwsA(
-          isA<UnsupportedError>().having(
-            (error) => error.message,
-            'message',
-            contains('Imported JSON Schema fragments'),
-          ),
-        ),
-      );
+      expect(emitted, isNotEmpty);
     });
   });
 }

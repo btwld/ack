@@ -95,7 +95,7 @@ final class _OperationRecordingSchema extends AckSchema<String, String>
   }
 
   @override
-  Map<String, Object?> toJsonSchema() => const {'type': 'string'};
+  JsonSchema toJsonSchema() => const JsonSchema.fromMap({'type': 'string'});
 }
 
 void main() {

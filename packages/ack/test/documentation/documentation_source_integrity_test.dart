@@ -110,7 +110,7 @@ void main() {
       );
     });
 
-    test('converter exhaustive switches handle imported schema models', () {
+    test('converter exhaustive switches use only canonical schema models', () {
       const paths = [
         'docs/guides/schema-converter-quickstart.mdx',
         'docs/guides/creating-schema-converter-packages.mdx',
@@ -141,10 +141,8 @@ void main() {
       for (final documented in exhaustiveSwitches) {
         expect(
           documented.fence,
-          contains('AckImportedSchemaModel'),
-          reason:
-              '${documented.path} must convert or reject imported '
-              'JSON Schema fragments',
+          isNot(contains('AckImportedSchemaModel')),
+          reason: '${documented.path} must not expose an import-only model',
         );
       }
     });
