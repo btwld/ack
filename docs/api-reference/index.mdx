@@ -100,8 +100,8 @@ For non-`num` boundary types (e.g. numeric strings), use
 
 ### Utility Methods
 
-- `JsonSchema toJsonSchema()`: Returns a Draft-7 JSON Schema value that remains
-  usable as a `Map<String, Object?>`.
+- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via
+  the canonical `AckSchemaModel` boundary.
 - `AckSchemaModel toSchemaModel()`: Returns the canonical, target-independent
   boundary model for schema adapters, including export warnings.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.

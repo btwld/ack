@@ -9,8 +9,6 @@
   semantics, and exact `allOf`, `oneOf`, and `not` composition. Partial imports
   explicitly report omissions; exports are self-contained and reflect only
   enforced assertions.
-* Add `JsonSchema`, a zero-cost core value type over decoded JSON Schema maps,
-  and return it from `AckSchema.toJsonSchema()`.
 * Verify imports against 600 pinned upstream JSON Schema cases and the A2UI
   v0.9 protocol bundle. Support catalog JSON Pointer targets outside `$defs`,
   preserve branch shapes in partial exclusive unions, and normalize enums for
@@ -29,13 +27,6 @@
 * Preserve imported JSON Schema definitions without adding an import-specific
   variant to the sealed `AckSchemaModel` hierarchy. Imported roots use the
   existing composition and reference models.
-
-### Compatibility / release handoff
-
-* `toJsonSchema()` now returns `JsonSchema`, an extension type implementing
-  `Map<String, Object?>`. Existing map consumers remain compatible. Custom
-  `AckSchema` subclasses that override this method with the wider `Map` return
-  type must update the override to return `JsonSchema`.
 
 ## 1.5.0
 

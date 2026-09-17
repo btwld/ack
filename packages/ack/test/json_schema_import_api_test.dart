@@ -2,12 +2,14 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('JsonSchema is the concrete core JSON Schema value type', () {
-    final input = JsonSchema.fromMap({'type': 'string', 'minLength': 2});
+  test('JSON Schema maps round-trip through existing schema models', () {
+    final input = <String, Object?>{'type': 'string', 'minLength': 2};
 
     final schema = Ack.fromJsonSchema(input);
-    final JsonSchema exported = schema.toJsonSchema();
-    final JsonSchema modelExport = schema.toSchemaModel().toJsonSchema();
+    final Map<String, Object?> exported = schema.toJsonSchema();
+    final Map<String, Object?> modelExport = schema
+        .toSchemaModel()
+        .toJsonSchema();
 
     expect(exported['type'], isNull);
     expect(exported['definitions'], isA<Map<String, Object?>>());

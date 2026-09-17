@@ -81,7 +81,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   /// Builds root-scoped definitions for the shared schema-model renderer.
   @internal
-  Map<String, JsonSchema> exportDefinitions(String prefix) {
+  Map<String, Map<String, Object?>> exportDefinitions(String prefix) {
     final names = <_ImportedNode, String>{};
     void visit(_ImportedNode node) {
       if (names.containsKey(node)) return;
@@ -94,9 +94,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     visit(_root);
     return {
       for (final entry in names.entries)
-        entry.value: JsonSchema.fromMap(
-          entry.key.render((node) => names[node]!),
-        ),
+        entry.value: entry.key.render((node) => names[node]!),
     };
   }
 

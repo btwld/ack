@@ -35,8 +35,8 @@ void main() {
       expect(convertSchemaModel(imported), 'allOf');
     });
 
-    test('JSON-map targets use the concrete JsonSchema export', () {
-      final JsonSchema emitted = schema.toJsonSchema();
+    test('JSON-map targets use the direct map export', () {
+      final Map<String, Object?> emitted = schema.toJsonSchema();
 
       expect(emitted, isA<Map<String, Object?>>());
       expect(emitted, equals(imported.toJsonSchema()));

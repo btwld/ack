@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
-import '../json_schema/json_schema.dart';
 import 'ack_schema_model_warning.dart';
 
 const _unset = Object();
@@ -162,7 +161,7 @@ sealed class AckSchemaModel {
 
   String? get format => null;
 
-  JsonSchema toJsonSchema();
+  Map<String, Object?> toJsonSchema();
 
   Object? get _metadataEquality => null;
 
@@ -253,26 +252,26 @@ sealed class AckSchemaModel {
     };
   }
 
-  JsonSchema finishTypeJson(Map<String, Object?> typeJson) {
+  Map<String, Object?> finishTypeJson(Map<String, Object?> typeJson) {
     if (!nullable) {
-      return JsonSchema.fromMap({...typeJson, ..._common.toJson()});
+      return {...typeJson, ..._common.toJson()};
     }
 
     // Hoist user-facing metadata (title, description, default) to the top
     // level so generic JSON Schema consumers can find it without descending
     // into anyOf branches. Constraint-derived keywords stay inside the inner
     // branch so consumers see them next to the `type` they constrain.
-    return JsonSchema.fromMap({
+    return {
       ..._common.toHoistedJson(),
       if (_common.definitions != null) 'definitions': _common.definitions,
       'anyOf': [
         {...typeJson, ..._common.toEmbeddedJson()},
         _nullSchemaJson,
       ],
-    });
+    };
   }
 
-  JsonSchema finishCompositionJson(
+  Map<String, Object?> finishCompositionJson(
     String keyword,
     List<AckSchemaModel> schemas,
   ) {
@@ -282,17 +281,17 @@ sealed class AckSchemaModel {
       // one branch, then add null as the other branch. Flattening would validate
       // the same values but loses the distinction between nullability and the
       // composed union.
-      return JsonSchema.fromMap({
+      return {
         ..._common.toHoistedJson(),
         if (_common.definitions != null) 'definitions': _common.definitions,
         'anyOf': [
           {..._common.toEmbeddedJson(), keyword: branches},
           _nullSchemaJson,
         ],
-      });
+      };
     }
 
-    return JsonSchema.fromMap({..._common.toJson(), keyword: branches});
+    return {..._common.toJson(), keyword: branches};
   }
 
   AckSchemaModel _withUnhandledKeywords(
@@ -346,19 +345,17 @@ final class AckRefSchemaModel extends AckSchemaModel {
   final String refName;
 
   @override
-  JsonSchema toJsonSchema() {
-    final refJson = <String, Object?>{
-      r'$ref': '#/definitions/${_jsonPointerToken(refName)}',
-    };
+  Map<String, Object?> toJsonSchema() {
+    final refJson = {r'$ref': '#/definitions/${_jsonPointerToken(refName)}'};
     if (nullable) return finishTypeJson(refJson);
 
     final commonJson = _common.toJson();
-    if (commonJson.isEmpty) return JsonSchema.fromMap(refJson);
+    if (commonJson.isEmpty) return refJson;
 
-    return JsonSchema.fromMap({
+    return {
       ...commonJson,
       'allOf': [refJson],
-    });
+    };
   }
 
   @override
@@ -427,7 +424,7 @@ final class AckStringSchemaModel extends AckSchemaModel {
   }
 
   @override
-  JsonSchema toJsonSchema() => finishTypeJson({
+  Map<String, Object?> toJsonSchema() => finishTypeJson({
     'type': 'string',
     if (format != null) 'format': format,
     if (constValue != null) 'const': constValue,
@@ -558,7 +555,7 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
   final num? multipleOf;
 
   @override
-  JsonSchema toJsonSchema() => finishTypeJson({
+  Map<String, Object?> toJsonSchema() => finishTypeJson({
     'type': 'integer',
     if (format != null) 'format': format,
     if (constValue != null) 'const': constValue,
@@ -683,7 +680,7 @@ final class AckNumberSchemaModel extends AckSchemaModel {
   final num? multipleOf;
 
   @override
-  JsonSchema toJsonSchema() => finishTypeJson({
+  Map<String, Object?> toJsonSchema() => finishTypeJson({
     'type': 'number',
     if (format != null) 'format': format,
     if (constValue != null) 'const': constValue,
@@ -787,7 +784,7 @@ final class AckBooleanSchemaModel extends AckSchemaModel {
   final bool? constValue;
 
   @override
-  JsonSchema toJsonSchema() => finishTypeJson({
+  Map<String, Object?> toJsonSchema() => finishTypeJson({
     'type': 'boolean',
     if (constValue != null) 'const': constValue,
   });
@@ -838,7 +835,7 @@ final class AckArraySchemaModel extends AckSchemaModel {
   final bool? uniqueItems;
 
   @override
-  JsonSchema toJsonSchema() => finishTypeJson({
+  Map<String, Object?> toJsonSchema() => finishTypeJson({
     'type': 'array',
     if (items != null) 'items': items!.toJsonSchema(),
     if (minItems != null) 'minItems': minItems,
@@ -934,7 +931,7 @@ final class AckObjectSchemaModel extends AckSchemaModel {
   };
 
   @override
-  JsonSchema toJsonSchema() {
+  Map<String, Object?> toJsonSchema() {
     return finishTypeJson({
       'type': 'object',
       if (properties != null)
@@ -1020,8 +1017,7 @@ final class AckNullSchemaModel extends AckSchemaModel {
   AckNullSchemaModel._(_AckSchemaModelCommon common) : super._(common);
 
   @override
-  JsonSchema toJsonSchema() =>
-      JsonSchema.fromMap({'type': 'null', ..._common.toJson()});
+  Map<String, Object?> toJsonSchema() => {'type': 'null', ..._common.toJson()};
 
   @override
   AckNullSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
@@ -1062,7 +1058,8 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
   };
 
   @override
-  JsonSchema toJsonSchema() => finishCompositionJson('anyOf', schemas);
+  Map<String, Object?> toJsonSchema() =>
+      finishCompositionJson('anyOf', schemas);
 
   @override
   AckAnyOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
@@ -1107,7 +1104,8 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
   };
 
   @override
-  JsonSchema toJsonSchema() => finishCompositionJson('oneOf', schemas);
+  Map<String, Object?> toJsonSchema() =>
+      finishCompositionJson('oneOf', schemas);
 
   @override
   AckOneOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
@@ -1142,7 +1140,8 @@ final class AckAllOfSchemaModel extends AckSchemaModel {
   final List<AckSchemaModel> schemas;
 
   @override
-  JsonSchema toJsonSchema() => finishCompositionJson('allOf', schemas);
+  Map<String, Object?> toJsonSchema() =>
+      finishCompositionJson('allOf', schemas);
 
   @override
   AckAllOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
