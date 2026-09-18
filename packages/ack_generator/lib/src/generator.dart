@@ -162,7 +162,7 @@ class AckSchemaGenerator extends Generator {
       formattedCode = generatedCode;
     }
 
-    final validation = CodeValidator.validate(formattedCode);
+    final validation = validateGeneratedDartCode(formattedCode);
     if (validation.isFailure) {
       throw InvalidGenerationSource(
         'Generated code validation failed: ${validation.errorMessage}\n'

@@ -104,7 +104,7 @@ final class _AckFixtureSet {
     return fixture;
   }
 
-  static _AckFixtureSet load() {
+  factory _AckFixtureSet.load() {
     final packageRoot = _findPackageRoot();
     final fixtureDir = Directory(
       '${packageRoot.path}/test/fixtures/firebase_ai_response_json_schema',
