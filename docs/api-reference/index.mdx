@@ -35,6 +35,10 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
+- `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
+  documents = const {}})`: Strictly imports a decoded draft 2020-12 JSON
+  Schema. Referenced documents must be supplied explicitly; Ack never fetches
+  files or URLs.
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use
   `Ack.map(Ack.any().nullable())` for a `JsonMap`.
@@ -54,6 +58,27 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
   omit it, boundary payloads must include it, compatible branch discriminator
   fields are allowed, and conflicts are rejected. Exported/generated branches
   expose the exact branch literal.
+
+## JSON Schema Import
+
+See [JSON Schema Integration](../guides/json-schema-integration.mdx) for the
+supported draft 2020-12 subset, reference-bundle behavior, diagnostics, and
+examples.
+
+- `importJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object> documents
+  = const {}, bool allowUnsupported = false})`: Imports a decoded schema and
+  returns a `JsonSchemaImportResult`. The default is strict. With
+  `allowUnsupported: true`, unsupported assertions are omitted and reported;
+  malformed supported keywords, unresolved references, invalid dialects, and
+  unsafe reference cycles still throw.
+- `JsonSchemaImportResult`: Contains the executable
+  `AckSchema<Object, Object> schema`, immutable `diagnostics`, and `isExact`,
+  which is true when no reachable assertion was omitted.
+- `JsonSchemaImportDiagnostic`: Describes one import issue through `code`,
+  `documentUri`, `pointer`, `keyword`, and `message`.
+- `JsonSchemaImportException`: Thrown when a strict import encounters an
+  unsupported assertion or when an import cannot be completed safely. Its
+  `diagnostics` list identifies every reported issue.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)
 

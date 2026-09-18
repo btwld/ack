@@ -180,6 +180,15 @@ void main() {
       final apiReference = _readFromRepo('docs/api-reference/index.mdx');
 
       expect(apiReference, contains('toSchemaModel()'));
+      for (final importApi in [
+        'Ack.fromJsonSchema',
+        'importJsonSchema',
+        'JsonSchemaImportResult',
+        'JsonSchemaImportDiagnostic',
+        'JsonSchemaImportException',
+      ]) {
+        expect(apiReference, contains(importApi));
+      }
       expect(
         apiReference,
         contains('https://pub.dev/documentation/ack/latest/ack/'),

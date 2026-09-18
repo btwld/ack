@@ -160,6 +160,8 @@ final class _SchemaModelBuilder {
       _definitions[entry.key] = entry.value;
     }
     final sourceNullable = schema.sourceAllowsNull;
+    // Draft-7 ignores siblings of a bare $ref. Keep the imported root in an
+    // allOf envelope so fluent metadata and constraints remain effective.
     return AckAllOfSchemaModel(
       schemas: [AckRefSchemaModel(refName: '${prefix}0')],
       description: schema.description,
