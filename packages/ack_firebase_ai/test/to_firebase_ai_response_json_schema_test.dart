@@ -113,7 +113,7 @@ final class _FirebaseAiResponseJsonSchemaFixtures {
     return fixture;
   }
 
-  static _FirebaseAiResponseJsonSchemaFixtures load() {
+  factory _FirebaseAiResponseJsonSchemaFixtures.load() {
     final packageRoot = _findPackageRoot();
     final fixtureDir = Directory(
       '${packageRoot.path}/test/fixtures/firebase_ai_response_json_schema',

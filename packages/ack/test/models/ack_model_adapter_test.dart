@@ -21,9 +21,9 @@ final class _User {
   final String name;
   final int age;
 
-  static _User fromRuntime(JsonMap value) {
-    return _User(name: value['name'] as String, age: value['age'] as int);
-  }
+  _User.fromRuntime(JsonMap value)
+    : name = value['name'] as String,
+      age = value['age'] as int;
 
   JsonMap toRuntime() => {'name': name, 'age': age};
 }

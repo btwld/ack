@@ -132,7 +132,7 @@ final class _FirebaseAiNativeSchemaFixtures {
     return fixture;
   }
 
-  static _FirebaseAiNativeSchemaFixtures load(
+  factory _FirebaseAiNativeSchemaFixtures.load(
     FirebaseAiNativeSchemaFixtureFamily family,
   ) {
     final packageRoot = _findPackageRoot();

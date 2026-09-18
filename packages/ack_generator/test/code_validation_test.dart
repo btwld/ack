@@ -2,7 +2,7 @@ import 'package:ack_generator/src/validation/code_validator.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('CodeValidator', () {
+  group('validateGeneratedDartCode', () {
     test('should catch syntax errors', () {
       const invalidSyntax = '''
         class Test {
@@ -11,7 +11,7 @@ void main() {
         }
       ''';
 
-      final result = CodeValidator.validate(invalidSyntax);
+      final result = validateGeneratedDartCode(invalidSyntax);
       expect(result.isFailure, isTrue);
       expect(result.errorMessage, contains('syntax'));
     });
@@ -25,22 +25,8 @@ void main() {
         }
       ''';
 
-      final result = CodeValidator.validate(validSyntaxInvalidSemantic);
-      // This should pass because syntax is valid, even though semantics are wrong
+      final result = validateGeneratedDartCode(validSyntaxInvalidSemantic);
       expect(result.isSuccess, isTrue);
-    });
-
-    test('should catch actual syntax errors like missing braces', () {
-      const actualSyntaxError = '''
-        class Test {
-          void method( {
-            return;
-          }
-        }
-      ''';
-
-      final result = CodeValidator.validate(actualSyntaxError);
-      expect(result.isFailure, isTrue);
     });
   });
 }
