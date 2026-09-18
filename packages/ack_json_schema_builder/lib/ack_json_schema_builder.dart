@@ -1,7 +1,8 @@
-/// JSON Schema Builder converter for ACK validation library.
+/// Bidirectional JSON Schema Builder bridge for ACK validation library.
 ///
 /// Converts ACK validation schemas to json_schema_builder Schema format
 /// from ACK's generic Draft-7 JSON Schema renderer.
+/// Imports draft 2020-12 builder models through [AckSchemaImportExtension].
 ///
 /// ## Usage
 ///
@@ -21,6 +22,20 @@ library;
 
 import 'package:ack/ack.dart';
 import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
+
+/// Imports json_schema_builder models using ACK's JSON Schema importer.
+extension AckSchemaImportExtension on jsb.Schema {
+  /// Strictly converts this draft 2020-12 model to an ACK validator.
+  /// Unsupported semantics throw [JsonSchemaImportException].
+  AckSchema<Object, Object> toAckSchema({
+    Uri? baseUri,
+    Map<Uri, jsb.Schema> documents = const {},
+  }) => Ack.fromJsonSchema(
+    value,
+    baseUri: baseUri,
+    documents: documents.map((uri, schema) => MapEntry(uri, schema.value)),
+  );
+}
 
 /// Extension methods for converting ACK schemas to json_schema_builder format.
 extension JsonSchemaBuilderExtension on AckSchema {

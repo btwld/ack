@@ -34,7 +34,12 @@ export 'src/json_schema.dart';
 // plumbing for subclasses; consumers use `.refine(...)`, `safeParse`, and
 // concrete schema types instead.
 export 'src/schemas/schema.dart'
-    hide AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
+    hide
+        AnyAckSchema,
+        ImportedJsonSchema,
+        Refinement,
+        SchemaOperation,
+        WrapperSchema;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results

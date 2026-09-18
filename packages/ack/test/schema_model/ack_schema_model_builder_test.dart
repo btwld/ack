@@ -128,6 +128,56 @@ void main() {
       );
     });
 
+    test('uses existing composition models for imported JSON Schema', () {
+      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+
+      final model = schema.toSchemaModel();
+
+      expect(model, isA<AckAllOfSchemaModel>());
+      final allOf = model as AckAllOfSchemaModel;
+      expect(allOf.schemas, hasLength(1));
+      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
+      expect(model.toJsonSchema(), schema.toJsonSchema());
+    });
+
+    test('rejects an imported definition reused as a lazy target', () {
+      final imported = Ack.fromJsonSchema(true).nullable(value: false);
+      final schema = Ack.object({
+        'a': imported,
+        'b': Ack.lazy('_ack_import_0_0', () => imported),
+      });
+
+      expect(
+        schema.toJsonSchema,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('collides with an imported definition'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects an import generated name occupied by an earlier lazy', () {
+      final imported = Ack.fromJsonSchema(true);
+      final schema = Ack.object({
+        'a': Ack.lazy('_ack_import_0_0', Ack.string),
+        'b': imported,
+      });
+
+      expect(
+        schema.toJsonSchema,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('Imported definition collides with'),
+          ),
+        ),
+      );
+    });
+
     test('rejects nullable list item schemas at construction', () {
       expect(
         () => Ack.list(Ack.string().nullable()),

@@ -21,19 +21,34 @@ extension AckSchemaModelExtension<
 }
 
 final class _SchemaModelBuilder {
-  final _definitions = <String, AckSchemaModel?>{};
-  final _targets = <String, Object>{};
+  // Every emitted definition name is reserved here. A null value marks a lazy
+  // target that is currently being built.
+  final _definitions = <String, Object?>{};
+
+  // Lazy-target identity is tracked separately because imported definitions
+  // are complete schema bodies, not recursive lazy targets.
+  final _lazyTargets = <String, Object>{};
+  var _importCount = 0;
 
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
-    final lazyDefinitions = <String, Object?>{
-      for (final entry in _definitions.entries)
-        if (entry.value case final model?) entry.key: model.toJsonSchema(),
-    };
-    if (existingDefinitions == null) return lazyDefinitions;
+    final schemaDefinitions = <String, Object?>{};
+    for (final entry in _definitions.entries) {
+      switch (entry.value) {
+        case final AckSchemaModel model:
+          schemaDefinitions[entry.key] = model.toJsonSchema();
+        case final Map<String, Object?> schema:
+          schemaDefinitions[entry.key] = schema;
+        case null:
+          break;
+        default:
+          throw StateError('Invalid schema definition for "${entry.key}".');
+      }
+    }
+    if (existingDefinitions == null) return schemaDefinitions;
     if (existingDefinitions is! Map) {
       throw ArgumentError(
-        'Root JSON Schema definitions must be a map when Ack.lazy definitions '
-        'are exported.',
+        'Root JSON Schema definitions must be a map when generated '
+        'definitions are exported.',
       );
     }
 
@@ -42,20 +57,20 @@ final class _SchemaModelBuilder {
       final key = entry.key;
       if (key is! String) {
         throw ArgumentError(
-          'Root JSON Schema definitions keys must be strings when Ack.lazy '
+          'Root JSON Schema definitions keys must be strings when generated '
           'definitions are exported.',
         );
       }
       merged[key] = entry.value;
     }
 
-    for (final entry in lazyDefinitions.entries) {
+    for (final entry in schemaDefinitions.entries) {
       if (merged.containsKey(entry.key)) {
         if (!_deepEquality.equals(merged[entry.key], entry.value)) {
           throw ArgumentError(
-            'Ack.lazy definition "${entry.key}" collides with an existing root '
-            'JSON Schema definition. Use a unique lazy name or rename the '
-            'existing definition.',
+            'Generated definition "${entry.key}" collides with an existing '
+            'root JSON Schema definition. Use a unique lazy name or rename '
+            'the existing definition.',
           );
         }
         continue;
@@ -125,12 +140,36 @@ final class _SchemaModelBuilder {
       InstanceSchema() => _instance(schema),
       DiscriminatedObjectSchema() => _discriminated(schema),
       LazySchema<dynamic, dynamic>() => _lazy(schema),
+      ImportedJsonSchema() => _imported(schema),
       _ => throw UnsupportedError(
         'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
       ),
     };
 
     return schema is LazySchema ? model : _applyConstraints(model, schema);
+  }
+
+  AckSchemaModel _imported(ImportedJsonSchema schema) {
+    final prefix = '_ack_import_${_importCount++}_';
+    for (final entry in schema.exportDefinitions(prefix).entries) {
+      if (_definitions.containsKey(entry.key)) {
+        throw ArgumentError(
+          'Imported definition collides with "${entry.key}".',
+        );
+      }
+      _definitions[entry.key] = entry.value;
+    }
+    final sourceNullable = schema.sourceAllowsNull;
+    // Draft-7 ignores siblings of a bare $ref. Keep the imported root in an
+    // allOf envelope so fluent metadata and constraints remain effective.
+    return AckAllOfSchemaModel(
+      schemas: [AckRefSchemaModel(refName: '${prefix}0')],
+      description: schema.description,
+      extensions: {
+        if (!schema.isNullable && sourceNullable) 'not': const {'type': 'null'},
+      },
+      nullable: schema.isNullable,
+    );
   }
 
   AckSchemaModel _string(StringSchema schema) {
@@ -304,7 +343,7 @@ final class _SchemaModelBuilder {
   AckSchemaModel _lazy(LazySchema<dynamic, dynamic> schema) {
     final name = schema.name;
     final target = schema.target;
-    final priorTarget = _targets[name];
+    final priorTarget = _lazyTargets[name];
     if (priorTarget != null) {
       if (!identical(priorTarget, target)) {
         throw ArgumentError(
@@ -316,7 +355,14 @@ final class _SchemaModelBuilder {
       return _lazyRef(schema);
     }
 
-    _targets[name] = target;
+    if (_definitions.containsKey(name)) {
+      throw ArgumentError(
+        'Ack.lazy definition "$name" collides with an imported definition. '
+        'Use a unique lazy name.',
+      );
+    }
+
+    _lazyTargets[name] = target;
     _definitions[name] = null;
     _definitions[name] = _build(target);
 

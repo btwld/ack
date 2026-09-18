@@ -35,6 +35,10 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
+- `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
+  documents = const {}})`: Strictly imports a decoded draft 2020-12 JSON
+  Schema. Referenced documents must be supplied explicitly; Ack never fetches
+  files or URLs.
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use
   `Ack.map(Ack.any().nullable())` for a `JsonMap`.
@@ -54,6 +58,18 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
   omit it, boundary payloads must include it, compatible branch discriminator
   fields are allowed, and conflicts are rejected. Exported/generated branches
   expose the exact branch literal.
+
+## JSON Schema Import
+
+See [JSON Schema Integration](../guides/json-schema-integration.mdx) for the
+supported draft 2020-12 subset, reference-bundle behavior, diagnostics, and
+examples.
+
+- `JsonSchemaImportDiagnostic`: Describes one import issue through `code`,
+  `documentUri`, `pointer`, `keyword`, and `message`.
+- `JsonSchemaImportException`: Thrown when an import encounters an unsupported
+  assertion or cannot be completed safely. Its
+  `diagnostics` list identifies every reported issue.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)
 
@@ -100,7 +116,8 @@ For non-`num` boundary types (e.g. numeric strings), use
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via the canonical `AckSchemaModel` boundary.
+- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via
+  the canonical `AckSchemaModel` boundary.
 - `AckSchemaModel toSchemaModel()`: Returns the canonical, target-independent
   boundary model for schema adapters, including export warnings.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.

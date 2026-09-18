@@ -1,5 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:ack_json_schema_builder/ack_json_schema_builder.dart';
+import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
 
 void main() async {
   print('=== ACK JSON Schema Builder Converter Examples ===\n');
@@ -44,6 +45,11 @@ void main() async {
   ).minLength(1).maxLength(5);
   tagsSchema.toJsonSchemaBuilder();
   print('Converted array schema with constraints');
+
+  // A builder model is the source; strict conversion returns a validator.
+  final jsb.Schema source = jsb.Schema.string(minLength: 2);
+  final AckSchema<Object, Object> imported = source.toAckSchema();
+  print(imported.parse('Ada'));
 
   print('\n=== Conversion Complete ===');
 }

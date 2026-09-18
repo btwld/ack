@@ -1,3 +1,32 @@
+## Unreleased
+
+### Added
+
+* Add strict `Ack.fromJsonSchema()` returning `AckSchema<Object, Object>` for a
+  documented draft 2020-12 subset. The runtime implementation is internal;
+  failures expose immutable diagnostics through `JsonSchemaImportException`.
+  Supports supplied reference bundles, recursion, JSON-specific null/presence
+  semantics, and exact `allOf`, `oneOf`, and `not` composition. Exports are
+  self-contained and reflect only enforced assertions.
+* Verify imports against 600 pinned upstream JSON Schema cases and selected
+  A2UI v0.9 protocol schemas. Support catalog JSON Pointer targets outside
+  `$defs`, normalize enums for valid Draft-7 output, and report unsupported
+  assertions only when they are reachable from the imported root.
+
+### Fixed
+
+* Reject conflicting bundle documents with the same resolved retrieval URI,
+  including conflicting copies of the root document.
+* Accept the draft 2020-12 meta-schema URI with an empty fragment (`#`).
+* Reject generated-definition name collisions between imported schemas and
+  `Ack.lazy()` targets instead of exporting a reference to the wrong schema.
+* Report duplicate anchors at the conflicting `$anchor` keyword rather than at
+  the enclosing resource identifier.
+* Correct the executable reference-bundle example in the JSON Schema guide.
+* Preserve imported JSON Schema definitions without adding an import-specific
+  variant to the sealed `AckSchemaModel` hierarchy. Imported roots use the
+  existing composition and reference models.
+
 ## 1.5.0
 
 ### Added
