@@ -8,10 +8,10 @@
   Supports supplied reference bundles, recursion, JSON-specific null/presence
   semantics, and exact `allOf`, `oneOf`, and `not` composition. Exports are
   self-contained and reflect only enforced assertions.
-* Verify imports against 600 pinned upstream JSON Schema cases and the A2UI
-  v0.9 protocol bundle. Support catalog JSON Pointer targets outside `$defs`,
-  normalize enums for valid Draft-7 output, and report unsupported assertions
-  only when they are reachable from the imported root.
+* Verify imports against 600 pinned upstream JSON Schema cases and selected
+  A2UI v0.9 protocol schemas. Support catalog JSON Pointer targets outside
+  `$defs`, normalize enums for valid Draft-7 output, and report unsupported
+  assertions only when they are reachable from the imported root.
 
 ### Fixed
 

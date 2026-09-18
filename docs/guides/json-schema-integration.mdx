@@ -151,12 +151,8 @@ schema does not establish compatibility with a tool-registration API.
 
 ### A2UI compatibility and verification
 
-Offline regression fixtures pin the eleven A2UI v0.9 protocol files and basic
-catalog to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
-For this catalog, register the catalog document under
-`https://a2ui.org/specification/v0_9/catalog.json`, in addition to the eleven
-protocol documents under their retrieval URIs. Its own `$id` is registered
-automatically; no source files need to be rewritten.
+Offline regression fixtures pin five representative A2UI v0.9 protocol schemas
+to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
 
 The basic catalog is **not an exact supported import**: it additionally uses
 unevaluated-property checks, conditionals, patterns, formats, and an extension

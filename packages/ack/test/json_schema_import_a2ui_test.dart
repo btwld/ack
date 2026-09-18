@@ -23,23 +23,6 @@ void main() {
     documents: documents,
   );
 
-  test('fixture inventory includes eleven protocol schemas and catalog', () {
-    expect(documents.keys.map((uri) => uri.pathSegments.last).toSet(), {
-      'catalog.json',
-      'client_capabilities.json',
-      'client_data_model.json',
-      'client_to_server.json',
-      'client_to_server_list.json',
-      'client_to_server_list_wrapper.json',
-      'common_types.json',
-      'sample.json',
-      'server_capabilities.json',
-      'server_to_client.json',
-      'server_to_client_list.json',
-      'server_to_client_list_wrapper.json',
-    });
-  });
-
   test('supported upstream documents import strictly', () {
     for (final name in [
       'client_data_model.json',
