@@ -1,10 +1,14 @@
-## Unreleased
+## 1.6.0
 
 ### Added
 
 * Add strict `Schema.toAckSchema()` returning `AckSchema<Object, Object>`, with
   supplied reference bundles. It complements the existing
   `AckSchema.toJsonSchemaBuilder()` export bridge.
+
+### Changed
+
+* Require `ack: ^1.6.0`, because imports use `Ack.fromJsonSchema()`.
 
 ## 1.5.0
 
