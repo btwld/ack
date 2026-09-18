@@ -47,14 +47,16 @@ for the complete support matrix and reference/diagnostic behavior.
 
 ```yaml
 dependencies:
-  ack: ^1.2.0
-  ack_json_schema_builder: ^1.5.0
+  ack: ^1.6.0
+  ack_json_schema_builder: ^1.6.0
   json_schema_builder: ^0.1.3
 ```
 
 ### Compatibility
 
-Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/conceptadev/ack/issues).
+Requires `ack: >=1.6.0 <2.0.0` and
+`json_schema_builder: >=0.1.3 <1.0.0` as peer dependencies. Report
+[compatibility issues](https://github.com/conceptadev/ack/issues).
 
 ## Conversion Model
 

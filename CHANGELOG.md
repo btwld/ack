@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.6.0
+
+* Add strict draft 2020-12 import through `Ack.fromJsonSchema()`, including
+  offline reference bundles, recursion, and immutable diagnostics.
+* Verify the importer against 600 pinned upstream JSON Schema cases and
+  selected A2UI v0.9 protocol schemas.
+* Add bidirectional `json_schema_builder` integration with
+  `Schema.toAckSchema()` and `AckSchema.toJsonSchemaBuilder()`.
+* Align all six publishable packages at 1.6.0 and compare public APIs against
+  1.5.0.
+
 ## 1.5.0
 
 * Add `Ack.map(valueSchema)` and `MapSchema` for string-keyed JSON objects
