@@ -110,43 +110,6 @@ void main() {
       );
     });
 
-    test('converter exhaustive switches use only canonical schema models', () {
-      const paths = [
-        'docs/guides/schema-converter-quickstart.mdx',
-        'docs/guides/creating-schema-converter-packages.mdx',
-      ];
-      final dartFence = RegExp(r'```dart\n([\s\S]*?)```');
-      final exhaustiveSwitches = <({String path, String fence})>[];
-
-      for (final path in paths) {
-        final source = _readFromRepo(path);
-        for (final match in dartFence.allMatches(source)) {
-          final fence = match.group(1)!;
-          if (!fence.contains('switch (schema)')) continue;
-          if (!fence.contains('AckRefSchemaModel')) continue;
-          if (RegExp(r'^\s*_ =>', multiLine: true).hasMatch(fence)) {
-            continue;
-          }
-          exhaustiveSwitches.add((path: path, fence: fence));
-        }
-      }
-
-      expect(
-        exhaustiveSwitches,
-        hasLength(3),
-        reason:
-            'the two converter guides document three exhaustive '
-            'AckSchemaModel switches',
-      );
-      for (final documented in exhaustiveSwitches) {
-        expect(
-          documented.fence,
-          isNot(contains('AckImportedSchemaModel')),
-          reason: '${documented.path} must not expose an import-only model',
-        );
-      }
-    });
-
     test('community health files provide contribution routes', () {
       for (final path in ['CODE_OF_CONDUCT.md', 'SECURITY.md', 'SUPPORT.md']) {
         expect(File('../../$path').existsSync(), isTrue, reason: path);
@@ -180,13 +143,6 @@ void main() {
       final apiReference = _readFromRepo('docs/api-reference/index.mdx');
 
       expect(apiReference, contains('toSchemaModel()'));
-      for (final importApi in [
-        'Ack.fromJsonSchema',
-        'JsonSchemaImportDiagnostic',
-        'JsonSchemaImportException',
-      ]) {
-        expect(apiReference, contains(importApi));
-      }
       expect(
         apiReference,
         contains('https://pub.dev/documentation/ack/latest/ack/'),

@@ -15,7 +15,7 @@ import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
 part '../json_schema/json_schema_compiler.dart';
-part '../json_schema/json_schema_importer.dart';
+part '../json_schema/json_schema_import_error.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boundary_schema.dart';

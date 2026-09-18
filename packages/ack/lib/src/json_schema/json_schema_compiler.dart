@@ -112,8 +112,8 @@ final class _JsonSchemaCompiler {
       throw ArgumentError.value(uri, 'baseUri', 'Must not contain a fragment.');
     }
     if (!_isImportJson(document, HashSet.identity())) {
-      throw JsonSchemaImportException([
-        JsonSchemaImportDiagnostic(
+      throw JsonSchemaImportException._([
+        JsonSchemaImportDiagnostic._(
           code: 'invalid_schema',
           documentUri: uri,
           pointer: '#',
@@ -469,7 +469,7 @@ final class _JsonSchemaCompiler {
     String key,
     String message,
     String code,
-  ) => JsonSchemaImportDiagnostic(
+  ) => JsonSchemaImportDiagnostic._(
     code: code,
     documentUri: node.documentUri,
     pointer: key.isEmpty
@@ -493,7 +493,7 @@ final class _JsonSchemaCompiler {
     String key,
     String message, {
     String code = 'invalid_schema',
-  }) => throw JsonSchemaImportException([
+  }) => throw JsonSchemaImportException._([
     ...diagnostics,
     _diagnostic(node, key, message, code),
   ]);

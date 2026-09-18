@@ -5,9 +5,6 @@
 * Add strict `Schema.toAckSchema()` returning `AckSchema<Object, Object>`, with
   supplied reference bundles. It complements the existing
   `AckSchema.toJsonSchemaBuilder()` export bridge.
-* Release handoff: advance this bridge's minimum Ack dependency to the first
-  release containing the importer. Package versions, publishing, and any
-  sealed-model compatibility-version adjustment are separate release work.
 
 ## 1.5.0
 

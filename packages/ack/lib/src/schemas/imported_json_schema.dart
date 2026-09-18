@@ -23,7 +23,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     }
     compiler.compile(root);
     if (compiler.diagnostics.isNotEmpty) {
-      throw JsonSchemaImportException(compiler.diagnostics);
+      throw JsonSchemaImportException._(compiler.diagnostics);
     }
     return ImportedJsonSchema._(root);
   }

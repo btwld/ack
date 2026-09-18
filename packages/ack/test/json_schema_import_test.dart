@@ -487,10 +487,6 @@ void main() {
           'a/b': {'format': 'email', 'x-custom': true},
         },
       };
-      expect(
-        () => Ack.fromJsonSchema(document),
-        throwsA(isA<JsonSchemaImportException>()),
-      );
       try {
         Ack.fromJsonSchema(document);
         fail('Expected unsupported keyword diagnostics.');

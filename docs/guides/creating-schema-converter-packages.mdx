@@ -39,14 +39,12 @@ final jsonSchema = schema.toJsonSchema();
 `AckSchemaModel` describes the boundary shape, constraints, export-safe
 defaults, discriminator metadata, and warnings that adapters can reuse for
 non-JSON targets. JSON-map adapters can call `schema.toJsonSchema()` directly.
+Imported schemas use the existing `AckAllOfSchemaModel` and
+`AckRefSchemaModel` variants, with their preserved definition bodies attached
+to the root model. They do not introduce an import-only variant into the sealed
+model hierarchy.
 Adapters should not traverse `AckSchema` subclasses or parse rendered JSON
 Schema output as their source of truth for non-JSON formats.
-
-JSON-map targets should call `schema.toJsonSchema()` directly. Imported
-schemas use the existing
-`AckAllOfSchemaModel` and `AckRefSchemaModel` variants, with their preserved
-definition bodies attached to the root model. They do not introduce an
-import-only variant into the sealed model hierarchy.
 
 ### Package Naming Convention
 

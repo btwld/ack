@@ -7,8 +7,9 @@ Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's sh
 ## Importing published schemas
 
 Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
-(a map or boolean, not a JSON string) into an `AckSchema<Object, Object>`. The input dialect is draft 2020-12, including when
-`$schema` is absent. Other explicitly declared dialects are rejected.
+(a map or boolean, not a JSON string) into an
+`AckSchema<Object, Object>`. The input dialect is draft 2020-12, including
+when `$schema` is absent. Other explicitly declared dialects are rejected.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -28,8 +29,9 @@ final exported = schema.toJsonSchema();
 ```
 
 The returned abstract `AckSchema<Object, Object>` composes with native
-Ack schemas; its runtime implementation is internal. It validates JSON values without injecting defaults or applying
-coercions. Parsing returns a detached, recursively unmodifiable value.
+Ack schemas; its runtime implementation is internal. It validates JSON values
+without injecting defaults or applying coercions. Parsing returns a detached,
+recursively unmodifiable value.
 Required means **key present**, not **non-null**; an omitted `type` does not
 implicitly require an object, string, or array. Integral numbers such as `1.0`
 match `integer`, and null array elements are supported.

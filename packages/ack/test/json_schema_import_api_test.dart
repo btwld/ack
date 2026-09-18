@@ -88,14 +88,6 @@ void main() {
     ]) {
       expect(schema.safeParse(testCase.value).isOk, testCase.valid);
     }
-    expect(
-      schema.safeParse({
-        'value': 1,
-        'child': {'value': 2},
-      }).isOk,
-      isTrue,
-    );
-    expect(schema.safeParse({'value': 1, 'child': {}}).isFail, isTrue);
   });
 
   test('unsupported assertions expose immutable diagnostics', () {

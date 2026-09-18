@@ -3,7 +3,7 @@ part of '../schemas/schema.dart';
 /// A limitation or error found while importing a JSON Schema document.
 @immutable
 final class JsonSchemaImportDiagnostic {
-  const JsonSchemaImportDiagnostic({
+  const JsonSchemaImportDiagnostic._({
     required this.code,
     required this.documentUri,
     required this.pointer,
@@ -26,7 +26,7 @@ final class JsonSchemaImportDiagnostic {
 
 /// A strict import encountered a limitation, or the input cannot be imported.
 final class JsonSchemaImportException implements Exception {
-  JsonSchemaImportException(Iterable<JsonSchemaImportDiagnostic> diagnostics)
+  JsonSchemaImportException._(Iterable<JsonSchemaImportDiagnostic> diagnostics)
     : diagnostics = List.unmodifiable(diagnostics);
 
   final List<JsonSchemaImportDiagnostic> diagnostics;

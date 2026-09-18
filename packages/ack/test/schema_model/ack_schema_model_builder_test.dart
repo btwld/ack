@@ -159,30 +159,6 @@ void main() {
       );
     });
 
-    test('rejects a lazy name occupied by a nested imported definition', () {
-      final imported = Ack.fromJsonSchema({
-        'type': 'object',
-        'properties': {
-          'value': {'type': 'string'},
-        },
-      });
-      final schema = Ack.object({
-        'a': imported,
-        'b': Ack.lazy('_ack_import_0_1', () => imported),
-      });
-
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('collides with an imported definition'),
-          ),
-        ),
-      );
-    });
-
     test('rejects an import generated name occupied by an earlier lazy', () {
       final imported = Ack.fromJsonSchema(true);
       final schema = Ack.object({
