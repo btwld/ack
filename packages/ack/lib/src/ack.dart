@@ -11,14 +11,16 @@ final class Ack {
   ///
   /// [document] must be a map or boolean, not a JSON string. Referenced
   /// [documents] are supplied by retrieval URI; no files or URLs are fetched.
-  /// Unsupported semantics throw [JsonSchemaImportException]. Use
-  /// [importJsonSchema] for a report or explicit partial conversion.
+  /// Unsupported semantics throw [JsonSchemaImportException].
   static AckSchema<Object, Object> fromJsonSchema(
     Object document, {
     Uri? baseUri,
     Map<Uri, Object> documents = const {},
-  }) =>
-      importJsonSchema(document, baseUri: baseUri, documents: documents).schema;
+  }) => ImportedJsonSchema.fromDocument(
+    document,
+    baseUri: baseUri,
+    documents: documents,
+  );
 
   /// Creates a string schema. Boundary and runtime are both `String`.
   static StringSchema string() => const StringSchema();

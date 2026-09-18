@@ -182,8 +182,6 @@ void main() {
       expect(apiReference, contains('toSchemaModel()'));
       for (final importApi in [
         'Ack.fromJsonSchema',
-        'importJsonSchema',
-        'JsonSchemaImportResult',
         'JsonSchemaImportDiagnostic',
         'JsonSchemaImportException',
       ]) {

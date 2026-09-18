@@ -6,6 +6,25 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
+  test('public barrel does not expose the removed top-level importer', () async {
+    final temporary = Directory.systemTemp.createTempSync('ack-import-api-');
+    addTearDown(() => temporary.deleteSync(recursive: true));
+    final fixture = File(
+      'test/fixtures/public_api/json_schema_import_function_hidden.dart.txt',
+    );
+    final source = fixture.copySync('${temporary.path}/consumer.dart');
+    final result = await Process.run(Platform.resolvedExecutable, [
+      'compile',
+      'kernel',
+      '--packages=${File('../../.dart_tool/package_config.json').absolute.path}',
+      '-o',
+      '${temporary.path}/consumer.dill',
+      source.path,
+    ]);
+    expect(result.exitCode, isNot(0));
+    expect(result.stderr, contains('importJsonSchema'));
+  });
+
   test('public barrel does not expose the imported runtime type', () async {
     final temporary = Directory.systemTemp.createTempSync('ack-import-api-');
     addTearDown(() => temporary.deleteSync(recursive: true));

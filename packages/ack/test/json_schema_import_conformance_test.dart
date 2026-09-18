@@ -17,34 +17,20 @@ void main() {
     for (final group in groups.cast<Map<String, Object?>>()) {
       test(group['description']! as String, () {
         final documents = group['documents'] as Map<String, Object?>? ?? {};
-        final imported = importJsonSchema(
+        final schema = Ack.fromJsonSchema(
           group['schema']!,
           documents: documents.map(
             (uri, value) => MapEntry(Uri.parse(uri), value!),
           ),
         );
-        expect(imported.isExact, isTrue);
-        final roundTrip = importJsonSchema(imported.schema.toJsonSchema());
-        expect(roundTrip.isExact, isTrue);
+        final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
         for (final example in group['tests']! as List) {
           final value = example['data'];
           final expected = example['valid'] as bool;
           final reason = example['description'] as String;
-          expect(
-            imported.schema.safeParse(value).isOk,
-            expected,
-            reason: reason,
-          );
-          expect(
-            imported.schema.safeEncode(value).isOk,
-            expected,
-            reason: reason,
-          );
-          expect(
-            roundTrip.schema.safeParse(value).isOk,
-            expected,
-            reason: reason,
-          );
+          expect(schema.safeParse(value).isOk, expected, reason: reason);
+          expect(schema.safeEncode(value).isOk, expected, reason: reason);
+          expect(roundTrip.safeParse(value).isOk, expected, reason: reason);
         }
       });
     }

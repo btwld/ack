@@ -17,13 +17,4 @@ void main() {
   );
   print(validator.parse({'name': 'Ada'}));
   print(validator.toJsonSchema());
-
-  // Partial conversion requires an explicit opt-in and a diagnostic report.
-  final JsonSchemaImportResult report = importJsonSchema({
-    'type': 'string',
-    'format': 'email',
-  }, allowUnsupported: true);
-  print(report.diagnostics);
-  final AckSchema<Object, Object> partial = report.schema;
-  print(partial.parse('A string, not necessarily an email'));
 }

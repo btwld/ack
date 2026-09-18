@@ -7,16 +7,6 @@ import 'package:test/test.dart';
 
 void main() {
   test('imports builder models, including referenced documents', () {
-    final JsonSchemaImportResult result =
-        jsb.Schema.fromMap({r'$ref': 'types.json'}).importToAck(
-          baseUri: Uri.parse('https://example.test/root.json'),
-          documents: {
-            Uri.parse('types.json'): jsb.Schema.object(
-              properties: {'name': jsb.Schema.string()},
-              required: ['name'],
-            ),
-          },
-        );
     final AckSchema<Object, Object> strict =
         jsb.Schema.fromMap({r'$ref': 'types.json'}).toAckSchema(
           baseUri: Uri.parse('https://example.test/root.json'),
@@ -27,10 +17,8 @@ void main() {
             ),
           },
         );
-    expect(strict.toJsonSchema(), result.schema.toJsonSchema());
-    expect(result.isExact, isTrue);
-    expect(result.schema.safeParse({'name': 'Ada'}).isOk, isTrue);
-    expect(result.schema.safeParse({}).isFail, isTrue);
+    expect(strict.safeParse({'name': 'Ada'}).isOk, isTrue);
+    expect(strict.safeParse({}).isFail, isTrue);
   });
 
   test('builder bridge retains strictness and diagnostics', () {
@@ -38,10 +26,6 @@ void main() {
     expect(
       () => model.toAckSchema(),
       throwsA(isA<JsonSchemaImportException>()),
-    );
-    expect(
-      model.importToAck(allowUnsupported: true).diagnostics.single.keyword,
-      'format',
     );
   });
 
@@ -167,10 +151,7 @@ void main() {
             ? jsb.Schema.fromBoolean(document)
             : jsb.Schema.fromMap(document as Map<String, Object?>);
         final AckSchema<Object, Object> imported = original.toAckSchema();
-        final JsonSchemaImportResult report = original.importToAck();
         final AckSchema<Object, Object> core = Ack.fromJsonSchema(document);
-        expect(report.isExact, isTrue);
-        expect(imported.toJsonSchema(), report.schema.toJsonSchema());
         expect(
           imported.toJsonSchema(),
           Ack.fromJsonSchema(original.value).toJsonSchema(),
@@ -198,7 +179,7 @@ void main() {
   test(
     'imported schemas compose and export alongside native and lazy schemas',
     () async {
-      final imported = importJsonSchema({
+      final imported = Ack.fromJsonSchema({
         r'$defs': {
           'v': {'type': 'integer'},
         },
@@ -207,7 +188,7 @@ void main() {
           'v': {r'$ref': r'#/$defs/v'},
         },
         'required': ['v'],
-      }).schema;
+      });
       final schema = Ack.object({
         'a': imported,
         'b': imported,
@@ -237,7 +218,7 @@ void main() {
   test(
     'ordinary lazy and imported schemas retain independent validation',
     () async {
-      final imported = importJsonSchema(true).schema.nullable(value: false);
+      final imported = Ack.fromJsonSchema(true).nullable(value: false);
       final schema = Ack.object({
         'a': imported,
         'b': Ack.lazy('native', () => imported),

@@ -51,14 +51,5 @@ void main() async {
   final AckSchema<Object, Object> imported = source.toAckSchema();
   print(imported.parse('Ada'));
 
-  // Reports expose unsupported semantics; partial conversion is explicit.
-  final JsonSchemaImportResult report = jsb.Schema.fromMap({
-    'type': 'string',
-    'format': 'email',
-  }).importToAck(allowUnsupported: true);
-  print(report.diagnostics);
-  final AckSchema<Object, Object> partial = report.schema;
-  print(partial.toJsonSchema());
-
   print('\n=== Conversion Complete ===');
 }

@@ -26,27 +26,14 @@ import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
 /// Imports json_schema_builder models using ACK's JSON Schema importer.
 extension AckSchemaImportExtension on jsb.Schema {
   /// Strictly converts this draft 2020-12 model to an ACK validator.
-  ///
-  /// Unsupported semantics throw [JsonSchemaImportException]. Use
-  /// [importToAck] for diagnostics and explicit partial conversion.
+  /// Unsupported semantics throw [JsonSchemaImportException].
   AckSchema<Object, Object> toAckSchema({
     Uri? baseUri,
     Map<Uri, jsb.Schema> documents = const {},
-  }) => importToAck(baseUri: baseUri, documents: documents).schema;
-
-  /// Returns an ACK validator and diagnostics for this draft 2020-12 schema.
-  ///
-  /// Referenced models must be supplied in [documents]; no network requests
-  /// are made. See [importJsonSchema] for the supported subset and strictness.
-  JsonSchemaImportResult importToAck({
-    Uri? baseUri,
-    Map<Uri, jsb.Schema> documents = const {},
-    bool allowUnsupported = false,
-  }) => importJsonSchema(
+  }) => Ack.fromJsonSchema(
     value,
     baseUri: baseUri,
     documents: documents.map((uri, schema) => MapEntry(uri, schema.value)),
-    allowUnsupported: allowUnsupported,
   );
 }
 

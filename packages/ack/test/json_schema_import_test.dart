@@ -2,49 +2,42 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('importJsonSchema', () {
+  group('Ack.fromJsonSchema', () {
     test('rejects conflicting documents with equivalent retrieval URIs', () {
       final base = Uri.parse('https://example.test/root.json');
       final entries = [
         MapEntry(Uri.parse('types.json'), {'type': 'string'}),
         MapEntry(base.resolve('types.json'), {'type': 'number'}),
       ];
-      for (final allowUnsupported in [false, true]) {
-        for (final ordered in [entries, entries.reversed]) {
-          expect(
-            () => importJsonSchema(
-              {r'$ref': 'types.json'},
-              baseUri: base,
-              documents: Map.fromEntries(ordered),
-              allowUnsupported: allowUnsupported,
-            ),
-            throwsA(isA<JsonSchemaImportException>()),
-          );
-        }
+      for (final ordered in [entries, entries.reversed]) {
         expect(
-          () => importJsonSchema(
-            {'type': 'string'},
+          () => Ack.fromJsonSchema(
+            {r'$ref': 'types.json'},
             baseUri: base,
-            documents: {
-              base: {'type': 'number'},
-            },
-            allowUnsupported: allowUnsupported,
+            documents: Map.fromEntries(ordered),
           ),
           throwsA(isA<JsonSchemaImportException>()),
         );
       }
+      expect(
+        () => Ack.fromJsonSchema(
+          {'type': 'string'},
+          baseUri: base,
+          documents: {
+            base: {'type': 'number'},
+          },
+        ),
+        throwsA(isA<JsonSchemaImportException>()),
+      );
     });
 
     test('accepts the draft 2020-12 dialect with an empty fragment', () {
-      for (final allowUnsupported in [false, true]) {
-        final result = importJsonSchema({
-          r'$schema': 'https://json-schema.org/draft/2020-12/schema#',
-          'type': 'string',
-        }, allowUnsupported: allowUnsupported);
-        expect(result.isExact, isTrue);
-        expect(result.schema.safeParse('hello').isOk, isTrue);
-        expect(result.schema.safeParse(1).isFail, isTrue);
-      }
+      final schema = Ack.fromJsonSchema({
+        r'$schema': 'https://json-schema.org/draft/2020-12/schema#',
+        'type': 'string',
+      });
+      expect(schema.safeParse('hello').isOk, isTrue);
+      expect(schema.safeParse(1).isFail, isTrue);
     });
 
     test('rejects non-empty dialect fragments and different drafts', () {
@@ -53,41 +46,11 @@ void main() {
         'https://json-schema.org/draft/2019-09/schema#',
       ]) {
         expect(
-          () => importJsonSchema({r'$schema': dialect}, allowUnsupported: true),
+          () => Ack.fromJsonSchema({r'$schema': dialect}),
           throwsA(isA<JsonSchemaImportException>()),
         );
       }
     });
-
-    test(
-      'partial exclusive unions retain branch shapes as inclusive unions',
-      () {
-        final result = importJsonSchema({
-          'anyOf': [
-            {'type': 'object'},
-            {'type': 'boolean'},
-          ],
-          'oneOf': [
-            {
-              'type': 'object',
-              'required': ['name'],
-              'format': 'custom',
-            },
-            {'type': 'integer'},
-          ],
-        }, allowUnsupported: true);
-        expect(result.schema.safeParse({'name': 'Ada'}).isOk, isTrue);
-        for (final invalid in [null, true, 1, [], <String, Object?>{}]) {
-          expect(result.schema.safeParse(invalid).isFail, isTrue);
-          expect(
-            importJsonSchema(
-              result.schema.toJsonSchema(),
-            ).schema.safeParse(invalid).isFail,
-            isTrue,
-          );
-        }
-      },
-    );
 
     test(
       'rejects invalid annotation shapes instead of emitting invalid schemas',
@@ -102,7 +65,7 @@ void main() {
           {r'$comment': false},
         ]) {
           expect(
-            () => importJsonSchema(document),
+            () => Ack.fromJsonSchema(document),
             throwsA(isA<JsonSchemaImportException>()),
           );
         }
@@ -112,7 +75,7 @@ void main() {
     test(
       'added constraints do not become ignored Draft-7 reference siblings',
       () {
-        final schema = importJsonSchema(true).schema.constrain(_OnlyStrings());
+        final schema = Ack.fromJsonSchema(true).constrain(_OnlyStrings());
         expect(schema.safeParse('ok').isOk, isTrue);
         expect(schema.safeParse(1).isFail, isTrue);
         expect(schema.safeParse(null).isOk, isTrue);
@@ -135,17 +98,17 @@ void main() {
             isA<String>(),
           ),
         );
-        expect(importJsonSchema(exported).schema.safeParse(1).isFail, isTrue);
-        expect(importJsonSchema(exported).schema.safeParse(null).isOk, isTrue);
+        expect(Ack.fromJsonSchema(exported).safeParse(1).isFail, isTrue);
+        expect(Ack.fromJsonSchema(exported).safeParse(null).isOk, isTrue);
         expect(schema.toSchemaModel().toJsonSchema(), exported);
       },
     );
 
     test('source descriptions are available through the Ack schema API', () {
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'type': 'string',
         'description': 'A protocol field',
-      }).schema;
+      });
       expect(schema.description, 'A protocol field');
       expect(schema.describe('Override').description, 'Override');
     });
@@ -153,7 +116,7 @@ void main() {
     test(
       'resolves catalog schemas stored outside standard schema containers',
       () {
-        final schema = importJsonSchema(
+        final schema = Ack.fromJsonSchema(
           {r'$ref': r'catalog.json#/$defs/component'},
           baseUri: Uri.parse('https://example.test/message.json'),
           documents: {
@@ -174,20 +137,20 @@ void main() {
               },
             },
           },
-        ).schema;
+        );
         expect(schema.safeParse({'text': 'Hello'}).isOk, isTrue);
         expect(schema.safeParse({'text': 1}).isFail, isTrue);
         expect(
-          importJsonSchema(
+          Ack.fromJsonSchema(
             schema.toJsonSchema(),
-          ).schema.safeParse({'text': 1}).isFail,
+          ).safeParse({'text': 1}).isFail,
           isTrue,
         );
       },
     );
 
     test('only reachable assertions affect strictness and diagnostics', () {
-      final result = importJsonSchema(
+      final schema = Ack.fromJsonSchema(
         {
           'type': 'string',
           r'$defs': {
@@ -198,22 +161,21 @@ void main() {
           Uri.parse('unused.json'): {'format': 'date-time'},
         },
       );
-      expect(result.isExact, isTrue);
-      expect(result.schema.safeParse('hello').isOk, isTrue);
+      expect(schema.safeParse('hello').isOk, isTrue);
     });
 
     test('empty and repeated enum values export as valid Draft-7 schemas', () {
-      final never = importJsonSchema({'enum': []}).schema;
+      final never = Ack.fromJsonSchema({'enum': []});
       for (final value in [null, 1, 'x', [], <String, Object?>{}]) {
         expect(never.safeParse(value).isFail, isTrue);
         expect(
-          importJsonSchema(never.toJsonSchema()).schema.safeParse(value).isFail,
+          Ack.fromJsonSchema(never.toJsonSchema()).safeParse(value).isFail,
           isTrue,
         );
       }
-      final repeated = importJsonSchema({
+      final repeated = Ack.fromJsonSchema({
         'enum': [1, 1.0, 'x', 'x'],
-      }).schema;
+      });
       expect(repeated.safeParse(1).isOk, isTrue);
       final definitions = repeated.toJsonSchema()['definitions'] as Map;
       expect((definitions.values.first as Map)['enum'], [1, 'x']);
@@ -223,7 +185,7 @@ void main() {
 
     test('reference failures include source URI and keyword location', () {
       try {
-        importJsonSchema({
+        Ack.fromJsonSchema({
           'properties': {
             'child': {r'$ref': 'missing.json'},
           },
@@ -245,7 +207,7 @@ void main() {
         {r'$schema': 'http://json-schema.org/draft-07/schema#'},
       ]) {
         expect(
-          () => importJsonSchema(document, allowUnsupported: true),
+          () => Ack.fromJsonSchema(document),
           throwsA(isA<JsonSchemaImportException>()),
         );
       }
@@ -253,44 +215,38 @@ void main() {
 
     test('attributes duplicate anchors to the second anchor keyword', () {
       final documentUri = Uri.parse('https://example.test/anchors.json');
-      for (final allowUnsupported in [false, true]) {
-        expect(
-          () => importJsonSchema(
-            {
-              r'$defs': {
-                'a': {r'$anchor': 'dup'},
-                'b': {r'$anchor': 'dup'},
-              },
-            },
-            baseUri: documentUri,
-            allowUnsupported: allowUnsupported,
+      expect(
+        () => Ack.fromJsonSchema({
+          r'$defs': {
+            'a': {r'$anchor': 'dup'},
+            'b': {r'$anchor': 'dup'},
+          },
+        }, baseUri: documentUri),
+        throwsA(
+          isA<JsonSchemaImportException>().having(
+            (error) => error.diagnostics.last,
+            'diagnostic',
+            isA<JsonSchemaImportDiagnostic>()
+                .having((issue) => issue.keyword, 'keyword', r'$anchor')
+                .having(
+                  (issue) => issue.pointer,
+                  'pointer',
+                  r'#/$defs/b/$anchor',
+                )
+                .having(
+                  (issue) => issue.documentUri,
+                  'documentUri',
+                  documentUri,
+                ),
           ),
-          throwsA(
-            isA<JsonSchemaImportException>().having(
-              (error) => error.diagnostics.last,
-              'diagnostic',
-              isA<JsonSchemaImportDiagnostic>()
-                  .having((issue) => issue.keyword, 'keyword', r'$anchor')
-                  .having(
-                    (issue) => issue.pointer,
-                    'pointer',
-                    r'#/$defs/b/$anchor',
-                  )
-                  .having(
-                    (issue) => issue.documentUri,
-                    'documentUri',
-                    documentUri,
-                  ),
-            ),
-          ),
-        );
-      }
+        ),
+      );
     });
 
     test('attributes duplicate resource IDs to the second id keyword', () {
       final documentUri = Uri.parse('https://example.test/resources.json');
       expect(
-        () => importJsonSchema({
+        () => Ack.fromJsonSchema({
           r'$defs': {
             'a': {r'$id': 'duplicate.json'},
             'b': {r'$id': 'duplicate.json'},
@@ -313,34 +269,14 @@ void main() {
       );
     });
 
-    test('loss propagates through recursive references before negation', () {
-      final result = importJsonSchema({
-        r'$defs': {
-          'node': {
-            'properties': {
-              'next': {r'$ref': r'#/$defs/node'},
-            },
-            'format': 'custom',
-          },
-        },
-        'not': {r'$ref': r'#/$defs/node'},
-      }, allowUnsupported: true);
-      expect(
-        result.diagnostics.map((d) => d.keyword),
-        containsAll(['format', 'not']),
-      );
-      expect(result.schema.safeParse({'next': {}}).isOk, isTrue);
-      expect(result.schema.safeParse(null).isOk, isTrue);
-    });
-
     test('runtime errors keep the failing instance path', () {
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'properties': {
           'a/b': {
             'items': {'type': 'string'},
           },
         },
-      }).schema;
+      });
       expect(
         schema
             .safeParse({
@@ -354,12 +290,12 @@ void main() {
     });
 
     test('recursive validation has no hidden Ack.lazy depth limit', () {
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'type': 'object',
         'properties': {
           'child': {r'$ref': '#'},
         },
-      }).schema;
+      });
       var value = <String, Object?>{};
       for (var i = 0; i < 150; i++) {
         value = {'child': value};
@@ -376,12 +312,12 @@ void main() {
           r'#/$defs/%E2%98%83': '☃',
           r'#/$defs/~01': '~1',
         }.entries) {
-          final schema = importJsonSchema({
+          final schema = Ack.fromJsonSchema({
             r'$defs': {
               entry.value: {'const': 'yes'},
             },
             r'$ref': entry.key,
-          }).schema;
+          });
           expect(schema.safeParse('yes').isOk, isTrue, reason: entry.key);
           expect(schema.safeParse('no').isFail, isTrue, reason: entry.key);
         }
@@ -391,7 +327,7 @@ void main() {
     test(
       'nested IDs change ref scope without scanning literal data for IDs',
       () {
-        final schema = importJsonSchema(
+        final schema = Ack.fromJsonSchema(
           {
             r'$id': 'https://example.test/root.json',
             r'$defs': {
@@ -411,7 +347,7 @@ void main() {
               'type': 'boolean',
             },
           },
-        ).schema;
+        );
         expect(schema.safeParse({'x': true}).isOk, isTrue);
         expect(schema.safeParse({'x': 1}).isFail, isTrue);
       },
@@ -423,47 +359,26 @@ void main() {
         final uri = Uri.parse('https://example.test/root.json');
         final document = {'type': 'string'};
         expect(
-          importJsonSchema(
+          Ack.fromJsonSchema(
             document,
             baseUri: uri,
             documents: {uri: document},
-          ).schema.safeParse('ok').isOk,
+          ).safeParse('ok').isOk,
           isTrue,
         );
       },
     );
 
-    test('partial omissions respect coupled applicators', () {
-      final object = importJsonSchema({
-        'patternProperties': {
-          '^x': {'type': 'number'},
-        },
-        'additionalProperties': false,
-      }, allowUnsupported: true);
-      expect(object.schema.safeParse({'x': 1}).isOk, isTrue);
-      expect(
-        object.diagnostics.map((d) => d.keyword),
-        containsAll(['patternProperties', 'additionalProperties']),
-      );
-      final list = importJsonSchema({
-        'prefixItems': [
-          {'type': 'string'},
-        ],
-        'items': false,
-      }, allowUnsupported: true);
-      expect(list.schema.safeParse(['x']).isOk, isTrue);
-    });
-
     test('schema documents and parsed values are detached snapshots', () {
       final types = ['string'];
       final document = {'type': types};
-      final schema = importJsonSchema(document).schema;
+      final schema = Ack.fromJsonSchema(document);
       types.add('number');
       expect(schema.safeParse(1).isFail, isTrue);
       final input = {
         'a': [1],
       };
-      final parsed = importJsonSchema(true).schema.parse(input) as Map;
+      final parsed = Ack.fromJsonSchema(true).parse(input) as Map;
       input['a']!.add(2);
       expect(parsed, {
         'a': [1],
@@ -471,21 +386,18 @@ void main() {
       expect(() => (parsed['a'] as List).add(2), throwsUnsupportedError);
       final cycle = <Object?>[];
       cycle.add(cycle);
-      expect(importJsonSchema(true).schema.safeParse(cycle).isFail, isTrue);
-      expect(
-        importJsonSchema(true).schema.safeParse(double.nan).isFail,
-        isTrue,
-      );
+      expect(Ack.fromJsonSchema(true).safeParse(cycle).isFail, isTrue);
+      expect(Ack.fromJsonSchema(true).safeParse(double.nan).isFail, isTrue);
     });
 
     test(
       'fluent nullability overrides preserve parse/encode/export parity',
       () {
         for (final schema in [
-          importJsonSchema({'type': 'string'}).schema.nullable(),
-          importJsonSchema(true).schema.nullable(value: false),
+          Ack.fromJsonSchema({'type': 'string'}).nullable(),
+          Ack.fromJsonSchema(true).nullable(value: false),
         ]) {
-          final roundTrip = importJsonSchema(schema.toJsonSchema()).schema;
+          final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
           expect(schema.safeParse(null).isOk, schema.isNullable);
           expect(schema.safeEncode(null).isOk, schema.isNullable);
           expect(roundTrip.safeParse(null).isOk, schema.isNullable);
@@ -496,7 +408,7 @@ void main() {
     test(
       'resolves cross-file, escaped pointers, anchors, and recursive refs',
       () {
-        final result = importJsonSchema(
+        final schema = Ack.fromJsonSchema(
           {
             r'$id': 'https://example.test/root.json',
             r'$ref': 'types.json#node',
@@ -522,25 +434,22 @@ void main() {
           'value': 1,
           'next': {'value': 2},
         };
-        expect(result.schema.parse(value), value);
-        expect(
-          result.schema.safeParse({'value': 1, 'next': {}}).isFail,
-          isTrue,
-        );
-        final roundTrip = importJsonSchema(result.schema.toJsonSchema()).schema;
+        expect(schema.parse(value), value);
+        expect(schema.safeParse({'value': 1, 'next': {}}).isFail, isTrue);
+        final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
         expect(roundTrip.safeParse(value).isOk, isTrue);
         expect(roundTrip.safeParse({'value': 1, 'next': {}}).isFail, isTrue);
       },
     );
 
     test('reference siblings still constrain a value', () {
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         r'$defs': {
           'n': {'type': 'number', 'minimum': 0},
         },
         r'$ref': r'#/$defs/n',
         'maximum': 2,
-      }).schema;
+      });
       expect(schema.safeParse(1).isOk, isTrue);
       expect(schema.safeParse(3).isFail, isTrue);
       expect(schema.safeParse(-1).isFail, isTrue);
@@ -560,7 +469,7 @@ void main() {
           },
         ]) {
           expect(
-            () => importJsonSchema(document, allowUnsupported: true),
+            () => Ack.fromJsonSchema(document),
             throwsA(isA<JsonSchemaImportException>()),
           );
         }
@@ -570,16 +479,23 @@ void main() {
     test(
       'reports meta-schema references as unsupported, not as any schema',
       () {
-        final result = importJsonSchema({
-          r'$ref': 'https://json-schema.org/draft/2020-12/schema',
-        }, allowUnsupported: true);
-        expect(result.isExact, isFalse);
-        expect(result.diagnostics.single.keyword, r'$ref');
+        expect(
+          () => Ack.fromJsonSchema({
+            r'$ref': 'https://json-schema.org/draft/2020-12/schema',
+          }),
+          throwsA(
+            isA<JsonSchemaImportException>().having(
+              (error) => error.diagnostics.single.keyword,
+              'keyword',
+              r'$ref',
+            ),
+          ),
+        );
       },
     );
 
     test('preserves required presence, optional nulls, and open objects', () {
-      final result = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'type': 'object',
         'properties': {
           'name': {'type': 'string'},
@@ -589,8 +505,6 @@ void main() {
         },
         'required': ['name', 'unlisted'],
       });
-      expect(result.isExact, isTrue);
-      final schema = result.schema;
       expect(schema.safeParse({'name': 'A', 'unlisted': null}).isOk, isTrue);
       expect(schema.safeParse({'name': 'A'}).isFail, isTrue);
       expect(schema.safeParse({'name': null, 'unlisted': 1}).isFail, isTrue);
@@ -606,11 +520,11 @@ void main() {
     });
 
     test('applies keywords independently without inferring a type', () {
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'minimum': 2,
         'minLength': 2,
         'required': ['a'],
-      }).schema;
+      });
       for (final value in [
         null,
         true,
@@ -628,21 +542,21 @@ void main() {
 
     test('handles JSON integers, structural enum/const, and null', () {
       expect(
-        importJsonSchema({'type': 'integer'}).schema.safeParse(1.0).isOk,
+        Ack.fromJsonSchema({'type': 'integer'}).safeParse(1.0).isOk,
         isTrue,
       );
       expect(
-        importJsonSchema({'type': 'integer'}).schema.safeParse(1.5).isFail,
+        Ack.fromJsonSchema({'type': 'integer'}).safeParse(1.5).isFail,
         isTrue,
       );
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'enum': [
           null,
           {
             'a': [1],
           },
         ],
-      }).schema;
+      });
       expect(schema.safeParse(null).isOk, isTrue);
       expect(schema.safeEncode(null).isOk, isTrue);
       expect(
@@ -657,17 +571,14 @@ void main() {
         }).isFail,
         isTrue,
       );
-      expect(
-        importJsonSchema({'const': null}).schema.safeParse(0).isFail,
-        isTrue,
-      );
+      expect(Ack.fromJsonSchema({'const': null}).safeParse(0).isFail, isTrue);
     });
 
     test('supports boolean schemas and nullable array items', () {
-      expect(importJsonSchema(true).schema.safeParse(null).isOk, isTrue);
-      expect(importJsonSchema(false).schema.safeParse(null).isFail, isTrue);
-      expect(importJsonSchema(false).schema.safeEncode(null).isFail, isTrue);
-      final schema = importJsonSchema({
+      expect(Ack.fromJsonSchema(true).safeParse(null).isOk, isTrue);
+      expect(Ack.fromJsonSchema(false).safeParse(null).isFail, isTrue);
+      expect(Ack.fromJsonSchema(false).safeEncode(null).isFail, isTrue);
+      final schema = Ack.fromJsonSchema({
         'type': 'array',
         'items': {
           'type': ['integer', 'null'],
@@ -675,7 +586,7 @@ void main() {
         'minItems': 1,
         'maxItems': 2,
         'uniqueItems': true,
-      }).schema;
+      });
       expect(schema.safeParse([null, 1.0]).isOk, isTrue);
       for (final value in [
         [],
@@ -688,7 +599,7 @@ void main() {
     });
 
     test('intersects siblings and implements exclusive composition', () {
-      final schema = importJsonSchema({
+      final schema = Ack.fromJsonSchema({
         'type': 'number',
         'allOf': [
           {'minimum': 0},
@@ -699,7 +610,7 @@ void main() {
           {'minimum': 3},
         ],
         'not': {'const': 1},
-      }).schema;
+      });
       for (final value in [0, 2, 5, 10]) {
         expect(schema.safeParse(value).isOk, isTrue, reason: '$value');
       }
@@ -711,20 +622,20 @@ void main() {
     test(
       'validates additional property schemas and preserves defaults as data',
       () {
-        final schema = importJsonSchema({
+        final schema = Ack.fromJsonSchema({
           'type': 'object',
           'properties': {
             'name': {'type': 'string', 'default': 'A'},
           },
           'additionalProperties': {'type': 'integer'},
-        }).schema;
+        });
         expect(schema.parse({'extra': 1}), {'extra': 1});
         expect(schema.safeParse({'extra': 'bad'}).isFail, isTrue);
         expect(
-          importJsonSchema({
+          Ack.fromJsonSchema({
             'type': 'object',
             'additionalProperties': false,
-          }).schema.safeParse({'a': null}).isFail,
+          }).safeParse({'a': null}).isFail,
           isTrue,
         );
       },
@@ -737,45 +648,24 @@ void main() {
         },
       };
       expect(
-        () => importJsonSchema(document),
+        () => Ack.fromJsonSchema(document),
         throwsA(isA<JsonSchemaImportException>()),
       );
-      final result = importJsonSchema(document, allowUnsupported: true);
-      expect(result.isExact, isFalse);
-      expect(
-        result.diagnostics.map((d) => d.pointer),
-        containsAll(['#/properties/a~1b/format', '#/properties/a~1b/x-custom']),
-      );
-      expect(result.schema.safeParse({'a/b': 12}).isOk, isTrue);
-      expect(
-        result.schema.toJsonSchema().toString(),
-        isNot(contains('format')),
-      );
+      try {
+        Ack.fromJsonSchema(document);
+        fail('Expected unsupported keyword diagnostics.');
+      } on JsonSchemaImportException catch (error) {
+        expect(
+          error.diagnostics.map((diagnostic) => diagnostic.pointer),
+          containsAll([
+            '#/properties/a~1b/format',
+            '#/properties/a~1b/x-custom',
+          ]),
+        );
+      }
     });
 
-    test(
-      'partial import cannot tighten not or oneOf through omitted assertions',
-      () {
-        for (final document in [
-          {
-            'not': {'format': 'email'},
-          },
-          {
-            'oneOf': [
-              {'type': 'string'},
-              {'format': 'email'},
-            ],
-          },
-        ]) {
-          final result = importJsonSchema(document, allowUnsupported: true);
-          expect(result.isExact, isFalse);
-          expect(result.schema.safeParse('hello').isOk, isTrue);
-          expect(result.schema.safeParse(null).isOk, isTrue);
-        }
-      },
-    );
-
-    test('rejects malformed supported keywords even in partial mode', () {
+    test('rejects malformed supported keywords', () {
       for (final document in [
         {'type': 'made-up'},
         {'required': 'a'},
@@ -785,7 +675,7 @@ void main() {
         {'items': 3},
       ]) {
         expect(
-          () => importJsonSchema(document, allowUnsupported: true),
+          () => Ack.fromJsonSchema(document),
           throwsA(isA<JsonSchemaImportException>()),
           reason: '$document',
         );

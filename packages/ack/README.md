@@ -67,16 +67,13 @@ final jsonSchema = schema.toJsonSchema();
 
 The source document is a decoded map or boolean, not a JSON string.
 `Ack.fromJsonSchema()` returns an executable validator and rejects unsupported
-semantics. `importJsonSchema()` returns a `JsonSchemaImportResult` containing
-`schema`, immutable `diagnostics`, and `isExact`; partial conversion requires
-`allowUnsupported: true`. Supply reference bundles with `documents` and
-`baseUri`; no references are fetched automatically. Malformed schemas,
-unresolved references, reference cycles, and resource-identity conflicts remain
-errors even when partial conversion is enabled.
+semantics with `JsonSchemaImportException`; its immutable diagnostics identify
+the source keyword and location. Supply reference bundles with `documents` and
+`baseUri`; no references are fetched automatically.
 
 Exports preserve supported validation behavior, not textual document identity.
-Full A2UI coverage is not supported; partial imports must be evaluated using
-their diagnostics. MCP registration compatibility remains separate. See the
+Full A2UI coverage is not supported. MCP registration compatibility remains
+separate. See the
 [JSON Schema guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
 for the supported subset, recursive bundles, and round-trip guarantees.
 

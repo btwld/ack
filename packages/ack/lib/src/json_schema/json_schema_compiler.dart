@@ -15,8 +15,6 @@ final class _ImportedNode {
   final maps = <String, Map<String, _ImportedNode>>{};
   final lists = <String, List<_ImportedNode>>{};
   _ImportedNode? reference;
-  bool inexact = false;
-
   Iterable<_ImportedNode> get dependencies sync* {
     if (reference case final target?) yield target;
     yield* children.values;
@@ -252,6 +250,11 @@ final class _JsonSchemaCompiler {
   }
 
   void compile(_ImportedNode root) {
+    final nodes = _compileReachable(root);
+    _checkProductiveCycles(nodes);
+  }
+
+  List<_ImportedNode> _compileReachable(_ImportedNode root) {
     final nodes = <_ImportedNode>[];
     final pending = Queue<_ImportedNode>()..add(root);
     final compiled = <_ImportedNode>{};
@@ -262,6 +265,10 @@ final class _JsonSchemaCompiler {
       nodes.add(node);
       pending.addAll(node.dependencies);
     }
+    return nodes;
+  }
+
+  void _checkProductiveCycles(List<_ImportedNode> nodes) {
     final visited = <_ImportedNode>{};
     final active = <_ImportedNode>{};
     void checkCycle(_ImportedNode node) {
@@ -283,45 +290,6 @@ final class _JsonSchemaCompiler {
 
     for (final node in nodes) {
       checkCycle(node);
-    }
-
-    // Omission is monotone through allOf, anyOf, objects, and arrays, but not
-    // through negation or exclusive choice. Propagate loss through references
-    // before deciding which enclosing assertions also have to be omitted.
-    var changed = true;
-    while (changed) {
-      changed = false;
-      for (final node in nodes) {
-        if (!node.inexact && node.dependencies.any((n) => n.inexact)) {
-          node.inexact = true;
-          changed = true;
-        }
-      }
-    }
-    for (final node in nodes) {
-      if (node.children['not']?.inexact ?? false) {
-        node.children.remove('not');
-        _omit(
-          node,
-          'not',
-          'Negation of an incomplete schema cannot be retained.',
-        );
-      }
-      if (node.lists['oneOf']?.any((n) => n.inexact) ?? false) {
-        final branches = node.lists.remove('oneOf')!;
-        final union = _ImportedNode(
-          true,
-          node.documentUri,
-          '${node.pointer}/oneOf',
-          node.baseUri,
-        )..lists['anyOf'] = branches;
-        node.lists['allOf'] = [...?node.lists['allOf'], union];
-        _omit(
-          node,
-          'oneOf',
-          'Exclusive choice has an incomplete branch; using inclusive anyOf.',
-        );
-      }
     }
   }
 
@@ -399,7 +367,7 @@ final class _JsonSchemaCompiler {
         if (target == null) {
           if (uri.host == 'json-schema.org' &&
               uri.path.startsWith('/draft/2020-12/')) {
-            _omit(
+            _unsupported(
               node,
               key,
               'Meta-schema validation is not supported.',
@@ -424,7 +392,7 @@ final class _JsonSchemaCompiler {
         if ((key == 'items' && source.containsKey('prefixItems')) ||
             (key == 'additionalProperties' &&
                 source.containsKey('patternProperties'))) {
-          _omit(
+          _unsupported(
             node,
             key,
             'Cannot retain $key without its unsupported sibling.',
@@ -491,7 +459,7 @@ final class _JsonSchemaCompiler {
         if (value is! bool) _fail(node, key, 'Expected a boolean.');
         node.keywords[key] = value;
       } else {
-        _omit(node, key, 'Keyword "$key" is not supported.');
+        _unsupported(node, key, 'Keyword "$key" is not supported.');
       }
     }
   }
@@ -511,13 +479,12 @@ final class _JsonSchemaCompiler {
     message: message,
   );
 
-  void _omit(
+  void _unsupported(
     _ImportedNode node,
     String key,
     String message, {
     String code = 'unsupported_keyword',
   }) {
-    node.inexact = true;
     diagnostics.add(_diagnostic(node, key, message, code));
   }
 

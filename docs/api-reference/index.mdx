@@ -65,19 +65,10 @@ See [JSON Schema Integration](../guides/json-schema-integration.mdx) for the
 supported draft 2020-12 subset, reference-bundle behavior, diagnostics, and
 examples.
 
-- `importJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object> documents
-  = const {}, bool allowUnsupported = false})`: Imports a decoded schema and
-  returns a `JsonSchemaImportResult`. The default is strict. With
-  `allowUnsupported: true`, unsupported assertions are omitted and reported;
-  malformed supported keywords, unresolved references, invalid dialects, and
-  unsafe reference cycles still throw.
-- `JsonSchemaImportResult`: Contains the executable
-  `AckSchema<Object, Object> schema`, immutable `diagnostics`, and `isExact`,
-  which is true when no reachable assertion was omitted.
 - `JsonSchemaImportDiagnostic`: Describes one import issue through `code`,
   `documentUri`, `pointer`, `keyword`, and `message`.
-- `JsonSchemaImportException`: Thrown when a strict import encounters an
-  unsupported assertion or when an import cannot be completed safely. Its
+- `JsonSchemaImportException`: Thrown when an import encounters an unsupported
+  assertion or cannot be completed safely. Its
   `diagnostics` list identifies every reported issue.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)

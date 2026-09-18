@@ -141,7 +141,7 @@ void main() {
     });
 
     test('rejects an imported definition reused as a lazy target', () {
-      final imported = importJsonSchema(true).schema.nullable(value: false);
+      final imported = Ack.fromJsonSchema(true).nullable(value: false);
       final schema = Ack.object({
         'a': imported,
         'b': Ack.lazy('_ack_import_0_0', () => imported),
@@ -160,12 +160,12 @@ void main() {
     });
 
     test('rejects a lazy name occupied by a nested imported definition', () {
-      final imported = importJsonSchema({
+      final imported = Ack.fromJsonSchema({
         'type': 'object',
         'properties': {
           'value': {'type': 'string'},
         },
-      }).schema;
+      });
       final schema = Ack.object({
         'a': imported,
         'b': Ack.lazy('_ack_import_0_1', () => imported),
@@ -184,7 +184,7 @@ void main() {
     });
 
     test('rejects an import generated name occupied by an earlier lazy', () {
-      final imported = importJsonSchema(true).schema;
+      final imported = Ack.fromJsonSchema(true);
       final schema = Ack.object({
         'a': Ack.lazy('_ack_import_0_0', Ack.string),
         'b': imported,

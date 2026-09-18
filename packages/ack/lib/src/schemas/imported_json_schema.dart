@@ -1,6 +1,6 @@
 part of 'schema.dart';
 
-/// An identity boundary/runtime schema compiled by [importJsonSchema].
+/// An identity boundary/runtime schema compiled by `Ack.fromJsonSchema`.
 ///
 /// It uses JSON semantics rather than Dart factory defaults: property presence
 /// is independent of nullability, integers include integral doubles, and
@@ -10,6 +10,24 @@ part of 'schema.dart';
 @internal
 final class ImportedJsonSchema extends AckSchema<Object, Object>
     with FluentSchema<Object, Object, ImportedJsonSchema> {
+  factory ImportedJsonSchema.fromDocument(
+    Object document, {
+    Uri? baseUri,
+    Map<Uri, Object> documents = const {},
+  }) {
+    final compiler = _JsonSchemaCompiler();
+    final base = baseUri ?? Uri.parse('ack-import:///root.json');
+    final root = compiler.addDocument(document, base);
+    for (final entry in documents.entries) {
+      compiler.addDocument(entry.value, base.resolveUri(entry.key));
+    }
+    compiler.compile(root);
+    if (compiler.diagnostics.isNotEmpty) {
+      throw JsonSchemaImportException(compiler.diagnostics);
+    }
+    return ImportedJsonSchema._(root);
+  }
+
   ImportedJsonSchema._(
     this._root, {
     bool? isNullable,

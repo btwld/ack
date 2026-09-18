@@ -57,7 +57,7 @@ void main() {
     expect(restored.safeParse({'name': 1}).isFail, isTrue);
   });
 
-  test('strict factory and report agree for supplied recursive bundles', () {
+  test('strict factory imports supplied recursive bundles', () {
     final baseUri = Uri.parse('https://example.test/root.json');
     final document = {r'$ref': 'node.json'};
     final documents = <Uri, Object>{
@@ -75,23 +75,18 @@ void main() {
       baseUri: baseUri,
       documents: documents,
     );
-    final JsonSchemaImportResult report = importJsonSchema(
-      document,
-      baseUri: baseUri,
-      documents: documents,
-    );
-    final AckSchema<Object, Object> reported = report.schema;
-    expect(report.isExact, isTrue);
-    expect(schema.toJsonSchema(), reported.toJsonSchema());
-    for (final value in [
-      {
-        'value': 1,
-        'child': {'value': 2},
-      },
-      {'value': 1, 'child': {}},
-      null,
+    for (final testCase in [
+      (
+        value: <String, Object?>{
+          'value': 1,
+          'child': {'value': 2},
+        },
+        valid: true,
+      ),
+      (value: <String, Object?>{'value': 1, 'child': {}}, valid: false),
+      (value: null, valid: false),
     ]) {
-      expect(schema.safeParse(value).isOk, reported.safeParse(value).isOk);
+      expect(schema.safeParse(testCase.value).isOk, testCase.valid);
     }
     expect(
       schema.safeParse({
@@ -103,26 +98,21 @@ void main() {
     expect(schema.safeParse({'value': 1, 'child': {}}).isFail, isTrue);
   });
 
-  test('partial conversion is explicit and diagnostics are immutable', () {
+  test('unsupported assertions expose immutable diagnostics', () {
     final document = {'type': 'string', 'format': 'email'};
-    expect(
-      () => Ack.fromJsonSchema(document),
-      throwsA(isA<JsonSchemaImportException>()),
-    );
-    final JsonSchemaImportResult report = importJsonSchema(
-      document,
-      allowUnsupported: true,
-    );
-    final AckSchema<Object, Object> schema = report.schema;
-    expect(report.isExact, isFalse);
-    expect(report.diagnostics.single.code, 'unsupported_keyword');
-    expect(report.diagnostics.single.pointer, '#/format');
-    expect(() => report.diagnostics.clear(), throwsUnsupportedError);
-    expect(schema.parse('not an email'), 'not an email');
-    expect(schema.toJsonSchema().toString(), isNot(contains('format')));
+    late JsonSchemaImportException failure;
+    try {
+      Ack.fromJsonSchema(document);
+      fail('Expected an unsupported keyword failure.');
+    } on JsonSchemaImportException catch (error) {
+      failure = error;
+    }
+    expect(failure.diagnostics.single.code, 'unsupported_keyword');
+    expect(failure.diagnostics.single.pointer, '#/format');
+    expect(() => failure.diagnostics.clear(), throwsUnsupportedError);
   });
 
-  test('invalid inputs remain errors through both core entry points', () {
+  test('invalid inputs remain errors through the core entry point', () {
     for (final document in <Object>[
       '{"type":"string"}',
       [],
@@ -133,10 +123,6 @@ void main() {
     ]) {
       expect(
         () => Ack.fromJsonSchema(document),
-        throwsA(isA<JsonSchemaImportException>()),
-      );
-      expect(
-        () => importJsonSchema(document, allowUnsupported: true),
         throwsA(isA<JsonSchemaImportException>()),
       );
     }
