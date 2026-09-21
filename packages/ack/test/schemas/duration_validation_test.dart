@@ -203,6 +203,46 @@ void main() {
 
         expect(jsonSchema['maximum'], 2000);
       });
+
+      test('emits a range without an unexported-constraint warning', () {
+        final schema = Ack.duration()
+            .min(Duration(seconds: 5))
+            .max(Duration(seconds: 10));
+        final model = schema.toSchemaModel();
+
+        expect(model.toJsonSchema(), {
+          'type': 'integer',
+          'x-transformed': true,
+          'minimum': 5000,
+          'maximum': 10000,
+        });
+        expect(model.warnings, isEmpty);
+      });
+
+      test('projection survives nullable, describe, and optional', () {
+        final schema = Ack.duration()
+            .min(Duration(seconds: 5))
+            .nullable()
+            .describe('A timeout')
+            .optional();
+        final model = schema.toSchemaModel();
+
+        expect(model.toJsonSchema()['anyOf'], [
+          {'type': 'integer', 'minimum': 5000, 'x-transformed': true},
+          {'type': 'null'},
+        ]);
+        expect(model.warnings, isEmpty);
+      });
+
+      test('projection survives copyWithInner', () {
+        final schema = Ack.duration()
+            .min(Duration(seconds: 5))
+            .copyWithInner(Ack.integer());
+        final model = schema.toSchemaModel();
+
+        expect(model.toJsonSchema()['minimum'], 5000);
+        expect(model.warnings, isEmpty);
+      });
     });
 
     group('Real-world use cases', () {
