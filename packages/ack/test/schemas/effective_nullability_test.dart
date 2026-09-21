@@ -258,6 +258,19 @@ void main() {
       );
     });
 
+    test('Ack.list rejects withDefault over a nullable union', () {
+      expect(
+        () => Ack.list(_nullableUnion().withDefault('fallback')),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('nullable item schemas'),
+          ),
+        ),
+      );
+    });
+
     test('Ack.list rejects preserveBoundary over a nullable union', () {
       expect(
         () => Ack.list(Ack.preserveBoundary(_nullableUnion())),

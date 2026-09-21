@@ -17,8 +17,11 @@
   missing key is still omitted.
 * `Ack.list(...)` now throws its existing "nullable item schemas"
   `ArgumentError` for item schemas whose null acceptance was previously hidden
-  behind a wrapper — a nested nullable union, or a codec or
-  `Ack.preserveBoundary(...)` over a nullable union.
+  behind a wrapper — a nested nullable union, or a codec, `withDefault(...)`,
+  or `Ack.preserveBoundary(...)` over a nullable union.
+* A codec or `Ack.preserveBoundary(...)` over a nullable union now exports an
+  outer `{"type": "null"}` branch, matching the `null` it accepts. The branch
+  is redundant with the union's own nullable branch but remains valid Draft-7.
 * `CodecSchema.create`'s `isNullable` parameter is now `bool?` and defaults to
   the input schema's effective null acceptance. Pass `.nullable(value: false)`
   to opt out explicitly.
