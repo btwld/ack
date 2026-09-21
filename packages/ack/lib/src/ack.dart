@@ -178,7 +178,6 @@ final class Ack {
       decoder: decode,
       encoder: encode,
       isOptional: input.isOptional,
-      isNullable: input.isNullable,
     );
   }
 

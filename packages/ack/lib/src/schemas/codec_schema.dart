@@ -51,7 +51,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     required AckSchema<dynamic, Runtime> outputSchema,
     required Runtime Function(InputRuntime value) decoder,
     required InputRuntime Function(Runtime value)? encoder,
-    bool isNullable = false,
+    bool? isNullable,
     bool isOptional = false,
     String? description,
     List<Constraint<Runtime>> constraints = const [],
@@ -63,7 +63,9 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: (value) => decoder(value as InputRuntime),
       encoder: encoder,
       decoderIdentity: decoder,
-      isNullable: isNullable,
+      // A codec is null-accepting whenever its input schema is, unless the
+      // caller opts out explicitly.
+      isNullable: isNullable ?? inputSchema.acceptsNull,
       isOptional: isOptional,
       description: description,
       constraints: constraints,

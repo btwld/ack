@@ -17,7 +17,6 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
       decoder: transformer,
       encoder: null,
       isOptional: isOptional,
-      isNullable: isNullable,
     );
   }
 
@@ -37,7 +36,6 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
       decoder: decode,
       encoder: encode,
       isOptional: isOptional,
-      isNullable: isNullable,
     );
   }
 }

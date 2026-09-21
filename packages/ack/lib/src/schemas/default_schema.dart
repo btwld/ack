@@ -135,6 +135,12 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @override
   bool get isNullable => super.isNullable || inner.isNullable;
 
+  // The wrapped schema's effective null policy can be broader than its
+  // `isNullable` flag (e.g. a union with a nullable branch), and encode must
+  // honor the same policy parse does.
+  @override
+  bool get acceptsNull => isNullable || inner.acceptsNull;
+
   @override
   bool get isOptional => super.isOptional || inner.isOptional;
 
