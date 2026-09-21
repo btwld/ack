@@ -10,7 +10,9 @@ import 'src/workspace_packages.dart';
 ///
 /// `pub` reports packaging problems as warnings, and a warning that reaches
 /// pub.dev cannot be withdrawn. The release therefore treats any warning as a
-/// failure.
+/// failure. A hint is a separate, advisory category that `pub` exits zero on —
+/// a version-skip notice is one, and it appears whenever a coordinated release
+/// is published incompletely — so hints are reported but do not fail the gate.
 ///
 /// Usage:
 /// `dart scripts/publish_dry_run.dart [package ...]`
@@ -77,9 +79,49 @@ Future<String?> _dryRun(String package) async {
   if (result.exitCode != 0) {
     return '$package: $executable pub publish exited with ${result.exitCode}';
   }
-  if (!output.contains('Package has 0 warnings.')) {
-    return '$package: publish validation reported warnings';
+
+  final counts = publishValidationCounts(output);
+  if (counts == null) {
+    return '$package: publish validation printed no summary to verify';
+  }
+  if (counts.warnings > 0) {
+    return '$package: publish validation reported ${counts.warnings} '
+        '${counts.warnings == 1 ? 'warning' : 'warnings'}';
+  }
+  if (counts.hints > 0) {
+    stdout.writeln(
+      'Note: $package has ${counts.hints} publish '
+      '${counts.hints == 1 ? 'hint' : 'hints'} (advisory, not blocking).',
+    );
   }
 
   return null;
+}
+
+/// The warning and hint counts `pub` reports in its dry-run summary, or `null`
+/// when the output carries no summary line to read.
+///
+/// `pub` closes a validated dry run with `Package has 0 warnings.`, or
+/// `Package has 0 warnings and 1 hint.` when it also has advice. Matching the
+/// clean line literally would read the second form as a failure even though it
+/// reports no warnings at all.
+({int warnings, int hints})? publishValidationCounts(String output) {
+  final summaries = RegExp(r'Package has ([^.\n]*)\.').allMatches(output);
+  if (summaries.isEmpty) return null;
+
+  // Only the final summary describes the package that was just validated.
+  final summary = summaries.last.group(1)!;
+
+  return (
+    warnings: _countOf(summary, 'warning'),
+    hints: _countOf(summary, 'hint'),
+  );
+}
+
+/// The count `pub` attached to [noun] in a summary, or `0` when the summary
+/// omits that category entirely.
+int _countOf(String summary, String noun) {
+  final match = RegExp('([0-9]+) ${noun}s?\\b').firstMatch(summary);
+
+  return match == null ? 0 : int.parse(match.group(1)!);
 }
