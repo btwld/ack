@@ -100,7 +100,6 @@ void main() {
       final captured = _captureThrow(() => schema.safeEncode(1));
 
       expect(captured.error, same(thrown));
-      expect(captured.stackTrace.toString(), isNotEmpty);
       expect(captured.stackTrace.toString(), contains('_throwingCodec'));
     });
 
