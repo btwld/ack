@@ -1,4 +1,4 @@
-## Unreleased
+## 1.6.1
 
 ### Fixed
 
@@ -25,9 +25,6 @@
 * A codec or `Ack.preserveBoundary(...)` over a nullable union now exports an
   outer `{"type": "null"}` branch, matching the `null` it accepts. The branch
   is redundant with the union's own nullable branch but remains valid Draft-7.
-* `CodecSchema.create`'s `isNullable` parameter is now `bool?` and defaults to
-  the input schema's effective null acceptance. Pass `.nullable(value: false)`
-  to opt out explicitly.
 * An `Error` thrown by an encoder now propagates out of `safeEncode` with its
   original stack trace at every nesting level. Previously only a root codec
   rethrew: nested in `Ack.object`, `Ack.list`, `Ack.map`, or

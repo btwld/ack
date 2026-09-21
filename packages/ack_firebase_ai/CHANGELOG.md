@@ -1,3 +1,10 @@
+## 1.6.1
+
+### Changed
+
+* Align with the coordinated Ack 1.6.1 release. This package has no source or
+  public API changes from 1.6.0; compatible dependency minimums are preserved.
+
 ## 1.6.0
 
 ### Changed

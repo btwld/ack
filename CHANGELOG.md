@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.6.1
+
+* Honor effective nullability consistently across unions, defaults, boundaries,
+  codecs, object properties, and list-item validation.
+* Propagate encoder `Error` objects through composite schemas without losing
+  their original stack traces or trying another union branch.
+* Keep runtime codec constraints out of exported wire schemas and report the
+  omitted constraints as export warnings.
+* Preserve inferred nullability through `.codec()`, `.transform()`, and the
+  built-in codec factories without changing the public codec factory API.
+* Align all six packages at 1.6.1.
+
+These fixes include observable behavior changes. See the core package
+changelog for compatibility details and migration guidance.
+
 ## 1.6.0
 
 * Add strict draft 2020-12 import through `Ack.fromJsonSchema()`, including
