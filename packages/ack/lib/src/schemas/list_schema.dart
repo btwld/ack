@@ -143,6 +143,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
           );
         }
       } catch (e, st) {
+        _rethrowIfError(e, st);
         errors.add(
           SchemaEncodeError.encoderThrew(
             message: 'List item $i encoder threw: $e',

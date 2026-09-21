@@ -84,7 +84,7 @@ Base class for all schema types.
   Codec/transform decoder failures, including `Error` values, become
   `SchemaTransformError` failures.
 - `Runtime? parse(Object? data, {String? debugName})`: Validates `data` and returns the value; throws `AckException` on failure.
-- `SchemaResult<TOut> safeParseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Parses and maps the validated value to `TOut`. Mapper failures, including `Error` values, become `SchemaTransformError` failures.
+- `SchemaResult<TOut> safeParseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Parses and maps the validated value to `TOut`. Mapper `Exception`s become `SchemaTransformError` failures; mapper `Error` values are rethrown with their original stack trace.
 - `TOut parseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Throwing variant of `safeParseAs`.
 - `SchemaResult<Boundary> safeEncode(Runtime? value, {String? debugName})`: Encodes a runtime value to the boundary representation.
 - `Boundary? encode(Runtime? value, {String? debugName})`: Throwing variant of `safeEncode`.

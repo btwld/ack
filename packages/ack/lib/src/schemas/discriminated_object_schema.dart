@@ -198,8 +198,9 @@ final class DiscriminatedObjectSchema<T extends Object>
   }
 
   /// Encodes [runtime] through [encodeThrough], then writes the union-owned
-  /// discriminator onto the boundary. Wraps a thrown encoder in
-  /// [SchemaEncodeError.encoderThrew] and rejects a branch that emitted a
+  /// discriminator onto the boundary. Rethrows a thrown `Error` with its
+  /// original stack trace, wraps a thrown `Exception` in
+  /// [SchemaEncodeError.encoderThrew], and rejects a branch that emitted a
   /// conflicting discriminator value.
   SchemaResult<JsonMap> _encodeBranch(
     AckSchema<JsonMap, T> encodeThrough,
@@ -211,6 +212,8 @@ final class DiscriminatedObjectSchema<T extends Object>
     try {
       encoded = encodeThrough.encodeWithContext(runtime, branchCtx);
     } catch (e, st) {
+      _rethrowIfError(e, st);
+
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
           message: 'Discriminated branch "$discValue" threw: $e',

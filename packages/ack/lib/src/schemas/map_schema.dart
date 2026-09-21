@@ -140,6 +140,7 @@ final class MapSchema<ValueBoundary extends Object, ValueRuntime extends Object>
           encoded[key] = r.getOrNull();
         }
       } catch (e, st) {
+        _rethrowIfError(e, st);
         errors.add(
           SchemaEncodeError.encoderThrew(
             message: 'Map value "$key" encoder threw: $e',

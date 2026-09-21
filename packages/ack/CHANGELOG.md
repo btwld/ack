@@ -2,6 +2,9 @@
 
 ### Fixed
 
+* Correct the `safeParseAs` documentation: mapper `Exception`s become
+  `SchemaTransformError` failures, while mapper `Error`s are rethrown with
+  their original stack trace (the documented behavior never matched the code).
 * Encode now honors *effective* nullability instead of a schema's own
   `isNullable` flag. A union with a nullable branch, and any `DefaultSchema`,
   `BoundarySchema`, or codec wrapping one, now encodes `null` wherever it
@@ -25,6 +28,14 @@
 * `CodecSchema.create`'s `isNullable` parameter is now `bool?` and defaults to
   the input schema's effective null acceptance. Pass `.nullable(value: false)`
   to opt out explicitly.
+* An `Error` thrown by an encoder now propagates out of `safeEncode` with its
+  original stack trace at every nesting level. Previously only a root codec
+  rethrew: nested in `Ack.object`, `Ack.list`, `Ack.map`, or
+  `Ack.discriminated` the `Error` became a `SchemaEncodeError` failure, and in
+  `Ack.anyOf` it was swallowed entirely so a later branch could return `ok`. A
+  union no longer tries later branches once a branch encoder raises an
+  `Error`. To signal a value a codec cannot encode, throw an `Exception` or
+  express the rule with an `output:` schema; do not catch `Error`.
 
 ## 1.6.0
 

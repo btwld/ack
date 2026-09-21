@@ -327,6 +327,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           encoded[key] = r.getOrNull();
         }
       } catch (e, st) {
+        _rethrowIfError(e, st);
         errors.add(
           SchemaEncodeError.encoderThrew(
             message: 'Property "$key" encoder threw: $e',
