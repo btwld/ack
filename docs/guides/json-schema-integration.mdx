@@ -73,11 +73,17 @@ Exports containing unsupported keywords are rejected.
 | Equality | `enum`, `const`, including nested JSON values and empty enums |
 | Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
 | Arrays | Single-schema `items`, `minItems`, `maxItems`, `uniqueItems` |
-| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search) |
+| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search, no `u` flag) |
 | Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
 | Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
+
+`pattern` compiles without ECMA-262's `u` flag, matching the default
+`RegExp`. Unicode property escapes (`\p{...}`, `\P{...}`) are therefore
+identity escapes rather than character classes, and patterns that only `u`
+mode rejects — an escaped hyphen outside a character class, for example —
+still import.
 
 This is deliberately not a complete JSON Schema validator. Unsupported
 keywords include `format`, `multipleOf`, `patternProperties`, `prefixItems`,

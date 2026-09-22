@@ -13,5 +13,13 @@ Selection happened when importing the fixtures, not at test runtime. Every
 listed group must continue importing exactly; unsupported features cannot
 silently turn these regression tests into skips.
 
+One group is excluded for a semantic deviation rather than an unsupported
+keyword: `pattern.json: pattern with Unicode property escape requires unicode
+mode`. Its schema imports cleanly, but `pattern` compiles with Dart's default
+`RegExp`, which follows ECMA-262 *without* the `u` flag, so `\p{Letter}` is an
+identity escape and the group's instances do not match. Enabling `u` would fix
+that group and reject patterns ECMA-262 accepts without it, such as an escaped
+hyphen outside a character class (`^\d{3}\-\d{4}$`).
+
 The complete suite also contains unsupported keywords; this fixture selection
 is **not** a claim of complete draft 2020-12 conformance.
