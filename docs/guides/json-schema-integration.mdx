@@ -11,6 +11,13 @@ Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
 `AckSchema<Object, Object>`. The input dialect is draft 2020-12, including
 when `$schema` is absent. Other explicitly declared dialects are rejected.
 
+Only the declared `$schema` string is checked — a document is never matched
+against a dialect by shape. An older-draft document whose keywords fall in the
+supported subset therefore imports once that string is replaced, with two
+caveats. Tuple-form `items` (a Draft-7 array) is rejected outright. A `$ref`
+carrying sibling keywords changes meaning silently: Draft-7 ignores those
+siblings, while 2020-12 and this importer apply them.
+
 ```dart
 import 'package:ack/ack.dart';
 
@@ -64,19 +71,19 @@ Exports containing unsupported keywords are rejected.
 | --- | --- |
 | Schemas and types | Boolean schemas, `type` (including lists and `null`) |
 | Equality | `enum`, `const`, including nested JSON values and empty enums |
-| Objects | `properties`, `required`, boolean/schema `additionalProperties`, `minProperties`, `maxProperties` |
+| Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
 | Arrays | Single-schema `items`, `minItems`, `maxItems`, `uniqueItems` |
-| Strings | `minLength`, `maxLength` (Unicode code points) |
+| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search) |
 | Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
 | Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
 
 This is deliberately not a complete JSON Schema validator. Unsupported
-keywords include `format`, `pattern`, `multipleOf`, `patternProperties`,
-`prefixItems`, `contains`, conditional/dependent/unevaluated keywords, dynamic
-references, and custom vocabulary declarations. Unknown extension keywords are
-also reported. `format` is not enforced, even for formats Ack's native string
+keywords include `format`, `multipleOf`, `patternProperties`, `prefixItems`,
+`contains`, conditional/dependent/unevaluated keywords, dynamic references,
+and custom vocabulary declarations. Unknown extension keywords are also
+reported. `format` is not enforced, even for formats Ack's native string
 schemas can validate. References to the 2020-12 meta-schema fail strict import.
 The meta-schema itself is not validated.
 
@@ -163,8 +170,8 @@ reports its date-time format, and client capabilities report the three
 meta-schema references. Test the specific catalog your application uses;
 successful validation of examples does not prove complete catalog conformance.
 
-The committed conformance tests contain 600 upstream JSON Schema instance cases
-across 178 groups in the supported subset, including supplied remote documents.
+The committed conformance tests contain 631 upstream JSON Schema instance cases
+across 186 groups in the supported subset, including supplied remote documents.
 They check parse, encode, and re-imported exports without network access.
 Unsupported cases are not silently skipped within those fixtures.
 

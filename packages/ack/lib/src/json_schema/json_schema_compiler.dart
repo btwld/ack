@@ -388,7 +388,12 @@ final class _JsonSchemaCompiler {
           for (final name in (value as Map<String, Object?>).keys)
             name: _child(node, '$key/${_importPointerToken(name)}'),
         };
-      } else if ({'items', 'additionalProperties', 'not'}.contains(key)) {
+      } else if ({
+        'items',
+        'additionalProperties',
+        'not',
+        'propertyNames',
+      }.contains(key)) {
         if ((key == 'items' && source.containsKey('prefixItems')) ||
             (key == 'additionalProperties' &&
                 source.containsKey('patternProperties'))) {
@@ -457,6 +462,16 @@ final class _JsonSchemaCompiler {
         node.keywords[key] = value;
       } else if (key == 'uniqueItems') {
         if (value is! bool) _fail(node, key, 'Expected a boolean.');
+        node.keywords[key] = value;
+      } else if (key == 'pattern') {
+        if (value is! String) {
+          _fail(node, key, 'Expected a regular expression string.');
+        }
+        try {
+          RegExp(value);
+        } on FormatException catch (e) {
+          _fail(node, key, 'Invalid regular expression: ${e.message}');
+        }
         node.keywords[key] = value;
       } else {
         _unsupported(node, key, 'Keyword "$key" is not supported.');

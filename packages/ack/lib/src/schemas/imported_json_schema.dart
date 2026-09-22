@@ -223,6 +223,11 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       if (length > maximum) return fail('max$suffix');
     }
   }
+  if (value is String) {
+    if (keywords['pattern'] case final String source) {
+      if (!RegExp(source).hasMatch(value)) return fail('pattern');
+    }
+  }
   if (value is Map) {
     for (final key in keywords['required'] as List? ?? const []) {
       if (!value.containsKey(key)) return fail('required').at(key as String);
@@ -234,6 +239,14 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       if (target == null) continue;
       final error = _checkImportedNode(target, entry.value);
       if (error != null) return error.at(entry.key as String);
+    }
+    if (node.children['propertyNames'] case final target?) {
+      for (final key in value.keys) {
+        final error = _checkImportedNode(target, key);
+        // Like "required", the replayed path segment resolves to the
+        // property's value rather than the offending name.
+        if (error != null) return error.at(key as String);
+      }
     }
   }
   if (value is List) {
