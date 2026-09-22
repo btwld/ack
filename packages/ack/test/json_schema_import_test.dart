@@ -334,7 +334,8 @@ void main() {
           },
         },
       });
-      final nestedError = nested.safeParse({'data': {'foobar': 1}}).getError();
+      const invalidNested = {'data': {'foobar': 1}};
+      final nestedError = nested.safeParse(invalidNested).getError();
       expect(nestedError.context.path, '#/data/foobar');
       expect(nestedError.value, 'foobar');
     });
