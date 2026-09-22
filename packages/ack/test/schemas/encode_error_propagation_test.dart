@@ -4,12 +4,10 @@ import 'package:ack/ack.dart';
 import 'package:ack/src/schemas/schema.dart' show Refinement;
 import 'package:test/test.dart';
 
-/// A codec whose encoder always throws [error].
 CodecSchema<String, int> _throwingCodec(Object error) {
   return Ack.string().codec<int>(decode: int.parse, encode: (_) => throw error);
 }
 
-/// A codec that records how many times its encoder ran.
 CodecSchema<String, int> _countingCodec(List<int> calls) {
   return Ack.string().codec<int>(
     decode: int.parse,
@@ -81,7 +79,6 @@ Iterable<SchemaError> _flatten(SchemaError error) sync* {
   }
 }
 
-/// Runs [encode] and returns the thrown object, failing if nothing is thrown.
 ({Object error, StackTrace stackTrace}) _captureThrow(void Function() encode) {
   try {
     encode();
