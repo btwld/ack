@@ -8,11 +8,11 @@ retained for Ack 1.1 extension-type compatibility.
 
 ```yaml
 dependencies:
-  ack: ^1.6.0
-  ack_annotations: ^1.6.0
+  ack: ^1.6.1
+  ack_annotations: ^1.6.1
 
 dev_dependencies:
-  ack_generator: ^1.6.0
+  ack_generator: ^1.6.1
   build_runner: ^2.4.0
 ```
 
