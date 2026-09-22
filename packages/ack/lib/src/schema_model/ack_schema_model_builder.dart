@@ -96,9 +96,20 @@ final class _SchemaModelBuilder {
       // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
       // which `_build(schema.inner)` already applied. Re-running them here
       // would emit duplicate warnings (e.g. datetime range under a default).
+      //
+      // A codec's constraints are declared in runtime terms, so projecting
+      // them onto the boundary schema is only honest when the codec says its
+      // mapping preserves them. Otherwise the keyword is omitted and the
+      // omission is reported.
       var wrapped = schema is DefaultSchema
           ? layered
-          : _applyConstraints(layered, schema);
+          : _applyConstraints(
+              layered,
+              schema,
+              projectKeywords:
+                  schema is! CodecSchema ||
+                  schema.projectsConstraintsToBoundary,
+            );
 
       if (schema is DefaultSchema) {
         final exportDefault = _defaultExportValueOrNull(schema);
@@ -408,13 +419,15 @@ final class _SchemaModelBuilder {
 
 AckSchemaModel _applyConstraints(
   AckSchemaModel model,
-  AckSchema<dynamic, dynamic> schema,
-) {
+  AckSchema<dynamic, dynamic> schema, {
+  bool projectKeywords = true,
+}) {
   var next = model;
   final appliedKeywordValues = {
     for (final entry in _renderedKeywords(model).entries)
       entry.key: <Object?>[entry.value],
   };
+  final omittedConstraintKeys = <String>[];
   for (final constraint in schema.constraints) {
     if (constraint is DateTimeConstraint) {
       next = _applyDateTimeConstraint(next, constraint);
@@ -423,6 +436,12 @@ AckSchemaModel _applyConstraints(
 
     if (constraint is JsonSchemaSpec) {
       final keywords = constraint.toJsonSchema();
+      if (!projectKeywords) {
+        if (keywords.isNotEmpty) {
+          omittedConstraintKeys.add(constraint.constraintKey);
+        }
+        continue;
+      }
       final newKeywords = <String, Object?>{};
       final conflicts = <String, Object?>{};
       for (final entry in keywords.entries) {
@@ -453,7 +472,17 @@ AckSchemaModel _applyConstraints(
     }
   }
 
-  return next;
+  if (omittedConstraintKeys.isEmpty) return next;
+
+  return next.withWarnings([
+    ...next.warnings,
+    AckSchemaModelWarning(
+      code: 'codec_runtime_constraint_not_exported',
+      message:
+          'Codec constraints were omitted because they validate runtime values, not the encoded boundary values the exported schema describes.',
+      context: {'constraints': omittedConstraintKeys},
+    ),
+  ]);
 }
 
 Map<String, Object?> _renderedKeywords(AckSchemaModel model) {

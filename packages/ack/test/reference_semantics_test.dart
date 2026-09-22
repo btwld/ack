@@ -91,14 +91,19 @@ void main() {
           .withConstraint(outerConstraint);
 
       expect(schema.safeParse('1234567').isFail, isTrue);
-      expect(schema.toJsonSchema(), {
+      // The inner schema's `minLength` describes the boundary and still
+      // exports. The outer one is a runtime constraint on a codec that does
+      // not claim its mapping preserves keywords, so it is enforced locally
+      // and reported as omitted rather than published.
+      final model = schema.toSchemaModel();
+      expect(model.toJsonSchema(), {
         'type': 'string',
         'minLength': 10,
         'x-transformed': true,
-        'allOf': [
-          {'minLength': 5},
-        ],
       });
+      expect(model.warnings.map((warning) => warning.code), [
+        'codec_runtime_constraint_not_exported',
+      ]);
     });
 
     test('exports exact list lengths as item-count constraints', () {

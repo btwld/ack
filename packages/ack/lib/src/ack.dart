@@ -253,6 +253,9 @@ final class Ack {
       ),
       decoder: _decodeDuration,
       encoder: _encodeDuration,
+      // `DurationConstraint` renders milliseconds, which is exactly this
+      // codec's boundary, so `.min()`/`.max()` stay true on the wire.
+      projectsConstraintsToBoundary: true,
     );
   }
 }

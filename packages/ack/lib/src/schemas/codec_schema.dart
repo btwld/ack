@@ -22,6 +22,17 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   @internal
   final AckSchema<dynamic, Runtime> outputSchema;
 
+  /// Whether this codec's runtime constraints describe its boundary values,
+  /// and may therefore be projected onto the exported wire schema.
+  ///
+  /// A constraint is declared in runtime terms, so the projection is only
+  /// valid when the codec's mapping preserves the keyword's meaning — e.g.
+  /// [Ack.duration], whose boundary is the milliseconds a
+  /// `DurationConstraint` already renders. Internal codec plumbing; not part
+  /// of the public API surface.
+  @internal
+  final bool projectsConstraintsToBoundary;
+
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
   final Object _decoderIdentity;
@@ -32,6 +43,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     required Runtime Function(Object value) decoder,
     required Object Function(Runtime value)? encoder,
     required Object decoderIdentity,
+    this.projectsConstraintsToBoundary = false,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -51,6 +63,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     required AckSchema<dynamic, Runtime> outputSchema,
     required Runtime Function(InputRuntime value) decoder,
     required InputRuntime Function(Runtime value)? encoder,
+    @internal bool projectsConstraintsToBoundary = false,
     bool? isNullable,
     bool isOptional = false,
     String? description,
@@ -63,6 +76,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: (value) => decoder(value as InputRuntime),
       encoder: encoder,
       decoderIdentity: decoder,
+      projectsConstraintsToBoundary: projectsConstraintsToBoundary,
       // A codec is null-accepting whenever its input schema is, unless the
       // caller opts out explicitly.
       isNullable: isNullable ?? inputSchema.acceptsNull,
@@ -170,6 +184,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: _decoder,
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
+      projectsConstraintsToBoundary: projectsConstraintsToBoundary,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -192,6 +207,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: _decoder,
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
+      projectsConstraintsToBoundary: projectsConstraintsToBoundary,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -208,6 +224,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
+        projectsConstraintsToBoundary == other.projectsConstraintsToBoundary &&
         _decoderIdentity == other._decoderIdentity &&
         _encoder == other._encoder;
   }
@@ -223,6 +240,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     baseFieldsHashCode,
     inputSchema,
     outputSchema,
+    projectsConstraintsToBoundary,
     _decoderIdentity,
     _encoder,
   );

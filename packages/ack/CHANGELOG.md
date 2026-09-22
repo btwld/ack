@@ -36,6 +36,15 @@
   union no longer tries later branches once a branch encoder raises an
   `Error`. To signal a value a codec cannot encode, throw an `Exception` or
   express the rule with an `output:` schema; do not catch `Error`.
+* Constraints added to a codec are no longer projected onto its exported wire
+  schema, because they validate runtime values the encoder may map to a
+  different shape — a seconds codec's `.min(Duration(seconds: 5))` used to
+  export `minimum: 5000` while encoding `5`. They are still enforced at
+  runtime, and the export now carries a
+  `codec_runtime_constraint_not_exported` warning naming the omitted
+  constraint keys. Move rules the wire should advertise onto the input schema
+  (`Ack.string().minLength(5).codec(...)`). `Ack.duration().min()`/`.max()`
+  still export `minimum`/`maximum` in milliseconds.
 
 ## 1.6.0
 

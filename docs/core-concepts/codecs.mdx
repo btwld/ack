@@ -113,6 +113,15 @@ encode.
 
 A codec exports the JSON Schema of its **boundary** (input) schema — that is the shape that crosses the wire. For example, `Ack.datetime()` exports as `string` with `format: date-time`. The runtime type and decode/encode logic are not part of the exported schema. See [JSON Serialization](./json-serialization.mdx).
 
+Constraints added to a codec validate its **runtime** values, which the encoder
+may map to something else entirely, so they are enforced locally but not
+published: the export omits the keyword and `toSchemaModel().warnings` reports a
+`codec_runtime_constraint_not_exported` warning. Put rules the wire should
+advertise on the input schema instead — `Ack.string().minLength(5).codec(...)`
+exports `minLength: 5`, while `Ack.string().codec(...).minLength(5)` does not.
+`Ack.duration()` is the exception: its boundary is the milliseconds its `min()`
+and `max()` already compare, so those constraints do export.
+
 ## Next steps
 
 - **[Schema Types](./schemas.mdx)**: Schema types and the `transform` helper
