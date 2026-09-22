@@ -172,7 +172,7 @@ final class Ack {
     required InputRuntime Function(Runtime value) encode,
     AckSchema<dynamic, Runtime>? output,
   }) {
-    return CodecSchema.create<Boundary, InputRuntime, Runtime>(
+    return createCodecSchemaInternal<Boundary, InputRuntime, Runtime>(
       inputSchema: input,
       outputSchema: output ?? InstanceSchema<Runtime>(),
       decoder: decode,
@@ -188,7 +188,7 @@ final class Ack {
   /// (year/month/day only). Values with non-zero time-of-day fail
   /// `safeEncode` and `validateRuntimeWithContext`.
   static CodecSchema<String, DateTime> date() {
-    return CodecSchema.create<String, String, DateTime>(
+    return createCodecSchemaInternal<String, String, DateTime>(
       inputSchema: string().date(),
       outputSchema: InstanceSchema<DateTime>().refine(
         _isLocalMidnightDate,
@@ -209,7 +209,7 @@ final class Ack {
   /// Runtime invariant: the encoded `DateTime` must be UTC. Local-time
   /// values fail validation; convert with `.toUtc()` before encoding.
   static CodecSchema<String, DateTime> datetime() {
-    return CodecSchema.create<String, String, DateTime>(
+    return createCodecSchemaInternal<String, String, DateTime>(
       inputSchema: string().datetime().refine(
         isDateTimeSecondRepresentableByDart,
         message: 'Dart DateTime cannot represent leap seconds.',
@@ -228,7 +228,7 @@ final class Ack {
   /// Runtime invariant: the `Uri` must have both a scheme and a host
   /// (matching the parse-side predicate).
   static CodecSchema<String, Uri> uri() {
-    return CodecSchema.create<String, String, Uri>(
+    return createCodecSchemaInternal<String, String, Uri>(
       inputSchema: string().uri(),
       outputSchema: InstanceSchema<Uri>().refine(
         _isAbsoluteUri,
@@ -245,7 +245,7 @@ final class Ack {
   /// milliseconds (sub-millisecond precision is rejected to avoid silent
   /// truncation on encode).
   static CodecSchema<int, Duration> duration() {
-    return CodecSchema.create<int, int, Duration>(
+    return createCodecSchemaInternal<int, int, Duration>(
       inputSchema: integer(),
       outputSchema: InstanceSchema<Duration>().refine(
         _isWholeMillisecondDuration,

@@ -267,6 +267,18 @@ void main() {
       },
     );
 
+    test('CodecSchema.create keeps its published nullability default', () {
+      final schema = CodecSchema.create<String, String, String>(
+        inputSchema: Ack.string().nullable(),
+        outputSchema: Ack.string(),
+        decoder: (value) => value,
+        encoder: (value) => value,
+      );
+
+      expect(schema.isNullable, false);
+      expect(schema.safeParse(null).isFail, true);
+    });
+
     test('decoder exceptions use codec decode wording', () {
       final transformSchema = Ack.string().transform<int>(
         (_) => throw StateError('transform decoder failed'),

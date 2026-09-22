@@ -11,7 +11,7 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
   CodecSchema<Boundary, R> transform<R extends Object>(
     R Function(Runtime value) transformer,
   ) {
-    return CodecSchema.create<Boundary, Runtime, R>(
+    return createCodecSchemaInternal<Boundary, Runtime, R>(
       inputSchema: this,
       outputSchema: InstanceSchema<R>(),
       decoder: transformer,
@@ -30,7 +30,7 @@ extension AckSchemaExtensions<Boundary extends Object, Runtime extends Object>
     required Runtime Function(R value) encode,
     AckSchema<dynamic, R>? output,
   }) {
-    return CodecSchema.create(
+    return createCodecSchemaInternal(
       inputSchema: this,
       outputSchema: output ?? InstanceSchema<R>(),
       decoder: decode,
