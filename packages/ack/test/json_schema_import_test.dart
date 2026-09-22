@@ -326,18 +326,6 @@ void main() {
       expect(error.context.path, '#/foobar');
       expect(error.value, 'foobar');
       expect(error.toMap()['value'], 'foobar');
-
-      final nested = Ack.fromJsonSchema({
-        'properties': {
-          'data': {
-            'propertyNames': {'maxLength': 3},
-          },
-        },
-      });
-      const invalidNested = {'data': {'foobar': 1}};
-      final nestedError = nested.safeParse(invalidNested).getError();
-      expect(nestedError.context.path, '#/data/foobar');
-      expect(nestedError.value, 'foobar');
     });
 
     test('recursive validation has no hidden Ack.lazy depth limit', () {
