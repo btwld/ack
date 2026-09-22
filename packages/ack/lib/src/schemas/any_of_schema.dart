@@ -123,6 +123,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
           errors.add(encoded.getError());
         }
       } catch (e, st) {
+        _rethrowIfError(e, st);
         errors.add(
           SchemaEncodeError.encoderThrew(
             message: 'AnyOf branch $index threw: $e',

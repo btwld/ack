@@ -103,6 +103,12 @@ Errors surface as typed [`SchemaError`](./error-handling.mdx) values:
 - `SchemaEncodeError` — encoding failed (for example, a one-way `transform`, or a
   runtime invariant violation such as a non-UTC `DateTime` for `Ack.datetime()`).
 
+An `Error` thrown by an `encode` function is a programming bug, not bad data, so
+it propagates out of `safeEncode` with its original stack trace at every nesting
+level — inside an object, list, map, or union, too. Throw an `Exception` (or
+express the rule with an `output:` schema) to signal a value the codec cannot
+encode.
+
 ## Codecs and JSON Schema
 
 A codec exports the JSON Schema of its **boundary** (input) schema — that is the shape that crosses the wire. For example, `Ack.datetime()` exports as `string` with `format: date-time`. The runtime type and decode/encode logic are not part of the exported schema. See [JSON Serialization](./json-serialization.mdx).

@@ -349,10 +349,12 @@ void main() {
     });
 
     test('codec encoder throws preserve child path and encode kind', () {
+      // An `Exception`, not an `Error`: encoder `Error`s propagate out of the
+      // composite instead of becoming a failure result.
       final schema = Ack.object({
         'count': Ack.string().codec<int>(
           decode: int.parse,
-          encode: (_) => throw StateError('boom'),
+          encode: (_) => throw const FormatException('boom'),
         ),
       });
 
