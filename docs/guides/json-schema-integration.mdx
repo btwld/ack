@@ -12,11 +12,12 @@ Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
 when `$schema` is absent. Other explicitly declared dialects are rejected.
 
 Only the declared `$schema` string is checked — a document is never matched
-against a dialect by shape. An older-draft document whose keywords fall in the
-supported subset therefore imports once that string is replaced, with two
-caveats. Tuple-form `items` (a Draft-7 array) is rejected outright. A `$ref`
-carrying sibling keywords changes meaning silently: Draft-7 ignores those
-siblings, while 2020-12 and this importer apply them.
+against a dialect by shape. Replacing an older draft's `$schema` string does
+not convert its semantics. Tuple-form `items` (a Draft-7 array) is rejected;
+Draft-7 ignores `$ref` siblings that this importer applies. Draft-4 boolean
+`exclusiveMinimum` and `exclusiveMaximum` values are rejected, and Draft-4
+`integer` rejects `1.0` where this importer accepts it. Convert older schemas
+to draft 2020-12 and check their validation results before importing them.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -83,7 +84,9 @@ Exports containing unsupported keywords are rejected.
 `RegExp`. Unicode property escapes (`\p{...}`, `\P{...}`) are therefore
 identity escapes rather than character classes, and patterns that only `u`
 mode rejects — an escaped hyphen outside a character class, for example —
-still import.
+still import. This can differ from validators such as Ajv, which enables `u`
+by default: `pattern: "^.$"` rejects `"😀"` here but accepts it with `u`.
+Test patterns in both validators if their results must agree.
 
 This is deliberately not a complete JSON Schema validator. Unsupported
 keywords include `format`, `multipleOf`, `patternProperties`, `prefixItems`,
@@ -170,7 +173,7 @@ Offline regression fixtures pin five representative A2UI v0.9 protocol schemas
 to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
 
 The basic catalog is **not an exact supported import**: it additionally uses
-unevaluated-property checks, conditionals, patterns, formats, and an extension
+unevaluated-property checks, conditionals, formats, and an extension
 keyword. Import therefore fails with diagnostics. The client event schema
 reports its date-time format, and client capabilities report the three
 meta-schema references. Test the specific catalog your application uses;
