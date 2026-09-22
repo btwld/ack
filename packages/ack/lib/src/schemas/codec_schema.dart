@@ -63,23 +63,18 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     required AckSchema<dynamic, Runtime> outputSchema,
     required Runtime Function(InputRuntime value) decoder,
     required InputRuntime Function(Runtime value)? encoder,
-    @internal bool projectsConstraintsToBoundary = false,
-    bool? isNullable,
+    bool isNullable = false,
     bool isOptional = false,
     String? description,
     List<Constraint<Runtime>> constraints = const [],
     List<Refinement<Runtime>> refinements = const [],
   }) {
-    return CodecSchema._(
+    return createCodecSchemaInternal(
       inputSchema: inputSchema,
       outputSchema: outputSchema,
-      decoder: (value) => decoder(value as InputRuntime),
+      decoder: decoder,
       encoder: encoder,
-      decoderIdentity: decoder,
-      projectsConstraintsToBoundary: projectsConstraintsToBoundary,
-      // A codec is null-accepting whenever its input schema is, unless the
-      // caller opts out explicitly.
-      isNullable: isNullable ?? inputSchema.acceptsNull,
+      isNullable: isNullable,
       isOptional: isOptional,
       description: description,
       constraints: constraints,
@@ -243,5 +238,41 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     projectsConstraintsToBoundary,
     _decoderIdentity,
     _encoder,
+  );
+}
+
+/// Internal codec construction used by ACK factories and fluent extensions.
+///
+/// This keeps nullability inference and wire-constraint projection out of the
+/// public [CodecSchema.create] contract.
+@internal
+CodecSchema<Boundary, Runtime> createCodecSchemaInternal<
+  Boundary extends Object,
+  InputRuntime extends Object,
+  Runtime extends Object
+>({
+  required AckSchema<Boundary, InputRuntime> inputSchema,
+  required AckSchema<dynamic, Runtime> outputSchema,
+  required Runtime Function(InputRuntime value) decoder,
+  required InputRuntime Function(Runtime value)? encoder,
+  bool projectsConstraintsToBoundary = false,
+  bool? isNullable,
+  bool isOptional = false,
+  String? description,
+  List<Constraint<Runtime>> constraints = const [],
+  List<Refinement<Runtime>> refinements = const [],
+}) {
+  return CodecSchema._(
+    inputSchema: inputSchema,
+    outputSchema: outputSchema,
+    decoder: (value) => decoder(value as InputRuntime),
+    encoder: encoder,
+    decoderIdentity: decoder,
+    projectsConstraintsToBoundary: projectsConstraintsToBoundary,
+    isNullable: isNullable ?? inputSchema.acceptsNull,
+    isOptional: isOptional,
+    description: description,
+    constraints: constraints,
+    refinements: refinements,
   );
 }

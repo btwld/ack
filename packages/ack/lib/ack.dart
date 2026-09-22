@@ -39,7 +39,8 @@ export 'src/schemas/schema.dart'
         ImportedJsonSchema,
         Refinement,
         SchemaOperation,
-        WrapperSchema;
+        WrapperSchema,
+        createCodecSchemaInternal;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results
