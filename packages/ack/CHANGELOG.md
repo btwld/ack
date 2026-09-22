@@ -1,3 +1,31 @@
+## Unreleased
+
+### Fixed
+
+* Encode now honors *effective* nullability instead of a schema's own
+  `isNullable` flag. A union with a nullable branch, and any `DefaultSchema`,
+  `BoundarySchema`, or codec wrapping one, now encodes `null` wherever it
+  already parsed `null`: at the root, as an object property, and when nested
+  in another union. `.transform()`, `.codec()`, and `Ack.codec()` no longer
+  reject `null` on parse or encode when their input schema accepts it, which
+  matches the `type: null` branch their export already advertised.
+
+### Changed
+
+* An optional object property whose schema effectively accepts `null` now
+  encodes a present `null` as `{"key": null}` instead of omitting the key. A
+  missing key is still omitted.
+* `Ack.list(...)` now throws its existing "nullable item schemas"
+  `ArgumentError` for item schemas whose null acceptance was previously hidden
+  behind a wrapper — a nested nullable union, or a codec, `withDefault(...)`,
+  or `Ack.preserveBoundary(...)` over a nullable union.
+* A codec or `Ack.preserveBoundary(...)` over a nullable union now exports an
+  outer `{"type": "null"}` branch, matching the `null` it accepts. The branch
+  is redundant with the union's own nullable branch but remains valid Draft-7.
+* `CodecSchema.create`'s `isNullable` parameter is now `bool?` and defaults to
+  the input schema's effective null acceptance. Pass `.nullable(value: false)`
+  to opt out explicitly.
+
 ## 1.6.0
 
 ### Added

@@ -219,7 +219,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
 
       if (propertyValue == null) {
-        if (schema.isNullable || (isEncode && schema.isOptional)) continue;
+        if (schema.acceptsNull || (isEncode && schema.isOptional)) continue;
         if (isEncode) {
           errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
         } else {
@@ -316,7 +316,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         continue;
       }
       if (propertyValue == null) {
-        if (schema.isNullable) encoded[key] = null;
+        if (schema.acceptsNull) encoded[key] = null;
         continue;
       }
       try {

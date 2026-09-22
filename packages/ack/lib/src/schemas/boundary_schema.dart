@@ -21,7 +21,7 @@ final class BoundarySchema<Boundary extends Object>
     super.constraints,
     super.refinements,
   }) : super(
-         isNullable: isNullable ?? inner.isNullable,
+         isNullable: isNullable ?? inner.acceptsNull,
          isOptional: isOptional ?? inner.isOptional,
          description: description ?? inner.description,
        );
