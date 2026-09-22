@@ -183,6 +183,35 @@ void main() {
       expect(falseDefinitions.values.first, {'not': <String, Object?>{}});
     });
 
+    test('pattern and propertyNames validate and export verbatim', () {
+      final schema = Ack.fromJsonSchema({
+        'properties': {
+          'name': {'pattern': r'^a+$'},
+        },
+        'propertyNames': {'maxLength': 4},
+      });
+      const accepted = {'name': 'aaa'};
+      const badPattern = {'name': 'bbb'};
+      const badPropertyName = {'name': 'aaa', 'other': 1};
+      expect(schema.safeParse(accepted).isOk, isTrue);
+      expect(schema.safeParse(badPattern).isFail, isTrue);
+      expect(schema.safeParse(badPropertyName).isFail, isTrue);
+      // "pattern" is skipped rather than failed for non-strings.
+      expect(schema.safeParse({'name': 42}).isOk, isTrue);
+
+      final export = schema.toJsonSchema();
+      final definitions = (export['definitions'] as Map).values.cast<Map>();
+      expect(definitions.any((d) => d['pattern'] == r'^a+$'), isTrue);
+      expect(
+        definitions.any((d) => (d['propertyNames'] as Map?)?[r'$ref'] != null),
+        isTrue,
+      );
+      final roundTrip = Ack.fromJsonSchema(export);
+      expect(roundTrip.safeParse(accepted).isOk, isTrue);
+      expect(roundTrip.safeParse(badPattern).isFail, isTrue);
+      expect(roundTrip.safeParse(badPropertyName).isFail, isTrue);
+    });
+
     test('reference failures include source URI and keyword location', () {
       try {
         Ack.fromJsonSchema({
@@ -287,6 +316,16 @@ void main() {
             .path,
         '#/a~1b/1',
       );
+    });
+
+    test('propertyNames errors keep the failing property path', () {
+      final schema = Ack.fromJsonSchema({
+        'propertyNames': {'maxLength': 3},
+      });
+      final error = schema.safeParse({'foobar': 1}).getError();
+      expect(error.context.path, '#/foobar');
+      expect(error.value, 'foobar');
+      expect(error.toMap()['value'], 'foobar');
     });
 
     test('recursive validation has no hidden Ack.lazy depth limit', () {
@@ -509,6 +548,8 @@ void main() {
         {'anyOf': []},
         {'enum': 1},
         {'items': 3},
+        {'pattern': 1},
+        {'pattern': '('},
       ]) {
         expect(
           () => Ack.fromJsonSchema(document),

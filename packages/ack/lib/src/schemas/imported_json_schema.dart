@@ -66,7 +66,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     final violation = _checkImportedNode(_root, value);
     if (violation != null) {
       var errorContext = context;
-      for (final segment in violation.path) {
+      for (final (index, segment) in violation.path.indexed) {
         final childValue = switch (errorContext.value) {
           final Map parent => parent[segment],
           final List parent => parent[int.parse(segment)],
@@ -75,7 +75,9 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         errorContext = errorContext.createChild(
           name: segment,
           schema: this,
-          value: childValue,
+          value: index == violation.path.length - 1
+              ? violation.invalidPropertyName ?? childValue
+              : childValue,
           pathSegment: segment,
         );
       }
@@ -137,12 +139,26 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 }
 
 final class _ImportViolation {
-  const _ImportViolation(this.message, [this.path = const []]);
+  const _ImportViolation(
+    this.message, {
+    this.path = const [],
+    this.invalidPropertyName,
+  });
   final String message;
   final List<String> path;
+  final String? invalidPropertyName;
 
-  _ImportViolation at(String segment) =>
-      _ImportViolation(message, [segment, ...path]);
+  _ImportViolation at(String segment) => _ImportViolation(
+    message,
+    path: [segment, ...path],
+    invalidPropertyName: invalidPropertyName,
+  );
+
+  _ImportViolation atPropertyName(String name) => _ImportViolation(
+    message,
+    path: [name, ...path],
+    invalidPropertyName: name,
+  );
 }
 
 _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
@@ -223,6 +239,11 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       if (length > maximum) return fail('max$suffix');
     }
   }
+  if (value is String) {
+    if (keywords['pattern'] case final String source) {
+      if (!RegExp(source).hasMatch(value)) return fail('pattern');
+    }
+  }
   if (value is Map) {
     for (final key in keywords['required'] as List? ?? const []) {
       if (!value.containsKey(key)) return fail('required').at(key as String);
@@ -234,6 +255,12 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       if (target == null) continue;
       final error = _checkImportedNode(target, entry.value);
       if (error != null) return error.at(entry.key as String);
+    }
+    if (node.children['propertyNames'] case final target?) {
+      for (final key in value.keys) {
+        final error = _checkImportedNode(target, key);
+        if (error != null) return error.atPropertyName(key as String);
+      }
     }
   }
   if (value is List) {
