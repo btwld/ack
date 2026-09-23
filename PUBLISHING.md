@@ -80,10 +80,11 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    staged hosted-dependency analysis; all must pass on the release merge commit.
 7. Review and merge the release PR before creating the tag.
 
-## First publication of ack_mcp_dart
+## Historical first publication of ack_mcp_dart
 
 [pub.dev requires the first version of a new package to be published manually](https://dart.dev/tools/pub/automated-publishing).
-OIDC cannot create a new package, and `ack_mcp_dart` is not yet on pub.dev.
+OIDC cannot create a new package. The steps below applied only to the first
+`ack_mcp_dart` release, v1.3.0; do not repeat them for 1.6.2.
 
 After the release PR merges and all checks pass, but **before pushing v1.3.0**:
 
@@ -115,7 +116,7 @@ repository cannot configure pub.dev Admin settings on behalf of its owner.
 
 ## Publish the coordinated release
 
-After the release commit's CI/preflight succeeds and first-package setup is done:
+After the release commit's CI/preflight succeeds:
 
 ```sh
 git fetch origin main --tags
