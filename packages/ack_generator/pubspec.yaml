@@ -1,6 +1,6 @@
 name: ack_generator
 description: Generates immutable models from Ack schemas and validated schemas from Dart classes
-version: 1.6.1
+version: 1.6.2
 repository: https://github.com/conceptadev/ack
 issue_tracker: https://github.com/conceptadev/ack/issues
 resolution: workspace

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.6.2
+
+* Restore import of Ack-exported JSON Schemas containing `pattern` and accept
+  standard `propertyNames` constraints.
+* Align all six publishable packages at 1.6.2 without changing the public Dart
+  API. Existing hosted dependency minimums remain compatible.
+
+See the core package changelog for supported keyword details and regex limits.
+
 ## 1.6.1
 
 * Honor effective nullability consistently across unions, defaults, boundaries,

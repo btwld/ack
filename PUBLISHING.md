@@ -9,13 +9,13 @@ environment. A release-preparation PR does not publish anything.
 
 Use SemVer for the combined public API: patch for compatible fixes, minor for
 new compatible features/packages, and major when any stable public API breaks.
-The next release is **1.6.1**, coordinating the effective-nullability, encoder
-error-propagation, and codec wire-schema fixes. The public API is unchanged
-from 1.6.0; `dart scripts/api_check.dart ack v1.6.0` reports no changes, so the
-patch version satisfies the API gate.
+The next release is **1.6.2**, restoring JSON Schema import compatibility for
+`pattern` and accepting standard `propertyNames` schemas. No public Dart API
+was added; this is a patch release for the import compatibility fix. The API
+check compares the six packages against v1.6.1.
 
-All six packages are published at 1.6.0, so the shared API baseline for this
-release is 1.6.0.
+The shared API baseline for this release is 1.6.1. Confirm that all six
+packages have published 1.6.1 versions before preparing the release.
 
 Melos **8.7** is configured with `mode: fixed` and `workspaceTag: true`, matching
 this repository's release-tag verifier. `smartDependents: true` preserves
@@ -47,7 +47,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 3. Preview/prepare a coordinated version without creating commits or tags:
 
    ```sh
-   dart run melos version --manual-version=ack:1.6.1 --yes --no-git-commit-version
+   dart run melos version --manual-version=ack:1.6.2 --yes --no-git-commit-version
    ```
 
    Use the named flag, not a positional package argument: the positional form
@@ -60,16 +60,16 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    unreleased notes into the new section, preserving every published section.
    Update installation snippets to match each package's version.
 5. Set `API_BASELINE_VERSION` in `.github/workflows/preflight.yml` to the latest
-   release published for all packages (currently `1.6.0`). Record a new
+   release published for all packages (currently `1.6.1`). Record a new
    package's actual first release in `ackPackageFirstReleases` in
    `scripts/src/workspace_packages.dart`;
    checks skip only older baselines. `ack_mcp_dart` first released at 1.3.0.
 6. Validate the complete release:
 
    ```sh
-   dart scripts/verify_release_tag.dart v1.6.1 --skip-ancestry
+   dart scripts/verify_release_tag.dart v1.6.2 --skip-ancestry
    dart run melos run ci
-   dart scripts/api_check.dart 1.6.0
+   dart scripts/api_check.dart 1.6.1
    dart scripts/publish_dry_run.dart
    dart run melos run validate-jsonschema:batch
    ```
@@ -120,9 +120,9 @@ After the release commit's CI/preflight succeeds and first-package setup is done
 ```sh
 git fetch origin main --tags
 # Use the exact reviewed release merge commit, not an arbitrary later main head.
-git tag -a v1.6.1 <release-merge-sha> -m 'Ack 1.6.1'
-dart scripts/verify_release_tag.dart v1.6.1
-git push origin v1.6.1
+git tag -a v1.6.2 <release-merge-sha> -m 'Ack 1.6.2'
+dart scripts/verify_release_tag.dart v1.6.2
+git push origin v1.6.2
 ```
 
 Pushing the tag triggers `.github/workflows/release.yml`; there is no Melos
@@ -148,4 +148,4 @@ or republish different contents under an existing version.
 
 After all six exact versions are visible, create the GitHub Release from the
 existing tag using the prepared release notes. Before the first subsequent code
-change, begin a new unreleased changelog section instead of editing 1.6.1 notes.
+change, begin a new unreleased changelog section instead of editing 1.6.2 notes.

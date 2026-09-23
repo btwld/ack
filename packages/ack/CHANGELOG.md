@@ -1,10 +1,11 @@
-## Unreleased
+## 1.6.2
 
-### Added
+### Fixed
 
-* `Ack.fromJsonSchema()` now compiles the `pattern` and `propertyNames`
-  keywords. `pattern` is an unanchored ECMA-262 search applied to strings
-  only, and is rejected at import time when it is not a valid regular
+* `Ack.fromJsonSchema()` now compiles the `pattern` keyword, restoring import
+  of schemas exported from Ack. It also accepts the standard `propertyNames`
+  keyword. `pattern` is an unanchored ECMA-262 search applied to strings only,
+  and is rejected at import time when it is not a valid regular
   expression string. `propertyNames` validates every key of an object
   instance against its subschema. Both round-trip through the Draft-7 export
   unchanged, raising the pinned upstream conformance selection to 631 cases.
