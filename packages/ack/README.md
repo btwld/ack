@@ -1,7 +1,7 @@
 # Ack
 
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
-[![CI/CD](https://github.com/conceptadev/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/conceptadev/ack/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-documentation-blue)](https://concepta.dev/ack)
 
 Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API. Ack is short for "acknowledge".

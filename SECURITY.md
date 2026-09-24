@@ -31,4 +31,4 @@ reporter unless they prefer to remain anonymous.
 
 Security reports should describe a concrete confidentiality, integrity, or
 availability impact. General bugs, unexpected validation results, and feature
-requests belong in the public [issue tracker](https://github.com/conceptadev/ack/issues).
+requests belong in the public [issue tracker](https://github.com/btwld/ack/issues).

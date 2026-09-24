@@ -1,7 +1,7 @@
 name: ack_workspace
 description: ACK workspace root package
 publish_to: none
-repository: https://github.com/conceptadev/ack
+repository: https://github.com/btwld/ack
 
 environment:
   sdk: '>=3.9.0 <4.0.0'

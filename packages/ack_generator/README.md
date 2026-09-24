@@ -182,7 +182,7 @@ field. Other `JsonKey` options and constructor-parameter placement fail
 generation so schema validation and JSON mapping remain identical.
 
 For design details and migration notes, see the
-[model and schema generation architecture](https://github.com/conceptadev/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
+[model and schema generation architecture](https://github.com/btwld/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
 
 ## Deprecated AckType compatibility
 

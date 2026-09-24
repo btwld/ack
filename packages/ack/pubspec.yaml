@@ -1,8 +1,8 @@
 name: ack
 description: Schema validation and bidirectional codecs for Dart and Flutter
 version: 1.6.2
-repository: https://github.com/conceptadev/ack
-issue_tracker: https://github.com/conceptadev/ack/issues
+repository: https://github.com/btwld/ack
+issue_tracker: https://github.com/btwld/ack/issues
 homepage: https://concepta.dev/ack
 
 resolution: workspace

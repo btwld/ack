@@ -7,18 +7,18 @@
 - [API quick reference](https://concepta.dev/documentation/ack/reference/api-reference)
 - [Generated API documentation](https://pub.dev/documentation/ack/latest/ack/)
 
-Search existing [GitHub issues](https://github.com/conceptadev/ack/issues) before
+Search existing [GitHub issues](https://github.com/btwld/ack/issues) before
 opening a new one; your question or bug may already have an answer.
 
 ## Ask a question
 
-Open a [GitHub issue](https://github.com/conceptadev/ack/issues/new) and apply the
+Open a [GitHub issue](https://github.com/btwld/ack/issues/new) and apply the
 `question` label. Include the Ack package and version, your Dart or Flutter
 version, what you are trying to accomplish, and a small reproducible example.
 
 ## Report a bug or request a feature
 
-Use the [issue tracker](https://github.com/conceptadev/ack/issues) with the `bug` or
+Use the [issue tracker](https://github.com/btwld/ack/issues) with the `bug` or
 `enhancement` label. A minimal reproduction and the full error output make an
 issue much easier to investigate.
 

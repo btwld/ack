@@ -49,7 +49,7 @@ jobs:
             echo "docs.page reserves /llms.txt; remove docs/llms.txt.mdx to avoid a duplicate index entry."
             exit 1
           }
-          grep -q 'https://docs.page/conceptadev/ack/llms.txt' docs/index.mdx || {
+          grep -q 'https://docs.page/btwld/ack/llms.txt' docs/index.mdx || {
             echo "The docs homepage must link to the generated docs.page llms.txt export."
             exit 1
           }

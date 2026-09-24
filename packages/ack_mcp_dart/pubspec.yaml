@@ -1,8 +1,8 @@
 name: ack_mcp_dart
 description: MCP tool schemas and typed argument validation for Ack and mcp_dart
 version: 1.6.2
-repository: https://github.com/conceptadev/ack
-issue_tracker: https://github.com/conceptadev/ack/issues
+repository: https://github.com/btwld/ack
+issue_tracker: https://github.com/btwld/ack/issues
 resolution: workspace
 topics:
   - json-schema

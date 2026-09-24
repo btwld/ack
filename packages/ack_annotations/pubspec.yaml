@@ -1,7 +1,7 @@
 name: ack_annotations
 description: Annotations for Ack schema-first models and class-first schema generation
 version: 1.6.2
-repository: https://github.com/conceptadev/ack
+repository: https://github.com/btwld/ack
 resolution: workspace
 topics:
   - annotations

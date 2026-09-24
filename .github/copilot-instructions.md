@@ -1,4 +1,4 @@
-# Copilot instructions for `conceptadev/ack`
+# Copilot instructions for `btwld/ack`
 
 ## Start here first
 - Read `/llms.txt` before making code changes. It is the canonical API reference and should be updated in the same PR when public API changes.
