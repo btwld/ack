@@ -105,7 +105,7 @@ After the release PR merges and all checks pass, but **before pushing v1.3.0**:
    core package. Follow pub's authentication prompt using an authorized uploader
    account; for a supported token-based flow use `dart pub token add https://pub.dev`.
 2. In the package's pub.dev Admin tab, enable GitHub Actions publication for
-   repository `conceptadev/ack`, tag pattern `v{{version}}`, and required
+   repository `btwld/ack`, tag pattern `v{{version}}`, and required
    environment `Production`. Associate the package with the intended publisher.
 3. Verify version 1.3.0 is visible on pub.dev before starting the coordinated tag
    release. Keep the same reviewed source for the manual upload and release tag.

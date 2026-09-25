@@ -56,7 +56,7 @@ dependencies:
 
 Requires `ack: >=1.6.0 <2.0.0` and
 `json_schema_builder: >=0.1.3 <1.0.0` as peer dependencies. Report
-[compatibility issues](https://github.com/conceptadev/ack/issues).
+[compatibility issues](https://github.com/btwld/ack/issues).
 
 ## Conversion Model
 
@@ -171,11 +171,11 @@ dart test
 ## Contributing
 
 For contribution guidelines, see the repository's
-[CONTRIBUTING.md](https://github.com/conceptadev/ack/blob/main/CONTRIBUTING.md).
+[CONTRIBUTING.md](https://github.com/btwld/ack/blob/main/CONTRIBUTING.md).
 
 ## License
 
-This package is part of the [ACK](https://github.com/conceptadev/ack) monorepo.
+This package is part of the [ACK](https://github.com/btwld/ack) monorepo.
 
 ## Related Packages
 

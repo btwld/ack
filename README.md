@@ -1,6 +1,6 @@
 # Ack
 
-[![CI/CD](https://github.com/conceptadev/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/conceptadev/ack/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-documentation-blue)](https://concepta.dev/ack)
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
 [![llms.txt](https://img.shields.io/badge/llms.txt-available-8A2BE2)](https://concepta.dev/documentation/ack/reference/llms-txt)
@@ -241,7 +241,7 @@ Use `.transform<R>(...)` for one-way (parse-only) conversions. See the
 
 - Human docs: [concepta.dev/ack](https://concepta.dev/ack)
 - AI agent index: [AI & llms.txt](https://concepta.dev/documentation/ack/reference/llms-txt)
-- Canonical plaintext source: [raw.githubusercontent.com/conceptadev/ack/main/llms.txt](https://raw.githubusercontent.com/conceptadev/ack/main/llms.txt)
+- Canonical plaintext source: [raw.githubusercontent.com/btwld/ack/main/llms.txt](https://raw.githubusercontent.com/btwld/ack/main/llms.txt)
 
 ## Development
 

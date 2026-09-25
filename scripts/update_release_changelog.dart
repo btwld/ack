@@ -32,7 +32,7 @@ void main(List<String> args) {
       ? args[1].trim()
       : 'v$version';
 
-  final releaseUrl = 'https://github.com/conceptadev/ack/releases/tag/$tag';
+  final releaseUrl = 'https://github.com/btwld/ack/releases/tag/$tag';
   final changelogPaths = publishableAckPackages
       .map((p) => 'packages/$p/CHANGELOG.md')
       .toList();
