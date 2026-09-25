@@ -30,6 +30,21 @@ final class _User {
 
 void main() {
   group('AckModelAdapter', () {
+    test('exposes a model-valued schema with the source wire contract', () {
+      final AckSchema<JsonMap, _User> modelSchema = _userAdapter.modelSchema;
+      final parsed = modelSchema.parse({'name': 'Ada', 'age': 36})!;
+
+      expect(parsed.name, 'Ada');
+      expect(modelSchema.encode(parsed), {'name': 'Ada', 'age': 36});
+      expect(
+        modelSchema.safeParse({'name': 'Ada', 'age': '36'}).isFail,
+        isTrue,
+      );
+      final wire = modelSchema.toJsonSchema();
+      expect(wire['properties'], _userSchema.toJsonSchema()['properties']);
+      expect(wire['required'], _userSchema.toJsonSchema()['required']);
+    });
+
     test('parses boundary input into a model', () {
       final user = _userAdapter.parse({'name': 'Ada', 'age': 36});
 
