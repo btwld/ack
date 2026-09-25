@@ -1,3 +1,12 @@
+## Unreleased
+
+### Added
+
+* Class-first generation uses field documentation as schema descriptions and
+  supports the new string format annotations.
+* `inference.dart` exports shared type and constraint inference for other
+  generators. The class-first generator uses this library.
+
 ## 1.6.2
 
 ### Changed
