@@ -11,21 +11,30 @@ final ackPackages = publishableAckPackages;
 const dartApiToolVersion = '0.23.0';
 
 Future<void> main(List<String> args) async {
+  final inputs = [...args];
+  final allowAdditive = inputs.remove('--allow-additive');
+  if (inputs.length > 2 || inputs.any((arg) => arg.startsWith('--'))) {
+    stderr.writeln('❌ Unexpected API check argument.');
+    printUsage();
+    exitCode = 64;
+    return;
+  }
+
   // Parse arguments
   String? packageName;
   String? version;
 
-  if (args.isNotEmpty) {
+  if (inputs.isNotEmpty) {
     // Check if first argument is a version (starts with v or is a number)
-    final firstArg = args[0];
+    final firstArg = inputs[0];
     if (firstArg.startsWith('v') || RegExp(r'^\d+\.\d+').hasMatch(firstArg)) {
       // First argument is a version, check all packages
       version = firstArg;
     } else if (ackPackages.contains(firstArg)) {
       // First argument is a package name
       packageName = firstArg;
-      if (args.length > 1) {
-        version = args[1];
+      if (inputs.length > 1) {
+        version = inputs[1];
       }
     } else {
       print(
@@ -86,7 +95,13 @@ Future<void> main(List<String> args) async {
   var hasFailures = false;
 
   for (final pkg in packagesToCheck) {
-    if (!await checkPackage(pkg, cleanVersion, version, reports)) {
+    if (!await checkPackage(
+      pkg,
+      cleanVersion,
+      version,
+      reports,
+      allowAdditive: allowAdditive,
+    )) {
       hasFailures = true;
     }
   }
@@ -136,8 +151,9 @@ Future<bool> checkPackage(
   String packageName,
   String cleanVersion,
   String displayVersion,
-  List<String> reports,
-) async {
+  List<String> reports, {
+  required bool allowAdditive,
+}) async {
   print('📦 Checking $packageName package...');
 
   final reportFile = 'api-compat-$packageName-vs-$displayVersion.md';
@@ -161,6 +177,7 @@ Future<bool> checkPackage(
       'pub://$packageName/$cleanVersion',
       '--new',
       './packages/$packageName',
+      if (allowAdditive) ...['--version-check-mode', 'onlyBreakingChanges'],
       '--report-format',
       'markdown',
       '--report-file-path',
@@ -211,6 +228,7 @@ void _writeProcessStderr(ProcessResult result) {
 void printUsage() {
   print('');
   print('Usage: dart scripts/api_check.dart [PACKAGE] [VERSION]');
+  print('       dart scripts/api_check.dart [VERSION] --allow-additive');
   print('');
   print('Arguments:');
   print('  PACKAGE  Package to check (${ackPackages.join('|')})');
@@ -219,6 +237,7 @@ void printUsage() {
   print(
     '           If not provided with single package, uses latest from pub.dev',
   );
+  print('  --allow-additive  Accept additions before a release version bump.');
   print('');
   print('Examples:');
   print(

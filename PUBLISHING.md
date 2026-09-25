@@ -60,7 +60,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    unreleased notes into the new section, preserving every published section.
    Update installation snippets to match each package's version.
 5. Set `API_BASELINE_VERSION` in `.github/workflows/preflight.yml` to the latest
-   release published for all packages (currently `1.6.1`). Record a new
+   release published for all packages (currently `1.6.2`). Record a new
    package's actual first release in `ackPackageFirstReleases` in
    `scripts/src/workspace_packages.dart`;
    checks skip only older baselines. `ack_mcp_dart` first released at 1.3.0.
@@ -69,7 +69,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    ```sh
    dart scripts/verify_release_tag.dart v1.6.2 --skip-ancestry
    dart run melos run ci
-   dart scripts/api_check.dart 1.6.1
+   dart scripts/api_check.dart 1.6.2
    dart scripts/publish_dry_run.dart
    dart run melos run validate-jsonschema:batch
    ```
