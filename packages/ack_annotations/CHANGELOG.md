@@ -1,3 +1,12 @@
+## Unreleased
+
+### Added
+
+* Constraint and field annotations can target function parameters.
+* `@Url()`, `@Uuid()`, and `@Date()` are string format annotations.
+* `format_annotations.dart` exports `@Uri()` and `@DateTime()` for prefixed
+  imports. This keeps Dart core type names available.
+
 ## 1.6.2
 
 ### Changed

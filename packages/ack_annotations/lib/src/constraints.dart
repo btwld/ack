@@ -1,7 +1,7 @@
 import 'package:meta/meta_meta.dart';
 
 /// Adds `.min(value)` to an inferred numeric schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Min {
   const Min(this.value);
 
@@ -9,7 +9,7 @@ final class Min {
 }
 
 /// Adds `.max(value)` to an inferred numeric schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Max {
   const Max(this.value);
 
@@ -17,7 +17,7 @@ final class Max {
 }
 
 /// Adds `.multipleOf(value)` to an inferred numeric schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class MultipleOf {
   const MultipleOf(this.value);
 
@@ -25,19 +25,19 @@ final class MultipleOf {
 }
 
 /// Adds `.positive()` to an inferred numeric schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Positive {
   const Positive();
 }
 
 /// Adds `.negative()` to an inferred numeric schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Negative {
   const Negative();
 }
 
 /// Adds `.minLength(length)` to an inferred string schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class MinLength {
   const MinLength(this.length);
 
@@ -45,7 +45,7 @@ final class MinLength {
 }
 
 /// Adds `.maxLength(length)` to an inferred string schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class MaxLength {
   const MaxLength(this.length);
 
@@ -53,7 +53,7 @@ final class MaxLength {
 }
 
 /// Adds `.matches(pattern)` to an inferred string schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Pattern {
   const Pattern(this.pattern);
 
@@ -61,19 +61,37 @@ final class Pattern {
 }
 
 /// Adds `.email()` to an inferred string schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Email {
   const Email();
 }
 
+/// Adds `.url()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class Url {
+  const Url();
+}
+
+/// Adds `.uuid()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class Uuid {
+  const Uuid();
+}
+
+/// Adds `.date()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class Date {
+  const Date();
+}
+
 /// Adds `.notEmpty()` to an inferred string schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class NotEmpty {
   const NotEmpty();
 }
 
 /// Adds `.minItems(count)` to an inferred collection schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class MinItems {
   const MinItems(this.count);
 
@@ -81,7 +99,7 @@ final class MinItems {
 }
 
 /// Adds `.maxItems(count)` to an inferred collection schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class MaxItems {
   const MaxItems(this.count);
 
@@ -89,7 +107,7 @@ final class MaxItems {
 }
 
 /// Adds `.unique()` to an inferred collection schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class UniqueItems {
   const UniqueItems();
 }

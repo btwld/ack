@@ -9,6 +9,8 @@
 /// and `@AckField(schema: ...)` to describe wire extras, field presence,
 /// and custom field codecs. Deprecated [AckFieldPresence] remains available
 /// during migration.
+/// Import `format_annotations.dart` with a prefix for `@Uri()` and
+/// `@DateTime()`, whose names also belong to Dart core types.
 library;
 
 export 'package:json_annotation/json_annotation.dart' show JsonKey;
