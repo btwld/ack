@@ -4,6 +4,11 @@ import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
 final class _InferenceProbe implements Builder {
+  const _InferenceProbe({this.parameterName = 'title', this.sourceComment});
+
+  final String parameterName;
+  final String? sourceComment;
+
   @override
   Map<String, List<String>> get buildExtensions => const {
     '.dart': ['.probe'],
@@ -15,7 +20,7 @@ final class _InferenceProbe implements Builder {
     final parameter = library.topLevelFunctions
         .singleWhere((function) => function.name == 'widget')
         .formalParameters
-        .single;
+        .singleWhere((parameter) => parameter.name == parameterName);
     const inference = AckSchemaInference();
     final base = await inference.inferType(
       parameter.type,
@@ -35,7 +40,7 @@ final class _InferenceProbe implements Builder {
     final described = inference.applyDescription(
       constrained,
       parameter,
-      sourceComment: '/// The item title.',
+      sourceComment: sourceComment,
     );
     await step.writeAsString(step.inputId.changeExtension('.probe'), described);
   }
@@ -46,7 +51,9 @@ void main() {
     final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
     await readerWriter.testing.loadIsolateSources();
     await testBuilder(
-      _InferenceProbe(),
+      const _InferenceProbe(
+        sourceComment: '/// The item title.\r\n/// It appears on screen.',
+      ),
       {
         'test_pkg|lib/widget.dart': '''
 import 'package:ack_annotations/ack_annotations.dart';
@@ -62,7 +69,29 @@ void widget({
       readerWriter: readerWriter,
       outputs: {
         'test_pkg|lib/widget.probe': decodedMatches(
-          "Ack.string().minLength(2).describe('The item title.')",
+          "Ack.string().minLength(2).describe('The item title. It appears on screen.')",
+        ),
+      },
+    );
+  });
+
+  test('a second generator infers a list of Dart enums', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      const _InferenceProbe(parameterName: 'priorities'),
+      {
+        'test_pkg|lib/widget.dart': '''
+enum Priority { low, high }
+
+void widget({required List<Priority> priorities}) {}
+''',
+      },
+      generateFor: const {'test_pkg|lib/widget.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/widget.probe': decodedMatches(
+          'Ack.list(Ack.enumValues(Priority.values))',
         ),
       },
     );
