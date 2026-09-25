@@ -1,3 +1,10 @@
+## Unreleased
+
+### Added
+
+* `AckModelAdapter.modelSchema` decodes a schema-first boundary value to its
+  generated model and encodes the model through the source schema.
+
 ## 1.6.2
 
 ### Fixed

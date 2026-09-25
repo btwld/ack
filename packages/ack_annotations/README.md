@@ -64,6 +64,11 @@ final class Account with _$AccountAck {
 
 This generates the public `AccountSchema` facade plus validated `toJson`,
 `safeToJson`, `copyWith`, equality, and `toString` implementations.
+Field documentation becomes the field schema's description. Format
+annotations such as `@Url()`, `@Uuid()`, and `@Date()` constrain string
+fields. Import `package:ack_annotations/format_annotations.dart` with a
+prefix for `@formats.Uri()` and `@formats.DateTime()`. The prefix preserves
+the Dart core `Uri` and `DateTime` type names.
 
 ## Custom names
 

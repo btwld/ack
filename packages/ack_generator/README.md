@@ -79,6 +79,14 @@ void main() {
 }
 ```
 
+Field documentation becomes an Ack schema description. The generator shares
+its type and constraint inference through
+`package:ack_generator/inference.dart`. A second generator can use
+`AckSchemaInference.inferType`, `applyConstraints`, and `applyDescription`.
+The caller resolves application model types and import prefixes. For function
+parameters, read the documentation comment from the source AST and pass it as
+`sourceComment` to `applyDescription`.
+
 ## Schema support
 
 The generator supports objects, empty objects, scalar and collection roots,

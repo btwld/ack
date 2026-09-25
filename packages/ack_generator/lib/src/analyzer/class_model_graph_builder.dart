@@ -3,7 +3,6 @@ import 'package:ack_annotations/ack_annotations.dart' as annotations;
 import 'package:ack_annotations/ack_generator_support.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -13,6 +12,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import '../inference/schema_inference.dart';
 import 'generated_companion_visibility.dart';
 
 typedef _ModelOptions = ({
@@ -172,58 +172,6 @@ final class ClassModelGraphBuilder {
     inPackage: 'json_annotation',
   );
 
-  static const _minChecker = TypeChecker.typeNamed(
-    annotations.Min,
-    inPackage: 'ack_annotations',
-  );
-  static const _maxChecker = TypeChecker.typeNamed(
-    annotations.Max,
-    inPackage: 'ack_annotations',
-  );
-  static const _multipleOfChecker = TypeChecker.typeNamed(
-    annotations.MultipleOf,
-    inPackage: 'ack_annotations',
-  );
-  static const _positiveChecker = TypeChecker.typeNamed(
-    annotations.Positive,
-    inPackage: 'ack_annotations',
-  );
-  static const _negativeChecker = TypeChecker.typeNamed(
-    annotations.Negative,
-    inPackage: 'ack_annotations',
-  );
-  static const _minLengthChecker = TypeChecker.typeNamed(
-    annotations.MinLength,
-    inPackage: 'ack_annotations',
-  );
-  static const _maxLengthChecker = TypeChecker.typeNamed(
-    annotations.MaxLength,
-    inPackage: 'ack_annotations',
-  );
-  static const _patternChecker = TypeChecker.typeNamed(
-    annotations.Pattern,
-    inPackage: 'ack_annotations',
-  );
-  static const _emailChecker = TypeChecker.typeNamed(
-    annotations.Email,
-    inPackage: 'ack_annotations',
-  );
-  static const _notEmptyChecker = TypeChecker.typeNamed(
-    annotations.NotEmpty,
-    inPackage: 'ack_annotations',
-  );
-  static const _minItemsChecker = TypeChecker.typeNamed(
-    annotations.MinItems,
-    inPackage: 'ack_annotations',
-  );
-  static const _maxItemsChecker = TypeChecker.typeNamed(
-    annotations.MaxItems,
-    inPackage: 'ack_annotations',
-  );
-  static const _uniqueItemsChecker = TypeChecker.typeNamed(
-    annotations.UniqueItems,
-    inPackage: 'ack_annotations',
-  );
   static const _optionalChecker = TypeChecker.typeNamed(
     annotations.Optional,
     inPackage: 'ack_annotations',
@@ -239,6 +187,7 @@ final class ClassModelGraphBuilder {
 
   final LibraryReader library;
   final String? ackPrefix;
+  AckSchemaInference get _inference => AckSchemaInference(ackPrefix: ackPrefix);
   final AckModelGraph _graph = AckModelGraph();
   final Set<ClassElement> _explicit = {};
   final Set<ClassElement> _consumed = {};
@@ -665,6 +614,7 @@ final class ClassModelGraphBuilder {
       var schema = isDiscriminator && discriminatorValue != null
           ? '${_ack('Ack')}.literal(${_literal(discriminatorValue)})'
           : await _fieldSchema(field, futureType: futureType);
+      schema = _inference.applyDescription(schema, field);
       schema = _applyPresence(
         schema,
         presence: presence,
@@ -1201,51 +1151,22 @@ final class ClassModelGraphBuilder {
     return '${prefix == null ? '' : '$prefix.'}${function.name}()';
   }
 
-  Future<String> _schemaForType(DartType type, FieldElement field) async {
-    if (type is DynamicType || type is TypeParameterType) {
-      _unsupportedFieldType(field, type);
-    }
-    if (type is! InterfaceType) _unsupportedFieldType(field, type);
-    final interfaceType = type;
-    if (_isCore(interfaceType, 'String')) return '${_ack('Ack')}.string()';
-    if (_isCore(interfaceType, 'int')) return '${_ack('Ack')}.integer()';
-    if (_isCore(interfaceType, 'double')) return '${_ack('Ack')}.double()';
-    if (_isCore(interfaceType, 'num')) return '${_ack('Ack')}.number()';
-    if (_isCore(interfaceType, 'bool')) return '${_ack('Ack')}.boolean()';
-    if (_isCore(interfaceType, 'DateTime')) return '${_ack('Ack')}.datetime()';
-    if (_isCore(interfaceType, 'Uri')) return '${_ack('Ack')}.uri()';
-    if (_isCore(interfaceType, 'Duration')) return '${_ack('Ack')}.duration()';
-    // Object means a JSON-safe value, not an arbitrary Dart instance.
-    if (_isCore(interfaceType, 'Object')) return '${_ack('Ack')}.any()';
-    if (interfaceType.element is EnumElement) {
-      return '${_ack('Ack')}.enumValues(${_visibleTypeName(interfaceType)}.values)';
-    }
-    if (interfaceType.isDartCoreList &&
-        interfaceType.typeArguments.length == 1) {
-      final itemType = interfaceType.typeArguments.single;
-      _rejectNullableCollectionElement(field, itemType);
-      final item = await _schemaForType(itemType, field);
-      return '${_ack('Ack')}.list($item)';
-    }
-    if (interfaceType.isDartCoreSet &&
-        interfaceType.typeArguments.length == 1) {
-      final itemType = interfaceType.typeArguments.single;
-      _rejectNullableCollectionElement(field, itemType);
-      final item = await _schemaForType(itemType, field);
-      final rendered = _renderType(_typeRef(interfaceType, field));
-      return '${_ack('Ack')}.list($item).codec<$rendered>('
-          'decode: (list) => list.toSet(), '
-          'encode: (set) => set.toList(growable: false),'
-          ')';
-    }
-    if (interfaceType.isDartCoreMap) {
-      _validateMapKey(field, interfaceType);
-      // Unlike list items, JSON object values may be null.
-      final valueType = interfaceType.typeArguments[1];
-      final value = await _schemaForType(valueType, field);
-      final nullable = _isNullable(valueType) ? '.nullable()' : '';
-      return '${_ack('Ack')}.map($value$nullable)';
-    }
+  Future<String> _schemaForType(DartType type, FieldElement field) =>
+      _inference.inferType(
+        type,
+        visibleTypeName: _visibleTypeName,
+        renderType: (type) => _renderType(_typeRef(type, field)),
+        resolveNamed: (type) => _namedSchemaForType(type, field),
+        unsupported: (type) => _unsupportedFieldType(field, type),
+        rejectNullableCollectionElement: (type) =>
+            _nullableCollectionElementError(field, type.getDisplayString()),
+        validateMapKey: (type) => _validateMapKey(field, type),
+      );
+
+  Future<String?> _namedSchemaForType(
+    InterfaceType interfaceType,
+    FieldElement field,
+  ) async {
     final target = interfaceType.element;
     if (target is ClassElement) {
       final facadeName = _classFirstFacadeName(target);
@@ -1263,7 +1184,7 @@ final class ClassModelGraphBuilder {
     if (_generatedJsonChecker.hasAnnotationOfExact(target)) {
       return '${_visibleTypeName(interfaceType)}.\$ack.schema';
     }
-    _unsupportedFieldType(field, interfaceType);
+    return null;
   }
 
   void _rejectNullableCollectionElement(FieldElement field, DartType itemType) {
@@ -1341,76 +1262,8 @@ final class ClassModelGraphBuilder {
     }
   }
 
-  String _applySugar(String schema, FieldElement field) {
-    var output = schema;
-    final type = field.type;
-    final isNumeric = _isNumeric(type);
-    final isString = type is InterfaceType && _isCore(type, 'String');
-    final isCollection =
-        type is InterfaceType && (type.isDartCoreList || type.isDartCoreSet);
-    for (final metadata in field.metadata.annotations) {
-      final value = metadata.computeConstantValue();
-      final valueType = value?.type;
-      if (value == null || valueType == null) continue;
-      if (_minChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@Min', isNumeric, '@MinLength');
-        output = '$output.min(${_numberField(value, 'value')})';
-      } else if (_maxChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@Max', isNumeric, '@MaxLength');
-        output = '$output.max(${_numberField(value, 'value')})';
-      } else if (_multipleOfChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@MultipleOf', isNumeric, 'numeric field');
-        output = '$output.multipleOf(${_numberField(value, 'value')})';
-      } else if (_positiveChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@Positive', isNumeric, 'numeric field');
-        output = '$output.positive()';
-      } else if (_negativeChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@Negative', isNumeric, 'numeric field');
-        output = '$output.negative()';
-      } else if (_minLengthChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@MinLength', isString, '@Min');
-        output = '$output.minLength(${value.getField('length')!.toIntValue()})';
-      } else if (_maxLengthChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@MaxLength', isString, '@Max');
-        output = '$output.maxLength(${value.getField('length')!.toIntValue()})';
-      } else if (_patternChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@Pattern', isString, 'String field');
-        output =
-            '$output.matches(${_literal(value.getField('pattern')!.toStringValue()!)})';
-      } else if (_emailChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@Email', isString, 'String field');
-        output = '$output.email()';
-      } else if (_notEmptyChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@NotEmpty', isString, 'String field');
-        output = '$output.notEmpty()';
-      } else if (_minItemsChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@MinItems', isCollection, 'List or Set field');
-        output = '$output.minItems(${value.getField('count')!.toIntValue()})';
-      } else if (_maxItemsChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@MaxItems', isCollection, 'List or Set field');
-        output = '$output.maxItems(${value.getField('count')!.toIntValue()})';
-      } else if (_uniqueItemsChecker.isExactlyType(valueType)) {
-        _requireSugar(field, '@UniqueItems', isCollection, 'List or Set field');
-        output = '$output.unique()';
-      }
-    }
-    return output;
-  }
-
-  void _requireSugar(
-    FieldElement field,
-    String annotation,
-    bool valid,
-    String alternative,
-  ) {
-    if (valid) return;
-    throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} has $annotation on '
-      '${field.type.getDisplayString()}; use $alternative instead.',
-      element: field,
-    );
-  }
-
+  String _applySugar(String schema, FieldElement field) =>
+      _inference.applyConstraints(schema, field, field.type);
   void _rejectUnsupportedStaticType(FieldElement field, DartType type) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
@@ -1997,10 +1850,6 @@ final class ClassModelGraphBuilder {
     };
   }
 
-  bool _isNumeric(DartType type) =>
-      type is InterfaceType &&
-      (_isCore(type, 'int') || _isCore(type, 'double') || _isCore(type, 'num'));
-
   bool _isCore(InterfaceType type, String name) =>
       type.element.library.uri.toString() == 'dart:core' &&
       type.element.name == name;
@@ -2060,11 +1909,6 @@ final class ClassModelGraphBuilder {
         element: element,
       );
     }
-  }
-
-  String _numberField(DartObject value, String name) {
-    final number = value.getField(name)!;
-    return (number.toIntValue() ?? number.toDoubleValue())!.toString();
   }
 
   String _renderType(AckInferRef type) => switch (type) {

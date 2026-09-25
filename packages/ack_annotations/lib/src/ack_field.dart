@@ -19,7 +19,7 @@ enum AckFieldPresence { inferred, required, optional }
 /// value may be `null`: a nullable Dart type still accepts JSON `null`, and
 /// `@NotNull()` rejects it. Valid only when the constructor can accept a
 /// missing value, with a discriminator-specific exception for union branches.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Optional {
   /// Creates an optional-presence annotation.
   const Optional();
@@ -28,7 +28,7 @@ final class Optional {
 /// Marks a class-first field as required on the wire.
 ///
 /// The JSON key must be present. This does not change Dart nullability.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class Required {
   /// Creates a required-presence annotation.
   const Required();
@@ -41,7 +41,7 @@ final class Required {
 /// this annotation there. Dart nullability is unchanged: an omitted optional key
 /// still becomes `null` on a nullable field, and encoding omits a null Dart
 /// value.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class NotNull {
   /// Creates a JSON null-rejection annotation.
   const NotNull();
@@ -55,7 +55,7 @@ final class NotNull {
 ///
 /// Prefer `@Optional()` and `@Required()` for key presence. [presence] is
 /// deprecated and will be removed in 2.0.0.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.parameter})
 final class AckField {
   /// Creates a field annotation.
   const AckField({

@@ -27,6 +27,79 @@ import 'package:ack_annotations/ack_annotations.dart';
 ''';
 
 void main() {
+  test('class-first field docs describe the inferred schema', () async {
+    await _build(
+      {
+        'documented.dart':
+            '''
+$_imports
+part 'documented.ack.dart';
+part 'documented.ack.g.dart';
+
+@AckModel()
+final class Documented with _\$DocumentedAck {
+  const Documented({required this.title});
+
+  /// The item title.
+  final String title;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/documented.ack.dart': decodedMatches(
+          contains("'title': Ack.string().describe('The item title.')"),
+        ),
+      },
+    );
+  });
+
+  test('class-first format annotations constrain string fields', () async {
+    await _build(
+      {
+        'formats.dart':
+            '''
+$_imports
+import 'package:ack_annotations/format_annotations.dart' as formats;
+part 'formats.ack.dart';
+part 'formats.ack.g.dart';
+
+@AckModel()
+final class Formats with _\$FormatsAck {
+  const Formats({
+    required this.url,
+    required this.uri,
+    required this.uuid,
+    required this.date,
+    required this.timestamp,
+  });
+
+  @Url()
+  final String url;
+  @formats.Uri()
+  final String uri;
+  @Uuid()
+  final String uuid;
+  @Date()
+  final String date;
+  @formats.DateTime()
+  final String timestamp;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/formats.ack.dart': decodedMatches(
+          allOf([
+            contains("'url': Ack.string().url()"),
+            contains("'uri': Ack.string().uri()"),
+            contains("'uuid': Ack.string().uuid()"),
+            contains("'date': Ack.string().date()"),
+            contains("'timestamp': Ack.string().datetime()"),
+          ]),
+        ),
+      },
+    );
+  });
+
   test('emits nullable constructor defaults without losing null', () async {
     await _build(
       {
