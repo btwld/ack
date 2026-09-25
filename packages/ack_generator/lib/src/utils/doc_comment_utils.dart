@@ -17,10 +17,11 @@ String? parseDocComment(String? docComment) {
   if (docComment == null || docComment.isEmpty) {
     return null;
   }
+  final normalized = docComment.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
   // Handle /// style comments (check startsWith to avoid false matches)
-  if (docComment.startsWith('///')) {
-    final lines = docComment
+  if (normalized.startsWith('///')) {
+    final lines = normalized
         .split('\n')
         .map((line) => line.replaceFirst(RegExp(r'^\s*///\s?'), ''))
         .where((line) => line.isNotEmpty)
@@ -31,8 +32,8 @@ String? parseDocComment(String? docComment) {
   }
 
   // Handle /** */ style comments
-  if (docComment.startsWith('/**')) {
-    final content = docComment
+  if (normalized.startsWith('/**')) {
+    final content = normalized
         .replaceFirst(RegExp(r'^/\*\*\s*'), '')
         .replaceFirst(RegExp(r'\s*\*/$'), '')
         .split('\n')

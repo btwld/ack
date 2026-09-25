@@ -233,6 +233,15 @@ import 'package:ack_ack_infer_runtime/person.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('schema-first adapter exposes a model-valued schema', () {
+    final schema = Node.$ack.modelSchema;
+    final node = schema.parse({'label': 'root'})!;
+
+    expect(node, isA<Node>());
+    expect(schema.encode(node), {'label': 'root'});
+    expect(schema.safeParse({'label': 42}).isFail, isTrue);
+  });
+
   test('recursion and imported model references round-trip', () {
     final node = Node.parse({
       'label': 'root',

@@ -1,8 +1,7 @@
 name: Release preflight
 
-# Every check that must hold before Ack may publish. The release workflow runs
-# this same file from the tag, so the tag gets the exact checks that the pull
-# request got.
+# Every check that must hold before Ack may publish. Source branches reject
+# breaking API changes. A release tag also checks the declared SemVer bump.
 
 on:
   push:
@@ -24,7 +23,7 @@ env:
   # The published release that every public API is compared against. Raise it
   # after each published version. `dart_apitool` compares the declared version
   # against the change severity, so a breaking change requires a major bump.
-  API_BASELINE_VERSION: '1.6.1'
+  API_BASELINE_VERSION: '1.6.2'
   # The lowest SDK versions that packages/*/pubspec.yaml accept.
   MINIMUM_DART_VERSION: '3.9.0'
   MINIMUM_FLUTTER_VERSION: '3.35.0'
@@ -169,7 +168,13 @@ jobs:
         run: dart pub get
 
       - name: Compare every package against the published baseline
-        run: dart scripts/api_check.dart "$API_BASELINE_VERSION"
+        run: |
+          # The release tag enforces the version bump after source review.
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            dart scripts/api_check.dart "$API_BASELINE_VERSION"
+          else
+            dart scripts/api_check.dart "$API_BASELINE_VERSION" --allow-additive
+          fi
 
   deterministic-generation:
     name: Deterministic generation

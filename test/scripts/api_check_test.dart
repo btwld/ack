@@ -3,6 +3,51 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'additive mode changes only the API version check mode',
+    () async {
+      final fakeBin = Directory.systemTemp.createTempSync('ack-api-mode-');
+      final workingDirectory = Directory.systemTemp.createTempSync(
+        'ack-api-mode-report-',
+      );
+      addTearDown(() => fakeBin.deleteSync(recursive: true));
+      addTearDown(() => workingDirectory.deleteSync(recursive: true));
+      final arguments = File('${workingDirectory.path}/arguments.txt');
+      _writeExecutable(fakeBin, 'dart', '''#!/bin/sh
+if [ "\$3" = "activate" ]; then exit 0; fi
+printf '%s\\n' "\$@" > '${arguments.path}'
+exit 23
+''');
+      final scriptPath = File('scripts/api_check.dart').absolute.path;
+      final environment = {
+        ...Platform.environment,
+        'PATH': '${fakeBin.path}:/usr/bin:/bin',
+      };
+
+      final additive = await Process.run(
+        Platform.resolvedExecutable,
+        [scriptPath, 'ack', '1.6.2', '--allow-additive'],
+        workingDirectory: workingDirectory.path,
+        environment: environment,
+      );
+      expect(additive.exitCode, 1);
+      expect(arguments.readAsStringSync(), contains('onlyBreakingChanges'));
+
+      final strict = await Process.run(
+        Platform.resolvedExecutable,
+        [scriptPath, 'ack', '1.6.2'],
+        workingDirectory: workingDirectory.path,
+        environment: environment,
+      );
+      expect(strict.exitCode, 1);
+      expect(
+        arguments.readAsStringSync(),
+        isNot(contains('onlyBreakingChanges')),
+      );
+    },
+    skip: Platform.isWindows ? 'Uses POSIX test executables.' : false,
+  );
+
   for (final baseline in ['1.1.0', '1.2.0', '1.3.0']) {
     test(
       'new adapter API baseline $baseline respects its first release',

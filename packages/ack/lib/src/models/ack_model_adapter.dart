@@ -1,4 +1,5 @@
 import '../schemas/schema.dart';
+import '../schemas/extensions/ack_schema_extensions.dart';
 import '../validation/schema_result.dart';
 
 /// Connects a generated immutable model to an Ack schema.
@@ -29,6 +30,12 @@ final class AckModelAdapter<
 
   /// Resolves the source schema for this model.
   AckSchema<Boundary, Runtime> get schema => _schema();
+
+  /// Resolves a schema that decodes to this model.
+  ///
+  /// The source schema keeps ownership of boundary validation and encoding.
+  AckSchema<Boundary, Model> get modelSchema =>
+      schema.codec<Model>(decode: _fromRuntime, encode: _toRuntime);
 
   /// Converts an already-validated Ack runtime value into the model.
   ///
