@@ -156,6 +156,7 @@ final class AckSchemaInference {
         type is InterfaceType && (type.isDartCoreList || type.isDartCoreSet);
     final isSet = type is InterfaceType && type.isDartCoreSet;
     final setConstraints = <String>[];
+    var hasUniqueConstraint = false;
     for (final metadata in declaration.metadata.annotations) {
       final value = metadata.computeConstantValue();
       final valueType = value?.type;
@@ -245,6 +246,7 @@ final class AckSchemaInference {
           'List or Set field',
         );
         if (isSet) {
+          hasUniqueConstraint = true;
           setConstraints.add('.unique()');
         } else {
           output = '$output.unique()';
@@ -252,6 +254,11 @@ final class AckSchemaInference {
       }
     }
     if (setConstraints.isNotEmpty) {
+      if (isSet && !hasUniqueConstraint) {
+        // A Set cannot retain duplicate values after decoding. Validate the
+        // boundary with the same cardinality before the codec runs.
+        setConstraints.add('.unique()');
+      }
       final codec = output.lastIndexOf('.codec<');
       output = codec < 0
           ? '$output${setConstraints.join()}'

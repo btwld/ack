@@ -212,7 +212,6 @@ final class Profile with _\$ProfileAck {
   final String? nickname;
   final String role;
   @MinItems(1)
-  @UniqueItems()
   final Set<String> tags;
 }
 ''',
