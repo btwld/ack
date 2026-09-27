@@ -35,6 +35,13 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
 
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
+
+  /// Whether this codec can encode a runtime value.
+  ///
+  /// False for a one-way [AckSchemaExtensions.transform], whose encode always
+  /// fails with [SchemaEncodeFailureKind.oneWayTransform]; true for a codec
+  /// built with an encoder, such as [Ack.codec].
+  bool get canEncode => _encoder != null;
   final Object _decoderIdentity;
 
   CodecSchema._({

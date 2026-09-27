@@ -4,6 +4,8 @@
 
 * `AckModelAdapter.modelSchema` decodes a schema-first boundary value to its
   generated model and encodes the model through the source schema.
+* `CodecSchema.canEncode` reports whether a codec can encode: false for a
+  one-way `transform`, true for a codec built with an encoder.
 
 ## 1.6.2
 
