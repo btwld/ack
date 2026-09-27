@@ -13,8 +13,9 @@
 
 ### Changed
 
-* A model extending or implementing another `@AckModel()` model exposes a
-  `copyWith` interface compatible with the parent model's interface.
+* A model extending or implementing another generated class-first model,
+  including an implicit sealed-union branch, exposes a `copyWith` interface
+  compatible with the parent model's interface.
 * Modern `.ack.dart` and `.ack.g.dart` parts start with
   `// ignore_for_file: type=lint` and `// coverage:ignore-file`, so consumer
   lint rules and coverage reports cover only hand-written source.

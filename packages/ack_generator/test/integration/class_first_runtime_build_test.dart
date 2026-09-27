@@ -472,6 +472,22 @@ final class Dog extends Pet with _$DogAck {
   String get type => 'Dog';
 }
 
+@AckModel(discriminatorKey: 'type')
+sealed class Animal with _$AnimalAck {
+  const Animal({required this.id});
+  final String id;
+}
+
+final class Rabbit extends Animal with _$RabbitAck {
+  const Rabbit({required super.id, required this.lives});
+  final int lives;
+}
+
+final class BabyRabbit extends Rabbit with _$BabyRabbitAck {
+  const BabyRabbit({required super.id, required super.lives, this.note});
+  final String? note;
+}
+
 @AckModel()
 final class Parent with _$ParentAck {
   const Parent({required this.id});
@@ -719,6 +735,21 @@ void main() {
     final implementedCopy = implementing.copyWith(id: 'two');
     expect(implementedCopy, isA<ImplementingChild>());
     expect((implementedCopy as ImplementingChild).note, 'saved');
+  });
+
+  test('copyWith remains compatible with implicit union branch inheritance', () {
+    final Rabbit rabbit = BabyRabbit(id: 'one', lives: 3, note: 'saved');
+    expect(AnimalSchema.encode(rabbit), {
+      'type': 'BabyRabbit',
+      'id': 'one',
+      'lives': 3,
+      'note': 'saved',
+    });
+    final copy = rabbit.copyWith(id: 'two');
+    expect(copy, isA<BabyRabbit>());
+    expect(copy.id, 'two');
+    expect((copy as BabyRabbit).note, 'saved');
+    expect(copy.copyWith(note: null).note, isNull);
   });
 
   test('optional not-null fields omit keys and reject explicit null', () {
@@ -1044,6 +1075,10 @@ void main() {
         expect(
           generated['lib/models.ack.dart'],
           contains(r'implements $ParentCopyWith<$Result>'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          contains(r'implements $RabbitCopyWith<$Result>'),
         );
         expect(
           generated['lib/models.ack.dart'],

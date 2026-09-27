@@ -112,6 +112,30 @@ final class AckClassModelEmitter {
         '${_literal(entry.key)} => '
         '${ackClassFromRuntimeName(branch.className)}(value)',
       );
+    }
+    // Match descendants before their parent branches in the type switch.
+    final pendingEncodeBranches = node.branches.entries.toList();
+    while (pendingEncodeBranches.isNotEmpty) {
+      final next = pendingEncodeBranches.indexWhere((candidate) {
+        final interfaceName = ackCopyWithInterfaceName(
+          nodes[candidate.value]!.className,
+        );
+        return !pendingEncodeBranches.any(
+          (other) =>
+              other.value != candidate.value &&
+              graph
+                  .classMetadataFor(other.value)!
+                  .copyWithSupertypes
+                  .contains(interfaceName),
+        );
+      });
+      if (next < 0) {
+        throw StateError(
+          'Cyclic union branch inheritance in ${node.className}.',
+        );
+      }
+      final entry = pendingEncodeBranches.removeAt(next);
+      final branch = nodes[entry.value]!;
       encodeCases.add(
         '${branch.className}() => '
         '${ackClassToRuntimeName(branch.className)}(model)',

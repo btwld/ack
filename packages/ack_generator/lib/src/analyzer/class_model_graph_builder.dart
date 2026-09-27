@@ -1721,9 +1721,10 @@ final class ClassModelGraphBuilder {
         copyWithSupertypes: {
           for (final supertype in element.allSupertypes)
             if (supertype.element case final ClassElement parent)
+              // Implicit sealed-union branches also receive value members.
               if (parent.library == element.library &&
                   !parent.isSealed &&
-                  _ackModelChecker.hasAnnotationOfExact(parent))
+                  _classFirstFacadeName(parent) != null)
                 ackCopyWithInterfaceName(parent.name!),
         }.toList(),
       ),
