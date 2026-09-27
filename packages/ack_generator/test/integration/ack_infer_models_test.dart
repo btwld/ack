@@ -494,6 +494,36 @@ final badSchema = Ack.object({'toJson': Ack.string()});
     expect(messages.single, contains('badSchema.toJson'));
   });
 
+  test(
+    'rejects a local declaration named like the copyWith interface',
+    () async {
+      final messages = <String>{};
+      await _build(
+        {
+          'bad.dart':
+              '''
+$_imports
+part 'bad.ack.dart';
+part 'bad.ack.g.dart';
+
+@AckInfer()
+final userSchema = Ack.object({'name': Ack.string()});
+
+final class \$UserCopyWith {}
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE') messages.add(log.message);
+        },
+      );
+      expect(
+        messages.single,
+        contains(r'Generated helper "$UserCopyWith" conflicts'),
+      );
+    },
+  );
+
   test('rejects Dart keywords used as generated field names', () async {
     final messages = <String>{};
     await _build(

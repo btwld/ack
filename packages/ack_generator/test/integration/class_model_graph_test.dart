@@ -64,6 +64,25 @@ part 'model.ack.g.dart';
 ''';
 
 void main() {
+  test(
+    'rejects a local declaration named like the copyWith implementation',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  final String name;
+}
+
+final class _\$UserCopyWith {}
+''',
+        [r'Generated helper "_$UserCopyWith" conflicts'],
+      );
+    },
+  );
+
   test('rejects numeric sugar on a String field', () async {
     await _expectFailure(
       '''

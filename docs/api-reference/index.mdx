@@ -383,7 +383,8 @@ presence. Use `caseStyle` for model-wide JSON naming and `@JsonKey(name: ...)`
 on the field for an override. Other `JsonKey` options and constructor-parameter
 placement are rejected. Instantiable models and implicit union branches must
 apply the generated mixin. In `copyWith`, omission keeps the current value and
-explicit `null` clears a nullable field.
+explicit `null` clears a nullable field. `copyWith` returns a typed interface,
+so a wrongly typed argument is a compile-time error.
 
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, nested lists, and sets

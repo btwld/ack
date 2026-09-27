@@ -1,6 +1,9 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format width=80
 
+// ignore_for_file: type=lint
+// coverage:ignore-file
+
 part of 'class_first_models.dart';
 
 // **************************************************************************
@@ -20,30 +23,47 @@ final _catSchema = _catObject.codec<Cat>(
   encode: _$CatToRuntime,
 );
 
+/// Parses, validates, and encodes [Cat] values.
 abstract final class CatSchema {
+  /// The typed schema, for composing [Cat] into other schemas.
   static AckSchema<Map<String, Object?>, Cat> get schema => _catSchema;
 
+  /// The structural JSON map schema behind [schema].
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _catWireSchema;
 
+  /// Validates [value] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Cat parse(Object? value, {String? debugName}) =>
       _catSchema.parse(value, debugName: debugName)!;
 
+  /// Validates [value] and returns the model or the validation failure.
   static SchemaResult<Cat> safeParse(Object? value, {String? debugName}) =>
       _catSchema.safeParse(value, debugName: debugName);
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Cat fromJson(Map<String, dynamic> json) => parse(json);
 
+  /// Validates [value] and encodes it as a JSON map.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Map<String, Object?> encode(Cat value, {String? debugName}) =>
       _catSchema.encode(value, debugName: debugName)!;
 
+  /// Validates [value] and encodes it as a JSON map, returning the validation
+  /// failure instead of throwing.
   static SchemaResult<Map<String, Object?>> safeEncode(
     Cat value, {
     String? debugName,
   }) => _catSchema.safeEncode(value, debugName: debugName);
 
+  /// The JSON Schema that describes [Cat].
   static Map<String, Object?> toJsonSchema() => _catSchema.toJsonSchema();
 
+  /// The schema model that describes [Cat].
   static AckSchemaModel toSchemaModel() =>
       AckSchemaModelExtension(_catSchema).toSchemaModel();
 }
@@ -56,11 +76,28 @@ Map<String, Object?> _$CatToRuntime(Cat model) {
   return <String, Object?>{...result, 'type': 'cat'};
 }
 
+/// Creates copies of [Cat] with selected fields replaced.
+abstract interface class $CatCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? id, int? lives});
+}
+
+final class _$CatCopyWith implements $CatCopyWith<Cat> {
+  const _$CatCopyWith(this._source);
+
+  final Cat _source;
+
+  @override
+  Cat call({String? id, int? lives}) =>
+      Cat(id: id ?? _source.id, lives: lives ?? _source.lives);
+}
+
 mixin _$CatAck {
-  Cat copyWith({String? id, int? lives}) {
-    final self = this as Cat;
-    return Cat(id: id ?? self.id, lives: lives ?? self.lives);
-  }
+  /// Creates a copy of this model with selected fields replaced.
+  $CatCopyWith<Cat> get copyWith => _$CatCopyWith(this as Cat);
 
   @override
   bool operator ==(Object other) {
@@ -88,9 +125,14 @@ mixin _$CatAck {
     return 'Cat(id: ${self.id}, lives: ${self.lives})';
   }
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() =>
       Map<String, dynamic>.from(CatSchema.encode(this as Cat));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() =>
       CatSchema.safeEncode(this as Cat);
 }
@@ -113,30 +155,47 @@ final _dogSchema = _dogObject.codec<Dog>(
   encode: _$DogToRuntime,
 );
 
+/// Parses, validates, and encodes [Dog] values.
 abstract final class DogSchema {
+  /// The typed schema, for composing [Dog] into other schemas.
   static AckSchema<Map<String, Object?>, Dog> get schema => _dogSchema;
 
+  /// The structural JSON map schema behind [schema].
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _dogWireSchema;
 
+  /// Validates [value] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Dog parse(Object? value, {String? debugName}) =>
       _dogSchema.parse(value, debugName: debugName)!;
 
+  /// Validates [value] and returns the model or the validation failure.
   static SchemaResult<Dog> safeParse(Object? value, {String? debugName}) =>
       _dogSchema.safeParse(value, debugName: debugName);
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Dog fromJson(Map<String, dynamic> json) => parse(json);
 
+  /// Validates [value] and encodes it as a JSON map.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Map<String, Object?> encode(Dog value, {String? debugName}) =>
       _dogSchema.encode(value, debugName: debugName)!;
 
+  /// Validates [value] and encodes it as a JSON map, returning the validation
+  /// failure instead of throwing.
   static SchemaResult<Map<String, Object?>> safeEncode(
     Dog value, {
     String? debugName,
   }) => _dogSchema.safeEncode(value, debugName: debugName);
 
+  /// The JSON Schema that describes [Dog].
   static Map<String, Object?> toJsonSchema() => _dogSchema.toJsonSchema();
 
+  /// The schema model that describes [Dog].
   static AckSchemaModel toSchemaModel() =>
       AckSchemaModelExtension(_dogSchema).toSchemaModel();
 }
@@ -149,11 +208,28 @@ Map<String, Object?> _$DogToRuntime(Dog model) {
   return <String, Object?>{...result, 'type': 'Dog'};
 }
 
+/// Creates copies of [Dog] with selected fields replaced.
+abstract interface class $DogCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? id, String? breed});
+}
+
+final class _$DogCopyWith implements $DogCopyWith<Dog> {
+  const _$DogCopyWith(this._source);
+
+  final Dog _source;
+
+  @override
+  Dog call({String? id, String? breed}) =>
+      Dog(id: id ?? _source.id, breed: breed ?? _source.breed);
+}
+
 mixin _$DogAck {
-  Dog copyWith({String? id, String? breed}) {
-    final self = this as Dog;
-    return Dog(id: id ?? self.id, breed: breed ?? self.breed);
-  }
+  /// Creates a copy of this model with selected fields replaced.
+  $DogCopyWith<Dog> get copyWith => _$DogCopyWith(this as Dog);
 
   @override
   bool operator ==(Object other) {
@@ -181,9 +257,14 @@ mixin _$DogAck {
     return 'Dog(id: ${self.id}, breed: ${self.breed})';
   }
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() =>
       Map<String, dynamic>.from(DogSchema.encode(this as Dog));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() =>
       DogSchema.safeEncode(this as Dog);
 }
@@ -212,38 +293,60 @@ final _petSchema = _petObject.codec<Pet>(
   },
 );
 
+/// Parses, validates, and encodes [Pet] values.
 abstract final class PetSchema {
+  /// The typed schema, for composing [Pet] into other schemas.
   static AckSchema<Map<String, Object?>, Pet> get schema => _petSchema;
 
+  /// The structural JSON map schema behind [schema].
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _petWireSchema;
 
+  /// Validates [value] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Pet parse(Object? value, {String? debugName}) =>
       _petSchema.parse(value, debugName: debugName)!;
 
+  /// Validates [value] and returns the model or the validation failure.
   static SchemaResult<Pet> safeParse(Object? value, {String? debugName}) =>
       _petSchema.safeParse(value, debugName: debugName);
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Pet fromJson(Map<String, dynamic> json) => parse(json);
 
+  /// Validates [value] and encodes it as a JSON map.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Map<String, Object?> encode(Pet value, {String? debugName}) =>
       _petSchema.encode(value, debugName: debugName)!;
 
+  /// Validates [value] and encodes it as a JSON map, returning the validation
+  /// failure instead of throwing.
   static SchemaResult<Map<String, Object?>> safeEncode(
     Pet value, {
     String? debugName,
   }) => _petSchema.safeEncode(value, debugName: debugName);
 
+  /// The JSON Schema that describes [Pet].
   static Map<String, Object?> toJsonSchema() => _petSchema.toJsonSchema();
 
+  /// The schema model that describes [Pet].
   static AckSchemaModel toSchemaModel() =>
       AckSchemaModelExtension(_petSchema).toSchemaModel();
 }
 
 mixin _$PetAck {
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() =>
       Map<String, dynamic>.from(PetSchema.encode(this as Pet));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() =>
       PetSchema.safeEncode(this as Pet);
 }
@@ -261,30 +364,47 @@ final _accountSchema = _accountObject.codec<Account>(
   encode: _$AccountToRuntime,
 );
 
+/// Parses, validates, and encodes [Account] values.
 abstract final class AccountSchema {
+  /// The typed schema, for composing [Account] into other schemas.
   static AckSchema<Map<String, Object?>, Account> get schema => _accountSchema;
 
+  /// The structural JSON map schema behind [schema].
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _accountWireSchema;
 
+  /// Validates [value] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Account parse(Object? value, {String? debugName}) =>
       _accountSchema.parse(value, debugName: debugName)!;
 
+  /// Validates [value] and returns the model or the validation failure.
   static SchemaResult<Account> safeParse(Object? value, {String? debugName}) =>
       _accountSchema.safeParse(value, debugName: debugName);
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Account fromJson(Map<String, dynamic> json) => parse(json);
 
+  /// Validates [value] and encodes it as a JSON map.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Map<String, Object?> encode(Account value, {String? debugName}) =>
       _accountSchema.encode(value, debugName: debugName)!;
 
+  /// Validates [value] and encodes it as a JSON map, returning the validation
+  /// failure instead of throwing.
   static SchemaResult<Map<String, Object?>> safeEncode(
     Account value, {
     String? debugName,
   }) => _accountSchema.safeEncode(value, debugName: debugName);
 
+  /// The JSON Schema that describes [Account].
   static Map<String, Object?> toJsonSchema() => _accountSchema.toJsonSchema();
 
+  /// The schema model that describes [Account].
   static AckSchemaModel toSchemaModel() =>
       AckSchemaModelExtension(_accountSchema).toSchemaModel();
 }
@@ -300,24 +420,40 @@ final class _AccountCopyWithUnset {
   const _AccountCopyWithUnset();
 }
 
-mixin _$AccountAck {
+/// Creates copies of [Account] with selected fields replaced.
+abstract interface class $AccountCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? displayName, Uri? website, String? role});
+}
+
+final class _$AccountCopyWith implements $AccountCopyWith<Account> {
+  const _$AccountCopyWith(this._source);
+
   static const _AccountCopyWithUnset _ackCopyWithUnset =
       _AccountCopyWithUnset();
 
-  Account copyWith({
+  final Account _source;
+
+  @override
+  Account call({
     String? displayName,
     Object? website = _ackCopyWithUnset,
     String? role,
-  }) {
-    final self = this as Account;
-    return Account(
-      displayName: displayName ?? self.displayName,
-      website: identical(website, _ackCopyWithUnset)
-          ? self.website
-          : website as Uri?,
-      role: role ?? self.role,
-    );
-  }
+  }) => Account(
+    displayName: displayName ?? _source.displayName,
+    website: identical(website, _ackCopyWithUnset)
+        ? _source.website
+        : website as Uri?,
+    role: role ?? _source.role,
+  );
+}
+
+mixin _$AccountAck {
+  /// Creates a copy of this model with selected fields replaced.
+  $AccountCopyWith<Account> get copyWith => _$AccountCopyWith(this as Account);
 
   @override
   bool operator ==(Object other) {
@@ -348,9 +484,14 @@ mixin _$AccountAck {
     return 'Account(displayName: ${self.displayName}, website: ${self.website}, role: ${self.role})';
   }
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() =>
       Map<String, dynamic>.from(AccountSchema.encode(this as Account));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() =>
       AccountSchema.safeEncode(this as Account);
 }

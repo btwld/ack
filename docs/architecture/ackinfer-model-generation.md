@@ -57,6 +57,17 @@ aliases. Scalar and collection roots generate value models whose `fromJson` and
 an omitted argument keeps the current value and an explicit `null` clears a
 nullable field.
 
+`copyWith` is a getter that returns a typed `$UserCopyWith<User>` interface,
+so a wrongly typed argument is a compile-time error. The private
+`_$UserCopyWith` implementation widens nullable parameters to `Object?` with a
+private sentinel default. A single method cannot do this, because a default
+value must match its parameter type. The interface is generic in its result,
+like the `freezed` and `dart_mappable` interfaces. Without the type parameter,
+`avoid_redundant_argument_values` reports `copyWith(field: null)` as redundant,
+and `dart fix` would remove it, turning "clear" into "keep". Both generated
+names are claimed like other helpers, so a local declaration with either name
+fails generation.
+
 ## Class-first facade contract
 
 For a hand-written `Account`, `@AckModel()` emits a private `_accountObject`
@@ -238,6 +249,13 @@ the default helpers so every stored field goes through the generated bridges.
 Discriminated unions keep a sealed base plus final same-library branches. The
 base dispatches by discriminator; each branch delegates only its stored fields
 and Ack adds the discriminator to the runtime map.
+
+Both modern parts, `.ack.dart` and `.ack.g.dart`, start with
+`// ignore_for_file: type=lint` and `// coverage:ignore-file`, so consumer lint
+rules and coverage reports cover only hand-written source. The frozen
+`@AckType()` `.g.dart` output is unchanged. The generator's runtime build
+tests still analyze the modern parts with the lint suppression removed, so the
+harness rules keep guarding generated code.
 
 ## Validation
 

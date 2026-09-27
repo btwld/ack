@@ -28,6 +28,55 @@ Map<String, String> _generatedFiles(Directory directory) => {
     p.relative(file.path, from: directory.path): file.readAsStringSync(),
 };
 
+/// Asserts modern generated parts suppress consumer lints and coverage, then
+/// analyzes them without the lint suppression so the harness rules still
+/// guard the generated code itself. Frozen `@AckType()` parts are excluded.
+Future<void> _expectConsumerSafeParts(
+  Directory project,
+  Map<String, String> generated,
+) async {
+  const lintSuppression = '// ignore_for_file: type=lint\n';
+  final modern = {
+    for (final MapEntry(key: path, value: source) in generated.entries)
+      if (path.endsWith('.ack.dart') || path.endsWith('.ack.g.dart'))
+        path: source,
+  };
+  expect(modern, isNotEmpty);
+  for (final MapEntry(key: path, value: source) in modern.entries) {
+    expect(source, contains(lintSuppression), reason: path);
+    expect(source, contains('// coverage:ignore-file\n'), reason: path);
+    File(
+      p.join(project.path, path),
+    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+  }
+  try {
+    _expectSuccess(
+      await _run(project, ['analyze', '--fatal-infos']),
+      'dart analyze --fatal-infos without the generated lint suppression',
+    );
+  } finally {
+    for (final MapEntry(key: path, value: source) in modern.entries) {
+      File(p.join(project.path, path)).writeAsStringSync(source);
+    }
+  }
+}
+
+/// Asserts that a wrongly typed `copyWith` argument fails analysis.
+Future<void> _expectCopyWithRejects(Directory project, String misuse) async {
+  final file = File(p.join(project.path, 'lib', 'copy_with_misuse.dart'))
+    ..writeAsStringSync(misuse);
+  try {
+    final result = await _run(project, [
+      'analyze',
+      p.join('lib', 'copy_with_misuse.dart'),
+    ]);
+    expect(result.exitCode, isNot(0), reason: '${result.stdout}');
+    expect('${result.stdout}', contains('argument_type_not_assignable'));
+  } finally {
+    file.deleteSync();
+  }
+}
+
 void main() {
   test(
     'class-first models compile and preserve the runtime contract',
@@ -71,6 +120,7 @@ dependency_overrides:
           '''
 linter:
   rules:
+    - avoid_redundant_argument_values
     - prefer_null_aware_operators
 ''',
         );
@@ -422,6 +472,25 @@ final class Dog extends Pet with _$DogAck {
   String get type => 'Dog';
 }
 
+@AckModel()
+final class Parent with _$ParentAck {
+  const Parent({required this.id});
+  final String id;
+}
+
+@AckModel()
+final class Child extends Parent with _$ChildAck {
+  const Child({required super.id, this.note});
+  final String? note;
+}
+
+@AckModel()
+final class ImplementingChild with _$ImplementingChildAck implements Parent {
+  const ImplementingChild({required this.id, this.note});
+  final String id;
+  final String? note;
+}
+
 @AckInfer()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
@@ -623,10 +692,6 @@ void main() {
     expect(renamed.name, 'Grace');
     expect(renamed.nickname, 'Countess');
     expect(profile.copyWith(nickname: null).nickname, isNull);
-    expect(
-      () => profile.copyWith(nickname: const Object()),
-      throwsA(isA<TypeError>()),
-    );
     expect(renamed.role, 'member');
     expect(renamed.tags, {'schema', 'dart'});
     expect(profile.copyWith(), profile);
@@ -640,6 +705,20 @@ void main() {
       }),
       profile,
     );
+  });
+
+  test('copyWith remains compatible across model inheritance', () {
+    final Parent child = Child(id: 'one', note: 'saved');
+    final updated = child.copyWith(id: 'two');
+    expect(updated, isA<Child>());
+    expect(updated.id, 'two');
+    expect((updated as Child).note, 'saved');
+    expect((child as Child).copyWith(note: null).note, isNull);
+
+    final Parent implementing = ImplementingChild(id: 'one', note: 'saved');
+    final implementedCopy = implementing.copyWith(id: 'two');
+    expect(implementedCopy, isA<ImplementingChild>());
+    expect((implementedCopy as ImplementingChild).note, 'saved');
   });
 
   test('optional not-null fields omit keys and reject explicit null', () {
@@ -964,6 +1043,10 @@ void main() {
         );
         expect(
           generated['lib/models.ack.dart'],
+          contains(r'implements $ParentCopyWith<$Result>'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
           contains('abstract final class ProfileSchema'),
         );
         expect(
@@ -985,7 +1068,7 @@ void main() {
         );
         expect(
           generated['lib/models.ack.dart'],
-          contains('parameters: parameters ?? self.parameters'),
+          contains('parameters: parameters ?? _source.parameters'),
         );
         expect(
           generated['lib/models.ack.dart'],
@@ -996,6 +1079,12 @@ void main() {
           await _run(temporary, ['analyze', '--fatal-infos']),
           'dart analyze --fatal-infos',
         );
+        await _expectConsumerSafeParts(temporary, generated);
+        await _expectCopyWithRejects(temporary, '''
+import 'models.dart';
+
+Profile misuse(Profile profile) => profile.copyWith(nickname: const Object());
+''');
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),

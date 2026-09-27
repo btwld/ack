@@ -180,12 +180,14 @@ final class AckClassModelMetadata {
     required this.backingName,
     required this.caseStyle,
     this.hasExplicitAnnotation = true,
+    this.copyWithSupertypes = const [],
   });
 
   final String facadeName;
   final String backingName;
   final String caseStyle;
   final bool hasExplicitAnnotation;
+  final List<String> copyWithSupertypes;
 }
 
 /// Base node for a generated class or value object.

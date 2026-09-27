@@ -284,6 +284,8 @@ final class ClassModelGraphBuilder {
       if (node.fields.any((field) => field.nullable || !field.isRequired)) {
         claim(ackCopyWithUnsetTypeName(node.className), node);
       }
+      claim(ackCopyWithInterfaceName(node.className), node);
+      claim(ackCopyWithImplementationName(node.className), node);
       claim(ackClassFromRuntimeName(node.className), node);
       claim(ackClassToRuntimeName(node.className), node);
       claim(jsonFromHelperName(node.className), node);
@@ -1716,6 +1718,14 @@ final class ClassModelGraphBuilder {
         backingName: backingName,
         caseStyle: options.caseStyle,
         hasExplicitAnnotation: _explicit.contains(element),
+        copyWithSupertypes: {
+          for (final supertype in element.allSupertypes)
+            if (supertype.element case final ClassElement parent)
+              if (parent.library == element.library &&
+                  !parent.isSealed &&
+                  _ackModelChecker.hasAnnotationOfExact(parent))
+                ackCopyWithInterfaceName(parent.name!),
+        }.toList(),
       ),
     );
   }

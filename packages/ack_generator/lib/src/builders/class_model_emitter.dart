@@ -86,6 +86,7 @@ final class AckClassModelEmitter {
           constructorParameters: node.constructorParameters,
           includeValueMembers: includeValueMembers,
           captureFieldName: node.captureFieldName,
+          copyWithSupertypes: metadata.copyWithSupertypes,
         ),
       )
       ..writeln()
@@ -172,36 +173,53 @@ final $backingName = $expression.codec<${node.className}>(
     required String wireName,
   }) =>
       '''
+/// Parses, validates, and encodes [$className] values.
 abstract final class ${metadata.facadeName} {
+  /// The typed schema, for composing [$className] into other schemas.
   static ${_ack('AckSchema')}<Map<String, Object?>, $className> get schema =>
       ${metadata.backingName};
 
+  /// The structural JSON map schema behind [schema].
   static ${_ack('AckSchema')}<Map<String, Object?>, Map<String, Object?>>
       get wireSchema => $wireName;
 
+  /// Validates [value] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static $className parse(Object? value, {String? debugName}) =>
       ${metadata.backingName}.parse(value, debugName: debugName)!;
 
+  /// Validates [value] and returns the model or the validation failure.
   static ${_ack('SchemaResult')}<$className> safeParse(
     Object? value, {
     String? debugName,
   }) => ${metadata.backingName}.safeParse(value, debugName: debugName);
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   static $className fromJson(Map<String, dynamic> json) => parse(json);
 
+  /// Validates [value] and encodes it as a JSON map.
+  ///
+  /// Throws an `AckException` when validation fails.
   static Map<String, Object?> encode(
     $className value, {
     String? debugName,
   }) => ${metadata.backingName}.encode(value, debugName: debugName)!;
 
+  /// Validates [value] and encodes it as a JSON map, returning the validation
+  /// failure instead of throwing.
   static ${_ack('SchemaResult')}<Map<String, Object?>> safeEncode(
     $className value, {
     String? debugName,
   }) => ${metadata.backingName}.safeEncode(value, debugName: debugName);
 
+  /// The JSON Schema that describes [$className].
   static Map<String, Object?> toJsonSchema() =>
       ${metadata.backingName}.toJsonSchema();
 
+  /// The schema model that describes [$className].
   static ${_ack('AckSchemaModel')} toSchemaModel() =>
       ${_ack('AckSchemaModelExtension')}(${metadata.backingName}).toSchemaModel();
 }''';
