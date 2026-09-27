@@ -99,6 +99,9 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     try {
       runtime = _decoder(intermediate);
     } catch (e, st) {
+      if (e is Error) {
+        Error.throwWithStackTrace(e, st);
+      }
       return SchemaResult.fail(
         SchemaTransformError(
           message: 'Codec decode failed: ${e.toString()}',
