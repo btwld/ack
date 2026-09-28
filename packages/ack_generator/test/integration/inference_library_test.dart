@@ -96,4 +96,28 @@ void widget({required List<Priority> priorities}) {}
       },
     );
   });
+
+  test('a second generator constrains a Set before its codec', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      const _InferenceProbe(parameterName: 'tags'),
+      {
+        'test_pkg|lib/widget.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+void widget({@MinItems(2) required Set<String> tags}) {}
+''',
+      },
+      generateFor: const {'test_pkg|lib/widget.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/widget.probe': decodedMatches(
+          'Ack.list(Ack.string()).minItems(2).unique().codec<Set<String>>('
+          'decode: (list) => list.toSet(), '
+          'encode: (set) => set.toList(growable: false),)',
+        ),
+      },
+    );
+  });
 }

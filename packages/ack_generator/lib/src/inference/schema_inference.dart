@@ -154,6 +154,9 @@ final class AckSchemaInference {
     final isString = type is InterfaceType && _core(type, 'String');
     final isCollection =
         type is InterfaceType && (type.isDartCoreList || type.isDartCoreSet);
+    final isSet = type is InterfaceType && type.isDartCoreSet;
+    final setConstraints = <String>[];
+    var hasUniqueConstraint = false;
     for (final metadata in declaration.metadata.annotations) {
       final value = metadata.computeConstantValue();
       final valueType = value?.type;
@@ -212,7 +215,13 @@ final class AckSchemaInference {
           isCollection,
           'List or Set field',
         );
-        output = '$output.minItems(${value.getField('count')!.toIntValue()})';
+        final constraint =
+            '.minItems(${value.getField('count')!.toIntValue()})';
+        if (isSet) {
+          setConstraints.add(constraint);
+        } else {
+          output = '$output$constraint';
+        }
       } else if (_maxItems.isExactlyType(valueType)) {
         _require(
           declaration,
@@ -221,7 +230,13 @@ final class AckSchemaInference {
           isCollection,
           'List or Set field',
         );
-        output = '$output.maxItems(${value.getField('count')!.toIntValue()})';
+        final constraint =
+            '.maxItems(${value.getField('count')!.toIntValue()})';
+        if (isSet) {
+          setConstraints.add(constraint);
+        } else {
+          output = '$output$constraint';
+        }
       } else if (_uniqueItems.isExactlyType(valueType)) {
         _require(
           declaration,
@@ -230,8 +245,25 @@ final class AckSchemaInference {
           isCollection,
           'List or Set field',
         );
-        output = '$output.unique()';
+        if (isSet) {
+          hasUniqueConstraint = true;
+          setConstraints.add('.unique()');
+        } else {
+          output = '$output.unique()';
+        }
       }
+    }
+    if (setConstraints.isNotEmpty) {
+      if (isSet && !hasUniqueConstraint) {
+        // A Set cannot retain duplicate values after decoding. Validate the
+        // boundary with the same cardinality before the codec runs.
+        setConstraints.add('.unique()');
+      }
+      final codec = output.lastIndexOf('.codec<');
+      output = codec < 0
+          ? '$output${setConstraints.join()}'
+          : '${output.substring(0, codec)}${setConstraints.join()}'
+                '${output.substring(codec)}';
     }
     return output;
   }

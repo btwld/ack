@@ -16,6 +16,11 @@
 * A model extending or implementing another generated class-first model,
   including an implicit sealed-union branch, exposes a `copyWith` interface
   compatible with the parent model's interface.
+* A class-first `Set` field with `@MinItems`, `@MaxItems`, or `@UniqueItems`
+  now requires unique items at the JSON boundary, so the list's item count
+  matches the decoded set. Input with duplicate items, such as `['a', 'a']`,
+  now fails validation instead of collapsing into a smaller set, and the JSON
+  Schema declares `uniqueItems: true`.
 * Modern `.ack.dart` and `.ack.g.dart` parts start with
   `// ignore_for_file: type=lint` and `// coverage:ignore-file`, so consumer
   lint rules and coverage reports cover only hand-written source.

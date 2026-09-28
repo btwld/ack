@@ -212,7 +212,6 @@ final class Profile with _\$ProfileAck {
   final String? nickname;
   final String role;
   @MinItems(1)
-  @UniqueItems()
   final Set<String> tags;
 }
 ''',
@@ -234,9 +233,11 @@ final class Profile with _\$ProfileAck {
             contains("'nickname': Ack.string().nullable()"),
             contains("'role': Ack.string().withDefault('member')"),
             contains('Ack.list(Ack.string())'),
-            contains('.minItems(1)'),
-            contains('.unique()'),
-            contains('.codec<Set<String>>'),
+            contains(
+              RegExp(
+                r'\.minItems\(1\)[\s\S]*\.unique\(\)[\s\S]*\.codec<Set<String>>',
+              ),
+            ),
             contains('.codec<Profile>('),
             contains(r'decode: _$ProfileFromRuntime'),
             contains(r'encode: _$ProfileToRuntime'),

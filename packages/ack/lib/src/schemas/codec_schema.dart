@@ -37,6 +37,16 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   final Object Function(Runtime value)? _encoder;
   final Object _decoderIdentity;
 
+  /// Whether this codec has its own encoder.
+  ///
+  /// False for a one-way [AckSchemaExtensions.transform], whose encode always
+  /// fails with [SchemaEncodeFailureKind.oneWayTransform]; true for a codec
+  /// built with an encoder, such as [Ack.codec].
+  ///
+  /// Only this codec is checked. Encoding can still fail when the schema it
+  /// wraps, or a schema nested inside that one, is a one-way transform.
+  bool get canEncode => _encoder != null;
+
   CodecSchema._({
     required this.inputSchema,
     required this.outputSchema,
