@@ -1400,6 +1400,380 @@
     ]
   },
   {
+    "description": "contains.json: contains keyword validation",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "minimum": 5
+      }
+    },
+    "tests": [
+      {
+        "description": "array with item matching schema (5) is valid",
+        "data": [
+          3,
+          4,
+          5
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with item matching schema (6) is valid",
+        "data": [
+          3,
+          4,
+          6
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with two items matching schema (5, 6) is valid",
+        "data": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "valid": true
+      },
+      {
+        "description": "array without items matching schema is invalid",
+        "data": [
+          2,
+          3,
+          4
+        ],
+        "valid": false
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "not array is valid",
+        "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains keyword with const keyword",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 5
+      }
+    },
+    "tests": [
+      {
+        "description": "array with item 5 is valid",
+        "data": [
+          3,
+          4,
+          5
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with two items 5 is valid",
+        "data": [
+          3,
+          4,
+          5,
+          5
+        ],
+        "valid": true
+      },
+      {
+        "description": "array without item 5 is invalid",
+        "data": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains keyword with boolean schema true",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": true
+    },
+    "tests": [
+      {
+        "description": "any non-empty array is valid",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains keyword with boolean schema false",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": false
+    },
+    "tests": [
+      {
+        "description": "any non-empty array is invalid",
+        "data": [
+          "foo"
+        ],
+        "valid": false
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "non-arrays are valid",
+        "data": "contains does not apply to strings",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "contains.json: items + contains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "items": {
+        "multipleOf": 2
+      },
+      "contains": {
+        "multipleOf": 3
+      }
+    },
+    "tests": [
+      {
+        "description": "matches items, does not match contains",
+        "data": [
+          2,
+          4,
+          8
+        ],
+        "valid": false
+      },
+      {
+        "description": "does not match items, matches contains",
+        "data": [
+          3,
+          6,
+          9
+        ],
+        "valid": false
+      },
+      {
+        "description": "matches both items and contains",
+        "data": [
+          6,
+          12
+        ],
+        "valid": true
+      },
+      {
+        "description": "matches neither items nor contains",
+        "data": [
+          1,
+          5
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains with false if subschema",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "if": false,
+        "else": true
+      }
+    },
+    "tests": [
+      {
+        "description": "any non-empty array is valid",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains with null instance elements",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "type": "null"
+      }
+    },
+    "tests": [
+      {
+        "description": "allows null items",
+        "data": [
+          null
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "content.json: validation of string-encoded content based on media type",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contentMediaType": "application/json"
+    },
+    "tests": [
+      {
+        "description": "a valid JSON document",
+        "data": "{\"foo\": \"bar\"}",
+        "valid": true
+      },
+      {
+        "description": "an invalid JSON document; validates true",
+        "data": "{:}",
+        "valid": true
+      },
+      {
+        "description": "ignores non-strings",
+        "data": 100,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "content.json: validation of binary string-encoding",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contentEncoding": "base64"
+    },
+    "tests": [
+      {
+        "description": "a valid base64 string",
+        "data": "eyJmb28iOiAiYmFyIn0K",
+        "valid": true
+      },
+      {
+        "description": "an invalid base64 string (% is not a valid character); validates true",
+        "data": "eyJmb28iOi%iYmFyIn0K",
+        "valid": true
+      },
+      {
+        "description": "ignores non-strings",
+        "data": 100,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "content.json: validation of binary-encoded media type documents",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contentMediaType": "application/json",
+      "contentEncoding": "base64"
+    },
+    "tests": [
+      {
+        "description": "a valid base64-encoded JSON document",
+        "data": "eyJmb28iOiAiYmFyIn0K",
+        "valid": true
+      },
+      {
+        "description": "a validly-encoded invalid JSON document; validates true",
+        "data": "ezp9Cg==",
+        "valid": true
+      },
+      {
+        "description": "an invalid base64 string that is valid JSON; validates true",
+        "data": "{}",
+        "valid": true
+      },
+      {
+        "description": "ignores non-strings",
+        "data": 100,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "content.json: validation of binary-encoded media type documents with schema",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contentMediaType": "application/json",
+      "contentEncoding": "base64",
+      "contentSchema": {
+        "type": "object",
+        "required": [
+          "foo"
+        ],
+        "properties": {
+          "foo": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "a valid base64-encoded JSON document",
+        "data": "eyJmb28iOiAiYmFyIn0K",
+        "valid": true
+      },
+      {
+        "description": "another valid base64-encoded JSON document",
+        "data": "eyJib28iOiAyMCwgImZvbyI6ICJiYXoifQ==",
+        "valid": true
+      },
+      {
+        "description": "an invalid base64-encoded JSON document; validates true",
+        "data": "eyJib28iOiAyMH0=",
+        "valid": true
+      },
+      {
+        "description": "an empty object as a base64-encoded JSON document; validates true",
+        "data": "e30=",
+        "valid": true
+      },
+      {
+        "description": "an empty array as a base64-encoded JSON document",
+        "data": "W10=",
+        "valid": true
+      },
+      {
+        "description": "a validly-encoded invalid JSON document; validates true",
+        "data": "ezp9Cg==",
+        "valid": true
+      },
+      {
+        "description": "an invalid base64 string that is valid JSON; validates true",
+        "data": "{}",
+        "valid": true
+      },
+      {
+        "description": "ignores non-strings",
+        "data": 100,
+        "valid": true
+      }
+    ]
+  },
+  {
     "description": "default.json: invalid type for default",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1483,6 +1857,412 @@
       {
         "description": "missing properties are not filled in with the default",
         "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "dependentRequired.json: single dependency",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentRequired": {
+        "bar": [
+          "foo"
+        ]
+      }
+    },
+    "tests": [
+      {
+        "description": "neither",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "nondependant",
+        "data": {
+          "foo": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "with dependency",
+        "data": {
+          "foo": 1,
+          "bar": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "missing dependency",
+        "data": {
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "ignores arrays",
+        "data": [
+          "bar"
+        ],
+        "valid": true
+      },
+      {
+        "description": "ignores strings",
+        "data": "foobar",
+        "valid": true
+      },
+      {
+        "description": "ignores other non-objects",
+        "data": 12,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "dependentRequired.json: empty dependents",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentRequired": {
+        "bar": []
+      }
+    },
+    "tests": [
+      {
+        "description": "empty object",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "object with one property",
+        "data": {
+          "bar": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "non-object is valid",
+        "data": 1,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "dependentRequired.json: multiple dependents required",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentRequired": {
+        "quux": [
+          "foo",
+          "bar"
+        ]
+      }
+    },
+    "tests": [
+      {
+        "description": "neither",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "nondependants",
+        "data": {
+          "foo": 1,
+          "bar": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "with dependencies",
+        "data": {
+          "foo": 1,
+          "bar": 2,
+          "quux": 3
+        },
+        "valid": true
+      },
+      {
+        "description": "missing dependency",
+        "data": {
+          "foo": 1,
+          "quux": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "missing other dependency",
+        "data": {
+          "bar": 1,
+          "quux": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "missing both dependencies",
+        "data": {
+          "quux": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "dependentRequired.json: dependencies with escaped characters",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentRequired": {
+        "foo\nbar": [
+          "foo\rbar"
+        ],
+        "foo\"bar": [
+          "foo'bar"
+        ]
+      }
+    },
+    "tests": [
+      {
+        "description": "CRLF",
+        "data": {
+          "foo\nbar": 1,
+          "foo\rbar": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "quoted quotes",
+        "data": {
+          "foo'bar": 1,
+          "foo\"bar": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "CRLF missing dependent",
+        "data": {
+          "foo\nbar": 1,
+          "foo": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "quoted quotes missing dependent",
+        "data": {
+          "foo\"bar": 2
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "dependentSchemas.json: single dependency",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentSchemas": {
+        "bar": {
+          "properties": {
+            "foo": {
+              "type": "integer"
+            },
+            "bar": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "valid",
+        "data": {
+          "foo": 1,
+          "bar": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "no dependency",
+        "data": {
+          "foo": "quux"
+        },
+        "valid": true
+      },
+      {
+        "description": "wrong type",
+        "data": {
+          "foo": "quux",
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "wrong type other",
+        "data": {
+          "foo": 2,
+          "bar": "quux"
+        },
+        "valid": false
+      },
+      {
+        "description": "wrong type both",
+        "data": {
+          "foo": "quux",
+          "bar": "quux"
+        },
+        "valid": false
+      },
+      {
+        "description": "ignores arrays",
+        "data": [
+          "bar"
+        ],
+        "valid": true
+      },
+      {
+        "description": "ignores strings",
+        "data": "foobar",
+        "valid": true
+      },
+      {
+        "description": "ignores other non-objects",
+        "data": 12,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "dependentSchemas.json: boolean subschemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentSchemas": {
+        "foo": true,
+        "bar": false
+      }
+    },
+    "tests": [
+      {
+        "description": "object with property having schema true is valid",
+        "data": {
+          "foo": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "object with property having schema false is invalid",
+        "data": {
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "object with both properties is invalid",
+        "data": {
+          "foo": 1,
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "empty object is valid",
+        "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "dependentSchemas.json: dependencies with escaped characters",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "dependentSchemas": {
+        "foo\tbar": {
+          "minProperties": 4
+        },
+        "foo'bar": {
+          "required": [
+            "foo\"bar"
+          ]
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "quoted tab",
+        "data": {
+          "foo\tbar": 1,
+          "a": 2,
+          "b": 3,
+          "c": 4
+        },
+        "valid": true
+      },
+      {
+        "description": "quoted quote",
+        "data": {
+          "foo'bar": {
+            "foo\"bar": 1
+          }
+        },
+        "valid": false
+      },
+      {
+        "description": "quoted tab invalid under dependent schema",
+        "data": {
+          "foo\tbar": 1,
+          "a": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "quoted quote invalid under dependent schema",
+        "data": {
+          "foo'bar": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "dependentSchemas.json: dependent subschema incompatible with root",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {}
+      },
+      "dependentSchemas": {
+        "foo": {
+          "properties": {
+            "bar": {}
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "matches root",
+        "data": {
+          "foo": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "matches dependency",
+        "data": {
+          "bar": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "matches both",
+        "data": {
+          "foo": 1,
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "no dependency",
+        "data": {
+          "baz": 1
+        },
         "valid": true
       }
     ]
@@ -2063,6 +2843,1164 @@
     ]
   },
   {
+    "description": "format.json: email format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "email"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid email string is only an annotation by default",
+        "data": "2962",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: idn-email format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "idn-email"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid idn-email string is only an annotation by default",
+        "data": "2962",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: regex format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "regex"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid regex string is only an annotation by default",
+        "data": "^(abc]",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: ipv4 format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "ipv4"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid ipv4 string is only an annotation by default",
+        "data": "127.0.0.0.1",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: ipv6 format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "ipv6"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid ipv6 string is only an annotation by default",
+        "data": "12345::",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: idn-hostname format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "idn-hostname"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid idn-hostname string is only an annotation by default",
+        "data": "〮실례.테스트",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: hostname format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "hostname"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid hostname string is only an annotation by default",
+        "data": "-a-host-name-that-starts-with--",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: date format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid date string is only an annotation by default",
+        "data": "06/19/1963",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: date-time format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid date-time string is only an annotation by default",
+        "data": "1990-02-31T15:59:60.123-08:00",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: time format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "time"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid time string is only an annotation by default",
+        "data": "08:30:06 PST",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: json-pointer format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "json-pointer"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid json-pointer string is only an annotation by default",
+        "data": "/foo/bar~",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: relative-json-pointer format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "relative-json-pointer"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid relative-json-pointer string is only an annotation by default",
+        "data": "/foo/bar",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: iri format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "iri"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid iri string is only an annotation by default",
+        "data": "http://2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: iri-reference format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "iri-reference"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid iri-reference string is only an annotation by default",
+        "data": "\\\\WINDOWS\\filëßåré",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: uri format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "uri"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid uri string is only an annotation by default",
+        "data": "//foo.bar/?baz=qux#quux",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: uri-reference format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "uri-reference"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid uri-reference string is only an annotation by default",
+        "data": "\\\\WINDOWS\\fileshare",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: uri-template format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "uri-template"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid uri-template string is only an annotation by default",
+        "data": "http://example.com/dictionary/{term:1}/{term",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: uuid format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "uuid"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid uuid string is only an annotation by default",
+        "data": "2eb8aa08-aa98-11ea-b4aa-73b441d1638",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "format.json: duration format",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration"
+    },
+    "tests": [
+      {
+        "description": "all string formats ignore integers",
+        "data": 12,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore floats",
+        "data": 13.7,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore booleans",
+        "data": false,
+        "valid": true
+      },
+      {
+        "description": "all string formats ignore nulls",
+        "data": null,
+        "valid": true
+      },
+      {
+        "description": "invalid duration string is only an annotation by default",
+        "data": "PT1D",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: ignore if without then or else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "const": 0
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when valid against lone if",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "valid when invalid against lone if",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: ignore then without if",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "then": {
+        "const": 0
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when valid against lone then",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "valid when invalid against lone then",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: ignore else without if",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "else": {
+        "const": 0
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when valid against lone else",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "valid when invalid against lone else",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if and then without else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "exclusiveMaximum": 0
+      },
+      "then": {
+        "minimum": -10
+      }
+    },
+    "tests": [
+      {
+        "description": "valid through then",
+        "data": -1,
+        "valid": true
+      },
+      {
+        "description": "invalid through then",
+        "data": -100,
+        "valid": false
+      },
+      {
+        "description": "valid when if test fails",
+        "data": 3,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if and else without then",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "exclusiveMaximum": 0
+      },
+      "else": {
+        "multipleOf": 2
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when if test passes",
+        "data": -1,
+        "valid": true
+      },
+      {
+        "description": "valid through else",
+        "data": 4,
+        "valid": true
+      },
+      {
+        "description": "invalid through else",
+        "data": 3,
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: validate against correct branch, then vs else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "exclusiveMaximum": 0
+      },
+      "then": {
+        "minimum": -10
+      },
+      "else": {
+        "multipleOf": 2
+      }
+    },
+    "tests": [
+      {
+        "description": "valid through then",
+        "data": -1,
+        "valid": true
+      },
+      {
+        "description": "invalid through then",
+        "data": -100,
+        "valid": false
+      },
+      {
+        "description": "valid through else",
+        "data": 4,
+        "valid": true
+      },
+      {
+        "description": "invalid through else",
+        "data": 3,
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: non-interference across combined schemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "if": {
+            "exclusiveMaximum": 0
+          }
+        },
+        {
+          "then": {
+            "minimum": -10
+          }
+        },
+        {
+          "else": {
+            "multipleOf": 2
+          }
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "valid, but would have been invalid through then",
+        "data": -100,
+        "valid": true
+      },
+      {
+        "description": "valid, but would have been invalid through else",
+        "data": 3,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if with boolean schema true",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": true,
+      "then": {
+        "const": "then"
+      },
+      "else": {
+        "const": "else"
+      }
+    },
+    "tests": [
+      {
+        "description": "boolean schema true in if always chooses the then path (valid)",
+        "data": "then",
+        "valid": true
+      },
+      {
+        "description": "boolean schema true in if always chooses the then path (invalid)",
+        "data": "else",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if with boolean schema false",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": false,
+      "then": {
+        "const": "then"
+      },
+      "else": {
+        "const": "else"
+      }
+    },
+    "tests": [
+      {
+        "description": "boolean schema false in if always chooses the else path (invalid)",
+        "data": "then",
+        "valid": false
+      },
+      {
+        "description": "boolean schema false in if always chooses the else path (valid)",
+        "data": "else",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if appears at the end when serialized (keyword processing sequence)",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "then": {
+        "const": "yes"
+      },
+      "else": {
+        "const": "other"
+      },
+      "if": {
+        "maxLength": 4
+      }
+    },
+    "tests": [
+      {
+        "description": "yes redirects to then and passes",
+        "data": "yes",
+        "valid": true
+      },
+      {
+        "description": "other redirects to else and passes",
+        "data": "other",
+        "valid": true
+      },
+      {
+        "description": "no redirects to then and fails",
+        "data": "no",
+        "valid": false
+      },
+      {
+        "description": "invalid redirects to else and fails",
+        "data": "invalid",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: then: false fails when condition matches",
+    "schema": {
+      "if": {
+        "const": 1
+      },
+      "then": false
+    },
+    "tests": [
+      {
+        "description": "matches if → then=false → invalid",
+        "data": 1,
+        "valid": false
+      },
+      {
+        "description": "does not match if → then ignored → valid",
+        "data": 2,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: else: false fails when condition does not match",
+    "schema": {
+      "if": {
+        "const": 1
+      },
+      "else": false
+    },
+    "tests": [
+      {
+        "description": "matches if → else ignored → valid",
+        "data": 1,
+        "valid": true
+      },
+      {
+        "description": "does not match if → else executes → invalid",
+        "data": 2,
+        "valid": false
+      }
+    ]
+  },
+  {
     "description": "infinite-loop-detection.json: evaluating the same schema location against the same data location twice is not a sign of an infinite loop",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2324,6 +4262,528 @@
           null
         ],
         "valid": true
+      }
+    ]
+  },
+  {
+    "description": "items.json: items and subitems",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "item": {
+          "type": "array",
+          "items": false,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/sub-item"
+            },
+            {
+              "$ref": "#/$defs/sub-item"
+            }
+          ]
+        },
+        "sub-item": {
+          "type": "object",
+          "required": [
+            "foo"
+          ]
+        }
+      },
+      "type": "array",
+      "items": false,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/item"
+        },
+        {
+          "$ref": "#/$defs/item"
+        },
+        {
+          "$ref": "#/$defs/item"
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "valid items",
+        "data": [
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ]
+        ],
+        "valid": true
+      },
+      {
+        "description": "too many items",
+        "data": [
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ]
+        ],
+        "valid": false
+      },
+      {
+        "description": "too many sub-items",
+        "data": [
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ]
+        ],
+        "valid": false
+      },
+      {
+        "description": "wrong item",
+        "data": [
+          {
+            "foo": null
+          },
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ]
+        ],
+        "valid": false
+      },
+      {
+        "description": "wrong sub-item",
+        "data": [
+          [
+            {},
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            },
+            {
+              "foo": null
+            }
+          ]
+        ],
+        "valid": false
+      },
+      {
+        "description": "fewer items is valid",
+        "data": [
+          [
+            {
+              "foo": null
+            }
+          ],
+          [
+            {
+              "foo": null
+            }
+          ]
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "items.json: prefixItems with no additional items allowed",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {},
+        {},
+        {}
+      ],
+      "items": false
+    },
+    "tests": [
+      {
+        "description": "empty array",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "fewer number of items present (1)",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "fewer number of items present (2)",
+        "data": [
+          1,
+          2
+        ],
+        "valid": true
+      },
+      {
+        "description": "equal number of items present",
+        "data": [
+          1,
+          2,
+          3
+        ],
+        "valid": true
+      },
+      {
+        "description": "additional items are not permitted",
+        "data": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "items.json: items does not look in applicators, valid case",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "prefixItems": [
+            {
+              "minimum": 3
+            }
+          ]
+        }
+      ],
+      "items": {
+        "minimum": 5
+      }
+    },
+    "tests": [
+      {
+        "description": "prefixItems in allOf does not constrain items, invalid case",
+        "data": [
+          3,
+          5
+        ],
+        "valid": false
+      },
+      {
+        "description": "prefixItems in allOf does not constrain items, valid case",
+        "data": [
+          5,
+          5
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "items.json: prefixItems validation adjusts the starting index for items",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "items": {
+        "type": "integer"
+      }
+    },
+    "tests": [
+      {
+        "description": "valid items",
+        "data": [
+          "x",
+          2,
+          3
+        ],
+        "valid": true
+      },
+      {
+        "description": "wrong type of second item",
+        "data": [
+          "x",
+          "y"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "items.json: items with heterogeneous array",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {}
+      ],
+      "items": false
+    },
+    "tests": [
+      {
+        "description": "heterogeneous invalid instance",
+        "data": [
+          "foo",
+          "bar",
+          37
+        ],
+        "valid": false
+      },
+      {
+        "description": "valid instance",
+        "data": [
+          null
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "maxContains.json: maxContains without contains is ignored",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "maxContains": 1
+    },
+    "tests": [
+      {
+        "description": "one item valid against lone maxContains",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "two items still valid against lone maxContains",
+        "data": [
+          1,
+          2
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "maxContains.json: maxContains with contains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "maxContains": 1
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "all elements match, valid maxContains",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "all elements match, invalid maxContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "some elements match, valid maxContains",
+        "data": [
+          1,
+          2
+        ],
+        "valid": true
+      },
+      {
+        "description": "some elements match, invalid maxContains",
+        "data": [
+          1,
+          2,
+          1
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "maxContains.json: maxContains with contains, value with a decimal",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "maxContains": 1.0
+    },
+    "tests": [
+      {
+        "description": "one element matches, valid maxContains",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "too many elements match, invalid maxContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "maxContains.json: minContains < maxContains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 1,
+      "maxContains": 3
+    },
+    "tests": [
+      {
+        "description": "actual < minContains < maxContains",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "minContains < actual < maxContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "minContains < maxContains < actual",
+        "data": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "maxContains.json: maxContains = 0 with minContains = 0",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 0,
+      "maxContains": 0
+    },
+    "tests": [
+      {
+        "description": "empty array",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "one matching item",
+        "data": [
+          1
+        ],
+        "valid": false
       }
     ]
   },
@@ -2600,6 +5060,300 @@
     ]
   },
   {
+    "description": "minContains.json: minContains without contains is ignored",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "minContains": 1
+    },
+    "tests": [
+      {
+        "description": "one item valid against lone minContains",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "zero items still valid against lone minContains",
+        "data": [],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: minContains=1 with contains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 1
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "no elements match",
+        "data": [
+          2
+        ],
+        "valid": false
+      },
+      {
+        "description": "single element matches, valid minContains",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "some elements match, valid minContains",
+        "data": [
+          1,
+          2
+        ],
+        "valid": true
+      },
+      {
+        "description": "all elements match, valid minContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: minContains=2 with contains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 2
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "all elements match, invalid minContains",
+        "data": [
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "some elements match, invalid minContains",
+        "data": [
+          1,
+          2
+        ],
+        "valid": false
+      },
+      {
+        "description": "all elements match, valid minContains (exactly as needed)",
+        "data": [
+          1,
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "all elements match, valid minContains (more than needed)",
+        "data": [
+          1,
+          1,
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "some elements match, valid minContains",
+        "data": [
+          1,
+          2,
+          1
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: minContains=2 with contains with a decimal value",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 2.0
+    },
+    "tests": [
+      {
+        "description": "one element matches, invalid minContains",
+        "data": [
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "both elements match, valid minContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: maxContains = minContains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "maxContains": 2,
+      "minContains": 2
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "all elements match, invalid minContains",
+        "data": [
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "all elements match, invalid maxContains",
+        "data": [
+          1,
+          1,
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "all elements match, valid maxContains and minContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: maxContains < minContains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "maxContains": 1,
+      "minContains": 3
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "invalid minContains",
+        "data": [
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "invalid maxContains",
+        "data": [
+          1,
+          1,
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "invalid maxContains and minContains",
+        "data": [
+          1,
+          1
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: minContains = 0",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 0
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "minContains = 0 makes contains always pass",
+        "data": [
+          2
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "minContains.json: minContains = 0 with maxContains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 1
+      },
+      "minContains": 0,
+      "maxContains": 1
+    },
+    "tests": [
+      {
+        "description": "empty data",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "not more than maxContains",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "too many",
+        "data": [
+          1,
+          1
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
     "description": "minItems.json: minItems validation",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2853,6 +5607,108 @@
       {
         "description": "ignores non-numbers",
         "data": "x",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "multipleOf.json: by int",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "multipleOf": 2
+    },
+    "tests": [
+      {
+        "description": "int by int",
+        "data": 10,
+        "valid": true
+      },
+      {
+        "description": "int by int fail",
+        "data": 7,
+        "valid": false
+      },
+      {
+        "description": "ignores non-numbers",
+        "data": "foo",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "multipleOf.json: by number",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "multipleOf": 1.5
+    },
+    "tests": [
+      {
+        "description": "zero is multiple of anything",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "4.5 is multiple of 1.5",
+        "data": 4.5,
+        "valid": true
+      },
+      {
+        "description": "-4.5 is multiple of 1.5",
+        "data": -4.5,
+        "valid": true
+      },
+      {
+        "description": "35 is not multiple of 1.5",
+        "data": 35,
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "multipleOf.json: by small number",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "multipleOf": 0.0001
+    },
+    "tests": [
+      {
+        "description": "0.0075 is multiple of 0.0001",
+        "data": 0.0075,
+        "valid": true
+      },
+      {
+        "description": "0.00751 is not multiple of 0.0001",
+        "data": 0.00751,
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "multipleOf.json: float division = inf",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "integer",
+      "multipleOf": 0.123456789
+    },
+    "tests": [
+      {
+        "description": "always invalid, but naive implementations may raise an overflow error",
+        "data": 1e+308,
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "multipleOf.json: small multiple of large integer",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "integer",
+      "multipleOf": 1e-08
+    },
+    "tests": [
+      {
+        "description": "any integer is a multiple of 1e-8",
+        "data": 12391239123,
         "valid": true
       }
     ]
@@ -3582,6 +6438,426 @@
       {
         "description": "matches a substring",
         "data": "xxaayy",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "pattern.json: pattern with Unicode property escape requires unicode mode",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
+      "pattern": "^\\p{Letter}+$"
+    },
+    "tests": [
+      {
+        "description": "ASCII letters match",
+        "data": "Hello",
+        "valid": true
+      },
+      {
+        "description": "Non-ASCII letters match",
+        "data": "π",
+        "valid": true
+      },
+      {
+        "description": "Digits do not match",
+        "data": "123",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "patternProperties.json: patternProperties validates properties matching a regex",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "patternProperties": {
+        "f.*o": {
+          "type": "integer"
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "a single valid match is valid",
+        "data": {
+          "foo": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "multiple valid matches is valid",
+        "data": {
+          "foo": 1,
+          "foooooo": 2
+        },
+        "valid": true
+      },
+      {
+        "description": "a single invalid match is invalid",
+        "data": {
+          "foo": "bar",
+          "fooooo": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "multiple invalid matches is invalid",
+        "data": {
+          "foo": "bar",
+          "foooooo": "baz"
+        },
+        "valid": false
+      },
+      {
+        "description": "ignores arrays",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "ignores strings",
+        "data": "foo",
+        "valid": true
+      },
+      {
+        "description": "ignores other non-objects",
+        "data": 12,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "patternProperties.json: multiple simultaneous patternProperties are validated",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "patternProperties": {
+        "a*": {
+          "type": "integer"
+        },
+        "aaa*": {
+          "maximum": 20
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "a single valid match is valid",
+        "data": {
+          "a": 21
+        },
+        "valid": true
+      },
+      {
+        "description": "a simultaneous match is valid",
+        "data": {
+          "aaaa": 18
+        },
+        "valid": true
+      },
+      {
+        "description": "multiple matches is valid",
+        "data": {
+          "a": 21,
+          "aaaa": 18
+        },
+        "valid": true
+      },
+      {
+        "description": "an invalid due to one is invalid",
+        "data": {
+          "a": "bar"
+        },
+        "valid": false
+      },
+      {
+        "description": "an invalid due to the other is invalid",
+        "data": {
+          "aaaa": 31
+        },
+        "valid": false
+      },
+      {
+        "description": "an invalid due to both is invalid",
+        "data": {
+          "aaa": "foo",
+          "aaaa": 31
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "patternProperties.json: regexes are not anchored by default and are case sensitive",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "patternProperties": {
+        "[0-9]{2,}": {
+          "type": "boolean"
+        },
+        "X_": {
+          "type": "string"
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "non recognized members are ignored",
+        "data": {
+          "answer 1": "42"
+        },
+        "valid": true
+      },
+      {
+        "description": "recognized members are accounted for",
+        "data": {
+          "a31b": null
+        },
+        "valid": false
+      },
+      {
+        "description": "regexes are case sensitive",
+        "data": {
+          "a_x_3": 3
+        },
+        "valid": true
+      },
+      {
+        "description": "regexes are case sensitive, 2",
+        "data": {
+          "a_X_3": 3
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "patternProperties.json: patternProperties with boolean schemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "patternProperties": {
+        "f.*": true,
+        "b.*": false
+      }
+    },
+    "tests": [
+      {
+        "description": "object with property matching schema true is valid",
+        "data": {
+          "foo": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "object with property matching schema false is invalid",
+        "data": {
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "object with both properties is invalid",
+        "data": {
+          "foo": 1,
+          "bar": 2
+        },
+        "valid": false
+      },
+      {
+        "description": "object with a property matching both true and false is invalid",
+        "data": {
+          "foobar": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "empty object is valid",
+        "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "patternProperties.json: patternProperties with null valued instance properties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "patternProperties": {
+        "^.*bar$": {
+          "type": "null"
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "allows null values",
+        "data": {
+          "foobar": null
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "patternProperties.json: patternProperties with Unicode property escape",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "patternProperties": {
+        "^\\p{Letter}+$": {
+          "type": "number"
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "Unicode letter property name matches",
+        "data": {
+          "π": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "Non-letter property name does not match pattern",
+        "data": {
+          "123": 1
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "prefixItems.json: a schema given for prefixItems",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "correct types",
+        "data": [
+          1,
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "wrong types",
+        "data": [
+          "foo",
+          1
+        ],
+        "valid": false
+      },
+      {
+        "description": "incomplete array of items",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with additional items",
+        "data": [
+          1,
+          "foo",
+          true
+        ],
+        "valid": true
+      },
+      {
+        "description": "empty array",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "JavaScript pseudo-array is valid",
+        "data": {
+          "0": "invalid",
+          "1": "valid",
+          "length": 2
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "prefixItems.json: prefixItems with boolean schemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        true,
+        false
+      ]
+    },
+    "tests": [
+      {
+        "description": "array with one item is valid",
+        "data": [
+          1
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with two items is invalid",
+        "data": [
+          1,
+          "foo"
+        ],
+        "valid": false
+      },
+      {
+        "description": "empty array is valid",
+        "data": [],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "prefixItems.json: additional items are allowed by default",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "only the first item is validated",
+        "data": [
+          1,
+          "foo",
+          false
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "prefixItems.json: prefixItems with null instance elements",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "allows null elements",
+        "data": [
+          null
+        ],
         "valid": true
       }
     ]
@@ -6426,6 +9702,3037 @@
       {
         "description": "string is invalid",
         "data": "foo",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems true",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": true
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems false",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems as schema",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": {
+        "type": "string"
+      }
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "with valid unevaluated items",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with invalid unevaluated items",
+        "data": [
+          42
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with uniform items",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "items": {
+        "type": "string"
+      },
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "unevaluatedItems doesn't apply",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with tuple",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with items and prefixItems",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "items": true,
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "unevaluatedItems doesn't apply",
+        "data": [
+          "foo",
+          42
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with items",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "items": {
+        "type": "number"
+      },
+      "unevaluatedItems": {
+        "type": "string"
+      }
+    },
+    "tests": [
+      {
+        "description": "valid under items",
+        "comment": "no elements are considered by unevaluatedItems",
+        "data": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "valid": true
+      },
+      {
+        "description": "invalid under items",
+        "data": [
+          "foo",
+          "bar",
+          "baz"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with nested tuple",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "allOf": [
+        {
+          "prefixItems": [
+            true,
+            {
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [
+          "foo",
+          42
+        ],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo",
+          42,
+          true
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with nested items",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": {
+        "type": "boolean"
+      },
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          }
+        },
+        true
+      ]
+    },
+    "tests": [
+      {
+        "description": "with only (valid) additional items",
+        "data": [
+          true,
+          false
+        ],
+        "valid": true
+      },
+      {
+        "description": "with no additional items",
+        "data": [
+          "yes",
+          "no"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with invalid additional item",
+        "data": [
+          "yes",
+          false
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with nested prefixItems and items",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "prefixItems": [
+            {
+              "type": "string"
+            }
+          ],
+          "items": true
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no additional items",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with additional items",
+        "data": [
+          "foo",
+          42,
+          true
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with nested unevaluatedItems",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "prefixItems": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "unevaluatedItems": true
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no additional items",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with additional items",
+        "data": [
+          "foo",
+          42,
+          true
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with anyOf",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "const": "foo"
+        }
+      ],
+      "anyOf": [
+        {
+          "prefixItems": [
+            true,
+            {
+              "const": "bar"
+            }
+          ]
+        },
+        {
+          "prefixItems": [
+            true,
+            true,
+            {
+              "const": "baz"
+            }
+          ]
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "when one schema matches and has no unevaluated items",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": true
+      },
+      {
+        "description": "when one schema matches and has unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          42
+        ],
+        "valid": false
+      },
+      {
+        "description": "when two schemas match and has no unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          "baz"
+        ],
+        "valid": true
+      },
+      {
+        "description": "when two schemas match and has unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          "baz",
+          42
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with oneOf",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "const": "foo"
+        }
+      ],
+      "oneOf": [
+        {
+          "prefixItems": [
+            true,
+            {
+              "const": "bar"
+            }
+          ]
+        },
+        {
+          "prefixItems": [
+            true,
+            {
+              "const": "baz"
+            }
+          ]
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          42
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with not",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "const": "foo"
+        }
+      ],
+      "not": {
+        "not": {
+          "prefixItems": [
+            true,
+            {
+              "const": "bar"
+            }
+          ]
+        }
+      },
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with if/then/else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "const": "foo"
+        }
+      ],
+      "if": {
+        "prefixItems": [
+          true,
+          {
+            "const": "bar"
+          }
+        ]
+      },
+      "then": {
+        "prefixItems": [
+          true,
+          true,
+          {
+            "const": "then"
+          }
+        ]
+      },
+      "else": {
+        "prefixItems": [
+          true,
+          true,
+          true,
+          {
+            "const": "else"
+          }
+        ]
+      },
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "when if matches and it has no unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          "then"
+        ],
+        "valid": true
+      },
+      {
+        "description": "when if matches and it has unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          "then",
+          "else"
+        ],
+        "valid": false
+      },
+      {
+        "description": "when if doesn't match and it has no unevaluated items",
+        "data": [
+          "foo",
+          42,
+          42,
+          "else"
+        ],
+        "valid": true
+      },
+      {
+        "description": "when if doesn't match and it has unevaluated items",
+        "data": [
+          "foo",
+          42,
+          42,
+          "else",
+          42
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with boolean schemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        true
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with $ref",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$ref": "#/$defs/bar",
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "unevaluatedItems": false,
+      "$defs": {
+        "bar": {
+          "prefixItems": [
+            true,
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          "baz"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems before $ref",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": false,
+      "prefixItems": [
+        {
+          "type": "string"
+        }
+      ],
+      "$ref": "#/$defs/bar",
+      "$defs": {
+        "bar": {
+          "prefixItems": [
+            true,
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated items",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": true
+      },
+      {
+        "description": "with unevaluated items",
+        "data": [
+          "foo",
+          "bar",
+          "baz"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems can't see inside cousins",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "prefixItems": [
+            true
+          ]
+        },
+        {
+          "unevaluatedItems": false
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "always fails",
+        "data": [
+          1
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: item is evaluated in an uncle schema to unevaluatedItems",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "prefixItems": [
+            {
+              "type": "string"
+            }
+          ],
+          "unevaluatedItems": false
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "foo": {
+              "prefixItems": [
+                true,
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "no extra items",
+        "data": {
+          "foo": [
+            "test"
+          ]
+        },
+        "valid": true
+      },
+      {
+        "description": "uncle keyword evaluation is not significant",
+        "data": {
+          "foo": [
+            "test",
+            "test"
+          ]
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems depends on adjacent contains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        true
+      ],
+      "contains": {
+        "type": "string"
+      },
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "second item is evaluated by contains",
+        "data": [
+          1,
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "contains fails, second item is not evaluated",
+        "data": [
+          1,
+          2
+        ],
+        "valid": false
+      },
+      {
+        "description": "contains passes, second item is not evaluated",
+        "data": [
+          1,
+          2,
+          "foo"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems depends on multiple nested contains",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "contains": {
+            "multipleOf": 2
+          }
+        },
+        {
+          "contains": {
+            "multipleOf": 3
+          }
+        }
+      ],
+      "unevaluatedItems": {
+        "multipleOf": 5
+      }
+    },
+    "tests": [
+      {
+        "description": "5 not evaluated, passes unevaluatedItems",
+        "data": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "valid": true
+      },
+      {
+        "description": "7 not evaluated, fails unevaluatedItems",
+        "data": [
+          2,
+          3,
+          4,
+          7,
+          8
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems and contains interact to control item dependency relationship",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "contains": {
+          "const": "a"
+        }
+      },
+      "then": {
+        "if": {
+          "contains": {
+            "const": "b"
+          }
+        },
+        "then": {
+          "if": {
+            "contains": {
+              "const": "c"
+            }
+          }
+        }
+      },
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "empty array is valid",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "only a's are valid",
+        "data": [
+          "a",
+          "a"
+        ],
+        "valid": true
+      },
+      {
+        "description": "a's and b's are valid",
+        "data": [
+          "a",
+          "b",
+          "a",
+          "b",
+          "a"
+        ],
+        "valid": true
+      },
+      {
+        "description": "a's, b's and c's are valid",
+        "data": [
+          "c",
+          "a",
+          "c",
+          "c",
+          "b",
+          "a"
+        ],
+        "valid": true
+      },
+      {
+        "description": "only b's are invalid",
+        "data": [
+          "b",
+          "b"
+        ],
+        "valid": false
+      },
+      {
+        "description": "only c's are invalid",
+        "data": [
+          "c",
+          "c"
+        ],
+        "valid": false
+      },
+      {
+        "description": "only b's and c's are invalid",
+        "data": [
+          "c",
+          "b",
+          "c",
+          "b",
+          "c"
+        ],
+        "valid": false
+      },
+      {
+        "description": "only a's and c's are invalid",
+        "data": [
+          "c",
+          "a",
+          "c",
+          "a",
+          "c"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with minContains = 0",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "type": "string"
+      },
+      "minContains": 0,
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "empty array is valid",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "no items evaluated by contains",
+        "data": [
+          0
+        ],
+        "valid": false
+      },
+      {
+        "description": "some but not all items evaluated by contains",
+        "data": [
+          "foo",
+          0
+        ],
+        "valid": false
+      },
+      {
+        "description": "all items evaluated by contains",
+        "data": [
+          "foo",
+          "bar"
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: non-array instances are valid",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "ignores booleans",
+        "data": true,
+        "valid": true
+      },
+      {
+        "description": "ignores integers",
+        "data": 123,
+        "valid": true
+      },
+      {
+        "description": "ignores floats",
+        "data": 1.0,
+        "valid": true
+      },
+      {
+        "description": "ignores objects",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "ignores strings",
+        "data": "foo",
+        "valid": true
+      },
+      {
+        "description": "ignores null",
+        "data": null,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems with null instance elements",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedItems": {
+        "type": "null"
+      }
+    },
+    "tests": [
+      {
+        "description": "allows null elements",
+        "data": [
+          null
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: unevaluatedItems can see annotations from if without then and else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "prefixItems": [
+          {
+            "const": "a"
+          }
+        ]
+      },
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "valid in case if is evaluated",
+        "data": [
+          "a"
+        ],
+        "valid": true
+      },
+      {
+        "description": "invalid in case if is evaluated",
+        "data": [
+          "b"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedItems.json: Evaluated items collection needs to consider instance location",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "prefixItems": [
+        {
+          "prefixItems": [
+            true,
+            {
+              "type": "string"
+            }
+          ]
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "tests": [
+      {
+        "description": "with an unevaluated item that exists at another location",
+        "data": [
+          [
+            "foo",
+            "bar"
+          ],
+          "bar"
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties true",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedProperties": true
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties schema",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedProperties": {
+        "type": "string",
+        "minLength": 3
+      }
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "with valid unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with invalid unevaluated properties",
+        "data": {
+          "foo": "fo"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties false",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with adjacent properties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with adjacent patternProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "patternProperties": {
+        "^foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with adjacent bool additionalProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no additional properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with adjacent non-bool additionalProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "string"
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no additional properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with nested properties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "bar": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "with additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with nested patternProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "patternProperties": {
+            "^bar": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "with additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with nested additionalProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "additionalProperties": true
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no additional properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with additional properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with nested unevaluatedProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "unevaluatedProperties": true
+        }
+      ],
+      "unevaluatedProperties": {
+        "type": "string",
+        "maxLength": 2
+      }
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with anyOf",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "bar": {
+              "const": "bar"
+            }
+          },
+          "required": [
+            "bar"
+          ]
+        },
+        {
+          "properties": {
+            "baz": {
+              "const": "baz"
+            }
+          },
+          "required": [
+            "baz"
+          ]
+        },
+        {
+          "properties": {
+            "quux": {
+              "const": "quux"
+            }
+          },
+          "required": [
+            "quux"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "when one matches and has no unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "when one matches and has unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "not-baz"
+        },
+        "valid": false
+      },
+      {
+        "description": "when two match and has no unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": true
+      },
+      {
+        "description": "when two match and has unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "baz",
+          "quux": "not-quux"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with oneOf",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "bar": {
+              "const": "bar"
+            }
+          },
+          "required": [
+            "bar"
+          ]
+        },
+        {
+          "properties": {
+            "baz": {
+              "const": "baz"
+            }
+          },
+          "required": [
+            "baz"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "quux": "quux"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with not",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "not": {
+        "not": {
+          "properties": {
+            "bar": {
+              "const": "bar"
+            }
+          },
+          "required": [
+            "bar"
+          ]
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with if/then/else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "properties": {
+          "foo": {
+            "const": "then"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      },
+      "then": {
+        "properties": {
+          "bar": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bar"
+        ]
+      },
+      "else": {
+        "properties": {
+          "baz": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "baz"
+        ]
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "when if is true and has no unevaluated properties",
+        "data": {
+          "foo": "then",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "when if is true and has unevaluated properties",
+        "data": {
+          "foo": "then",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": false
+      },
+      {
+        "description": "when if is false and has no unevaluated properties",
+        "data": {
+          "baz": "baz"
+        },
+        "valid": true
+      },
+      {
+        "description": "when if is false and has unevaluated properties",
+        "data": {
+          "foo": "else",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with if/then/else, then not defined",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "properties": {
+          "foo": {
+            "const": "then"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      },
+      "else": {
+        "properties": {
+          "baz": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "baz"
+        ]
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "when if is true and has no unevaluated properties",
+        "data": {
+          "foo": "then"
+        },
+        "valid": true
+      },
+      {
+        "description": "when if is true and has unevaluated properties",
+        "data": {
+          "foo": "then",
+          "bar": "bar"
+        },
+        "valid": false
+      },
+      {
+        "description": "when if is false and has no unevaluated properties",
+        "data": {
+          "baz": "baz"
+        },
+        "valid": true
+      },
+      {
+        "description": "when if is false and has unevaluated properties",
+        "data": {
+          "foo": "else",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with if/then/else, else not defined",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "properties": {
+          "foo": {
+            "const": "then"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      },
+      "then": {
+        "properties": {
+          "bar": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bar"
+        ]
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "when if is true and has no unevaluated properties",
+        "data": {
+          "foo": "then",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "when if is true and has unevaluated properties",
+        "data": {
+          "foo": "then",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": false
+      },
+      {
+        "description": "when if is false and has no unevaluated properties",
+        "data": {
+          "baz": "baz"
+        },
+        "valid": false
+      },
+      {
+        "description": "when if is false and has unevaluated properties",
+        "data": {
+          "foo": "else",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with dependentSchemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "dependentSchemas": {
+        "foo": {
+          "properties": {
+            "bar": {
+              "const": "bar"
+            }
+          },
+          "required": [
+            "bar"
+          ]
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with boolean schemas",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        true
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with $ref",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$ref": "#/$defs/bar",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false,
+      "$defs": {
+        "bar": {
+          "properties": {
+            "bar": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties before $ref",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedProperties": false,
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "$ref": "#/$defs/bar",
+      "$defs": {
+        "bar": {
+          "properties": {
+            "bar": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "with no unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      },
+      {
+        "description": "with unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties can't see inside cousins",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "properties": {
+            "foo": true
+          }
+        },
+        {
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "always fails",
+        "data": {
+          "foo": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties can't see inside cousins (reverse order)",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "unevaluatedProperties": false
+        },
+        {
+          "properties": {
+            "foo": true
+          }
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "always fails",
+        "data": {
+          "foo": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: nested unevaluatedProperties, outer false, inner true, properties outside",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "unevaluatedProperties": true
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: nested unevaluatedProperties, outer false, inner true, properties inside",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "unevaluatedProperties": true
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: nested unevaluatedProperties, outer true, inner false, properties outside",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "unevaluatedProperties": false
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": false
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: nested unevaluatedProperties, outer true, inner false, properties inside",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "unevaluatedProperties": false
+        }
+      ],
+      "unevaluatedProperties": true
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: cousin unevaluatedProperties, true and false, true with properties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "unevaluatedProperties": true
+        },
+        {
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": false
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: cousin unevaluatedProperties, true and false, false with properties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "unevaluatedProperties": true
+        },
+        {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "with no nested unevaluated properties",
+        "data": {
+          "foo": "foo"
+        },
+        "valid": true
+      },
+      {
+        "description": "with nested unevaluated properties",
+        "data": {
+          "foo": "foo",
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: property is evaluated in an uncle schema to unevaluatedProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "properties": {
+            "bar": {
+              "type": "string"
+            }
+          },
+          "unevaluatedProperties": false
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "foo": {
+              "properties": {
+                "faz": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "no extra properties",
+        "data": {
+          "foo": {
+            "bar": "test"
+          }
+        },
+        "valid": true
+      },
+      {
+        "description": "uncle keyword evaluation is not significant",
+        "data": {
+          "foo": {
+            "bar": "test",
+            "faz": "test"
+          }
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: in-place applicator siblings, allOf has unevaluated",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "properties": {
+            "foo": true
+          },
+          "unevaluatedProperties": false
+        }
+      ],
+      "anyOf": [
+        {
+          "properties": {
+            "bar": true
+          }
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "base case: both properties present",
+        "data": {
+          "foo": 1,
+          "bar": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "in place applicator siblings, bar is missing",
+        "data": {
+          "foo": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "in place applicator siblings, foo is missing",
+        "data": {
+          "bar": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: in-place applicator siblings, anyOf has unevaluated",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "allOf": [
+        {
+          "properties": {
+            "foo": true
+          }
+        }
+      ],
+      "anyOf": [
+        {
+          "properties": {
+            "bar": true
+          },
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "tests": [
+      {
+        "description": "base case: both properties present",
+        "data": {
+          "foo": 1,
+          "bar": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "in place applicator siblings, bar is missing",
+        "data": {
+          "foo": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "in place applicator siblings, foo is missing",
+        "data": {
+          "bar": 1
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties + single cyclic ref",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "x": {
+          "$ref": "#"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "Empty is valid",
+        "data": {},
+        "valid": true
+      },
+      {
+        "description": "Single is valid",
+        "data": {
+          "x": {}
+        },
+        "valid": true
+      },
+      {
+        "description": "Unevaluated on 1st level is invalid",
+        "data": {
+          "x": {},
+          "y": {}
+        },
+        "valid": false
+      },
+      {
+        "description": "Nested is valid",
+        "data": {
+          "x": {
+            "x": {}
+          }
+        },
+        "valid": true
+      },
+      {
+        "description": "Unevaluated on 2nd level is invalid",
+        "data": {
+          "x": {
+            "x": {},
+            "y": {}
+          }
+        },
+        "valid": false
+      },
+      {
+        "description": "Deep nested is valid",
+        "data": {
+          "x": {
+            "x": {
+              "x": {}
+            }
+          }
+        },
+        "valid": true
+      },
+      {
+        "description": "Unevaluated on 3rd level is invalid",
+        "data": {
+          "x": {
+            "x": {
+              "x": {},
+              "y": {}
+            }
+          }
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties + ref inside allOf / oneOf",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "one": {
+          "properties": {
+            "a": true
+          }
+        },
+        "two": {
+          "required": [
+            "x"
+          ],
+          "properties": {
+            "x": true
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/one"
+        },
+        {
+          "properties": {
+            "b": true
+          }
+        },
+        {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/two"
+            },
+            {
+              "required": [
+                "y"
+              ],
+              "properties": {
+                "y": true
+              }
+            }
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "Empty is invalid (no x or y)",
+        "data": {},
+        "valid": false
+      },
+      {
+        "description": "a and b are invalid (no x or y)",
+        "data": {
+          "a": 1,
+          "b": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "x and y are invalid",
+        "data": {
+          "x": 1,
+          "y": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "a and x are valid",
+        "data": {
+          "a": 1,
+          "x": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "a and y are valid",
+        "data": {
+          "a": 1,
+          "y": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "a and b and x are valid",
+        "data": {
+          "a": 1,
+          "b": 1,
+          "x": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "a and b and y are valid",
+        "data": {
+          "a": 1,
+          "b": 1,
+          "y": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "a and b and x and y are invalid",
+        "data": {
+          "a": 1,
+          "b": 1,
+          "x": 1,
+          "y": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: dynamic evalation inside nested refs",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "one": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/two"
+            },
+            {
+              "required": [
+                "b"
+              ],
+              "properties": {
+                "b": true
+              }
+            },
+            {
+              "required": [
+                "xx"
+              ],
+              "patternProperties": {
+                "x": true
+              }
+            },
+            {
+              "required": [
+                "all"
+              ],
+              "unevaluatedProperties": true
+            }
+          ]
+        },
+        "two": {
+          "oneOf": [
+            {
+              "required": [
+                "c"
+              ],
+              "properties": {
+                "c": true
+              }
+            },
+            {
+              "required": [
+                "d"
+              ],
+              "properties": {
+                "d": true
+              }
+            }
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/one"
+        },
+        {
+          "required": [
+            "a"
+          ],
+          "properties": {
+            "a": true
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "Empty is invalid",
+        "data": {},
+        "valid": false
+      },
+      {
+        "description": "a is valid",
+        "data": {
+          "a": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "b is valid",
+        "data": {
+          "b": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "c is valid",
+        "data": {
+          "c": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "d is valid",
+        "data": {
+          "d": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "a + b is invalid",
+        "data": {
+          "a": 1,
+          "b": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "a + c is invalid",
+        "data": {
+          "a": 1,
+          "c": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "a + d is invalid",
+        "data": {
+          "a": 1,
+          "d": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "b + c is invalid",
+        "data": {
+          "b": 1,
+          "c": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "b + d is invalid",
+        "data": {
+          "b": 1,
+          "d": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "c + d is invalid",
+        "data": {
+          "c": 1,
+          "d": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "xx is valid",
+        "data": {
+          "xx": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "xx + foox is valid",
+        "data": {
+          "xx": 1,
+          "foox": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "xx + foo is invalid",
+        "data": {
+          "xx": 1,
+          "foo": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "xx + a is invalid",
+        "data": {
+          "xx": 1,
+          "a": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "xx + b is invalid",
+        "data": {
+          "xx": 1,
+          "b": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "xx + c is invalid",
+        "data": {
+          "xx": 1,
+          "c": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "xx + d is invalid",
+        "data": {
+          "xx": 1,
+          "d": 1
+        },
+        "valid": false
+      },
+      {
+        "description": "all is valid",
+        "data": {
+          "all": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "all + foo is valid",
+        "data": {
+          "all": 1,
+          "foo": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "all + a is invalid",
+        "data": {
+          "all": 1,
+          "a": 1
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: non-object instances are valid",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "ignores booleans",
+        "data": true,
+        "valid": true
+      },
+      {
+        "description": "ignores integers",
+        "data": 123,
+        "valid": true
+      },
+      {
+        "description": "ignores floats",
+        "data": 1.0,
+        "valid": true
+      },
+      {
+        "description": "ignores arrays",
+        "data": [],
+        "valid": true
+      },
+      {
+        "description": "ignores strings",
+        "data": "foo",
+        "valid": true
+      },
+      {
+        "description": "ignores null",
+        "data": null,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties with null valued instance properties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "unevaluatedProperties": {
+        "type": "null"
+      }
+    },
+    "tests": [
+      {
+        "description": "allows null valued properties",
+        "data": {
+          "foo": null
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties not affected by propertyNames",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "propertyNames": {
+        "maxLength": 1
+      },
+      "unevaluatedProperties": {
+        "type": "number"
+      }
+    },
+    "tests": [
+      {
+        "description": "allows only number properties",
+        "data": {
+          "a": 1
+        },
+        "valid": true
+      },
+      {
+        "description": "string property is invalid",
+        "data": {
+          "a": "b"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: unevaluatedProperties can see annotations from if without then and else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "patternProperties": {
+          "foo": {
+            "type": "string"
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "valid in case if is evaluated",
+        "data": {
+          "foo": "a"
+        },
+        "valid": true
+      },
+      {
+        "description": "invalid in case if is evaluated",
+        "data": {
+          "bar": "a"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: dependentSchemas with unevaluatedProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo2": {}
+      },
+      "dependentSchemas": {
+        "foo": {},
+        "foo2": {
+          "properties": {
+            "bar": {}
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "unevaluatedProperties doesn't consider dependentSchemas",
+        "data": {
+          "foo": ""
+        },
+        "valid": false
+      },
+      {
+        "description": "unevaluatedProperties doesn't see bar when foo2 is absent",
+        "data": {
+          "bar": ""
+        },
+        "valid": false
+      },
+      {
+        "description": "unevaluatedProperties sees bar when foo2 is present",
+        "data": {
+          "foo2": "",
+          "bar": ""
+        },
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: Evaluated properties collection needs to consider instance location",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "properties": {
+            "bar": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with an unevaluated property that exists at another location",
+        "data": {
+          "foo": {
+            "bar": "foo"
+          },
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: Evaluated properties collection needs to consider instance location with patternProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "patternProperties": {
+            "^bar$": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with only the nested evaluated property",
+        "data": {
+          "foo": {
+            "bar": "foo"
+          }
+        },
+        "valid": true
+      },
+      {
+        "description": "with an unevaluated property that exists at another location",
+        "data": {
+          "foo": {
+            "bar": "foo"
+          },
+          "bar": "bar"
+        },
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "unevaluatedProperties.json: Evaluated properties collection needs to consider instance location with additionalProperties",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "foo": {
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "tests": [
+      {
+        "description": "with only the nested evaluated property",
+        "data": {
+          "foo": {
+            "bar": "foo"
+          }
+        },
+        "valid": true
+      },
+      {
+        "description": "with an unevaluated property that exists at another location",
+        "data": {
+          "foo": {
+            "bar": "foo"
+          },
+          "bar": "bar"
+        },
         "valid": false
       }
     ]

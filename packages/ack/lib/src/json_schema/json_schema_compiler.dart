@@ -4,19 +4,34 @@ String _importPointerToken(String token) =>
     token.replaceAll('~', '~0').replaceAll('/', '~1');
 
 final class _ImportedNode {
-  _ImportedNode(this.source, this.documentUri, this.pointer, this.baseUri);
+  _ImportedNode(
+    this.source,
+    this.documentUri,
+    this.pointer,
+    this.baseUri,
+    this.dialectUri,
+  );
 
   final Object source;
   final Uri documentUri;
   final String pointer;
   final Uri baseUri;
+  final Uri dialectUri;
+  bool validationVocabulary = true;
+  bool formatAssertion = false;
   final keywords = <String, Object?>{};
   final children = <String, _ImportedNode>{};
   final maps = <String, Map<String, _ImportedNode>>{};
   final lists = <String, List<_ImportedNode>>{};
   _ImportedNode? reference;
+  _ImportedNode? dynamicReference;
+  String? dynamicReferenceName;
+  String? dynamicAnchorName;
+  late _ImportedNode resourceRoot;
+  final dynamicAnchors = <String, _ImportedNode>{};
   Iterable<_ImportedNode> get dependencies sync* {
     if (reference case final target?) yield target;
+    if (dynamicReference case final target?) yield target;
     yield* children.values;
     for (final map in maps.values) {
       yield* map.values;
@@ -28,22 +43,38 @@ final class _ImportedNode {
 
   Iterable<_ImportedNode> get inPlaceDependencies sync* {
     if (reference case final target?) yield target;
+    if (dynamicReference case final target?) yield target;
     if (children['not'] case final target?) yield target;
+    for (final key in ['if', 'then', 'else']) {
+      if (children[key] case final target?) yield target;
+    }
     for (final key in ['anyOf', 'allOf', 'oneOf']) {
       yield* lists[key] ?? const <_ImportedNode>[];
     }
+    yield* maps['dependentSchemas']?.values ?? const <_ImportedNode>[];
   }
 
-  Map<String, Object?> render(String Function(_ImportedNode) name) {
-    if (source == false) return {'not': <String, Object?>{}};
-    // Empty enums are valid in 2020-12 but not Draft-7's meta-schema.
-    if (keywords['enum'] case []) return {'not': <String, Object?>{}};
+  /// The 1.x Draft-7 representation of an imported node. Newer 2020-12
+  /// assertions that cannot be lowered must use the preserving export.
+  Map<String, Object?> renderLegacy(String Function(_ImportedNode) name) {
+    if (dynamicReference != null ||
+        dynamicAnchorName != null ||
+        (source is Map<String, Object?> &&
+            (source as Map<String, Object?>).containsKey('format'))) {
+      throw UnsupportedError(
+        'This imported schema needs 2020-12 semantics. Use '
+        'toJsonSchemaPreservingImportedDialect().',
+      );
+    }
+    if (source == false ||
+        keywords['enum'] is List && (keywords['enum'] as List).isEmpty) {
+      return {'not': <String, Object?>{}};
+    }
     Map<String, Object?> ref(_ImportedNode node) => {
       r'$ref': '#/definitions/${_importPointerToken(name(node))}',
     };
     return {
       ...keywords,
-      // Draft-7 ignores $ref siblings; an allOf envelope preserves them.
       if (reference != null)
         'allOf': [ref(reference!), ...?lists['allOf']?.map(ref)],
       for (final entry in children.entries) entry.key: ref(entry.value),
@@ -57,10 +88,21 @@ final class _ImportedNode {
 }
 
 final class _JsonSchemaCompiler {
+  _JsonSchemaCompiler({this.assertFormats = false});
+
+  final bool assertFormats;
+  static final standardDialect = Uri.parse(
+    'https://json-schema.org/draft/2020-12/schema',
+  );
+  static const validationVocabularyUri =
+      'https://json-schema.org/draft/2020-12/vocab/validation';
+  static const formatAssertionVocabularyUri =
+      'https://json-schema.org/draft/2020-12/vocab/format-assertion';
   final diagnostics = <JsonSchemaImportDiagnostic>[];
   final locations = <(Uri, String), _ImportedNode>{};
   final resources = <Uri, _ImportedNode>{};
   final anchors = <Uri, _ImportedNode>{};
+  final dynamicAnchors = <Uri, _ImportedNode>{};
 
   static const mapKeywords = {
     r'$defs',
@@ -75,11 +117,11 @@ final class _JsonSchemaCompiler {
     'not',
     'contains',
     'propertyNames',
-    'unevaluatedProperties',
-    'unevaluatedItems',
     'if',
     'then',
     'else',
+    'unevaluatedProperties',
+    'unevaluatedItems',
   };
   static const listKeywords = {'anyOf', 'allOf', 'oneOf', 'prefixItems'};
   static const annotations = {
@@ -91,6 +133,20 @@ final class _JsonSchemaCompiler {
     'readOnly',
     'writeOnly',
     'deprecated',
+    'format',
+    'contentEncoding',
+    'contentMediaType',
+    'contentSchema',
+  };
+  static const knownVocabularies = {
+    'https://json-schema.org/draft/2020-12/vocab/core',
+    'https://json-schema.org/draft/2020-12/vocab/applicator',
+    'https://json-schema.org/draft/2020-12/vocab/unevaluated',
+    'https://json-schema.org/draft/2020-12/vocab/validation',
+    'https://json-schema.org/draft/2020-12/vocab/meta-data',
+    'https://json-schema.org/draft/2020-12/vocab/format-annotation',
+    formatAssertionVocabularyUri,
+    'https://json-schema.org/draft/2020-12/vocab/content',
   };
   static const counts = {
     'minLength',
@@ -136,6 +192,7 @@ final class _JsonSchemaCompiler {
       uri.removeFragment(),
       '#',
       uri.removeFragment(),
+      dialect: standardDialect,
       isRoot: true,
     );
   }
@@ -145,10 +202,12 @@ final class _JsonSchemaCompiler {
     Uri document,
     String pointer,
     Uri base, {
+    Uri? dialect,
     bool isRoot = false,
   }) {
     if (locations[(document, pointer)] case final existing?) return existing;
-    final provisional = _ImportedNode(source, document, pointer, base);
+    dialect ??= standardDialect;
+    final provisional = _ImportedNode(source, document, pointer, base, dialect);
     if (source is! bool && source is! Map<String, Object?>) {
       _fail(provisional, '', 'Expected a schema object or boolean.');
     }
@@ -161,26 +220,24 @@ final class _JsonSchemaCompiler {
       }
       base = base.removeFragment();
     }
-    final node = _ImportedNode(source, document, pointer, base);
+    if (source is Map<String, Object?> && source.containsKey(r'$schema')) {
+      final declared = source[r'$schema'];
+      if (declared is! String) {
+        _fail(provisional, r'$schema', 'Expected a URI string.');
+      }
+      final resolved = _resolve(provisional, r'$schema', base, declared);
+      if (resolved.fragment.isNotEmpty) {
+        _fail(provisional, r'$schema', 'Dialect URIs must not have fragments.');
+      }
+      dialect = resolved.removeFragment();
+    }
+    final node = _ImportedNode(source, document, pointer, base, dialect);
     locations[(document, pointer)] = node;
     if (isRoot) _register(resources, document, node, r'$id');
     if (isRoot || (source is Map && source.containsKey(r'$id'))) {
       _register(resources, base, node, r'$id');
     }
     if (source is! Map<String, Object?>) return node;
-    if (source.containsKey(r'$schema')) {
-      final dialect = source[r'$schema'];
-      // An empty fragment identifies the same meta-schema resource.
-      if (dialect != 'https://json-schema.org/draft/2020-12/schema' &&
-          dialect != 'https://json-schema.org/draft/2020-12/schema#') {
-        _fail(
-          node,
-          r'$schema',
-          'Only draft 2020-12 input is supported.',
-          code: 'unsupported_dialect',
-        );
-      }
-    }
     if (source.containsKey(r'$anchor')) {
       final anchor = source[r'$anchor'];
       if (anchor is! String ||
@@ -188,6 +245,17 @@ final class _JsonSchemaCompiler {
         _fail(node, r'$anchor', 'Invalid anchor name.');
       }
       _register(anchors, base.replace(fragment: anchor), node, r'$anchor');
+    }
+    if (source.containsKey(r'$dynamicAnchor')) {
+      final anchor = source[r'$dynamicAnchor'];
+      if (anchor is! String ||
+          !RegExp(r'^[A-Za-z_][-A-Za-z0-9._]*$').hasMatch(anchor)) {
+        _fail(node, r'$dynamicAnchor', 'Invalid dynamic anchor name.');
+      }
+      node.dynamicAnchorName = anchor;
+      final uri = base.replace(fragment: anchor);
+      _register(dynamicAnchors, uri, node, r'$dynamicAnchor');
+      _register(anchors, uri, node, r'$dynamicAnchor');
     }
     for (final entry in source.entries) {
       final key = entry.key;
@@ -203,10 +271,17 @@ final class _JsonSchemaCompiler {
             document,
             '$path/${_importPointerToken(child.key)}',
             base,
+            dialect: dialect,
           );
         }
       } else if (childKeywords.contains(key)) {
-        _index(value ?? _invalidSchema(node, key), document, path, base);
+        _index(
+          value ?? _invalidSchema(node, key),
+          document,
+          path,
+          base,
+          dialect: dialect,
+        );
       } else if (listKeywords.contains(key)) {
         if (value is! List || value.isEmpty) {
           _fail(node, key, 'Expected a non-empty list of schemas.');
@@ -217,6 +292,7 @@ final class _JsonSchemaCompiler {
             document,
             '$path/$i',
             base,
+            dialect: dialect,
           );
         }
       }
@@ -250,20 +326,81 @@ final class _JsonSchemaCompiler {
   }
 
   void compile(_ImportedNode root) {
+    for (final node in locations.values) {
+      _configureDialect(node);
+    }
     final nodes = _compileReachable(root);
+    for (final node in locations.values) {
+      node.resourceRoot = resources[node.baseUri]!;
+    }
+    for (final entry in dynamicAnchors.entries) {
+      resources[entry.key.removeFragment()]!.dynamicAnchors[Uri.decodeComponent(
+            entry.key.fragment,
+          )] =
+          entry.value;
+    }
     _checkProductiveCycles(nodes);
+  }
+
+  void _configureDialect(_ImportedNode node) {
+    final dialect = resources[node.dialectUri];
+    if (dialect == null) {
+      _fail(
+        node,
+        r'$schema',
+        'Unsupported or unsupplied dialect: ${node.dialectUri}.',
+        code: 'unsupported_dialect',
+      );
+    }
+    final vocabulary = switch (dialect.source) {
+      final Map<String, Object?> source => source[r'$vocabulary'],
+      _ => null,
+    };
+    if (vocabulary is! Map<String, Object?>) {
+      _fail(
+        node,
+        r'$schema',
+        'Dialect has no declared vocabularies: ${node.dialectUri}.',
+        code: 'unsupported_dialect',
+      );
+    }
+    for (final entry in vocabulary.entries) {
+      if (entry.value == true && !knownVocabularies.contains(entry.key)) {
+        _fail(
+          node,
+          r'$schema',
+          'Unknown required vocabulary: ${entry.key}.',
+          code: 'unsupported_vocabulary',
+        );
+      }
+    }
+    node.validationVocabulary = vocabulary.containsKey(validationVocabularyUri);
+    node.formatAssertion =
+        assertFormats || vocabulary.containsKey(formatAssertionVocabularyUri);
   }
 
   List<_ImportedNode> _compileReachable(_ImportedNode root) {
     final nodes = <_ImportedNode>[];
     final pending = Queue<_ImportedNode>()..add(root);
     final compiled = <_ImportedNode>{};
-    while (pending.isNotEmpty) {
-      final node = pending.removeFirst();
-      if (!compiled.add(node)) continue;
-      _compileNode(node);
-      nodes.add(node);
-      pending.addAll(node.dependencies);
+    while (true) {
+      while (pending.isNotEmpty) {
+        final node = pending.removeFirst();
+        if (!compiled.add(node)) continue;
+        _compileNode(node);
+        nodes.add(node);
+        pending.addAll(node.dependencies);
+      }
+      if (!nodes.any((node) => node.dynamicReference != null)) break;
+      final activeResources = nodes.map((node) => node.baseUri).toSet();
+      final anchorsToCompile = dynamicAnchors.entries
+          .where(
+            (entry) => activeResources.contains(entry.key.removeFragment()),
+          )
+          .map((entry) => entry.value)
+          .where((node) => !compiled.contains(node));
+      if (anchorsToCompile.isEmpty) break;
+      pending.addAll(anchorsToCompile);
     }
     return nodes;
   }
@@ -322,7 +459,15 @@ final class _JsonSchemaCompiler {
     // A reference can designate a schema inside an extension container, such
     // as A2UI's /components/Text. Only explicitly targeted locations become
     // schemas; objects in defaults and enum values are never scanned as schemas.
-    return _index(value!, resource.documentUri, pointer, base);
+    final indexed = _index(
+      value!,
+      resource.documentUri,
+      pointer,
+      base,
+      dialect: resource.dialectUri,
+    );
+    _configureDialect(indexed);
+    return indexed;
   }
 
   void _compileNode(_ImportedNode node) {
@@ -335,6 +480,7 @@ final class _JsonSchemaCompiler {
         r'$id',
         r'$schema',
         r'$anchor',
+        r'$dynamicAnchor',
         r'$defs',
         'definitions',
       }.contains(key)) {
@@ -342,14 +488,46 @@ final class _JsonSchemaCompiler {
       }
       if (annotations.contains(key)) {
         final valid = switch (key) {
-          'title' || 'description' || r'$comment' => value is String,
+          'title' ||
+          'description' ||
+          r'$comment' ||
+          'format' ||
+          'contentEncoding' ||
+          'contentMediaType' => value is String,
           'readOnly' || 'writeOnly' || 'deprecated' => value is bool,
           'examples' => value is List,
+          'contentSchema' => value is bool || value is Map<String, Object?>,
           _ => true,
         };
         if (!valid) _fail(node, key, 'Invalid annotation value for "$key".');
+        if (key == 'format' &&
+            node.formatAssertion &&
+            !_isSupportedJsonSchemaFormat(value as String)) {
+          _fail(
+            node,
+            key,
+            'Unknown asserted format: $value.',
+            code: 'unsupported_format',
+          );
+        }
         node.keywords[key] = value;
-      } else if (key == r'$ref') {
+      } else if (key == r'$vocabulary') {
+        if (value is! Map<String, Object?> ||
+            value.values.any((required) => required is! bool)) {
+          _fail(node, key, 'Expected a map of vocabulary URIs to booleans.');
+        }
+        for (final entry in value.entries) {
+          if (entry.value == true && !knownVocabularies.contains(entry.key)) {
+            _fail(
+              node,
+              key,
+              'Unknown required vocabulary: ${entry.key}.',
+              code: 'unsupported_vocabulary',
+            );
+          }
+        }
+        node.keywords[key] = value;
+      } else if (key == r'$ref' || key == r'$dynamicRef') {
         if (value is! String) _fail(node, key, 'Expected a URI string.');
         final uri = _resolve(node, key, node.baseUri, value);
         final resource = resources[uri.removeFragment()];
@@ -382,8 +560,27 @@ final class _JsonSchemaCompiler {
             code: 'unresolved_reference',
           );
         }
-        node.reference = target;
-      } else if (key == 'properties') {
+        if (key == r'$ref') {
+          node.reference = target;
+        } else {
+          node.dynamicReference = target;
+          if (!fragment.startsWith('/') &&
+              target.dynamicAnchorName == fragment) {
+            node.dynamicReferenceName = fragment;
+          }
+        }
+      } else if (key == 'properties' ||
+          key == 'patternProperties' ||
+          key == 'dependentSchemas') {
+        if (key == 'patternProperties') {
+          for (final pattern in (value as Map<String, Object?>).keys) {
+            try {
+              RegExp(pattern, unicode: true);
+            } on FormatException catch (e) {
+              _fail(node, key, 'Invalid pattern property: ${e.message}');
+            }
+          }
+        }
         node.maps[key] = {
           for (final name in (value as Map<String, Object?>).keys)
             name: _child(node, '$key/${_importPointerToken(name)}'),
@@ -393,19 +590,15 @@ final class _JsonSchemaCompiler {
         'additionalProperties',
         'not',
         'propertyNames',
+        'contains',
+        'if',
+        'then',
+        'else',
+        'unevaluatedProperties',
+        'unevaluatedItems',
       }.contains(key)) {
-        if ((key == 'items' && source.containsKey('prefixItems')) ||
-            (key == 'additionalProperties' &&
-                source.containsKey('patternProperties'))) {
-          _unsupported(
-            node,
-            key,
-            'Cannot retain $key without its unsupported sibling.',
-          );
-        } else {
-          node.children[key] = _child(node, key);
-        }
-      } else if ({'anyOf', 'allOf', 'oneOf'}.contains(key)) {
+        node.children[key] = _child(node, key);
+      } else if ({'anyOf', 'allOf', 'oneOf', 'prefixItems'}.contains(key)) {
         node.lists[key] = [
           for (var i = 0; i < (value as List).length; i++)
             _child(node, '$key/$i'),
@@ -438,6 +631,17 @@ final class _JsonSchemaCompiler {
           _fail(node, key, 'Expected a list of unique property names.');
         }
         node.keywords[key] = value;
+      } else if (key == 'dependentRequired') {
+        if (value is! Map<String, Object?> ||
+            value.values.any(
+              (names) =>
+                  names is! List ||
+                  names.any((name) => name is! String) ||
+                  names.toSet().length != names.length,
+            )) {
+          _fail(node, key, 'Expected a map of unique property-name lists.');
+        }
+        node.keywords[key] = value;
       } else if (key == 'enum') {
         if (value is! List) {
           _fail(node, key, 'Expected an enum array.');
@@ -452,13 +656,20 @@ final class _JsonSchemaCompiler {
         node.keywords[key] = List<Object?>.unmodifiable(unique);
       } else if (key == 'const') {
         node.keywords[key] = value;
-      } else if (counts.contains(key)) {
+      } else if (counts.contains(key) ||
+          key == 'minContains' ||
+          key == 'maxContains') {
         if (value is! num || value < 0 || value % 1 != 0) {
           _fail(node, key, 'Expected a non-negative integer.');
         }
         node.keywords[key] = value;
       } else if (bounds.contains(key)) {
         if (value is! num) _fail(node, key, 'Expected a number.');
+        node.keywords[key] = value;
+      } else if (key == 'multipleOf') {
+        if (value is! num || !value.isFinite || value <= 0) {
+          _fail(node, key, 'Expected a positive finite number.');
+        }
         node.keywords[key] = value;
       } else if (key == 'uniqueItems') {
         if (value is! bool) _fail(node, key, 'Expected a boolean.');
@@ -468,13 +679,15 @@ final class _JsonSchemaCompiler {
           _fail(node, key, 'Expected a regular expression string.');
         }
         try {
-          RegExp(value);
+          RegExp(value, unicode: true);
         } on FormatException catch (e) {
           _fail(node, key, 'Invalid regular expression: ${e.message}');
         }
         node.keywords[key] = value;
       } else {
-        _unsupported(node, key, 'Keyword "$key" is not supported.');
+        // Unknown keywords are annotations in the standard 2020-12 dialect.
+        // Their JSON values survive export, but never assert against instances.
+        node.keywords[key] = value;
       }
     }
   }

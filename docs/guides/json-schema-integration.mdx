@@ -2,17 +2,18 @@
 title: JSON Schema Integration
 ---
 
-Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can export it as JSON Schema (Draft-7) and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth.
+Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can export it as JSON Schema and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth. The existing export is Draft-7; imported schemas can opt into resource-preserving draft 2020-12 output.
 
 ## Importing published schemas
 
 Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
 (a map or boolean, not a JSON string) into an
 `AckSchema<Object, Object>`. The input dialect is draft 2020-12, including
-when `$schema` is absent. Other explicitly declared dialects are rejected.
+when `$schema` is absent. Supplied custom 2020-12 dialects can select supported
+vocabularies; unknown required vocabularies and unsupplied dialects are rejected.
 
-Only the declared `$schema` string is checked — a document is never matched
-against a dialect by shape. Replacing an older draft's `$schema` string does
+Dialect selection uses the declared `$schema` URI, not a document's shape.
+Replacing an older draft's `$schema` string does
 not convert its semantics. Tuple-form `items` (a Draft-7 array) is rejected;
 Draft-7 ignores `$ref` siblings that this importer applies. Draft-4 boolean
 `exclusiveMinimum` and `exclusiveMaximum` values are rejected, and Draft-4
@@ -33,7 +34,7 @@ final AckSchema<Object, Object> schema = Ack.fromJsonSchema({
 });
 
 final user = schema.parse({'name': 'Ada', 'age': 36});
-final exported = schema.toJsonSchema();
+final exported = schema.toJsonSchemaPreservingImportedDialect();
 ```
 
 The returned abstract `AckSchema<Object, Object>` composes with native
@@ -46,10 +47,12 @@ match `integer`, and null array elements are supported.
 
 ### Design: reuse the existing export boundary
 
-`AckSchema.toJsonSchema()` remains the export API. Imported schemas participate
-in the same `AckSchema` → `AckSchemaModel` → JSON Schema path as native schemas;
-the builder bridge delegates to that path too. There is no second public
-exporter or dependency on a Flutter runtime.
+`AckSchema.toJsonSchema()` and `toSchemaModel()` keep the 1.x Draft-7 output,
+including imported `definitions` / `$ref` entries. Use
+`toJsonSchemaPreservingImportedDialect()` or
+`toSchemaModelPreservingImportedDialect()` when an imported schema needs its
+draft 2020-12 resource and reference semantics. Both modes use the same
+`AckSchema` → `AckSchemaModel` → JSON Schema path.
 
 You can import an existing export directly:
 
@@ -64,37 +67,33 @@ The source document and executable validator are distinct.
 strictly. The importer preserves supported JSON validation semantics,
 not the original Dart declaration: JSON cannot recover codecs, Dart model
 types, custom callbacks, or refinements that were absent from the export.
-Exports containing unsupported keywords are rejected.
+Unknown extension keywords are retained as inert annotations. Unknown required
+vocabularies and unsupported asserted formats are rejected.
 
-### Supported import subset
+### Runtime import support
 
 | Area | Keywords |
 | --- | --- |
 | Schemas and types | Boolean schemas, `type` (including lists and `null`) |
 | Equality | `enum`, `const`, including nested JSON values and empty enums |
-| Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
-| Arrays | Single-schema `items`, `minItems`, `maxItems`, `uniqueItems` |
-| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search, no `u` flag) |
-| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
-| Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
-| References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
-| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
+| Objects | `properties`, `required`, `additionalProperties`, `patternProperties`, `propertyNames`, `dependentSchemas`, `dependentRequired`, `unevaluatedProperties`, property-count bounds |
+| Arrays | `items`, `prefixItems`, `contains`, `minContains`, `maxContains`, `unevaluatedItems`, length bounds, `uniqueItems` |
+| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored Unicode-mode search) |
+| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf` |
+| Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`, `if`/`then`/`else`; sibling assertions are intersected |
+| References | `$ref`, `$dynamicRef`, `$id`, `$anchor`, `$dynamicAnchor`, `$defs`, `definitions`; local/cross-document pointers and structural recursion |
+| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated`, `format`, content keywords, unknown extensions |
 
-`pattern` compiles without ECMA-262's `u` flag, matching the default
-`RegExp`. Unicode property escapes (`\p{...}`, `\P{...}`) are therefore
-identity escapes rather than character classes, and patterns that only `u`
-mode rejects — an escaped hyphen outside a character class, for example —
-still import. This can differ from validators such as Ajv, which enables `u`
-by default: `pattern: "^.$"` rejects `"😀"` here but accepts it with `u`.
-Test patterns in both validators if their results must agree.
+`pattern` uses Unicode-mode matching, including Unicode property escapes.
+Imported schemas do not coerce instance values or inject `default` values.
 
-This is deliberately not a complete JSON Schema validator. Unsupported
-keywords include `format`, `multipleOf`, `patternProperties`, `prefixItems`,
-`contains`, conditional/dependent/unevaluated keywords, dynamic references,
-and custom vocabulary declarations. Unknown extension keywords are also
-reported. `format` is not enforced, even for formats Ack's native string
-schemas can validate. References to the 2020-12 meta-schema fail strict import.
-The meta-schema itself is not validated.
+The complete required draft 2020-12 test suite passes for source validation
+and export/re-import. Optional format assertions are exercised separately;
+other optional vocabularies are not claimed as complete.
+`format` is an annotation by default. Pass `assertFormats: true` to enforce
+supported formats, or supply a dialect requiring the format-assertion
+vocabulary. Unknown asserted formats fail compilation. Standard 2020-12
+meta-schema resources resolve offline.
 
 ### References and bundles
 
@@ -121,31 +120,28 @@ final AckSchema<Object, Object> schema = Ack.fromJsonSchema(
 );
 ```
 
-Exports are self-contained, Draft-7-compatible documents with root-scoped
-`definitions` and rewritten references. Original IDs, reference spellings,
-and document layout are not preserved. Validation equivalence is the contract,
-not textual identity. Imported schemas can be nested inside native objects and
-combined with other imported or lazy schemas without losing reference scope.
-Explicit JSON Pointers may also target schemas inside extension containers,
-such as A2UI's `#/components/Text`. Such containers are not scanned as schemas
-unless referenced. Empty and duplicate enums are normalized to valid Draft-7
-representations without changing the values they accept.
+The explicit preserving export emits self-contained draft 2020-12 documents with
+resource identity and reference semantics intact. Validation equivalence is
+the contract, not textual identity. Imported schemas can be nested inside
+native objects and combined with other imported or lazy schemas without
+losing reference scope. Explicit JSON Pointers may also target schemas
+inside extension containers, such as A2UI's `#/components/Text`. Such
+containers are not scanned as schemas unless referenced. Empty and duplicate
+enums retain draft 2020-12 semantics.
 
 ### Import failures and diagnostics
 
 Unsupported features throw
 `JsonSchemaImportException`, whose `diagnostics` identify each source document,
 keyword, JSON Pointer, reason code, and explanation. Assertion diagnostics
-cover the validation graph reachable from the imported root. Unsupported
-assertions in unused definitions or unrelated supplied documents do not make
-the import fail. Schema resource IDs still need to be unambiguous.
+cover the validation graph reachable from the imported root. Schema resource
+IDs and declared dialects must still be unambiguous and supported.
 
 Malformed supported keywords, unresolved references, duplicate resource IDs,
 unsupported dialects, and reference cycles that do not descend into an instance
-are errors. The importer checks schema structure and the keywords it compiles;
-it is not full meta-schema validation of unused definitions or unsupported
-vocabularies. Structural recursion is supported without adding an arbitrary
-validation-depth constraint.
+are errors. The importer checks schema structure and supported vocabularies;
+it does not establish conformance for every optional vocabulary. Structural
+recursion is supported without adding an arbitrary validation-depth constraint.
 
 ### Importing json_schema_builder models
 
@@ -161,8 +157,9 @@ final AckSchema<Object, Object> ackSchema =
 final builderSchema = ackSchema.toJsonSchemaBuilder();
 ```
 
-`toAckSchema({baseUri, documents})` is strict and returns the validator directly.
-It accepts `Map<Uri, jsb.Schema>` bundles.
+`toAckSchema({baseUri, documents})` returns the validator directly and accepts
+`Map<Uri, jsb.Schema>` bundles. The bridge's format-assertion and preserving
+export options are introduced in the follow-up integration PR.
 
 MCP registration compatibility is deferred to separate work; importing a
 schema does not establish compatibility with a tool-registration API.
@@ -172,21 +169,23 @@ schema does not establish compatibility with a tool-registration API.
 Offline regression fixtures pin five representative A2UI v0.9 protocol schemas
 to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
 
-The basic catalog is **not an exact supported import**: it additionally uses
-unevaluated-property checks, conditionals, formats, and an extension
-keyword. Import therefore fails with diagnostics. The client event schema
-reports its date-time format, and client capabilities report the three
-meta-schema references. Test the specific catalog your application uses;
-successful validation of examples does not prove complete catalog conformance.
+Selected client data, event, capabilities, and common-type schemas import
+offline. Client event `date-time` is an annotation by default; client
+capabilities validate embedded schemas against bundled meta-schema resources.
+Test the specific catalog your application uses: passing representative
+examples does not prove full A2UI or MCP registration compatibility.
 
-The committed conformance tests contain 631 upstream JSON Schema instance cases
-across 186 groups in the supported subset, including supplied remote documents.
-They check parse, encode, and re-imported exports without network access.
+The selected regression fixture contains 1,178 upstream instance cases across
+341 groups. The complete required draft 2020-12 suite and supplied remote
+documents also run offline in source-validation and export/re-import modes.
 Unsupported cases are not silently skipped within those fixtures.
 
 ## Generating JSON schemas
 
-Call `toJsonSchema()` on any `AckSchema` instance. This is the same generic Draft-7 renderer used by `schema.toSchemaModel().toJsonSchema()`.
+Call `toJsonSchema()` on any `AckSchema` instance for the stable Draft-7
+representation. Imported schemas needing full 2020-12 semantics use
+`toJsonSchemaPreservingImportedDialect()` instead. The matching model API is
+`toSchemaModelPreservingImportedDialect()`; native schemas stay Draft-7.
 
 ```dart
 import 'dart:convert';
@@ -238,7 +237,7 @@ for (final warning in model.warnings) {
 }
 ```
 
-`AckSchemaModel` describes the boundary values a schema accepts and exports, keeping adapter metadata such as property ordering and discriminator info. Its JSON Schema renderer emits only generic Draft-7-compatible output; provider-specific hints belong in adapter renderers.
+`AckSchemaModel` describes the boundary values a schema accepts and exports, keeping adapter metadata such as property ordering and discriminator info. The default model renders Draft-7, including imports; the preserving model retains imported draft 2020-12 resources. Provider-specific hints belong in adapter renderers.
 
 **Output JSON (JSON Schema Object):**
 
@@ -357,7 +356,8 @@ Ack maps its [built-in constraints](../core-concepts/validation.mdx) to correspo
 
 ## Shape stability notes
 
-`toJsonSchema()` renders generic Draft-7 JSON Schema with stable nullability rules:
+For native Ack schemas, `toJsonSchema()` renders generic Draft-7 JSON Schema
+with stable nullability rules:
 
 - Primitive/object/list/enum schemas marked with `.nullable()` are emitted as:
   - `anyOf: [<base-schema>, { "type": "null" }]`

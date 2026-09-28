@@ -18,15 +18,26 @@ extension AckSchemaModelExtension<
 >
     on AckSchema<Boundary, Runtime> {
   AckSchemaModel toSchemaModel() => _SchemaModelBuilder().build(this);
+
+  /// Preserves imported Draft 2020-12 resources, including dynamic references.
+  /// Native Ack schemas continue to use their Draft-7 representation.
+  AckSchemaModel toSchemaModelPreservingImportedDialect() =>
+      _SchemaModelBuilder(preserveImportedDialect: true).build(this);
+
+  /// Exports imported schemas with their Draft 2020-12 dialect and resources.
+  Map<String, Object?> toJsonSchemaPreservingImportedDialect() =>
+      toSchemaModelPreservingImportedDialect().toJsonSchema();
 }
 
 final class _SchemaModelBuilder {
+  _SchemaModelBuilder({this.preserveImportedDialect = false});
+
+  final bool preserveImportedDialect;
   // Every emitted definition name is reserved here. A null value marks a lazy
   // target that is currently being built.
   final _definitions = <String, Object?>{};
 
-  // Lazy-target identity is tracked separately because imported definitions
-  // are complete schema bodies, not recursive lazy targets.
+  // Lazy-target identity is tracked separately from emitted definitions.
   final _lazyTargets = <String, Object>{};
   var _importCount = 0;
 
@@ -161,7 +172,17 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel _imported(ImportedJsonSchema schema) {
-    final prefix = '_ack_import_${_importCount++}_';
+    final importIndex = _importCount++;
+    if (preserveImportedDialect) {
+      return AckRawSchemaModel(
+        schema: schema.export2020Document(importIndex: importIndex),
+        description: schema.description,
+        nullable:
+            schema.isNullable &&
+            (!schema.sourceAllowsNull || schema.constraints.isNotEmpty),
+      );
+    }
+    final prefix = '_ack_import_${importIndex}_';
     for (final entry in schema.exportDefinitions(prefix).entries) {
       if (_definitions.containsKey(entry.key)) {
         throw ArgumentError(
@@ -171,8 +192,6 @@ final class _SchemaModelBuilder {
       _definitions[entry.key] = entry.value;
     }
     final sourceNullable = schema.sourceAllowsNull;
-    // Draft-7 ignores siblings of a bare $ref. Keep the imported root in an
-    // allOf envelope so fluent metadata and constraints remain effective.
     return AckAllOfSchemaModel(
       schemas: [AckRefSchemaModel(refName: '${prefix}0')],
       description: schema.description,

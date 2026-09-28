@@ -6,6 +6,31 @@ AnyOfSchema _nullableUnion() =>
     Ack.anyOf([Ack.string().nullable(), Ack.integer()]);
 
 void main() {
+  group('nullable wrapper composition', () {
+    test('keeps optional fields optional and retains their description', () {
+      final field = Ack.string().optional().describe('Display name').nullable();
+      final schema = Ack.object({'name': field});
+
+      expect(field.isOptional, isTrue);
+      expect(field.description, 'Display name');
+      expect(schema.safeParse({}).isOk, isTrue);
+      expect(schema.safeEncode({}).isOk, isTrue);
+      expect(schema.safeParse({'name': null}).isOk, isTrue);
+    });
+
+    test('enforces refinements added after nullable on parse and encode', () {
+      final schema = Ack.string().nullable().refine(
+        (value) => value != 'blocked',
+        message: 'Blocked name',
+      );
+
+      expect(schema.safeParse('blocked').isFail, isTrue);
+      expect(schema.safeEncode('blocked').isFail, isTrue);
+      expect(schema.safeParse('allowed').isOk, isTrue);
+      expect(schema.safeParse(null).isOk, isTrue);
+    });
+  });
+
   group('effective nullability — object fields', () {
     test('required nullable-union field parses and encodes null', () {
       final schema = Ack.object({'v': _nullableUnion()});

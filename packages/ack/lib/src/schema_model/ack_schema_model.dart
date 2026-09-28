@@ -241,6 +241,10 @@ sealed class AckSchemaModel {
         keywords,
         commonHandled,
       ),
+      AckRawSchemaModel schema => schema._withJsonSchemaKeywords(
+        keywords,
+        commonHandled,
+      ),
       AckNullSchemaModel schema => schema._withJsonSchemaKeywords(
         keywords,
         commonHandled,
@@ -326,6 +330,133 @@ sealed class AckSchemaModel {
       deepEq.hash(warnings),
     );
   }
+}
+
+/// A precompiled JSON Schema resource whose 2020-12 keywords must remain
+/// attached to their original resource instead of being lowered to Draft 7.
+final class AckRawSchemaModel extends AckSchemaModel {
+  const AckRawSchemaModel({
+    required this.schema,
+    super.title,
+    super.description,
+    super.nullable,
+    super.defaultValue,
+    super.warnings,
+    super.extensions,
+  });
+
+  AckRawSchemaModel._(_AckSchemaModelCommon common, {required this.schema})
+    : super._(common);
+
+  final Map<String, Object?> schema;
+
+  @override
+  Map<String, Object?> toJsonSchema() {
+    final body = {...schema, ..._common.toJson()};
+    if (!nullable) return body;
+    const resourceKeywords = {r'$schema', r'$id', r'$defs', 'definitions'};
+    final relocated = _relocateRootPointers(
+      body,
+      Uri.parse(body[r'$id'] as String),
+      resourceKeywords,
+    );
+    final resource = <String, Object?>{
+      for (final entry in relocated.entries)
+        if (resourceKeywords.contains(entry.key)) entry.key: entry.value,
+    };
+    final assertion = <String, Object?>{
+      for (final entry in relocated.entries)
+        if (!resourceKeywords.contains(entry.key)) entry.key: entry.value,
+    };
+    return {
+      ...resource,
+      'anyOf': [assertion, _nullSchemaJson],
+    };
+  }
+
+  @override
+  AckRawSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
+      AckRawSchemaModel._(common, schema: schema);
+
+  AckSchemaModel _withJsonSchemaKeywords(
+    Map<String, Object?> keywords,
+    Set<String> commonHandled,
+  ) => _withUnhandledKeywords(keywords, commonHandled);
+}
+
+Map<String, Object?> _relocateRootPointers(
+  Map<String, Object?> source,
+  Uri rootUri,
+  Set<String> retainedKeywords,
+) {
+  const mapKeywords = {
+    r'$defs',
+    'definitions',
+    'properties',
+    'patternProperties',
+    'dependentSchemas',
+  };
+  const childKeywords = {
+    'items',
+    'additionalProperties',
+    'not',
+    'contains',
+    'propertyNames',
+    'if',
+    'then',
+    'else',
+    'unevaluatedProperties',
+    'unevaluatedItems',
+  };
+  const listKeywords = {'anyOf', 'allOf', 'oneOf', 'prefixItems'};
+
+  Object? visit(Object? value, Uri base) {
+    if (value is! Map<String, Object?>) return value;
+    final declaredId = value[r'$id'];
+    final currentBase = declaredId is String
+        ? base.resolve(declaredId).removeFragment()
+        : base;
+    final rewritten = Map<String, Object?>.from(value);
+    for (final key in [r'$ref', r'$dynamicRef']) {
+      final reference = rewritten[key];
+      if (reference is! String) continue;
+      final resolved = currentBase.resolve(reference);
+      final fragment = resolved.fragment;
+      if (resolved.removeFragment() != rootUri) continue;
+      if (fragment.isEmpty) {
+        rewritten[key] = rootUri.replace(fragment: '/anyOf/0').toString();
+        continue;
+      }
+      if (!fragment.startsWith('/')) continue;
+      final first = fragment.substring(1).split('/').first;
+      if (retainedKeywords.contains(first)) continue;
+      rewritten[key] = rootUri
+          .replace(fragment: '/anyOf/0$fragment')
+          .toString();
+    }
+    for (final key in mapKeywords) {
+      if (rewritten[key] case final Map<String, Object?> children) {
+        rewritten[key] = children.map(
+          (name, child) => MapEntry(name, visit(child, currentBase)),
+        );
+      }
+    }
+    for (final key in childKeywords) {
+      if (rewritten.containsKey(key)) {
+        rewritten[key] = visit(rewritten[key], currentBase);
+      }
+    }
+    for (final key in listKeywords) {
+      if (rewritten[key] case final List children) {
+        rewritten[key] = [
+          for (final child in children) visit(child, currentBase),
+        ];
+      }
+    }
+    return rewritten;
+  }
+
+  return visit(source, rootUri)! as Map<String, Object?>;
 }
 
 final class AckRefSchemaModel extends AckSchemaModel {
