@@ -35,7 +35,7 @@ final userSchema = Ack.object({
 ```
 
 `ack_generator` emits an immutable `User` class with typed fields, an unchecked
-constructor, parsing helpers, JSON methods, generated `copyWith`, deep
+constructor, parsing helpers, JSON methods, a typed `copyWith`, deep
 collection-aware equality, and a public `$ack` adapter. The Ack part owns those
 declarations; `json_serializable` writes the structural field-mapping helpers
 into `user.ack.g.dart`. Ack-only apps do not add JSON packages for generated

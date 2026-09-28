@@ -1,6 +1,9 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format width=80
 
+// ignore_for_file: type=lint
+// coverage:ignore-file
+
 part of 'schema_types_edge_cases.dart';
 
 // **************************************************************************
@@ -10,6 +13,10 @@ part of 'schema_types_edge_cases.dart';
 /// Immutable model generated from `productSchema`.
 @AckInfer.jsonSerializable
 final class Product {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Product({
     required this.name,
     required List<String> tags,
@@ -19,10 +26,16 @@ final class Product {
        scores = List<int>.unmodifiable(scores.map((item) => item)),
        flags = List<bool>.unmodifiable(flags.map((item) => item));
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Product.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Product.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -35,30 +48,28 @@ final class Product {
 
   final List<bool> flags;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => productSchema,
     fromRuntime: Product._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Product> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Product copyWith({
-    String? name,
-    List<String>? tags,
-    List<int>? scores,
-    List<bool>? flags,
-  }) => Product(
-    name: name ?? this.name,
-    tags: tags ?? this.tags,
-    scores: scores ?? this.scores,
-    flags: flags ?? this.flags,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $ProductCopyWith<Product> get copyWith => _$ProductCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -113,18 +124,61 @@ final class Product {
       value.map((item) => item).toList(growable: false);
 }
 
+/// Creates copies of [Product] with selected fields replaced.
+abstract interface class $ProductCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({
+    String? name,
+    List<String>? tags,
+    List<int>? scores,
+    List<bool>? flags,
+  });
+}
+
+final class _$ProductCopyWith implements $ProductCopyWith<Product> {
+  const _$ProductCopyWith(this._source);
+
+  final Product _source;
+
+  @override
+  Product call({
+    String? name,
+    List<String>? tags,
+    List<int>? scores,
+    List<bool>? flags,
+  }) => Product(
+    name: name ?? _source.name,
+    tags: tags ?? _source.tags,
+    scores: scores ?? _source.scores,
+    flags: flags ?? _source.flags,
+  );
+}
+
 /// Immutable model generated from `gridSchema`.
 @AckInfer.jsonSerializable
 final class Grid {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Grid({required this.name, required List<List<int>> matrix})
     : matrix = List<List<int>>.unmodifiable(
         matrix.map((item) => List<int>.unmodifiable(item.map((item) => item))),
       );
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Grid.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Grid.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -133,20 +187,27 @@ final class Grid {
 
   final List<List<int>> matrix;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => gridSchema,
     fromRuntime: Grid._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Grid> safeParse(Object? input) => $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Grid copyWith({String? name, List<List<int>>? matrix}) =>
-      Grid(name: name ?? this.name, matrix: matrix ?? this.matrix);
+  /// Creates a copy of this model with selected fields replaced.
+  $GridCopyWith<Grid> get copyWith => _$GridCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -183,9 +244,32 @@ final class Grid {
       .toList(growable: false);
 }
 
+/// Creates copies of [Grid] with selected fields replaced.
+abstract interface class $GridCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? name, List<List<int>>? matrix});
+}
+
+final class _$GridCopyWith implements $GridCopyWith<Grid> {
+  const _$GridCopyWith(this._source);
+
+  final Grid _source;
+
+  @override
+  Grid call({String? name, List<List<int>>? matrix}) =>
+      Grid(name: name ?? _source.name, matrix: matrix ?? _source.matrix);
+}
+
 /// Immutable model generated from `addressSchema`.
 @AckInfer.jsonSerializable
 final class Address {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Address({
     required this.street,
     required this.city,
@@ -193,10 +277,16 @@ final class Address {
     required this.country,
   });
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Address.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Address.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -209,30 +299,28 @@ final class Address {
 
   final String country;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => addressSchema,
     fromRuntime: Address._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Address> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Address copyWith({
-    String? street,
-    String? city,
-    String? zipCode,
-    String? country,
-  }) => Address(
-    street: street ?? this.street,
-    city: city ?? this.city,
-    zipCode: zipCode ?? this.zipCode,
-    country: country ?? this.country,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $AddressCopyWith<Address> get copyWith => _$AddressCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -281,9 +369,46 @@ final class Address {
   static Object? _ackToRuntimeCountry(String value) => value;
 }
 
+/// Creates copies of [Address] with selected fields replaced.
+abstract interface class $AddressCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({
+    String? street,
+    String? city,
+    String? zipCode,
+    String? country,
+  });
+}
+
+final class _$AddressCopyWith implements $AddressCopyWith<Address> {
+  const _$AddressCopyWith(this._source);
+
+  final Address _source;
+
+  @override
+  Address call({
+    String? street,
+    String? city,
+    String? zipCode,
+    String? country,
+  }) => Address(
+    street: street ?? _source.street,
+    city: city ?? _source.city,
+    zipCode: zipCode ?? _source.zipCode,
+    country: country ?? _source.country,
+  );
+}
+
 /// Immutable model generated from `personSchema`.
 @AckInfer.jsonSerializable
 final class Person {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Person({
     required this.name,
     required this.email,
@@ -291,10 +416,16 @@ final class Person {
     required this.age,
   });
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Person.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Person.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -307,25 +438,27 @@ final class Person {
 
   final int age;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => personSchema,
     fromRuntime: Person._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Person> safeParse(Object? input) => $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Person copyWith({String? name, String? email, Address? address, int? age}) =>
-      Person(
-        name: name ?? this.name,
-        email: email ?? this.email,
-        address: address ?? this.address,
-        age: age ?? this.age,
-      );
+  /// Creates a copy of this model with selected fields replaced.
+  $PersonCopyWith<Person> get copyWith => _$PersonCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -376,9 +509,37 @@ final class Person {
   static Object? _ackToRuntimeAge(int value) => value;
 }
 
+/// Creates copies of [Person] with selected fields replaced.
+abstract interface class $PersonCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? name, String? email, Address? address, int? age});
+}
+
+final class _$PersonCopyWith implements $PersonCopyWith<Person> {
+  const _$PersonCopyWith(this._source);
+
+  final Person _source;
+
+  @override
+  Person call({String? name, String? email, Address? address, int? age}) =>
+      Person(
+        name: name ?? _source.name,
+        email: email ?? _source.email,
+        address: address ?? _source.address,
+        age: age ?? _source.age,
+      );
+}
+
 /// Immutable model generated from `employeeSchema`.
 @AckInfer.jsonSerializable
 final class Employee {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Employee({
     required this.name,
     required this.employeeId,
@@ -386,10 +547,16 @@ final class Employee {
     required this.workAddress,
   });
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Employee.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Employee.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -402,30 +569,28 @@ final class Employee {
 
   final Address workAddress;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => employeeSchema,
     fromRuntime: Employee._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Employee> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Employee copyWith({
-    String? name,
-    String? employeeId,
-    Address? homeAddress,
-    Address? workAddress,
-  }) => Employee(
-    name: name ?? this.name,
-    employeeId: employeeId ?? this.employeeId,
-    homeAddress: homeAddress ?? this.homeAddress,
-    workAddress: workAddress ?? this.workAddress,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $EmployeeCopyWith<Employee> get copyWith => _$EmployeeCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -478,13 +643,46 @@ final class Employee {
       Address.$ack.toRuntime(value);
 }
 
-final class _ModifierCopyWithUnset {
-  const _ModifierCopyWithUnset();
+/// Creates copies of [Employee] with selected fields replaced.
+abstract interface class $EmployeeCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({
+    String? name,
+    String? employeeId,
+    Address? homeAddress,
+    Address? workAddress,
+  });
+}
+
+final class _$EmployeeCopyWith implements $EmployeeCopyWith<Employee> {
+  const _$EmployeeCopyWith(this._source);
+
+  final Employee _source;
+
+  @override
+  Employee call({
+    String? name,
+    String? employeeId,
+    Address? homeAddress,
+    Address? workAddress,
+  }) => Employee(
+    name: name ?? _source.name,
+    employeeId: employeeId ?? _source.employeeId,
+    homeAddress: homeAddress ?? _source.homeAddress,
+    workAddress: workAddress ?? _source.workAddress,
+  );
 }
 
 /// Immutable model generated from `modifierSchema`.
 @AckInfer.jsonSerializable
 final class Modifier {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Modifier({
     required this.requiredField,
     this.optionalField,
@@ -493,16 +691,19 @@ final class Modifier {
     this.nullableOptional,
   });
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Modifier.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Modifier.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
-
-  static const _ModifierCopyWithUnset _ackCopyWithUnset =
-      _ModifierCopyWithUnset();
 
   final String requiredField;
 
@@ -514,40 +715,28 @@ final class Modifier {
 
   final String? nullableOptional;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => modifierSchema,
     fromRuntime: Modifier._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Modifier> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Modifier copyWith({
-    String? requiredField,
-    Object? optionalField = _ackCopyWithUnset,
-    Object? nullableField = _ackCopyWithUnset,
-    Object? optionalNullable = _ackCopyWithUnset,
-    Object? nullableOptional = _ackCopyWithUnset,
-  }) => Modifier(
-    requiredField: requiredField ?? this.requiredField,
-    optionalField: identical(optionalField, _ackCopyWithUnset)
-        ? this.optionalField
-        : optionalField as String?,
-    nullableField: identical(nullableField, _ackCopyWithUnset)
-        ? this.nullableField
-        : nullableField as String?,
-    optionalNullable: identical(optionalNullable, _ackCopyWithUnset)
-        ? this.optionalNullable
-        : optionalNullable as String?,
-    nullableOptional: identical(nullableOptional, _ackCopyWithUnset)
-        ? this.nullableOptional
-        : nullableOptional as String?,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $ModifierCopyWith<Modifier> get copyWith => _$ModifierCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -610,13 +799,64 @@ final class Modifier {
   static Object? _ackToRuntimeNullableOptional(String? value) => value;
 }
 
-final class _TaggedItemCopyWithUnset {
-  const _TaggedItemCopyWithUnset();
+final class _ModifierCopyWithUnset {
+  const _ModifierCopyWithUnset();
+}
+
+/// Creates copies of [Modifier] with selected fields replaced.
+abstract interface class $ModifierCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({
+    String? requiredField,
+    String? optionalField,
+    String? nullableField,
+    String? optionalNullable,
+    String? nullableOptional,
+  });
+}
+
+final class _$ModifierCopyWith implements $ModifierCopyWith<Modifier> {
+  const _$ModifierCopyWith(this._source);
+
+  static const _ModifierCopyWithUnset _ackCopyWithUnset =
+      _ModifierCopyWithUnset();
+
+  final Modifier _source;
+
+  @override
+  Modifier call({
+    String? requiredField,
+    Object? optionalField = _ackCopyWithUnset,
+    Object? nullableField = _ackCopyWithUnset,
+    Object? optionalNullable = _ackCopyWithUnset,
+    Object? nullableOptional = _ackCopyWithUnset,
+  }) => Modifier(
+    requiredField: requiredField ?? _source.requiredField,
+    optionalField: identical(optionalField, _ackCopyWithUnset)
+        ? _source.optionalField
+        : optionalField as String?,
+    nullableField: identical(nullableField, _ackCopyWithUnset)
+        ? _source.nullableField
+        : nullableField as String?,
+    optionalNullable: identical(optionalNullable, _ackCopyWithUnset)
+        ? _source.optionalNullable
+        : optionalNullable as String?,
+    nullableOptional: identical(nullableOptional, _ackCopyWithUnset)
+        ? _source.nullableOptional
+        : nullableOptional as String?,
+  );
 }
 
 /// Immutable model generated from `taggedItemSchema`.
 @AckInfer.jsonSerializable
 final class TaggedItem {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   TaggedItem({
     required this.name,
     required List<String> requiredTags,
@@ -638,16 +878,19 @@ final class TaggedItem {
          ),
        };
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory TaggedItem.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory TaggedItem.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
-
-  static const _TaggedItemCopyWithUnset _ackCopyWithUnset =
-      _TaggedItemCopyWithUnset();
 
   final String name;
 
@@ -657,34 +900,28 @@ final class TaggedItem {
 
   final List<String>? nullableTags;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => taggedItemSchema,
     fromRuntime: TaggedItem._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<TaggedItem> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  TaggedItem copyWith({
-    String? name,
-    List<String>? requiredTags,
-    Object? optionalTags = _ackCopyWithUnset,
-    Object? nullableTags = _ackCopyWithUnset,
-  }) => TaggedItem(
-    name: name ?? this.name,
-    requiredTags: requiredTags ?? this.requiredTags,
-    optionalTags: identical(optionalTags, _ackCopyWithUnset)
-        ? this.optionalTags
-        : optionalTags as List<String>?,
-    nullableTags: identical(nullableTags, _ackCopyWithUnset)
-        ? this.nullableTags
-        : nullableTags as List<String>?,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $TaggedItemCopyWith<TaggedItem> get copyWith => _$TaggedItemCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -759,16 +996,70 @@ final class TaggedItem {
       };
 }
 
+final class _TaggedItemCopyWithUnset {
+  const _TaggedItemCopyWithUnset();
+}
+
+/// Creates copies of [TaggedItem] with selected fields replaced.
+abstract interface class $TaggedItemCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({
+    String? name,
+    List<String>? requiredTags,
+    List<String>? optionalTags,
+    List<String>? nullableTags,
+  });
+}
+
+final class _$TaggedItemCopyWith implements $TaggedItemCopyWith<TaggedItem> {
+  const _$TaggedItemCopyWith(this._source);
+
+  static const _TaggedItemCopyWithUnset _ackCopyWithUnset =
+      _TaggedItemCopyWithUnset();
+
+  final TaggedItem _source;
+
+  @override
+  TaggedItem call({
+    String? name,
+    List<String>? requiredTags,
+    Object? optionalTags = _ackCopyWithUnset,
+    Object? nullableTags = _ackCopyWithUnset,
+  }) => TaggedItem(
+    name: name ?? _source.name,
+    requiredTags: requiredTags ?? _source.requiredTags,
+    optionalTags: identical(optionalTags, _ackCopyWithUnset)
+        ? _source.optionalTags
+        : optionalTags as List<String>?,
+    nullableTags: identical(nullableTags, _ackCopyWithUnset)
+        ? _source.nullableTags
+        : nullableTags as List<String>?,
+  );
+}
+
 /// Immutable model generated from `contactListSchema`.
 @AckInfer.jsonSerializable
 final class ContactList {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   ContactList({required this.name, required List<Address> addresses})
     : addresses = List<Address>.unmodifiable(addresses.map((item) => item));
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory ContactList.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory ContactList.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -777,23 +1068,28 @@ final class ContactList {
 
   final List<Address> addresses;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => contactListSchema,
     fromRuntime: ContactList._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<ContactList> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  ContactList copyWith({String? name, List<Address>? addresses}) => ContactList(
-    name: name ?? this.name,
-    addresses: addresses ?? this.addresses,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $ContactListCopyWith<ContactList> get copyWith => _$ContactListCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -833,32 +1129,71 @@ final class ContactList {
       value.map((item) => Address.$ack.toRuntime(item)).toList(growable: false);
 }
 
+/// Creates copies of [ContactList] with selected fields replaced.
+abstract interface class $ContactListCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? name, List<Address>? addresses});
+}
+
+final class _$ContactListCopyWith implements $ContactListCopyWith<ContactList> {
+  const _$ContactListCopyWith(this._source);
+
+  final ContactList _source;
+
+  @override
+  ContactList call({String? name, List<Address>? addresses}) => ContactList(
+    name: name ?? _source.name,
+    addresses: addresses ?? _source.addresses,
+  );
+}
+
 /// Immutable model generated from `emptySchema`.
 @AckInfer.jsonSerializable
 final class Empty {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Empty();
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Empty.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Empty.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => emptySchema,
     fromRuntime: Empty._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Empty> safeParse(Object? input) => $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Empty copyWith() => Empty();
+  /// Creates a copy of this model with selected fields replaced.
+  $EmptyCopyWith<Empty> get copyWith => const _$EmptyCopyWith();
 
   @override
   bool operator ==(Object other) =>
@@ -879,35 +1214,69 @@ final class Empty {
   };
 }
 
+/// Creates copies of [Empty] with selected fields replaced.
+abstract interface class $EmptyCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call();
+}
+
+final class _$EmptyCopyWith implements $EmptyCopyWith<Empty> {
+  const _$EmptyCopyWith();
+
+  @override
+  Empty call() => Empty();
+}
+
 /// Immutable model generated from `minimalSchema`.
 @AckInfer.jsonSerializable
 final class Minimal {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Minimal({required this.id});
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Minimal.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Minimal.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
 
   final String id;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => minimalSchema,
     fromRuntime: Minimal._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Minimal> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Minimal copyWith({String? id}) => Minimal(id: id ?? this.id);
+  /// Creates a copy of this model with selected fields replaced.
+  $MinimalCopyWith<Minimal> get copyWith => _$MinimalCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -934,35 +1303,71 @@ final class Minimal {
   static Object? _ackToRuntimeId(String value) => value;
 }
 
+/// Creates copies of [Minimal] with selected fields replaced.
+abstract interface class $MinimalCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? id});
+}
+
+final class _$MinimalCopyWith implements $MinimalCopyWith<Minimal> {
+  const _$MinimalCopyWith(this._source);
+
+  final Minimal _source;
+
+  @override
+  Minimal call({String? id}) => Minimal(id: id ?? _source.id);
+}
+
 /// Immutable model generated from `namedItemSchema`.
 @AckInfer.jsonSerializable
 final class NamedItem {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   NamedItem({required this.name});
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory NamedItem.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory NamedItem.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
 
   final String name;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => namedItemSchema,
     fromRuntime: NamedItem._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<NamedItem> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  NamedItem copyWith({String? name}) => NamedItem(name: name ?? this.name);
+  /// Creates a copy of this model with selected fields replaced.
+  $NamedItemCopyWith<NamedItem> get copyWith => _$NamedItemCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -989,34 +1394,70 @@ final class NamedItem {
   static Object? _ackToRuntimeName(String value) => value;
 }
 
+/// Creates copies of [NamedItem] with selected fields replaced.
+abstract interface class $NamedItemCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? name});
+}
+
+final class _$NamedItemCopyWith implements $NamedItemCopyWith<NamedItem> {
+  const _$NamedItemCopyWith(this._source);
+
+  final NamedItem _source;
+
+  @override
+  NamedItem call({String? name}) => NamedItem(name: name ?? _source.name);
+}
+
 /// Immutable model generated from `item`.
 @AckInfer.jsonSerializable
 final class Item {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Item({required this.id});
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Item.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Item.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
 
   final String id;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => item,
     fromRuntime: Item._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Item> safeParse(Object? input) => $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Item copyWith({String? id}) => Item(id: id ?? this.id);
+  /// Creates a copy of this model with selected fields replaced.
+  $ItemCopyWith<Item> get copyWith => _$ItemCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -1043,36 +1484,72 @@ final class Item {
   static Object? _ackToRuntimeId(String value) => value;
 }
 
+/// Creates copies of [Item] with selected fields replaced.
+abstract interface class $ItemCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? id});
+}
+
+final class _$ItemCopyWith implements $ItemCopyWith<Item> {
+  const _$ItemCopyWith(this._source);
+
+  final Item _source;
+
+  @override
+  Item call({String? id}) => Item(id: id ?? _source.id);
+}
+
 /// Immutable model generated from `myCustomSchema123`.
 @AckInfer.jsonSerializable
 final class MyCustomSchema123 {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   MyCustomSchema123({required this.value});
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory MyCustomSchema123.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory MyCustomSchema123.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
 
   final String value;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => myCustomSchema123,
     fromRuntime: MyCustomSchema123._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<MyCustomSchema123> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  MyCustomSchema123 copyWith({String? value}) =>
-      MyCustomSchema123(value: value ?? this.value);
+  /// Creates a copy of this model with selected fields replaced.
+  $MyCustomSchema123CopyWith<MyCustomSchema123> get copyWith =>
+      _$MyCustomSchema123CopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -1097,4 +1574,24 @@ final class MyCustomSchema123 {
   static String _ackFromRuntimeValue(Object? value) => value as String;
 
   static Object? _ackToRuntimeValue(String value) => value;
+}
+
+/// Creates copies of [MyCustomSchema123] with selected fields replaced.
+abstract interface class $MyCustomSchema123CopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({String? value});
+}
+
+final class _$MyCustomSchema123CopyWith
+    implements $MyCustomSchema123CopyWith<MyCustomSchema123> {
+  const _$MyCustomSchema123CopyWith(this._source);
+
+  final MyCustomSchema123 _source;
+
+  @override
+  MyCustomSchema123 call({String? value}) =>
+      MyCustomSchema123(value: value ?? _source.value);
 }

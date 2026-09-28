@@ -1,5 +1,27 @@
 ## Unreleased
 
+### Breaking
+
+* `copyWith` on `@AckInfer()` and `@AckModel()` models is a getter that returns
+  a typed `$ClassCopyWith<Class>` interface. A wrongly typed argument is now a
+  compile-time error instead of a runtime `TypeError`. Omission still keeps the
+  current value, and explicit `null` still clears a nullable field. Calls such
+  as `model.copyWith(name: 'x')` are unchanged. Code that tears off `copyWith`
+  as a function or mocks a model's `copyWith` method must be updated to use the
+  getter. Arguments statically typed `Object` or an incompatible type must be
+  narrowed or cast; `dynamic` arguments still compile.
+
+### Changed
+
+* A model extending or implementing another generated class-first model,
+  including an implicit sealed-union branch, exposes a `copyWith` interface
+  compatible with the parent model's interface.
+* Modern `.ack.dart` and `.ack.g.dart` parts start with
+  `// ignore_for_file: type=lint` and `// coverage:ignore-file`, so consumer
+  lint rules and coverage reports cover only hand-written source.
+* Generated constructors, parsing and JSON members, `$ack`, and class-first
+  facades now have doc comments.
+
 ### Added
 
 * Class-first generation uses field documentation as schema descriptions and

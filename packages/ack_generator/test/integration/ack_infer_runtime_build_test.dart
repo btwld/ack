@@ -16,6 +16,49 @@ void _expectSuccess(ProcessResult result, String command) {
   );
 }
 
+/// Asserts generated parts suppress consumer lints and coverage, then
+/// analyzes them without the lint suppression so the harness rules still
+/// guard the generated code itself.
+Future<void> _expectConsumerSafeParts(
+  Directory project,
+  Map<String, String> generated,
+) async {
+  const lintSuppression = '// ignore_for_file: type=lint\n';
+  for (final MapEntry(key: path, value: source) in generated.entries) {
+    expect(source, contains(lintSuppression), reason: path);
+    expect(source, contains('// coverage:ignore-file\n'), reason: path);
+    File(
+      p.join(project.path, path),
+    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+  }
+  try {
+    _expectSuccess(
+      await _run(project, ['analyze', '--fatal-infos']),
+      'dart analyze --fatal-infos without the generated lint suppression',
+    );
+  } finally {
+    for (final MapEntry(key: path, value: source) in generated.entries) {
+      File(p.join(project.path, path)).writeAsStringSync(source);
+    }
+  }
+}
+
+/// Asserts that a wrongly typed `copyWith` argument fails analysis.
+Future<void> _expectCopyWithRejects(Directory project, String misuse) async {
+  final file = File(p.join(project.path, 'lib', 'copy_with_misuse.dart'))
+    ..writeAsStringSync(misuse);
+  try {
+    final result = await _run(project, [
+      'analyze',
+      p.join('lib', 'copy_with_misuse.dart'),
+    ]);
+    expect(result.exitCode, isNot(0), reason: '${result.stdout}');
+    expect('${result.stdout}', contains('argument_type_not_assignable'));
+  } finally {
+    file.deleteSync();
+  }
+}
+
 void main() {
   test(
     'clean generated models compile and preserve the AckInfer runtime contract',
@@ -57,6 +100,7 @@ dependency_overrides:
           '''
 linter:
   rules:
+    - avoid_redundant_argument_values
     - prefer_null_aware_operators
 ''',
         );
@@ -312,10 +356,6 @@ void main() {
     expect(extras.role, 'member');
     expect(extras.copyWith().nickname, 'Countess');
     expect(extras.copyWith(nickname: null).nickname, isNull);
-    expect(
-      () => extras.copyWith(nickname: const Object()),
-      throwsA(isA<TypeError>()),
-    );
     expect(extras.box.values, ['a', 'b']);
     expect(() => extras.numbers.single.add(3), throwsUnsupportedError);
     final dynamic = extras.additionalProperties['dynamic']! as Map;
@@ -509,6 +549,12 @@ void main() {
           await _run(temporary, ['analyze', '--fatal-infos']),
           'dart analyze --fatal-infos',
         );
+        await _expectConsumerSafeParts(temporary, generated);
+        await _expectCopyWithRejects(temporary, '''
+import 'models.dart';
+
+Extras misuse(Extras extras) => extras.copyWith(nickname: const Object());
+''');
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),

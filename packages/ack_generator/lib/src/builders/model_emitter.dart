@@ -2,12 +2,11 @@ import 'package:code_builder/code_builder.dart';
 
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import 'data_class_emitter.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
   AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
-
-  static const _copyWithUnset = '_ackCopyWithUnset';
 
   final String? ackPrefix;
   final String? ackInferPrefix;
@@ -20,24 +19,23 @@ final class AckModelEmitter {
         case AckObjectModelNode(:final unionId) when unionId != null:
           continue;
         case AckObjectModelNode():
-          if (_usesCopyWithSentinel(_storedFields(node))) {
-            output.add(_copyWithSentinelClass(node.className));
-          }
-          output.add(_object(node));
+          output
+            ..add(_object(node))
+            ..add(_copyWithContract(node.className, _objectDataClass(node)));
         case AckValueModelNode():
-          if (_fieldUsesCopyWithSentinel(_valueField(node))) {
-            output.add(_copyWithSentinelClass(node.className));
-          }
-          output.add(_value(node));
+          output
+            ..add(_value(node))
+            ..add(_copyWithContract(node.className, _valueDataClass(node)));
         case AckUnionModelNode():
           output.add(_union(node, nodes));
           for (final branchId in node.branches.values) {
             final branch = nodes[branchId];
             if (branch is AckObjectModelNode) {
-              if (_usesCopyWithSentinel(_storedFields(branch))) {
-                output.add(_copyWithSentinelClass(branch.className));
-              }
-              output.add(_branch(branch, node));
+              output
+                ..add(_branch(branch, node))
+                ..add(
+                  _copyWithContract(branch.className, _objectDataClass(branch)),
+                );
             }
           }
       }
@@ -54,8 +52,6 @@ final class AckModelEmitter {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable model'))
         ..fields.addAll([
-          if (_usesCopyWithSentinel(fields))
-            _copyWithSentinelField(node.className),
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(node, node.id.declarationName),
@@ -69,7 +65,7 @@ final class AckModelEmitter {
           _safeParse(node.className),
           _objectToJson(),
           _objectSafeToJson(),
-          ..._dataClassMethods(node, fields: fields),
+          ..._valueMembers(node.className, _objectDataClass(node)),
           _objectFromRuntime(node, fields: fields),
           _objectToRuntime(node, fields: fields),
           ..._fieldBridges(fields),
@@ -81,7 +77,6 @@ final class AckModelEmitter {
   Class _value(AckValueModelNode node) {
     final runtimeRef = _type(node.runtimeRef);
     final boundaryType = _type(node.boundaryType);
-    final valueField = _valueField(node);
     return Class(
       (b) => b
         ..name = node.className
@@ -89,11 +84,10 @@ final class AckModelEmitter {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable value model'))
         ..fields.addAll([
-          if (_fieldUsesCopyWithSentinel(valueField))
-            _copyWithSentinelField(node.className),
           Field(
             (f) => f
               ..name = 'value'
+              ..docs.add('/// The wrapped value.')
               ..modifier = FieldModifier.final$
               ..type = refer(runtimeRef),
           ),
@@ -109,6 +103,7 @@ final class AckModelEmitter {
           Method(
             (m) => m
               ..name = 'toJson'
+              ..docs.addAll(_toJsonDocs)
               ..returns = refer(boundaryType)
               ..lambda = true
               ..body = Code(_valueToJsonBody(node.boundaryType)),
@@ -116,11 +111,12 @@ final class AckModelEmitter {
           Method(
             (m) => m
               ..name = 'safeToJson'
+              ..docs.addAll(_safeToJsonDocs)
               ..returns = refer('${_ack('SchemaResult')}<$boundaryType>')
               ..lambda = true
               ..body = const Code(r'$ack.safeEncode(this)'),
           ),
-          ..._valueDataClassMethods(node),
+          ..._valueMembers(node.className, _valueDataClass(node)),
           Method(
             (m) => m
               ..name = '_fromAckRuntime'
@@ -167,7 +163,11 @@ final class AckModelEmitter {
         ..docs.addAll(_docs(node, 'Discriminated model base'))
         ..fields.add(_adapter(node, node.id.declarationName))
         ..constructors.addAll([
-          Constructor((c) => c.constant = true),
+          Constructor(
+            (c) => c
+              ..constant = true
+              ..docs.add('/// Creates a branch of this union.'),
+          ),
           _parseFactory(),
           _fromJsonFactory(_objectJsonType),
         ])
@@ -177,6 +177,9 @@ final class AckModelEmitter {
             (m) => m
               ..type = MethodType.getter
               ..name = node.discriminatorKey
+              ..docs.add(
+                '/// The discriminator value that selects this branch.',
+              )
               ..returns = refer('String'),
           ),
           _objectToJson(),
@@ -222,8 +225,6 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Discriminated model branch'))
         ..fields.addAll([
-          if (_usesCopyWithSentinel(fields))
-            _copyWithSentinelField(node.className),
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(
@@ -247,7 +248,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
               ..lambda = true
               ..body = Code(_literal(value)),
           ),
-          ..._dataClassMethods(node, fields: fields),
+          ..._valueMembers(node.className, _objectDataClass(node)),
           _objectFromRuntime(
             node,
             fields: fields,
@@ -289,6 +290,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
     (f) => f
       ..name = r'$ack'
       ..static = true
+      ..docs.add('/// The Ack adapter that parses and encodes this model.')
       ..modifier = FieldModifier.final$
       ..assignment = Code('''
 ${_ack('AckModelAdapter')}(
@@ -302,6 +304,12 @@ ${_ack('AckModelAdapter')}(
     List<AckFieldNode> fields,
     bool additionalProperties,
   ) => Constructor((c) {
+    c.docs.addAll([
+      '/// Creates a model without validating it.',
+      '///',
+      '/// Use `parse` or `fromJson` for untrusted input. `toJson` validates',
+      '/// the model while encoding it.',
+    ]);
     for (final field in fields) {
       final copyType = _nonNullable(field.runtimeRef);
       final needsCopy = _requiresImmutableCopy(copyType);
@@ -351,6 +359,12 @@ ${_ack('AckModelAdapter')}(
   Constructor _valueConstructor(AckValueModelNode node, String runtimeType) {
     final needsCopy = _requiresImmutableCopy(node.runtimeRef);
     return Constructor((c) {
+      c.docs.addAll([
+        '/// Creates a model without validating it.',
+        '///',
+        '/// Use `parse` or `fromJson` for untrusted input. `toJson` validates',
+        '/// the model while encoding it.',
+      ]);
       c.requiredParameters.add(
         Parameter(
           (p) => p
@@ -371,6 +385,11 @@ ${_ack('AckModelAdapter')}(
     (c) => c
       ..factory = true
       ..name = 'parse'
+      ..docs.addAll([
+        '/// Validates [input] and creates the model.',
+        '///',
+        '/// Throws an `AckException` when validation fails.',
+      ])
       ..requiredParameters.add(
         Parameter(
           (p) => p
@@ -385,6 +404,11 @@ ${_ack('AckModelAdapter')}(
     (c) => c
       ..factory = true
       ..name = 'fromJson'
+      ..docs.addAll([
+        '/// Validates decoded [json] and creates the model.',
+        '///',
+        '/// Throws an `AckException` when validation fails.',
+      ])
       ..requiredParameters.add(
         Parameter(
           (p) => p
@@ -399,6 +423,9 @@ ${_ack('AckModelAdapter')}(
     (m) => m
       ..name = 'safeParse'
       ..static = true
+      ..docs.add(
+        '/// Validates [input] and returns the model or the validation failure.',
+      )
       ..returns = refer('${_ack('SchemaResult')}<$className>')
       ..requiredParameters.add(
         Parameter(
@@ -411,12 +438,11 @@ ${_ack('AckModelAdapter')}(
       ..body = const Code(r'$ack.safeParse(input)'),
   );
 
-  List<Method> _dataClassMethods(
-    AckObjectModelNode node, {
-    required List<AckFieldNode> fields,
-  }) {
+  /// Stored fields and constructor parameters shared by an object model's
+  /// value members and its `copyWith` contract.
+  _AckDataClass _objectDataClass(AckObjectModelNode node) {
     final stored = [
-      ...fields,
+      ..._storedFields(node),
       if (node.captureFieldName case final capture?)
         AckFieldNode(
           dartName: capture,
@@ -433,8 +459,7 @@ ${_ack('AckModelAdapter')}(
       for (final parameter in node.constructorParameters)
         if (storedNames.contains(parameter.fieldName)) parameter,
     ];
-    return _valueMembers(
-      className: node.className,
+    return (
       fields: stored,
       constructorParameters: constructorParameters.isEmpty
           ? [
@@ -450,18 +475,39 @@ ${_ack('AckModelAdapter')}(
     );
   }
 
-  List<Method> _valueDataClassMethods(AckValueModelNode node) {
-    return _valueMembers(
-      className: node.className,
-      fields: [_valueField(node)],
-      constructorParameters: [
-        AckConstructorParameter(
-          name: 'value',
-          kind: AckConstructorParameterKind.positional,
-          fieldName: 'value',
-          typeRef: node.runtimeRef,
-        ),
-      ],
+  _AckDataClass _valueDataClass(AckValueModelNode node) => (
+    fields: [_valueField(node)],
+    constructorParameters: [
+      AckConstructorParameter(
+        name: 'value',
+        kind: AckConstructorParameterKind.positional,
+        fieldName: 'value',
+        typeRef: node.runtimeRef,
+      ),
+    ],
+  );
+
+  Code _copyWithContract(String className, _AckDataClass data) {
+    final byField = {for (final field in data.fields) field.dartName: field};
+    return Code(
+      AckDataClassEmitter(ackPrefix: ackPrefix).copyWithContract(
+        className: className,
+        parameters: [
+          for (final parameter in data.constructorParameters)
+            AckCopyWithParameter(
+              name: parameter.name,
+              fieldName: parameter.fieldName,
+              type: _fieldType(
+                byField[parameter.fieldName] ?? _syntheticField(parameter),
+              ),
+              nullable: switch (byField[parameter.fieldName]) {
+                final field? => !field.isRequired || field.nullable,
+                null => parameter.typeRef is AckNullableTypeRef,
+              },
+              positional: parameter.kind != AckConstructorParameterKind.named,
+            ),
+        ],
+      ),
     );
   }
 
@@ -473,19 +519,8 @@ ${_ack('AckModelAdapter')}(
     runtimeRef: node.runtimeRef,
   );
 
-  List<Method> _valueMembers({
-    required String className,
-    required List<AckFieldNode> fields,
-    required List<AckConstructorParameter> constructorParameters,
-  }) {
-    final byField = {for (final field in fields) field.dartName: field};
-    final arguments = [
-      for (final parameter in constructorParameters)
-        _copyWithArgument(
-          parameter,
-          byField[parameter.fieldName] ?? _syntheticField(parameter),
-        ),
-    ];
+  List<Method> _valueMembers(String className, _AckDataClass data) {
+    final fields = data.fields;
     final comparisons = [
       'other is $className',
       'runtimeType == other.runtimeType',
@@ -499,20 +534,24 @@ ${_ack('AckModelAdapter')}(
     final toStringPreview = [
       for (final field in fields) '${field.dartName}: \$${field.dartName}',
     ].join(', ');
+    final implementation = ackCopyWithImplementationName(className);
     return [
       Method(
         (m) => m
           ..name = 'copyWith'
-          ..returns = refer(className)
-          ..optionalParameters.addAll([
-            for (final parameter in constructorParameters)
-              _copyWithParameter(
-                parameter,
-                byField[parameter.fieldName] ?? _syntheticField(parameter),
-              ),
-          ])
+          ..type = MethodType.getter
+          ..returns = refer(
+            '${ackCopyWithInterfaceName(className)}<$className>',
+          )
+          ..docs.add(
+            '/// Creates a copy of this model with selected fields replaced.',
+          )
           ..lambda = true
-          ..body = Code('$className(${arguments.join(', ')})'),
+          ..body = Code(
+            data.constructorParameters.isEmpty
+                ? 'const $implementation()'
+                : '$implementation(this)',
+          ),
       ),
       Method(
         (m) => m
@@ -551,45 +590,6 @@ ${_ack('AckModelAdapter')}(
     ];
   }
 
-  String _copyWithType(AckFieldNode field) {
-    final type = _fieldType(field);
-    return type.endsWith('?') ? type : '$type?';
-  }
-
-  Parameter _copyWithParameter(
-    AckConstructorParameter parameter,
-    AckFieldNode field,
-  ) => Parameter((builder) {
-    builder
-      ..name = parameter.name
-      ..named = true
-      ..type = refer(
-        _fieldUsesCopyWithSentinel(field) ? 'Object?' : _copyWithType(field),
-      );
-    if (_fieldUsesCopyWithSentinel(field)) {
-      builder.defaultTo = const Code(_copyWithUnset);
-    }
-  });
-
-  String _copyWithArgument(
-    AckConstructorParameter parameter,
-    AckFieldNode field,
-  ) {
-    final type = _fieldType(field);
-    // Sentinel parameters are already typed Object?.
-    final value = type == 'Object?'
-        ? parameter.name
-        : '${parameter.name} as $type';
-    final replacement = _fieldUsesCopyWithSentinel(field)
-        ? 'identical(${parameter.name}, $_copyWithUnset) '
-              '? this.${parameter.fieldName} '
-              ': $value'
-        : '${parameter.name} ?? this.${parameter.fieldName}';
-    return parameter.kind == AckConstructorParameterKind.named
-        ? '${parameter.name}: $replacement'
-        : replacement;
-  }
-
   AckFieldNode _syntheticField(AckConstructorParameter parameter) =>
       AckFieldNode(
         dartName: parameter.fieldName,
@@ -599,33 +599,10 @@ ${_ack('AckModelAdapter')}(
         runtimeRef: parameter.typeRef,
       );
 
-  Class _copyWithSentinelClass(String className) => Class(
-    (builder) => builder
-      ..name = ackCopyWithUnsetTypeName(className)
-      ..modifier = ClassModifier.final$
-      ..constructors.add(
-        Constructor((constructor) => constructor.constant = true),
-      ),
-  );
-
-  Field _copyWithSentinelField(String className) => Field(
-    (field) => field
-      ..name = _copyWithUnset
-      ..static = true
-      ..modifier = FieldModifier.constant
-      ..type = refer(ackCopyWithUnsetTypeName(className))
-      ..assignment = Code('${ackCopyWithUnsetTypeName(className)}()'),
-  );
-
-  bool _usesCopyWithSentinel(Iterable<AckFieldNode> fields) =>
-      fields.any(_fieldUsesCopyWithSentinel);
-
-  bool _fieldUsesCopyWithSentinel(AckFieldNode field) =>
-      _fieldType(field).endsWith('?');
-
   Method _objectToJson() => Method(
     (m) => m
       ..name = 'toJson'
+      ..docs.addAll(_toJsonDocs)
       ..returns = refer(_objectJsonType)
       ..lambda = true
       ..body = const Code('Map<String, dynamic>.from(\$ack.encode(this))'),
@@ -634,6 +611,7 @@ ${_ack('AckModelAdapter')}(
   Method _objectSafeToJson() => Method(
     (m) => m
       ..name = 'safeToJson'
+      ..docs.addAll(_safeToJsonDocs)
       ..returns = refer('${_ack('SchemaResult')}<$_runtimeMapType>')
       ..lambda = true
       ..body = const Code(r'$ack.safeEncode(this)'),
@@ -1056,3 +1034,19 @@ return $helper(<String, dynamic>{
   static const _runtimeMapLiteral = '<String, Object?>';
   static const _objectJsonType = 'Map<String, dynamic>';
 }
+
+typedef _AckDataClass = ({
+  List<AckFieldNode> fields,
+  List<AckConstructorParameter> constructorParameters,
+});
+
+const _toJsonDocs = [
+  '/// Validates this model and encodes it for JSON.',
+  '///',
+  '/// Throws an `AckException` when validation fails.',
+];
+
+const _safeToJsonDocs = [
+  '/// Validates this model and encodes it for JSON, returning the validation',
+  '/// failure instead of throwing.',
+];

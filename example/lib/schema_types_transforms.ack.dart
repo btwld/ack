@@ -1,6 +1,9 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format width=80
 
+// ignore_for_file: type=lint
+// coverage:ignore-file
+
 part of 'schema_types_transforms.dart';
 
 // **************************************************************************
@@ -10,32 +13,51 @@ part of 'schema_types_transforms.dart';
 /// Immutable value model generated from `colorSchema`.
 @AckInfer.jsonSerializable
 final class ColorModel {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   ColorModel(this.value);
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory ColorModel.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory ColorModel.fromJson(String json) {
     return $ack.parse(json);
   }
 
+  /// The wrapped value.
   final Color value;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => colorSchema,
     fromRuntime: ColorModel._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<ColorModel> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   String toJson() => $ack.encode(this);
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  ColorModel copyWith({Color? value}) => ColorModel(value ?? this.value);
+  /// Creates a copy of this model with selected fields replaced.
+  $ColorModelCopyWith<ColorModel> get copyWith => _$ColorModelCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -60,9 +82,31 @@ final class ColorModel {
   static Object? _ackToRuntimeValue(Color value) => value;
 }
 
+/// Creates copies of [ColorModel] with selected fields replaced.
+abstract interface class $ColorModelCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({Color? value});
+}
+
+final class _$ColorModelCopyWith implements $ColorModelCopyWith<ColorModel> {
+  const _$ColorModelCopyWith(this._source);
+
+  final ColorModel _source;
+
+  @override
+  ColorModel call({Color? value}) => ColorModel(value ?? _source.value);
+}
+
 /// Immutable model generated from `profileSchema`.
 @AckInfer.jsonSerializable
 final class Profile {
+  /// Creates a model without validating it.
+  ///
+  /// Use `parse` or `fromJson` for untrusted input. `toJson` validates
+  /// the model while encoding it.
   Profile({
     required this.homepage,
     required this.birthday,
@@ -81,10 +125,16 @@ final class Profile {
          customColors.map((item) => item),
        );
 
+  /// Validates [input] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Profile.parse(Object? input) {
     return $ack.parse(input);
   }
 
+  /// Validates decoded [json] and creates the model.
+  ///
+  /// Throws an `AckException` when validation fails.
   factory Profile.fromJson(Map<String, dynamic> json) {
     return $ack.parse(json);
   }
@@ -111,44 +161,28 @@ final class Profile {
 
   final TagList tagList;
 
+  /// The Ack adapter that parses and encodes this model.
   static final $ack = AckModelAdapter(
     schema: () => profileSchema,
     fromRuntime: Profile._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Profile> safeParse(Object? input) =>
       $ack.safeParse(input);
 
+  /// Validates this model and encodes it for JSON.
+  ///
+  /// Throws an `AckException` when validation fails.
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Profile copyWith({
-    Uri? homepage,
-    DateTime? birthday,
-    DateTime? lastLogin,
-    Duration? timeout,
-    List<Uri>? links,
-    Color? favoriteColor,
-    String? slug,
-    ColorModel? accent,
-    List<ColorModel>? colors,
-    List<Color>? customColors,
-    TagList? tagList,
-  }) => Profile(
-    homepage: homepage ?? this.homepage,
-    birthday: birthday ?? this.birthday,
-    lastLogin: lastLogin ?? this.lastLogin,
-    timeout: timeout ?? this.timeout,
-    links: links ?? this.links,
-    favoriteColor: favoriteColor ?? this.favoriteColor,
-    slug: slug ?? this.slug,
-    accent: accent ?? this.accent,
-    colors: colors ?? this.colors,
-    customColors: customColors ?? this.customColors,
-    tagList: tagList ?? this.tagList,
-  );
+  /// Creates a copy of this model with selected fields replaced.
+  $ProfileCopyWith<Profile> get copyWith => _$ProfileCopyWith(this);
 
   @override
   bool operator ==(Object other) =>
@@ -248,4 +282,58 @@ final class Profile {
   static TagList _ackFromRuntimeTagList(Object? value) => value as TagList;
 
   static Object? _ackToRuntimeTagList(TagList value) => value;
+}
+
+/// Creates copies of [Profile] with selected fields replaced.
+abstract interface class $ProfileCopyWith<$Result> {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  $Result call({
+    Uri? homepage,
+    DateTime? birthday,
+    DateTime? lastLogin,
+    Duration? timeout,
+    List<Uri>? links,
+    Color? favoriteColor,
+    String? slug,
+    ColorModel? accent,
+    List<ColorModel>? colors,
+    List<Color>? customColors,
+    TagList? tagList,
+  });
+}
+
+final class _$ProfileCopyWith implements $ProfileCopyWith<Profile> {
+  const _$ProfileCopyWith(this._source);
+
+  final Profile _source;
+
+  @override
+  Profile call({
+    Uri? homepage,
+    DateTime? birthday,
+    DateTime? lastLogin,
+    Duration? timeout,
+    List<Uri>? links,
+    Color? favoriteColor,
+    String? slug,
+    ColorModel? accent,
+    List<ColorModel>? colors,
+    List<Color>? customColors,
+    TagList? tagList,
+  }) => Profile(
+    homepage: homepage ?? _source.homepage,
+    birthday: birthday ?? _source.birthday,
+    lastLogin: lastLogin ?? _source.lastLogin,
+    timeout: timeout ?? _source.timeout,
+    links: links ?? _source.links,
+    favoriteColor: favoriteColor ?? _source.favoriteColor,
+    slug: slug ?? _source.slug,
+    accent: accent ?? _source.accent,
+    colors: colors ?? _source.colors,
+    customColors: customColors ?? _source.customColors,
+    tagList: tagList ?? _source.tagList,
+  );
 }

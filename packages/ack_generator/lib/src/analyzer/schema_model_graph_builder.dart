@@ -1575,6 +1575,16 @@ final class SchemaModelGraphBuilder {
         element: element,
       );
     }
+    for (final copyWithType in [
+      ackCopyWithInterfaceName(className),
+      ackCopyWithImplementationName(className),
+    ]) {
+      if (!localNames.contains(copyWithType)) continue;
+      throw InvalidGenerationSource(
+        'Generated helper "$copyWithType" conflicts with a local declaration.',
+        element: element,
+      );
+    }
   }
 
   Set<String> _localDeclarationNames() => {
