@@ -1,5 +1,13 @@
 ## Unreleased
 
+### Changed
+
+* A class-first `Set` field with `@MinItems`, `@MaxItems`, or `@UniqueItems`
+  now requires unique items at the JSON boundary, so the list's item count
+  matches the decoded set. Input with duplicate items, such as `['a', 'a']`,
+  now fails validation instead of collapsing into a smaller set, and the JSON
+  Schema declares `uniqueItems: true`.
+
 ### Added
 
 * Class-first generation uses field documentation as schema descriptions and
