@@ -11,7 +11,8 @@ There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 
 1. `ack`: core runtime validation, codecs, and generated-model support
 2. `ack_annotations`: exposes `@AckInfer()` and `@AckModel()`
-3. `ack_generator`: generates models from schemas and schemas from models
+3. `ack_generator`: generates models from fluent Ack or draft 2020-12 JSON
+   Schema bundles, and schemas from classes
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
 5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
 6. `ack_mcp_dart`: advertises MCP tool input schemas and validates typed arguments with `mcp_dart`
@@ -50,6 +51,13 @@ Codecs decode a boundary value into a runtime value and encode it back.
 
 Both directions use the same generated parts and build command. `@AckInfer()`
 is schema-first; `@AckModel()` is class-first.
+The opt-in `ack_generator:ack_json_schema` builder translates `*.schema.json`
+to typed `@AckInfer` models where possible and validated 2020-12 value models
+otherwise. Set `model_mode: validated` for exact importer-backed parse/encode;
+`assert_formats` and `documents` configure format assertions and offline
+external resources. Invalid schemas fail with JSON-pointer diagnostics. Use
+`unknown_properties: preserve` only when intentionally widening strict objects
+for forward-compatible clients.
 
 Every annotated library declares both generated parts:
 

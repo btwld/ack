@@ -88,8 +88,8 @@ vocabularies and unsupported asserted formats are rejected.
 Imported schemas do not coerce instance values or inject `default` values.
 
 The complete required draft 2020-12 test suite passes for source validation
-and export/re-import. Optional format assertions are exercised separately;
-other optional vocabularies are not claimed as complete.
+and export/re-import. Optional vocabulary coverage remains partial; the
+repository capability matrix tracks the per-vocabulary limits.
 `format` is an annotation by default. Pass `assertFormats: true` to enforce
 supported formats, or supply a dialect requiring the format-assertion
 vocabulary. Unknown asserted formats fail compilation. Standard 2020-12
@@ -157,9 +157,9 @@ final AckSchema<Object, Object> ackSchema =
 final builderSchema = ackSchema.toJsonSchemaBuilder();
 ```
 
-`toAckSchema({baseUri, documents})` returns the validator directly and accepts
-`Map<Uri, jsb.Schema>` bundles. The bridge's format-assertion and preserving
-export options are introduced in the follow-up integration PR.
+`toAckSchema({baseUri, documents, assertFormats})` returns the validator
+directly. It accepts `Map<Uri, jsb.Schema>` bundles. Formats are annotations
+unless `assertFormats: true` or a supplied dialect enables assertions.
 
 MCP registration compatibility is deferred to separate work; importing a
 schema does not establish compatibility with a tool-registration API.
@@ -179,6 +179,28 @@ The selected regression fixture contains 1,178 upstream instance cases across
 341 groups. The complete required draft 2020-12 suite and supplied remote
 documents also run offline in source-validation and export/re-import modes.
 Unsupported cases are not silently skipped within those fixtures.
+
+## Generating Dart models from draft 2020-12
+
+Enable the opt-in `ack_generator:ack_json_schema` builder for a
+`*.schema.json` source. In `model_mode: auto` it retains typed `@AckInfer`
+fields and `copyWith` for the representable v1 subset. A valid schema with
+other 2020-12 behavior generates validated value models instead; their
+`value` holds immutable JSON and their `parse`, `safeParse`, `encode`,
+`safeEncode`, and `toJson` methods use the source validator. Set
+`model_mode: validated` to force this exact path even for simple shapes,
+including the typed `int` and UTF-16 string-length edge cases.
+
+The builder also accepts `assert_formats: true` and an offline `documents`
+mapping from retrieval URI to package-local JSON asset path. It never fetches
+URLs. Source `$defs` generate named models, and a validating document root
+generates `Root`; arbitrary definition keys get stable Dart class names.
+Unknown required vocabularies, unsupported asserted formats, malformed
+schemas, and unresolved resources fail the build with JSON-pointer diagnostics.
+See the [generator package README](https://pub.dev/packages/ack_generator)
+for `build.yaml` syntax. The required 2020-12 corpus generates offline with
+its supplied resources; generated runtime parity is also exercised in a real
+`build_runner` consumer for representative advanced features.
 
 ## Generating JSON schemas
 

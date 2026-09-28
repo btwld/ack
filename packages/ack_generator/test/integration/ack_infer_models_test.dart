@@ -61,6 +61,35 @@ final emptySchema = Ack.object({});
     },
   );
 
+  test('emits multi-line descriptions as one doc line each', () async {
+    await _build(
+      {
+        'doc.dart':
+            '''
+$_imports
+part 'doc.ack.dart';
+part 'doc.ack.g.dart';
+
+'''
+            r'''
+@AckInfer()
+final docSchema = Ack.object({
+  'price': Ack.integer().describe('The asking price.\n\nIn \'USD\' \$ \\ */.'),
+}).describe('A listing.\r\nFrom the MLS.');
+''',
+      },
+      outputs: {
+        'test_pkg|lib/doc.ack.dart': decodedMatches(
+          allOf([
+            contains('  /// The asking price.\n  ///\n'),
+            contains("  /// In 'USD' \$ \\ */.\n"),
+            contains('/// A listing.\n/// From the MLS.\n'),
+          ]),
+        ),
+      },
+    );
+  });
+
   test('evaluates const additionalProperties references', () async {
     await _build(
       {
