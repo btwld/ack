@@ -5,7 +5,7 @@ suite's `remotes/` fixtures from
 [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
 commit `80c87e8fca8b207a7a7ae944b875f0fcf889f46a` (MIT; see `LICENSE`).
 The GitHub archive SHA-256 is
-`33e7f6afcade9777013752f124ff0bc9bdc41a5a33cb91b9578c3908cb83ed1d`.
+`eb54db8df07ddbfae5a1de447d97ba38377e1ccf5d96f2bf32b159af29a0b9d2`.
 
 The fixtures mirror upstream, except four trailing-space lines were normalized
 for diff hygiene. They are intended for fully offline validation: URLs under
