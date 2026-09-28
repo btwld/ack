@@ -81,8 +81,9 @@ Generated object models provide:
 - an unchecked constructor with stored typed fields;
 - `User.parse(data)` and `User.safeParse(data)` for schema validation;
 - `User.fromJson(json)`, `toJson()`, and `safeToJson()` for the JSON boundary;
-- generated `copyWith` (omitted means keep; explicit `null` clears a nullable
-  field), deep collection-aware `==`/`hashCode`, and `toString`;
+- a typed `copyWith` (omitted means keep; explicit `null` clears a nullable
+  field; wrong argument types fail to compile), deep collection-aware
+  `==`/`hashCode`, and `toString`;
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 

@@ -60,6 +60,13 @@ String ackClassRawObjectName(String className) =>
 String ackCopyWithUnsetTypeName(String className) =>
     '_${className}CopyWithUnset';
 
+/// Public interface that types a generated model's `copyWith` call.
+String ackCopyWithInterfaceName(String className) => '\$${className}CopyWith';
+
+/// Private implementation behind a generated model's `copyWith` getter.
+String ackCopyWithImplementationName(String className) =>
+    '_\$${className}CopyWith';
+
 /// json_serializable `fromJson` helper for a generated model class.
 String jsonFromHelperName(String className) => '_\$${className}FromJson';
 

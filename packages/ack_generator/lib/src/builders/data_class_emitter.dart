@@ -1,6 +1,33 @@
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 
+/// One generated `copyWith` parameter, typed by the emitter that owns type
+/// rendering.
+final class AckCopyWithParameter {
+  const AckCopyWithParameter({
+    required this.name,
+    required this.fieldName,
+    required this.type,
+    required this.nullable,
+    required this.positional,
+  });
+
+  /// The named `copyWith` parameter.
+  final String name;
+
+  /// The stored field kept when the argument is omitted.
+  final String fieldName;
+
+  /// The stored field's Dart type.
+  final String type;
+
+  /// Whether an explicit `null` must be distinguished from an omission.
+  final bool nullable;
+
+  /// Whether the model constructor receives this value positionally.
+  final bool positional;
+}
+
 /// Shared copy/equality/hash/string emission for class-first and schema-first
 /// data classes.
 final class AckDataClassEmitter {
@@ -18,6 +45,7 @@ final class AckDataClassEmitter {
     required List<AckConstructorParameter> constructorParameters,
     required bool includeValueMembers,
     String? captureFieldName,
+    List<String> copyWithSupertypes = const [],
   }) {
     final stored = [
       ...fields,
@@ -32,11 +60,21 @@ final class AckDataClassEmitter {
           ),
         ),
     ];
+    final copyWithParameters = [
+      for (final parameter in constructorParameters)
+        AckCopyWithParameter(
+          name: parameter.name,
+          fieldName: parameter.fieldName,
+          type: _type(parameter.typeRef),
+          nullable: parameter.typeRef is AckNullableTypeRef,
+          positional: parameter.kind != AckConstructorParameterKind.named,
+        ),
+    ];
     final members = [
       if (includeValueMembers) ...[
-        copyWithMethod(
+        copyWithGetter(
           className: className,
-          constructorParameters: constructorParameters,
+          hasParameters: copyWithParameters.isNotEmpty,
           castSelf: true,
         ),
         equalityMembers(className: className, fields: stored, castSelf: true),
@@ -44,47 +82,91 @@ final class AckDataClassEmitter {
       ],
       jsonMembers(className: className, facadeName: facadeName),
     ];
-    final needsCopyWithSentinel =
-        includeValueMembers && constructorParameters.any(_usesCopyWithSentinel);
-    final sentinelType = ackCopyWithUnsetTypeName(className);
 
     return '''
-${needsCopyWithSentinel ? 'final class $sentinelType {\n  const $sentinelType();\n}\n\n' : ''}
-mixin ${'_\$${className}Ack'} {
-  ${needsCopyWithSentinel ? 'static const $sentinelType $_copyWithUnset = $sentinelType();\n\n  ' : ''}${members.join('\n\n  ')}
+${includeValueMembers ? '${copyWithContract(className: className, parameters: copyWithParameters, supertypes: copyWithSupertypes)}\n\n' : ''}mixin ${'_\$${className}Ack'} {
+  ${members.join('\n\n  ')}
 }''';
   }
 
-  String copyWithMethod({
+  /// The typed `copyWith` interface and its implementation, plus the private
+  /// sentinel type when a nullable field needs one.
+  ///
+  /// The public interface types every parameter, so a wrong argument type is
+  /// a compile-time error. The implementation widens nullable parameters to
+  /// `Object?` with a sentinel default, so an omitted argument keeps the
+  /// current value while an explicit `null` clears the field. A single method
+  /// cannot do both because a default value must match the parameter type.
+  ///
+  /// The interface is generic in its result, like the `freezed` and
+  /// `dart_mappable` interfaces. Without the type parameter,
+  /// `avoid_redundant_argument_values` reports `copyWith(field: null)` as
+  /// redundant, and `dart fix` would delete the argument, turning "clear"
+  /// into "keep".
+  String copyWithContract({
     required String className,
-    required List<AckConstructorParameter> constructorParameters,
-    bool castSelf = false,
+    required List<AckCopyWithParameter> parameters,
+    List<String> supertypes = const [],
   }) {
-    final receiver = castSelf ? 'self' : 'this';
-    final parameters = [
-      for (final parameter in constructorParameters)
-        if (_usesCopyWithSentinel(parameter))
-          'Object? ${parameter.name} = $_copyWithUnset'
-        else
-          '${_copyWithType(parameter)} ${parameter.name}',
+    final interfaceName = ackCopyWithInterfaceName(className);
+    final implementationName = ackCopyWithImplementationName(className);
+    final sentinelType = ackCopyWithUnsetTypeName(className);
+    final needsSentinel = parameters.any((parameter) => parameter.nullable);
+    final hasSource = parameters.isNotEmpty;
+    String named(List<String> declarations) =>
+        declarations.isEmpty ? '' : '{${declarations.join(', ')}}';
+    final interfaceParameters = [
+      for (final parameter in parameters)
+        '${_optional(parameter.type)} ${parameter.name}',
+    ];
+    final implementationParameters = [
+      for (final parameter in parameters)
+        parameter.nullable
+            ? 'Object? ${parameter.name} = $_copyWithUnset'
+            : '${_optional(parameter.type)} ${parameter.name}',
     ];
     final arguments = [
-      for (final parameter in constructorParameters)
-        _copyWithArgument(parameter, receiver),
+      for (final parameter in parameters) _copyWithArgument(parameter),
     ];
-    final parameterList = parameters.isEmpty
-        ? ''
-        : '{${parameters.join(', ')}}';
-    // A fieldless model reads nothing through `self`; skip the unused cast.
-    if (castSelf && arguments.isNotEmpty) {
-      return '''
-$className copyWith($parameterList) {
-  final self = this as $className;
-  return $className(${arguments.join(', ')});
-}''';
-    }
+    final sentinelClass = needsSentinel
+        ? 'final class $sentinelType {\n  const $sentinelType();\n}\n\n'
+        : '';
+    final sentinelField = needsSentinel
+        ? '  static const $sentinelType $_copyWithUnset = $sentinelType();\n\n'
+        : '';
+    final sourceField = hasSource ? '  final $className _source;\n\n' : '';
     return '''
-$className copyWith($parameterList) => $className(${arguments.join(', ')});''';
+$sentinelClass/// Creates copies of [$className] with selected fields replaced.
+abstract interface class $interfaceName<\$Result> ${supertypes.isEmpty ? '' : 'implements ${supertypes.map((name) => '$name<\$Result>').join(', ')}'} {
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// An omitted argument keeps the current value. An explicit `null` clears a
+  /// nullable field.
+  \$Result call(${named(interfaceParameters)});
+}
+
+final class $implementationName implements $interfaceName<$className> {
+  const $implementationName(${hasSource ? 'this._source' : ''});
+
+$sentinelField$sourceField  @override
+  $className call(${named(implementationParameters)}) =>
+      $className(${arguments.join(', ')});
+}''';
+  }
+
+  /// The `copyWith` getter that exposes [copyWithContract]'s interface.
+  String copyWithGetter({
+    required String className,
+    required bool hasParameters,
+    bool castSelf = false,
+  }) {
+    final implementationName = ackCopyWithImplementationName(className);
+    final creation = hasParameters
+        ? '$implementationName(${castSelf ? 'this as $className' : 'this'})'
+        : 'const $implementationName()';
+    return '''
+/// Creates a copy of this model with selected fields replaced.
+${ackCopyWithInterfaceName(className)}<$className> get copyWith => $creation;''';
   }
 
   String equalityMembers({
@@ -162,34 +244,34 @@ String toString() => '$className(${parts.join(', ')})';''';
 
   String jsonMembers({required String className, required String facadeName}) {
     return '''
+/// Validates this model and encodes it for JSON.
+///
+/// Throws an `AckException` when validation fails.
 Map<String, dynamic> toJson() =>
     Map<String, dynamic>.from($facadeName.encode(this as $className));
 
+/// Validates this model and encodes it for JSON, returning the validation
+/// failure instead of throwing.
 ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
     $facadeName.safeEncode(this as $className);''';
   }
 
-  String _copyWithType(AckConstructorParameter parameter) =>
-      '${_type(parameter.typeRef)}?';
+  String _optional(String type) => type.endsWith('?') ? type : '$type?';
 
-  String _copyWithArgument(AckConstructorParameter parameter, String receiver) {
-    final type = _type(parameter.typeRef);
+  String _copyWithArgument(AckCopyWithParameter parameter) {
     // Sentinel parameters are already typed Object?.
-    final value = type == 'Object?'
+    final value = parameter.type == 'Object?'
         ? parameter.name
-        : '${parameter.name} as $type';
-    final replacement = _usesCopyWithSentinel(parameter)
+        : '${parameter.name} as ${parameter.type}';
+    final replacement = parameter.nullable
         ? 'identical(${parameter.name}, $_copyWithUnset) '
-              '? $receiver.${parameter.fieldName} '
+              '? _source.${parameter.fieldName} '
               ': $value'
-        : '${parameter.name} ?? $receiver.${parameter.fieldName}';
-    return parameter.kind == AckConstructorParameterKind.named
-        ? '${parameter.name}: $replacement'
-        : replacement;
+        : '${parameter.name} ?? _source.${parameter.fieldName}';
+    return parameter.positional
+        ? replacement
+        : '${parameter.name}: $replacement';
   }
-
-  bool _usesCopyWithSentinel(AckConstructorParameter parameter) =>
-      parameter.typeRef is AckNullableTypeRef;
 
   String _equals(String left, String right) =>
       '${_ack('deepEquals')}($left, $right)';

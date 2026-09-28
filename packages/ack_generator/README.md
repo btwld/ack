@@ -119,6 +119,17 @@ Named model references work through direct imports, prefixes, and re-exports.
 Nested conversion uses each model's public `$ack` adapter so codec runtime
 values aren't parsed twice.
 
+## Generated parts
+
+`copyWith` is a getter that returns a typed `$AccountCopyWith<Account>`
+interface. Call it as `account.copyWith(name: 'Grace')`. Omitted arguments keep
+their current values, explicit `null` clears nullable fields, and arguments
+with incompatible static types fail analysis.
+
+Both generated parts start with `// ignore_for_file: type=lint` and
+`// coverage:ignore-file`, so your lint rules and coverage reports apply only to
+your own source.
+
 ## JSON serialization
 
 Every annotated library declares both parts:
@@ -175,8 +186,9 @@ For a hand-written `Account`, class-first generation exposes an
 `AccountSchema` facade backed by a private `_accountSchema` codec. The facade
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
 typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
-`_$AccountAck` mixin, which supplies `toJson`, `copyWith` (omitted means keep;
-explicit `null` clears a nullable field), and deep collection-aware equality. Add
+`_$AccountAck` mixin, which supplies `toJson`, a typed `copyWith` (omitted
+means keep; explicit `null` clears a nullable field; a wrongly typed argument is
+a compile-time error), and deep collection-aware equality. Add
 `static final fromJson = AccountSchema.fromJson;` when the class should expose
 the conventional one-argument entry point. Imported nested models compose as
 `prefix.AddressSchema.schema`. Across all imports and barrel exports,
@@ -188,9 +200,6 @@ across multiple imports that use the same prefix.
 Class-first wire-name overrides support `@JsonKey(name: 'wire_name')` on the
 field. Other `JsonKey` options and constructor-parameter placement fail
 generation so schema validation and JSON mapping remain identical.
-
-For design details and migration notes, see the
-[model and schema generation architecture](https://github.com/btwld/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
 
 ## Deprecated AckType compatibility
 

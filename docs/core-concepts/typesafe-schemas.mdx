@@ -185,8 +185,9 @@ entry point:
 Every instantiable `@AckModel` class and implicit sealed-union branch must
 be declared `final class`, contain only final stored fields, and apply its
 generated `_$ClassAck` mixin. The mixin supplies `toJson()`, `safeToJson()`, a
-generated `copyWith` where omission keeps the current value and explicit
-`null` clears a nullable field, and deep collection-aware `==`, `hashCode`, and
+typed `copyWith` where omission keeps the current value, explicit `null`
+clears a nullable field, and a wrongly typed argument is a compile-time error,
+and deep collection-aware `==`, `hashCode`, and
 `toString`. A sealed abstract base receives union serialization only.
 
 Values created by `ProfileSchema.parse` or `Profile.fromJson` receive recursive

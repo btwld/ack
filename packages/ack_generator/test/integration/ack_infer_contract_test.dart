@@ -55,7 +55,7 @@ final userSchema = Ack.object({
               contains(r'static final $ack = AckModelAdapter'),
               contains('Map<String, dynamic> toJson()'),
               contains('SchemaResult<Map<String, Object?>> safeToJson()'),
-              contains('User copyWith('),
+              contains(r'$UserCopyWith<User> get copyWith'),
               contains('deepEquals('),
               contains('deepHashCode('),
               isNot(contains('fromMap')),

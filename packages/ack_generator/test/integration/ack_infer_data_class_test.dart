@@ -66,10 +66,10 @@ final class Point with _\$PointAck {
           'test_pkg|lib/model.ack.dart': decodedMatches(
             allOf([
               contains(r'mixin _$PointAck'),
-              contains('Point copyWith('),
-              contains('x ?? self.x'),
-              contains('y: y ?? self.y'),
-              contains('label: label ?? self.label'),
+              contains(r'$PointCopyWith<Point> get copyWith'),
+              contains('x ?? _source.x'),
+              contains('y: y ?? _source.y'),
+              contains('label: label ?? _source.label'),
               contains('get wireSchema'),
               contains('_pointObject'),
             ]),
@@ -174,9 +174,9 @@ final class Cat extends Pet with _\$CatAck {
             allOf([
               contains("'nickname': Ack.string().nullable()"),
               isNot(contains("'nickname': Ack.string().nullable().optional()")),
-              contains('Cat copyWith({'),
-              contains('id: id ?? self.id'),
-              contains('lives: lives ?? self.lives'),
+              contains('Cat call({'),
+              contains('id: id ?? _source.id'),
+              contains('lives: lives ?? _source.lives'),
             ]),
           ),
         },
@@ -202,12 +202,10 @@ final class Normalized with _\$NormalizedAck {
           'test_pkg|lib/model.ack.dart': decodedMatches(
             allOf([
               contains("'value': Ack.string().optional()"),
-              contains(
-                'Normalized copyWith({Object? value = _ackCopyWithUnset})',
-              ),
+              contains('Normalized call({Object? value = _ackCopyWithUnset})'),
               contains(
                 'identical(value, _ackCopyWithUnset) '
-                '? self.value '
+                '? _source.value '
                 ': value as String?',
               ),
             ]),
@@ -230,7 +228,20 @@ final userSchema = Ack.object({
       outputs: {
         'test_pkg|lib/model.ack.dart': decodedMatches(
           allOf([
-            contains('User copyWith({'),
+            contains('// ignore_for_file: type=lint'),
+            contains('// coverage:ignore-file'),
+            contains('/// Creates a model without validating it.'),
+            contains('/// Validates [input] and creates the model.'),
+            contains('/// Validates decoded [json] and creates the model.'),
+            contains('/// Validates this model and encodes it for JSON.'),
+            contains('/// The Ack adapter that parses and encodes this model.'),
+            contains(
+              '/// Creates copies of [User] with selected fields replaced.',
+            ),
+            contains(
+              '/// Creates a copy of this model with selected fields replaced.',
+            ),
+            contains('User call({'),
             contains('deepEquals(name, other.name)'),
             contains('deepHashCode(tags)'),
             contains("toString() => 'User("),
