@@ -33,5 +33,14 @@ void main() {
       expect(codec.describe('A number.').canEncode, isTrue);
       expect(Ack.date().canEncode, isTrue);
     });
+
+    test('reports only its own encoder, not a wrapped transform', () {
+      final schema = Ack.string()
+          .transform<int>(int.parse)
+          .codec<String>(decode: (value) => '$value', encode: int.parse);
+
+      expect(schema.canEncode, isTrue);
+      expect(schema.safeEncode('1').isFail, isTrue);
+    });
   });
 }
