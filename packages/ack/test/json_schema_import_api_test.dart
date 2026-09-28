@@ -12,7 +12,17 @@ void main() {
         .toJsonSchema();
 
     expect(exported['type'], isNull);
-    expect(exported['definitions'], isA<Map<String, Object?>>());
+    expect(exported['allOf'], [
+      {r'$ref': '#/definitions/_ack_import_0_0'},
+    ]);
+    expect((exported['definitions'] as Map)['_ack_import_0_0'], {
+      'type': 'string',
+      'minLength': 2,
+    });
+    expect(
+      schema.toJsonSchemaPreservingImportedDialect()[r'$schema'],
+      'https://json-schema.org/draft/2020-12/schema',
+    );
     expect(modelExport, exported);
     expect(schema.safeParse('Ada').isOk, isTrue);
     expect(schema.safeParse('A').isFail, isTrue);
@@ -90,17 +100,19 @@ void main() {
     }
   });
 
-  test('unsupported assertions expose immutable diagnostics', () {
-    final document = {'type': 'string', 'format': 'email'};
+  test('unknown required vocabularies expose immutable diagnostics', () {
+    final document = {
+      r'$vocabulary': {'https://example.test/required': true},
+    };
     late JsonSchemaImportException failure;
     try {
       Ack.fromJsonSchema(document);
-      fail('Expected an unsupported keyword failure.');
+      fail('Expected an unsupported vocabulary failure.');
     } on JsonSchemaImportException catch (error) {
       failure = error;
     }
-    expect(failure.diagnostics.single.code, 'unsupported_keyword');
-    expect(failure.diagnostics.single.pointer, '#/format');
+    expect(failure.diagnostics.single.code, 'unsupported_vocabulary');
+    expect(failure.diagnostics.single.pointer, r'#/$vocabulary');
     expect(() => failure.diagnostics.clear(), throwsUnsupportedError);
   });
 
@@ -121,5 +133,20 @@ void main() {
     final AckSchema<Object, Object> never = Ack.fromJsonSchema(false);
     expect(never.safeParse(null).isFail, isTrue);
     expect(never.safeParse('anything').isFail, isTrue);
+  });
+
+  test('dynamic references require the explicit preserving export', () {
+    final schema = Ack.fromJsonSchema({
+      r'$dynamicAnchor': 'node',
+      'type': 'object',
+      'properties': {
+        'next': {r'$dynamicRef': '#node'},
+      },
+    });
+    expect(schema.toJsonSchema, throwsUnsupportedError);
+    expect(
+      schema.toJsonSchemaPreservingImportedDialect()[r'$dynamicAnchor'],
+      'node',
+    );
   });
 }

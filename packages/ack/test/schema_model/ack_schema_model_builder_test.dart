@@ -162,54 +162,45 @@ void main() {
       );
     });
 
-    test('uses existing composition models for imported JSON Schema', () {
+    test('uses a resource-preserving model for imported JSON Schema', () {
       final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
 
-      final model = schema.toSchemaModel();
+      final model = schema.toSchemaModelPreservingImportedDialect();
 
-      expect(model, isA<AckAllOfSchemaModel>());
-      final allOf = model as AckAllOfSchemaModel;
-      expect(allOf.schemas, hasLength(1));
-      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
-      expect(model.toJsonSchema(), schema.toJsonSchema());
+      expect(model, isA<AckRawSchemaModel>());
+      expect(model.toJsonSchema()['type'], 'string');
+      expect(
+        model.toJsonSchema(),
+        schema.toJsonSchemaPreservingImportedDialect(),
+      );
     });
 
-    test('rejects an imported definition reused as a lazy target', () {
+    test('imported resources coexist with a similarly named lazy target', () {
       final imported = Ack.fromJsonSchema(true).nullable(value: false);
       final schema = Ack.object({
         'a': imported,
         'b': Ack.lazy('_ack_import_0_0', () => imported),
       });
 
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('collides with an imported definition'),
-          ),
-        ),
+      final roundTrip = Ack.fromJsonSchema(
+        schema.toJsonSchemaPreservingImportedDialect(),
       );
+      expect(roundTrip.safeParse({'a': 1, 'b': 'value'}).isOk, isTrue);
+      expect(roundTrip.safeParse({'a': null, 'b': 'value'}).isFail, isTrue);
     });
 
-    test('rejects an import generated name occupied by an earlier lazy', () {
+    test('imported resources coexist with an earlier named lazy target', () {
       final imported = Ack.fromJsonSchema(true);
       final schema = Ack.object({
         'a': Ack.lazy('_ack_import_0_0', Ack.string),
         'b': imported,
       });
 
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('Imported definition collides with'),
-          ),
-        ),
+      final roundTrip = Ack.fromJsonSchema(
+        schema.toJsonSchemaPreservingImportedDialect(),
       );
+      expect(roundTrip.safeParse({'a': 'value', 'b': null}).isOk, isTrue);
+      expect(roundTrip.safeParse({'a': 1, 'b': null}).isFail, isTrue);
     });
 
     test('rejects nullable list item schemas at construction', () {

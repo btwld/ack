@@ -69,13 +69,15 @@ The source document is a decoded map or boolean, not a JSON string.
 `Ack.fromJsonSchema()` returns an executable validator and rejects unsupported
 semantics with `JsonSchemaImportException`; its immutable diagnostics identify
 the source keyword and location. Supply reference bundles with `documents` and
-`baseUri`; no references are fetched automatically.
+`baseUri`; no references are fetched automatically. Formats are annotations by
+default; pass `assertFormats: true` to enforce supported formats.
 
-Exports preserve supported validation behavior, not textual document identity.
-Full A2UI coverage is not supported. MCP registration compatibility remains
-separate. See the
+`toJsonSchema()` keeps the 1.x Draft-7 export for imported and native schemas.
+Use `toJsonSchemaPreservingImportedDialect()` for imported draft 2020-12
+resources. Exports preserve validation behavior, not textual document identity.
+Full A2UI and MCP registration compatibility remain separate. See the
 [JSON Schema guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
-for the supported subset, recursive bundles, and round-trip guarantees.
+for coverage and round-trip guarantees.
 
 ## Documentation
 

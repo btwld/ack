@@ -36,9 +36,9 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
 - `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
-  documents = const {}})`: Strictly imports a decoded draft 2020-12 JSON
+  documents = const {}, bool assertFormats = false})`: Imports a decoded draft 2020-12 JSON
   Schema. Referenced documents must be supplied explicitly; Ack never fetches
-  files or URLs.
+  files or URLs. Formats are annotations unless assertions are enabled.
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use
   `Ack.map(Ack.any().nullable())` for a `JsonMap`.
@@ -116,10 +116,14 @@ For non-`num` boundary types (e.g. numeric strings), use
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via
-  the canonical `AckSchemaModel` boundary.
+- `Map<String, Object?> toJsonSchema()`: Returns the stable Draft-7 JSON Schema
+  representation via the canonical `AckSchemaModel` boundary, including imports.
+- `Map<String, Object?> toJsonSchemaPreservingImportedDialect()`: Exports
+  imported schemas with draft 2020-12 resource semantics; native schemas stay Draft-7.
 - `AckSchemaModel toSchemaModel()`: Returns the canonical, target-independent
   boundary model for schema adapters, including export warnings.
+- `AckSchemaModel toSchemaModelPreservingImportedDialect()`: Returns the matching
+  model for the resource-preserving export.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
@@ -467,7 +471,7 @@ Canonical export model for Ack schemas.
 
 - Created by `schema.toSchemaModel()`.
 - Represents the boundary/export shape, JSON-compatible defaults, discriminator metadata, target-independent constraints, and export warnings.
-- `schema.toSchemaModel().toJsonSchema()` returns the same Draft-7 map as `schema.toJsonSchema()`.
+- `schema.toSchemaModel().toJsonSchema()` returns the same Draft-7 map as `schema.toJsonSchema()`. Use the preserving model method for imported 2020-12 resources.
 - Adapters that need a JSON map should call `schema.toJsonSchema()`; adapters for non-JSON targets should convert from `AckSchemaModel` rather than traversing `AckSchema` subclasses directly.
 
 ### `AnySchema`

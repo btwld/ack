@@ -7,6 +7,15 @@
 * `CodecSchema.canEncode` reports whether a codec has its own encoder: false
   for a one-way `transform`, true for a codec built with an encoder. It does
   not inspect the schemas a codec wraps.
+* `Ack.fromJsonSchema()` now validates and round-trips the complete required
+  draft 2020-12 test suite, including dynamic references, unevaluated keywords,
+  and offline standard meta-schemas. `assertFormats: true` enables optional
+  format assertions.
+* `toJsonSchemaPreservingImportedDialect()` and
+  `toSchemaModelPreservingImportedDialect()` opt into resource-preserving
+  draft 2020-12 export. The existing `toJsonSchema()` and `toSchemaModel()`
+  keep the 1.x Draft-7 shape for imported schemas; imports that require
+  2020-12-only semantics reject legacy export explicitly.
 
 ## 1.6.2
 

@@ -19,17 +19,10 @@ void main() {
     expect(strict.safeParse({}).isFail, isTrue);
   });
 
-  test('builder bridge retains strictness and diagnostics', () {
-    final model = jsb.Schema.fromMap({'format': 'email'});
-    expect(
-      () => model.toAckSchema(),
-      throwsA(
-        isA<JsonSchemaImportException>().having(
-          (error) => error.diagnostics.single.keyword,
-          'keyword',
-          'format',
-        ),
-      ),
-    );
+  test('builder bridge treats formats as annotations by default', () {
+    final model = jsb.Schema.fromMap({'type': 'string', 'format': 'email'});
+    final schema = model.toAckSchema();
+    expect(schema.safeParse('not an email').isOk, isTrue);
+    expect(schema.safeParse(42).isFail, isTrue);
   });
 }

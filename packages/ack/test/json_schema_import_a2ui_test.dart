@@ -33,32 +33,44 @@ void main() {
     }
   });
 
-  test(
-    'client capabilities reject meta-schema references with diagnostics',
-    () {
-      expect(
-        () => load('client_capabilities.json'),
-        throwsA(
-          isA<JsonSchemaImportException>().having(
-            (error) => error.diagnostics.map((issue) => issue.code),
-            'diagnostic codes',
-            everyElement('unsupported_reference'),
-          ),
-        ),
-      );
-    },
-  );
+  test('client capabilities validate embedded schemas offline', () {
+    final schema = load('client_capabilities.json');
+    Map<String, Object?> withComponentType(String type) => {
+      'v0.9': {
+        'supportedCatalogIds': <String>[],
+        'inlineCatalogs': [
+          {
+            'catalogId': 'example',
+            'components': {
+              'Button': {'type': type},
+            },
+          },
+        ],
+      },
+    };
+    expect(schema.safeParse(withComponentType('string')).isOk, isTrue);
+    expect(schema.safeParse(withComponentType('invalid')).isFail, isTrue);
+  });
 
-  test('client events reject the unsupported date-time format', () {
+  test('client event date-time format is an annotation by default', () {
+    final schema = load('client_to_server.json');
+    final message = {
+      'version': 'v0.9',
+      'action': {
+        'name': 'click',
+        'surfaceId': 'surface',
+        'sourceComponentId': 'button',
+        'timestamp': 'not-a-date',
+        'context': <String, Object?>{},
+      },
+    };
+    expect(schema.safeParse(message).isOk, isTrue);
     expect(
-      () => load('client_to_server.json'),
-      throwsA(
-        isA<JsonSchemaImportException>().having(
-          (error) => error.diagnostics.single.keyword,
-          'keyword',
-          'format',
-        ),
-      ),
+      schema.safeParse({
+        ...message,
+        'action': {...message['action']! as Map, 'timestamp': 1},
+      }).isFail,
+      isTrue,
     );
   });
 }
