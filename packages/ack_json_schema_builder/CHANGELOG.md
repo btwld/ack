@@ -1,3 +1,8 @@
+## Unreleased
+
+* Imports inherit the expanded draft 2020-12 runtime validator. Formats are
+  annotations by default; the bridge's public API is unchanged.
+
 ## 1.6.2
 
 ### Changed
