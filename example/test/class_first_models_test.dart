@@ -15,6 +15,24 @@ void main() {
     expect(AccountSchema.wireSchema, isNotNull);
   });
 
+  test('explicit descriptions and tags become schema descriptions', () {
+    final jsonSchema = AccountSchema.toJsonSchema();
+    final properties = jsonSchema['properties'] as Map<String, Object?>;
+
+    expect(jsonSchema['description'], "A signed-in user's account.");
+    expect(AccountSchema.schema.description, "A signed-in user's account.");
+    expect(
+      (properties['display_name'] as Map<String, Object?>)['description'],
+      'The name shown to other users.',
+    );
+    expect(PetSchema.schema.description, 'A pet, identified by its `type`.');
+    expect(
+      CatSchema.schema.description,
+      'A cat with a limited number of lives.',
+    );
+    expect(DogSchema.schema.description, isNull);
+  });
+
   test('class-first sealed models dispatch through a discriminator', () {
     final pet = PetSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9});
 

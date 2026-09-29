@@ -149,7 +149,7 @@ final class AckClassModelEmitter {
 final $rawName = ${_ack('Ack')}.discriminated(
   discriminatorKey: ${dartStringLiteral(node.discriminatorKey)},
   schemas: {${schemaEntries.join(', ')}},
-);
+)${_describe(node.description)};
 
 final $wireName = ${_ack('Ack')}.preserveBoundary($rawName);
 
@@ -163,7 +163,7 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
   encode: (model) => switch (model) {
     ${encodeCases.join(',\n    ')},
   },
-);''')
+)${_describe(node.description)};''')
       ..writeln()
       ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
@@ -189,8 +189,15 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
 final $backingName = $expression.codec<${node.className}>(
   decode: ${ackClassFromRuntimeName(node.className)},
   encode: ${ackClassToRuntimeName(node.className)},
-);''';
+)${_describe(node.description)};''';
   }
+
+  /// Explicit class descriptions describe the wire object and model codec.
+  ///
+  /// A codec does not inherit its input schema's description, so describing
+  /// only the object would leave `XSchema.schema.description` unset.
+  String _describe(String? description) =>
+      description == null ? '' : '.describe(${dartStringLiteral(description)})';
 
   String _facade(
     String className,
@@ -261,7 +268,8 @@ abstract final class ${metadata.facadeName} {
     final additional = node.allowsUnknownProperties
         ? ', additionalProperties: true'
         : '';
-    return '${_ack('Ack')}.object({${entries.join(', ')}}$additional)';
+    return '${_ack('Ack')}.object({${entries.join(', ')}}$additional)'
+        '${_describe(node.description)}';
   }
 
   String _fromRuntimeFunction(AckObjectModelNode node) {

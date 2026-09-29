@@ -83,6 +83,35 @@ final class _\$UserCopyWith {}
     },
   );
 
+  test('rejects duplicate class description tags at the class', () async {
+    await _expectFailure(
+      '''
+/// @description First.
+/// @description Second.
+@AckModel()
+final class Item with _\$ItemAck {
+  const Item({required this.value});
+  final String value;
+}
+''',
+      ['Item', 'Duplicate @description tags.'],
+    );
+  });
+
+  test('rejects a blank field description tag at the field', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class Item with _\$ItemAck {
+  const Item({required this.value});
+  /// @description
+  final String value;
+}
+''',
+      ['value', '@description requires text'],
+    );
+  });
+
   test('rejects numeric sugar on a String field', () async {
     await _expectFailure(
       '''

@@ -31,6 +31,7 @@ final class AckModel {
   /// Creates a class-first Ack model annotation.
   const AckModel({
     this.schemaName,
+    this.description,
     this.caseStyle = AckCaseStyle.none,
     this.discriminatorKey,
     this.discriminatorValue,
@@ -67,6 +68,10 @@ final class AckModel {
   /// The name must be a public UpperCamel identifier. When omitted, Ack derives
   /// `<ClassName>Schema`, preserving the model class's written capitalization.
   final String? schemaName;
+
+  /// Schema description. This takes precedence over an `@description` doc tag.
+  /// Untagged documentation does not become a schema description.
+  final String? description;
 
   /// Naming convention applied to JSON field keys.
   final AckCaseStyle caseStyle;

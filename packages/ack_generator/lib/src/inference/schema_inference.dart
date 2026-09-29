@@ -90,6 +90,10 @@ final class AckSchemaInference {
     annotations.UniqueItems,
     inPackage: 'ack_annotations',
   );
+  static const _ackField = TypeChecker.typeNamed(
+    annotations.AckField,
+    inPackage: 'ack_annotations',
+  );
 
   /// Infers a schema expression for [type].
   ///
@@ -269,7 +273,7 @@ final class AckSchemaInference {
     return output;
   }
 
-  /// Adds documentation as an Ack description.
+  /// Adds an explicit Ack description or a tagged documentation description.
   ///
   /// Analyzer does not attach parameter doc comments to parameter elements.
   /// A function generator passes the comment from its source AST.
@@ -278,9 +282,29 @@ final class AckSchemaInference {
     Element declaration, {
     String? sourceComment,
   }) {
-    final description = parseDocComment(
-      sourceComment ?? declaration.documentationComment,
-    );
+    final String? tag;
+    try {
+      tag = parseDescriptionTag(
+        sourceComment ?? declaration.documentationComment,
+      );
+    } on FormatException catch (error) {
+      throw InvalidGenerationSource(
+        '${declaration.name} ${error.message}',
+        element: declaration,
+      );
+    }
+    final annotation = _ackField.firstAnnotationOfExact(declaration);
+    final value = annotation == null
+        ? null
+        : ConstantReader(annotation).read('description');
+    final explicit = value == null || value.isNull ? null : value.stringValue;
+    if (explicit != null && explicit.trim().isEmpty) {
+      throw InvalidGenerationSource(
+        '${declaration.name} @AckField.description must not be blank.',
+        element: declaration,
+      );
+    }
+    final description = explicit ?? tag;
     return description == null
         ? schema
         : '$schema.describe(${dartStringLiteral(description)})';

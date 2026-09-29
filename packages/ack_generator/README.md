@@ -90,13 +90,19 @@ void main() {
 }
 ```
 
-Field documentation becomes an Ack schema description. The generator shares
-its type and constraint inference through
+Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
+descriptions. A single-line `@description` tag in a `///` or `/** */` doc
+comment is a fallback. The tag exports only text on its own line. Untagged
+prose never becomes schema data. Duplicate or blank tags fail generation.
+Annotation text takes precedence over a tag. A class description applies to
+both the object schema and model codec, including union bases and branches.
+A field description applies at its property without changing a nested model.
+The generator shares its type and constraint inference through
 `package:ack_generator/inference.dart`. A second generator can use
 `AckSchemaInference.inferType`, `applyConstraints`, and `applyDescription`.
 The caller resolves application model types and import prefixes. For function
 parameters, read the documentation comment from the source AST and pass it as
-`sourceComment` to `applyDescription`.
+`sourceComment` to `applyDescription`. That method uses the same tag-only rule.
 
 ## Schema support
 

@@ -13,11 +13,13 @@ import 'package:source_gen/source_gen.dart';
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 import '../inference/schema_inference.dart';
+import '../utils/doc_comment_utils.dart';
 import 'generated_companion_visibility.dart';
 import '../utils/string_literal.dart';
 
 typedef _ModelOptions = ({
   String? schemaName,
+  String? description,
   String caseStyle,
   String? discriminatorKey,
   String? discriminatorValue,
@@ -395,6 +397,7 @@ final class ClassModelGraphBuilder {
           _options(branch) ??
           (
             schemaName: null,
+            description: null,
             caseStyle: baseOptions.caseStyle,
             discriminatorKey: null,
             discriminatorValue: null,
@@ -437,6 +440,7 @@ final class ClassModelGraphBuilder {
         runtimeRef: AckExternalTypeRef(name: base.name!),
         discriminatorKey: discriminatorKey,
         branches: branches,
+        description: _classDescription(base, baseOptions),
       ),
     );
   }
@@ -662,6 +666,7 @@ final class ClassModelGraphBuilder {
       unionId: unionId,
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
+      description: _classDescription(element, options),
     );
     _graph.complete(node);
     return node;
@@ -1435,10 +1440,12 @@ final class ClassModelGraphBuilder {
           .objectValue
           .getField('index')!
           .toIntValue()!;
-      if (schemaMissing && presenceIndex == 0) {
+      if (schemaMissing &&
+          reader.read('description').isNull &&
+          presenceIndex == 0) {
         throw InvalidGenerationSource(
           '${field.enclosingElement.name}.${field.name} @AckField() is a '
-          'no-op; set schema or presence.',
+          'no-op; set schema, description, or presence.',
           element: field,
         );
       }
@@ -1741,6 +1748,7 @@ final class ClassModelGraphBuilder {
     const styles = ['none', 'snake', 'kebab', 'pascal', 'screamingSnake'];
     return (
       schemaName: _nullableString(reader, 'schemaName'),
+      description: _nullableString(reader, 'description'),
       caseStyle: styles[caseIndex],
       discriminatorKey: _nullableString(reader, 'discriminatorKey'),
       discriminatorValue: _nullableString(reader, 'discriminatorValue'),
@@ -1752,6 +1760,29 @@ final class ClassModelGraphBuilder {
               .toIntValue()!],
       captureField: reader.read('captureField').stringValue,
     );
+  }
+
+  String? _classDescription(ClassElement element, _ModelOptions options) {
+    final tag = _descriptionTag(element);
+    final explicit = options.description;
+    if (explicit != null && explicit.trim().isEmpty) {
+      throw InvalidGenerationSource(
+        '${element.name} @AckModel.description must not be blank.',
+        element: element,
+      );
+    }
+    return explicit ?? tag;
+  }
+
+  String? _descriptionTag(Element element) {
+    try {
+      return parseDescriptionTag(element.documentationComment);
+    } on FormatException catch (error) {
+      throw InvalidGenerationSource(
+        '${element.name} ${error.message}',
+        element: element,
+      );
+    }
   }
 
   String? _nullableString(ConstantReader reader, String name) {

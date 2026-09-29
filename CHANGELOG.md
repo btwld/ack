@@ -7,6 +7,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * Generate a static `Model.schema` shorthand for `Model.$ack.modelSchema` on
   `@AckInfer()` models.
+* Add explicit `description` options to `@AckModel` and `@AckField`.
+  A single-line `@description` doc tag is a fallback. Untagged prose does not
+  become schema data (#175).
+* Escape control characters in generated string literals, including inferred
+  pattern values (#164).
 
 ## 1.6.2
 

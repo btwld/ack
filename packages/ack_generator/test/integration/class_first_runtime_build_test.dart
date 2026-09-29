@@ -507,6 +507,68 @@ final class ImplementingChild with _$ImplementingChildAck implements Parent {
   final String? note;
 }
 
+/// A task the person can complete.
+/// @description This tag has lower priority.
+@AckModel(description: 'A task the person can complete.')
+final class Task with _$TaskAck {
+  const Task({required this.id, required this.title});
+
+  final String id;
+
+  /// What to do.
+  /// @description What to do.
+  final String title;
+}
+
+/**
+ * A board that groups
+ * related tasks.
+ * @description A board that groups related tasks.
+ */
+@AckModel()
+final class Board with _$BoardAck {
+  const Board({required this.focus, required this.backlog, this.pinned});
+
+  /// The task to do next.
+  /// @description This tag has lower priority.
+  @AckField(description: 'The task to do next.')
+  final Task focus;
+  final List<Task> backlog;
+  final Task? pinned;
+}
+
+@AckModel()
+final class Undocumented with _$UndocumentedAck {
+  const Undocumented({required this.value});
+
+  /// Ordinary field prose does not become schema data.
+  final String value;
+}
+
+/// A shape to draw.
+/// @description A shape to draw.
+@AckModel(discriminatorKey: 'kind')
+sealed class Shape with _$ShapeAck {
+  const Shape();
+}
+
+/// A circle, sized by its radius.
+@AckModel(
+  discriminatorValue: 'circle',
+  description: 'A circle, sized by its radius.',
+)
+final class Circle extends Shape with _$CircleAck {
+  const Circle({required this.radius});
+
+  final double radius;
+}
+
+final class Square extends Shape with _$SquareAck {
+  const Square({required this.side});
+
+  final double side;
+}
+
 @AckInfer()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
@@ -523,6 +585,8 @@ final class PlainJson {
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
         ).writeAsStringSync(r'''
+import 'dart:convert';
+
 import 'package:ack_class_first_runtime/alpha.dart' as alpha;
 import 'package:ack_class_first_runtime/beta.dart' as beta;
 import 'package:ack_class_first_runtime/coexist.dart';
@@ -1019,6 +1083,62 @@ void main() {
     final direct = CatSchema.parse({'id': 'c2', 'lives': 7});
     expect(direct.toJson(), {'type': 'cat', 'id': 'c2', 'lives': 7});
     expect(PetSchema.safeParse({'id': 'c2', 'lives': 7}).isFail, isTrue);
+  });
+
+  test('class doc comments describe class-first object schemas', () {
+    const task = 'A task the person can complete.';
+    expect(TaskSchema.toJsonSchema()['description'], task);
+    expect(TaskSchema.schema.description, task);
+    expect(TaskSchema.wireSchema.description, task);
+    expect(TaskSchema.toSchemaModel().toJsonSchema()['description'], task);
+    final taskProperties =
+        TaskSchema.toJsonSchema()['properties'] as Map<String, Object?>;
+    expect(
+      (taskProperties['title'] as Map<String, Object?>)['description'],
+      'What to do.',
+    );
+    expect(
+      (taskProperties['id'] as Map<String, Object?>)['description'],
+      isNull,
+    );
+
+    expect(
+      BoardSchema.schema.description,
+      'A board that groups related tasks.',
+    );
+    final board = BoardSchema.toJsonSchema();
+    final boardProperties = board['properties'] as Map<String, Object?>;
+    expect(
+      (boardProperties['focus'] as Map<String, Object?>)['description'],
+      'The task to do next.',
+    );
+    expect(
+      ((boardProperties['backlog'] as Map<String, Object?>)['items']
+          as Map<String, Object?>)['description'],
+      task,
+    );
+    expect(jsonEncode(boardProperties['pinned']), contains(task));
+
+    expect(UndocumentedSchema.toJsonSchema().containsKey('description'), isFalse);
+    expect(UndocumentedSchema.schema.description, isNull);
+    expect(UndocumentedSchema.wireSchema.description, isNull);
+  });
+
+  test('union base and branch doc comments describe their schemas', () {
+    expect(ShapeSchema.schema.description, 'A shape to draw.');
+    expect(ShapeSchema.toJsonSchema()['description'], 'A shape to draw.');
+    expect(CircleSchema.schema.description, 'A circle, sized by its radius.');
+    expect(SquareSchema.schema.description, isNull);
+    final branches = (ShapeSchema.toJsonSchema()['anyOf'] as List<Object?>)
+        .cast<Map<String, Object?>>();
+    expect(branches.map((branch) => branch['description']), [
+      'A circle, sized by its radius.',
+      null,
+    ]);
+    expect(
+      ShapeSchema.parse({'kind': 'circle', 'radius': 2}),
+      const Circle(radius: 2),
+    );
   });
 
   test('prefixed same-named imported types preserve identity', () {

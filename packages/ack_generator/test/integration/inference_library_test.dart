@@ -52,7 +52,8 @@ void main() {
     await readerWriter.testing.loadIsolateSources();
     await testBuilder(
       const _InferenceProbe(
-        sourceComment: '/// The item title.\r\n/// It appears on screen.',
+        sourceComment:
+            '/// The item title.\r\n/// @description It appears on screen.\r\n/// More prose.',
       ),
       {
         'test_pkg|lib/widget.dart': '''
@@ -69,7 +70,34 @@ void widget({
       readerWriter: readerWriter,
       outputs: {
         'test_pkg|lib/widget.probe': decodedMatches(
-          "Ack.string().minLength(2).describe('The item title. It appears on screen.')",
+          "Ack.string().minLength(2).describe('It appears on screen.')",
+        ),
+      },
+    );
+  });
+
+  test('an explicit parameter description overrides its source tag', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      const _InferenceProbe(
+        sourceComment: '/// @description Tag text.\n/// Following prose.',
+      ),
+      {
+        'test_pkg|lib/widget.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+void widget({
+  @AckField(description: 'Explicit text.')
+  required String title,
+}) {}
+''',
+      },
+      generateFor: const {'test_pkg|lib/widget.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/widget.probe': decodedMatches(
+          "Ack.string().describe('Explicit text.')",
         ),
       },
     );

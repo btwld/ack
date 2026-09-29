@@ -223,6 +223,32 @@ static final Profile Function(Map<String, dynamic>) fromJson =
     ProfileSchema.fromJson;
 ```
 
+Use `@AckModel(description: ...)` and `@AckField(description: ...)` to export
+schema descriptions. A single-line `@description` tag in a `///` or `/** */`
+doc comment is a fallback. The tag exports only text on its own line. Untagged
+prose does not become schema data. Explicit annotation text takes precedence.
+Blank or duplicate tags fail generation. `@description` is an Ack convention,
+not a Dart annotation.
+
+A class description applies to its object schema and model codec. This includes
+sealed union bases and branches. A field description applies at its property.
+It does not change a nested model's own description.
+
+```dart
+/// A task the person can complete.
+@AckModel(description: 'A task the person can complete.')
+final class Task with _$TaskAck {
+  const Task({required this.id, required this.title});
+
+  final String id;
+
+  /// @description What to do.
+  final String title;
+}
+
+TaskSchema.toJsonSchema()['description']; // 'A task the person can complete.'
+```
+
 Use `@AckModel(schemaName: 'WireProfileSchema')` to override the exact public
 facade name. It must be a public UpperCamel identifier. The private backing
 name remains derived from the model class, and no public lower-camel alias is
