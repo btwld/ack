@@ -83,6 +83,30 @@ final class _\$UserCopyWith {}
     },
   );
 
+  test('rejects blank annotation descriptions', () async {
+    await _expectFailure(
+      '''
+@AckModel(description: ' ')
+final class Item with _\$ItemAck {
+  const Item({required this.value});
+  final String value;
+}
+''',
+      ['Item @AckModel.description must not be blank.'],
+    );
+    await _expectFailure(
+      '''
+@AckModel()
+final class Item with _\$ItemAck {
+  const Item({required this.value});
+  @AckField(description: '')
+  final String value;
+}
+''',
+      ['value @AckField.description must not be blank.'],
+    );
+  });
+
   test('rejects duplicate class description tags at the class', () async {
     await _expectFailure(
       '''

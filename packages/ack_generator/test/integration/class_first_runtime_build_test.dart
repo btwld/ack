@@ -1085,7 +1085,7 @@ void main() {
     expect(PetSchema.safeParse({'id': 'c2', 'lives': 7}).isFail, isTrue);
   });
 
-  test('class doc comments describe class-first object schemas', () {
+  test('explicit descriptions and tags describe class-first object schemas', () {
     const task = 'A task the person can complete.';
     expect(TaskSchema.toJsonSchema()['description'], task);
     expect(TaskSchema.schema.description, task);
@@ -1124,7 +1124,7 @@ void main() {
     expect(UndocumentedSchema.wireSchema.description, isNull);
   });
 
-  test('union base and branch doc comments describe their schemas', () {
+  test('union base and branch descriptions describe their schemas', () {
     expect(ShapeSchema.schema.description, 'A shape to draw.');
     expect(ShapeSchema.toJsonSchema()['description'], 'A shape to draw.');
     expect(CircleSchema.schema.description, 'A circle, sized by its radius.');

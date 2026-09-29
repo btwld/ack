@@ -41,9 +41,15 @@ String? parseDescriptionTag(String? docComment) {
       final marker = fenceMatch.group(1)!;
       if (fence == null) {
         fence = marker;
-      } else if (marker[0] == fence[0] && marker.length >= fence.length) {
-        fence = null;
+        continue;
       }
+      // A closing fence is a bare marker; a line with an info string such
+      // as ```dart stays inside the open fence.
+      final closes =
+          marker[0] == fence[0] &&
+          marker.length >= fence.length &&
+          line.substring(marker.length).trim().isEmpty;
+      if (closes) fence = null;
       continue;
     }
     if (fence != null || !RegExp(r'^@description(?:\s|$)').hasMatch(line)) {

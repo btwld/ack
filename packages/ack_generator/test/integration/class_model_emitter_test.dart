@@ -514,6 +514,7 @@ final class Record with _\$RecordAck {
     required this.names,
   });
 
+  /// Untagged field prose does not replace the authored description.
   @AckField(schema: colorSchema)
   final Color color;
   @AckField(schema: scoresSchema)

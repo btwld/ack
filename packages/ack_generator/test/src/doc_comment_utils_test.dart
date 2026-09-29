@@ -33,6 +33,15 @@ void main() {
       parseDescriptionTag('/**\n * ~~~\n * @description Example.\n * ~~~\n */'),
       isNull,
     );
+    expect(
+      parseDescriptionTag(
+        '/// ```\n'
+        '/// ```dart\n'
+        '/// @description Still inside the fence.\n'
+        '/// ```',
+      ),
+      isNull,
+    );
   });
 
   test('blank and duplicate tags are invalid', () {
