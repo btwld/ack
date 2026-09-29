@@ -10,6 +10,7 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../json/helper_names.dart';
+import 'schema_first_names.dart';
 import '../models/schema_model_graph.dart';
 import 'generated_companion_visibility.dart';
 
@@ -52,91 +53,6 @@ typedef _SchemaTypes = ({AckInferRef boundary, AckInferRef runtime});
 /// Builds the single normalized graph consumed by Ack model emission.
 final class SchemaModelGraphBuilder {
   SchemaModelGraphBuilder(this.library);
-
-  static const _reservedMembers = {
-    r'$ack',
-    'parse',
-    'safeParse',
-    'fromJson',
-    'toJson',
-    'safeToJson',
-    'copyWith',
-    '_fromAckRuntime',
-    '_toAckRuntime',
-    'hashCode',
-    'noSuchMethod',
-    'toString',
-    'runtimeType',
-  };
-
-  static const _dartKeywords = {
-    'abstract',
-    'as',
-    'assert',
-    'async',
-    'await',
-    'base',
-    'break',
-    'case',
-    'catch',
-    'class',
-    'const',
-    'continue',
-    'covariant',
-    'default',
-    'deferred',
-    'do',
-    'dynamic',
-    'else',
-    'enum',
-    'export',
-    'extends',
-    'extension',
-    'external',
-    'factory',
-    'false',
-    'final',
-    'finally',
-    'for',
-    'get',
-    'hide',
-    'if',
-    'implements',
-    'import',
-    'in',
-    'interface',
-    'is',
-    'late',
-    'library',
-    'mixin',
-    'new',
-    'null',
-    'of',
-    'on',
-    'operator',
-    'part',
-    'required',
-    'rethrow',
-    'return',
-    'sealed',
-    'set',
-    'show',
-    'static',
-    'super',
-    'switch',
-    'sync',
-    'this',
-    'throw',
-    'true',
-    'try',
-    'typedef',
-    'var',
-    'void',
-    'when',
-    'while',
-    'with',
-    'yield',
-  };
 
   static const _oneWayTransformMethods = {
     'transform',
@@ -483,7 +399,7 @@ final class SchemaModelGraphBuilder {
       }
       final jsonKey = (entry.key as SimpleStringLiteral).value;
       _rejectInvalidMemberName(jsonKey, path, declaration.element);
-      if (_reservedMembers.contains(jsonKey)) {
+      if (ackSchemaFirstReservedMembers.contains(jsonKey)) {
         throw InvalidGenerationSource(
           '$path.$jsonKey conflicts with generated/Object member "$jsonKey".',
           element: declaration.element,
@@ -572,7 +488,7 @@ final class SchemaModelGraphBuilder {
       );
     }
     _rejectInvalidMemberName(discriminatorKey, path, declaration.element);
-    if (_reservedMembers.contains(discriminatorKey) ||
+    if (ackSchemaFirstReservedMembers.contains(discriminatorKey) ||
         discriminatorKey == 'additionalProperties') {
       throw InvalidGenerationSource(
         '$path.$discriminatorKey conflicts with a generated member or Dart '
@@ -1550,7 +1466,7 @@ final class SchemaModelGraphBuilder {
             element: element,
           );
         }
-        if (_reservedMembers.contains(bridgeName)) {
+        if (ackSchemaFirstReservedMembers.contains(bridgeName)) {
           throw InvalidGenerationSource(
             '$path.$fieldName generates helper "$bridgeName" that conflicts '
             'with a generated member.',
@@ -1644,7 +1560,7 @@ final class SchemaModelGraphBuilder {
       );
     }
     if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(jsonKey) ||
-        _dartKeywords.contains(jsonKey)) {
+        ackDartReservedWords.contains(jsonKey)) {
       throw InvalidGenerationSource(
         '$path.$jsonKey cannot be represented as a Dart field name.',
         element: element,

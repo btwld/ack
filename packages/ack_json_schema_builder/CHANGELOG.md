@@ -1,7 +1,13 @@
 ## Unreleased
 
-* Imports inherit the expanded draft 2020-12 runtime validator. Formats are
-  annotations by default; the bridge's public API is unchanged.
+* Imports use the expanded draft 2020-12 importer and its `assertFormats`
+  API. `toJsonSchemaBuilder()` keeps the 1.x Draft-7 export;
+  `toJsonSchemaBuilderPreservingImportedDialect()` opts into 2020-12 resources.
+
+### Added
+
+* `Schema.toAckSchema(assertFormats: true)` enables format assertions when
+  importing a draft 2020-12 model. Formats remain annotations by default.
 
 ## 1.6.2
 

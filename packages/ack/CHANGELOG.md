@@ -10,7 +10,8 @@
 * `Ack.fromJsonSchema()` now validates and round-trips the complete required
   draft 2020-12 test suite, including dynamic references, unevaluated keywords,
   and offline standard meta-schemas. `assertFormats: true` enables optional
-  format assertions.
+  format assertions. The opt-in model generator retains typed output where
+  supported and uses validated value-model wrappers for other valid shapes.
 * `toJsonSchemaPreservingImportedDialect()` and
   `toSchemaModelPreservingImportedDialect()` opt into resource-preserving
   draft 2020-12 export. The existing `toJsonSchema()` and `toSchemaModel()`

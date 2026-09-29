@@ -77,7 +77,8 @@ Use `toJsonSchemaPreservingImportedDialect()` for imported draft 2020-12
 resources. Exports preserve validation behavior, not textual document identity.
 Full A2UI and MCP registration compatibility remain separate. See the
 [JSON Schema guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
-for coverage and round-trip guarantees.
+and [capability matrix](../../docs/json-schema-2020-12-capabilities.md) for
+coverage and round-trip guarantees.
 
 ## Documentation
 

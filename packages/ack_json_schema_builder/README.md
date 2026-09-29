@@ -33,15 +33,13 @@ the source keyword and location. `toAckSchema()` returns the executable
 validator. Exports preserve supported validation behavior, not textual
 round-trip identity.
 
-The bridge inherits ACK's required draft 2020-12 validation support, including
-patterns, multiples, dynamic references, conditionals, unevaluated keywords,
-and offline standard meta-schemas. Formats are annotations by default. To
-assert supported formats before the bridge exposes an assertion option, use
-`Ack.fromJsonSchema(..., assertFormats: true)` directly. The bridge's default
-export remains the stable Draft-7 representation. Full A2UI support and MCP
-registration compatibility remain separate work.
-See the [import guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
-for coverage and reference/diagnostic behavior.
+The importer validates and round-trips the complete required draft 2020-12
+test suite, including patterns, `multipleOf`, dynamic references,
+`unevaluated*`, conditionals, and standard meta-schemas. Formats are annotations
+by default; use `toAckSchema(assertFormats: true)` to enforce supported formats.
+Unknown asserted formats fail compilation. Optional vocabulary coverage and
+typed model generation remain narrower than runtime validation; see the
+[capability matrix](../../docs/json-schema-2020-12-capabilities.md).
 
 ## Installation
 
@@ -95,9 +93,11 @@ other logic that JSON Schema cannot represent.
 
 ### Target Schema Support
 
-The converter emits ACK's generic Draft-7 JSON Schema map before constructing
-the `json_schema_builder` schema. If a downstream validator or consumer ignores
-a JSON Schema keyword, validate with ACK after parsing.
+The converter uses `AckSchema.toJsonSchema()` before constructing the
+`json_schema_builder` schema. This retains the 1.x Draft-7 output. For an
+imported schema needing full draft 2020-12 semantics, call
+`schema.toJsonSchemaBuilderPreservingImportedDialect()`. If a validator ignores
+a keyword, validate with ACK.
 
 ```dart
 final schema = Ack.date().min(DateTime(2026));

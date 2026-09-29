@@ -34,3 +34,14 @@ builders:
     auto_apply: none
     build_to: source
     required_inputs: [".ack.dart"]
+
+  ack_json_schema:
+    import: "package:ack_generator/builder.dart"
+    builder_factories: ["ackJsonSchemaBuilder"]
+    build_extensions: {".schema.json": [".schema.dart"]}
+    auto_apply: none
+    build_to: source
+    runs_before: ["ack_generator:ack_models"]
+    defaults:
+      options:
+        unknown_properties: schema
