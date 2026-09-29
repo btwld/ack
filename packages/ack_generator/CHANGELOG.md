@@ -29,6 +29,9 @@
 
 ### Added
 
+* `@AckInfer()` models declare `static final schema` as a shorthand for
+  `$ack.modelSchema`. The generator omits this member when `schema` conflicts
+  with a field, discriminator, or annotated declaration.
 * Class-first generation uses field documentation as schema descriptions and
   supports the new string format annotations.
 * `inference.dart` exports shared type and constraint inference for other

@@ -8,6 +8,8 @@ import 'data_class_emitter.dart';
 final class AckModelEmitter {
   AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
 
+  static const _schemaShorthandName = 'schema';
+
   final String? ackPrefix;
   final String? ackInferPrefix;
 
@@ -55,6 +57,11 @@ final class AckModelEmitter {
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(node, node.id.declarationName),
+          if (_exposesSchemaShorthand(
+            declarationName: node.id.declarationName,
+            fields: fields,
+          ))
+            _schemaShorthand(node),
         ])
         ..constructors.addAll([
           _objectConstructor(fields, node.additionalProperties),
@@ -92,6 +99,11 @@ final class AckModelEmitter {
               ..type = refer(runtimeRef),
           ),
           _adapter(node, node.id.declarationName),
+          if (_exposesSchemaShorthand(
+            declarationName: node.id.declarationName,
+            fields: [_valueField(node)],
+          ))
+            _schemaShorthand(node),
         ])
         ..constructors.addAll([
           _valueConstructor(node, runtimeRef),
@@ -161,7 +173,14 @@ final class AckModelEmitter {
         ..name = node.className
         ..sealed = true
         ..docs.addAll(_docs(node, 'Discriminated model base'))
-        ..fields.add(_adapter(node, node.id.declarationName))
+        ..fields.addAll([
+          _adapter(node, node.id.declarationName),
+          if (_exposesSchemaShorthand(
+            declarationName: node.id.declarationName,
+            discriminatorKey: node.discriminatorKey,
+          ))
+            _schemaShorthand(node),
+        ])
         ..constructors.addAll([
           Constructor(
             (c) => c
@@ -231,6 +250,12 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
             node,
             '${union.id.declarationName}.effectiveBranch(${_literal(value)})',
           ),
+          if (_exposesSchemaShorthand(
+            declarationName: union.id.declarationName,
+            fields: fields,
+            discriminatorKey: discriminator,
+          ))
+            _schemaShorthand(node),
         ])
         ..constructors.addAll([
           _objectConstructor(fields, node.additionalProperties),
@@ -298,6 +323,36 @@ ${_ack('AckModelAdapter')}(
   fromRuntime: ${node.className}._fromAckRuntime,
   toRuntime: (model) => model._toAckRuntime(),
 )'''),
+  );
+
+  /// Whether a model class can declare the static `schema` shorthand.
+  ///
+  /// Dart rejects a static and an instance member with the same name, so a
+  /// field or discriminator getter named `schema` suppresses the shorthand.
+  /// A schema declaration named `schema` suppresses it too, because the
+  /// static would shadow the declaration that [_adapter] reads. The model
+  /// still exposes the same schema as `$ack.modelSchema`.
+  static bool _exposesSchemaShorthand({
+    required String declarationName,
+    Iterable<AckFieldNode> fields = const [],
+    String? discriminatorKey,
+  }) =>
+      declarationName != _schemaShorthandName &&
+      discriminatorKey != _schemaShorthandName &&
+      fields.every((field) => field.dartName != _schemaShorthandName);
+
+  Field _schemaShorthand(AckModelNode node) => Field(
+    (f) => f
+      ..name = _schemaShorthandName
+      ..static = true
+      ..modifier = FieldModifier.final$
+      ..docs.addAll([
+        '/// The Ack schema that parses input into [${node.className}] and '
+            'encodes it back.',
+        '///',
+        '/// A shorthand for `\$ack.modelSchema`, created once.',
+      ])
+      ..assignment = const Code(r'$ack.modelSchema'),
   );
 
   Constructor _objectConstructor(

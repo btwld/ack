@@ -36,6 +36,17 @@ void main() {
 }
 ```
 
+`User.schema` is the model-valued schema: it parses input into `User` and
+encodes a `User` back, so it composes like any other Ack schema:
+
+```dart
+final users = Ack.list(User.schema).parse(json)!; // List<User>
+```
+
+It is a shorthand for `User.$ack.modelSchema`. The generator omits it when the
+model has a field or union discriminator named `schema`, or when the annotated
+declaration is itself named `schema`; use `$ack.modelSchema` there.
+
 Constructors don't validate immediately. Use `parse` for untrusted input;
 `toJson` and `safeToJson` validate a directly constructed model while encoding
 it. Generated models don't implement `Map`, and there are no `fromMap` or

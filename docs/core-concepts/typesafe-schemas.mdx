@@ -121,6 +121,10 @@ Generated models provide:
 - `User.parse` and `User.safeParse` for validated input;
 - `User.fromJson`, `toJson`, and `safeToJson` for the JSON boundary;
 - generated `copyWith`, deep collection-aware `==`/`hashCode`, and `toString`;
+- `User.schema`, the model-valued schema for composition such as
+  `Ack.list(User.schema)`; it is a shorthand for `User.$ack.modelSchema` and
+  is omitted when the model has a field or discriminator named `schema`, or the
+  annotated declaration is named `schema`;
 - a public `User.$ack` adapter used by nested generated models.
 
 The generator supports object and value roots, literals, enums, lists, sets,

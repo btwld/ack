@@ -84,6 +84,9 @@ Generated object models provide:
 - a typed `copyWith` (omitted means keep; explicit `null` clears a nullable
   field; wrong argument types fail to compile), deep collection-aware
   `==`/`hashCode`, and `toString`;
+- a static `User.schema` model-valued schema, shorthand for
+  `User.$ack.modelSchema` (omitted when a field, discriminator, or the
+  annotated declaration is named `schema`);
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 

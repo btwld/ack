@@ -43,6 +43,11 @@ final class Password {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Password] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Password> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -133,6 +138,11 @@ final class Age {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Age] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Age> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -221,6 +231,11 @@ final class Price {
     fromRuntime: Price._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Price] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Price> safeParse(Object? input) => $ack.safeParse(input);
@@ -311,6 +326,11 @@ final class Active {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Active] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Active> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -400,6 +420,11 @@ final class Tags {
     fromRuntime: Tags._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Tags] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Tags> safeParse(Object? input) => $ack.safeParse(input);
@@ -493,6 +518,11 @@ final class Scores {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Scores] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Scores> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -583,6 +613,11 @@ final class StatusLiteral {
     fromRuntime: StatusLiteral._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [StatusLiteral] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<StatusLiteral> safeParse(Object? input) =>
@@ -676,6 +711,11 @@ final class Role {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Role] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Role> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -764,6 +804,11 @@ final class UserRoleModel {
     fromRuntime: UserRoleModel._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [UserRoleModel] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<UserRoleModel> safeParse(Object? input) =>
@@ -858,6 +903,11 @@ final class StatusEnum {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [StatusEnum] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<StatusEnum> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -947,6 +997,11 @@ final class OptionalStatus {
     fromRuntime: OptionalStatus._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [OptionalStatus] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<OptionalStatus> safeParse(Object? input) =>
@@ -1041,6 +1096,11 @@ final class DefaultedEnum {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [DefaultedEnum] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<DefaultedEnum> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -1134,6 +1194,11 @@ final class ChainedEnumString {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [ChainedEnumString] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<ChainedEnumString> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -1226,6 +1291,11 @@ final class RefinedAge {
     fromRuntime: RefinedAge._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [RefinedAge] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<RefinedAge> safeParse(Object? input) =>

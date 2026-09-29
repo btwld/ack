@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+* Generate a static `Model.schema` shorthand for `Model.$ack.modelSchema` on
+  `@AckInfer()` models.
+
 ## 1.6.2
 
 * Restore import of Ack-exported JSON Schemas containing `pattern` and accept

@@ -221,6 +221,33 @@ final class Counted {
   }
 }
 
+@AckInfer()
+final documentSchema = Ack.object({'schema': Ack.string()});
+
+@AckInfer(name: 'Settings')
+final schema = Ack.object({'theme': Ack.string()});
+
+@AckInfer()
+final draftSchema = Ack.object({'body': Ack.string()});
+
+@AckInfer()
+final revisionSchema = Ack.discriminated(
+  discriminatorKey: 'schema',
+  schemas: {'draft': draftSchema},
+);
+
+@AckInfer()
+final circleSchema = Ack.object({'radius': Ack.integer()});
+
+@AckInfer()
+final ruleSchema = Ack.object({'schema': Ack.string()});
+
+@AckInfer()
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {'circle': circleSchema, 'rule': ruleSchema},
+);
+
 @AckInfer(name: 'CountedModel')
 final countedSchema = Ack.object({
   'item': Ack.string().codec<Counted>(
@@ -272,11 +299,65 @@ final personSchema = Ack.object({
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
         ).writeAsStringSync(r'''
+import 'package:ack/ack.dart';
 import 'package:ack_ack_infer_runtime/models.dart';
 import 'package:ack_ack_infer_runtime/person.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('models expose their model schema as a static shorthand', () {
+    final AckSchema<Map<String, Object?>, Node> schema = Node.schema;
+    expect(identical(Node.schema, schema), isTrue);
+    expect(Node.schema, Node.$ack.modelSchema);
+    expect(Node.schema.hashCode, Node.$ack.modelSchema.hashCode);
+
+    final nodes = Ack.list(Node.schema).parse([
+      {'label': 'a'},
+      {'label': 'b'},
+    ])!;
+    expect(nodes, [Node(label: 'a'), Node(label: 'b')]);
+    expect(Ack.list(Node.schema).encode(nodes), [
+      {'label': 'a'},
+      {'label': 'b'},
+    ]);
+
+    final AckSchema<String, MemberType> member = MemberType.schema;
+    expect(member, MemberType.$ack.modelSchema);
+    expect(member.parse('admin'), MemberType('admin'));
+
+    expect(Pet.schema, Pet.$ack.modelSchema);
+    expect(Pet.schema.parse({'kind': 'cat', 'lives': 9}), isA<Cat>());
+    expect(Cat.schema, Cat.$ack.modelSchema);
+    expect(Shape.schema.parse({'type': 'circle', 'radius': 1}), isA<Circle>());
+    expect(Circle.schema, Circle.$ack.modelSchema);
+  });
+
+  test('colliding models keep their members and the adapter schema', () {
+    final document = Document.$ack.modelSchema.parse({'schema': 'v1'})!;
+    expect(document.schema, 'v1');
+
+    final rule = Shape.schema.parse({'type': 'rule', 'schema': 'v2'});
+    expect(rule, isA<Rule>());
+    expect((rule as Rule).schema, 'v2');
+    expect(Rule.$ack.modelSchema.encode(rule), {'type': 'rule', 'schema': 'v2'});
+
+    final settings = Settings.$ack.modelSchema.parse({'theme': 'dark'})!;
+    expect(settings.theme, 'dark');
+    // The adapter still reads the top-level `schema` declaration.
+    expect(Settings.$ack.schema, same(schema));
+
+    final revision = Revision.$ack.modelSchema.parse({
+      'schema': 'draft',
+      'body': 'text',
+    })!;
+    expect(revision, isA<Draft>());
+    expect(revision.schema, 'draft');
+    expect(Draft.$ack.modelSchema.encode(revision as Draft), {
+      'schema': 'draft',
+      'body': 'text',
+    });
+  });
+
   test('schema-first adapter exposes a model-valued schema', () {
     final schema = Node.$ack.modelSchema;
     final node = schema.parse({'label': 'root'})!;
