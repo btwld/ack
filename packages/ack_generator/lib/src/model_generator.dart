@@ -122,6 +122,9 @@ final class AckModelGenerator extends Generator {
       final specs = AckModelEmitter(
         ackPrefix: schemaFirst.ackPrefix,
         ackInferPrefix: schemaFirst.ackInferPrefix,
+        schemaPrefixInScope: library.element.firstFragment.libraryImports.any(
+          (import) => import.prefix?.element.name == 'schema',
+        ),
       ).emit(schemaFirst.graph);
       output.add(
         Library((b) => b.body.addAll(specs))

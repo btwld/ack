@@ -6,12 +6,19 @@ import 'data_class_emitter.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
-  AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
+  AckModelEmitter({
+    this.ackPrefix,
+    this.ackInferPrefix,
+    this.schemaPrefixInScope = false,
+  });
 
   static const _schemaShorthandName = 'schema';
 
   final String? ackPrefix;
   final String? ackInferPrefix;
+
+  /// Whether the annotated library imports a prefix named `schema`.
+  final bool schemaPrefixInScope;
 
   List<Spec> emit(AckModelGraph graph) {
     final nodes = {for (final node in graph.nodes) node.id: node};
@@ -330,13 +337,16 @@ ${_ack('AckModelAdapter')}(
   /// Dart rejects a static and an instance member with the same name, so a
   /// field or discriminator getter named `schema` suppresses the shorthand.
   /// A schema declaration named `schema` suppresses it too, because the
-  /// static would shadow the declaration that [_adapter] reads. The model
+  /// static would shadow the declaration that [_adapter] reads. An import
+  /// prefix named `schema` suppresses it for the same reason: generated code
+  /// may qualify Ack or nested model types through that prefix. The model
   /// still exposes the same schema as `$ack.modelSchema`.
-  static bool _exposesSchemaShorthand({
+  bool _exposesSchemaShorthand({
     required String declarationName,
     Iterable<AckFieldNode> fields = const [],
     String? discriminatorKey,
   }) =>
+      !schemaPrefixInScope &&
       declarationName != _schemaShorthandName &&
       discriminatorKey != _schemaShorthandName &&
       fields.every((field) => field.dartName != _schemaShorthandName);

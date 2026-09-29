@@ -226,6 +226,29 @@ final shapeSchema = Ack.discriminated(
     );
   });
 
+  test('an import prefix named schema suppresses the shorthand', () async {
+    await _generate(
+      '''
+import 'package:ack/ack.dart' as schema;
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'schema.ack.dart';
+part 'schema.ack.g.dart';
+
+@AckInfer()
+final userSchema = schema.Ack.object({'name': schema.Ack.string()});
+''',
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          allOf([
+            contains('schema.AckModelAdapter'),
+            _schemaShorthandOn('User', present: false),
+          ]),
+        ),
+      },
+    );
+  });
+
   test('rejects one-way transforms anywhere in the graph', () async {
     var sawError = false;
     await _generate(
