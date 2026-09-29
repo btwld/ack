@@ -147,8 +147,10 @@ and publishes in dependency order:
 Each package resolves and analyzes a staged copy against pub.dev, runs tests,
 and passes a zero-warning publish dry run. `dart-lang/setup-dart` provisions the
 short-lived OIDC credential immediately before upload; no permanent `PUB_TOKEN`
-secret is required. Approve the existing `Production` environment deployment
-when GitHub requests it.
+secret is required. The workflow pauses once, after preflight, at the
+`Release` environment; approve that deployment to publish every package.
+`Production` keeps its `v*` tag policy for pub.dev OIDC but has no reviewers,
+so the publish stages do not ask again.
 
 The workflow checks exact versions on pub.dev and skips upload/OIDC provisioning
 for versions already published, while retaining validation. This handles the
