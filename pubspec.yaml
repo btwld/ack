@@ -118,6 +118,12 @@ melos:
       packageFilters:
         scope: ack_generator
 
+    test:gen:unit:
+      run: dart run melos exec -c 1 -- dart test -x integration
+      description: Run generator tests except the build_runner integration tests
+      packageFilters:
+        scope: ack_generator
+
     firebase-ai-fixtures:
       run: cd packages/ack_firebase_ai && dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
       description: Regenerate Firebase AI adapter and native schema fixtures

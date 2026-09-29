@@ -51,7 +51,9 @@ final class NotNull {
 ///
 /// [schema] must be a const tear-off of a top-level function returning an Ack
 /// schema. The generator validates the declaration and follows its expression.
-/// A no-op `@AckField()` is rejected.
+/// [description] describes this property, not a nested model's schema.
+/// It takes precedence over an `@description` doc tag. A no-op `@AckField()`
+/// is rejected.
 ///
 /// Prefer `@Optional()` and `@Required()` for key presence. [presence] is
 /// deprecated and will be removed in 2.0.0.
@@ -60,6 +62,7 @@ final class AckField {
   /// Creates a field annotation.
   const AckField({
     this.schema,
+    this.description,
     @Deprecated(
       'Use @Optional() or @Required(). AckField.presence will be removed in '
       '2.0.0.',
@@ -69,6 +72,9 @@ final class AckField {
 
   /// Top-level schema-function tear-off followed by `ack_generator`.
   final Object Function()? schema;
+
+  /// Schema description for this property.
+  final String? description;
 
   /// Presence override applied after constructor inference.
   @Deprecated(

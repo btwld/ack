@@ -1,7 +1,9 @@
-## Unreleased
+## 1.7.0-beta.2
 
 ### Added
 
+* `@AckModel(description: ...)` and `@AckField(description: ...)` set schema
+  descriptions. Explicit values take precedence over `@description` doc tags.
 * Constraint and field annotations can target function parameters.
 * `@Url()`, `@Uuid()`, and `@Date()` are string format annotations.
 * `format_annotations.dart` exports `@Uri()` and `@DateTime()` for prefixed

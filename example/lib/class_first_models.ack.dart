@@ -14,14 +14,13 @@ final _catObject = Ack.object({
   'type': Ack.literal('cat').optional(),
   'id': Ack.string(),
   'lives': Ack.integer().min(1).max(9),
-});
+}).describe('A cat with a limited number of lives.');
 
 final _catWireSchema = Ack.preserveBoundary(_catObject);
 
-final _catSchema = _catObject.codec<Cat>(
-  decode: _$CatFromRuntime,
-  encode: _$CatToRuntime,
-);
+final _catSchema = _catObject
+    .codec<Cat>(decode: _$CatFromRuntime, encode: _$CatToRuntime)
+    .describe('A cat with a limited number of lives.');
 
 /// Parses, validates, and encodes [Cat] values.
 abstract final class CatSchema {
@@ -277,21 +276,23 @@ Object? _ackDogToRuntimeBreed(String value) => value;
 final _petObject = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'cat': _catObject, 'Dog': _dogObject},
-);
+).describe('A pet, identified by its `type`.');
 
 final _petWireSchema = Ack.preserveBoundary(_petObject);
 
-final _petSchema = _petObject.codec<Pet>(
-  decode: (value) => switch (value['type']) {
-    'cat' => _$CatFromRuntime(value),
-    'Dog' => _$DogFromRuntime(value),
-    final unknown => throw StateError('Unknown type: $unknown'),
-  },
-  encode: (model) => switch (model) {
-    Cat() => _$CatToRuntime(model),
-    Dog() => _$DogToRuntime(model),
-  },
-);
+final _petSchema = _petObject
+    .codec<Pet>(
+      decode: (value) => switch (value['type']) {
+        'cat' => _$CatFromRuntime(value),
+        'Dog' => _$DogFromRuntime(value),
+        final unknown => throw StateError('Unknown type: $unknown'),
+      },
+      encode: (model) => switch (model) {
+        Cat() => _$CatToRuntime(model),
+        Dog() => _$DogToRuntime(model),
+      },
+    )
+    .describe('A pet, identified by its `type`.');
 
 /// Parses, validates, and encodes [Pet] values.
 abstract final class PetSchema {
@@ -352,17 +353,18 @@ mixin _$PetAck {
 }
 
 final _accountObject = Ack.object({
-  'display_name': Ack.string().minLength(2),
+  'display_name': Ack.string()
+      .minLength(2)
+      .describe('The name shown to other users.'),
   'website': Ack.uri().optional().nullable(),
   'role': Ack.string().withDefault('member'),
-});
+}).describe('A signed-in user\'s account.');
 
 final _accountWireSchema = Ack.preserveBoundary(_accountObject);
 
-final _accountSchema = _accountObject.codec<Account>(
-  decode: _$AccountFromRuntime,
-  encode: _$AccountToRuntime,
-);
+final _accountSchema = _accountObject
+    .codec<Account>(decode: _$AccountFromRuntime, encode: _$AccountToRuntime)
+    .describe('A signed-in user\'s account.');
 
 /// Parses, validates, and encodes [Account] values.
 abstract final class AccountSchema {

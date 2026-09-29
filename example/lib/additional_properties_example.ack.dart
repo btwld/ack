@@ -51,6 +51,11 @@ final class UserConfig {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [UserConfig] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<UserConfig> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -196,6 +201,11 @@ final class ApiRequest {
     fromRuntime: ApiRequest._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [ApiRequest] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<ApiRequest> safeParse(Object? input) =>
@@ -343,6 +353,11 @@ final class FeatureFlags {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [FeatureFlags] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<FeatureFlags> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -483,6 +498,11 @@ final class DynamicData {
     fromRuntime: DynamicData._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [DynamicData] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<DynamicData> safeParse(Object? input) =>

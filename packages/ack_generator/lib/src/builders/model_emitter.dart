@@ -3,13 +3,23 @@ import 'package:code_builder/code_builder.dart';
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 import 'data_class_emitter.dart';
+import '../utils/string_literal.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
-  AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
+  AckModelEmitter({
+    this.ackPrefix,
+    this.ackInferPrefix,
+    this.schemaPrefixInScope = false,
+  });
+
+  static const _schemaShorthandName = 'schema';
 
   final String? ackPrefix;
   final String? ackInferPrefix;
+
+  /// Whether the annotated library imports a prefix named `schema`.
+  final bool schemaPrefixInScope;
 
   List<Spec> emit(AckModelGraph graph) {
     final nodes = {for (final node in graph.nodes) node.id: node};
@@ -55,6 +65,11 @@ final class AckModelEmitter {
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(node, node.id.declarationName),
+          if (_exposesSchemaShorthand(
+            declarationName: node.id.declarationName,
+            fields: fields,
+          ))
+            _schemaShorthand(node),
         ])
         ..constructors.addAll([
           _objectConstructor(fields, node.additionalProperties),
@@ -92,6 +107,11 @@ final class AckModelEmitter {
               ..type = refer(runtimeRef),
           ),
           _adapter(node, node.id.declarationName),
+          if (_exposesSchemaShorthand(
+            declarationName: node.id.declarationName,
+            fields: [_valueField(node)],
+          ))
+            _schemaShorthand(node),
         ])
         ..constructors.addAll([
           _valueConstructor(node, runtimeRef),
@@ -153,7 +173,7 @@ final class AckModelEmitter {
     for (final entry in node.branches.entries) {
       final branch = nodes[entry.value]!;
       cases.add(
-        '${_literal(entry.key)} => ${branch.className}._fromAckRuntime(value)',
+        '${dartStringLiteral(entry.key)} => ${branch.className}._fromAckRuntime(value)',
       );
     }
     return Class(
@@ -161,7 +181,14 @@ final class AckModelEmitter {
         ..name = node.className
         ..sealed = true
         ..docs.addAll(_docs(node, 'Discriminated model base'))
-        ..fields.add(_adapter(node, node.id.declarationName))
+        ..fields.addAll([
+          _adapter(node, node.id.declarationName),
+          if (_exposesSchemaShorthand(
+            declarationName: node.id.declarationName,
+            discriminatorKey: node.discriminatorKey,
+          ))
+            _schemaShorthand(node),
+        ])
         ..constructors.addAll([
           Constructor(
             (c) => c
@@ -197,7 +224,7 @@ final class AckModelEmitter {
                 ),
               )
               ..body = Code('''
-return switch (value[${_literal(node.discriminatorKey)}]) {
+return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
   ${cases.join(',\n  ')},
   final unknown => throw StateError(
     'Unknown ${node.discriminatorKey}: \$unknown',
@@ -229,8 +256,14 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(
             node,
-            '${union.id.declarationName}.effectiveBranch(${_literal(value)})',
+            '${union.id.declarationName}.effectiveBranch(${dartStringLiteral(value)})',
           ),
+          if (_exposesSchemaShorthand(
+            declarationName: union.id.declarationName,
+            fields: fields,
+            discriminatorKey: discriminator,
+          ))
+            _schemaShorthand(node),
         ])
         ..constructors.addAll([
           _objectConstructor(fields, node.additionalProperties),
@@ -246,7 +279,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
               ..name = discriminator
               ..returns = refer('String')
               ..lambda = true
-              ..body = Code(_literal(value)),
+              ..body = Code(dartStringLiteral(value)),
           ),
           ..._valueMembers(node.className, _objectDataClass(node)),
           _objectFromRuntime(
@@ -257,7 +290,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
           _objectToRuntime(
             node,
             fields: fields,
-            leadingEntries: {discriminator: _literal(value)},
+            leadingEntries: {discriminator: dartStringLiteral(value)},
             isOverride: true,
           ),
           ..._fieldBridges(fields),
@@ -298,6 +331,39 @@ ${_ack('AckModelAdapter')}(
   fromRuntime: ${node.className}._fromAckRuntime,
   toRuntime: (model) => model._toAckRuntime(),
 )'''),
+  );
+
+  /// Whether a model class can declare the static `schema` shorthand.
+  ///
+  /// Dart rejects a static and an instance member with the same name, so a
+  /// field or discriminator getter named `schema` suppresses the shorthand.
+  /// A schema declaration named `schema` suppresses it too, because the
+  /// static would shadow the declaration that [_adapter] reads. An import
+  /// prefix named `schema` suppresses it for the same reason: generated code
+  /// may qualify Ack or nested model types through that prefix. The model
+  /// still exposes the same schema as `$ack.modelSchema`.
+  bool _exposesSchemaShorthand({
+    required String declarationName,
+    Iterable<AckFieldNode> fields = const [],
+    String? discriminatorKey,
+  }) =>
+      !schemaPrefixInScope &&
+      declarationName != _schemaShorthandName &&
+      discriminatorKey != _schemaShorthandName &&
+      fields.every((field) => field.dartName != _schemaShorthandName);
+
+  Field _schemaShorthand(AckModelNode node) => Field(
+    (f) => f
+      ..name = _schemaShorthandName
+      ..static = true
+      ..modifier = FieldModifier.final$
+      ..docs.addAll([
+        '/// The Ack schema that parses input into [${node.className}] and '
+            'encodes it back.',
+        '///',
+        '/// A shorthand for `\$ack.modelSchema`, created once.',
+      ])
+      ..assignment = const Code(r'$ack.modelSchema'),
   );
 
   Constructor _objectConstructor(
@@ -700,7 +766,7 @@ return $helper(<String, dynamic>{
       if (!needsBlock) {
         final entries = <String>[
           for (final entry in leadingEntries.entries)
-            '${_literal(entry.key)}: ${entry.value}',
+            '${dartStringLiteral(entry.key)}: ${entry.value}',
           '...$helper(this)',
         ];
         m
@@ -717,7 +783,7 @@ return $helper(<String, dynamic>{
       for (final field in requiredNulls) {
         lines.add(
           'if (${field.dartName} == null) {'
-          ' result[${_literal(field.jsonKey)}] = null;'
+          ' result[${dartStringLiteral(field.jsonKey)}] = null;'
           ' }',
         );
       }
@@ -726,7 +792,7 @@ return $helper(<String, dynamic>{
           'for (final entry in additionalProperties.entries)\n'
               '    if (!declared.contains(entry.key)) entry.key: entry.value',
         for (final entry in leadingEntries.entries)
-          '${_literal(entry.key)}: ${entry.value}',
+          '${dartStringLiteral(entry.key)}: ${entry.value}',
         '...result',
       ];
       lines.add(
@@ -957,7 +1023,7 @@ return $helper(<String, dynamic>{
   }) => {...additionalKeys, for (final field in fields) field.jsonKey};
 
   String _declaredKeysLiteral(Set<String> keys) =>
-      '<String>{${keys.map(_literal).join(', ')}}';
+      '<String>{${keys.map(dartStringLiteral).join(', ')}}';
 
   AckInferRef _nonNullable(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => inner,
@@ -1020,14 +1086,6 @@ return $helper(<String, dynamic>{
   String _ack(String symbol) {
     final prefix = ackPrefix;
     return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
-
-  String _literal(String value) {
-    final escaped = value
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'")
-        .replaceAll(r'$', r'\$');
-    return "'$escaped'";
   }
 
   static const _runtimeMapType = 'Map<String, Object?>';

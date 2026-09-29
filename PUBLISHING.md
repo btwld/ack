@@ -9,15 +9,18 @@ environment. A release-preparation PR does not publish anything.
 
 Use SemVer for the combined public API: patch for compatible fixes, minor for
 new compatible features/packages, and major when any stable public API breaks.
-The next release is **1.6.2**, restoring JSON Schema import compatibility for
-`pattern` and accepting standard `propertyNames` schemas. No public Dart API
-was added; this is a patch release for the import compatibility fix. The API
-check compares the six packages against v1.6.1.
+The next candidate is **1.7.0-beta.2**. It previews shared inference, model
+adapter schemas, codec introspection, typed generated `copyWith`, stricter
+constrained-`Set` validation, static model schema shorthand, and explicit
+description controls. The API check compares
+all six packages against 1.6.2; generator compatibility also requires the
+consumer build and runtime tests because the API check cannot inspect
+generated consumer code.
 
-The shared API baseline for this release is 1.6.1. Confirm that all six
-packages have published 1.6.1 versions before preparing the release.
+The shared API baseline for this release is 1.6.2. Confirm that all six
+packages have published 1.6.2 versions before preparing the release.
 
-Melos **8.7** is configured with `mode: fixed` and `workspaceTag: true`, matching
+Melos **8.x** is configured with `mode: fixed` and `workspaceTag: true`, matching
 this repository's release-tag verifier. `smartDependents: true` preserves
 compatible dependency minimums instead of forcing unnecessary upgrades.
 For example, packages at 1.3.0 can still declare `ack: ^1.2.0` when they use only
@@ -47,27 +50,34 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 3. Preview/prepare a coordinated version without creating commits or tags:
 
    ```sh
-   dart run melos version --manual-version=ack:1.6.2 --yes --no-git-commit-version
+   dart run melos version --manual-version=ack:1.7.0-beta.2 --yes --no-git-commit-version
    ```
 
    Use the named flag, not a positional package argument: the positional form
-   filters the selected packages in Melos 8.7. Choose the next SemVer value for
-   later releases. Normal automatic selection is also available with
+   selects a package instead of requesting a coordinated version. Choose the
+   next SemVer value for later releases. Normal automatic selection is also available with
    `dart run melos version --yes --no-git-commit-version` after reviewing commits.
-   Do not pass `--all`: that would include private packages.
+   Do not pass `--all`: that would include private packages. Melos fetches tags
+   through Git; a new local branch needs an upstream before this command runs.
 
 4. Review generated changelogs and retain substantive release notes; move only
    unreleased notes into the new section, preserving every published section.
    Update installation snippets to match each package's version.
-5. Set `API_BASELINE_VERSION` in `.github/workflows/preflight.yml` to the latest
-   release published for all packages (currently `1.6.2`). Record a new
+5. Compare against the most recent coordinated stable release in
+   `API_BASELINE_VERSION` in `.github/workflows/preflight.yml` (currently
+   `1.6.2`). Keep that stable baseline for prereleases, so a beta cannot hide a
+   breaking change since the last stable version. Raise it after the next
+   stable release. Record a new
    package's actual first release in `ackPackageFirstReleases` in
    `scripts/src/workspace_packages.dart`;
    checks skip only older baselines. `ack_mcp_dart` first released at 1.3.0.
-6. Validate the complete release:
+6. Commit the reviewed version, changelog, and documentation changes locally
+   before the publish dry run. Pub treats modified tracked package files as a
+   warning, and this repository requires zero warnings.
+7. Validate the complete release from that clean commit:
 
    ```sh
-   dart scripts/verify_release_tag.dart v1.6.2 --skip-ancestry
+   dart scripts/verify_release_tag.dart v1.7.0-beta.2 --skip-ancestry
    dart run melos run ci
    dart scripts/api_check.dart 1.6.2
    dart scripts/publish_dry_run.dart
@@ -78,13 +88,13 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    The actual release workflow always enforces ancestry on `origin/main`.
    CI also runs minimum Dart/Flutter SDK checks, deterministic generation, and
    staged hosted-dependency analysis; all must pass on the release merge commit.
-7. Review and merge the release PR before creating the tag.
+8. Review and merge the release PR before creating the tag.
 
 ## Historical first publication of ack_mcp_dart
 
 [pub.dev requires the first version of a new package to be published manually](https://dart.dev/tools/pub/automated-publishing).
 OIDC cannot create a new package. The steps below applied only to the first
-`ack_mcp_dart` release, v1.3.0; do not repeat them for 1.6.2.
+`ack_mcp_dart` release, v1.3.0; do not repeat them for later releases.
 
 After the release PR merges and all checks pass, but **before pushing v1.3.0**:
 
@@ -121,9 +131,9 @@ After the release commit's CI/preflight succeeds:
 ```sh
 git fetch origin main --tags
 # Use the exact reviewed release merge commit, not an arbitrary later main head.
-git tag -a v1.6.2 <release-merge-sha> -m 'Ack 1.6.2'
-dart scripts/verify_release_tag.dart v1.6.2
-git push origin v1.6.2
+git tag -a v1.7.0-beta.2 <release-merge-sha> -m 'Ack 1.7.0 beta 2'
+dart scripts/verify_release_tag.dart v1.7.0-beta.2
+git push origin v1.7.0-beta.2
 ```
 
 Pushing the tag triggers `.github/workflows/release.yml`; there is no Melos
@@ -148,5 +158,7 @@ missing version. Rerun failed jobs on the **same tag**; never move a published t
 or republish different contents under an existing version.
 
 After all six exact versions are visible, create the GitHub Release from the
-existing tag using the prepared release notes. Before the first subsequent code
-change, begin a new unreleased changelog section instead of editing 1.6.2 notes.
+existing tag using the prepared release notes and mark it as a prerelease for
+beta versions. Before the first subsequent code
+change, begin a new unreleased changelog section instead of editing the
+1.7.0-beta.2 notes.

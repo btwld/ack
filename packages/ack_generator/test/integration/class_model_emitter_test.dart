@@ -21,13 +21,26 @@ Future<void> _build(
   );
 }
 
+/// Matches generated [code] regardless of formatter line breaks.
+///
+/// Whitespace and trailing commas are ignored on both sides.
+Matcher _containsCode(String code) => predicate<String>(
+  (output) => _compact(output).contains(_compact(code)),
+  'contains code `$code`',
+);
+
+String _compact(String code) => code
+    .replaceAll(RegExp(r'\s+'), '')
+    .replaceAll(',)', ')')
+    .replaceAll(',}', '}');
+
 const _imports = '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 ''';
 
 void main() {
-  test('class-first field docs describe the inferred schema', () async {
+  test('a field description tag describes the inferred schema', () async {
     await _build(
       {
         'documented.dart':
@@ -41,6 +54,7 @@ final class Documented with _\$DocumentedAck {
   const Documented({required this.title});
 
   /// The item title.
+  /// @description The item title.
   final String title;
 }
 ''',
@@ -48,6 +62,182 @@ final class Documented with _\$DocumentedAck {
       outputs: {
         'test_pkg|lib/documented.ack.dart': decodedMatches(
           contains("'title': Ack.string().describe('The item title.')"),
+        ),
+      },
+    );
+  });
+
+  test('description tags describe the object and its codec', () async {
+    const task = r"'A task the person\'s \$team can complete.'";
+    await _build(
+      {
+        'documented.dart':
+            '''
+$_imports
+part 'documented.ack.dart';
+part 'documented.ack.g.dart';
+
+/// A task the person's \$team can complete.
+/// @description A task the person's \$team can complete.
+///
+/// Shown in the task list.
+@AckModel()
+final class Task with _\$TaskAck {
+  const Task({required this.title});
+
+  /// What to do.
+  /// @description What to do.
+  final String title;
+}
+
+/**
+ * A note
+ * without fields.
+ * @description A note without fields.
+ */
+@AckModel()
+final class Note with _\$NoteAck {
+  const Note();
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/documented.ack.dart': decodedMatches(
+          allOf(
+            _containsCode(
+              'final _taskObject = Ack.object({'
+              "'title': Ack.string().describe('What to do.'),"
+              '}).describe($task);',
+            ),
+            _containsCode(
+              'final _taskSchema = _taskObject.codec<Task>('
+              r'decode: _$TaskFromRuntime, encode: _$TaskToRuntime,'
+              ').describe($task);',
+            ),
+            _containsCode(
+              "final _noteObject = Ack.object({}).describe('A note without "
+              "fields.');",
+            ),
+            _containsCode(
+              r'encode: _$NoteToRuntime,'
+              ").describe('A note without fields.');",
+            ),
+          ),
+        ),
+      },
+    );
+  });
+
+  test('untagged prose and line comments emit no description', () async {
+    await _build(
+      {
+        'plain.dart':
+            '''
+$_imports
+part 'plain.ack.dart';
+part 'plain.ack.g.dart';
+
+/// Ordinary class prose is not schema data.
+@AckModel()
+final class Plain with _\$PlainAck {
+  const Plain({required this.title, this.note});
+
+  /// Ordinary field prose is not schema data.
+  final String title;
+
+  // @description Line comments are not documentation.
+  final String? note;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/plain.ack.dart': decodedMatches(
+          isNot(contains('.describe(')),
+        ),
+      },
+    );
+  });
+
+  test('explicit descriptions escape control characters', () async {
+    await _build(
+      {
+        'escaped.dart':
+            '''
+$_imports
+part 'escaped.ack.dart';
+part 'escaped.ack.g.dart';
+
+@AckModel(description: 'First\\nsecond')
+final class Escaped with _\$EscapedAck {
+  const Escaped({required this.value});
+
+  @AckField(description: 'A\\tB')
+  final String value;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/escaped.ack.dart': decodedMatches(
+          allOf([
+            contains(r".describe('First\u000asecond')"),
+            contains(r".describe('A\u0009B')"),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test('union bases and branches carry their own description tags', () async {
+    await _build(
+      {
+        'shapes.dart':
+            '''
+$_imports
+part 'shapes.ack.dart';
+part 'shapes.ack.g.dart';
+
+/// A shape to draw.
+/// @description A shape to draw.
+@AckModel(discriminatorKey: 'kind')
+sealed class Shape with _\$ShapeAck {
+  const Shape();
+}
+
+/// A circle.
+/// @description A circle.
+@AckModel(discriminatorValue: 'circle')
+final class Circle extends Shape with _\$CircleAck {
+  const Circle({required this.radius});
+
+  final double radius;
+}
+
+final class Square extends Shape with _\$SquareAck {
+  const Square({required this.side});
+
+  final double side;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/shapes.ack.dart': decodedMatches(
+          allOf(
+            _containsCode("'radius': Ack.double(),}).describe('A circle.');"),
+            _containsCode(
+              r'encode: _$CircleToRuntime,'
+              ").describe('A circle.');",
+            ),
+            _containsCode("'side': Ack.double(),});"),
+            _containsCode(r'encode: _$SquareToRuntime,);'),
+            _containsCode(
+              "schemas: {'circle': _circleObject, 'Square': _squareObject},"
+              ").describe('A shape to draw.');",
+            ),
+            _containsCode(
+              r'Square() => _$SquareToRuntime(model),},'
+              ").describe('A shape to draw.');",
+            ),
+          ),
         ),
       },
     );
@@ -302,7 +492,7 @@ final class Color {
 AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.value,
-);
+).describe('Authored color.');
 
 AckSchema<Map<String, Object?>, Map<String, int>> scoresSchema() =>
     Ack.object({}, additionalProperties: true).codec<Map<String, int>>(
@@ -324,6 +514,7 @@ final class Record with _\$RecordAck {
     required this.names,
   });
 
+  /// Untagged field prose does not replace the authored description.
   @AckField(schema: colorSchema)
   final Color color;
   @AckField(schema: scoresSchema)
@@ -340,6 +531,7 @@ final class Record with _\$RecordAck {
           'test_pkg|lib/types.ack.dart': decodedMatches(
             allOf([
               contains("'color': colorSchema()"),
+              isNot(contains("'color': colorSchema().describe(")),
               contains("'scores': scoresSchema()"),
               contains("'role': Ack.enumValues(Role.values)"),
               contains("'createdAt': Ack.datetime()"),

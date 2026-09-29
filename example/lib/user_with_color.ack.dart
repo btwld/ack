@@ -43,6 +43,11 @@ final class ColorModel {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [ColorModel] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<ColorModel> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -133,6 +138,11 @@ final class Profile {
     fromRuntime: Profile._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Profile] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Profile> safeParse(Object? input) =>
@@ -265,6 +275,11 @@ final class UserWithColor {
     fromRuntime: UserWithColor._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [UserWithColor] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<UserWithColor> safeParse(Object? input) =>

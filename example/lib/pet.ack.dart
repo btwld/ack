@@ -36,6 +36,11 @@ sealed class Pet {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Pet] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Pet> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -93,6 +98,11 @@ final class Cat extends Pet {
     fromRuntime: Cat._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Cat] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Cat> safeParse(Object? input) => $ack.safeParse(input);
@@ -179,6 +189,11 @@ final class Dog extends Pet {
     fromRuntime: Dog._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Dog] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Dog> safeParse(Object? input) => $ack.safeParse(input);

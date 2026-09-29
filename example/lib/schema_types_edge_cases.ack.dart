@@ -55,6 +55,11 @@ final class Product {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Product] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Product> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -194,6 +199,11 @@ final class Grid {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Grid] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Grid> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -305,6 +315,11 @@ final class Address {
     fromRuntime: Address._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Address] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Address> safeParse(Object? input) =>
@@ -445,6 +460,11 @@ final class Person {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Person] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Person> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -575,6 +595,11 @@ final class Employee {
     fromRuntime: Employee._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Employee] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Employee> safeParse(Object? input) =>
@@ -721,6 +746,11 @@ final class Modifier {
     fromRuntime: Modifier._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Modifier] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Modifier> safeParse(Object? input) =>
@@ -907,6 +937,11 @@ final class TaggedItem {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [TaggedItem] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<TaggedItem> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -1075,6 +1110,11 @@ final class ContactList {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [ContactList] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<ContactList> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -1180,6 +1220,11 @@ final class Empty {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Empty] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Empty> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -1261,6 +1306,11 @@ final class Minimal {
     fromRuntime: Minimal._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [Minimal] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Minimal> safeParse(Object? input) =>
@@ -1353,6 +1403,11 @@ final class NamedItem {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [NamedItem] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<NamedItem> safeParse(Object? input) =>
       $ack.safeParse(input);
@@ -1444,6 +1499,11 @@ final class Item {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [Item] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<Item> safeParse(Object? input) => $ack.safeParse(input);
 
@@ -1533,6 +1593,11 @@ final class MyCustomSchema123 {
     fromRuntime: MyCustomSchema123._fromAckRuntime,
     toRuntime: (model) => model._toAckRuntime(),
   );
+
+  /// The Ack schema that parses input into [MyCustomSchema123] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
 
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<MyCustomSchema123> safeParse(Object? input) =>

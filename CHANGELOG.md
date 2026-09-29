@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0-beta.2
+
+* Add `AckModelAdapter.modelSchema`, function-parameter annotations, string
+  format annotations, and shared schema inference for downstream generators.
+* Generate a static `Model.schema` shorthand for `Model.$ack.modelSchema` on
+  `@AckInfer()` models.
+* Add `CodecSchema.canEncode` for direct codec encoder introspection.
+* Generated `copyWith` is a getter that returns a typed interface, so a wrongly
+  typed argument fails to compile. Calls such as `model.copyWith(name: 'x')`
+  are unchanged; code that tears off or mocks the `copyWith` method must be
+  updated. Generated parts also suppress consumer lints and coverage.
+* Constrained `Set` fields (`@MinItems`, `@MaxItems`, `@UniqueItems`) require
+  unique items at the JSON boundary. Duplicate input such as `['a', 'a']` now
+  fails validation instead of collapsing into a smaller set.
+* Add explicit `description` options to `@AckModel` and `@AckField` (#175).
+  A single-line `@description` doc tag is a fallback. Untagged prose does not
+  become schema data.
+* Escape control characters in generated string literals, including inferred
+  pattern values (#164).
+* Align all six publishable packages at the 1.7.0 beta. The generator now
+  requires the 1.7.0 beta of `ack` and `ack_annotations`.
+
 ## 1.6.2
 
 * Restore import of Ack-exported JSON Schemas containing `pattern` and accept

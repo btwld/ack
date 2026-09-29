@@ -46,6 +46,11 @@ final class User {
     toRuntime: (model) => model._toAckRuntime(),
   );
 
+  /// The Ack schema that parses input into [User] and encodes it back.
+  ///
+  /// A shorthand for `$ack.modelSchema`, created once.
+  static final schema = $ack.modelSchema;
+
   /// Validates [input] and returns the model or the validation failure.
   static SchemaResult<User> safeParse(Object? input) => $ack.safeParse(input);
 

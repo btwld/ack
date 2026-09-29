@@ -30,6 +30,21 @@ part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 ''';
 
+const _schemaShorthand = r'static final schema = $ack.modelSchema;';
+
+/// Matches generated source whose `className` declaration has, or lacks, the
+/// static `schema` shorthand.
+Matcher _schemaShorthandOn(String className, {required bool present}) =>
+    predicate<String>((source) {
+      final start = RegExp(
+        'class ${RegExp.escape(className)}\\b',
+      ).firstMatch(source)?.start;
+      if (start == null) return false;
+      final end = source.indexOf('\n}\n', start);
+      final body = source.substring(start, end == -1 ? null : end);
+      return body.contains(_schemaShorthand) == present;
+    }, '$className ${present ? 'declares' : 'omits'} the schema shorthand');
+
 void main() {
   test(
     'object models expose only the AckInfer parse and JSON contract',
@@ -121,6 +136,113 @@ final customSchema = Ack.string();
             contains('final class MemberType'),
             contains('final class IntentionalType'),
             isNot(contains('MemberTypeType')),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test('every model kind declares a static schema shorthand', () async {
+    await _generate(
+      '''
+$_imports
+@AckInfer()
+final userSchema = Ack.object({'name': Ack.string()});
+
+@AckInfer()
+final occurredAtSchema = Ack.datetime();
+
+@AckInfer()
+final catSchema = Ack.object({'lives': Ack.integer()});
+
+@AckInfer()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {'cat': catSchema},
+);
+''',
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          allOf([
+            _schemaShorthandOn('User', present: true),
+            _schemaShorthandOn('OccurredAt', present: true),
+            _schemaShorthandOn('Pet', present: true),
+            _schemaShorthandOn('Cat', present: true),
+            contains(r'static final $ack = AckModelAdapter'),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test('the schema shorthand yields to colliding members', () async {
+    await _generate(
+      '''
+$_imports
+@AckInfer()
+final documentSchema = Ack.object({'schema': Ack.string()});
+
+@AckInfer(name: 'Settings')
+final schema = Ack.object({'theme': Ack.string()});
+
+@AckInfer()
+final draftSchema = Ack.object({'body': Ack.string()});
+
+@AckInfer()
+final revisionSchema = Ack.discriminated(
+  discriminatorKey: 'schema',
+  schemas: {'draft': draftSchema},
+);
+
+@AckInfer()
+final circleSchema = Ack.object({'radius': Ack.integer()});
+
+@AckInfer()
+final ruleSchema = Ack.object({'schema': Ack.string()});
+
+@AckInfer()
+final shapeSchema = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {'circle': circleSchema, 'rule': ruleSchema},
+);
+''',
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          allOf([
+            // A field named `schema`.
+            _schemaShorthandOn('Document', present: false),
+            // The shorthand would shadow the `schema` declaration.
+            _schemaShorthandOn('Settings', present: false),
+            // The discriminator getter is named `schema`.
+            _schemaShorthandOn('Revision', present: false),
+            _schemaShorthandOn('Draft', present: false),
+            // Only the branch with a `schema` field loses the shorthand.
+            _schemaShorthandOn('Shape', present: true),
+            _schemaShorthandOn('Circle', present: true),
+            _schemaShorthandOn('Rule', present: false),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test('an import prefix named schema suppresses the shorthand', () async {
+    await _generate(
+      '''
+import 'package:ack/ack.dart' as schema;
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'schema.ack.dart';
+part 'schema.ack.g.dart';
+
+@AckInfer()
+final userSchema = schema.Ack.object({'name': schema.Ack.string()});
+''',
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          allOf([
+            contains('schema.AckModelAdapter'),
+            _schemaShorthandOn('User', present: false),
           ]),
         ),
       },

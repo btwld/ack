@@ -1,6 +1,7 @@
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 import 'data_class_emitter.dart';
+import '../utils/string_literal.dart';
 
 /// Emits class-first schema codecs and top-level JSON/runtime glue.
 final class AckClassModelEmitter {
@@ -106,10 +107,10 @@ final class AckClassModelEmitter {
     for (final entry in node.branches.entries) {
       final branch = nodes[entry.value]!;
       schemaEntries.add(
-        '${_literal(entry.key)}: ${ackClassRawObjectName(branch.className)}',
+        '${dartStringLiteral(entry.key)}: ${ackClassRawObjectName(branch.className)}',
       );
       decodeCases.add(
-        '${_literal(entry.key)} => '
+        '${dartStringLiteral(entry.key)} => '
         '${ackClassFromRuntimeName(branch.className)}(value)',
       );
     }
@@ -146,14 +147,14 @@ final class AckClassModelEmitter {
     output
       ..writeln('''
 final $rawName = ${_ack('Ack')}.discriminated(
-  discriminatorKey: ${_literal(node.discriminatorKey)},
+  discriminatorKey: ${dartStringLiteral(node.discriminatorKey)},
   schemas: {${schemaEntries.join(', ')}},
-);
+)${_describe(node.description)};
 
 final $wireName = ${_ack('Ack')}.preserveBoundary($rawName);
 
 final ${metadata.backingName} = $rawName.codec<${node.className}>(
-  decode: (value) => switch (value[${_literal(node.discriminatorKey)}]) {
+  decode: (value) => switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
     ${decodeCases.join(',\n    ')},
     final unknown => throw StateError(
       'Unknown ${node.discriminatorKey}: \$unknown',
@@ -162,7 +163,7 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
   encode: (model) => switch (model) {
     ${encodeCases.join(',\n    ')},
   },
-);''')
+)${_describe(node.description)};''')
       ..writeln()
       ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
@@ -188,8 +189,15 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
 final $backingName = $expression.codec<${node.className}>(
   decode: ${ackClassFromRuntimeName(node.className)},
   encode: ${ackClassToRuntimeName(node.className)},
-);''';
+)${_describe(node.description)};''';
   }
+
+  /// Explicit class descriptions describe the wire object and model codec.
+  ///
+  /// A codec does not inherit its input schema's description, so describing
+  /// only the object would leave `XSchema.schema.description` unset.
+  String _describe(String? description) =>
+      description == null ? '' : '.describe(${dartStringLiteral(description)})';
 
   String _facade(
     String className,
@@ -253,14 +261,15 @@ abstract final class ${metadata.facadeName} {
       if (node.discriminatorKey case final key?)
         if (node.discriminatorValue case final value?)
           if (!node.fields.any((field) => field.jsonKey == key))
-            '${_literal(key)}: ${_ack('Ack')}.literal(${_literal(value)}).optional()',
+            '${dartStringLiteral(key)}: ${_ack('Ack')}.literal(${dartStringLiteral(value)}).optional()',
       for (final field in node.fields)
-        '${_literal(field.jsonKey)}: ${field.schemaExpression}',
+        '${dartStringLiteral(field.jsonKey)}: ${field.schemaExpression}',
     ];
     final additional = node.allowsUnknownProperties
         ? ', additionalProperties: true'
         : '';
-    return '${_ack('Ack')}.object({${entries.join(', ')}}$additional)';
+    return '${_ack('Ack')}.object({${entries.join(', ')}}$additional)'
+        '${_describe(node.description)}';
   }
 
   String _fromRuntimeFunction(AckObjectModelNode node) {
@@ -279,7 +288,7 @@ ${node.className} $function(Map<String, Object?> value) {
   const declared = ${_keySet(declared)};
   return $helper(<String, dynamic>{
     ...value,
-    ${_literal(captureJsonKey)}: Map<String, Object?>.fromEntries(
+    ${dartStringLiteral(captureJsonKey)}: Map<String, Object?>.fromEntries(
       value.entries.where((entry) => !declared.contains(entry.key)),
     ),
   });
@@ -313,10 +322,10 @@ Map<String, Object?> $function(${node.className} model) =>
       ..add('final result = <String, Object?>{...$jsonHelper(model)};')
       ..addAll([
         if (captureJsonKey != null)
-          'result.remove(${_literal(captureJsonKey)});',
+          'result.remove(${dartStringLiteral(captureJsonKey)});',
         for (final field in requiredNulls)
           'if (model.${field.dartName} == null) { '
-              'result[${_literal(field.jsonKey)}] = null; }',
+              'result[${dartStringLiteral(field.jsonKey)}] = null; }',
       ]);
 
     final entries = <String>[
@@ -325,7 +334,7 @@ Map<String, Object?> $function(${node.className} model) =>
             '    if (!declared.contains(entry.key)) entry.key: entry.value',
       '...result',
       if (discriminatorKey != null && discriminatorValue != null)
-        '${_literal(discriminatorKey)}: ${_literal(discriminatorValue)}',
+        '${dartStringLiteral(discriminatorKey)}: ${dartStringLiteral(discriminatorValue)}',
     ];
     lines.add('return <String, Object?>{${entries.join(',\n  ')}};');
     return '''
@@ -456,7 +465,7 @@ Map<String, Object?> $function(${node.className} model) {
   };
 
   String _keySet(Set<String> keys) =>
-      '<String>{${keys.map(_literal).join(', ')}}';
+      '<String>{${keys.map(dartStringLiteral).join(', ')}}';
 
   AckClassModelMetadata _metadata(AckModelGraph graph, AckModelNode node) {
     final metadata = graph.classMetadataFor(node.id);
@@ -469,13 +478,5 @@ Map<String, Object?> $function(${node.className} model) {
   String _ack(String symbol) {
     final prefix = ackPrefix;
     return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
-
-  String _literal(String value) {
-    final escaped = value
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'")
-        .replaceAll(r'$', r'\$');
-    return "'$escaped'";
   }
 }

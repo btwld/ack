@@ -36,6 +36,18 @@ void main() {
 }
 ```
 
+`User.schema` is the model-valued schema: it parses input into `User` and
+encodes a `User` back, so it composes like any other Ack schema:
+
+```dart
+final users = Ack.list(User.schema).parse(json)!; // List<User>
+```
+
+It is a shorthand for `User.$ack.modelSchema`. The generator omits it when the
+model has a field or union discriminator named `schema`, when the annotated
+declaration is itself named `schema`, or when the library imports a prefix
+named `schema`; use `$ack.modelSchema` there.
+
 Constructors don't validate immediately. Use `parse` for untrusted input;
 `toJson` and `safeToJson` validate a directly constructed model while encoding
 it. Generated models don't implement `Map`, and there are no `fromMap` or
@@ -79,13 +91,19 @@ void main() {
 }
 ```
 
-Field documentation becomes an Ack schema description. The generator shares
-its type and constraint inference through
+Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
+descriptions. A single-line `@description` tag in a `///` or `/** */` doc
+comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
+prose never becomes schema data. Duplicate or blank tags fail generation.
+Annotation text takes precedence over a tag. A class description applies to
+both the object schema and model codec, including union bases and branches.
+A field description applies at its property without changing a nested model.
+The generator shares its type and constraint inference through
 `package:ack_generator/inference.dart`. A second generator can use
 `AckSchemaInference.inferType`, `applyConstraints`, and `applyDescription`.
 The caller resolves application model types and import prefixes. For function
 parameters, read the documentation comment from the source AST and pass it as
-`sourceComment` to `applyDescription`.
+`sourceComment` to `applyDescription`. That method uses the same tag-only rule.
 
 ## Schema support
 

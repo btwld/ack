@@ -8,11 +8,11 @@ retained for Ack 1.1 extension-type compatibility.
 
 ```yaml
 dependencies:
-  ack: ^1.6.2
-  ack_annotations: ^1.6.2
+  ack: ^1.7.0-beta.2
+  ack_annotations: ^1.7.0-beta.2
 
 dev_dependencies:
-  ack_generator: ^1.6.2
+  ack_generator: ^1.7.0-beta.2
   build_runner: ^2.4.0
 ```
 
@@ -64,7 +64,11 @@ final class Account with _$AccountAck {
 
 This generates the public `AccountSchema` facade plus validated `toJson`,
 `safeToJson`, `copyWith`, equality, and `toString` implementations.
-Field documentation becomes the field schema's description. Format
+Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
+descriptions. A single-line `@description` documentation tag is a fallback.
+Untagged prose does not become schema data. Explicit annotation text takes
+precedence over the tag. A field description applies to its property without
+changing a nested model's description. Format
 annotations such as `@Url()`, `@Uuid()`, and `@Date()` constrain string
 fields. Import `package:ack_annotations/format_annotations.dart` with a
 prefix for `@formats.Uri()` and `@formats.DateTime()`. The prefix preserves

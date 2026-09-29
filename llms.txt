@@ -84,6 +84,9 @@ Generated object models provide:
 - a typed `copyWith` (omitted means keep; explicit `null` clears a nullable
   field; wrong argument types fail to compile), deep collection-aware
   `==`/`hashCode`, and `toString`;
+- a static `User.schema` model-valued schema, shorthand for
+  `User.$ack.modelSchema` (omitted when a field, discriminator, annotated
+  declaration, or import prefix is named `schema`);
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
@@ -114,6 +117,10 @@ classes use `@AckModel(discriminatorKey: ...)`; same-library concrete branches
 are included automatically. Use `@Optional()` or `@Required()` to override
 inferred key presence, `@NotNull()` to reject an explicit JSON `null` without
 requiring the key, and `@AckField(schema: ...)` for custom field codecs.
+Use `@AckModel(description: ...)` and `@AckField(description: ...)` to export
+schema descriptions. A single-line `@description` doc tag is a fallback.
+Untagged prose does not export. A field description applies at its property
+without changing a nested model's own description.
 Deprecated `AckFieldPresence` remains available during migration. Unknown properties use
 `unknownProperties: AckUnknownPropertyPolicy.<policy>` (`reject` by default).
 Raw `Ack.object(..., additionalProperties: true)` validation preserves extras;
