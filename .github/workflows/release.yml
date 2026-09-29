@@ -54,9 +54,22 @@ jobs:
       contents: read
     uses: ./.github/workflows/preflight.yml
 
+  # The only manual gate. Publish stages run in `Production` for pub.dev OIDC
+  # without their own reviewers, so one approval covers the whole release.
+  approve-release:
+    name: Approve the release
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: Release
+    permissions: {}
+    steps:
+      - name: Record the approval
+        run: echo "Approved publishing $GITHUB_REF_NAME to pub.dev."
+
   publish-foundations:
     name: Publish foundation packages
-    needs: preflight
+    needs: approve-release
     uses: ./.github/workflows/publish-packages.yml
     permissions:
       contents: read
