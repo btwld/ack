@@ -44,8 +44,9 @@ final users = Ack.list(User.schema).parse(json)!; // List<User>
 ```
 
 It is a shorthand for `User.$ack.modelSchema`. The generator omits it when the
-model has a field or union discriminator named `schema`, or when the annotated
-declaration is itself named `schema`; use `$ack.modelSchema` there.
+model has a field or union discriminator named `schema`, when the annotated
+declaration is itself named `schema`, or when the library imports a prefix
+named `schema`; use `$ack.modelSchema` there.
 
 Constructors don't validate immediately. Use `parse` for untrusted input;
 `toJson` and `safeToJson` validate a directly constructed model while encoding
@@ -92,7 +93,7 @@ void main() {
 
 Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
 descriptions. A single-line `@description` tag in a `///` or `/** */` doc
-comment is a fallback. The tag exports only text on its own line. Untagged
+comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
 prose never becomes schema data. Duplicate or blank tags fail generation.
 Annotation text takes precedence over a tag. A class description applies to
 both the object schema and model codec, including union bases and branches.

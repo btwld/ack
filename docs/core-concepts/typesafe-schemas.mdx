@@ -123,8 +123,9 @@ Generated models provide:
 - generated `copyWith`, deep collection-aware `==`/`hashCode`, and `toString`;
 - `User.schema`, the model-valued schema for composition such as
   `Ack.list(User.schema)`; it is a shorthand for `User.$ack.modelSchema` and
-  is omitted when the model has a field or discriminator named `schema`, or the
-  annotated declaration is named `schema`;
+  is omitted when the model has a field or discriminator named `schema`, the
+  annotated declaration is named `schema`, or the library imports a prefix
+  named `schema`;
 - a public `User.$ack` adapter used by nested generated models.
 
 The generator supports object and value roots, literals, enums, lists, sets,
@@ -225,7 +226,7 @@ static final Profile Function(Map<String, dynamic>) fromJson =
 
 Use `@AckModel(description: ...)` and `@AckField(description: ...)` to export
 schema descriptions. A single-line `@description` tag in a `///` or `/** */`
-doc comment is a fallback. The tag exports only text on its own line. Untagged
+doc comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
 prose does not become schema data. Explicit annotation text takes precedence.
 Blank or duplicate tags fail generation. `@description` is an Ack convention,
 not a Dart annotation.
@@ -235,7 +236,7 @@ sealed union bases and branches. A field description applies at its property.
 It does not change a nested model's own description.
 
 ```dart
-/// A task the person can complete.
+/// Tracks one unit of work. This prose is not exported.
 @AckModel(description: 'A task the person can complete.')
 final class Task with _$TaskAck {
   const Task({required this.id, required this.title});

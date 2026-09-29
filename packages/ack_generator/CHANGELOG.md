@@ -1,4 +1,4 @@
-## 1.7.0-beta.1
+## 1.7.0-beta.2
 
 ### Breaking
 
@@ -26,6 +26,7 @@
   lint rules and coverage reports cover only hand-written source.
 * Generated constructors, parsing and JSON members, `$ack`, and class-first
   facades now have doc comments.
+* Requires `ack` and `ack_annotations` `^1.7.0-beta.2`.
 * Schema descriptions come only from `description:` or an `@description` doc
   tag. This replaces the unreleased development behavior that exported every
   field doc comment. Untagged prose and `//` comments never become schema
@@ -35,7 +36,7 @@
 
 * `@AckInfer()` models declare `static final schema` as a shorthand for
   `$ack.modelSchema`. The generator omits this member when `schema` conflicts
-  with a field, discriminator, or annotated declaration.
+  with a field, discriminator, annotated declaration, or import prefix.
 * Class-first generation supports explicit `@AckModel` and `@AckField`
   descriptions, plus single-line `@description` doc tags. Explicit annotation
   values take precedence. Class descriptions apply to the wire object and

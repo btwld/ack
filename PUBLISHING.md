@@ -9,7 +9,7 @@ environment. A release-preparation PR does not publish anything.
 
 Use SemVer for the combined public API: patch for compatible fixes, minor for
 new compatible features/packages, and major when any stable public API breaks.
-The next candidate is **1.7.0-beta.1**. It previews shared inference, model
+The next candidate is **1.7.0-beta.2**. It previews shared inference, model
 adapter schemas, codec introspection, typed generated `copyWith`, stricter
 constrained-`Set` validation, static model schema shorthand, and explicit
 description controls. The API check compares
@@ -50,7 +50,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 3. Preview/prepare a coordinated version without creating commits or tags:
 
    ```sh
-   dart run melos version --manual-version=ack:1.7.0-beta.1 --yes --no-git-commit-version
+   dart run melos version --manual-version=ack:1.7.0-beta.2 --yes --no-git-commit-version
    ```
 
    Use the named flag, not a positional package argument: the positional form
@@ -77,7 +77,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 7. Validate the complete release from that clean commit:
 
    ```sh
-   dart scripts/verify_release_tag.dart v1.7.0-beta.1 --skip-ancestry
+   dart scripts/verify_release_tag.dart v1.7.0-beta.2 --skip-ancestry
    dart run melos run ci
    dart scripts/api_check.dart 1.6.2
    dart scripts/publish_dry_run.dart
@@ -131,9 +131,9 @@ After the release commit's CI/preflight succeeds:
 ```sh
 git fetch origin main --tags
 # Use the exact reviewed release merge commit, not an arbitrary later main head.
-git tag -a v1.7.0-beta.1 <release-merge-sha> -m 'Ack 1.7.0 beta 1'
-dart scripts/verify_release_tag.dart v1.7.0-beta.1
-git push origin v1.7.0-beta.1
+git tag -a v1.7.0-beta.2 <release-merge-sha> -m 'Ack 1.7.0 beta 2'
+dart scripts/verify_release_tag.dart v1.7.0-beta.2
+git push origin v1.7.0-beta.2
 ```
 
 Pushing the tag triggers `.github/workflows/release.yml`; there is no Melos
@@ -161,4 +161,4 @@ After all six exact versions are visible, create the GitHub Release from the
 existing tag using the prepared release notes and mark it as a prerelease for
 beta versions. Before the first subsequent code
 change, begin a new unreleased changelog section instead of editing the
-1.7.0-beta.1 notes.
+1.7.0-beta.2 notes.

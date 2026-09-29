@@ -8,7 +8,7 @@ String dartStringLiteral(String value) {
       .replaceAll(r'\', r'\\')
       .replaceAll("'", r"\'")
       .replaceAll(r'$', r'\$')
-      .replaceAllMapped(RegExp(r'[\x00-\x1f  ]'), (match) {
+      .replaceAllMapped(RegExp(r'[\x00-\x1f\u2028\u2029]'), (match) {
         final hex = match[0]!.codeUnitAt(0).toRadixString(16).padLeft(4, '0');
         return '\\u$hex';
       });
