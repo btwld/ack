@@ -45,14 +45,14 @@ typed model generation remain narrower than runtime validation; see the
 
 ```yaml
 dependencies:
-  ack: ^1.7.0-beta.1
-  ack_json_schema_builder: ^1.7.0-beta.1
+  ack: ^1.6.2
+  ack_json_schema_builder: ^1.6.2
   json_schema_builder: ^0.1.3
 ```
 
 ### Compatibility
 
-Requires `ack: >=1.7.0-beta.1 <2.0.0` and
+Requires `ack: >=1.6.0 <2.0.0` and
 `json_schema_builder: >=0.1.3 <1.0.0` as peer dependencies. Report
 [compatibility issues](https://github.com/btwld/ack/issues).
 

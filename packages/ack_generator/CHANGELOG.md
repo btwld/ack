@@ -1,4 +1,4 @@
-## 1.7.0-beta.1
+## Unreleased
 
 ### Breaking
 

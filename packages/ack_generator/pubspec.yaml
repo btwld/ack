@@ -1,6 +1,6 @@
 name: ack_generator
 description: Generates immutable models from Ack schemas and validated schemas from Dart classes
-version: 1.7.0-beta.1
+version: 1.6.2
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 resolution: workspace
@@ -30,7 +30,7 @@ dependencies:
   pub_semver: ^2.1.4
 
   # Ack packages (versions are overridden locally by Melos)
-  ack: ^1.7.0-beta.1
+  ack: ^1.5.0
   ack_annotations: ^1.4.0
 
 dev_dependencies:

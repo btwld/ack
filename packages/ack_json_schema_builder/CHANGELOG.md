@@ -1,7 +1,7 @@
-## 1.7.0-beta.1
+## Unreleased
 
-* Require `ack: ^1.7.0-beta.1` for the draft 2020-12 importer and
-  `assertFormats` API. `toJsonSchemaBuilder()` keeps the 1.x Draft-7 export;
+* Imports use the expanded draft 2020-12 importer and its `assertFormats`
+  API. `toJsonSchemaBuilder()` keeps the 1.x Draft-7 export;
   `toJsonSchemaBuilderPreservingImportedDialect()` opts into 2020-12 resources.
 
 ### Added

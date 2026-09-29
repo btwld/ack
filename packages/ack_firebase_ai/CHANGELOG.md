@@ -1,10 +1,3 @@
-## 1.7.0-beta.1
-
-### Changed
-
-* Align with the coordinated Ack 1.7.0 beta. This package has no source or
-  public API changes from 1.6.2; compatible dependency minimums are preserved.
-
 ## 1.6.2
 
 ### Changed
