@@ -1,0 +1,11 @@
+# Most tests resolve code with the analyzer through testBuilder, and the
+# integration tests run real build_runner builds in temporary packages, so each
+# suite is memory-heavy. The default concurrency is half the CPU cores (6 on a
+# 12-core laptop), which can use more memory than a laptop has. Two suites at
+# a time is what CI's 4-core runners already use.
+concurrency: 2
+
+tags:
+  integration:
+    # Creates a temporary package and runs build_runner, pub get, and the
+    # analyzer in it. Skip with `dart test -x integration` for a quick run.

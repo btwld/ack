@@ -33,6 +33,18 @@ For code generation changes, also run:
 dart run melos run test:gen
 ```
 
+The generator suite is memory-heavy: its integration tests run real
+`build_runner` builds in temporary packages. For a quick check while
+iterating, skip them:
+
+```bash
+dart run melos run test:gen:unit
+```
+
+Run the full `test:gen` before opening the PR. Run one generator suite at a
+time on a machine; running it from several checkouts in parallel can exhaust
+memory.
+
 For JSON Schema export changes, also run:
 
 ```bash
