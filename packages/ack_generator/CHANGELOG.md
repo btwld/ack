@@ -37,6 +37,12 @@
 * `inference.dart` exports shared type and constraint inference for other
   generators. The class-first generator uses this library.
 
+### Fixed
+
+* Escape line terminators and other control characters in every generated
+  string literal. `@Pattern`, discriminator, and key values containing a
+  newline or carriage return now produce valid Dart source.
+
 ## 1.6.2
 
 ### Changed

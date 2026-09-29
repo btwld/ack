@@ -7,6 +7,7 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
 import '../utils/doc_comment_utils.dart';
+import '../utils/string_literal.dart';
 
 /// Infers Ack schema expressions from resolved Dart types and annotations.
 ///
@@ -185,7 +186,7 @@ final class AckSchemaInference {
       } else if (_pattern.isExactlyType(valueType)) {
         _require(declaration, type, '@Pattern', isString, 'String field');
         output =
-            '$output.matches(${_literal(value.getField('pattern')!.toStringValue()!)})';
+            '$output.matches(${dartStringLiteral(value.getField('pattern')!.toStringValue()!)})';
       } else if (_email.isExactlyType(valueType)) {
         _require(declaration, type, '@Email', isString, 'String field');
         output = '$output.email()';
@@ -282,7 +283,7 @@ final class AckSchemaInference {
     );
     return description == null
         ? schema
-        : '$schema.describe(${_literal(description)})';
+        : '$schema.describe(${dartStringLiteral(description)})';
   }
 
   String? _scalar(InterfaceType type) {
@@ -317,14 +318,6 @@ final class AckSchemaInference {
   String _number(DartObject value, String name) {
     final number = value.getField(name)!;
     return (number.toIntValue() ?? number.toDoubleValue())!.toString();
-  }
-
-  String _literal(String value) {
-    final escaped = value
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'")
-        .replaceAll(r'$', r'\$');
-    return "'$escaped'";
   }
 
   void _require(

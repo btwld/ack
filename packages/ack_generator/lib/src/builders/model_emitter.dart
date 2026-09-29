@@ -3,6 +3,7 @@ import 'package:code_builder/code_builder.dart';
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 import 'data_class_emitter.dart';
+import '../utils/string_literal.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
@@ -172,7 +173,7 @@ final class AckModelEmitter {
     for (final entry in node.branches.entries) {
       final branch = nodes[entry.value]!;
       cases.add(
-        '${_literal(entry.key)} => ${branch.className}._fromAckRuntime(value)',
+        '${dartStringLiteral(entry.key)} => ${branch.className}._fromAckRuntime(value)',
       );
     }
     return Class(
@@ -223,7 +224,7 @@ final class AckModelEmitter {
                 ),
               )
               ..body = Code('''
-return switch (value[${_literal(node.discriminatorKey)}]) {
+return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
   ${cases.join(',\n  ')},
   final unknown => throw StateError(
     'Unknown ${node.discriminatorKey}: \$unknown',
@@ -255,7 +256,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(
             node,
-            '${union.id.declarationName}.effectiveBranch(${_literal(value)})',
+            '${union.id.declarationName}.effectiveBranch(${dartStringLiteral(value)})',
           ),
           if (_exposesSchemaShorthand(
             declarationName: union.id.declarationName,
@@ -278,7 +279,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
               ..name = discriminator
               ..returns = refer('String')
               ..lambda = true
-              ..body = Code(_literal(value)),
+              ..body = Code(dartStringLiteral(value)),
           ),
           ..._valueMembers(node.className, _objectDataClass(node)),
           _objectFromRuntime(
@@ -289,7 +290,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
           _objectToRuntime(
             node,
             fields: fields,
-            leadingEntries: {discriminator: _literal(value)},
+            leadingEntries: {discriminator: dartStringLiteral(value)},
             isOverride: true,
           ),
           ..._fieldBridges(fields),
@@ -765,7 +766,7 @@ return $helper(<String, dynamic>{
       if (!needsBlock) {
         final entries = <String>[
           for (final entry in leadingEntries.entries)
-            '${_literal(entry.key)}: ${entry.value}',
+            '${dartStringLiteral(entry.key)}: ${entry.value}',
           '...$helper(this)',
         ];
         m
@@ -782,7 +783,7 @@ return $helper(<String, dynamic>{
       for (final field in requiredNulls) {
         lines.add(
           'if (${field.dartName} == null) {'
-          ' result[${_literal(field.jsonKey)}] = null;'
+          ' result[${dartStringLiteral(field.jsonKey)}] = null;'
           ' }',
         );
       }
@@ -791,7 +792,7 @@ return $helper(<String, dynamic>{
           'for (final entry in additionalProperties.entries)\n'
               '    if (!declared.contains(entry.key)) entry.key: entry.value',
         for (final entry in leadingEntries.entries)
-          '${_literal(entry.key)}: ${entry.value}',
+          '${dartStringLiteral(entry.key)}: ${entry.value}',
         '...result',
       ];
       lines.add(
@@ -1022,7 +1023,7 @@ return $helper(<String, dynamic>{
   }) => {...additionalKeys, for (final field in fields) field.jsonKey};
 
   String _declaredKeysLiteral(Set<String> keys) =>
-      '<String>{${keys.map(_literal).join(', ')}}';
+      '<String>{${keys.map(dartStringLiteral).join(', ')}}';
 
   AckInferRef _nonNullable(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => inner,
@@ -1085,14 +1086,6 @@ return $helper(<String, dynamic>{
   String _ack(String symbol) {
     final prefix = ackPrefix;
     return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
-
-  String _literal(String value) {
-    final escaped = value
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'")
-        .replaceAll(r'$', r'\$');
-    return "'$escaped'";
   }
 
   static const _runtimeMapType = 'Map<String, Object?>';

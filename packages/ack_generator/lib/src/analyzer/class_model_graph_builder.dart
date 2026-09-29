@@ -14,6 +14,7 @@ import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 import '../inference/schema_inference.dart';
 import 'generated_companion_visibility.dart';
+import '../utils/string_literal.dart';
 
 typedef _ModelOptions = ({
   String? schemaName,
@@ -614,7 +615,7 @@ final class ClassModelGraphBuilder {
         isDiscriminator: isDiscriminator,
       );
       var schema = isDiscriminator && discriminatorValue != null
-          ? '${_ack('Ack')}.literal(${_literal(discriminatorValue)})'
+          ? '${_ack('Ack')}.literal(${dartStringLiteral(discriminatorValue)})'
           : await _fieldSchema(field, futureType: futureType);
       schema = _inference.applyDescription(schema, field);
       schema = _applyPresence(
@@ -1938,14 +1939,6 @@ final class ClassModelGraphBuilder {
   String _ack(String symbol) {
     final prefix = ackPrefix;
     return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
-
-  String _literal(String value) {
-    final escaped = value
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'")
-        .replaceAll(r'$', r'\$');
-    return "'$escaped'";
   }
 
   AckSchemaId _id(ClassElement element) => AckSchemaId(
