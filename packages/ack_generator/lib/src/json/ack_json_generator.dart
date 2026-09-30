@@ -45,6 +45,10 @@ final class AckJsonSerializableGenerator extends Generator {
     for (final element in library.classes) {
       final annotation = _model.firstAnnotationOfExact(element);
       if (annotation == null) continue;
+      // The class-first generator emits runtime bridges for redirecting
+      // factory models. json_serializable cannot inspect their generated
+      // private implementation because it is emitted in another part.
+      if (element.unnamedConstructor?.isFactory == true) continue;
       final reader = ConstantReader(annotation);
       if (!element.isSealed) {
         _addModelRequest(requests, claimed, element, reader);

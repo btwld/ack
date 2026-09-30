@@ -80,6 +80,27 @@ final class Account with _$AccountAck {
 }
 ```
 
+You can also use a redirecting factory when the generated implementation
+should stay private. Add a zero-argument private constructor and keep the
+mixin on the public abstract class:
+
+```dart
+@AckModel(description: 'A habit entry.')
+abstract class HabitDto with _$HabitDtoAck {
+  const HabitDto._();
+
+  const factory HabitDto({
+    required String name,
+    required DateTime date,
+  }) = _HabitDto;
+}
+```
+
+Ack generates `_HabitDto` with the stored fields. The public `HabitDtoSchema`
+facade and the `HabitDto` mixin provide the same parsing, JSON, `copyWith`,
+equality, and description behavior as a concrete class. Factory parameters
+must be named, and the factory must redirect to the matching private name.
+
 After generation, the public facade and model JSON methods use the same Ack
 codec boundary:
 
@@ -181,7 +202,10 @@ targets:
 getters. Classes, instance members, and local variables are rejected.
 
 `@AckModel()` annotates public, constructable `final class` declarations whose
-stored fields are final. Annotated sealed union bases remain supported, and
+stored fields are final. It also supports an abstract class with a named
+private zero-argument constructor and an unnamed factory that redirects to the
+matching private generated implementation. Annotated sealed union bases remain
+supported, and
 their concrete branches must also be final. Use `@Optional()` or `@Required()`
 to override inferred key presence, `@NotNull()` to reject JSON `null` without
 requiring the key, and `@AckField(schema: ...)` for custom codecs. See the

@@ -64,6 +64,21 @@ final class Account with _$AccountAck {
 
 This generates the public `AccountSchema` facade plus validated `toJson`,
 `safeToJson`, `copyWith`, equality, and `toString` implementations.
+
+An abstract class can keep its implementation private with a redirecting
+factory. Declare `const Class._();`, apply the generated mixin, and redirect
+the named factory to `_Class`:
+
+```dart
+@AckModel()
+abstract class HabitDto with _$HabitDtoAck {
+  const HabitDto._();
+  const factory HabitDto({required String name}) = _HabitDto;
+}
+```
+
+The generator emits `_HabitDto` and uses the factory parameters as its stored
+fields. Factory parameters must be named.
 Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
 descriptions. A single-line `@description` documentation tag is a fallback.
 Untagged prose does not become schema data. Explicit annotation text takes

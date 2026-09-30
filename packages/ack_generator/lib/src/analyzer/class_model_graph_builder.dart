@@ -33,7 +33,7 @@ typedef _FutureGeneratedType = ({
   String? setListSchema,
 });
 
-typedef _ClassFirstDependency = ({ClassElement target, FieldElement field});
+typedef _ClassFirstDependency = ({ClassElement target, VariableElement field});
 
 /// Builds normalized Ack model nodes from hand-written `@AckModel` classes.
 ///
@@ -230,7 +230,8 @@ final class ClassModelGraphBuilder {
           element: element,
         );
       }
-      if (element.isAbstract || !element.isConstructable) {
+      if ((element.isAbstract || !element.isConstructable) &&
+          element.unnamedConstructor?.isFactory != true) {
         throw InvalidGenerationSource(
           '@AckModel requires a constructable class; ${element.name} is '
           'abstract.',
@@ -277,6 +278,9 @@ final class ClassModelGraphBuilder {
       final metadata = _graph.classMetadataFor(node.id);
       if (metadata == null) {
         throw StateError('Missing class-first metadata for ${node.id}.');
+      }
+      if (metadata.generatedImplementation) {
+        claim('_${node.className}', node);
       }
       claim(metadata.facadeName, node);
       claim(metadata.backingName, node);
@@ -445,6 +449,71 @@ final class ClassModelGraphBuilder {
     );
   }
 
+  void _validateFactoryConstructor(
+    ClassElement element,
+    ConstructorElement constructor,
+  ) {
+    final declaration = _inputResolved!
+        .getFragmentDeclaration(constructor.firstFragment)
+        ?.node;
+    final redirect = declaration is ConstructorDeclaration
+        ? declaration.redirectedConstructor
+        : null;
+    final targetName = redirect?.type.toSource();
+    final targetConstructor = redirect?.name?.name;
+    if (!element.isAbstract ||
+        element.isSealed ||
+        targetName != '_${element.name}' ||
+        targetConstructor != null) {
+      throw InvalidGenerationSource(
+        '@AckModel factory models require an abstract class with an unnamed '
+        'factory redirecting to _${element.name}.',
+        element: constructor,
+      );
+    }
+    if (element.typeParameters.isNotEmpty ||
+        element.interfaces.isNotEmpty ||
+        element.mixins.isNotEmpty ||
+        _instanceFields(element).isNotEmpty ||
+        element.methods.any((method) => !method.isStatic) ||
+        element.getters.any((getter) => !getter.isStatic)) {
+      throw InvalidGenerationSource(
+        '@AckModel factory models must declare only the redirecting factory '
+        'and the generated mixin.',
+        element: element,
+      );
+    }
+    final privateConstructor = element.getNamedConstructor('_');
+    if (privateConstructor == null ||
+        !privateConstructor.isGenerative ||
+        privateConstructor.formalParameters.isNotEmpty) {
+      throw InvalidGenerationSource(
+        '@AckModel factory models require a zero-argument private '
+        'generative constructor such as `const ${element.name}._();`.',
+        element: element,
+      );
+    }
+    for (final parameter in constructor.formalParameters) {
+      if (!parameter.isNamed) {
+        throw InvalidGenerationSource(
+          '@AckModel factory parameters must be named.',
+          element: parameter,
+        );
+      }
+      _rejectInvalidMemberName(
+        parameter.name!,
+        parameter,
+        memberKind: 'factory parameter',
+      );
+      if (_reservedMembers.contains(parameter.name)) {
+        throw InvalidGenerationSource(
+          '${element.name}.${parameter.name} conflicts with a generated member.',
+          element: parameter,
+        );
+      }
+    }
+  }
+
   Future<AckObjectModelNode> _buildObject(
     ClassElement element, {
     required _ModelOptions options,
@@ -456,18 +525,27 @@ final class ClassModelGraphBuilder {
     _graph.begin(id);
     _registerMetadata(element, options, id);
     final constructor = element.unnamedConstructor;
-    if (constructor == null || !constructor.isGenerative) {
+    if (constructor == null) {
       throw InvalidGenerationSource(
         '@AckModel ${element.name} requires an unnamed generative constructor.',
         element: element,
       );
     }
+    final isFactory = constructor.isFactory;
+    if (isFactory) {
+      _validateFactoryConstructor(element, constructor);
+    }
     _requireMixin(element);
     _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
 
-    final fields = _instanceFields(element);
+    final fields = isFactory
+        ? <String, VariableElement>{
+            for (final parameter in constructor.formalParameters)
+              parameter.name!: parameter,
+          }
+        : _instanceFields(element);
     for (final field in fields.values) {
-      if (field.isFinal) continue;
+      if (isFactory || field.isFinal) continue;
       throw InvalidGenerationSource(
         '${element.name}.${field.name} must be final because @AckModel '
         'generates immutable value semantics.',
@@ -513,7 +591,9 @@ final class ClassModelGraphBuilder {
     final parameters = <String, FormalParameterElement>{};
     final constructorParameters = <AckConstructorParameter>[];
     for (final parameter in constructor.formalParameters) {
-      _rejectJsonKeyOnParameter(element, parameter);
+      if (!isFactory) {
+        _rejectJsonKeyOnParameter(element, parameter);
+      }
       final field = _parameterField(parameter) ?? fields[parameter.name];
       final fieldName = field?.name;
       if (fieldName == null) {
@@ -531,6 +611,7 @@ final class ClassModelGraphBuilder {
               ? AckConstructorParameterKind.named
               : AckConstructorParameterKind.positional,
           fieldName: fieldName,
+          isRequired: parameter.isRequiredNamed,
           typeRef:
               futureTypes[fieldName]?.runtimeRef ??
               _typeRef(parameter.type, field!),
@@ -562,7 +643,7 @@ final class ClassModelGraphBuilder {
     }
 
     final nodes = <AckFieldNode>[];
-    final ownerByJsonKey = <String, FieldElement>{};
+    final ownerByJsonKey = <String, VariableElement>{};
     for (final field in fields.values) {
       final name = field.name;
       if (name == null || name == captureFieldName) continue;
@@ -675,7 +756,7 @@ final class ClassModelGraphBuilder {
   void _recordClassFirstDependencies(
     ClassElement owner,
     DartType type,
-    FieldElement field,
+    VariableElement field,
   ) {
     if (type is! InterfaceType) return;
     final target = type.element;
@@ -712,7 +793,7 @@ final class ClassModelGraphBuilder {
         if (visiting.contains(dependency.target)) {
           final field = dependency.field;
           throw InvalidGenerationSource(
-            '${field.enclosingElement.name}.${field.name} creates a '
+            '${field.enclosingElement?.name}.${field.name} creates a '
             'recursive class-first schema graph. Automatic class-first '
             'Ack.lazy semantics are not yet defined; use a schema-first '
             'named Ack.lazy contract for recursive models.',
@@ -731,7 +812,7 @@ final class ClassModelGraphBuilder {
   }
 
   Future<String> _fieldSchema(
-    FieldElement field, {
+    VariableElement field, {
     _FutureGeneratedType? futureType,
   }) async {
     final override = _ackFieldChecker.firstAnnotationOfExact(field);
@@ -800,7 +881,10 @@ final class ClassModelGraphBuilder {
       type is InvalidType ||
       (type is InterfaceType && type.typeArguments.any(_containsInvalidType));
 
-  void _rejectResolvedLegacyGeneratedType(DartType type, FieldElement field) {
+  void _rejectResolvedLegacyGeneratedType(
+    DartType type,
+    VariableElement field,
+  ) {
     if (type is! InterfaceType) return;
     final element = type.element;
     if (element is ExtensionTypeElement) {
@@ -824,20 +908,29 @@ final class ClassModelGraphBuilder {
     return false;
   }
 
-  Future<_FutureGeneratedType?> _futureGeneratedType(FieldElement field) async {
-    final resolved = await _resolvedLibraryFor(field.library);
+  Future<_FutureGeneratedType?> _futureGeneratedType(
+    VariableElement field,
+  ) async {
+    final resolved = await _resolvedLibraryFor(field.library!);
     AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
-    while (node != null && node is! FieldDeclaration) {
+    while (node != null &&
+        node is! FieldDeclaration &&
+        node is! FormalParameter) {
       node = node.parent;
     }
-    final annotation = node is FieldDeclaration ? node.fields.type : null;
+    if (node is DefaultFormalParameter) node = node.parameter;
+    final annotation = switch (node) {
+      FieldDeclaration() => node.fields.type,
+      SimpleFormalParameter() => node.type,
+      _ => null,
+    };
     if (annotation == null) return null;
     return _futureGeneratedTypeForAnnotation(annotation, field);
   }
 
   _FutureGeneratedType? _futureGeneratedTypeForAnnotation(
     TypeAnnotation annotation,
-    FieldElement field,
+    VariableElement field,
   ) {
     if (annotation is! NamedType) return null;
     final name = annotation.name.lexeme;
@@ -903,7 +996,7 @@ final class ClassModelGraphBuilder {
   Element? _futureAckInferTarget({
     required String className,
     required String? prefix,
-    required FieldElement field,
+    required VariableElement field,
   }) {
     final matches = <Element>{};
     final candidates = <Element>{};
@@ -960,7 +1053,7 @@ final class ClassModelGraphBuilder {
     }
     if (matches.isEmpty) {
       if (hiddenDeclaration != null) {
-        final fieldPath = '${field.enclosingElement.name}.${field.name}';
+        final fieldPath = '${field.enclosingElement?.name}.${field.name}';
         throw InvalidGenerationSource(
           '$fieldPath resolves to generated schema-first type "$className", '
           'which is hidden by an import combinator or an upstream export '
@@ -972,7 +1065,7 @@ final class ClassModelGraphBuilder {
     }
     if (matches.length > 1) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} resolves future generated '
+        '${field.enclosingElement?.name}.${field.name} resolves future generated '
         'type "$className" ambiguously.',
         element: field,
       );
@@ -983,7 +1076,7 @@ final class ClassModelGraphBuilder {
   Element? _futureAckTypeTarget({
     required String generatedTypeName,
     required String? prefix,
-    required FieldElement field,
+    required VariableElement field,
   }) {
     final matches = <Element>{};
     String? hiddenDeclaration;
@@ -1032,7 +1125,7 @@ final class ClassModelGraphBuilder {
     }
     if (matches.length > 1) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} resolves future legacy '
+        '${field.enclosingElement?.name}.${field.name} resolves future legacy '
         'generated type "$generatedTypeName" ambiguously.',
         element: field,
       );
@@ -1040,9 +1133,9 @@ final class ClassModelGraphBuilder {
     return matches.single;
   }
 
-  Never _rejectLegacyGeneratedType(FieldElement field, String name) {
+  Never _rejectLegacyGeneratedType(VariableElement field, String name) {
     throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} crosses from modern '
+      '${field.enclosingElement?.name}.${field.name} crosses from modern '
       '@AckModel into legacy @AckType generated type "$name". AckType '
       'and modern models intentionally use isolated generators; migrate '
       'this connected graph together.',
@@ -1113,13 +1206,13 @@ final class ClassModelGraphBuilder {
   }
 
   Future<String> _escapeHatchExpression(
-    FieldElement field,
+    VariableElement field,
     ConstantReader annotation,
   ) async {
     final function = annotation.read('schema').objectValue.toFunctionValue();
     if (function is! TopLevelFunctionElement) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField schema must '
+        '${field.enclosingElement?.name}.${field.name} @AckField schema must '
         'be a const tear-off of a top-level function.',
         element: field,
       );
@@ -1127,7 +1220,7 @@ final class ClassModelGraphBuilder {
     if (function.formalParameters.isNotEmpty ||
         !_ackSchemaChecker.isAssignableFromType(function.returnType)) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField top-level '
+        '${field.enclosingElement?.name}.${field.name} @AckField top-level '
         'function must have type AckSchema Function().',
         element: field,
       );
@@ -1141,7 +1234,7 @@ final class ClassModelGraphBuilder {
         : null;
     if (bodyExpression == null) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField function must '
+        '${field.enclosingElement?.name}.${field.name} @AckField function must '
         'have a statically resolvable expression or single return.',
         element: field,
       );
@@ -1149,7 +1242,7 @@ final class ClassModelGraphBuilder {
     final oneWaySource = await _oneWayTransformSource(bodyExpression);
     if (oneWaySource != null) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField schema '
+        '${field.enclosingElement?.name}.${field.name} @AckField schema '
         'function ${function.name} reaches one-way schema $oneWaySource. '
         'Migrate this .transform() path to .codec() with an encoder.',
         element: field,
@@ -1159,7 +1252,7 @@ final class ClassModelGraphBuilder {
     return '${prefix == null ? '' : '$prefix.'}${function.name}()';
   }
 
-  Future<String> _schemaForType(DartType type, FieldElement field) =>
+  Future<String> _schemaForType(DartType type, VariableElement field) =>
       _inference.inferType(
         type,
         visibleTypeName: _visibleTypeName,
@@ -1173,7 +1266,7 @@ final class ClassModelGraphBuilder {
 
   Future<String?> _namedSchemaForType(
     InterfaceType interfaceType,
-    FieldElement field,
+    VariableElement field,
   ) async {
     final target = interfaceType.element;
     if (target is ClassElement) {
@@ -1195,13 +1288,16 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
-  void _rejectNullableCollectionElement(FieldElement field, DartType itemType) {
+  void _rejectNullableCollectionElement(
+    VariableElement field,
+    DartType itemType,
+  ) {
     if (!_isNullable(itemType)) return;
     _nullableCollectionElementError(field, itemType.getDisplayString());
   }
 
   void _rejectNullableFutureCollectionElement(
-    FieldElement field,
+    VariableElement field,
     AckInferRef type,
   ) {
     switch (type) {
@@ -1220,9 +1316,12 @@ final class ClassModelGraphBuilder {
     }
   }
 
-  Never _nullableCollectionElementError(FieldElement field, String itemType) {
+  Never _nullableCollectionElementError(
+    VariableElement field,
+    String itemType,
+  ) {
     throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} uses nullable collection '
+      '${field.enclosingElement?.name}.${field.name} uses nullable collection '
       'elements ($itemType). Ack.list does not support '
       'nullable item schemas; make the element non-nullable or provide an '
       'explicit @AckField(schema: ...) codec.',
@@ -1234,7 +1333,7 @@ final class ClassModelGraphBuilder {
     ClassElement target,
     String facadeName, {
     required String? prefix,
-    required FieldElement field,
+    required VariableElement field,
   }) {
     if (target.library == library.element) return;
     final modelName = target.name!;
@@ -1270,27 +1369,27 @@ final class ClassModelGraphBuilder {
     }
   }
 
-  String _applySugar(String schema, FieldElement field) =>
+  String _applySugar(String schema, VariableElement field) =>
       _inference.applyConstraints(schema, field, field.type);
-  void _rejectUnsupportedStaticType(FieldElement field, DartType type) {
+  void _rejectUnsupportedStaticType(VariableElement field, DartType type) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
     }
   }
 
-  Never _unsupportedFieldType(FieldElement field, DartType type) {
+  Never _unsupportedFieldType(VariableElement field, DartType type) {
     final jsonHint = type is DynamicType
         ? ', or Object? for an open JSON value'
         : '';
     throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} uses unsupported '
+      '${field.enclosingElement?.name}.${field.name} uses unsupported '
       '${type.getDisplayString()}; use a concrete type with a static '
       'class-first schema contract$jsonHint.',
       element: field,
     );
   }
 
-  void _validateMapKey(FieldElement field, DartType type) {
+  void _validateMapKey(VariableElement field, DartType type) {
     if (type is! InterfaceType ||
         !type.isDartCoreMap ||
         type.typeArguments.length != 2) {
@@ -1299,13 +1398,13 @@ final class ClassModelGraphBuilder {
     final key = type.typeArguments.first;
     if (key is InterfaceType && _isCore(key, 'String')) return;
     throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} must use Map<String, V>; '
+      '${field.enclosingElement?.name}.${field.name} must use Map<String, V>; '
       'received ${type.getDisplayString()}.',
       element: field,
     );
   }
 
-  AckInferRef _typeRef(DartType type, FieldElement field) {
+  AckInferRef _typeRef(DartType type, VariableElement field) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
     }
@@ -1414,7 +1513,7 @@ final class ClassModelGraphBuilder {
   }
 
   AckSchemaFieldPresence _effectivePresence(
-    FieldElement field, {
+    VariableElement field, {
     required FormalParameterElement? parameter,
     required bool isDiscriminator,
   }) {
@@ -1423,7 +1522,7 @@ final class ClassModelGraphBuilder {
     final hasRequired = _requiredChecker.hasAnnotationOfExact(field);
     if (hasOptional && hasRequired) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} cannot combine '
+        '${field.enclosingElement?.name}.${field.name} cannot combine '
         '@Optional() and @Required().',
         element: field,
       );
@@ -1444,7 +1543,7 @@ final class ClassModelGraphBuilder {
           reader.read('description').isNull &&
           presenceIndex == 0) {
         throw InvalidGenerationSource(
-          '${field.enclosingElement.name}.${field.name} @AckField() is a '
+          '${field.enclosingElement?.name}.${field.name} @AckField() is a '
           'no-op; set schema, description, or presence.',
           element: field,
         );
@@ -1470,7 +1569,7 @@ final class ClassModelGraphBuilder {
         annotationOverride != null &&
         legacyOverride != annotationOverride) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} has conflicting '
+        '${field.enclosingElement?.name}.${field.name} has conflicting '
         'presence declarations.',
         element: field,
       );
@@ -1484,7 +1583,7 @@ final class ClassModelGraphBuilder {
               (!parameter.isRequired || _isNullable(parameter.type)));
       if (!canBeOptional) {
         throw InvalidGenerationSource(
-          '${field.enclosingElement.name}.${field.name} cannot be optional '
+          '${field.enclosingElement?.name}.${field.name} cannot be optional '
           'because the constructor cannot accept a missing value.',
           element: field,
         );
@@ -1493,7 +1592,7 @@ final class ClassModelGraphBuilder {
 
     if (legacyOverride != null) {
       log.warning(
-        '${field.enclosingElement.name}.${field.name} uses '
+        '${field.enclosingElement?.name}.${field.name} uses '
         '@AckField(presence: ...); use @Optional() or @Required() instead. '
         'AckField.presence will be removed in 2.0.0.',
       );
@@ -1725,6 +1824,8 @@ final class ClassModelGraphBuilder {
         facadeName: facadeName,
         backingName: backingName,
         caseStyle: options.caseStyle,
+        generatedImplementation: element.unnamedConstructor?.isFactory ?? false,
+        constImplementation: element.unnamedConstructor?.isConst ?? false,
         hasExplicitAnnotation: _explicit.contains(element),
         copyWithSupertypes: {
           for (final supertype in element.allSupertypes)
@@ -1808,7 +1909,7 @@ final class ClassModelGraphBuilder {
         : null;
   }
 
-  String? _jsonKey(FieldElement field) {
+  String? _jsonKey(VariableElement field) {
     final annotation = _jsonKeyChecker.firstAnnotationOfExact(field);
     if (annotation == null) return null;
     final reader = ConstantReader(annotation);
@@ -1832,7 +1933,7 @@ final class ClassModelGraphBuilder {
     ];
     if (configuredUnsupported.isNotEmpty) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} uses unsupported '
+        '${field.enclosingElement?.name}.${field.name} uses unsupported '
         '@JsonKey options: ${configuredUnsupported.join(', ')}. @AckModel '
         'supports only @JsonKey(name: ...) on fields so validation and JSON '
         'serialization cannot diverge.',

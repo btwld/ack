@@ -166,6 +166,18 @@ final class Handwritten with _$HandwrittenAck {
 
   final bool enabled;
 }
+
+@AckModel(description: 'A habit entry.')
+abstract class HabitDto with _$HabitDtoAck {
+  const HabitDto._();
+
+  const factory HabitDto({
+    required String name,
+    @AckField(description: 'The day the habit was recorded.')
+    required DateTime date,
+    String? note,
+  }) = _HabitDto;
+}
 ''',
         );
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
@@ -621,6 +633,23 @@ final envelopeJson = <String, Object?>{
 };
 
 void main() {
+  test('redirecting factory models generate a private implementation', () {
+    final habit = HabitDtoSchema.parse({
+      'name': 'Read',
+      'date': '2026-09-30T00:00:00.000Z',
+    });
+    expect(habit, isA<HabitDto>());
+    expect(habit.name, 'Read');
+    expect(habit.date, DateTime.parse('2026-09-30T00:00:00.000Z'));
+    expect(habit.toJson(), {
+      'name': 'Read',
+      'date': '2026-09-30T00:00:00.000Z',
+    });
+    expect(habit.copyWith(name: 'Write').name, 'Write');
+    expect(habit.copyWith(note: null).note, isNull);
+    expect(HabitDtoSchema.toJsonSchema()['description'], 'A habit entry.');
+  });
+
   test('presence, defaults, collections, and escape hatches round-trip', () {
     final profile = Profile.fromJson({
       'name': 'Ada',

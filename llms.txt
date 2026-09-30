@@ -90,6 +90,22 @@ Generated object models provide:
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
+For class-first generation, a redirecting factory can keep the generated
+implementation private. The abstract class must declare `const Class._();`,
+use the generated mixin, and redirect its named factory to `_Class`:
+
+```dart
+@AckModel(description: 'A habit entry.')
+abstract class HabitDto with _$HabitDtoAck {
+  const HabitDto._();
+  const factory HabitDto({required String name}) = _HabitDto;
+}
+```
+
+Ack generates `_HabitDto` with the stored fields. Factory parameters must be
+named. The generated schema, JSON helpers, `copyWith`, and descriptions match
+regular class-first models.
+
 For class-first generation:
 
 ```dart
@@ -162,7 +178,8 @@ Generation rejects nullable roots, one-way transforms, `Ack.any()` and
 object fields, non-string map keys, unresolved dynamic factories, name
 collisions, and cross-library discriminated branches.
 
-Class-first generation supports object models, inferred scalar and enum
+Class-first generation supports object models, redirecting private factory
+implementations, inferred scalar and enum
 fields, JSON-safe `Object` fields, nested lists, sets through list codecs,
 string-keyed maps, custom `@AckField` schemas, `@Optional()`, `@Required()`,
 `@NotNull()`, constructor defaults, case styles, `AckUnknownPropertyPolicy`,
