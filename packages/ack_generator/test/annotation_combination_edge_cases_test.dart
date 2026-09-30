@@ -184,5 +184,41 @@ class InvalidModel {
         expect(sawExpectedError, isTrue);
       },
     );
+
+    test('rejects typed additional-properties maps', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+      var sawExpectedError = false;
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/invalid_additional_properties.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@Schemable(
+  additionalProperties: true,
+  additionalPropertiesField: 'metadata',
+)
+class InvalidAdditionalProperties {
+  final Map<String, int> metadata;
+
+  const InvalidAdditionalProperties({required this.metadata});
+}
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains(
+                'must be of type Map<String, dynamic> or Map<String, Object?>',
+              )) {
+            sawExpectedError = true;
+          }
+        },
+      );
+
+      expect(sawExpectedError, isTrue);
+    });
   });
 }

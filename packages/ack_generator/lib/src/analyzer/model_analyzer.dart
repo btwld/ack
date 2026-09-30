@@ -1,5 +1,6 @@
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
@@ -308,18 +309,29 @@ class ModelAnalyzer {
       );
     }
 
-    final fieldType = field.type.getDisplayString();
-    final isValidType = switch (fieldType) {
-      String type when type.startsWith('Map<String,') => true,
-      _ => false,
-    };
+    final fieldType = field.type;
+    final isValidType =
+        fieldType is InterfaceType &&
+        fieldType.isDartCoreMap &&
+        fieldType.typeArguments.length == 2 &&
+        fieldType.typeArguments.first.isDartCoreString &&
+        _isAdditionalPropertiesValueType(fieldType.typeArguments.last);
 
     if (!isValidType) {
       throw ArgumentError(
         'additionalPropertiesField "$fieldName" must be of type '
-        'Map<String, dynamic> or Map<String, Object?>, got $fieldType',
+        'Map<String, dynamic> or Map<String, Object?>, got '
+        '${field.type.getDisplayString()}',
       );
     }
+  }
+
+  bool _isAdditionalPropertiesValueType(DartType type) {
+    if (type.getDisplayString(withNullability: true) == 'dynamic') {
+      return true;
+    }
+    return type.isDartCoreObject &&
+        type.nullabilitySuffix == NullabilitySuffix.question;
   }
 
   void _validateProviderSchemaType(
