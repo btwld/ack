@@ -1,3 +1,11 @@
+## Unreleased
+
+* Add `@AckModel()` support for abstract classes with an unnamed factory
+  that redirects to a generated private implementation. Named factory
+  parameters define the stored fields, including nested models and descriptions.
+  The class must apply its generated mixin and declare a zero-argument `._()`
+  constructor. Existing concrete constructor models remain supported.
+
 ## 1.7.0-beta.2
 
 ### Breaking

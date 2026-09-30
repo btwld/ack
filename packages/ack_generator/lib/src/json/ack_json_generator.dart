@@ -34,6 +34,7 @@ final class AckJsonSerializableGenerator extends Generator {
   String generate(LibraryReader library, BuildStep buildStep) {
     final requests = <({Element element, ConstantReader config})>[];
     final claimed = <Element>{};
+    var hasFactoryModel = false;
     for (final item in library.annotatedWith(_marker)) {
       requests.add((
         element: item.element,
@@ -45,10 +46,11 @@ final class AckJsonSerializableGenerator extends Generator {
     for (final element in library.classes) {
       final annotation = _model.firstAnnotationOfExact(element);
       if (annotation == null) continue;
-      // The class-first generator emits runtime bridges for redirecting
-      // factory models. json_serializable cannot inspect their generated
-      // private implementation because it is emitted in another part.
-      if (element.unnamedConstructor?.isFactory == true) continue;
+      // Factory models serialize through the class-first runtime functions.
+      if (element.unnamedConstructor?.isFactory == true) {
+        hasFactoryModel = true;
+        continue;
+      }
       final reader = ConstantReader(annotation);
       if (!element.isSealed) {
         _addModelRequest(requests, claimed, element, reader);
@@ -72,7 +74,12 @@ final class AckJsonSerializableGenerator extends Generator {
       }
     }
 
-    if (requests.isEmpty) return '';
+    if (requests.isEmpty) {
+      // Keep the required JSON part available in factory-only libraries.
+      return hasFactoryModel
+          ? '// Factory model serialization is generated in the Ack model part.'
+          : '';
+    }
 
     final output = <String>[];
     for (final request in requests) {

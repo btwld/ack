@@ -125,9 +125,12 @@ final class AckClassModelEmitter {
         'final ${_type(parameter.typeRef)} ${parameter.fieldName};',
     ];
     final constKeyword = metadata.constImplementation ? 'const ' : '';
+    final namedParameters = parameters.isEmpty
+        ? ''
+        : '{${parameters.join(', ')}}';
     return '''
 final class _${node.className} extends ${node.className} {
-  ${constKeyword}_${node.className}({${parameters.join(', ')}}) : super._();
+  ${constKeyword}_${node.className}($namedParameters) : super._();
 
   ${fields.join('\n  ')}
 }''';
@@ -440,17 +443,13 @@ Map<String, Object?> $function(${node.className} model) {
       }
     }
     if (node.captureFieldName case final capture?) {
-      entries.insert(0, 'const declared = ${_keySet(_declaredKeys(node))};');
       entries.insert(
-        1,
+        0,
         'for (final entry in model.$capture.entries) '
         'if (!declared.contains(entry.key)) entry.key: entry.value',
       );
     }
-    final hasCapture = node.captureFieldName != null;
-    final body = hasCapture
-        ? '<String, Object?>{${entries.skip(1).join(', ')}}'
-        : '<String, Object?>{${entries.join(', ')}}';
+    final body = '<String, Object?>{${entries.join(', ')}}';
     if (node.captureFieldName == null) {
       return '''
 Map<String, Object?> ${ackClassToRuntimeName(node.className)}(${node.className} model) =>
@@ -458,7 +457,7 @@ Map<String, Object?> ${ackClassToRuntimeName(node.className)}(${node.className} 
     }
     return '''
 Map<String, Object?> ${ackClassToRuntimeName(node.className)}(${node.className} model) {
-  ${entries.first}
+  const declared = ${_keySet(_declaredKeys(node))};
   return $body;
 }''';
   }

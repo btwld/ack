@@ -66,8 +66,8 @@ This generates the public `AccountSchema` facade plus validated `toJson`,
 `safeToJson`, `copyWith`, equality, and `toString` implementations.
 
 An abstract class can keep its implementation private with a redirecting
-factory. Declare `const Class._();`, apply the generated mixin, and redirect
-the named factory to `_Class`:
+factory. Declare a zero-argument private constructor, apply the generated
+mixin, and redirect the unnamed factory with named parameters to `_Class`:
 
 ```dart
 @AckModel()

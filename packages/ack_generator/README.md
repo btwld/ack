@@ -82,7 +82,8 @@ final class Account with _$AccountAck {
 
 You can also use a redirecting factory when the generated implementation
 should stay private. Add a zero-argument private constructor and keep the
-mixin on the public abstract class:
+mixin on the public abstract class. The factory must be unnamed, use named
+parameters, and redirect to the matching private implementation:
 
 ```dart
 @AckModel(description: 'A habit entry.')
@@ -100,6 +101,7 @@ Ack generates `_HabitDto` with the stored fields. The public `HabitDtoSchema`
 facade and the `HabitDto` mixin provide the same parsing, JSON, `copyWith`,
 equality, and description behavior as a concrete class. Factory parameters
 must be named, and the factory must redirect to the matching private name.
+A `const` factory also requires a `const` private constructor.
 
 After generation, the public facade and model JSON methods use the same Ack
 codec boundary:

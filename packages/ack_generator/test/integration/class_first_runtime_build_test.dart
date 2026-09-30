@@ -134,6 +134,7 @@ targets:
       ack_generator:ack_generator:
         generate_for:
           - lib/coexist.dart
+          - lib/factories.dart
       source_gen:combining_builder:
         generate_for:
           - lib/models.dart
@@ -166,6 +167,25 @@ final class Handwritten with _$HandwrittenAck {
 
   final bool enabled;
 }
+''',
+        );
+        File(p.join(temporary.path, 'lib', 'factories.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'factories.ack.dart';
+part 'factories.ack.g.dart';
+
+@AckModel(description: 'A habit date.')
+abstract class HabitDateDto with _$HabitDateDtoAck {
+  const HabitDateDto._();
+
+  const factory HabitDateDto({
+    @AckField(description: 'The calendar day.')
+    required DateTime value,
+  }) = _HabitDateDto;
+}
 
 @AckModel(description: 'A habit entry.')
 abstract class HabitDto with _$HabitDtoAck {
@@ -173,10 +193,19 @@ abstract class HabitDto with _$HabitDtoAck {
 
   const factory HabitDto({
     required String name,
-    @AckField(description: 'The day the habit was recorded.')
-    required DateTime date,
+    required HabitDateDto date,
     String? note,
   }) = _HabitDto;
+}
+
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
+abstract class OpenDto with _$OpenDtoAck {
+  const OpenDto._();
+
+  const factory OpenDto({
+    required String name,
+    required Map<String, Object?> additionalProperties,
+  }) = _OpenDto;
 }
 ''',
         );
@@ -605,6 +634,7 @@ import 'dart:convert';
 import 'package:ack_class_first_runtime/alpha.dart' as alpha;
 import 'package:ack_class_first_runtime/beta.dart' as beta;
 import 'package:ack_class_first_runtime/coexist.dart';
+import 'package:ack_class_first_runtime/factories.dart';
 import 'package:ack_class_first_runtime/models.dart';
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
@@ -636,18 +666,35 @@ void main() {
   test('redirecting factory models generate a private implementation', () {
     final habit = HabitDtoSchema.parse({
       'name': 'Read',
-      'date': '2026-09-30T00:00:00.000Z',
+      'date': {'value': '2026-09-30T00:00:00.000Z'},
     });
     expect(habit, isA<HabitDto>());
     expect(habit.name, 'Read');
-    expect(habit.date, DateTime.parse('2026-09-30T00:00:00.000Z'));
+    expect(habit.date, isA<HabitDateDto>());
+    expect(habit.date.value, DateTime.parse('2026-09-30T00:00:00.000Z'));
     expect(habit.toJson(), {
       'name': 'Read',
-      'date': '2026-09-30T00:00:00.000Z',
+      'date': {'value': '2026-09-30T00:00:00.000Z'},
     });
     expect(habit.copyWith(name: 'Write').name, 'Write');
     expect(habit.copyWith(note: null).note, isNull);
     expect(HabitDtoSchema.toJsonSchema()['description'], 'A habit entry.');
+    final properties =
+        HabitDateDtoSchema.toJsonSchema()['properties']! as Map<Object?, Object?>;
+    expect((properties['value']! as Map<Object?, Object?>)['description'],
+        'The calendar day.');
+  });
+
+  test('redirecting factory models capture unknown properties', () {
+    final model = OpenDtoSchema.parse({
+      'name': 'Read',
+      'color': 'blue',
+    });
+    expect(model.additionalProperties, {'color': 'blue'});
+    expect(model.toJson(), {
+      'name': 'Read',
+      'color': 'blue',
+    });
   });
 
   test('presence, defaults, collections, and escape hatches round-trip', () {
@@ -1273,6 +1320,10 @@ import 'models.dart';
 Profile misuse(Profile profile) => profile.copyWith(nickname: const Object());
 ''');
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
+        final factories = File(p.join(temporary.path, 'lib', 'factories.dart'));
+        factories.writeAsStringSync(
+          '${factories.readAsStringSync()}\n// Rebuild.\n',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'outputs-present build_runner build',

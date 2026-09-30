@@ -79,6 +79,19 @@ abstract class User with _$UserAck {
     },
   );
 
+  test('requires a const private constructor for const factories', () async {
+    await _expectFailure(
+      r'''
+@AckModel()
+abstract class User with _$UserAck {
+  User._();
+  const factory User({required String name}) = _User;
+}
+''',
+      ['when the factory is const'],
+    );
+  });
+
   test('requires named parameters for factory models', () async {
     await _expectFailure(
       r'''

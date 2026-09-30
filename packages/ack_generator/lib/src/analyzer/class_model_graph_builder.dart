@@ -452,6 +452,7 @@ final class ClassModelGraphBuilder {
   void _validateFactoryConstructor(
     ClassElement element,
     ConstructorElement constructor,
+    _ModelOptions options,
   ) {
     final declaration = _inputResolved!
         .getFragmentDeclaration(constructor.firstFragment)
@@ -472,11 +473,15 @@ final class ClassModelGraphBuilder {
       );
     }
     if (element.typeParameters.isNotEmpty ||
+        (element.supertype != null && !element.supertype!.isDartCoreObject) ||
         element.interfaces.isNotEmpty ||
-        element.mixins.isNotEmpty ||
+        element.mixins.any(
+          (mixin) => mixin.element.name != ackClassMixinName(element.name!),
+        ) ||
         _instanceFields(element).isNotEmpty ||
         element.methods.any((method) => !method.isStatic) ||
-        element.getters.any((getter) => !getter.isStatic)) {
+        element.getters.any((getter) => !getter.isStatic) ||
+        element.setters.any((setter) => !setter.isStatic)) {
       throw InvalidGenerationSource(
         '@AckModel factory models must declare only the redirecting factory '
         'and the generated mixin.',
@@ -486,10 +491,12 @@ final class ClassModelGraphBuilder {
     final privateConstructor = element.getNamedConstructor('_');
     if (privateConstructor == null ||
         !privateConstructor.isGenerative ||
-        privateConstructor.formalParameters.isNotEmpty) {
+        privateConstructor.formalParameters.isNotEmpty ||
+        (constructor.isConst && !privateConstructor.isConst)) {
       throw InvalidGenerationSource(
         '@AckModel factory models require a zero-argument private '
-        'generative constructor such as `const ${element.name}._();`.',
+        'generative constructor such as `const ${element.name}._();` '
+        'when the factory is const.',
         element: element,
       );
     }
@@ -505,7 +512,15 @@ final class ClassModelGraphBuilder {
         parameter,
         memberKind: 'factory parameter',
       );
-      if (_reservedMembers.contains(parameter.name)) {
+      final isCaptureParameter =
+          options.unknownProperties ==
+              annotations.AckUnknownPropertyPolicy.capture &&
+          options.captureField == parameter.name;
+      if (_generatedValueMembers.contains(parameter.name) ||
+          _generatedSerializationMembers.contains(parameter.name) ||
+          (_reservedMembers.contains(parameter.name) &&
+              !(isCaptureParameter &&
+                  parameter.name == 'additionalProperties'))) {
         throw InvalidGenerationSource(
           '${element.name}.${parameter.name} conflicts with a generated member.',
           element: parameter,
@@ -533,7 +548,7 @@ final class ClassModelGraphBuilder {
     }
     final isFactory = constructor.isFactory;
     if (isFactory) {
-      _validateFactoryConstructor(element, constructor);
+      _validateFactoryConstructor(element, constructor, options);
     }
     _requireMixin(element);
     _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
@@ -780,7 +795,11 @@ final class ClassModelGraphBuilder {
       if (recorded != null) return recorded;
 
       _dependencies[owner] = <_ClassFirstDependency>[];
-      for (final field in _instanceFields(owner).values) {
+      final Iterable<VariableElement> fields =
+          owner.unnamedConstructor?.isFactory == true
+          ? owner.unnamedConstructor!.formalParameters
+          : _instanceFields(owner).values;
+      for (final field in fields) {
         _recordClassFirstDependencies(owner, field.type, field);
       }
       return _dependencies[owner]!;

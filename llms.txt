@@ -91,8 +91,9 @@ Generated object models provide:
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
 For class-first generation, a redirecting factory can keep the generated
-implementation private. The abstract class must declare `const Class._();`,
-use the generated mixin, and redirect its named factory to `_Class`:
+implementation private. The abstract class must declare a zero-argument
+private constructor, use the generated mixin, and redirect its unnamed factory
+with named parameters to `_Class`:
 
 ```dart
 @AckModel(description: 'A habit entry.')
