@@ -1,57 +1,64 @@
+// These tests also cover the deprecated AckModel and AckField.presence API.
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
 Object _customSchema() => Object();
 
 void main() {
-  test('AckModel options are const and default to class-first conventions', () {
-    const defaults = AckModel();
-    expect(defaults.schemaName, isNull);
-    expect(defaults.caseStyle, AckCaseStyle.none);
-    expect(defaults.discriminatorKey, isNull);
-    expect(defaults.discriminatorValue, isNull);
-    expect(defaults.unknownProperties, AckUnknownPropertyPolicy.reject);
-    expect(defaults.captureField, 'additionalProperties');
-    expect(defaults.jsonSerializable.includeIfNull, isFalse);
-    expect(defaults.jsonSerializable.fieldRename!.name, 'none');
+  test(
+    'Schemable options are const and default to class-first conventions',
+    () {
+      const defaults = Schemable();
+      expect(defaults.name, isNull);
+      expect(defaults.schemaName, isNull);
+      expect(defaults.caseStyle, AckCaseStyle.none);
+      expect(defaults.discriminatorKey, isNull);
+      expect(defaults.discriminatorValue, isNull);
+      expect(defaults.unknownProperties, AckUnknownPropertyPolicy.reject);
+      expect(defaults.captureField, 'additionalProperties');
+      expect(defaults.jsonSerializable.includeIfNull, isFalse);
+      expect(defaults.jsonSerializable.fieldRename!.name, 'none');
 
-    const configured = AckModel(
-      schemaName: 'WireUserSchema',
-      caseStyle: AckCaseStyle.snake,
-      discriminatorKey: 'type',
-      discriminatorValue: 'user',
-      unknownProperties: AckUnknownPropertyPolicy.capture,
-      captureField: 'args',
-    );
-    expect(configured.schemaName, 'WireUserSchema');
-    expect(configured.caseStyle, AckCaseStyle.snake);
-    expect(configured.discriminatorKey, 'type');
-    expect(configured.discriminatorValue, 'user');
-    expect(configured.unknownProperties, AckUnknownPropertyPolicy.capture);
-    expect(configured.captureField, 'args');
-    expect(configured.jsonSerializable.includeIfNull, isFalse);
-    expect(configured.jsonSerializable.fieldRename!.name, 'snake');
-    expect(AckCaseStyle.values, const [
-      AckCaseStyle.none,
-      AckCaseStyle.snake,
-      AckCaseStyle.kebab,
-      AckCaseStyle.pascal,
-      AckCaseStyle.screamingSnake,
-    ]);
-    expect(AckUnknownPropertyPolicy.values, const [
-      AckUnknownPropertyPolicy.reject,
-      AckUnknownPropertyPolicy.discard,
-      AckUnknownPropertyPolicy.capture,
-    ]);
-  });
+      const configured = Schemable(
+        schemaName: 'WireUserSchema',
+        caseStyle: AckCaseStyle.snake,
+        discriminatorKey: 'type',
+        discriminatorValue: 'user',
+        unknownProperties: AckUnknownPropertyPolicy.capture,
+        captureField: 'args',
+      );
+      expect(configured.schemaName, 'WireUserSchema');
+      expect(configured.caseStyle, AckCaseStyle.snake);
+      expect(configured.discriminatorKey, 'type');
+      expect(configured.discriminatorValue, 'user');
+      expect(configured.unknownProperties, AckUnknownPropertyPolicy.capture);
+      expect(configured.captureField, 'args');
+      expect(configured.jsonSerializable.includeIfNull, isFalse);
+      expect(configured.jsonSerializable.fieldRename!.name, 'snake');
+      expect(AckCaseStyle.values, const [
+        AckCaseStyle.none,
+        AckCaseStyle.snake,
+        AckCaseStyle.kebab,
+        AckCaseStyle.pascal,
+        AckCaseStyle.screamingSnake,
+      ]);
+      expect(AckUnknownPropertyPolicy.values, const [
+        AckUnknownPropertyPolicy.reject,
+        AckUnknownPropertyPolicy.discard,
+        AckUnknownPropertyPolicy.capture,
+      ]);
+    },
+  );
 
   test('every case style maps to the pinned JSON phase configuration', () {
     const models = [
-      AckModel(),
-      AckModel(caseStyle: AckCaseStyle.snake),
-      AckModel(caseStyle: AckCaseStyle.kebab),
-      AckModel(caseStyle: AckCaseStyle.pascal),
-      AckModel(caseStyle: AckCaseStyle.screamingSnake),
+      Schemable(),
+      Schemable(caseStyle: AckCaseStyle.snake),
+      Schemable(caseStyle: AckCaseStyle.kebab),
+      Schemable(caseStyle: AckCaseStyle.pascal),
+      Schemable(caseStyle: AckCaseStyle.screamingSnake),
     ];
     final configs = {
       for (final model in models) model.caseStyle: model.jsonSerializable,
@@ -70,37 +77,31 @@ void main() {
     expect(configs.values.every((config) => !config.includeIfNull!), isTrue);
   });
 
+  test('deprecated AckModel derives the same JSON configuration', () {
+    const model = AckModel(caseStyle: AckCaseStyle.kebab);
+    const schemable = Schemable(caseStyle: AckCaseStyle.kebab);
+
+    expect(model.jsonSerializable.fieldRename!.name, 'kebab');
+    expect(
+      model.jsonSerializable.fieldRename,
+      schemable.jsonSerializable.fieldRename,
+    );
+    expect(model.jsonSerializable.includeIfNull, isFalse);
+  });
+
   test('AckField accepts a schema tear-off and a presence override', () {
     const inferred = AckField(schema: _customSchema);
     expect(inferred.schema, same(_customSchema));
-    expect(
-      // ignore: deprecated_member_use_from_same_package
-      inferred.presence,
-      // ignore: deprecated_member_use_from_same_package
-      AckFieldPresence.inferred,
-    );
+    expect(inferred.presence, AckFieldPresence.inferred);
 
-    // ignore: deprecated_member_use_from_same_package
     const optional = AckField(presence: AckFieldPresence.optional);
     expect(optional.schema, isNull);
-    expect(
-      // ignore: deprecated_member_use_from_same_package
-      optional.presence,
-      // ignore: deprecated_member_use_from_same_package
+    expect(optional.presence, AckFieldPresence.optional);
+    expect(AckFieldPresence.values, const [
+      AckFieldPresence.inferred,
+      AckFieldPresence.required,
       AckFieldPresence.optional,
-    );
-    expect(
-      // ignore: deprecated_member_use_from_same_package
-      AckFieldPresence.values,
-      const [
-        // ignore: deprecated_member_use_from_same_package
-        AckFieldPresence.inferred,
-        // ignore: deprecated_member_use_from_same_package
-        AckFieldPresence.required,
-        // ignore: deprecated_member_use_from_same_package
-        AckFieldPresence.optional,
-      ],
-    );
+    ]);
   });
 
   test('presence and null annotations are const', () {

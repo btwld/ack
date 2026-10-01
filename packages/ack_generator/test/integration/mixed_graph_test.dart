@@ -46,7 +46,7 @@ $_parts
 @AckType()
 final legacySchema = Ack.object({'id': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
 """;
 
@@ -77,10 +77,10 @@ final modernSchema = Ack.object({'name': Ack.string()});
       ackModelBuilder(BuilderOptions.empty),
       '''
 $_parts
-@AckInfer(name: 'AddressSchema')
+@Schemable(name: 'AddressSchema')
 final valueSchema = Ack.string();
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -91,8 +91,8 @@ final class Address with _\$AddressAck {
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains('AddressSchema') &&
-            log.message.contains('@AckInfer') &&
-            log.message.contains('@AckModel')) {
+            log.message.contains('schema-first class') &&
+            log.message.contains('class-first facade')) {
           sawDiagnostic = true;
         }
       },
@@ -112,10 +112,10 @@ final class Address with _\$AddressAck {
         ackModelBuilder(BuilderOptions.empty),
         '''
 $_parts
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -141,10 +141,10 @@ final class User with _\$UserAck {
       ackModelBuilder(BuilderOptions.empty),
       '''
 $_parts
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.address});
 
@@ -175,10 +175,10 @@ AckSchema<Object?, List<Address?>> addressListSchema() =>
       encode: (value) => value,
     );
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -208,7 +208,7 @@ import 'exports.dart';
 part 'models.ack.dart';
 part 'models.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -223,7 +223,7 @@ import 'package:ack/annotations.dart';
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
           'exports.dart': "export 'address.dart' show addressSchema, Address;",
@@ -255,7 +255,7 @@ import 'exports.dart';
 part 'models.ack.dart';
 part 'models.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -270,7 +270,7 @@ import 'package:ack/annotations.dart';
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
           'exports.dart': "export 'address.dart' show addressSchema;",
@@ -298,7 +298,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'address': addressSchema});
 """,
       outputs: const {},
@@ -319,7 +319,7 @@ final userSchema = Ack.object({'address': addressSchema});
       ackGenerator(BuilderOptions.empty),
       """
 $_parts
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
 @AckType()
@@ -346,7 +346,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -374,7 +374,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -400,7 +400,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -455,7 +455,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -509,7 +509,7 @@ final class User with _\$UserAck {
       ackGenerator(BuilderOptions.empty),
       """
 $_parts
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -546,7 +546,7 @@ final userSchema = Ack.object({
           ackGenerator(BuilderOptions.empty),
           '''
 $_parts
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -591,7 +591,7 @@ final userSchema = Ack.object({'address': AddressSchema.schema});
         'address.dart': '''
 import 'package:ack/annotations.dart';
 
-@AckModel()
+@Schemable()
 final class Address {
   const Address({required this.city});
 

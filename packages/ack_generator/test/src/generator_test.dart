@@ -33,7 +33,7 @@ import 'package:ack/annotations.dart';
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         outputs: {
@@ -49,7 +49,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     },
   );
 
-  test('does not emit output without AckInfer declarations', () async {
+  test('does not emit output without Schemable declarations', () async {
     await _build('final value = 1;', outputs: const {});
   });
 
@@ -60,7 +60,7 @@ final userSchema = Ack.object({'name': Ack.string()});
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.string();
 ''',
       outputs: const {},
@@ -75,13 +75,13 @@ final userSchema = Ack.string();
     expect(sawError, isTrue);
   });
 
-  test('reports the required part directives for AckModel', () async {
+  test('reports the required part directives for Schemable', () async {
     var sawError = false;
     await _build(
       '''
 import 'package:ack/annotations.dart';
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -111,7 +111,7 @@ import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.string();
 ''',
         outputs: const {},
@@ -136,7 +136,7 @@ import 'package:ack/annotations.dart';
 part './schema.ack.dart';
 part './schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
       outputs: const {},
@@ -162,7 +162,7 @@ import 'package:ack/annotations.dart';
 part 'sub/schema.ack.dart';
 part 'sub/schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.string();
 ''',
         outputs: const {},
@@ -188,7 +188,7 @@ import 'package:ack/annotations.dart';
 part 'schema.ack.dart';
 part 'other.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.string();
 ''',
       outputs: const {},

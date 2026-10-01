@@ -79,10 +79,16 @@ class SchemaAstAnalyzer {
     AckType,
     inPackage: 'ack',
   );
-  static const _ackModelChecker = TypeChecker.typeNamed(
-    AckModel,
-    inPackage: 'ack',
-  );
+  static const _classFirstChecker = TypeChecker.any([
+    TypeChecker.typeNamed(Schemable, inPackage: 'ack'),
+    // ignore: deprecated_member_use
+    TypeChecker.typeNamed(AckModel, inPackage: 'ack'),
+  ]);
+  static const _schemaFirstChecker = TypeChecker.any([
+    TypeChecker.typeNamed(Schemable, inPackage: 'ack'),
+    // ignore: deprecated_member_use
+    TypeChecker.typeNamed(AckInfer, inPackage: 'ack'),
+  ]);
 
   final Map<String, String> _schemaVariableTypeCache = {};
   final Set<String> _schemaVariableTypeStack = {};
@@ -2546,7 +2552,7 @@ class SchemaAstAnalyzer {
       if (_hasAckInferAnnotation(declarationForMetadata)) {
         final path = diagnosticPath ?? contextElement.name ?? 'legacy schema';
         throw InvalidGenerationSource(
-          '$path crosses from legacy @AckType into modern @AckInfer schema '
+          '$path crosses from legacy @AckType into modern schema-first model '
           '"$schemaName". '
           'AckType and modern models intentionally use isolated generators; '
           'migrate this connected graph together.',
@@ -2697,7 +2703,7 @@ class SchemaAstAnalyzer {
     if (matches.isEmpty) return;
     if (matches.length > 1) {
       throw InvalidGenerationSource(
-        'Modern @AckModel facade reference ${expression.toSource()} is '
+        'Modern class-first facade reference ${expression.toSource()} is '
         'ambiguous.',
         element: contextElement,
       );
@@ -2705,7 +2711,7 @@ class SchemaAstAnalyzer {
 
     final path = diagnosticPath ?? contextElement.name ?? 'legacy schema';
     throw InvalidGenerationSource(
-      '$path crosses from legacy @AckType into modern @AckModel facade '
+      '$path crosses from legacy @AckType into modern class-first facade '
       '"$facadeName.schema". AckType and modern models intentionally use '
       'isolated generators; migrate this connected graph together.',
       element: contextElement,
@@ -2755,7 +2761,7 @@ class SchemaAstAnalyzer {
   }
 
   String? _classFirstFacadeName(ClassElement element) {
-    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    final annotation = _classFirstChecker.firstAnnotationOfExact(element);
     if (annotation != null) {
       final configuredName = ConstantReader(annotation).read('schemaName');
       return ackClassSchemaFacadeName(
@@ -2768,7 +2774,7 @@ class SchemaAstAnalyzer {
       return base is ClassElement &&
           base.library == element.library &&
           base.isSealed &&
-          _ackModelChecker.hasAnnotationOfExact(base);
+          _classFirstChecker.hasAnnotationOfExact(base);
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
@@ -2827,10 +2833,7 @@ class SchemaAstAnalyzer {
   }
 
   bool _hasAckInferAnnotation(Element element) {
-    return TypeChecker.typeNamed(
-      AckInfer,
-      inPackage: 'ack',
-    ).hasAnnotationOfExact(element);
+    return _schemaFirstChecker.hasAnnotationOfExact(element);
   }
 
   String? _extractAckTypeName(Element element) {

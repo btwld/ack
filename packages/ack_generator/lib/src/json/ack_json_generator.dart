@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:ack/annotations.dart' show AckModel, Schemable;
 import 'package:ack/ack_generator_support.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -25,6 +26,7 @@ final class AckJsonSerializableGenerator extends Generator {
     AckGeneratedJson,
     inPackage: 'ack',
   );
+  // ignore: deprecated_member_use
   static const _model = TypeChecker.typeNamed(AckModel, inPackage: 'ack');
   static const _schemable = TypeChecker.typeNamed(Schemable, inPackage: 'ack');
 
@@ -58,7 +60,9 @@ final class AckJsonSerializableGenerator extends Generator {
           (type) => type.element.baseElement == element.baseElement,
         );
         if (!isSubtype) continue;
-        final branchAnnotation = _model.firstAnnotationOfExact(branch);
+        final branchAnnotation =
+            _model.firstAnnotationOfExact(branch) ??
+            _schemable.firstAnnotationOfExact(branch);
         _addModelRequest(
           requests,
           claimed,

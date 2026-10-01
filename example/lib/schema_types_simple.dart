@@ -4,7 +4,7 @@ part 'schema_types_simple.ack.dart';
 part 'schema_types_simple.ack.g.dart';
 
 /// Simple example: Basic primitives
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'age': Ack.integer(),

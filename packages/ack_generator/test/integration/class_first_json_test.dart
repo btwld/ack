@@ -28,7 +28,7 @@ void main() {
       await _expectJsonOutput(
         '''
 $_head
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class User {
   const User({required this.firstName, this.nickname});
 
@@ -62,7 +62,7 @@ Object? _ackUserToRuntimeNickname(String? value) => value;
       await _expectJsonOutput(
         '''
 $_head
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet {
   const Pet({required this.id});
   final String id;
@@ -89,4 +89,29 @@ Object? _ackCatToRuntimeLives(int value) => value;
       );
     },
   );
+
+  test('JSON phase applies an annotated branch case style', () async {
+    await _expectJsonOutput(
+      '''
+$_head
+@Schemable(discriminatorKey: 'type')
+sealed class Pet {
+  const Pet();
+}
+
+@Schemable(caseStyle: AckCaseStyle.snake)
+final class Cat extends Pet {
+  const Cat({required this.livesLeft});
+  final int livesLeft;
+}
+
+int _ackCatFromRuntimeLivesLeft(Object? value) => value as int;
+Object? _ackCatToRuntimeLivesLeft(int value) => value;
+''',
+      allOf([
+        contains("livesLeft: _ackCatFromRuntimeLivesLeft(json['lives_left'])"),
+        contains("'lives_left': _ackCatToRuntimeLivesLeft(instance.livesLeft)"),
+      ]),
+    );
+  });
 }

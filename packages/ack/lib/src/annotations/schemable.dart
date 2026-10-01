@@ -1,16 +1,23 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta_meta.dart';
 
+import 'ack_generated_json.dart';
 import 'ack_model.dart';
 
 /// Marks an Ack schema declaration.
 ///
 /// Use this annotation on a top-level schema variable or getter to generate a
 /// schema-first model. Use it on a class to generate a class-first schema.
-/// The target determines which options apply. [AckInfer] and [AckModel]
-/// remain supported as compatibility spellings.
+/// The target determines which options apply. The deprecated `@AckInfer` and
+/// `@AckModel` spellings remain supported until 2.0.0.
 @Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
 final class Schemable {
+  /// Internal marker used on generated schema-first model classes.
+  ///
+  /// Typed as [Object] so generated code only needs a constant annotation
+  /// expression. The generator inspects the actual [AckGeneratedJson] type.
+  static const Object generatedJson = AckGeneratedJson();
+
   /// Creates a unified schema declaration annotation.
   const Schemable({
     this.name,

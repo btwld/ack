@@ -35,7 +35,7 @@ typedef _FutureGeneratedType = ({
 
 typedef _ClassFirstDependency = ({ClassElement target, FieldElement field});
 
-/// Builds normalized Ack model nodes from hand-written `@AckModel` classes.
+/// Builds normalized Ack model nodes from hand-written `@Schemable` classes.
 ///
 /// Analyzer elements and AST nodes are consumed here; emitters receive only
 /// structural type references and source expressions stored in [AckModelGraph].
@@ -142,6 +142,7 @@ final class ClassModelGraphBuilder {
   };
 
   static const _ackModelChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     annotations.AckModel,
     inPackage: 'ack',
   );
@@ -150,6 +151,7 @@ final class ClassModelGraphBuilder {
     inPackage: 'ack',
   );
   static const _ackInferChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     annotations.AckInfer,
     inPackage: 'ack',
   );
@@ -210,7 +212,7 @@ final class ClassModelGraphBuilder {
     );
     if (resolved is! ResolvedLibraryResult) {
       throw InvalidGenerationSource(
-        'Could not resolve ${libraryElement.uri} for @AckModel generation.',
+        'Could not resolve ${libraryElement.uri} for Ack model generation.',
       );
     }
     _inputResolved = resolved;
@@ -230,14 +232,14 @@ final class ClassModelGraphBuilder {
       if (options.discriminatorValue != null) {
         throw InvalidGenerationSource(
           '${element.name} sets discriminatorValue but is not a concrete '
-          'branch of an annotated sealed @AckModel base.',
+          'branch of an annotated sealed ${_annotationName(element)} base.',
           element: element,
         );
       }
       if (element.isAbstract || !element.isConstructable) {
         throw InvalidGenerationSource(
-          '@AckModel requires a constructable class; ${element.name} is '
-          'abstract.',
+          '${_annotationName(element)} requires a constructable class; '
+          '${element.name} is abstract.',
           element: element,
         );
       }
@@ -311,7 +313,8 @@ final class ClassModelGraphBuilder {
     final name = element.name ?? '';
     if (name.startsWith('_')) {
       throw InvalidGenerationSource(
-        '@AckModel requires a public class; received "$name".',
+        '${_annotationName(element)} requires a public class; received '
+        '"$name".',
         element: element,
         todo: 'Annotate a public class.',
       );
@@ -319,16 +322,18 @@ final class ClassModelGraphBuilder {
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
-        '$name cannot use @AckModel and @JsonSerializable together because '
-        'both generate the same _\$$name JSON helpers.',
+        '$name cannot use ${_annotationName(element)} and @JsonSerializable '
+        'together because both generate the same _\$$name JSON helpers.',
         element: element,
-        todo: 'Remove @JsonSerializable; @AckModel owns JSON generation.',
+        todo:
+            'Remove @JsonSerializable; ${_annotationName(element)} owns JSON '
+            'generation.',
       );
     }
     final options = _options(element)!;
     if (element.isSealed && options.discriminatorKey == null) {
       throw InvalidGenerationSource(
-        'Sealed @AckModel $name requires discriminatorKey.',
+        'Sealed ${_annotationName(element)} $name requires discriminatorKey.',
         element: element,
       );
     }
@@ -340,7 +345,8 @@ final class ClassModelGraphBuilder {
     }
     if (element.isSealed && options.discriminatorValue != null) {
       throw InvalidGenerationSource(
-        'Sealed @AckModel $name cannot set discriminatorValue.',
+        'Sealed ${_annotationName(element)} $name cannot set '
+        'discriminatorValue.',
         element: element,
       );
     }
@@ -384,7 +390,8 @@ final class ClassModelGraphBuilder {
     }
     if (candidates.isEmpty) {
       throw InvalidGenerationSource(
-        'Sealed @AckModel ${base.name} has no concrete same-library branches.',
+        'Sealed ${_annotationName(base)} ${base.name} has no concrete '
+        'same-library branches.',
         element: base,
       );
     }
@@ -462,7 +469,8 @@ final class ClassModelGraphBuilder {
     final constructor = element.unnamedConstructor;
     if (constructor == null || !constructor.isGenerative) {
       throw InvalidGenerationSource(
-        '@AckModel ${element.name} requires an unnamed generative constructor.',
+        '${_annotationName(element)} ${element.name} requires an unnamed '
+        'generative constructor.',
         element: element,
       );
     }
@@ -473,8 +481,8 @@ final class ClassModelGraphBuilder {
     for (final field in fields.values) {
       if (field.isFinal) continue;
       throw InvalidGenerationSource(
-        '${element.name}.${field.name} must be final because @AckModel '
-        'generates immutable value semantics.',
+        '${element.name}.${field.name} must be final because '
+        '${_annotationName(element)} generates immutable value semantics.',
         element: field,
         todo: 'Declare the stored field as final.',
       );
@@ -574,7 +582,7 @@ final class ClassModelGraphBuilder {
         if (parameters.containsKey(name)) {
           throw InvalidGenerationSource(
             '${element.name}.$name is private and cannot participate in '
-            '@AckModel generation.',
+            '${_annotationName(element)} generation.',
             element: field,
           );
         }
@@ -1046,8 +1054,8 @@ final class ClassModelGraphBuilder {
 
   Never _rejectLegacyGeneratedType(FieldElement field, String name) {
     throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} crosses from modern '
-      '@AckModel into legacy @AckType generated type "$name". AckType '
+      '${field.enclosingElement.name}.${field.name} crosses from a modern '
+      'class-first model into legacy @AckType generated type "$name". AckType '
       'and modern models intentionally use isolated generators; migrate '
       'this connected graph together.',
       element: field,
@@ -1391,8 +1399,8 @@ final class ClassModelGraphBuilder {
   void _requireFinalConcreteClass(ClassElement element) {
     if (element.isAbstract || element.isSealed || element.isFinal) return;
     throw InvalidGenerationSource(
-      '${element.name} must be declared as a final class because @AckModel '
-      'generates immutable value semantics.',
+      '${element.name} must be declared as a final class because '
+      '${_annotationName(element)} generates immutable value semantics.',
       element: element,
       todo: 'Add the final class modifier.',
     );
@@ -1710,7 +1718,7 @@ final class ClassModelGraphBuilder {
     if (!RegExp(r'^[A-Z][A-Za-z0-9_$]*$').hasMatch(facadeName) ||
         _dartKeywords.contains(facadeName)) {
       throw InvalidGenerationSource(
-        'Invalid @AckModel schema facade name "$facadeName" on '
+        'Invalid ${_annotationName(element)} schema facade name "$facadeName" on '
         '${element.name}; schemaName must be a public UpperCamel identifier.',
         element: element,
       );
@@ -1771,12 +1779,28 @@ final class ClassModelGraphBuilder {
     );
   }
 
+  /// The annotation spelling that marks [element] or its sealed base.
+  String _annotationName(Element element) {
+    if (element is! ClassElement) return '@Schemable';
+    for (final candidate in [
+      element,
+      for (final supertype in element.allSupertypes) supertype.element,
+    ]) {
+      if (_ackModelChecker.hasAnnotationOfExact(candidate)) return '@AckModel';
+      if (_schemableChecker.hasAnnotationOfExact(candidate)) {
+        return '@Schemable';
+      }
+    }
+    return '@Schemable';
+  }
+
   String? _classDescription(ClassElement element, _ModelOptions options) {
     final tag = _descriptionTag(element);
     final explicit = options.description;
     if (explicit != null && explicit.trim().isEmpty) {
       throw InvalidGenerationSource(
-        '${element.name} @AckModel.description must not be blank.',
+        '${element.name} ${_annotationName(element)}.description must not be '
+        'blank.',
         element: element,
       );
     }
@@ -1843,9 +1867,10 @@ final class ClassModelGraphBuilder {
     if (configuredUnsupported.isNotEmpty) {
       throw InvalidGenerationSource(
         '${field.enclosingElement.name}.${field.name} uses unsupported '
-        '@JsonKey options: ${configuredUnsupported.join(', ')}. @AckModel '
-        'supports only @JsonKey(name: ...) on fields so validation and JSON '
-        'serialization cannot diverge.',
+        '@JsonKey options: ${configuredUnsupported.join(', ')}. '
+        '${_annotationName(field.enclosingElement)} supports only '
+        '@JsonKey(name: ...) on fields so validation and JSON serialization '
+        'cannot diverge.',
         element: field,
       );
     }
@@ -1942,7 +1967,7 @@ final class ClassModelGraphBuilder {
     final result = await element.session.getResolvedLibraryByElement(element);
     if (result is! ResolvedLibraryResult) {
       throw InvalidGenerationSource(
-        'Could not resolve ${element.uri} for @AckField generation.',
+        'Could not resolve ${element.uri} for Ack model generation.',
       );
     }
     _resolvedByUri[element.uri] = result;

@@ -68,7 +68,7 @@ sealed class Pet {
 }
 
 /// Discriminated model branch generated from `catSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Cat extends Pet {
   /// Creates a model without validating it.
   ///
@@ -159,7 +159,7 @@ final class _$CatCopyWith implements $CatCopyWith<Cat> {
 }
 
 /// Discriminated model branch generated from `dogSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Dog extends Pet {
   /// Creates a model without validating it.
   ///

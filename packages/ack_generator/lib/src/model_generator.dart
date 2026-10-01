@@ -13,14 +13,15 @@ import 'builders/class_model_emitter.dart';
 import 'builders/model_emitter.dart';
 import 'models/schema_model_graph.dart';
 
-/// Generates immutable model classes for top-level schemas annotated with
-/// `@AckInfer`.
+/// Generates Ack models for `@Schemable` top-level schemas and classes.
 final class AckModelGenerator extends Generator {
   static const _ackInferChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     AckInfer,
     inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     AckModel,
     inPackage: 'ack',
   );
@@ -55,7 +56,8 @@ final class AckModelGenerator extends Generator {
       if (!_hasAckInfer(element)) continue;
       if (element is ClassElement) {
         throw InvalidGenerationSource(
-          '@AckInfer can only be applied to top-level schema variables or getters, not classes.',
+          '@AckInfer can only be applied to top-level schema variables or '
+          'getters, not classes. Use @Schemable() on the class.',
           element: element,
         );
       }
@@ -64,7 +66,8 @@ final class AckModelGenerator extends Generator {
       } else if (element is GetterElement && element.isOriginDeclaration) {
         if (element.enclosingElement is! LibraryElement) {
           throw InvalidGenerationSource(
-            '@AckInfer can only be applied to top-level schema variables or getters.',
+            '${_annotationLabel(element)} can only be applied to top-level '
+            'schema variables or getters.',
             element: element,
           );
         }
@@ -80,7 +83,8 @@ final class AckModelGenerator extends Generator {
       for (final getter in classElement.getters) {
         if (_hasAckInfer(getter)) {
           throw InvalidGenerationSource(
-            '@AckInfer can only be applied to top-level schema variables or getters.',
+            '${_annotationLabel(getter)} can only be applied to top-level '
+            'schema variables or getters.',
             element: getter,
           );
         }
@@ -93,14 +97,14 @@ final class AckModelGenerator extends Generator {
       annotated.isNotEmpty ? annotated.first : annotatedModels.first,
     );
 
-    ({AckModelGraph graph, String? ackPrefix, String? ackInferPrefix})?
+    ({AckModelGraph graph, String? ackPrefix, String? schemablePrefix})?
     schemaFirst;
     if (annotated.isNotEmpty) {
       final graph = await SchemaModelGraphBuilder(library).build(annotated);
       schemaFirst = (
         graph: graph,
         ackPrefix: _ackRuntimeQualifier(library, annotated.first),
-        ackInferPrefix: _ackInferQualifier(library, annotated.first),
+        schemablePrefix: _schemableQualifier(library, annotated.first),
       );
     }
     ({AckModelGraph graph, String? ackPrefix})? classFirst;
@@ -126,7 +130,7 @@ final class AckModelGenerator extends Generator {
     if (schemaFirst != null) {
       final specs = AckModelEmitter(
         ackPrefix: schemaFirst.ackPrefix,
-        ackInferPrefix: schemaFirst.ackInferPrefix,
+        schemablePrefix: schemaFirst.schemablePrefix,
         schemaPrefixInScope: library.element.firstFragment.libraryImports.any(
           (import) => import.prefix?.element.name == 'schema',
         ),
@@ -168,9 +172,9 @@ final class AckModelGenerator extends Generator {
       final facadeName = classFirst.classMetadataFor(node.id)!.facadeName;
       if (!schemaClassNames.contains(facadeName)) continue;
       throw InvalidGenerationSource(
-        'Generated @AckInfer class "$facadeName" conflicts with the '
-        '@AckModel facade for ${node.className}. Choose a different '
-        '@AckInfer name or AckModel.schemaName.',
+        'Generated schema-first class "$facadeName" conflicts with the '
+        'class-first facade for ${node.className}. Choose a different '
+        'Schemable.name or Schemable.schemaName.',
         element: classesByName[node.className],
       );
     }
@@ -195,11 +199,16 @@ final class AckModelGenerator extends Generator {
       'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
     },
     message:
-        'Generated @AckModel schemas require visible exact Ack, AckSchema, '
+        'Generated class-first schemas require visible exact Ack, AckSchema, '
         'AckSchemaModel, AckSchemaModelExtension, SchemaResult, deepEquals, '
         'and deepHashCode imports in this library.',
     todo: 'Import package:ack/ack.dart, directly or through a barrel.',
   );
+
+  String _annotationLabel(Element element) =>
+      _ackInferChecker.hasAnnotationOfExact(element)
+      ? '@AckInfer'
+      : '@Schemable';
 
   bool _hasAckInfer(Element element) =>
       _ackInferChecker.hasAnnotationOfExact(element) ||
@@ -269,23 +278,23 @@ final class AckModelGenerator extends Generator {
         'are exposed.',
   );
 
-  /// Resolves the visible `AckInfer` qualifier for generated JSON markers.
+  /// Resolves the visible `Schemable` qualifier for generated JSON markers.
   ///
   /// Uses import namespaces so barrel re-exports and `show` combinators work.
   /// Prefixed imports win over unprefixed ones, in import order.
-  String? _ackInferQualifier(
+  String? _schemableQualifier(
     LibraryReader library,
     Element annotatedElement,
   ) => _visibleQualifier(
     library,
     annotatedElement,
-    requiredTypes: const {'AckInfer': _ackInferChecker},
+    requiredTypes: const {'Schemable': _schemableChecker},
     message:
-        'Generated @AckInfer.jsonSerializable requires a visible exact AckInfer '
+        'Generated @Schemable.generatedJson requires a visible exact Schemable '
         'import in this library.',
     todo:
-        'Import AckInfer from package:ack, using the same prefix as '
-        '@AckInfer() when one is present.',
+        'Import Schemable from package:ack, using the same prefix as the '
+        'schema annotation when one is present.',
   );
 
   String? _visibleQualifier(

@@ -15,13 +15,13 @@ class TagList {
 
 final baseColorSchema = Ack.string();
 
-@AckInfer(name: 'ColorModel')
+@Schemable(name: 'ColorModel')
 final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.value,
 );
 
-@AckInfer()
+@Schemable()
 final profileSchema = Ack.object({
   'homepage': Ack.uri(),
   'birthday': Ack.date(),

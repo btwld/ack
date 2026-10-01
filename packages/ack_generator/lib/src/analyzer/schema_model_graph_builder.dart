@@ -147,6 +147,7 @@ final class SchemaModelGraphBuilder {
   static const _maxReferenceDepth = 16;
 
   static const _ackInferChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     AckInfer,
     inPackage: 'ack',
   );
@@ -160,11 +161,8 @@ final class SchemaModelGraphBuilder {
     inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     AckModel,
-    inPackage: 'ack',
-  );
-  static const _schemableModelChecker = TypeChecker.typeNamed(
-    Schemable,
     inPackage: 'ack',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
@@ -347,8 +345,9 @@ final class SchemaModelGraphBuilder {
     } else if (chain.reference != null &&
         _isCrossLibraryAckInfer(chain.reference!)) {
       throw InvalidGenerationSource(
-        '$path aliases a cross-library @AckInfer schema. Use the original '
-        'model directly.',
+        '$path aliases a cross-library '
+        '${_annotationLabel(_referencedElement(chain.reference!)!)} schema. '
+        'Use the original model directly.',
         element: declaration.element,
       );
     } else {
@@ -510,7 +509,7 @@ final class SchemaModelGraphBuilder {
         throw InvalidGenerationSource(
           '$fieldPath uses an anonymous inline Ack.object(...).',
           element: declaration.element,
-          todo: 'Extract it to a named @AckInfer schema declaration.',
+          todo: 'Extract it to a named @Schemable schema declaration.',
         );
       }
       fields.add(
@@ -609,7 +608,8 @@ final class SchemaModelGraphBuilder {
       final branch = _graph.nodeFor(target.id);
       if (branch is! AckObjectModelNode) {
         throw InvalidGenerationSource(
-          '$path.$value must reference an @AckInfer object schema.',
+          '$path.$value must reference an '
+          '${_annotationLabel(declaration.element)} object schema.',
           element: declaration.element,
         );
       }
@@ -698,7 +698,7 @@ final class SchemaModelGraphBuilder {
         if (followedName != null) {
           throw InvalidGenerationSource(
             "$path references '$followedName', an Ack.object schema without "
-            '@AckInfer. Annotate it to generate a model.',
+            '@Schemable. Annotate it to generate a model.',
             element: context,
           );
         }
@@ -772,7 +772,7 @@ final class SchemaModelGraphBuilder {
         if (followedName != null) {
           throw InvalidGenerationSource(
             "$path references '$followedName', an Ack.discriminated schema "
-            'without @AckInfer. Annotate it to generate a model.',
+            'without @Schemable. Annotate it to generate a model.',
             element: context,
           );
         }
@@ -941,7 +941,8 @@ final class SchemaModelGraphBuilder {
     );
     if (model == null) {
       throw InvalidGenerationSource(
-        '$path Ack.lazy must resolve to a named @AckInfer schema.',
+        '$path Ack.lazy must resolve to a named ${_annotationLabel(context)} '
+        'schema.',
         element: context,
       );
     }
@@ -1144,7 +1145,7 @@ final class SchemaModelGraphBuilder {
   String? _classFirstFacadeName(ClassElement element) {
     final annotation =
         _ackModelChecker.firstAnnotationOfExact(element) ??
-        _schemableModelChecker.firstAnnotationOfExact(element);
+        _schemableChecker.firstAnnotationOfExact(element);
     if (annotation != null) {
       final value = ConstantReader(annotation).read('schemaName');
       return ackClassSchemaFacadeName(
@@ -1158,7 +1159,7 @@ final class SchemaModelGraphBuilder {
           base.library == element.library &&
           base.isSealed &&
           (_ackModelChecker.hasAnnotationOfExact(base) ||
-              _schemableModelChecker.hasAnnotationOfExact(base));
+              _schemableChecker.hasAnnotationOfExact(base));
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
@@ -1392,6 +1393,12 @@ final class SchemaModelGraphBuilder {
         _schemableChecker.hasAnnotationOfExact(declaration);
   }
 
+  /// The annotation spelling that marks the declaration behind [element].
+  String _annotationLabel(Element element) =>
+      _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element))
+      ? '@AckInfer'
+      : '@Schemable';
+
   bool _hasLegacyAckType(Element element) {
     return _legacyAckTypeChecker.hasAnnotationOfExact(
       _propertyDeclaration(element),
@@ -1450,7 +1457,8 @@ final class SchemaModelGraphBuilder {
       if (customName.trim() != customName ||
           !RegExp(r'^[A-Z][A-Za-z0-9]*$').hasMatch(customName)) {
         throw InvalidGenerationSource(
-          'Invalid @AckInfer name "$customName". Names must be unchanged UpperCamelCase identifiers.',
+          'Invalid ${_annotationLabel(element)} name "$customName". Names must '
+          'be unchanged UpperCamelCase identifiers.',
           element: element,
         );
       }
@@ -1479,7 +1487,8 @@ final class SchemaModelGraphBuilder {
       final name = declaration.className;
       if (!generated.add(name)) {
         throw InvalidGenerationSource(
-          'Multiple @AckInfer declarations generate "$name".',
+          'Multiple ${_annotationLabel(declaration.element)} declarations '
+          'generate "$name".',
           element: declaration.element,
         );
       }

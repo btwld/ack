@@ -13,7 +13,7 @@ enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
 /// [reject] is the default: unknown properties fail validation.
 /// [discard] accepts unknown properties during validation but does not store
 /// them on the model. It is intended for tolerant, read-only consumers.
-/// [capture] stores unknown properties in [AckModel.captureField]
+/// [capture] stores unknown properties in the configured `captureField`
 /// and flattens them back onto the wire during encoding. Declared fields and
 /// union discriminators always win over captured extras. Models that must
 /// round-trip unknown properties use [capture].
@@ -26,6 +26,7 @@ enum AckUnknownPropertyPolicy { reject, discard, capture }
 /// implicit sealed-union branches must be `final class` declarations, use only
 /// final stored fields, and apply the generated `_$ClassAck` mixin. Annotated
 /// sealed union bases remain supported.
+@Deprecated('Use @Schemable(). AckModel will be removed in 2.0.0.')
 @Target({TargetKind.classType})
 final class AckModel {
   /// Creates a class-first Ack model annotation.

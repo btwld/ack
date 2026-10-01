@@ -144,7 +144,7 @@ dependency_overrides:
               expect(entry.value, isNot(contains('final accountSchema')));
             } else {
               expect(entry.value, contains('class '));
-              expect(entry.value, contains('jsonSerializable'));
+              expect(entry.value, contains('generatedJson'));
             }
             expect(entry.value, isNot(contains('extension type')));
             expect(entry.value, isNot(contains('fromMap')));

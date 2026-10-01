@@ -107,8 +107,8 @@ void main() {
         expect(
           diagnostics,
           contains(
-            'Use @AckInfer() for schema-first models or @AckModel() for '
-            'class-first models. AckType will be removed in 2.0.0.',
+            'Use @Schemable() for schema-first or class-first models. AckType '
+            'will be removed in 2.0.0.',
           ),
         );
       } finally {

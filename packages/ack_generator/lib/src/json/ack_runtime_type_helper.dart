@@ -1,3 +1,4 @@
+// ignore: deprecated_member_use
 import 'package:ack/annotations.dart' show AckModel, Schemable;
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -14,6 +15,7 @@ import 'helper_names.dart';
 final class AckRuntimeTypeHelper extends TypeHelper<TypeHelperContext> {
   const AckRuntimeTypeHelper();
 
+  // ignore: deprecated_member_use
   static const _model = TypeChecker.typeNamed(AckModel, inPackage: 'ack');
   static const _schemable = TypeChecker.typeNamed(Schemable, inPackage: 'ack');
 

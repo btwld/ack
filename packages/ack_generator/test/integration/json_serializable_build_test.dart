@@ -68,7 +68,7 @@ import 'package:ack/ack.dart';
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'createdAt': Ack.datetime(),
@@ -88,7 +88,7 @@ final userSchema = Ack.object({
           p.join(temporary.path, 'lib', 'user.ack.g.dart'),
         ).readAsStringSync();
 
-        expect(ackPart, contains('@AckInfer.jsonSerializable'));
+        expect(ackPart, contains('@Schemable.generatedJson'));
         expect(ackPart, contains(r'_$UserFromJson'));
         expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
         expect(jsonPart, contains('JsonSerializableGenerator'));
@@ -158,7 +158,7 @@ part 'same.ack.dart';
 part 'same.ack.g.dart';
 part 'same.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'nickname': Ack.string().optional(),
@@ -230,7 +230,7 @@ void main() {
   );
 
   test(
-    'prefixed barrel AckInfer imports compile through the JSON phase',
+    'prefixed barrel Schemable imports compile through the JSON phase',
     () async {
       final projectRoot = _projectRoot();
       final temporary = await Directory.systemTemp.createTemp(
@@ -270,7 +270,7 @@ import 'support.dart' as support;
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@support.AckInfer()
+@support.Schemable()
 final userSchema = support.Ack.object({
   'name': support.Ack.string(),
   'role': support.Ack.enumValues(support.Role.values),
@@ -305,7 +305,7 @@ void main() {
         final ackPart = File(
           p.join(temporary.path, 'lib', 'user.ack.dart'),
         ).readAsStringSync();
-        expect(ackPart, contains('@support.AckInfer.jsonSerializable'));
+        expect(ackPart, contains('@support.Schemable.generatedJson'));
         expect(ackPart, contains('support.AckModelAdapter'));
         expect(ackPart, contains('final support.Role role;'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');

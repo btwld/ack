@@ -50,7 +50,7 @@ import 'child.dart';
 part 'parent.ack.dart';
 part 'parent.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Parent with _$ParentAck {
   const Parent({required this.child});
 
@@ -66,7 +66,7 @@ import 'parent.dart';
 part 'child.ack.dart';
 part 'child.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Child with _$ChildAck {
   const Child({required this.parent});
 

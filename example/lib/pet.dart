@@ -4,19 +4,19 @@ part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
 /// Pet schemas: discriminated by 'type'
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({
   'type': Ack.literal('cat'),
   'lives': Ack.integer().min(1).max(9),
 });
 
-@AckInfer()
+@Schemable()
 final dogSchema = Ack.object({
   'type': Ack.literal('dog'),
   'breed': Ack.string().minLength(1),
 });
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'cat': catSchema, 'dog': dogSchema},

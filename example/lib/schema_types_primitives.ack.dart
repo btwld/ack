@@ -11,7 +11,7 @@ part of 'schema_types_primitives.dart';
 // **************************************************************************
 
 /// Immutable value model generated from `passwordSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Password {
   /// Creates a model without validating it.
   ///
@@ -106,7 +106,7 @@ final class _$PasswordCopyWith implements $PasswordCopyWith<Password> {
 }
 
 /// Immutable value model generated from `ageSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Age {
   /// Creates a model without validating it.
   ///
@@ -200,7 +200,7 @@ final class _$AgeCopyWith implements $AgeCopyWith<Age> {
 }
 
 /// Immutable value model generated from `priceSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Price {
   /// Creates a model without validating it.
   ///
@@ -294,7 +294,7 @@ final class _$PriceCopyWith implements $PriceCopyWith<Price> {
 }
 
 /// Immutable value model generated from `activeSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Active {
   /// Creates a model without validating it.
   ///
@@ -388,7 +388,7 @@ final class _$ActiveCopyWith implements $ActiveCopyWith<Active> {
 }
 
 /// Immutable value model generated from `tagsSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Tags {
   /// Creates a model without validating it.
   ///
@@ -485,7 +485,7 @@ final class _$TagsCopyWith implements $TagsCopyWith<Tags> {
 }
 
 /// Immutable value model generated from `scoresSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Scores {
   /// Creates a model without validating it.
   ///
@@ -582,7 +582,7 @@ final class _$ScoresCopyWith implements $ScoresCopyWith<Scores> {
 }
 
 /// Immutable value model generated from `statusSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class StatusLiteral {
   /// Creates a model without validating it.
   ///
@@ -679,7 +679,7 @@ final class _$StatusLiteralCopyWith
 }
 
 /// Immutable value model generated from `roleSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Role {
   /// Creates a model without validating it.
   ///
@@ -773,7 +773,7 @@ final class _$RoleCopyWith implements $RoleCopyWith<Role> {
 }
 
 /// Immutable value model generated from `userRoleSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class UserRoleModel {
   /// Creates a model without validating it.
   ///
@@ -871,7 +871,7 @@ final class _$UserRoleModelCopyWith
 }
 
 /// Immutable value model generated from `statusEnumSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class StatusEnum {
   /// Creates a model without validating it.
   ///
@@ -966,7 +966,7 @@ final class _$StatusEnumCopyWith implements $StatusEnumCopyWith<StatusEnum> {
 }
 
 /// Immutable value model generated from `optionalStatusSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class OptionalStatus {
   /// Creates a model without validating it.
   ///
@@ -1064,7 +1064,7 @@ final class _$OptionalStatusCopyWith
 }
 
 /// Immutable value model generated from `defaultedEnumSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class DefaultedEnum {
   /// Creates a model without validating it.
   ///
@@ -1162,7 +1162,7 @@ final class _$DefaultedEnumCopyWith
 }
 
 /// Immutable value model generated from `chainedEnumStringSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class ChainedEnumString {
   /// Creates a model without validating it.
   ///
@@ -1260,7 +1260,7 @@ final class _$ChainedEnumStringCopyWith
 }
 
 /// Immutable value model generated from `refinedAgeSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class RefinedAge {
   /// Creates a model without validating it.
   ///

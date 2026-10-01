@@ -11,7 +11,7 @@ part of 'additional_properties_example.dart';
 // **************************************************************************
 
 /// Immutable model generated from `userConfigSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class UserConfig {
   /// Creates a model without validating it.
   ///
@@ -162,7 +162,7 @@ final class _$UserConfigCopyWith implements $UserConfigCopyWith<UserConfig> {
 }
 
 /// Immutable model generated from `apiRequestSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class ApiRequest {
   /// Creates a model without validating it.
   ///
@@ -313,7 +313,7 @@ final class _$ApiRequestCopyWith implements $ApiRequestCopyWith<ApiRequest> {
 }
 
 /// Immutable model generated from `featureFlagsSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class FeatureFlags {
   /// Creates a model without validating it.
   ///
@@ -466,7 +466,7 @@ final class _$FeatureFlagsCopyWith
 }
 
 /// Immutable model generated from `dynamicDataSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class DynamicData {
   /// Creates a model without validating it.
   ///

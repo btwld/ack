@@ -29,8 +29,8 @@ import 'package:meta/meta_meta.dart';
 /// - Instance members
 /// - Local variables
 @Deprecated(
-  'Use @AckInfer() for schema-first models or @AckModel() for '
-  'class-first models. AckType will be removed in 2.0.0.',
+  'Use @Schemable() for schema-first or class-first models. AckType will '
+  'be removed in 2.0.0.',
 )
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {

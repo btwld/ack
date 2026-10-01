@@ -71,7 +71,7 @@ import 'package:ack/ack.dart';
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel(schemaName: 'PostalAddressSchema')
+@Schemable(schemaName: 'PostalAddressSchema')
 final class Address with _$AddressAck {
   const Address({required this.city});
 
@@ -80,7 +80,7 @@ final class Address with _$AddressAck {
   static final fromJson = PostalAddressSchema.fromJson;
 }
 
-@AckModel()
+@Schemable()
 final class AddressBook with _$AddressBookAck {
   const AddressBook({required this.primary, this.secondary});
 
@@ -98,7 +98,7 @@ import 'address.dart' show Address, PostalAddressSchema;
 part 'customer.ack.dart';
 part 'customer.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Customer with _$CustomerAck {
   const Customer({
     this.primary = const Address(city: 'Default City'),
@@ -122,7 +122,7 @@ import 'models.dart' as models;
 part 'parcel.ack.dart';
 part 'parcel.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Parcel with _$ParcelAck {
   const Parcel({required this.destination});
 
@@ -136,7 +136,7 @@ import 'package:ack/ack.dart';
 part 'north.ack.dart';
 part 'north.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Place with _$PlaceAck {
   const Place({required this.name});
 
@@ -149,7 +149,7 @@ import 'package:ack/ack.dart';
 part 'south.ack.dart';
 part 'south.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Place with _$PlaceAck {
   const Place({required this.name});
 
@@ -166,7 +166,7 @@ import 'south.dart' as south;
 part 'itinerary.ack.dart';
 part 'itinerary.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Itinerary with _$ItineraryAck {
   const Itinerary({required this.start, required this.finish});
 
@@ -181,7 +181,7 @@ import 'package:ack/ack.dart';
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
 
@@ -203,7 +203,7 @@ import 'pet.dart' as pets;
 part 'order.ack.dart';
 part 'order.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Order with _$OrderAck {
   const Order({
     required this.shipping,
@@ -227,7 +227,7 @@ import 'package:ack/ack.dart';
 part 'legacy.ack.dart';
 part 'legacy.ack.g.dart';
 
-@AckInfer(name: 'LegacyAddress')
+@Schemable(name: 'LegacyAddress')
 final legacyAddressContract = Ack.object({'city': Ack.string()});
 ''',
         );
@@ -240,7 +240,7 @@ import 'legacy.dart' as legacy;
 part 'holder.ack.dart';
 part 'holder.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Holder with _$HolderAck {
   const Holder({
     required this.primary,
@@ -268,7 +268,7 @@ import 'address.dart' as address;
 part 'address_envelope.ack.dart';
 part 'address_envelope.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressEnvelopeSchema = Ack.object({
   'primary': address.PostalAddressSchema.schema,
   'optional': address.PostalAddressSchema.schema.optional(),

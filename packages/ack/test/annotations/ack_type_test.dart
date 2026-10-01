@@ -17,6 +17,7 @@ void main() {
   test('support barrel exposes the marker with fixed null omission', () {
     const marker = AckGeneratedJson();
     expect(marker.config.includeIfNull, isFalse);
+    expect(identical(Schemable.generatedJson, marker), isTrue);
 
     final generated = AckInfer.jsonSerializable as AckGeneratedJson;
     expect(generated.config.includeIfNull, isFalse);
