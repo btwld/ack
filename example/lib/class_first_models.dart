@@ -1,11 +1,10 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'class_first_models.ack.dart';
 part 'class_first_models.ack.g.dart';
 
 /// A signed-in user's account.
-@AckModel(
+@Schemable(
   caseStyle: AckCaseStyle.snake,
   description: "A signed-in user's account.",
 )
@@ -19,8 +18,11 @@ final class Account with _$AccountAck {
   /// The name shown to other users.
   @MinLength(2)
   @AckField(description: 'The name shown to other users.')
+  @override
   final String displayName;
+  @override
   final Uri? website;
+  @override
   final String role;
 
   static final fromJson = AccountSchema.fromJson;
@@ -28,7 +30,7 @@ final class Account with _$AccountAck {
 
 /// A pet, identified by its `type`.
 /// @description A pet, identified by its `type`.
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
 
@@ -37,17 +39,19 @@ sealed class Pet with _$PetAck {
 
 /// A cat with a limited number of lives.
 /// @description A cat with a limited number of lives.
-@AckModel(discriminatorValue: 'cat')
+@Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
 
   @Min(1)
   @Max(9)
+  @override
   final int lives;
 }
 
 final class Dog extends Pet with _$DogAck {
   const Dog({required super.id, required this.breed});
 
+  @override
   final String breed;
 }

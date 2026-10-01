@@ -36,8 +36,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSource(
           '@AckType can only be applied to top-level schema variables or getters, not classes.',
           element: element,
-          todo:
-              'Remove @AckType from the class and annotate a top-level schema variable or getter instead.',
+          todo: 'Remove @AckType from the class and annotate a top-level schema variable or getter instead.',
         );
       }
 
@@ -50,8 +49,7 @@ class AckSchemaGenerator extends Generator {
           throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
             element: element,
-            todo:
-                'Move this getter to the library level or annotate a top-level schema variable instead.',
+            todo: 'Move this getter to the library level or annotate a top-level schema variable instead.',
           );
         }
 
@@ -67,8 +65,7 @@ class AckSchemaGenerator extends Generator {
           throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
             element: getter,
-            todo:
-                'Move this getter to the library level or annotate a top-level schema variable instead.',
+            todo: 'Move this getter to the library level or annotate a top-level schema variable instead.',
           );
         }
       }
@@ -99,8 +96,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSource(
           'Failed to analyze schema variable "${variable.name}": $e',
           element: variable,
-          todo:
-              'Ensure the variable uses Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
+          todo: 'Ensure the variable uses Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
         );
       }
     }
@@ -118,8 +114,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSource(
           'Failed to analyze schema getter "${getter.name}": $e',
           element: getter,
-          todo:
-              'Ensure the getter returns Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
+          todo: 'Ensure the getter returns Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
         );
       }
     }
@@ -191,8 +186,7 @@ class AckSchemaGenerator extends Generator {
             ) ??
             (throw InvalidGenerationSource(
               'Could not find schema declaration "${model.schemaClassName}"',
-              todo:
-                  'Ensure the schema variable or getter exists and is annotated with @AckType.',
+              todo: 'Ensure the schema variable or getter exists and is annotated with @AckType.',
             )),
     ];
 
@@ -204,8 +198,7 @@ class AckSchemaGenerator extends Generator {
       throw InvalidGenerationSource(
         'Extension type dependency resolution failed: $e',
         element: element,
-        todo:
-            'Check for circular dependencies in the typed schema graph and ensure nested schemas resolve to @AckType declarations.',
+        todo: 'Check for circular dependencies in the typed schema graph and ensure nested schemas resolve to @AckType declarations.',
       );
     }
 
@@ -220,8 +213,7 @@ class AckSchemaGenerator extends Generator {
       if (element == null) {
         throw InvalidGenerationSource(
           'Could not find schema declaration "${model.schemaClassName}"',
-          todo:
-              'Ensure the schema variable or getter exists and is annotated with @AckType.',
+          todo: 'Ensure the schema variable or getter exists and is annotated with @AckType.',
         );
       }
 
@@ -246,8 +238,7 @@ class AckSchemaGenerator extends Generator {
               throw InvalidGenerationSource(
                 'Discriminated base "${model.schemaClassName}" maps multiple discriminator values to subtype "$subtypeSchemaName".',
                 element: element,
-                todo:
-                    'Ensure each discriminator value maps to a unique branch schema.',
+                todo: 'Ensure each discriminator value maps to a unique branch schema.',
               );
             }
 
@@ -288,8 +279,7 @@ class AckSchemaGenerator extends Generator {
         throw InvalidGenerationSource(
           'Extension type generation failed for ${element.name}: $e',
           element: element,
-          todo:
-              'Ensure nested schemas resolve to @AckType declarations and unsupported schema shapes are not annotated.',
+          todo: 'Ensure nested schemas resolve to @AckType declarations and unsupported schema shapes are not annotated.',
         );
       }
     }
@@ -328,8 +318,7 @@ class AckSchemaGenerator extends Generator {
         if (branchIndex == null) {
           throw InvalidGenerationSource(
             'Could not resolve discriminated branch "$branchSchemaClassName" for base "${baseModel.schemaClassName}".',
-            todo:
-                'Ensure every Ack.discriminated(...) branch references an @AckType schema declared in the same library.',
+            todo: 'Ensure every Ack.discriminated(...) branch references an @AckType schema declared in the same library.',
           );
         }
 
@@ -342,8 +331,7 @@ class AckSchemaGenerator extends Generator {
             existingOwner != baseModel.schemaClassName) {
           throw InvalidGenerationSource(
             'Branch schema "$branchSchemaClassName" is mapped to multiple discriminated bases: "$existingOwner" and "${baseModel.schemaClassName}".',
-            todo:
-                'A branch schema can only belong to one Ack.discriminated(...) base.',
+            todo: 'A branch schema can only belong to one Ack.discriminated(...) base.',
           );
         }
         branchOwnerByCanonicalIdentity[canonicalBranchIdentity] =

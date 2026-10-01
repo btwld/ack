@@ -30,9 +30,8 @@ Future<void> _expectConsumerSafeParts(
   for (final MapEntry(key: path, value: source) in generated.entries) {
     expect(source, contains(lintSuppression), reason: path);
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
-    File(
-      p.join(project.path, path),
-    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+    File(p.join(project.path, path))
+        .writeAsStringSync(source.replaceFirst(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -67,9 +66,8 @@ void main() {
     'clean generated models compile and preserve the AckInfer runtime contract',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
@@ -99,18 +97,16 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
-          '''
+        File(p.join(temporary.path, 'analysis_options.yaml'))
+            .writeAsStringSync('''
 linter:
   rules:
     - avoid_redundant_argument_values
     - prefer_null_aware_operators
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'models.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
@@ -125,6 +121,7 @@ final class RuntimeUser {
   final String name;
 }
 
+// ignore: deprecated_member_use
 @AckInfer(name: 'UserRecord')
 final userRecordSchema = Ack.object({
   'name': Ack.string(),
@@ -133,7 +130,7 @@ final userRecordSchema = Ack.object({
   encode: (user) => {'name': user.name},
 );
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   'label': Ack.string(),
   'children': Ack.list(
@@ -141,12 +138,12 @@ final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   ).optional(),
 });
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> authorSchema = Ack.object({
   'books': Ack.list(Ack.lazy('book', () => bookSchema)),
 });
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
   'title': Ack.string(),
   'author': Ack.lazy('author', () => authorSchema).optional(),
@@ -154,7 +151,7 @@ final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
 
 const allowExtras = true;
 
-@AckInfer()
+@Schemable()
 final extrasSchema = Ack.object({
   'name': Ack.string(),
   'maybe': Ack.string().nullable(),
@@ -167,30 +164,30 @@ final extrasSchema = Ack.object({
   ),
 }, additionalProperties: allowExtras);
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final dogSchema = Ack.object({'friendly': Ack.boolean()}).passthrough();
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema, 'dog': dogSchema},
 );
 
-@AckInfer(name: 'MemberType')
+@Schemable(name: 'MemberType')
 final memberSchema = Ack.string();
 
-@AckInfer()
+@Schemable()
 final emptySchema = Ack.object({});
 
-@AckInfer()
+@Schemable()
 final scoresSchema = Ack.list(Ack.integer());
 
 final looseAny = Ack.any();
 
-@AckInfer()
+@Schemable()
 final envelopeSchema = Ack.object({
   'kind': Ack.any(),
   'payload': Ack.any().nullable().optional(),
@@ -203,7 +200,7 @@ final envelopeSchema = Ack.object({
 
 final nullableLabel = Ack.string().nullable();
 
-@AckInfer()
+@Schemable()
 final labelsSchema = Ack.object({
   'byKey': Ack.map(nullableLabel),
   'groups': Ack.map(Ack.list(Ack.string()).nullable()),
@@ -224,34 +221,34 @@ final class Counted {
   }
 }
 
-@AckInfer()
+@Schemable()
 final documentSchema = Ack.object({'schema': Ack.string()});
 
-@AckInfer(name: 'Settings')
+@Schemable(name: 'Settings')
 final schema = Ack.object({'theme': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final draftSchema = Ack.object({'body': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final revisionSchema = Ack.discriminated(
   discriminatorKey: 'schema',
   schemas: {'draft': draftSchema},
 );
 
-@AckInfer()
+@Schemable()
 final circleSchema = Ack.object({'radius': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final ruleSchema = Ack.object({'schema': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final shapeSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'circle': circleSchema, 'rule': ruleSchema},
 );
 
-@AckInfer(name: 'CountedModel')
+@Schemable(name: 'CountedModel')
 final countedSchema = Ack.object({
   'item': Ack.string().codec<Counted>(
     decode: Counted.decode,
@@ -264,27 +261,22 @@ final countedSchema = Ack.object({
     ),
   ),
 });
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'address.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
-''',
-        );
-        File(
-          p.join(temporary.path, 'lib', 'exports.dart'),
-        ).writeAsStringSync("export 'address.dart';\n");
-        File(p.join(temporary.path, 'lib', 'person.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'exports.dart'))
+            .writeAsStringSync("export 'address.dart';\n");
+        File(p.join(temporary.path, 'lib', 'person.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
@@ -292,16 +284,14 @@ import 'exports.dart' as exported;
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({
   'home': direct.addressSchema,
   'history': Ack.list(exported.addressSchema),
 });
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+        File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 import 'package:ack_ack_infer_runtime/models.dart';
 import 'package:ack_ack_infer_runtime/person.dart';

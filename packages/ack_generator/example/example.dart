@@ -17,12 +17,11 @@
 // Add `ack` to `dependencies`, and `ack_generator` plus `build_runner` to
 // `dev_dependencies`.
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
-/// Schema-first. `@AckInfer()` derives an immutable `User` class from this
+/// Schema-first. `@Schemable()` derives an immutable `User` class from this
 /// schema: final `name`, `email`, and `age` fields, `User.parse`,
 /// `User.fromJson`, and `toJson`.
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string().minLength(2).maxLength(50),
   'email': Ack.string().email(),
@@ -31,16 +30,16 @@ final userSchema = Ack.object({
 
 /// `name` overrides the class name that the declaration would imply.
 /// This schema generates `AppSettings` rather than `Settings`.
-@AckInfer(name: 'AppSettings')
+@Schemable(name: 'AppSettings')
 final settingsSchema = Ack.object({
   'theme': Ack.enumString(['light', 'dark']),
   'notifications': Ack.boolean(),
 });
 
-/// Class-first. `@AckModel()` runs the other direction: it derives a validated
+/// Class-first. `@Schemable()` runs the other direction: it derives a validated
 /// schema from this hand-written class, which applies the generated
 /// `_$ProductAck` mixin once the parts are in place.
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Product {
   const Product({required this.displayName, required this.priceCents});
 

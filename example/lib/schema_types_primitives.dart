@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'schema_types_primitives.ack.dart';
 part 'schema_types_primitives.ack.g.dart';
@@ -15,68 +14,64 @@ enum UserRole { admin, user, guest }
 enum Status { active, inactive, pending }
 
 // String schema
-@AckInfer()
+@Schemable()
 final passwordSchema = Ack.string().minLength(8);
 
 // Integer schema
-@AckInfer()
+@Schemable()
 final ageSchema = Ack.integer().min(0).max(150);
 
 // Double schema
-@AckInfer()
+@Schemable()
 final priceSchema = Ack.double().min(0);
 
 // Boolean schema
-@AckInfer()
+@Schemable()
 final activeSchema = Ack.boolean();
 
 // List schema
-@AckInfer()
+@Schemable()
 final tagsSchema = Ack.list(Ack.string());
 
 // List of integers
-@AckInfer()
+@Schemable()
 final scoresSchema = Ack.list(Ack.integer());
 
 // Literal schema
-@AckInfer(name: 'StatusLiteral')
+@Schemable(name: 'StatusLiteral')
 final statusSchema = Ack.literal('active');
 
 // String enum schema
-@AckInfer()
+@Schemable()
 final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 
 // EnumValues schemas
-@AckInfer(name: 'UserRoleModel')
+@Schemable(name: 'UserRoleModel')
 final userRoleSchema = Ack.enumValues(UserRole.values);
 
-@AckInfer()
+@Schemable()
 final statusEnumSchema = Ack.enumValues(Status.values);
 
 // Method chaining tests for new schema types
-@AckInfer()
+@Schemable()
 final optionalStatusSchema = Ack.literal('active').optional();
 
 final nullableRoleSchema = Ack.enumString(['admin', 'user']).nullable();
 
-@AckInfer()
-final defaultedEnumSchema = Ack.enumValues(
-  UserRole.values,
-).withDefault(UserRole.guest);
+@Schemable()
+final defaultedEnumSchema = Ack.enumValues(UserRole.values)
+    .withDefault(UserRole.guest);
 
-final optionalNullableLiteralSchema = Ack.literal(
-  'pending',
-).optional().nullable();
+final optionalNullableLiteralSchema = Ack.literal('pending')
+    .optional()
+    .nullable();
 
-@AckInfer()
-final chainedEnumStringSchema = Ack.enumString([
-  'read',
-  'write',
-  'execute',
-]).withDefault('read');
+@Schemable()
+final chainedEnumStringSchema = Ack.enumString(['read', 'write', 'execute'])
+    .withDefault('read');
 
 // Test refine - this should work
-@AckInfer()
+@Schemable()
 final refinedAgeSchema = Ack.integer()
     .min(0)
     .refine((age) => age < 150, message: 'Age must be less than 150');

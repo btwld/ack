@@ -11,7 +11,7 @@ part of 'schema_types_transforms.dart';
 // **************************************************************************
 
 /// Immutable value model generated from `colorSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class ColorModel {
   /// Creates a model without validating it.
   ///
@@ -106,7 +106,7 @@ final class _$ColorModelCopyWith implements $ColorModelCopyWith<ColorModel> {
 }
 
 /// Immutable model generated from `profileSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Profile {
   /// Creates a model without validating it.
   ///

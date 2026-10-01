@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack/annotations.dart';
 import 'package:ack/ack.dart'
     show Ack, AckModelAdapter, AckSchema, AckSchemaModel, SchemaResult;
@@ -93,14 +95,14 @@ final class AckModelGenerator extends Generator {
       annotated.isNotEmpty ? annotated.first : annotatedModels.first,
     );
 
-    ({AckModelGraph graph, String? ackPrefix, String? ackInferPrefix})?
+    ({AckModelGraph graph, String? ackPrefix, String? schemablePrefix})?
     schemaFirst;
     if (annotated.isNotEmpty) {
       final graph = await SchemaModelGraphBuilder(library).build(annotated);
       schemaFirst = (
         graph: graph,
         ackPrefix: _ackRuntimeQualifier(library, annotated.first),
-        ackInferPrefix: _ackInferQualifier(library, annotated.first),
+        schemablePrefix: _schemableQualifier(library, annotated.first),
       );
     }
     ({AckModelGraph graph, String? ackPrefix})? classFirst;
@@ -126,7 +128,7 @@ final class AckModelGenerator extends Generator {
     if (schemaFirst != null) {
       final specs = AckModelEmitter(
         ackPrefix: schemaFirst.ackPrefix,
-        ackInferPrefix: schemaFirst.ackInferPrefix,
+        schemablePrefix: schemaFirst.schemablePrefix,
         schemaPrefixInScope: library.element.firstFragment.libraryImports.any(
           (import) => import.prefix?.element.name == 'schema',
         ),
@@ -145,9 +147,8 @@ final class AckModelGenerator extends Generator {
     }
     if (classFirst != null) {
       output.add(
-        AckClassModelEmitter(
-          ackPrefix: classFirst.ackPrefix,
-        ).emit(classFirst.graph),
+        AckClassModelEmitter(ackPrefix: classFirst.ackPrefix)
+            .emit(classFirst.graph),
       );
     }
     return output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
@@ -269,23 +270,23 @@ final class AckModelGenerator extends Generator {
         'are exposed.',
   );
 
-  /// Resolves the visible `AckInfer` qualifier for generated JSON markers.
+  /// Resolves the visible `Schemable` qualifier for generated JSON markers.
   ///
   /// Uses import namespaces so barrel re-exports and `show` combinators work.
   /// Prefixed imports win over unprefixed ones, in import order.
-  String? _ackInferQualifier(
+  String? _schemableQualifier(
     LibraryReader library,
     Element annotatedElement,
   ) => _visibleQualifier(
     library,
     annotatedElement,
-    requiredTypes: const {'AckInfer': _ackInferChecker},
+    requiredTypes: const {'Schemable': _schemableChecker},
     message:
-        'Generated @AckInfer.jsonSerializable requires a visible exact AckInfer '
+        'Generated @Schemable.generatedJson requires a visible exact Schemable '
         'import in this library.',
     todo:
-        'Import AckInfer from package:ack, using the same prefix as '
-        '@AckInfer() when one is present.',
+        'Import Schemable from package:ack, using the same prefix as '
+        '@Schemable() when one is present.',
   );
 
   String? _visibleQualifier(

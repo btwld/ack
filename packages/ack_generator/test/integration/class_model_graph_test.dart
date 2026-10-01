@@ -64,44 +64,13 @@ part 'model.ack.g.dart';
 ''';
 
 void main() {
-  test(
-    'requires a private generative constructor for factory models',
-    () async {
-      await _expectFailure(
-        r'''
-@AckModel()
-abstract class User with _$UserAck {
-  const factory User({required String name}) = _User;
-}
-''',
-        ['require a zero-argument private generative constructor'],
-      );
-    },
-  );
-
-  test('requires a const private constructor for const factories', () async {
+  test('rejects mutable primary-constructor fields', () async {
     await _expectFailure(
       r'''
-@AckModel()
-abstract class User with _$UserAck {
-  User._();
-  const factory User({required String name}) = _User;
-}
+@Schemable()
+final class User({required var String name}) with _$UserAck;
 ''',
-      ['when the factory is const'],
-    );
-  });
-
-  test('requires named parameters for factory models', () async {
-    await _expectFailure(
-      r'''
-@AckModel()
-abstract class User with _$UserAck {
-  const User._();
-  const factory User(String name) = _User;
-}
-''',
-      ['factory parameters must be named'],
+      ['User.name must be final'],
     );
   });
 

@@ -2,6 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta_meta.dart';
 
 import 'ack_model.dart';
+import 'ack_generated_json.dart';
 
 /// Marks an Ack schema declaration.
 ///
@@ -11,6 +12,9 @@ import 'ack_model.dart';
 /// remain supported as compatibility spellings.
 @Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
 final class Schemable {
+  /// Internal JSON marker for schema-first generated models.
+  static const Object generatedJson = AckGeneratedJson();
+
   /// Creates a unified schema declaration annotation.
   const Schemable({
     this.name,

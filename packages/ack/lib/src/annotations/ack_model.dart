@@ -26,6 +26,7 @@ enum AckUnknownPropertyPolicy { reject, discard, capture }
 /// implicit sealed-union branches must be `final class` declarations, use only
 /// final stored fields, and apply the generated `_$ClassAck` mixin. Annotated
 /// sealed union bases remain supported.
+@Deprecated('Use @Schemable() for class-first generation.')
 @Target({TargetKind.classType})
 final class AckModel {
   /// Creates a class-first Ack model annotation.

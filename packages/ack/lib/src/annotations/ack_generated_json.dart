@@ -3,7 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 /// Generator-support marker applied to Ack-generated model classes.
 ///
 /// This is not part of the user-facing annotation API. `ack_generator` emits
-/// [AckInfer.jsonSerializable] so the internal JSON builder can delegate
+/// `Schemable.generatedJson` so the internal JSON builder can delegate
 /// structural mapping to `json_serializable` without a literal
 /// `@JsonSerializable` annotation that the ordinary builder would also claim.
 ///

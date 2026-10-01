@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 import 'pet.dart';
 
@@ -16,7 +15,7 @@ class Color {
 }
 
 /// Color schema: validates and bidirectionally maps hex values to Color.
-@AckInfer(name: 'ColorModel')
+@Schemable(name: 'ColorModel')
 final colorSchema = Ack.string()
     .refine(
       (value) => RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value),
@@ -28,14 +27,14 @@ final colorSchema = Ack.string()
     );
 
 /// Profile: nested object with bio and website
-@AckInfer()
+@Schemable()
 final profileSchema = Ack.object({
   'bio': Ack.string().minLength(1).maxLength(500),
   'website': Ack.uri().optional(),
 });
 
 /// User with color: combines user fields, nested profile, and color
-@AckInfer()
+@Schemable()
 final userWithColorSchema =
     Ack.object({
       'firstName': Ack.string().minLength(1).maxLength(50),

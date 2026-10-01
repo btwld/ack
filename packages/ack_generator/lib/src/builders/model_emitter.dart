@@ -9,14 +9,14 @@ import '../utils/string_literal.dart';
 final class AckModelEmitter {
   AckModelEmitter({
     this.ackPrefix,
-    this.ackInferPrefix,
+    this.schemablePrefix,
     this.schemaPrefixInScope = false,
   });
 
   static const _schemaShorthandName = 'schema';
 
   final String? ackPrefix;
-  final String? ackInferPrefix;
+  final String? schemablePrefix;
 
   /// Whether the annotated library imports a prefix named `schema`.
   final bool schemaPrefixInScope;
@@ -1076,11 +1076,11 @@ return $helper(<String, dynamic>{
   ];
 
   Expression _jsonMarker() {
-    final prefix = ackInferPrefix;
+    final prefix = schemablePrefix;
     final typeName = prefix == null || prefix.isEmpty
-        ? 'AckInfer'
-        : '$prefix.AckInfer';
-    return refer(typeName).property('jsonSerializable');
+        ? 'Schemable'
+        : '$prefix.Schemable';
+    return refer(typeName).property('generatedJson');
   }
 
   String _ack(String symbol) {

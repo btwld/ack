@@ -261,12 +261,10 @@ final usersSchema = Ack.list(Ack.object({
       });
     });
 
-    test(
-      'throws on top-level Ack.list(schemaFactory()) when element is not statically resolvable',
-      () async {
-        final assets = {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+    test('throws on top-level Ack.list(schemaFactory()) when element is not statically resolvable', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -275,25 +273,24 @@ schemaFactory() => Ack.string();
 @AckType()
 final usersSchema = Ack.list(schemaFactory());
 ''',
-        };
+      };
 
-        await resolveSources(assets, (resolver) async {
-          final library = await resolver.libraryFor(
-            AssetId('test_pkg', 'lib/schema.dart'),
-          );
-          final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement>()
-              .firstWhere((e) => e.name == 'usersSchema');
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'usersSchema');
 
-          final analyzer = SchemaAstAnalyzer();
+        final analyzer = SchemaAstAnalyzer();
 
-          expect(
-            () => analyzer.analyzeSchemaVariable(schemaVar),
-            throwsA(isA<InvalidGenerationSource>()),
-          );
-        });
-      },
-    );
+        expect(
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(isA<InvalidGenerationSource>()),
+        );
+      });
+    });
 
     test('supports prefixed Ack invocations in list schemas', () async {
       final assets = {
@@ -674,12 +671,10 @@ final testSchema = Ack.object({
       });
     });
 
-    test(
-      'throws on Ack.list(schemaFactory()) when element is not statically resolvable',
-      () async {
-        final assets = {
-          ...allAssets,
-          'test_pkg|lib/schema.dart': '''
+    test('throws on Ack.list(schemaFactory()) when element is not statically resolvable', () async {
+      final assets = {
+        ...allAssets,
+        'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -690,25 +685,24 @@ final testSchema = Ack.object({
   'items': Ack.list(schemaFactory()),
 });
 ''',
-        };
+      };
 
-        await resolveSources(assets, (resolver) async {
-          final library = await resolver.libraryFor(
-            AssetId('test_pkg', 'lib/schema.dart'),
-          );
-          final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement>()
-              .firstWhere((e) => e.name == 'testSchema');
+      await resolveSources(assets, (resolver) async {
+        final library = await resolver.libraryFor(
+          AssetId('test_pkg', 'lib/schema.dart'),
+        );
+        final schemaVar = library.topLevelVariables
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'testSchema');
 
-          final analyzer = SchemaAstAnalyzer();
+        final analyzer = SchemaAstAnalyzer();
 
-          expect(
-            () => analyzer.analyzeSchemaVariable(schemaVar),
-            throwsA(isA<InvalidGenerationSource>()),
-          );
-        });
-      },
-    );
+        expect(
+          () => analyzer.analyzeSchemaVariable(schemaVar),
+          throwsA(isA<InvalidGenerationSource>()),
+        );
+      });
+    });
 
     test(
       'throws when list element method chain exceeds analyzer depth',

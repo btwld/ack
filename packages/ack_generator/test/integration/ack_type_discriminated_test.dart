@@ -8,16 +8,14 @@ import '../test_utils/test_assets.dart';
 
 void main() {
   group('@AckType discriminated schemas', () {
-    test(
-      'generates discriminated subtypes when branches omit discriminator property',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('generates discriminated subtypes when branches omit discriminator property', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/schema.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -40,43 +38,42 @@ final petSchema = Ack.discriminated(
   },
 );
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/schema.g.dart': decodedMatches(
-              allOf([
-                contains('extension type PetType(Map<String, Object?> _data)'),
-                contains('implements Map<String, Object?>'),
-                contains("switch (map['kind'])"),
-                contains("'cat' => CatType(map)"),
-                contains("'dog' => DogType(map)"),
-                contains('extension type CatType(Map<String, Object?> _data)'),
-                contains('extension type DogType(Map<String, Object?> _data)'),
-                contains('implements PetType, Map<String, Object?>'),
-                contains('return petSchema.parseAs('),
-                contains('return petSchema.safeParseAs('),
-                contains(".effectiveBranch('cat')"),
-                contains(".effectiveBranch('dog')"),
-                isNot(contains('return catSchema.parseAs(')),
-                isNot(contains('return catSchema.safeParseAs(')),
-                isNot(contains('return dogSchema.parseAs(')),
-                isNot(contains('return dogSchema.safeParseAs(')),
-                isNot(contains("map['kind'] !=")),
-                isNot(contains('Expected kind')),
-                contains('Map<String, Object?> get args =>'),
-                contains("e.key != 'kind' && e.key != 'bark'"),
-                predicate((content) {
-                  final source = content as String;
-                  final count = RegExp(
-                    r"String get kind => _data\['kind'\] as String;",
-                  ).allMatches(source).length;
-                  return count == 3;
-                }, 'contains one kind getter per generated type'),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('extension type PetType(Map<String, Object?> _data)'),
+              contains('implements Map<String, Object?>'),
+              contains("switch (map['kind'])"),
+              contains("'cat' => CatType(map)"),
+              contains("'dog' => DogType(map)"),
+              contains('extension type CatType(Map<String, Object?> _data)'),
+              contains('extension type DogType(Map<String, Object?> _data)'),
+              contains('implements PetType, Map<String, Object?>'),
+              contains('return petSchema.parseAs('),
+              contains('return petSchema.safeParseAs('),
+              contains(".effectiveBranch('cat')"),
+              contains(".effectiveBranch('dog')"),
+              isNot(contains('return catSchema.parseAs(')),
+              isNot(contains('return catSchema.safeParseAs(')),
+              isNot(contains('return dogSchema.parseAs(')),
+              isNot(contains('return dogSchema.safeParseAs(')),
+              isNot(contains("map['kind'] !=")),
+              isNot(contains('Expected kind')),
+              contains('Map<String, Object?> get args =>'),
+              contains("e.key != 'kind' && e.key != 'bark'"),
+              predicate((content) {
+                final source = content as String;
+                final count = RegExp(
+                  r"String get kind => _data\['kind'\] as String;",
+                ).allMatches(source).length;
+                return count == 3;
+              }, 'contains one kind getter per generated type'),
+            ]),
+          ),
+        },
+      );
+    });
 
     test('allows existing matching discriminator literal', () async {
       final builder = ackGenerator(BuilderOptions.empty);

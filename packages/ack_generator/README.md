@@ -1,16 +1,18 @@
 # Ack Generator
 
+Requires Dart 3.13 or newer. The generator uses Analyzer 13.3 and dart_style
+3.1.13. The core `ack` runtime still supports Dart 3.9.
+
 `ack_generator` supports two modern directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
-codec schema from a hand-written class. `@AckInfer()` and `@AckModel()` remain
-compatibility spellings. It also retains the deprecated Ack 1.1 `@AckType()`
+codec schema from a hand-written class. `@AckInfer()` and `@AckModel()` are
+deprecated spellings. It also retains the deprecated Ack 1.1 `@AckType()`
 generator unchanged.
 
 ## Schema-first usage
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'user_schema.ack.dart';
 part 'user_schema.ack.g.dart';
@@ -55,7 +57,7 @@ it. Generated models don't implement `Map`, and there are no `fromMap` or
 `toMap` aliases.
 
 Omit `name` when the inferred class name is right. Use
-`@AckInfer(name: 'Member')` only when you need an exact custom name. Custom
+`@Schemable(name: 'Member')` only when you need an exact custom name. Custom
 names must be unchanged UpperCamelCase identifiers.
 
 ## Class-first usage
@@ -65,44 +67,19 @@ mixin:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'account.ack.dart';
 part 'account.ack.g.dart';
 
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-
-  @MinLength(2)
-  final String name;
-
+final class Account({required final String name}) with _$AccountAck {
   static final fromJson = AccountSchema.fromJson;
 }
+
+// Primary constructor fields are inferred automatically.
+// A field whose type is another @Schemable class uses that nested schema.
+
 ```
-
-You can also use a redirecting factory when the generated implementation
-should stay private. Add a zero-argument private constructor and keep the
-mixin on the public abstract class. The factory must be unnamed, use named
-parameters, and redirect to the matching private implementation:
-
-```dart
-@AckModel(description: 'A habit entry.')
-abstract class HabitDto with _$HabitDtoAck {
-  const HabitDto._();
-
-  const factory HabitDto({
-    required String name,
-    required DateTime date,
-  }) = _HabitDto;
-}
-```
-
-Ack generates `_HabitDto` with the stored fields. The public `HabitDtoSchema`
-facade and the `HabitDto` mixin provide the same parsing, JSON, `copyWith`,
-equality, and description behavior as a concrete class. Factory parameters
-must be named, and the factory must redirect to the matching private name.
-A `const` factory also requires a `const` private constructor.
 
 After generation, the public facade and model JSON methods use the same Ack
 codec boundary:
@@ -115,7 +92,7 @@ void main() {
 }
 ```
 
-Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
+Use `@Schemable(description: ...)` and `@AckField(description: ...)` for schema
 descriptions. A single-line `@description` tag in a `///` or `/** */` doc
 comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
 prose never becomes schema data. Duplicate or blank tags fail generation.
@@ -135,8 +112,8 @@ The generator supports objects, empty objects, scalar and collection roots,
 literals, enums, defaults, additional properties, built-in and custom
 bidirectional codecs, named nested models, aliases, named `Ack.lazy` recursion,
 and same-library discriminated unions. Lists, sets, and maps stored by a model
-generated with `@AckInfer()` are copied recursively into unmodifiable
-collections. `@AckModel()` parsing provides the same guarantee, including for
+generated with `@Schemable()` are copied recursively into unmodifiable
+collections. Class-first parsing provides the same guarantee, including for
 captured extras. Hand-written constructors and collection replacements passed
 to `copyWith` remain responsible for their own defensive copies; use
 `deepUnmodifiableJsonMap` for dynamic JSON maps. Raw
@@ -204,11 +181,8 @@ targets:
 `@AckInfer()` can annotate top-level schema variables and top-level schema
 getters. Classes, instance members, and local variables are rejected.
 
-`@AckModel()` annotates public, constructable `final class` declarations whose
-stored fields are final. It also supports an abstract class with a named
-private zero-argument constructor and an unnamed factory that redirects to the
-matching private generated implementation. Annotated sealed union bases remain
-supported, and
+`@Schemable()` annotates public, constructable `final class` declarations whose
+stored fields are final. Annotated sealed union bases remain supported, and
 their concrete branches must also be final. Use `@Optional()` or `@Required()`
 to override inferred key presence, `@NotNull()` to reject JSON `null` without
 requiring the key, and `@AckField(schema: ...)` for custom codecs. See the

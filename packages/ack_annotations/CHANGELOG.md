@@ -4,7 +4,8 @@
   work through compatibility barrels; new code should import
   `package:ack/annotations.dart`.
 * Add `@Schemable()` as the unified schema-first and class-first annotation.
-  Existing `@AckInfer()` and `@AckModel()` spellings remain supported.
+  Existing `@AckInfer()` and `@AckModel()` spellings remain supported but
+  deprecated.
 
 ## 1.7.0-beta.2
 

@@ -92,20 +92,26 @@ String overrideWithStagedPackages(
 /// Removes the [flutterMembers] workspace entries and the Flutter SDK
 /// constraint from a workspace root [pubspec].
 ///
-/// The complete workspace cannot resolve on the minimum Dart SDK, because
-/// `flutter_test` pins an older `test_api` than the analyzer floor of
-/// `ack_generator` allows. Dropping the Flutter members produces a resolvable
-/// pure-Dart workspace that still covers every other package.
+/// [excludedMembers] removes packages with a newer SDK minimum, such as the
+/// generator and its example, from the runtime minimum-SDK check.
 String toPureDartWorkspace(
   String pubspec, {
   required Set<String> flutterMembers,
+  Set<String> excludedMembers = const {},
 }) {
   final editor = YamlEditor(pubspec);
   final members = _valueAt(editor, ['workspace']);
   if (members is List) {
-    editor.update([
-      'workspace',
-    ], members.where((member) => !flutterMembers.contains(member)).toList());
+    editor.update(
+      ['workspace'],
+      members
+          .where(
+            (member) =>
+                !flutterMembers.contains(member) &&
+                !excludedMembers.contains(member),
+          )
+          .toList(),
+    );
   }
   if (_valueAt(editor, ['environment', 'flutter']) != null) {
     editor.remove(['environment', 'flutter']);

@@ -8,9 +8,8 @@ import 'package:test/test.dart';
 
 Directory _projectRoot() {
   var projectRoot = Directory.current;
-  while (!Directory(
-    p.join(projectRoot.path, 'packages', 'ack_generator'),
-  ).existsSync()) {
+  while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+      .existsSync()) {
     projectRoot = projectRoot.parent;
   }
   return projectRoot;
@@ -37,16 +36,14 @@ int _helperDefinitionCount(String source, String className, String suffix) {
 }
 
 void main() {
-  test(
-    'ack_generator alone generates json_serializable Ack helpers',
-    () async {
-      final projectRoot = _projectRoot();
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_json_ack_only_',
-      );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test('ack_generator alone generates json_serializable Ack helpers', () async {
+    final projectRoot = _projectRoot();
+    final temporary = await Directory.systemTemp.createTemp(
+      'ack_json_ack_only_',
+    );
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_json_ack_only
 publish_to: none
 environment:
@@ -66,52 +63,47 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'createdAt': Ack.datetime(),
 });
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'clean build_runner build',
-        );
+      _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'clean build_runner build',
+      );
 
-        final ackPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.dart'),
-        ).readAsStringSync();
-        final jsonPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.g.dart'),
-        ).readAsStringSync();
+      final ackPart = File(p.join(temporary.path, 'lib', 'user.ack.dart'))
+          .readAsStringSync();
+      final jsonPart = File(p.join(temporary.path, 'lib', 'user.ack.g.dart'))
+          .readAsStringSync();
 
-        expect(ackPart, contains('@AckInfer.jsonSerializable'));
-        expect(ackPart, contains(r'_$UserFromJson'));
-        expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
-        expect(jsonPart, contains('JsonSerializableGenerator'));
-        expect(jsonPart, contains('User._ackFromRuntimeName(json[\'name\'])'));
-        expect(
-          jsonPart,
-          contains('User._ackFromRuntimeCreatedAt(json[\'createdAt\'])'),
-        );
-        expect(jsonPart, contains('User._ackToRuntimeName(instance.name)'));
-        expect(_helperDefinitionCount(jsonPart, 'User', 'FromJson'), 1);
-        expect(_helperDefinitionCount(jsonPart, 'User', 'ToJson'), 1);
-        expect(jsonPart, isNot(contains("value['name']")));
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      expect(ackPart, contains('@Schemable.generatedJson'));
+      expect(ackPart, contains(r'_$UserFromJson'));
+      expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
+      expect(jsonPart, contains('JsonSerializableGenerator'));
+      expect(jsonPart, contains('User._ackFromRuntimeName(json[\'name\'])'));
+      expect(
+        jsonPart,
+        contains('User._ackFromRuntimeCreatedAt(json[\'createdAt\'])'),
+      );
+      expect(jsonPart, contains('User._ackToRuntimeName(instance.name)'));
+      expect(_helperDefinitionCount(jsonPart, 'User', 'FromJson'), 1);
+      expect(_helperDefinitionCount(jsonPart, 'User', 'ToJson'), 1);
+      expect(jsonPart, isNot(contains("value['name']")));
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test(
     'ordinary json_serializable coexists without duplicate Ack helpers',
@@ -161,14 +153,13 @@ targets:
 ''');
         File(p.join(temporary.path, 'lib', 'same.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'same.ack.dart';
 part 'same.ack.g.dart';
 part 'same.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'nickname': Ack.string().optional(),
@@ -184,9 +175,8 @@ final class SameEnvelope {
   Map<String, dynamic> toJson() => _$SameEnvelopeToJson(this);
 }
 ''');
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_json_coexist/same.dart';
 import 'package:test/test.dart';
 
@@ -211,12 +201,10 @@ void main() {
           'dart analyze --fatal-infos',
         );
 
-        final ackJson = File(
-          p.join(temporary.path, 'lib', 'same.ack.g.dart'),
-        ).readAsStringSync();
-        final ordinaryJson = File(
-          p.join(temporary.path, 'lib', 'same.g.dart'),
-        ).readAsStringSync();
+        final ackJson = File(p.join(temporary.path, 'lib', 'same.ack.g.dart'))
+            .readAsStringSync();
+        final ordinaryJson = File(p.join(temporary.path, 'lib', 'same.g.dart'))
+            .readAsStringSync();
         expect(_helperDefinitionCount(ackJson, 'User', 'FromJson'), 1);
         expect(_helperDefinitionCount(ackJson, 'User', 'ToJson'), 1);
         expect(_helperDefinitionCount(ordinaryJson, 'User', 'FromJson'), 0);
@@ -270,9 +258,8 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(
-          p.join(temporary.path, 'lib', 'role.dart'),
-        ).writeAsStringSync('enum Role { admin, member }\n');
+        File(p.join(temporary.path, 'lib', 'role.dart'))
+            .writeAsStringSync('enum Role { admin, member }\n');
         File(p.join(temporary.path, 'lib', 'support.dart')).writeAsStringSync(
           "export 'package:ack/ack.dart';\n"
           "export 'package:ack_annotations/ack_annotations.dart';\n"
@@ -284,15 +271,14 @@ import 'support.dart' as support;
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@support.AckInfer()
+@support.Schemable()
 final userSchema = support.Ack.object({
   'name': support.Ack.string(),
   'role': support.Ack.enumValues(support.Role.values),
 });
 ''');
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_json_barrel/user.dart';
 import 'package:test/test.dart';
 
@@ -316,10 +302,9 @@ void main() {
           'dart analyze --fatal-infos',
         );
 
-        final ackPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.dart'),
-        ).readAsStringSync();
-        expect(ackPart, contains('@support.AckInfer.jsonSerializable'));
+        final ackPart = File(p.join(temporary.path, 'lib', 'user.ack.dart'))
+            .readAsStringSync();
+        expect(ackPart, contains('@support.Schemable.generatedJson'));
         expect(ackPart, contains('support.AckModelAdapter'));
         expect(ackPart, contains('final support.Role role;'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');

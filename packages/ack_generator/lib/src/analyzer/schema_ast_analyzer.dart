@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:collection/collection.dart';
 import 'package:ack/annotations.dart';
 import 'package:analyzer/dart/analysis/results.dart';
@@ -75,7 +77,6 @@ class _ResolvedSchemaReference {
 /// requiring const evaluation or string parsing.
 class SchemaAstAnalyzer {
   static const _ackTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
     AckType,
     inPackage: 'ack',
   );
@@ -261,8 +262,7 @@ class SchemaAstAnalyzer {
         throw InvalidGenerationSource(
           'Schema getter "${element.name}" must return a schema expression',
           element: element,
-          todo:
-              'Use an expression body or a single return statement (e.g., return Ack.object({...});).',
+          todo: 'Use an expression body or a single return statement (e.g., return Ack.object({...});).',
         );
       }
 
@@ -303,8 +303,7 @@ class SchemaAstAnalyzer {
     throw InvalidGenerationSource(
       'Schema getter "${element.name}" must return an Ack schema invocation or schema reference',
       element: element,
-      todo:
-          'Return a schema expression such as Ack.object({...}), Ack.string(), or another @AckType schema variable/getter.',
+      todo: 'Return a schema expression such as Ack.object({...}), Ack.string(), or another @AckType schema variable/getter.',
     );
   }
 
@@ -677,11 +676,11 @@ class SchemaAstAnalyzer {
     SetOrMapLiteral? schemasLiteral;
 
     for (final argument in baseInvocation.argumentList.arguments) {
-      if (argument is! NamedExpression) continue;
+      if (argument is! NamedArgument) continue;
 
-      final name = argument.name.label.name;
+      final name = argument.name.lexeme;
       if (name == 'discriminatorKey') {
-        final expression = argument.expression;
+        final expression = argument.argumentExpression;
         if (expression is! SimpleStringLiteral) {
           throw InvalidGenerationSource(
             'Ack.discriminated(...): `discriminatorKey` must be a string literal.',
@@ -690,7 +689,7 @@ class SchemaAstAnalyzer {
         }
         discriminatorKey = expression.value;
       } else if (name == 'schemas') {
-        final expression = argument.expression;
+        final expression = argument.argumentExpression;
         if (expression is! SetOrMapLiteral) {
           throw InvalidGenerationSource(
             'Ack.discriminated(...): `schemas` must be a map literal.',
@@ -771,8 +770,7 @@ class SchemaAstAnalyzer {
         throw InvalidGenerationSource(
           'Ack.discriminated(...): branch "$discriminatorValue" must reference a top-level schema variable/getter.',
           element: element,
-          todo:
-              'Extract inline expressions to a top-level @AckType schema variable/getter and reference it.',
+          todo: 'Extract inline expressions to a top-level @AckType schema variable/getter and reference it.',
         );
       }
 
@@ -817,8 +815,7 @@ class SchemaAstAnalyzer {
           'Ack.discriminated(...): branch "${resolvedBranch.schemaName}" is itself a discriminated base. '
           'Nested discriminated unions are not supported.',
           element: element,
-          todo:
-              'Use a plain Ack.object(...) schema for each branch, not another Ack.discriminated(...).',
+          todo: 'Use a plain Ack.object(...) schema for each branch, not another Ack.discriminated(...).',
         );
       }
 
@@ -1238,10 +1235,10 @@ class SchemaAstAnalyzer {
 
     // First check for named parameter in the base Ack.object() call
     for (final arg in baseInvocation.argumentList.arguments) {
-      if (arg is NamedExpression &&
-          arg.name.label.name == 'additionalProperties') {
-        if (arg.expression is BooleanLiteral) {
-          hasAdditionalProperties = (arg.expression as BooleanLiteral).value;
+      if (arg is NamedArgument && arg.name.lexeme == 'additionalProperties') {
+        if (arg.argumentExpression is BooleanLiteral) {
+          hasAdditionalProperties =
+              (arg.argumentExpression as BooleanLiteral).value;
         }
       }
     }
@@ -1495,8 +1492,7 @@ class SchemaAstAnalyzer {
           'Field "$fieldName" schema method chain exceeded max depth of 20. '
           '@AckType requires statically analyzable schema chains.',
           element: element,
-          todo:
-              'Reduce the chaining depth or extract part of the schema into a named variable.',
+          todo: 'Reduce the chaining depth or extract part of the schema into a named variable.',
         );
       }
 
@@ -1524,8 +1520,7 @@ class SchemaAstAnalyzer {
         'Field "$fieldName" uses anonymous inline Ack.object(...). '
         'Strict typed generation requires a named schema reference.',
         element: element,
-        todo:
-            'Extract this inline object schema into a top-level @AckType() variable and reference it by name.',
+        todo: 'Extract this inline object schema into a top-level @AckType() variable and reference it by name.',
       );
     }
 
@@ -1836,7 +1831,7 @@ class SchemaAstAnalyzer {
     final args = listInvocation.argumentList.arguments;
     if (args.isEmpty) return null;
 
-    final ref = _resolveListElementRef(args.first);
+    final ref = _resolveListElementRef(args.first.argumentExpression);
     final elementSchema = ref.invocation == null
         ? null
         : _analyzeSchemaChain(ref.invocation!).ackBase;
@@ -1879,7 +1874,7 @@ class SchemaAstAnalyzer {
     final args = invocation.argumentList.arguments;
     if (args.isNotEmpty) {
       final resolvedFromArgument = _resolveEnumValuesTypeFromArgument(
-        args.first,
+        args.first.argumentExpression,
         library: library,
       );
       if (resolvedFromArgument != null) {
@@ -2120,19 +2115,18 @@ class SchemaAstAnalyzer {
       throw InvalidGenerationSource(
         'Ack.list(...) requires an element schema argument for strict typed generation.',
         element: element,
-        todo:
-            'Provide a concrete element schema, e.g. Ack.list(Ack.string()) or Ack.list(namedSchema).',
+        todo: 'Provide a concrete element schema, e.g. Ack.list(Ack.string()) or Ack.list(namedSchema).',
       );
     }
 
     final firstArg = args.first;
     _rejectAckModelFacadeExpression(
-      firstArg,
+      firstArg.argumentExpression,
       element,
       diagnosticPath: diagnosticPath,
     );
 
-    final ref = _resolveListElementRef(firstArg);
+    final ref = _resolveListElementRef(firstArg.argumentExpression);
     if (ref.invocation != null) {
       final chain = _analyzeSchemaChain(ref.invocation!);
       _rejectNullableListElement(chain.isNullable, element);
@@ -2149,8 +2143,7 @@ class SchemaAstAnalyzer {
           'Ack.list(Ack.object(...)) uses an anonymous inline object schema. '
           'Strict typed generation requires a named schema reference.',
           element: element,
-          todo:
-              'Extract the inline object to a top-level @AckType() variable and use Ack.list(namedSchema).',
+          todo: 'Extract the inline object to a top-level @AckType() variable and use Ack.list(namedSchema).',
         );
       }
 
@@ -2178,8 +2171,7 @@ class SchemaAstAnalyzer {
         throw InvalidGenerationSource(
           'Could not statically resolve Ack.list($rawExpression) element type.',
           element: element,
-          todo:
-              'Use Ack.list(Ack.<primitive>()), Ack.list(enumSchema), or Ack.list(namedSchema) so the generator can infer a concrete element type.',
+          todo: 'Use Ack.list(Ack.<primitive>()), Ack.list(enumSchema), or Ack.list(namedSchema) so the generator can infer a concrete element type.',
         );
       }
 
@@ -2238,8 +2230,7 @@ class SchemaAstAnalyzer {
     throw InvalidGenerationSource(
       'Could not statically resolve Ack.list($rawExpression) element type.',
       element: element,
-      todo:
-          'Use Ack.list(Ack.<primitive>()), Ack.list(enumSchema), or Ack.list(namedSchema) so the generator can infer a concrete element type.',
+      todo: 'Use Ack.list(Ack.<primitive>()), Ack.list(enumSchema), or Ack.list(namedSchema) so the generator can infer a concrete element type.',
     );
   }
 
@@ -2249,8 +2240,7 @@ class SchemaAstAnalyzer {
     throw InvalidGenerationSource(
       'Ack.list(...) does not support nullable element schemas.',
       element: element,
-      todo:
-          'Remove `.nullable()` from the element schema. Make the list itself nullable with `Ack.list(item).nullable()` when needed.',
+      todo: 'Remove `.nullable()` from the element schema. Make the list itself nullable with `Ack.list(item).nullable()` when needed.',
     );
   }
 
@@ -2474,8 +2464,7 @@ class SchemaAstAnalyzer {
       throw InvalidGenerationSource(
         'Circular schema reference detected for "$referenceLabel".',
         element: contextElement,
-        todo:
-            'Break the circular alias/reference chain between @AckType schemas.',
+        todo: 'Break the circular alias/reference chain between @AckType schemas.',
       );
     }
 
@@ -2874,8 +2863,7 @@ class SchemaAstAnalyzer {
         '"${resolved.schemaName}" uses unsupported syntax for cross-file '
         'generation.',
         element: contextElement,
-        todo:
-            'Use a nominal type with optional nested generics/nullability, or keep the schema in the same library.',
+        todo: 'Use a nominal type with optional nested generics/nullability, or keep the schema in the same library.',
       );
     }
 
@@ -2919,8 +2907,7 @@ class SchemaAstAnalyzer {
         '"${resolved.schemaName}" uses a qualified type that cannot be '
         'referenced across library boundaries.',
         element: contextElement,
-        todo:
-            'Use an unqualified exported representation type, import that type directly into the consuming library, or keep the schema in the same library.',
+        todo: 'Use an unqualified exported representation type, import that type directly into the consuming library, or keep the schema in the same library.',
       );
     }
 
@@ -2965,8 +2952,7 @@ class SchemaAstAnalyzer {
           'Transformed representation type "$fullRepresentationType" for '
           '"${resolved.schemaName}" is ambiguous in this library.',
           element: contextElement,
-          todo:
-              'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
+          todo: 'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
         );
       }
     }
@@ -2976,8 +2962,7 @@ class SchemaAstAnalyzer {
         'Transformed representation type "$fullRepresentationType" for '
         '"${resolved.schemaName}" is ambiguous in this library.',
         element: contextElement,
-        todo:
-            'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
+        todo: 'Use a prefixed schema import or rename/import the representation type so the generated cast resolves unambiguously.',
       );
     }
 
@@ -2989,8 +2974,7 @@ class SchemaAstAnalyzer {
       'Transformed representation type "$fullRepresentationType" for '
       '"${resolved.schemaName}" is not visible from this library.',
       element: contextElement,
-      todo:
-          'Export the representation type from the referenced schema library or import that type directly into this library.',
+      todo: 'Export the representation type from the referenced schema library or import that type directly into this library.',
     );
   }
 
@@ -3285,8 +3269,7 @@ class SchemaAstAnalyzer {
       '$contextLabel uses .transform(...) without an explicit output type. '
       '@AckType requires .transform<T>(...) so the generated type can be inferred.',
       element: element,
-      todo:
-          'Add an explicit type argument, for example .transform<Uri>((value) => ...).',
+      todo: 'Add an explicit type argument, for example .transform<Uri>((value) => ...).',
     );
   }
 
@@ -3305,8 +3288,7 @@ class SchemaAstAnalyzer {
         '$contextLabel transforms an Ack.object(...) schema. '
         'Transformed object schemas are not supported by @AckType.',
         element: element,
-        todo:
-            'Remove .transform<T>() from the object schema or expose the transformed result through a separate non-object schema.',
+        todo: 'Remove .transform<T>() from the object schema or expose the transformed result through a separate non-object schema.',
       );
     }
 
@@ -3315,8 +3297,7 @@ class SchemaAstAnalyzer {
         '$contextLabel transforms an Ack.discriminated(...) schema. '
         'Transformed discriminated schemas are not supported by @AckType.',
         element: element,
-        todo:
-            'Remove .transform<T>() from the discriminated schema or expose the transformed result through a separate non-object schema.',
+        todo: 'Remove .transform<T>() from the discriminated schema or expose the transformed result through a separate non-object schema.',
       );
     }
   }
@@ -3332,8 +3313,7 @@ class SchemaAstAnalyzer {
         '$contextLabel transforms referenced discriminated schema '
         '"${resolved.schemaName}". Transformed discriminated schemas are not supported by @AckType.',
         element: element,
-        todo:
-            'Remove .transform<T>() from the referenced discriminated schema or expose a separate non-object schema.',
+        todo: 'Remove .transform<T>() from the referenced discriminated schema or expose a separate non-object schema.',
       );
     }
 
@@ -3342,8 +3322,7 @@ class SchemaAstAnalyzer {
         '$contextLabel transforms referenced object schema '
         '"${resolved.schemaName}". Transformed object schemas are not supported by @AckType.',
         element: element,
-        todo:
-            'Remove .transform<T>() from the referenced object schema or expose a separate non-object schema.',
+        todo: 'Remove .transform<T>() from the referenced object schema or expose a separate non-object schema.',
       );
     }
   }

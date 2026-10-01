@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack/ack.dart'
     show AckSchema, AnyOfSchema, AnySchema, InstanceSchema, MapSchema;
 import 'package:ack/annotations.dart' hide AckUnknownPropertyPolicy;
@@ -155,7 +157,6 @@ final class SchemaModelGraphBuilder {
     inPackage: 'ack',
   );
   static const _legacyAckTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
     AckType,
     inPackage: 'ack',
   );
@@ -1805,18 +1806,14 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
-  /// Normalizes Analyzer 10 argument nodes into the expression API used by the
-  /// graph.
+  /// Reads the value expressions from Analyzer argument nodes.
   List<Expression> _argumentExpressions(ArgumentList argumentList) =>
       argumentList.arguments
-          .map((argument) => _argumentExpression(argument))
+          .map((argument) => argument.argumentExpression)
           .toList(growable: false);
 
-  Expression _argumentExpression(Expression argument) =>
-      argument is NamedExpression ? argument.expression : argument;
-
-  ({String name, Expression expression})? _namedArgument(Expression argument) =>
-      argument is NamedExpression
-      ? (name: argument.name.label.name, expression: argument.expression)
+  ({String name, Expression expression})? _namedArgument(Argument argument) =>
+      argument is NamedArgument
+      ? (name: argument.name.lexeme, expression: argument.argumentExpression)
       : null;
 }

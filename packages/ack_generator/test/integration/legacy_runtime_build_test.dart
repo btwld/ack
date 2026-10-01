@@ -23,9 +23,8 @@ void main() {
     'an unchanged Ack 1.1 source builds and reports the migration deprecation',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
@@ -55,8 +54,8 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'lib', 'legacy.dart')).writeAsStringSync(
-          r'''
+        File(p.join(temporary.path, 'lib', 'legacy.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -66,11 +65,9 @@ part 'legacy.g.dart';
 final userSchema = Ack.object({
   'name': Ack.string(),
 }).passthrough();
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'legacy_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+        File(p.join(temporary.path, 'test', 'legacy_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_legacy_compat/legacy.dart';
 import 'package:test/test.dart';
 

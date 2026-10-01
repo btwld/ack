@@ -75,19 +75,9 @@ final class AckClassModelEmitter {
       ..writeln()
       ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
-      ..writeln(
-        _fromRuntimeFunction(
-          node,
-          generatedImplementation: metadata.generatedImplementation,
-        ),
-      )
+      ..writeln(_fromRuntimeFunction(node))
       ..writeln()
-      ..writeln(
-        _toRuntimeFunction(
-          node,
-          generatedImplementation: metadata.generatedImplementation,
-        ),
-      )
+      ..writeln(_toRuntimeFunction(node))
       ..writeln()
       ..writeln(
         _dataClasses.mixin(
@@ -101,39 +91,7 @@ final class AckClassModelEmitter {
         ),
       )
       ..writeln()
-      ..writeln(
-        metadata.generatedImplementation
-            ? _factoryImplementation(node, metadata)
-            : '',
-      )
-      ..writeln()
-      ..writeln(metadata.generatedImplementation ? '' : _fieldBridges(node));
-  }
-
-  String _factoryImplementation(
-    AckObjectModelNode node,
-    AckClassModelMetadata metadata,
-  ) {
-    final parameters = [
-      for (final parameter in node.constructorParameters)
-        '${parameter.isRequired ? 'required ' : ''}${_type(parameter.typeRef)} '
-            'this.${parameter.fieldName}'
-            '${parameter.defaultExpression == null ? '' : ' = ${parameter.defaultExpression}'}',
-    ];
-    final fields = [
-      for (final parameter in node.constructorParameters)
-        'final ${_type(parameter.typeRef)} ${parameter.fieldName};',
-    ];
-    final constKeyword = metadata.constImplementation ? 'const ' : '';
-    final namedParameters = parameters.isEmpty
-        ? ''
-        : '{${parameters.join(', ')}}';
-    return '''
-final class _${node.className} extends ${node.className} {
-  ${constKeyword}_${node.className}($namedParameters) : super._();
-
-  ${fields.join('\n  ')}
-}''';
+      ..writeln(_fieldBridges(node));
   }
 
   void _emitUnion(
@@ -314,19 +272,13 @@ abstract final class ${metadata.facadeName} {
         '${_describe(node.description)}';
   }
 
-  String _fromRuntimeFunction(
-    AckObjectModelNode node, {
-    required bool generatedImplementation,
-  }) {
+  String _fromRuntimeFunction(AckObjectModelNode node) {
     final helper = jsonFromHelperName(node.className);
     final function = ackClassFromRuntimeName(node.className);
-    if (node.captureFieldName == null && !generatedImplementation) {
+    if (node.captureFieldName == null) {
       return '''
 ${node.className} $function(Map<String, Object?> value) =>
     $helper(Map<String, dynamic>.from(value));''';
-    }
-    if (generatedImplementation) {
-      return _factoryFromRuntimeFunction(node);
     }
     final declared = _declaredKeys(node);
     final capture = node.captureFieldName!;
@@ -343,38 +295,7 @@ ${node.className} $function(Map<String, Object?> value) {
 }''';
   }
 
-  String _factoryFromRuntimeFunction(AckObjectModelNode node) {
-    final fields = {for (final field in node.fields) field.dartName: field};
-    final args = <String>[];
-    for (final parameter in node.constructorParameters) {
-      if (parameter.fieldName == node.captureFieldName) {
-        final declared = _declaredKeys(node);
-        args.add(
-          '${parameter.name}: ${_ack('deepUnmodifiableJsonMap')}('
-          'Map<String, Object?>.fromEntries('
-          'value.entries.where((entry) => !${_keySet(declared)}.contains(entry.key))))',
-        );
-        continue;
-      }
-      final field = fields[parameter.fieldName];
-      if (field == null) continue;
-      final value = 'value[${dartStringLiteral(field.jsonKey)}]';
-      final converted = _fromRuntime(parameter.typeRef, value);
-      final expression = parameter.defaultExpression == null
-          ? converted
-          : 'value.containsKey(${dartStringLiteral(field.jsonKey)}) '
-                '? $converted : ${parameter.defaultExpression}';
-      args.add('${parameter.name}: $expression');
-    }
-    return '''
-${node.className} ${ackClassFromRuntimeName(node.className)}(Map<String, Object?> value) =>
-    ${node.className}(${args.join(', ')});''';
-  }
-
-  String _toRuntimeFunction(
-    AckObjectModelNode node, {
-    required bool generatedImplementation,
-  }) {
+  String _toRuntimeFunction(AckObjectModelNode node) {
     final function = ackClassToRuntimeName(node.className);
     final jsonHelper = jsonToHelperName(node.className);
     final requiredNulls = [
@@ -385,9 +306,6 @@ ${node.className} ${ackClassFromRuntimeName(node.className)}(Map<String, Object?
     final discriminatorValue = node.discriminatorValue;
     final capture = node.captureFieldName;
     final captureJsonKey = node.captureJsonKey ?? capture;
-    if (generatedImplementation) {
-      return _factoryToRuntimeFunction(node);
-    }
     final needsBlock =
         capture != null || requiredNulls.isNotEmpty || discriminatorKey != null;
     if (!needsBlock) {
@@ -422,43 +340,6 @@ Map<String, Object?> $function(${node.className} model) =>
     return '''
 Map<String, Object?> $function(${node.className} model) {
   ${lines.join('\n  ')}
-}''';
-  }
-
-  String _factoryToRuntimeFunction(AckObjectModelNode node) {
-    final entries = <String>[];
-    for (final field in node.fields) {
-      final expression = _toRuntime(
-        field.runtimeRef,
-        'model.${field.dartName}',
-      );
-      final include = field.isRequired || !field.nullable;
-      if (include) {
-        entries.add('${dartStringLiteral(field.jsonKey)}: $expression');
-      } else {
-        entries.add(
-          'if (model.${field.dartName} != null) '
-          '${dartStringLiteral(field.jsonKey)}: $expression',
-        );
-      }
-    }
-    if (node.captureFieldName case final capture?) {
-      entries.insert(
-        0,
-        'for (final entry in model.$capture.entries) '
-        'if (!declared.contains(entry.key)) entry.key: entry.value',
-      );
-    }
-    final body = '<String, Object?>{${entries.join(', ')}}';
-    if (node.captureFieldName == null) {
-      return '''
-Map<String, Object?> ${ackClassToRuntimeName(node.className)}(${node.className} model) =>
-    $body;''';
-    }
-    return '''
-Map<String, Object?> ${ackClassToRuntimeName(node.className)}(${node.className} model) {
-  const declared = ${_keySet(_declaredKeys(node))};
-  return $body;
 }''';
   }
 
@@ -499,10 +380,12 @@ Map<String, Object?> ${ackClassToRuntimeName(node.className)}(${node.className} 
     if (node.captureFieldName case final capture?) {
       final fromName = ackClassFromRuntimeBridgeName(node.className, capture);
       final toName = ackClassToRuntimeBridgeName(node.className, capture);
+      final hasDefault = parametersByField[capture]?.defaultExpression != null;
       output
         ..writeln(
-          'Map<String, Object?>? $fromName(Object? value) => '
-          'value == null ? null : '
+          'Map<String, Object?>${hasDefault ? '?' : ''} '
+          '$fromName(Object? value) => '
+          '${hasDefault ? 'value == null ? null : ' : ''}'
           '${_ack('deepUnmodifiableJsonMap')}('
           'value as Map<String, Object?>);',
         )

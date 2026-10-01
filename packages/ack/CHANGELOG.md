@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Changed
+
+* Use `@Schemable()` for schema-first and class-first generation. Deprecate
+  `@AckInfer()` and `@AckModel()` while retaining their behavior.
+
 ### Added
 
 * Own the schema-generation annotations and export them from

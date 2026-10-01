@@ -376,11 +376,13 @@ final class Envelope with _\$EnvelopeAck {
     );
   });
 
-  test('emits a codec schema, presence semantics, mixin, and bridges', () async {
-    await _build(
-      {
-        'profile.dart':
-            '''
+  test(
+    'emits a codec schema, presence semantics, mixin, and bridges',
+    () async {
+      await _build(
+        {
+          'profile.dart':
+              '''
 $_imports
 part 'profile.ack.dart';
 part 'profile.ack.g.dart';
@@ -405,73 +407,76 @@ final class Profile with _\$ProfileAck {
   final Set<String> tags;
 }
 ''',
-      },
-      outputs: {
-        'test_pkg|lib/profile.ack.dart': decodedMatches(
-          allOf([
-            contains('final _profileObject = Ack.object'),
-            contains(
-              'final _profileWireSchema = '
-              'Ack.preserveBoundary(_profileObject)',
-            ),
-            contains('final _profileSchema = _profileObject.codec<Profile>'),
-            contains('get wireSchema'),
-            contains('_profileWireSchema;'),
-            isNot(contains('final profileSchema =')),
-            contains("'bio': Ack.string().minLength(1).maxLength(500)"),
-            contains("'website': Ack.uri().optional().nullable()"),
-            contains("'nickname': Ack.string().nullable()"),
-            contains("'role': Ack.string().withDefault('member')"),
-            contains('Ack.list(Ack.string())'),
-            contains(
-              RegExp(
-                r'\.minItems\(1\)[\s\S]*\.unique\(\)[\s\S]*\.codec<Set<String>>',
+        },
+        outputs: {
+          'test_pkg|lib/profile.ack.dart': decodedMatches(
+            allOf([
+              contains('final _profileObject = Ack.object'),
+              contains(
+                'final _profileWireSchema = '
+                'Ack.preserveBoundary(_profileObject)',
               ),
-            ),
-            contains('.codec<Profile>('),
-            contains(r'decode: _$ProfileFromRuntime'),
-            contains(r'encode: _$ProfileToRuntime'),
-            contains('abstract final class ProfileSchema'),
-            contains(
-              'static AckSchema<Map<String, Object?>, Profile> get schema',
-            ),
-            contains('static Profile parse('),
-            contains('static SchemaResult<Profile> safeParse('),
-            contains(
-              'static Profile fromJson(Map<String, dynamic> json) => parse(json)',
-            ),
-            contains('static Map<String, Object?> encode('),
-            contains('static SchemaResult<Map<String, Object?>> safeEncode('),
-            contains('static Map<String, Object?> toJsonSchema()'),
-            contains('static AckSchemaModel toSchemaModel()'),
-            contains('_profileSchema.parse(value, debugName: debugName)!'),
-            contains('_profileSchema.encode(value, debugName: debugName)!'),
-            contains(r'Profile _$ProfileFromRuntime'),
-            contains(r'_$ProfileFromJson'),
-            contains(r'Map<String, Object?> _$ProfileToRuntime'),
-            contains("result['nickname'] = null"),
-            contains(r'mixin _$ProfileAck'),
-            contains(r'$ProfileCopyWith<Profile> get copyWith'),
-            contains('final class _ProfileCopyWithUnset'),
-            contains('const _ProfileCopyWithUnset()'),
-            contains('static const _ProfileCopyWithUnset _ackCopyWithUnset ='),
-            contains('Object? website = _ackCopyWithUnset'),
-            contains('website: identical(website, _ackCopyWithUnset)'),
-            contains(': website as Uri?'),
-            isNot(contains('_ackCopyWithOmitted')),
-            contains('deepEquals('),
-            contains('deepHashCode('),
-            contains('Map<String, dynamic> toJson()'),
-            contains('SchemaResult<Map<String, Object?>> safeToJson()'),
-            contains('ProfileSchema.encode(this as Profile)'),
-            contains('ProfileSchema.safeEncode(this as Profile)'),
-            contains('_ackProfileFromRuntimeBio'),
-            contains('_ackProfileToRuntimeTags'),
-          ]),
-        ),
-      },
-    );
-  });
+              contains('final _profileSchema = _profileObject.codec<Profile>'),
+              contains('get wireSchema'),
+              contains('_profileWireSchema;'),
+              isNot(contains('final profileSchema =')),
+              contains("'bio': Ack.string().minLength(1).maxLength(500)"),
+              contains("'website': Ack.uri().optional().nullable()"),
+              contains("'nickname': Ack.string().nullable()"),
+              contains("'role': Ack.string().withDefault('member')"),
+              contains('Ack.list(Ack.string())'),
+              contains(
+                RegExp(
+                  r'\.minItems\(1\)[\s\S]*\.unique\(\)[\s\S]*\.codec<Set<String>>',
+                ),
+              ),
+              contains('.codec<Profile>('),
+              contains(r'decode: _$ProfileFromRuntime'),
+              contains(r'encode: _$ProfileToRuntime'),
+              contains('abstract final class ProfileSchema'),
+              contains(
+                'static AckSchema<Map<String, Object?>, Profile> get schema',
+              ),
+              contains('static Profile parse('),
+              contains('static SchemaResult<Profile> safeParse('),
+              contains(
+                'static Profile fromJson(Map<String, dynamic> json) => parse(json)',
+              ),
+              contains('static Map<String, Object?> encode('),
+              contains('static SchemaResult<Map<String, Object?>> safeEncode('),
+              contains('static Map<String, Object?> toJsonSchema()'),
+              contains('static AckSchemaModel toSchemaModel()'),
+              contains('_profileSchema.parse(value, debugName: debugName)!'),
+              contains('_profileSchema.encode(value, debugName: debugName)!'),
+              contains(r'Profile _$ProfileFromRuntime'),
+              contains(r'_$ProfileFromJson'),
+              contains(r'Map<String, Object?> _$ProfileToRuntime'),
+              contains("result['nickname'] = null"),
+              contains(r'mixin _$ProfileAck'),
+              contains(r'$ProfileCopyWith<Profile> get copyWith'),
+              contains('final class _ProfileCopyWithUnset'),
+              contains('const _ProfileCopyWithUnset()'),
+              contains(
+                'static const _ProfileCopyWithUnset _ackCopyWithUnset =',
+              ),
+              contains('Object? website = _ackCopyWithUnset'),
+              contains('website: identical(website, _ackCopyWithUnset)'),
+              contains(': website as Uri?'),
+              isNot(contains('_ackCopyWithOmitted')),
+              contains('deepEquals('),
+              contains('deepHashCode('),
+              contains('Map<String, dynamic> toJson()'),
+              contains('SchemaResult<Map<String, Object?>> safeToJson()'),
+              contains('ProfileSchema.encode(this as Profile)'),
+              contains('ProfileSchema.safeEncode(this as Profile)'),
+              contains('_ackProfileFromRuntimeBio'),
+              contains('_ackProfileToRuntimeTags'),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 
   test(
     'emits escape-hatch schemas and built-in recursive type coverage',

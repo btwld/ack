@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'schema_types_transforms.ack.dart';
 part 'schema_types_transforms.ack.g.dart';
@@ -16,13 +15,13 @@ class TagList {
 
 final baseColorSchema = Ack.string();
 
-@AckInfer(name: 'ColorModel')
+@Schemable(name: 'ColorModel')
 final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.value,
 );
 
-@AckInfer()
+@Schemable()
 final profileSchema = Ack.object({
   'homepage': Ack.uri(),
   'birthday': Ack.date(),
@@ -46,7 +45,6 @@ final profileSchema = Ack.object({
       encode: (color) => color.value,
     ),
   ),
-  'tagList': Ack.list(
-    Ack.string(),
-  ).codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
+  'tagList': Ack.list(Ack.string())
+      .codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
 });

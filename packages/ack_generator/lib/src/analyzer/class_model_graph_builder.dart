@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack/ack.dart' show AckSchema;
 import 'package:ack/annotations.dart' as annotations;
 import 'package:ack/ack_generator_support.dart';
@@ -154,7 +156,6 @@ final class ClassModelGraphBuilder {
     inPackage: 'ack',
   );
   static const _ackTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
     annotations.AckType,
     inPackage: 'ack',
   );
@@ -282,9 +283,6 @@ final class ClassModelGraphBuilder {
       final metadata = _graph.classMetadataFor(node.id);
       if (metadata == null) {
         throw StateError('Missing class-first metadata for ${node.id}.');
-      }
-      if (metadata.generatedImplementation) {
-        claim('_${node.className}', node);
       }
       claim(metadata.facadeName, node);
       claim(metadata.backingName, node);
@@ -453,86 +451,6 @@ final class ClassModelGraphBuilder {
     );
   }
 
-  void _validateFactoryConstructor(
-    ClassElement element,
-    ConstructorElement constructor,
-    _ModelOptions options,
-  ) {
-    final declaration = _inputResolved!
-        .getFragmentDeclaration(constructor.firstFragment)
-        ?.node;
-    final redirect = declaration is ConstructorDeclaration
-        ? declaration.redirectedConstructor
-        : null;
-    final targetName = redirect?.type.toSource();
-    final targetConstructor = redirect?.name?.name;
-    if (!element.isAbstract ||
-        element.isSealed ||
-        targetName != '_${element.name}' ||
-        targetConstructor != null) {
-      throw InvalidGenerationSource(
-        '@AckModel factory models require an abstract class with an unnamed '
-        'factory redirecting to _${element.name}.',
-        element: constructor,
-      );
-    }
-    if (element.typeParameters.isNotEmpty ||
-        (element.supertype != null && !element.supertype!.isDartCoreObject) ||
-        element.interfaces.isNotEmpty ||
-        element.mixins.any(
-          (mixin) => mixin.element.name != ackClassMixinName(element.name!),
-        ) ||
-        _instanceFields(element).isNotEmpty ||
-        element.methods.any((method) => !method.isStatic) ||
-        element.getters.any((getter) => !getter.isStatic) ||
-        element.setters.any((setter) => !setter.isStatic)) {
-      throw InvalidGenerationSource(
-        '@AckModel factory models must declare only the redirecting factory '
-        'and the generated mixin.',
-        element: element,
-      );
-    }
-    final privateConstructor = element.getNamedConstructor('_');
-    if (privateConstructor == null ||
-        !privateConstructor.isGenerative ||
-        privateConstructor.formalParameters.isNotEmpty ||
-        (constructor.isConst && !privateConstructor.isConst)) {
-      throw InvalidGenerationSource(
-        '@AckModel factory models require a zero-argument private '
-        'generative constructor such as `const ${element.name}._();` '
-        'when the factory is const.',
-        element: element,
-      );
-    }
-    for (final parameter in constructor.formalParameters) {
-      if (!parameter.isNamed) {
-        throw InvalidGenerationSource(
-          '@AckModel factory parameters must be named.',
-          element: parameter,
-        );
-      }
-      _rejectInvalidMemberName(
-        parameter.name!,
-        parameter,
-        memberKind: 'factory parameter',
-      );
-      final isCaptureParameter =
-          options.unknownProperties ==
-              annotations.AckUnknownPropertyPolicy.capture &&
-          options.captureField == parameter.name;
-      if (_generatedValueMembers.contains(parameter.name) ||
-          _generatedSerializationMembers.contains(parameter.name) ||
-          (_reservedMembers.contains(parameter.name) &&
-              !(isCaptureParameter &&
-                  parameter.name == 'additionalProperties'))) {
-        throw InvalidGenerationSource(
-          '${element.name}.${parameter.name} conflicts with a generated member.',
-          element: parameter,
-        );
-      }
-    }
-  }
-
   Future<AckObjectModelNode> _buildObject(
     ClassElement element, {
     required _ModelOptions options,
@@ -550,21 +468,19 @@ final class ClassModelGraphBuilder {
         element: element,
       );
     }
-    final isFactory = constructor.isFactory;
-    if (isFactory) {
-      _validateFactoryConstructor(element, constructor, options);
+    if (constructor.isFactory) {
+      throw InvalidGenerationSource(
+        '@AckModel ${element.name} requires an unnamed generative constructor '
+        'with fields declared in the constructor.',
+        element: constructor,
+      );
     }
     _requireMixin(element);
     _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
 
-    final fields = isFactory
-        ? <String, VariableElement>{
-            for (final parameter in constructor.formalParameters)
-              parameter.name!: parameter,
-          }
-        : _instanceFields(element);
+    final fields = _instanceFields(element);
     for (final field in fields.values) {
-      if (isFactory || field.isFinal) continue;
+      if (field.isFinal) continue;
       throw InvalidGenerationSource(
         '${element.name}.${field.name} must be final because @AckModel '
         'generates immutable value semantics.',
@@ -610,9 +526,7 @@ final class ClassModelGraphBuilder {
     final parameters = <String, FormalParameterElement>{};
     final constructorParameters = <AckConstructorParameter>[];
     for (final parameter in constructor.formalParameters) {
-      if (!isFactory) {
-        _rejectJsonKeyOnParameter(element, parameter);
-      }
+      _rejectJsonKeyOnParameter(element, parameter);
       final field = _parameterField(parameter) ?? fields[parameter.name];
       final fieldName = field?.name;
       if (fieldName == null) {
@@ -799,10 +713,7 @@ final class ClassModelGraphBuilder {
       if (recorded != null) return recorded;
 
       _dependencies[owner] = <_ClassFirstDependency>[];
-      final Iterable<VariableElement> fields =
-          owner.unnamedConstructor?.isFactory == true
-          ? owner.unnamedConstructor!.formalParameters
-          : _instanceFields(owner).values;
+      final Iterable<VariableElement> fields = _instanceFields(owner).values;
       for (final field in fields) {
         _recordClassFirstDependencies(owner, field.type, field);
       }
@@ -941,10 +852,9 @@ final class ClassModelGraphBuilder {
         node is! FormalParameter) {
       node = node.parent;
     }
-    if (node is DefaultFormalParameter) node = node.parameter;
     final annotation = switch (node) {
       FieldDeclaration() => node.fields.type,
-      SimpleFormalParameter() => node.type,
+      FormalParameter() => node.type,
       _ => null,
     };
     if (annotation == null) return null;
@@ -1850,8 +1760,6 @@ final class ClassModelGraphBuilder {
         facadeName: facadeName,
         backingName: backingName,
         caseStyle: options.caseStyle,
-        generatedImplementation: element.unnamedConstructor?.isFactory ?? false,
-        constImplementation: element.unnamedConstructor?.isConst ?? false,
         hasExplicitAnnotation: _explicit.contains(element),
         copyWithSupertypes: {
           for (final supertype in element.allSupertypes)

@@ -182,8 +182,6 @@ final class AckClassModelMetadata {
     required this.backingName,
     required this.caseStyle,
     this.hasExplicitAnnotation = true,
-    this.generatedImplementation = false,
-    this.constImplementation = false,
     this.copyWithSupertypes = const [],
   });
 
@@ -192,11 +190,6 @@ final class AckClassModelMetadata {
   final String caseStyle;
   final bool hasExplicitAnnotation;
 
-  /// The source class redirects its factory constructor to a generated class.
-  final bool generatedImplementation;
-
-  /// The redirecting factory is const, so the generated implementation is const.
-  final bool constImplementation;
   final List<String> copyWithSupertypes;
 }
 

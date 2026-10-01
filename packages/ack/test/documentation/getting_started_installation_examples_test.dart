@@ -27,7 +27,8 @@ void main() {
       expect(content, contains('@AckModel()'));
       expect(content, contains('ack_generator'));
       expect(content, contains('build_runner'));
-      expect(content, contains('There is no `@AckSchema()`'));
+      expect(content, contains('@Schemable()'));
+      expect(content, contains('>=3.13.0 <4.0.0'));
     });
   });
 }

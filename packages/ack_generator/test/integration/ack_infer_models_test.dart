@@ -50,7 +50,7 @@ final emptySchema = Ack.object({});
           'test_pkg|lib/empty.ack.dart': decodedMatches(
             allOf([
               contains('Empty()'),
-              contains('@AckInfer.jsonSerializable'),
+              contains('@Schemable.generatedJson'),
               contains(r'_$EmptyFromJson'),
               contains(r'_$EmptyToJson'),
               isNot(contains('\n  ,')),
@@ -459,8 +459,8 @@ final petSchema = Ack.discriminated(
             contains('sealed class Pet'),
             contains('final class Cat extends Pet'),
             contains('final class Dog extends Pet'),
-            isNot(contains('@AckInfer.jsonSerializable\nsealed class Pet')),
-            contains('@AckInfer.jsonSerializable\nfinal class Cat extends Pet'),
+            isNot(contains('@Schemable.generatedJson\nsealed class Pet')),
+            contains('@Schemable.generatedJson\nfinal class Cat extends Pet'),
             contains("String get kind => 'cat';"),
             contains("'kind': 'dog'"),
             contains('additionalProperties.entries'),
@@ -634,7 +634,7 @@ final bagSchema = Ack.object({}).passthrough();
     );
   });
 
-  test('preserves a prefixed AckInfer qualifier on the JSON marker', () async {
+  test('preserves a prefixed Schemable qualifier on the JSON marker', () async {
     await _build(
       {
         'schema.dart': '''
@@ -644,19 +644,19 @@ import 'package:ack_annotations/ack_annotations.dart' as annotations;
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@annotations.AckInfer()
+@annotations.Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
       },
       outputs: {
         'test_pkg|lib/schema.ack.dart': decodedMatches(
-          contains('@annotations.AckInfer.jsonSerializable'),
+          contains('@annotations.Schemable.generatedJson'),
         ),
       },
     );
   });
 
-  test('preserves a direct AckInfer qualifier on the JSON marker', () async {
+  test('preserves a direct Schemable qualifier on the JSON marker', () async {
     await _build(
       {
         'schema.dart':
@@ -671,14 +671,14 @@ final userSchema = Ack.object({'name': Ack.string()});
       },
       outputs: {
         'test_pkg|lib/schema.ack.dart': decodedMatches(
-          contains('@AckInfer.jsonSerializable'),
+          contains('@Schemable.generatedJson'),
         ),
       },
     );
   });
 
   test(
-    'preserves an unprefixed barrel AckInfer qualifier on the JSON marker',
+    'preserves an unprefixed barrel Schemable qualifier on the JSON marker',
     () async {
       await _build(
         {
@@ -697,7 +697,7 @@ final userSchema = Ack.object({'name': Ack.string()});
         },
         outputs: {
           'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@AckInfer.jsonSerializable'),
+            contains('@Schemable.generatedJson'),
           ),
         },
       );
@@ -705,7 +705,7 @@ final userSchema = Ack.object({'name': Ack.string()});
   );
 
   test(
-    'prefers a prefixed AckInfer qualifier when both imports are visible',
+    'prefers a prefixed Schemable qualifier when both imports are visible',
     () async {
       await _build(
         {
@@ -723,7 +723,7 @@ final userSchema = Ack.object({'name': Ack.string()});
         },
         outputs: {
           'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@annotations.AckInfer.jsonSerializable'),
+            contains('@annotations.Schemable.generatedJson'),
           ),
         },
       );
@@ -731,7 +731,7 @@ final userSchema = Ack.object({'name': Ack.string()});
   );
 
   test(
-    'preserves a prefixed barrel AckInfer qualifier on the JSON marker',
+    'preserves a prefixed barrel Schemable qualifier on the JSON marker',
     () async {
       await _build(
         {
@@ -739,18 +739,18 @@ final userSchema = Ack.object({'name': Ack.string()});
               "export 'package:ack_annotations/ack_annotations.dart';",
           'schema.dart': '''
 import 'package:ack/ack.dart';
-import 'annotations.dart' as annotations show AckInfer;
+import 'annotations.dart' as annotations show Schemable;
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@annotations.AckInfer()
+@annotations.Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         },
         outputs: {
           'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@annotations.AckInfer.jsonSerializable'),
+            contains('@annotations.Schemable.generatedJson'),
           ),
         },
       );

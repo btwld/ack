@@ -39,16 +39,14 @@ final userSchema = Ack.object({
       },
     );
 
-    test(
-      'generates args getter for schema variable with explicit additionalProperties: true',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('generates args getter for schema variable with explicit additionalProperties: true', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/schema.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -58,29 +56,26 @@ final userSchema = Ack.object({
   'age': Ack.integer(),
 }, additionalProperties: true);
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/schema.g.dart': decodedMatches(
-              allOf([
-                contains('Map<String, Object?> get args =>'),
-                contains("e.key != 'name' && e.key != 'age'"),
-              ]),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            allOf([
+              contains('Map<String, Object?> get args =>'),
+              contains("e.key != 'name' && e.key != 'age'"),
+            ]),
+          ),
+        },
+      );
+    });
 
-    test(
-      'does not generate args getter for schema variable without additionalProperties',
-      () async {
-        final builder = ackGenerator(BuilderOptions.empty);
+    test('does not generate args getter for schema variable without additionalProperties', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
 
-        await testBuilder(
-          builder,
-          {
-            ...allAssets,
-            'test_pkg|lib/schema.dart': '''
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -90,15 +85,14 @@ final userSchema = Ack.object({
   'age': Ack.integer(),
 });
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/schema.g.dart': decodedMatches(
-              isNot(contains('Map<String, Object?> get args')),
-            ),
-          },
-        );
-      },
-    );
+        },
+        outputs: {
+          'test_pkg|lib/schema.g.dart': decodedMatches(
+            isNot(contains('Map<String, Object?> get args')),
+          ),
+        },
+      );
+    });
 
     test(
       'generates args getter with no conditions when there are no fields',

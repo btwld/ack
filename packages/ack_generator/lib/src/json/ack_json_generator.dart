@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack/annotations.dart' show AckModel, Schemable;
 import 'package:ack/ack_generator_support.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -32,7 +34,6 @@ final class AckJsonSerializableGenerator extends Generator {
   String generate(LibraryReader library, BuildStep buildStep) {
     final requests = <({Element element, ConstantReader config})>[];
     final claimed = <Element>{};
-    var hasFactoryModel = false;
     for (final item in library.annotatedWith(_marker)) {
       requests.add((
         element: item.element,
@@ -46,11 +47,6 @@ final class AckJsonSerializableGenerator extends Generator {
           _model.firstAnnotationOfExact(element) ??
           _schemable.firstAnnotationOfExact(element);
       if (annotation == null) continue;
-      // Factory models serialize through the class-first runtime functions.
-      if (element.unnamedConstructor?.isFactory == true) {
-        hasFactoryModel = true;
-        continue;
-      }
       final reader = ConstantReader(annotation);
       if (!element.isSealed) {
         _addModelRequest(requests, claimed, element, reader);
@@ -64,7 +60,9 @@ final class AckJsonSerializableGenerator extends Generator {
           (type) => type.element.baseElement == element.baseElement,
         );
         if (!isSubtype) continue;
-        final branchAnnotation = _model.firstAnnotationOfExact(branch);
+        final branchAnnotation =
+            _model.firstAnnotationOfExact(branch) ??
+            _schemable.firstAnnotationOfExact(branch);
         _addModelRequest(
           requests,
           claimed,
@@ -75,10 +73,7 @@ final class AckJsonSerializableGenerator extends Generator {
     }
 
     if (requests.isEmpty) {
-      // Keep the required JSON part available in factory-only libraries.
-      return hasFactoryModel
-          ? '// Factory model serialization is generated in the Ack model part.'
-          : '';
+      return '';
     }
 
     final output = <String>[];
