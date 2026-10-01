@@ -788,7 +788,7 @@ final class SchemaModelGraphBuilder {
         if (valuesType is InterfaceType &&
             valuesType.isDartCoreList &&
             valuesType.typeArguments.length == 1) {
-          return _typeRef(valuesType.typeArguments.single, context);
+          return _typeRef(valuesType.typeArguments.single, path, context);
         }
         throw InvalidGenerationSource(
           '$path Ack.enumValues(...) enum type is not statically resolvable.',
@@ -1217,8 +1217,8 @@ final class SchemaModelGraphBuilder {
       );
     }
     return (
-      boundary: _typeRef(ackInfer.typeArguments[0], context),
-      runtime: _typeRef(ackInfer.typeArguments[1], context),
+      boundary: _typeRef(ackInfer.typeArguments[0], path, context),
+      runtime: _typeRef(ackInfer.typeArguments[1], path, context),
     );
   }
 
@@ -1226,7 +1226,7 @@ final class SchemaModelGraphBuilder {
     return _ackSchemaChecker.isExactlyType(type);
   }
 
-  AckInferRef _typeRef(DartType type, Element context) {
+  AckInferRef _typeRef(DartType type, String path, Element context) {
     if (type is DynamicType) {
       return const AckNullableTypeRef(AckScalarTypeRef('Object'));
     }
@@ -1243,9 +1243,13 @@ final class SchemaModelGraphBuilder {
     final name = type.element.name ?? type.getDisplayString();
     AckInferRef result;
     if (type.isDartCoreList && type.typeArguments.length == 1) {
-      result = AckListTypeRef(_typeRef(type.typeArguments.single, context));
+      result = AckListTypeRef(
+        _typeRef(type.typeArguments.single, path, context),
+      );
     } else if (type.isDartCoreSet && type.typeArguments.length == 1) {
-      result = AckSetTypeRef(_typeRef(type.typeArguments.single, context));
+      result = AckSetTypeRef(
+        _typeRef(type.typeArguments.single, path, context),
+      );
     } else if (type.isDartCoreMap && type.typeArguments.length == 2) {
       final keyType = type.typeArguments.first;
       if (keyType is! InterfaceType || !keyType.isDartCoreString) {
@@ -1258,7 +1262,7 @@ final class SchemaModelGraphBuilder {
               'runtime type before generating the model.',
         );
       }
-      result = AckMapTypeRef(_typeRef(type.typeArguments[1], context));
+      result = AckMapTypeRef(_typeRef(type.typeArguments[1], path, context));
     } else if (type.element.library.uri.toString() == 'dart:core' &&
         const {
           'String',
@@ -1272,20 +1276,30 @@ final class SchemaModelGraphBuilder {
     } else {
       result = AckExternalTypeRef(
         name: name,
-        importPrefix: _visiblePrefix(type.element),
+        importPrefix: _visiblePrefix(type.element, path, context),
         typeArguments: [
           for (final argument in type.typeArguments)
-            _typeRef(argument, context),
+            _typeRef(argument, path, context),
         ],
       );
     }
     return nullable ? AckNullableTypeRef(result) : result;
   }
 
-  String? _visiblePrefix(InterfaceElement target) {
+  /// The import prefix that names [target] in this library, or null when an
+  /// unprefixed name reaches it.
+  ///
+  /// Throws when [target] is not visible, because a part cannot add imports.
+  String? _visiblePrefix(
+    InterfaceElement target,
+    String path,
+    Element context,
+  ) {
+    if (target.library == library.element) return null;
     final name = target.name;
     if (name == null) return null;
     String? prefixed;
+    var unprefixed = false;
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) {
         continue;
@@ -1297,9 +1311,19 @@ final class SchemaModelGraphBuilder {
       if (candidate != target) continue;
       if (prefix != null && prefix.isNotEmpty) {
         prefixed ??= prefix;
+      } else {
+        unprefixed = true;
       }
     }
-    return prefixed;
+    if (prefixed != null || unprefixed) return prefixed;
+    if (library.element.firstFragment.scope.lookup(name).getter == target) {
+      return null;
+    }
+    throw InvalidGenerationSource(
+      '$path uses $name, which is not visible in this library. Import '
+      '${target.library.uri}.',
+      element: context,
+    );
   }
 
   _SchemaChain _chain(Expression expression) {

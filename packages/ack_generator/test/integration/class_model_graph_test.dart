@@ -63,7 +63,80 @@ part 'model.ack.dart';
 part 'model.ack.g.dart';
 ''';
 
+const _aliasHead = '''
+import 'package:ack/ack.dart';
+import 'aliases.dart';
+
+part 'model.ack.dart';
+part 'model.ack.g.dart';
+''';
+
 void main() {
+  test('rejects a field type that is visible only through a typedef', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+final class Person with _\$PersonAck {
+  const Person({required this.home, required this.shade});
+  final Addr home;
+  final Shade shade;
+}
+''',
+      [
+        'Person.home uses Address, which is not visible in this library. '
+            'Import package:test_pkg/address.dart.',
+      ],
+      head: _aliasHead,
+      allowedOutputs: {
+        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+      },
+      extraSources: {
+        'aliases.dart': '''
+import 'address.dart';
+import 'shade.dart';
+
+typedef Addr = Address;
+typedef Shade = Color;
+''',
+        'address.dart': '''
+import 'package:ack/ack.dart';
+
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@Schemable()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+  final String city;
+}
+''',
+        'shade.dart': 'enum Color { red, blue }',
+      },
+    );
+    await _expectFailure(
+      '''
+@Schemable()
+final class Swatch with _\$SwatchAck {
+  const Swatch({required this.shade});
+  final Shade shade;
+}
+''',
+      [
+        'Swatch.shade uses Color, which is not visible in this library. '
+            'Import package:test_pkg/shade.dart.',
+      ],
+      head: _aliasHead,
+      extraSources: {
+        'aliases.dart': '''
+import 'shade.dart';
+
+typedef Shade = Color;
+''',
+        'shade.dart': 'enum Color { red, blue }',
+      },
+    );
+  });
+
   test('rejects @Schemable(name:) on a class', () async {
     await _expectFailure(
       '''

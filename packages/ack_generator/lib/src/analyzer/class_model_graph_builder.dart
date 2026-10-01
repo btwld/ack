@@ -1197,14 +1197,14 @@ final class ClassModelGraphBuilder {
         element: field,
       );
     }
-    final prefix = _visiblePrefix(function);
+    final prefix = _visiblePrefix(function, field);
     return '${prefix == null ? '' : '$prefix.'}${function.name}()';
   }
 
   Future<String> _schemaForType(DartType type, FieldElement field) =>
       _inference.inferType(
         type,
-        visibleTypeName: _visibleTypeName,
+        visibleTypeName: (type) => _visibleTypeName(type, field),
         renderType: (type) => _renderType(_typeRef(type, field)),
         resolveNamed: (type) => _namedSchemaForType(type, field),
         unsupported: (type) => _unsupportedFieldType(field, type),
@@ -1221,7 +1221,7 @@ final class ClassModelGraphBuilder {
     if (target is ClassElement) {
       final facadeName = _classFirstFacadeName(target);
       if (facadeName != null) {
-        final prefix = _visiblePrefix(target);
+        final prefix = _visiblePrefix(target, field);
         _validateClassFirstFacadeImport(
           target,
           facadeName,
@@ -1232,7 +1232,7 @@ final class ClassModelGraphBuilder {
       }
     }
     if (_generatedJsonChecker.hasAnnotationOfExact(target)) {
-      return '${_visibleTypeName(interfaceType)}.\$ack.schema';
+      return '${_visibleTypeName(interfaceType, field)}.\$ack.schema';
     }
     return null;
   }
@@ -1389,12 +1389,12 @@ final class ClassModelGraphBuilder {
         ),
         className: interfaceType.element.name!,
         runtimeRef: _jsonMapRef,
-        importPrefix: _visiblePrefix(interfaceType.element),
+        importPrefix: _visiblePrefix(interfaceType.element, field),
       );
     } else {
       result = AckExternalTypeRef(
         name: interfaceType.element.name!,
-        importPrefix: _visiblePrefix(interfaceType.element),
+        importPrefix: _visiblePrefix(interfaceType.element, field),
         typeArguments: [
           for (final argument in interfaceType.typeArguments)
             _typeRef(argument, field),
@@ -1962,16 +1962,21 @@ final class ClassModelGraphBuilder {
   bool _isNullable(DartType type) =>
       type.nullabilitySuffix == NullabilitySuffix.question;
 
-  String _visibleTypeName(InterfaceType type) {
-    final prefix = _visiblePrefix(type.element);
+  String _visibleTypeName(InterfaceType type, FieldElement field) {
+    final prefix = _visiblePrefix(type.element, field);
     return '${prefix == null ? '' : '$prefix.'}${type.element.name}';
   }
 
-  String? _visiblePrefix(Element target) {
+  /// The import prefix that names [target] in this library, or null when an
+  /// unprefixed name reaches it.
+  ///
+  /// Throws when [target] is not visible, because a part cannot add imports.
+  String? _visiblePrefix(Element target, FieldElement field) {
     if (target.library == library.element) return null;
     final name = target.name;
     if (name == null) return null;
     String? prefixed;
+    var unprefixed = false;
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
       final prefix = import.prefix?.element.name;
@@ -1981,9 +1986,18 @@ final class ClassModelGraphBuilder {
       if (candidate?.baseElement != target.baseElement) continue;
       if (prefix != null && prefix.isNotEmpty) {
         prefixed ??= prefix;
+      } else {
+        unprefixed = true;
       }
     }
-    return prefixed;
+    if (prefixed != null || unprefixed) return prefixed;
+    final inScope = library.element.firstFragment.scope.lookup(name).getter;
+    if (inScope?.baseElement == target.baseElement) return null;
+    throw InvalidGenerationSource(
+      '${field.enclosingElement.name}.${field.name} uses $name, which is not '
+      'visible in this library. Import ${target.library?.uri}.',
+      element: field,
+    );
   }
 
   Future<ResolvedLibraryResult> _resolvedLibraryFor(

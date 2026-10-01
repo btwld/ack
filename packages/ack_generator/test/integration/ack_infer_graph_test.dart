@@ -46,6 +46,58 @@ part 'schema.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects a codec type the library cannot name', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    final errors = <String>[];
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'money_schema.dart';
+
+part 'schema.ack.dart';
+part 'schema.ack.g.dart';
+
+@Schemable()
+final orderSchema = Ack.object({'price': moneySchema});
+''',
+        'test_pkg|lib/money_schema.dart': '''
+import 'package:ack/ack.dart';
+import 'money.dart';
+
+final moneySchema = Ack.integer().codec<Money>(
+  decode: Money.new,
+  encode: (money) => money.cents,
+);
+''',
+        'test_pkg|lib/money.dart': '''
+class Money {
+  const Money(this.cents);
+  final int cents;
+}
+''',
+      },
+      generateFor: const {'test_pkg|lib/schema.dart'},
+      readerWriter: readerWriter,
+      outputs: const {},
+      onLog: (LogRecord log) {
+        if (log.level == Level.SEVERE) errors.add(log.message);
+      },
+    );
+
+    expect(
+      errors,
+      contains(
+        contains(
+          'orderSchema.price(→ moneySchema) uses Money, which is not visible '
+          'in this library. Import package:test_pkg/money.dart.',
+        ),
+      ),
+    );
+  });
+
   test('rejects @Schemable options that apply only to classes', () async {
     await _expectFailure(
       '''
