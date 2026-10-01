@@ -168,6 +168,7 @@ removed in Ack 2.0:
 
 ```dart
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 
 part 'legacy_user.g.dart';
 

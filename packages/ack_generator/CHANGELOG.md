@@ -18,12 +18,13 @@
   types are supported, and a generic type declares a static
   `schema<A>()` method that is called with the field's type arguments
   (`Command.schema<CompletionAction>()`). Schema-first objects may reference
-  the same members. A `@Schemable` class may expose its facade as
+  the same members; `void` type arguments are supported only in class-first
+  fields. A `@Schemable` class may expose its facade as
   `static final schema = XSchema.schema;`. The schema must produce the field's
   type.
-* A generic `schema<A>()` that declares one positional `AckSchema` parameter
-  per type parameter receives the schema inferred for each type argument
-  (`Box.schema<Row>(RowSchema.schema)`). Type arguments may be `void`
+* A generic `schema<A>()` that declares one positional `AckSchema<Object, A>`
+  parameter per type parameter `A` receives the schema inferred for each type
+  argument (`Box.schema<Row>(RowSchema.schema)`). Type arguments may be `void`
   (`Command.schema<void>()`). An enum's static `schema` takes precedence over
   `Ack.enumValues`.
 

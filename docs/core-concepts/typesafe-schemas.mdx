@@ -413,11 +413,11 @@ parameters, the generator calls it with the field's type arguments, written as
 they are, including `void` and `Object?`:
 
 ```dart
-final class Command<A extends Object> {
+final class Command<A> {
   const Command(this.name);
   final String name;
 
-  static AckSchema<String, Command<A>> schema<A extends Object>() =>
+  static AckSchema<String, Command<A>> schema<A>() =>
       Ack.string().codec<Command<A>>(
         decode: Command<A>.new,
         encode: (command) => command.name,
@@ -429,7 +429,8 @@ final class Command<A extends Object> {
 ```
 
 When the schema needs to validate the type argument itself, declare one
-positional `AckSchema` parameter per type parameter. The generator passes the
+positional parameter per type parameter, each typed `AckSchema<Object, A>` for
+its type parameter `A`. The generator passes the
 schema it infers for each type argument: a facade for a `@Schemable` class, a
 built-in schema for a primitive, and the collection schema for a `List`:
 
@@ -452,14 +453,12 @@ Generation checks the parameter count and that each parameter is a schema of
 its type argument. A type argument without an inferable schema fails with the
 usual unsupported-type message.
 
-A model's schema is built on first use of its facade, so a type-owned schema
-runs then, not when the library loads.
-
 The schema must produce the field's type; generation fails otherwise,
 for example when `Slot.schema` produces a `String` or when a generic type
 offers a static field instead of a `schema<A>()` method. Schema-first objects
 can reference the same members, such as `'header': Slot.schema` or
-`'open': Command.schema<CompletionAction>()`.
+`'open': Command.schema<CompletionAction>()`; a `void` type argument is
+supported only in class-first fields.
 
 A type with neither a static `schema` nor built-in inference fails generation
 with a message that names both fixes: declare a static `schema` on the type, or
@@ -679,7 +678,10 @@ Both entries must cover the same annotated libraries.
   `package:ack_annotations/format_annotations.dart` with
   `package:ack/format_annotations.dart`.
 - Rename `@Pattern(...)` to `@Matches(...)`. The old name remains a deprecated
-  alias in `package:ack/annotations.dart` only.
+  alias in `package:ack/annotations.dart` only. Until 2.0.0, an unprefixed
+  import of that library hides `dart:core`'s `Pattern` in the file; import it
+  `as ack`, or with `hide Pattern`, where the file needs `dart:core`'s
+  `Pattern`.
 - Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`; the options keep
   their names. The old spellings still generate the same code until 2.0.0,
   as long as `Schemable` is in scope: generated models carry

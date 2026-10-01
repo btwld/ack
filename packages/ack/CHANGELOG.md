@@ -6,7 +6,7 @@
   Remove `ack_annotations` from `pubspec.yaml`. `package:ack/ack.dart`
   exports `@Schemable()` and the model annotations (`AckField`, `Optional`,
   `Required`, `NotNull`, `JsonKey`, `AckCaseStyle`,
-  `AckUnknownPropertyPolicy`). Replace
+  `AckUnknownPropertyPolicy`, and the deprecated `AckFieldPresence`). Replace
   `package:ack_annotations/ack_annotations.dart` with
   `package:ack/annotations.dart`, which exports the model annotations, the
   constraints and the deprecated spellings, and
@@ -14,6 +14,9 @@
   `package:ack/format_annotations.dart`.
 * `@Pattern` is renamed `@Matches`, matching `Ack.string().matches(...)`.
   `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only.
+  Until 2.0.0, an unprefixed import of that library hides `dart:core`'s
+  `Pattern` in the file; import it `as ack`, or with `hide Pattern`, where the
+  file needs `dart:core`'s `Pattern`.
 * Names exported from `package:ack/ack.dart` or `package:ack/annotations.dart`
   can clash with same-named classes from other libraries, such as
   `package:uuid`'s `Uuid` or `package:meta`'s `Required`. Import

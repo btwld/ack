@@ -411,8 +411,8 @@ so a wrongly typed argument is a compile-time error.
 **Type-owned schemas:** a field whose type declares a static `schema` resolves
 to it with no annotation, also per `List` / `Set` item and as a `Map` value. A
 generic type declares `static AckSchema<B, T<A>> schema<A>()`, which is called
-with the field's type arguments; if it declares one positional `AckSchema`
-parameter per type parameter, it also receives each type argument's inferred
+with the field's type arguments; if it declares one positional parameter typed
+`AckSchema<Object, A>` per type parameter `A`, it also receives each type argument's inferred
 schema. An enum's static `schema` wins over `Ack.enumValues`. The schema must
 produce the field type.
 

@@ -155,11 +155,11 @@ final class Slot {
   );
 }
 
-final class Command<A extends Object> {
+final class Command<A> {
   const Command(this.name);
   final String name;
 
-  static AckSchema<String, Command<A>> schema<A extends Object>() =>
+  static AckSchema<String, Command<A>> schema<A>() =>
       Ack.string().codec<Command<A>>(
         decode: Command<A>.new,
         encode: (command) => command.name,
@@ -171,8 +171,8 @@ final class Command<A extends Object> {
 // final Command<CompletionAction> open;  -> Command.schema<CompletionAction>()
 ```
 
-A generic `schema<A>()` may instead take one positional `AckSchema` parameter
-per type parameter; the generator then passes each type argument's inferred
+A generic `schema<A>()` may instead take one positional parameter typed
+`AckSchema<Object, A>` per type parameter `A`; the generator then passes each type argument's inferred
 schema, as in `Box.schema<Row>(RowSchema.schema)`. Type arguments are written
 as they are, including `void` (`Command.schema<void>()`). An enum with a
 static `schema` resolves to it instead of `Ack.enumValues`.
@@ -180,7 +180,8 @@ static `schema` resolves to it instead of `Ack.enumValues`.
 Extension types work the same way when they implement `Object`. The schema
 must produce the field type, or generation fails. A class-first model
 may expose its facade as `static final schema = AccountSchema.schema;`.
-Schema-first objects may reference the same members (`'header': Slot.schema`).
+Schema-first objects may reference the same members (`'header': Slot.schema`),
+except that a `void` type argument is supported only in class-first fields.
 
 For a single wire-name override, put `@JsonKey(name: 'wire_name')` on the
 field. Other `JsonKey` options and constructor-parameter placement are rejected
