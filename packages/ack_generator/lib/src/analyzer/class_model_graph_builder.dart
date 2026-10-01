@@ -1367,7 +1367,7 @@ final class ClassModelGraphBuilder {
       }
       final arguments = [
         for (final argument in type.typeArguments)
-          _renderType(_typeRef(argument, field)),
+          _renderType(_typeArgumentRef(argument, field)),
       ];
       final name = _visibleTypeName(type, field);
       expression = arguments.isEmpty
@@ -1519,6 +1519,13 @@ final class ClassModelGraphBuilder {
     );
   }
 
+  /// A type argument of an application type, where `void` is also valid,
+  /// as in `Trigger<void>`. It is never a field or collection item type.
+  AckInferRef _typeArgumentRef(DartType type, FieldElement field) =>
+      type is VoidType
+      ? const AckExternalTypeRef(name: 'void')
+      : _typeRef(type, field);
+
   AckInferRef _typeRef(DartType type, FieldElement field) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
@@ -1569,7 +1576,7 @@ final class ClassModelGraphBuilder {
         importPrefix: _visiblePrefix(interfaceType.element, field),
         typeArguments: [
           for (final argument in interfaceType.typeArguments)
-            _typeRef(argument, field),
+            _typeArgumentRef(argument, field),
         ],
       );
     }

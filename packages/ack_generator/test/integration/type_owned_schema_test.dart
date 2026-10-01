@@ -53,6 +53,17 @@ final class Invoke<A extends Object> {
   ) => throw UnimplementedError();
 }
 
+final class Trigger<A> {
+  const Trigger(this.name);
+  final String name;
+
+  static AckSchema<String, Trigger<A>> schema<A>() =>
+      Ack.string().codec<Trigger<A>>(
+        decode: Trigger<A>.new,
+        encode: (trigger) => trigger.name,
+      );
+}
+
 final class Command<A extends Object> {
   const Command(this.name);
   final String name;
@@ -194,6 +205,34 @@ final class Menu with _$MenuAck {
       );
     },
   );
+
+  test('void, Object? and Null pass through as type arguments', () async {
+    await _expectOutput(
+      r'''
+@Schemable()
+final class Panel with _$PanelAck {
+  const Panel({
+    required this.openAll,
+    required this.anything,
+    required this.nothing,
+    required this.complete,
+  });
+
+  final Trigger<void> openAll;
+  final Trigger<Object?> anything;
+  final Trigger<Null> nothing;
+  final Trigger<CompletionAction> complete;
+}
+''',
+      allOf(
+        _containsCode("'openAll': Trigger.schema<void>(),"),
+        _containsCode("'anything': Trigger.schema<Object?>(),"),
+        _containsCode("'nothing': Trigger.schema<Null>(),"),
+        _containsCode("'complete': Trigger.schema<CompletionAction>()"),
+        contains('Trigger<void>? openAll'),
+      ),
+    );
+  });
 
   test('a prefixed type keeps its prefix', () async {
     await _expectOutput(

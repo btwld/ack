@@ -80,6 +80,18 @@ extension type const WidgetId(String value) implements Object {
 
 enum CompletionAction { complete, skip }
 
+final class Trigger<A> {
+  const Trigger(this.name);
+
+  final String name;
+
+  static AckSchema<String, Trigger<A>> schema<A>() =>
+      Ack.string().codec<Trigger<A>>(
+        decode: Trigger<A>.new,
+        encode: (trigger) => trigger.name,
+      );
+}
+
 final class Command<A extends Object> {
   const Command(this.name);
 
@@ -132,6 +144,19 @@ final class Section with _$SectionAck {
 }
 
 @Schemable()
+final class Toolbar with _$ToolbarAck {
+  const Toolbar({
+    required this.openAll,
+    required this.anything,
+    required this.complete,
+  });
+
+  final Trigger<void> openAll;
+  final Trigger<Object?> anything;
+  final Trigger<CompletionAction> complete;
+}
+
+@Schemable()
 final panelSchema = Ack.object({
   'header': Slot.schema,
   'commands': Ack.list(Command.schema<CompletionAction>()),
@@ -176,6 +201,23 @@ void main() {
     expect(Habit.schema.parse({'name': 'walk'}), const Habit(name: 'walk'));
   });
 
+  test('void and Object? type arguments reach the type-owned schema', () {
+    final toolbar = ToolbarSchema.parse({
+      'openAll': 'open',
+      'anything': 'any',
+      'complete': 'done',
+    });
+
+    expect(toolbar.openAll, isA<Trigger<void>>());
+    expect(toolbar.anything, isA<Trigger<Object?>>());
+    expect(toolbar.complete, isA<Trigger<CompletionAction>>());
+    expect(toolbar.toJson(), {
+      'openAll': 'open',
+      'anything': 'any',
+      'complete': 'done',
+    });
+  });
+
   test('schema-first models type fields from type-owned schemas', () {
     final panel = Panel.parse({
       'header': 'h',
@@ -199,6 +241,7 @@ void main() {
           p.join(temporary.path, 'lib', 'models.ack.dart'),
         ).readAsStringSync();
         expect(generated, contains('Command.schema<CompletionAction>()'));
+        expect(generated, contains('Trigger.schema<void>()'));
         expect(generated, contains('Ack.map(Slot.schema)'));
         _expectSuccess(
           await _run(temporary, ['analyze', '--fatal-infos']),
