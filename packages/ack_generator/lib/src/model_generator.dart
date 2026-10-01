@@ -24,6 +24,10 @@ final class AckModelGenerator extends Generator {
     AckModel,
     inPackage: 'ack_annotations',
   );
+  static const _schemableChecker = TypeChecker.typeNamed(
+    Schemable,
+    inPackage: 'ack_annotations',
+  );
   static const _ackChecker = TypeChecker.typeNamed(Ack, inPackage: 'ack');
   static const _ackModelAdapterChecker = TypeChecker.typeNamed(
     AckModelAdapter,
@@ -69,7 +73,8 @@ final class AckModelGenerator extends Generator {
     }
 
     for (final classElement in library.classes) {
-      if (_ackModelChecker.hasAnnotationOfExact(classElement)) {
+      if (_ackModelChecker.hasAnnotationOfExact(classElement) ||
+          _schemableChecker.hasAnnotationOfExact(classElement)) {
         annotatedModels.add(classElement);
       }
       for (final getter in classElement.getters) {
@@ -197,7 +202,9 @@ final class AckModelGenerator extends Generator {
   );
 
   bool _hasAckInfer(Element element) =>
-      _ackInferChecker.hasAnnotationOfExact(element);
+      _ackInferChecker.hasAnnotationOfExact(element) ||
+      (element is! ClassElement &&
+          _schemableChecker.hasAnnotationOfExact(element));
 
   /// Strips `./` segments so `part './user.ack.dart'` matches the file next to
   /// the input, without treating `part 'sub/user.ack.dart'` as the same path.

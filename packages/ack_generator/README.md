@@ -1,9 +1,10 @@
 # Ack Generator
 
-`ack_generator` supports two modern directions: `@AckInfer()` turns a
-top-level Ack schema into an immutable model, while `@AckModel()` derives an
-Ack codec schema from a hand-written class. It also retains the deprecated Ack
-1.1 `@AckType()` generator unchanged.
+`ack_generator` supports two modern directions through `@Schemable()`:
+it turns a top-level Ack schema into an immutable model and derives an Ack
+codec schema from a hand-written class. `@AckInfer()` and `@AckModel()` remain
+compatibility spellings. It also retains the deprecated Ack 1.1 `@AckType()`
+generator unchanged.
 
 ## Schema-first usage
 
@@ -14,7 +15,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'user_schema.ack.dart';
 part 'user_schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
@@ -69,7 +70,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'account.ack.dart';
 part 'account.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
 

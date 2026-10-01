@@ -145,6 +145,10 @@ final class ClassModelGraphBuilder {
     annotations.AckModel,
     inPackage: 'ack_annotations',
   );
+  static const _schemableChecker = TypeChecker.typeNamed(
+    annotations.Schemable,
+    inPackage: 'ack_annotations',
+  );
   static const _ackInferChecker = TypeChecker.typeNamed(
     annotations.AckInfer,
     inPackage: 'ack_annotations',
@@ -1084,13 +1088,16 @@ final class ClassModelGraphBuilder {
       _ => null,
     };
     return declaration != null &&
-            _ackInferChecker.hasAnnotationOfExact(declaration)
+            (_ackInferChecker.hasAnnotationOfExact(declaration) ||
+                _schemableChecker.hasAnnotationOfExact(declaration))
         ? declaration
         : null;
   }
 
   String _generatedAckInferClassName(Element declaration) {
-    final annotation = _ackInferChecker.firstAnnotationOfExact(declaration)!;
+    final annotation =
+        _ackInferChecker.firstAnnotationOfExact(declaration) ??
+        _schemableChecker.firstAnnotationOfExact(declaration)!;
     final custom = ConstantReader(annotation).read('name');
     return ackInferModelClassName(
       declaration.name!,
@@ -1740,7 +1747,9 @@ final class ClassModelGraphBuilder {
   }
 
   _ModelOptions? _options(ClassElement element) {
-    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    final annotation =
+        _ackModelChecker.firstAnnotationOfExact(element) ??
+        _schemableChecker.firstAnnotationOfExact(element);
     if (annotation == null) return null;
     final reader = ConstantReader(annotation);
     final caseStyle = reader.read('caseStyle').objectValue;
@@ -1801,7 +1810,8 @@ final class ClassModelGraphBuilder {
       return base is ClassElement &&
           base.library == element.library &&
           base.isSealed &&
-          _ackModelChecker.hasAnnotationOfExact(base);
+          (_ackModelChecker.hasAnnotationOfExact(base) ||
+              _schemableChecker.hasAnnotationOfExact(base));
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)

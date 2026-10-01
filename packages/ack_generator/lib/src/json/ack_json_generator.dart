@@ -1,4 +1,4 @@
-import 'package:ack_annotations/ack_annotations.dart' show AckModel;
+import 'package:ack_annotations/ack_annotations.dart' show AckModel, Schemable;
 import 'package:ack_annotations/ack_generator_support.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
@@ -29,6 +29,10 @@ final class AckJsonSerializableGenerator extends Generator {
     AckModel,
     inPackage: 'ack_annotations',
   );
+  static const _schemable = TypeChecker.typeNamed(
+    Schemable,
+    inPackage: 'ack_annotations',
+  );
 
   @override
   String generate(LibraryReader library, BuildStep buildStep) {
@@ -43,7 +47,9 @@ final class AckJsonSerializableGenerator extends Generator {
     }
 
     for (final element in library.classes) {
-      final annotation = _model.firstAnnotationOfExact(element);
+      final annotation =
+          _model.firstAnnotationOfExact(element) ??
+          _schemable.firstAnnotationOfExact(element);
       if (annotation == null) continue;
       final reader = ConstantReader(annotation);
       if (!element.isSealed) {

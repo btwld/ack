@@ -1,3 +1,8 @@
+## Unreleased
+
+* Support `@Schemable()` for schema-first and class-first generation while
+  preserving `@AckInfer()` and `@AckModel()` compatibility.
+
 ## 1.7.0-beta.2
 
 ### Breaking

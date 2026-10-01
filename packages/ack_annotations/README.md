@@ -1,8 +1,9 @@
 # ack_annotations
 
-`ack_annotations` provides the `@AckInfer()` schema-first and `@AckModel()`
-class-first annotations used by `ack_generator`. Deprecated `@AckType()` is
-retained for Ack 1.1 extension-type compatibility.
+`ack_annotations` provides the unified `@Schemable()` annotation used by
+`ack_generator` for schema-first and class-first declarations. `@AckInfer()`
+and `@AckModel()` remain supported compatibility spellings. Deprecated
+`@AckType()` is retained for Ack 1.1 extension-type compatibility.
 
 ## Installation
 
@@ -27,7 +28,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
@@ -51,7 +52,7 @@ For class-first generation, keep the class in source and apply its generated
 mixin:
 
 ```dart
-@AckModel()
+@Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
 
@@ -64,7 +65,8 @@ final class Account with _$AccountAck {
 
 This generates the public `AccountSchema` facade plus validated `toJson`,
 `safeToJson`, `copyWith`, equality, and `toString` implementations.
-Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
+
+Use `@Schemable(description: ...)` and `@AckField(description: ...)` for schema
 descriptions. A single-line `@description` documentation tag is a fallback.
 Untagged prose does not become schema data. Explicit annotation text takes
 precedence over the tag. A field description applies to its property without
