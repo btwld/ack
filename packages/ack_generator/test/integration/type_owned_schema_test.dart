@@ -414,4 +414,41 @@ final sectionSchema = Ack.object({
       ),
     );
   });
+
+  test('an enum with a static schema resolves to it', () async {
+    await _expectOutput(
+      r'''
+@Schemable()
+final class Task with _$TaskAck {
+  const Task({required this.status, required this.plain});
+
+  final Status status;
+  final Plain plain;
+}
+''',
+      allOf(
+        _containsCode("'status': Status.schema,"),
+        _containsCode("'plain': Ack.enumValues(Plain.values)"),
+      ),
+      types: '''
+import 'package:ack/ack.dart';
+
+enum Status {
+  active('A'),
+  paused('P');
+
+  const Status(this.wire);
+  final String wire;
+
+  static final schema = Ack.string().codec<Status>(
+    decode: (wire) => values.firstWhere((status) => status.wire == wire),
+    encode: (status) => status.wire,
+  );
+}
+
+enum Plain { one, two }
+''',
+    );
+  });
+
 }

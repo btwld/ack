@@ -87,8 +87,9 @@ final class AckSchemaInference {
 
   /// Infers a schema expression for [type].
   ///
-  /// [resolveNamed] returns a schema expression for an application type.
-  /// Return null when the type has no supported model contract.
+  /// [resolveNamed] returns a schema expression for an application type,
+  /// including an enum that declares its own schema. Return null when the type
+  /// has no supported model contract; an enum then uses `Ack.enumValues`.
   Future<String> inferType(
     DartType type, {
     required String Function(InterfaceType) visibleTypeName,
@@ -102,7 +103,8 @@ final class AckSchemaInference {
     final scalar = _scalar(type);
     if (scalar != null) return scalar;
     if (type.element is EnumElement) {
-      return '${_ack('Ack')}.enumValues(${visibleTypeName(type)}.values)';
+      return await resolveNamed(type) ??
+          '${_ack('Ack')}.enumValues(${visibleTypeName(type)}.values)';
     }
     if (type.isDartCoreList && type.typeArguments.length == 1) {
       final item = type.typeArguments.single;
