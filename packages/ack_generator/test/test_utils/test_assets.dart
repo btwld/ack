@@ -26,7 +26,7 @@ class Target {
 
 const ackPackageAnnotationsAsset = {
   'ack|lib/annotations.dart': '''
-library ack;
+library;
 
 import 'package:meta/meta_meta.dart';
 

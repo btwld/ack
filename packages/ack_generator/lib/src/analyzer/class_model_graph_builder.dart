@@ -374,7 +374,8 @@ final class ClassModelGraphBuilder {
       return;
     }
     final runtime = _ackSchemaRuntimeType(getter.returnType);
-    if (runtime != null && _isFieldRuntimeType(runtime, element.thisType)) {
+    if (runtime != null &&
+        _sameTypeIgnoringNullability(runtime, element.thisType)) {
       return;
     }
     throw InvalidGenerationSource(
@@ -1228,7 +1229,7 @@ final class ClassModelGraphBuilder {
       );
     }
     final runtime = _ackSchemaRuntimeType(function.returnType);
-    if (runtime == null || !_isFieldRuntimeType(runtime, field.type)) {
+    if (runtime == null || !_sameTypeIgnoringNullability(runtime, field.type)) {
       throw InvalidGenerationSource(
         '$path @AckField schema function ${function.name} produces '
         '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
@@ -1276,15 +1277,10 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
-  /// Whether a schema producing [runtime] can back a field of [fieldType].
+  /// Whether a schema producing [left] can back a field of type [right].
   ///
-  /// The types must match apart from nullability: presence handling adds the
-  /// field's own nullability, and collection schemas such as `Ack.map` type
-  /// their values as nullable.
-  bool _isFieldRuntimeType(DartType runtime, DartType fieldType) =>
-      _sameTypeIgnoringNullability(runtime, fieldType) &&
-      (!_isNullable(runtime) || _isNullable(fieldType));
-
+  /// The types must match apart from nullability: collection schemas such as
+  /// `Ack.map` type their values as nullable.
   bool _sameTypeIgnoringNullability(DartType left, DartType right) {
     final typeSystem = library.element.typeSystem;
     final a = typeSystem.promoteToNonNull(left);
@@ -1382,7 +1378,7 @@ final class ClassModelGraphBuilder {
       return null;
     }
     final runtime = _ackSchemaRuntimeType(returnType);
-    if (runtime == null || !_isFieldRuntimeType(runtime, fieldType)) {
+    if (runtime == null || !_sameTypeIgnoringNullability(runtime, fieldType)) {
       final generic = type.typeArguments.isEmpty
           ? ''
           : ' A generic type declares static AckSchema<..., '

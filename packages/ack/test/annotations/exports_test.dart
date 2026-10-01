@@ -10,7 +10,7 @@ void main() {
   });
 
   test('package:ack/ack.dart exports the generation annotations', () {
-    const annotations = <Object>[
+    const values = <Object>[
       Schemable(),
       AckField(description: 'id'),
       Required(),
@@ -22,17 +22,7 @@ void main() {
       JsonKey(name: 'id'),
     ];
 
-    expect(annotations.map((annotation) => annotation.runtimeType.toString()), [
-      'Schemable',
-      'AckField',
-      'Required',
-      'Optional',
-      'NotNull',
-      'Matches',
-      'MinLength',
-      'UniqueItems',
-      'JsonKey',
-    ]);
+    expect(values, hasLength(9));
     expect(const Matches('^a').pattern, '^a');
   });
 

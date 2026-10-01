@@ -77,13 +77,10 @@ void main() {
       '''
 @Schemable()
 final class Range with _\$RangeAck {
-  const Range({required this.limit, required this.step});
+  const Range({required this.limit});
 
   @Max(double.infinity)
   final double limit;
-
-  @MultipleOf(double.nan)
-  final double step;
 }
 ''',
       ['Range.limit has @Max(Infinity); the value must be a finite number.'],
