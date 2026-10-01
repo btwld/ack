@@ -1351,11 +1351,10 @@ final class ClassModelGraphBuilder {
     final path = '${field.enclosingElement.name}.${field.name}';
     final fieldType = library.element.typeSystem.promoteToNonNull(type);
     final display = fieldType.getDisplayString();
-    final name = _visibleTypeName(type, field);
     final String expression;
     final DartType returnType;
     if (getter != null && getter.isStatic) {
-      expression = '$name.schema';
+      expression = '${_visibleTypeName(type, field)}.schema';
       returnType = getter.returnType;
     } else if (method != null && method.isStatic) {
       if (method.formalParameters.isNotEmpty ||
@@ -1370,12 +1369,20 @@ final class ClassModelGraphBuilder {
         for (final argument in type.typeArguments)
           _renderType(_typeRef(argument, field)),
       ];
+      final name = _visibleTypeName(type, field);
       expression = arguments.isEmpty
           ? '$name.schema()'
           : '$name.schema<${arguments.join(', ')}>()';
       returnType = method.type.instantiate(type.typeArguments).returnType;
     } else {
       return null;
+    }
+    if (_containsInvalidType(returnType)) {
+      throw InvalidGenerationSource(
+        '$path resolves to ${target.name}.schema, whose type does not resolve '
+        'yet. Declare the type of ${target.name}.schema explicitly.',
+        element: field,
+      );
     }
     final runtime = _ackSchemaRuntimeType(returnType);
     if (runtime == null || !_sameTypeIgnoringNullability(runtime, fieldType)) {

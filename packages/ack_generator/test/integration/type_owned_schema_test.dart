@@ -451,4 +451,33 @@ enum Plain { one, two }
     );
   });
 
+  test('a static schema whose type does not resolve asks for a type', () async {
+    final errors = await _errors(
+      r'''
+@Schemable()
+final class Section with _$SectionAck {
+  const Section({required this.routine});
+
+  final Routine routine;
+}
+''',
+      types: '''
+final class Routine {
+  const Routine();
+
+  static final schema = RoutineSchema.schema;
+}
+''',
+    );
+
+    expect(
+      errors,
+      contains(
+        contains(
+          'Section.routine resolves to Routine.schema, whose type does not '
+          'resolve yet. Declare the type of Routine.schema explicitly.',
+        ),
+      ),
+    );
+  });
 }
