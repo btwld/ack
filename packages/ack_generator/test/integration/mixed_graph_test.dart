@@ -136,6 +136,73 @@ final class User with _\$UserAck {
     });
   }
 
+  test(
+    'class-first models explain an unsupported future-generated Map value',
+    () async {
+      final errors = <String>[];
+      await _build(
+        ackModelBuilder(BuilderOptions.empty),
+        '''
+$_parts
+@Schemable()
+final tagSchema = Ack.object({'label': Ack.string()});
+
+@Schemable()
+final class Board with _\$BoardAck {
+  const Board({required this.tags, required this.list});
+
+  final Map<String, Tag> tags;
+  final List<Tag> list;
+}
+''',
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE') errors.add(log.message);
+        },
+      );
+      expect(
+        errors,
+        contains(
+          contains(
+            'Board.tags uses Map<String, Tag>. A model generated from a '
+            '@Schemable schema in this build can be a field type directly or a '
+            'List or Set item, but not a Map value.',
+          ),
+        ),
+      );
+      expect(errors, everyElement(isNot(contains('InvalidType'))));
+    },
+  );
+
+  test('class-first models report an unresolvable field type', () async {
+    final errors = <String>[];
+    await _build(
+      ackModelBuilder(BuilderOptions.empty),
+      '''
+$_parts
+@Schemable()
+final class Board with _\$BoardAck {
+  const Board({required this.owner});
+
+  final Missing owner;
+}
+''',
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') errors.add(log.message);
+      },
+    );
+    expect(
+      errors,
+      contains(
+        contains(
+          'Board.owner uses Missing, which does not resolve. Check that it is '
+          'imported.',
+        ),
+      ),
+    );
+  });
+
   test('class-first models allow a direct nullable future-generated model', () {
     return _build(
       ackModelBuilder(BuilderOptions.empty),

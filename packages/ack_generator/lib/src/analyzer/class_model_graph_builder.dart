@@ -543,10 +543,7 @@ final class ClassModelGraphBuilder {
       if (name == null) continue;
       _rejectResolvedLegacyGeneratedType(field.type, field);
       if (!_containsInvalidType(field.type)) continue;
-      final futureType = await _futureGeneratedType(field);
-      if (futureType != null) {
-        futureTypes[name] = futureType;
-      }
+      futureTypes[name] = await _futureGeneratedType(field);
     }
 
     final parameters = <String, FormalParameterElement>{};
@@ -863,15 +860,38 @@ final class ClassModelGraphBuilder {
     return false;
   }
 
-  Future<_FutureGeneratedType?> _futureGeneratedType(FieldElement field) async {
+  Future<_FutureGeneratedType> _futureGeneratedType(FieldElement field) async {
     final resolved = await _resolvedLibraryFor(field.library);
     AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
     while (node != null && node is! FieldDeclaration) {
       node = node.parent;
     }
     final annotation = node is FieldDeclaration ? node.fields.type : null;
-    if (annotation == null) return null;
-    return _futureGeneratedTypeForAnnotation(annotation, field);
+    final futureType = annotation == null
+        ? null
+        : _futureGeneratedTypeForAnnotation(annotation, field);
+    if (futureType != null) return futureType;
+    final path = '${field.enclosingElement.name}.${field.name}';
+    final arguments = annotation is NamedType
+        ? annotation.typeArguments?.arguments ?? const <TypeAnnotation>[]
+        : const <TypeAnnotation>[];
+    if (annotation is NamedType &&
+        annotation.importPrefix == null &&
+        annotation.name.lexeme == 'Map' &&
+        arguments.length == 2 &&
+        _futureGeneratedTypeForAnnotation(arguments.last, field) != null) {
+      throw InvalidGenerationSource(
+        '$path uses ${annotation.toSource()}. A model generated from a '
+        '@Schemable schema in this build can be a field type directly or a '
+        'List or Set item, but not a Map value.',
+        element: field,
+      );
+    }
+    throw InvalidGenerationSource(
+      '$path uses ${annotation?.toSource() ?? 'a type'}, which does not '
+      'resolve. Check that it is imported.',
+      element: field,
+    );
   }
 
   _FutureGeneratedType? _futureGeneratedTypeForAnnotation(
