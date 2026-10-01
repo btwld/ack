@@ -404,9 +404,13 @@ extension type const WidgetId(String value) implements Object {
 }
 ```
 
+An enum that declares a static `schema` resolves to it as well, instead of
+the default `Ack.enumValues`, so it can map custom wire values.
+
 A static field cannot mention a class's type parameters, so a generic type
-declares a static generic method instead. The generator calls it with the
-field's type arguments:
+declares a static generic method instead. It takes one of two forms. With no
+parameters, the generator calls it with the field's type arguments, written as
+they are, including `void` and `Object?`:
 
 ```dart
 final class Command<A extends Object> {
@@ -421,7 +425,35 @@ final class Command<A extends Object> {
 }
 
 // final Command<CompletionAction> open;  ->  Command.schema<CompletionAction>()
+// final Command<void> close;             ->  Command.schema<void>()
 ```
+
+When the schema needs to validate the type argument itself, declare one
+positional `AckSchema` parameter per type parameter. The generator passes the
+schema it infers for each type argument: a facade for a `@Schemable` class, a
+built-in schema for a primitive, and the collection schema for a `List`:
+
+```dart
+final class Box<A extends Object> {
+  const Box(this.value);
+  final A value;
+
+  static AckSchema<Object, Box<A>> schema<A extends Object>(
+    AckSchema<Object, A> value,
+  ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
+}
+
+// final Box<Row> row;          ->  Box.schema<Row>(RowSchema.schema)
+// final Box<String> title;     ->  Box.schema<String>(Ack.string())
+// final Box<List<Row>> rows;   ->  Box.schema<List<Row>>(Ack.list(RowSchema.schema))
+```
+
+Generation checks the parameter count and that each parameter is a schema of
+its type argument. A type argument without an inferable schema fails with the
+usual unsupported-type message.
+
+A model's schema is built on first use of its facade, so a type-owned schema
+runs then, not when the library loads.
 
 The schema must produce the field's type; generation fails otherwise,
 for example when `Slot.schema` produces a `String` or when a generic type

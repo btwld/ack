@@ -171,6 +171,12 @@ final class Command<A extends Object> {
 // final Command<CompletionAction> open;  -> Command.schema<CompletionAction>()
 ```
 
+A generic `schema<A>()` may instead take one positional `AckSchema` parameter
+per type parameter; the generator then passes each type argument's inferred
+schema, as in `Box.schema<Row>(RowSchema.schema)`. Type arguments are written
+as they are, including `void` (`Command.schema<void>()`). An enum with a
+static `schema` resolves to it instead of `Ack.enumValues`.
+
 Extension types work the same way when they implement `Object`. The schema
 must produce the field type, or generation fails. A class-first model
 may expose its facade as `static final schema = AccountSchema.schema;`.

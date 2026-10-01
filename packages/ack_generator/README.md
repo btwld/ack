@@ -96,7 +96,11 @@ void main() {
 A field whose type declares a static `schema` resolves to it without an
 annotation, also as a `List` or `Set` item and as a `Map` value. A generic type
 declares `static AckSchema<B, T<A>> schema<A>()`, which is called with the
-field's type arguments, for example `Command.schema<CompletionAction>()`. The
+field's type arguments, for example `Command.schema<CompletionAction>()` or
+`Command.schema<void>()`. A `schema<A>()` that declares one positional
+`AckSchema` parameter per type parameter receives each type argument's
+inferred schema, as in `Box.schema<Row>(RowSchema.schema)`. An enum with a
+static `schema` resolves to it instead of `Ack.enumValues`. The
 schema must produce the field's type. A class may also expose its own facade
 with `static final schema = AccountSchema.schema;`.
 

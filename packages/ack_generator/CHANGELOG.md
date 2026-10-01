@@ -21,6 +21,11 @@
   the same members. A `@Schemable` class may expose its facade as
   `static final schema = XSchema.schema;`. The schema must produce the field's
   type.
+* A generic `schema<A>()` that declares one positional `AckSchema` parameter
+  per type parameter receives the schema inferred for each type argument
+  (`Box.schema<Row>(RowSchema.schema)`). Type arguments may be `void`
+  (`Command.schema<void>()`). An enum's static `schema` takes precedence over
+  `Ack.enumValues`.
 
 ### Fixed
 
