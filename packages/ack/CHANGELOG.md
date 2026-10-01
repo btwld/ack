@@ -5,7 +5,9 @@
 * The `ack_annotations` package is removed. Its annotations now ship in `ack`
   and are exported from `package:ack/ack.dart`. Remove `ack_annotations` from
   `pubspec.yaml` and replace `package:ack_annotations/ack_annotations.dart`
-  imports with `package:ack/ack.dart`.
+  imports with `package:ack/ack.dart`, and
+  `package:ack_annotations/format_annotations.dart` with
+  `package:ack/format_annotations.dart`.
 * `@Pattern` is renamed `@Matches`, matching `Ack.string().matches(...)`.
   `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only,
   so importing `package:ack/ack.dart` keeps `dart:core`'s `Pattern` visible.

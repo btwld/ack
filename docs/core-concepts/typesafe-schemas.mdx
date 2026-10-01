@@ -238,9 +238,7 @@ write `Profile.schema`:
 static final schema = ProfileSchema.schema;
 ```
 
-Generation checks that this static produces the class itself. Redirecting
-factory constructors (`const factory Profile(...) = _Profile;`) are not
-supported.
+Generation rejects a `schema` static whose type produces another class.
 
 Use `@Schemable(description: ...)` and `@AckField(description: ...)` to export
 schema descriptions. A single-line `@description` tag in a `///` or `/** */`
@@ -336,6 +334,9 @@ Constraint annotations follow the field type:
 
 - numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`;
 - strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`;
+- string formats: `@Url`, `@Uuid`, `@Date`; `@Uri()` and `@DateTime()` from
+  `package:ack/format_annotations.dart` imported with a prefix
+  (`@formats.Uri()`);
 - lists and sets: `@MinItems`, `@MaxItems`, `@UniqueItems`.
 
 `@Matches` is the annotation form of `Ack.string().matches(...)`. Numeric
@@ -408,7 +409,7 @@ final class Command<A extends Object> {
 // final Command<CompletionAction> open;  ->  Command.schema<CompletionAction>()
 ```
 
-The schema must produce exactly the field's type; generation fails otherwise,
+The schema must produce the field's type; generation fails otherwise,
 for example when `Slot.schema` produces a `String` or when a generic type
 offers a static field instead of a `schema<A>()` method. Schema-first objects
 can reference the same members, such as `'header': Slot.schema` or
@@ -626,12 +627,16 @@ Both entries must cover the same annotated libraries.
 
 - The `ack_annotations` package is gone. Remove it from `pubspec.yaml` and
   replace `package:ack_annotations/ack_annotations.dart` imports with
-  `package:ack/ack.dart`.
+  `package:ack/ack.dart`, and `package:ack_annotations/format_annotations.dart`
+  with `package:ack/format_annotations.dart`.
 - Rename `@Pattern(...)` to `@Matches(...)`. The old name remains a deprecated
   alias in `package:ack/annotations.dart` only, so `package:ack/ack.dart` keeps
   `dart:core`'s `Pattern` visible.
 - Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`; the options keep
-  their names. The old spellings still generate the same code until 2.0.0.
+  their names. The old spellings still generate the same code until 2.0.0,
+  as long as `Schemable` is in scope: generated models carry
+  `@Schemable.generatedJson`, so an import with `show AckInfer` must also show
+  `Schemable`.
 - `@Required()` is exported from `package:ack/ack.dart`. A library that also
   imports `package:meta/meta.dart` and uses `@Required()` must hide one of
   them; `meta`'s `Required` class only backs its deprecated `@required`

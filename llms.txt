@@ -164,10 +164,9 @@ final class Command<A extends Object> {
 ```
 
 Extension types work the same way when they implement `Object`. The schema
-must produce exactly the field type, or generation fails. A class-first model
+must produce the field type, or generation fails. A class-first model
 may expose its facade as `static final schema = AccountSchema.schema;`.
 Schema-first objects may reference the same members (`'header': Slot.schema`).
-Redirecting factory constructors are not supported.
 
 For a single wire-name override, put `@JsonKey(name: 'wire_name')` on the
 field. Other `JsonKey` options and constructor-parameter placement are rejected
@@ -264,12 +263,6 @@ validates through the union's effective branch.
 - Replace legacy Map access and `.args` with typed fields and
   `.additionalProperties`; use `fromJson` / `toJson` at the JSON boundary.
 
-## Migration from 1.7.0-beta.2
-
-- Remove `ack_annotations`; import `package:ack/ack.dart` instead.
-- Rename `@Pattern(...)` to `@Matches(...)`.
-- Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`.
-- Regenerate the `.ack.dart` parts.
 - Replace one-way transforms used by generated models with bidirectional codecs.
 - Replace public class-first `accountSchema` calls with `AccountSchema`; use
   `AccountSchema.schema` when composing another schema and
@@ -278,6 +271,17 @@ validates through the union's effective branch.
 - Replace the temporary class-first `additionalProperties` option with
   `unknownProperties: AckUnknownPropertyPolicy.<policy>`.
 - Regenerate all checked-in outputs with `dart run build_runner build`.
+
+## Migration from 1.7.0-beta.2
+
+- Remove `ack_annotations`; import `package:ack/ack.dart` instead, and replace
+  `package:ack_annotations/format_annotations.dart` with
+  `package:ack/format_annotations.dart`.
+- Rename `@Pattern(...)` to `@Matches(...)`.
+- Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`. A library that
+  keeps `@AckInfer()` must still have `Schemable` in scope, because generated
+  models carry `@Schemable.generatedJson`.
+- Regenerate the `.ack.dart` parts.
 
 ## Runtime API reminders
 

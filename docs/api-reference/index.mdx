@@ -395,6 +395,9 @@ so a wrongly typed argument is a compile-time error.
 
 - numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`
 - strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`
+- string formats: `@Url`, `@Uuid`, `@Date`; `@Uri()` and `@DateTime()` from
+  `package:ack/format_annotations.dart` imported with a prefix
+  (`@formats.Uri()`)
 - collections: `@MinItems`, `@MaxItems`, `@UniqueItems`
 
 `@Matches` replaces `@Pattern`, which remains a deprecated alias in
@@ -446,7 +449,7 @@ build.
 
 A class-first `@Schemable()` cannot share a class with `@JsonSerializable()`,
 and `name` is rejected on a class. Class-first value roots, automatic recursive
-graphs, redirecting factory constructors, and undiscriminated `anyOf` shapes
+graphs, and undiscriminated `anyOf` shapes
 are unsupported; use a schema-first `@Schemable()` schema and named `Ack.lazy` for those
 cases. See
 [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for the complete

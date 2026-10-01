@@ -213,8 +213,10 @@ and a generic `Command<Action>` to `Command.schema<Action>()`. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 Upgrading from 1.7.0-beta.2: drop `ack_annotations` and import
-`package:ack/ack.dart`, rename `@Pattern` to `@Matches`, and replace the
-deprecated `@AckInfer()` / `@AckModel()` with `@Schemable()`.
+`package:ack/ack.dart` (and `package:ack/format_annotations.dart` in place of
+`package:ack_annotations/format_annotations.dart`), rename `@Pattern` to
+`@Matches`, and replace the deprecated `@AckInfer()` / `@AckModel()` with
+`@Schemable()`.
 
 ## Codecs
 

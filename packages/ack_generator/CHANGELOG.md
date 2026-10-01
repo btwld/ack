@@ -6,8 +6,6 @@
   removed. Import `package:ack/ack.dart` in annotated libraries.
 * Generated schema-first models carry `@Schemable.generatedJson` instead of
   `@AckInfer.jsonSerializable`. Regenerate after upgrading.
-* `@Pattern` is recognised under its new name `@Matches`; the deprecated
-  `@Pattern` alias still generates `.matches(...)`.
 
 ### Added
 
@@ -37,9 +35,6 @@
 * An unresolved class-first field type is reported by its written name, with
   a specific message for a model generated in the same build used as a `Map`
   value.
-* A `@Schemable` union branch's own options apply in the JSON phase.
-* A redirecting factory model is rejected with a message that names the
-  supported form.
 
 ## 1.7.0-beta.2
 

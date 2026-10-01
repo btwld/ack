@@ -141,8 +141,7 @@ Generation rejects shapes without a useful static, encodable model contract:
 - invalid names, generated-member collisions, and cross-library union branches;
 - types the annotated library cannot name, because a generated part cannot add
   imports;
-- `@Schemable` options set for the other target, and redirecting factory
-  constructors on a class.
+- `@Schemable` options set for the other target.
 
 Named model references work through direct imports, prefixes, and re-exports.
 Nested conversion uses each model's public `$ack` adapter so codec runtime
