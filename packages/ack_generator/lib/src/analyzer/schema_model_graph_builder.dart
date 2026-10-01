@@ -814,6 +814,19 @@ final class SchemaModelGraphBuilder {
     if (reference != null) {
       final classFirst = _classFirstModelReference(reference, context);
       if (classFirst != null) return classFirst;
+      final member = _memberElement(reference);
+      if (_isTypeOwnedSchema(member)) {
+        final owner = member!.enclosingElement! as InterfaceElement;
+        // A class-first model's own schema may point at a facade generated
+        // in this build, so its type is the model rather than the static's.
+        if (owner is ClassElement && _classFirstFacadeName(owner) != null) {
+          return AckExternalTypeRef(
+            name: owner.name!,
+            importPrefix: _visiblePrefix(owner, path, context),
+          );
+        }
+        return _schemaTypes(reference, path, context).runtime;
+      }
       final model = await _modelReference(
         reference,
         path: path,
@@ -1353,7 +1366,8 @@ final class SchemaModelGraphBuilder {
       defaulted |= name == 'withDefault';
       transform |= _oneWayTransformMethods.contains(name);
       codec |= name == 'codec';
-      if (current.methodName.element is TopLevelFunctionElement) {
+      if (current.methodName.element is TopLevelFunctionElement ||
+          _isTypeOwnedSchema(current.methodName.element)) {
         reference = current;
         break;
       }
@@ -1411,6 +1425,21 @@ final class SchemaModelGraphBuilder {
     }
     return null;
   }
+
+  /// Whether [element] is a static `schema` member that a type declares.
+  bool _isTypeOwnedSchema(Element? element) =>
+      (element is GetterElement || element is MethodElement) &&
+      element is ExecutableElement &&
+      element.isStatic &&
+      element.name == 'schema' &&
+      element.enclosingElement is InterfaceElement;
+
+  Element? _memberElement(Expression expression) => switch (expression) {
+    PrefixedIdentifier() => expression.identifier.element,
+    PropertyAccess() => expression.propertyName.element,
+    MethodInvocation() => expression.methodName.element,
+    _ => null,
+  };
 
   Element _propertyDeclaration(Element element) {
     if (element is GetterElement && element.isOriginVariable) {

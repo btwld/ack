@@ -33,7 +33,7 @@ For code generation changes, also run:
 dart run melos run test:gen
 ```
 
-The generator suite is memory-heavy: eight tests tagged `integration` run
+The generator suite is memory-heavy: nine tests tagged `integration` run
 real `build_runner` builds in temporary packages. For a quick check while
 iterating, skip them:
 

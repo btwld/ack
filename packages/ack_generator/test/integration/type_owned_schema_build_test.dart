@@ -1,0 +1,214 @@
+@Tags(['integration'])
+library;
+
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
+Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
+    Process.run('dart', arguments, workingDirectory: directory.path);
+
+void _expectSuccess(ProcessResult result, String command) {
+  expect(
+    result.exitCode,
+    0,
+    reason:
+        '$command failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}',
+  );
+}
+
+void main() {
+  test(
+    'type-owned schemas build, analyze, and round-trip',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
+      }
+      final temporary = await Directory.systemTemp.createTemp(
+        'ack_type_owned_',
+      );
+      try {
+        Directory(p.join(temporary.path, 'lib')).createSync();
+        Directory(p.join(temporary.path, 'test')).createSync();
+        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+name: ack_type_owned
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+dev_dependencies:
+  ack_generator:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
+  build_runner: ^2.15.0
+  test: ^1.29.0
+dependency_overrides:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+''');
+        File(p.join(temporary.path, 'lib', 'types.dart')).writeAsStringSync(r'''
+import 'package:ack/ack.dart';
+
+final class Slot {
+  const Slot(this.id);
+
+  final String id;
+
+  static final schema = Ack.string().codec<Slot>(
+    decode: Slot.new,
+    encode: (slot) => slot.id,
+  );
+
+  @override
+  bool operator ==(Object other) => other is Slot && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
+extension type const WidgetId(String value) implements Object {
+  static final schema = Ack.string().codec<WidgetId>(
+    decode: WidgetId.new,
+    encode: (id) => id.value,
+  );
+}
+
+enum CompletionAction { complete, skip }
+
+final class Command<A extends Object> {
+  const Command(this.name);
+
+  final String name;
+
+  static AckSchema<String, Command<A>> schema<A extends Object>() =>
+      Ack.string().codec<Command<A>>(
+        decode: Command<A>.new,
+        encode: (command) => command.name,
+      );
+}
+''');
+        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+
+import 'types.dart';
+
+part 'models.ack.dart';
+part 'models.ack.g.dart';
+
+@Schemable()
+final class Habit with _$HabitAck {
+  const Habit({required this.name});
+
+  final String name;
+
+  static final schema = HabitSchema.schema;
+}
+
+@Schemable()
+final class Section with _$SectionAck {
+  const Section({
+    required this.header,
+    this.footer,
+    required this.children,
+    required this.widgets,
+    required this.byName,
+    required this.open,
+    required this.habits,
+  });
+
+  final Slot header;
+  final Slot? footer;
+  final List<Slot> children;
+  final Set<WidgetId> widgets;
+  final Map<String, Slot> byName;
+  final Command<CompletionAction> open;
+  final List<Habit> habits;
+}
+
+@Schemable()
+final panelSchema = Ack.object({
+  'header': Slot.schema,
+  'commands': Ack.list(Command.schema<CompletionAction>()),
+  'habit': Habit.schema.optional(),
+});
+''',
+        );
+        File(
+          p.join(temporary.path, 'test', 'type_owned_test.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack_type_owned/models.dart';
+import 'package:ack_type_owned/types.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('class-first fields decode through their types', () {
+    final json = {
+      'header': 'top',
+      'children': ['a', 'b'],
+      'widgets': ['w1'],
+      'byName': {'x': 'slot-x'},
+      'open': 'open-menu',
+      'habits': [
+        {'name': 'read'},
+      ],
+    };
+
+    final section = SectionSchema.parse(json);
+
+    expect(section.header, const Slot('top'));
+    expect(section.footer, isNull);
+    expect(section.children, const [Slot('a'), Slot('b')]);
+    expect(section.widgets, {const WidgetId('w1')});
+    expect(section.byName['x'], const Slot('slot-x'));
+    expect(section.open, isA<Command<CompletionAction>>());
+    expect(section.open.name, 'open-menu');
+    expect(section.habits.single.name, 'read');
+    expect(section.toJson(), json);
+  });
+
+  test('a model exposes its facade as a static schema', () {
+    expect(Habit.schema.parse({'name': 'walk'}), const Habit(name: 'walk'));
+  });
+
+  test('schema-first models type fields from type-owned schemas', () {
+    final panel = Panel.parse({
+      'header': 'h',
+      'commands': ['go'],
+      'habit': {'name': 'run'},
+    });
+
+    expect(panel.header, const Slot('h'));
+    expect(panel.commands.single, isA<Command<CompletionAction>>());
+    expect(panel.habit, const Habit(name: 'run'));
+  });
+}
+''');
+
+        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'build_runner build',
+        );
+        final generated = File(
+          p.join(temporary.path, 'lib', 'models.ack.dart'),
+        ).readAsStringSync();
+        expect(generated, contains('Command.schema<CompletionAction>()'));
+        expect(generated, contains('Ack.map(Slot.schema)'));
+        _expectSuccess(
+          await _run(temporary, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        _expectSuccess(await _run(temporary, ['test']), 'dart test');
+      } finally {
+        temporary.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+}

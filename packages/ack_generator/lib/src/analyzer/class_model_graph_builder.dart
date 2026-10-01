@@ -328,6 +328,7 @@ final class ClassModelGraphBuilder {
       );
     }
     _rejectRedirectingFactory(element);
+    _validateStaticSchema(element);
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
@@ -359,6 +360,29 @@ final class ClassModelGraphBuilder {
         element: element,
       );
     }
+  }
+
+  /// A model may expose its facade as `static final schema = XSchema.schema;`.
+  ///
+  /// The facade is generated in this build, so the type is checked only once
+  /// it resolves.
+  void _validateStaticSchema(ClassElement element) {
+    final getter = element.getGetter('schema');
+    if (getter == null ||
+        !getter.isStatic ||
+        _containsInvalidType(getter.returnType)) {
+      return;
+    }
+    final runtime = _ackSchemaRuntimeType(getter.returnType);
+    if (runtime != null && _isFieldRuntimeType(runtime, element.thisType)) {
+      return;
+    }
+    throw InvalidGenerationSource(
+      '${element.name}.schema must be an AckSchema<Map<String, Object?>, '
+      '${element.name}>; it produces '
+      '${runtime?.getDisplayString() ?? 'an untyped value'}.',
+      element: getter,
+    );
   }
 
   void _rejectRedirectingFactory(ClassElement element) {
@@ -1298,7 +1322,63 @@ final class ClassModelGraphBuilder {
     if (_generatedJsonChecker.hasAnnotationOfExact(target)) {
       return '${_visibleTypeName(interfaceType, field)}.\$ack.schema';
     }
-    return null;
+    return _typeOwnedSchema(interfaceType, field);
+  }
+
+  /// Resolves [type] through a static `schema` that the type declares.
+  ///
+  /// A non-generic type declares a static field or getter. A generic type
+  /// declares a static method with one type parameter per type argument,
+  /// which is called with the field's type arguments.
+  String? _typeOwnedSchema(InterfaceType type, FieldElement field) {
+    final target = type.element;
+    final getter = target.getGetter('schema');
+    final method = target.getMethod('schema');
+    final path = '${field.enclosingElement.name}.${field.name}';
+    final fieldType = library.element.typeSystem.promoteToNonNull(type);
+    final display = fieldType.getDisplayString();
+    final name = _visibleTypeName(type, field);
+    final String expression;
+    final DartType returnType;
+    if (getter != null && getter.isStatic) {
+      expression = '$name.schema';
+      returnType = getter.returnType;
+    } else if (method != null && method.isStatic) {
+      if (method.formalParameters.isNotEmpty ||
+          method.typeParameters.length != type.typeArguments.length) {
+        throw InvalidGenerationSource(
+          '$path resolves to ${target.name}.schema, which must take no '
+          'parameters and one type parameter per type argument of $display.',
+          element: field,
+        );
+      }
+      final arguments = [
+        for (final argument in type.typeArguments)
+          _renderType(_typeRef(argument, field)),
+      ];
+      expression = arguments.isEmpty
+          ? '$name.schema()'
+          : '$name.schema<${arguments.join(', ')}>()';
+      returnType = method.type.instantiate(type.typeArguments).returnType;
+    } else {
+      return null;
+    }
+    final runtime = _ackSchemaRuntimeType(returnType);
+    if (runtime == null || !_isFieldRuntimeType(runtime, fieldType)) {
+      final generic = type.typeArguments.isEmpty
+          ? ''
+          : ' A generic type declares static AckSchema<..., '
+                '${target.name}<${target.typeParameters.map((p) => p.name).join(', ')}>> '
+                'schema<${target.typeParameters.map((p) => p.name).join(', ')}>() '
+                'instead.';
+      throw InvalidGenerationSource(
+        '$path resolves to ${target.name}.schema, which produces '
+        '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
+        'type is $display.$generic',
+        element: field,
+      );
+    }
+    return expression;
   }
 
   void _rejectNullableCollectionElement(FieldElement field, DartType itemType) {
@@ -1385,13 +1465,20 @@ final class ClassModelGraphBuilder {
   }
 
   Never _unsupportedFieldType(FieldElement field, DartType type) {
+    final path = '${field.enclosingElement.name}.${field.name}';
+    final display = type.getDisplayString();
+    if (type is InterfaceType) {
+      throw InvalidGenerationSource(
+        '$path uses unsupported $display. Declare a static schema on '
+        '${type.element.name}, or set @AckField(schema: ...) on the field.',
+        element: field,
+      );
+    }
     final jsonHint = type is DynamicType
         ? ', or Object? for an open JSON value'
         : '';
     throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} uses unsupported '
-      '${type.getDisplayString()}; use a concrete type with a static '
-      'class-first schema contract$jsonHint.',
+      '$path uses unsupported $display; use a concrete type$jsonHint.',
       element: field,
     );
   }
