@@ -1278,15 +1278,33 @@ final class ClassModelGraphBuilder {
 
   /// Whether a schema producing [runtime] can back a field of [fieldType].
   ///
-  /// The types must match exactly apart from the field's nullability, which
-  /// presence handling adds.
-  bool _isFieldRuntimeType(DartType runtime, DartType fieldType) {
+  /// The types must match apart from nullability: presence handling adds the
+  /// field's own nullability, and collection schemas such as `Ack.map` type
+  /// their values as nullable.
+  bool _isFieldRuntimeType(DartType runtime, DartType fieldType) =>
+      _sameTypeIgnoringNullability(runtime, fieldType) &&
+      (!_isNullable(runtime) || _isNullable(fieldType));
+
+  bool _sameTypeIgnoringNullability(DartType left, DartType right) {
     final typeSystem = library.element.typeSystem;
-    final produced = typeSystem.promoteToNonNull(runtime);
-    final expected = typeSystem.promoteToNonNull(fieldType);
-    return typeSystem.isSubtypeOf(produced, expected) &&
-        typeSystem.isSubtypeOf(expected, produced) &&
-        (!_isNullable(runtime) || _isNullable(fieldType));
+    final a = typeSystem.promoteToNonNull(left);
+    final b = typeSystem.promoteToNonNull(right);
+    if (a is InterfaceType && b is InterfaceType) {
+      if (a.element.baseElement != b.element.baseElement ||
+          a.typeArguments.length != b.typeArguments.length) {
+        return false;
+      }
+      for (var i = 0; i < a.typeArguments.length; i++) {
+        if (!_sameTypeIgnoringNullability(
+          a.typeArguments[i],
+          b.typeArguments[i],
+        )) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return typeSystem.isSubtypeOf(a, b) && typeSystem.isSubtypeOf(b, a);
   }
 
   Future<String> _schemaForType(DartType type, FieldElement field) =>

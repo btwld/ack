@@ -40,6 +40,34 @@ import 'package:ack/annotations.dart';
 ''';
 
 void main() {
+  test('an Ack.map schema function backs a Map field', () async {
+    await _build(
+      {
+        'scores.dart':
+            '''
+$_imports
+part 'scores.ack.dart';
+part 'scores.ack.g.dart';
+
+MapSchema<int, int> scoresSchema() => Ack.map(Ack.integer().min(0));
+
+@Schemable()
+final class Board with _\$BoardAck {
+  const Board({required this.scores});
+
+  @AckField(schema: scoresSchema)
+  final Map<String, int> scores;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/scores.ack.dart': decodedMatches(
+          _containsCode("Ack.object({'scores': scoresSchema()})"),
+        ),
+      },
+    );
+  });
+
   test(
     'collection constraints on a nested Set land on the outer set',
     () async {
