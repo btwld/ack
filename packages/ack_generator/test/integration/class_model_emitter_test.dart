@@ -40,6 +40,43 @@ import 'package:ack/annotations.dart';
 ''';
 
 void main() {
+  test(
+    'collection constraints on a nested Set land on the outer set',
+    () async {
+      await _build(
+        {
+          'grid.dart':
+              '''
+$_imports
+part 'grid.ack.dart';
+part 'grid.ack.g.dart';
+
+@Schemable()
+final class Grid with _\$GridAck {
+  const Grid({required this.cells});
+
+  @MinItems(2)
+  final Set<Set<int>> cells;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/grid.ack.dart': decodedMatches(
+            allOf(
+              _containsCode(
+                'Ack.list(Ack.list(Ack.integer()).codec<Set<int>>('
+                'decode: (list) => list.toSet(), '
+                'encode: (set) => set.toList(growable: false),'
+                ')).minItems(2).unique().codec<Set<Set<int>>>(',
+              ),
+              isNot(_containsCode('Ack.list(Ack.integer()).minItems(2)')),
+            ),
+          ),
+        },
+      );
+    },
+  );
+
   test('a field description tag describes the inferred schema', () async {
     await _build(
       {

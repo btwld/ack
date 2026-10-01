@@ -1,5 +1,7 @@
 import 'package:ack/annotations.dart' as annotations;
 import 'package:ack/format_annotations.dart' as formats;
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
@@ -252,13 +254,28 @@ final class AckSchemaInference {
         // boundary with the same cardinality before the codec runs.
         setConstraints.add('.unique()');
       }
-      final codec = output.lastIndexOf('.codec<');
-      output = codec < 0
-          ? '$output${setConstraints.join()}'
-          : '${output.substring(0, codec)}${setConstraints.join()}'
-                '${output.substring(codec)}';
+      output = _beforeOuterCodec(output, setConstraints.join());
     }
     return output;
+  }
+
+  /// Inserts [modifiers] before the codec that ends [schema], or appends them
+  /// when [schema] is the list schema that the set codec will wrap.
+  String _beforeOuterCodec(String schema, String modifiers) {
+    const prefix = 'final schema = ';
+    final unit = parseString(
+      content: '$prefix$schema;',
+      throwIfDiagnostics: false,
+    ).unit;
+    final declaration = unit.declarations.single as TopLevelVariableDeclaration;
+    final expression = declaration.variables.variables.single.initializer;
+    if (expression is MethodInvocation &&
+        expression.methodName.name == 'codec' &&
+        expression.target != null) {
+      final end = expression.target!.end - prefix.length;
+      return '${schema.substring(0, end)}$modifiers${schema.substring(end)}';
+    }
+    return '$schema$modifiers';
   }
 
   /// Adds an explicit Ack description or a tagged documentation description.
