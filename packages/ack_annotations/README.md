@@ -1,16 +1,17 @@
 # ack_annotations
 
-`ack_annotations` provides the unified `@Schemable()` annotation used by
-`ack_generator` for schema-first and class-first declarations. `@AckInfer()`
-and `@AckModel()` remain supported compatibility spellings. Deprecated
-`@AckType()` is retained for Ack 1.1 extension-type compatibility.
+`ack_annotations` is a compatibility package. Ack now owns the annotations
+used by `ack_generator`, including `@Schemable()`, `@AckInfer()`,
+`@AckModel()`, and deprecated `@AckType()`.
+
+New code should depend on `ack` and import `package:ack/annotations.dart`.
+This package re-exports the same declarations for existing applications.
 
 ## Installation
 
 ```yaml
 dependencies:
   ack: ^1.7.0-beta.2
-  ack_annotations: ^1.7.0-beta.2
 
 dev_dependencies:
   ack_generator: ^1.7.0-beta.2
@@ -23,7 +24,7 @@ Annotate a top-level Ack schema variable or getter and run `build_runner`:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
@@ -72,7 +73,7 @@ Untagged prose does not become schema data. Explicit annotation text takes
 precedence over the tag. A field description applies to its property without
 changing a nested model's description. Format
 annotations such as `@Url()`, `@Uuid()`, and `@Date()` constrain string
-fields. Import `package:ack_annotations/format_annotations.dart` with a
+fields. Import `package:ack/format_annotations.dart` with a
 prefix for `@formats.Uri()` and `@formats.DateTime()`. The prefix preserves
 the Dart core `Uri` and `DateTime` type names.
 

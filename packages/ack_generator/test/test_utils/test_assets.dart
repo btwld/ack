@@ -28,9 +28,14 @@ const ackAnnotationsAsset = {
   'ack_annotations|lib/ack_annotations.dart': '''
 library ack_annotations;
 
-export 'src/ack_type.dart';
+export 'package:ack/annotations.dart';
 ''',
-  'ack_annotations|lib/src/ack_type.dart': '''
+};
+
+const ackPackageAnnotationsAsset = {
+  'ack|lib/annotations.dart': '''
+library ack;
+
 import 'package:meta/meta_meta.dart';
 
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
@@ -45,6 +50,7 @@ const ackPackageAsset = {
   'ack|lib/ack.dart': '''
 library ack;
 
+export 'annotations.dart';
 export 'src/ack.dart';
 export 'src/schemas/schema_model.dart';
 export 'src/schemas/object_schema.dart';
@@ -352,5 +358,6 @@ class SchemaFailure<T> extends SchemaResult<T> {
 Map<String, String> get allAssets => {
   ...metaAssets,
   ...ackAnnotationsAsset,
+  ...ackPackageAnnotationsAsset,
   ...ackPackageAsset,
 };

@@ -10,7 +10,7 @@ generator unchanged.
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'user_schema.ack.dart';
 part 'user_schema.ack.g.dart';
@@ -65,7 +65,7 @@ mixin:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'account.ack.dart';
 part 'account.ack.g.dart';

@@ -26,10 +26,10 @@ dependencies:
 ## Optional code generator
 
 To generate models from Ack schemas or Ack schemas from hand-written models,
-add the annotation and generator packages alongside `ack`:
+add `ack` and the generator package:
 
 ```bash
-dart pub add ack ack_annotations
+dart pub add ack
 dart pub add --dev ack_generator build_runner
 ```
 
@@ -38,7 +38,6 @@ Or add them to your `pubspec.yaml`:
 ```yaml
 dependencies:
   ack: ^1.6.2 # Replace with latest version
-  ack_annotations: ^1.6.2 # Replace with latest version
 
 dev_dependencies:
   ack_generator: ^1.6.2 # Replace with latest version
@@ -53,7 +52,7 @@ schema type.
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
@@ -89,4 +88,7 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 ## Requirements
 
 - Dart SDK: `>=3.9.0 <4.0.0` for core `ack`
-- Dart SDK: `>=3.9.0 <4.0.0` when using `ack_annotations` / `ack_generator`
+- Dart SDK: `>=3.9.0 <4.0.0` when using `ack` / `ack_generator`
+
+Existing applications may keep `ack_annotations`; it re-exports the annotation
+API for compatibility.

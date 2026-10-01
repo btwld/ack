@@ -1,5 +1,5 @@
 name: ack_annotations
-description: Annotations for Ack schema-first models and class-first schema generation
+description: Compatibility re-exports for Ack schema-generation annotations
 version: 1.7.0-beta.2
 repository: https://github.com/btwld/ack
 resolution: workspace
@@ -13,8 +13,7 @@ environment:
   sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
-  json_annotation: ^4.12.0
-  meta: ^1.15.0
+  ack: ^1.7.0-beta.2
 
 dev_dependencies:
   # Every sibling package declares lints, so the shared analysis_options.yaml

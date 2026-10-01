@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Read annotations from `package:ack` while preserving compatibility imports
+  through `ack_annotations`.
 * Support `@Schemable()` for schema-first and class-first generation while
   preserving `@AckInfer()` and `@AckModel()` compatibility.
 

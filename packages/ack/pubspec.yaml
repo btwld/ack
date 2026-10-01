@@ -16,6 +16,7 @@ topics:
 environment:
   sdk: '>=3.9.0 <4.0.0'
 dependencies:
+  json_annotation: ^4.12.0
   meta: ^1.15.0
   collection: ^1.18.0
 

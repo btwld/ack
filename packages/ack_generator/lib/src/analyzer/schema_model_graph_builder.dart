@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart'
     show AckSchema, AnyOfSchema, AnySchema, InstanceSchema, MapSchema;
-import 'package:ack_annotations/ack_annotations.dart'
-    hide AckUnknownPropertyPolicy;
+import 'package:ack/annotations.dart' hide AckUnknownPropertyPolicy;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -149,24 +148,24 @@ final class SchemaModelGraphBuilder {
 
   static const _ackInferChecker = TypeChecker.typeNamed(
     AckInfer,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _schemableChecker = TypeChecker.typeNamed(
     Schemable,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _legacyAckTypeChecker = TypeChecker.typeNamed(
     // ignore: deprecated_member_use
     AckType,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
     AckModel,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _schemableModelChecker = TypeChecker.typeNamed(
     Schemable,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
     AckSchema,

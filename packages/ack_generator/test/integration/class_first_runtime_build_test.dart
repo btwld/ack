@@ -147,7 +147,7 @@ targets:
         File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'coexist.g.dart';
 part 'coexist.ack.dart';

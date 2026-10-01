@@ -1,5 +1,5 @@
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
-import 'package:ack_annotations/format_annotations.dart' as formats;
+import 'package:ack/annotations.dart' as annotations;
+import 'package:ack/format_annotations.dart' as formats;
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
@@ -18,81 +18,69 @@ final class AckSchemaInference {
 
   final String? ackPrefix;
 
-  static const _min = TypeChecker.typeNamed(
-    annotations.Min,
-    inPackage: 'ack_annotations',
-  );
-  static const _max = TypeChecker.typeNamed(
-    annotations.Max,
-    inPackage: 'ack_annotations',
-  );
+  static const _min = TypeChecker.typeNamed(annotations.Min, inPackage: 'ack');
+  static const _max = TypeChecker.typeNamed(annotations.Max, inPackage: 'ack');
   static const _multipleOf = TypeChecker.typeNamed(
     annotations.MultipleOf,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _positive = TypeChecker.typeNamed(
     annotations.Positive,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _negative = TypeChecker.typeNamed(
     annotations.Negative,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _minLength = TypeChecker.typeNamed(
     annotations.MinLength,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _maxLength = TypeChecker.typeNamed(
     annotations.MaxLength,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _pattern = TypeChecker.typeNamed(
     annotations.Pattern,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _email = TypeChecker.typeNamed(
     annotations.Email,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
-  static const _url = TypeChecker.typeNamed(
-    annotations.Url,
-    inPackage: 'ack_annotations',
-  );
-  static const _uri = TypeChecker.typeNamed(
-    formats.Uri,
-    inPackage: 'ack_annotations',
-  );
+  static const _url = TypeChecker.typeNamed(annotations.Url, inPackage: 'ack');
+  static const _uri = TypeChecker.typeNamed(formats.Uri, inPackage: 'ack');
   static const _uuid = TypeChecker.typeNamed(
     annotations.Uuid,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _date = TypeChecker.typeNamed(
     annotations.Date,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _dateTime = TypeChecker.typeNamed(
     formats.DateTime,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _notEmpty = TypeChecker.typeNamed(
     annotations.NotEmpty,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _minItems = TypeChecker.typeNamed(
     annotations.MinItems,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _maxItems = TypeChecker.typeNamed(
     annotations.MaxItems,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _uniqueItems = TypeChecker.typeNamed(
     annotations.UniqueItems,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackField = TypeChecker.typeNamed(
     annotations.AckField,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
 
   /// Infers a schema expression for [type].

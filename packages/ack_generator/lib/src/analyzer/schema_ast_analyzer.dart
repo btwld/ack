@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart' show Keyword;
@@ -77,11 +77,11 @@ class SchemaAstAnalyzer {
   static const _ackTypeChecker = TypeChecker.typeNamed(
     // ignore: deprecated_member_use
     AckType,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
     AckModel,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
 
   final Map<String, String> _schemaVariableTypeCache = {};
@@ -2829,7 +2829,7 @@ class SchemaAstAnalyzer {
   bool _hasAckInferAnnotation(Element element) {
     return TypeChecker.typeNamed(
       AckInfer,
-      inPackage: 'ack_annotations',
+      inPackage: 'ack',
     ).hasAnnotationOfExact(element);
   }
 

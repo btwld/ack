@@ -3,7 +3,7 @@
 library;
 
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'additional_properties_example.ack.dart';
 part 'additional_properties_example.ack.g.dart';
