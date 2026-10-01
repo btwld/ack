@@ -1166,12 +1166,31 @@ final class ClassModelGraphBuilder {
         element: field,
       );
     }
+    final path = '${field.enclosingElement.name}.${field.name}';
+    if (function.typeParameters.isNotEmpty) {
+      throw InvalidGenerationSource(
+        '$path @AckField schema function ${function.name} is generic, and the '
+        'generated call cannot keep its type arguments. Use a non-generic '
+        'function, or declare a static schema method on the field type.',
+        element: field,
+      );
+    }
     if (function.formalParameters.isNotEmpty ||
         !_ackSchemaChecker.isAssignableFromType(function.returnType)) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField top-level '
-        'function must have type AckSchema Function().',
+        '$path @AckField top-level function must have type AckSchema '
+        'Function().',
         element: field,
+      );
+    }
+    final runtime = _ackSchemaRuntimeType(function.returnType);
+    if (runtime == null || !_isFieldRuntimeType(runtime, field.type)) {
+      throw InvalidGenerationSource(
+        '$path @AckField schema function ${function.name} produces '
+        '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
+        'type is ${field.type.getDisplayString()}.',
+        element: field,
+        todo: 'Return AckSchema<..., ${field.type.getDisplayString()}>.',
       );
     }
     final resolved = await _resolvedLibraryFor(function.library);
@@ -1199,6 +1218,31 @@ final class ClassModelGraphBuilder {
     }
     final prefix = _visiblePrefix(function, field);
     return '${prefix == null ? '' : '$prefix.'}${function.name}()';
+  }
+
+  /// The runtime type argument of [type] as an `AckSchema<Boundary, Runtime>`.
+  DartType? _ackSchemaRuntimeType(DartType type) {
+    if (type is! InterfaceType) return null;
+    for (final candidate in [type, ...type.allSupertypes]) {
+      if (_ackSchemaChecker.isExactlyType(candidate) &&
+          candidate.typeArguments.length == 2) {
+        return candidate.typeArguments[1];
+      }
+    }
+    return null;
+  }
+
+  /// Whether a schema producing [runtime] can back a field of [fieldType].
+  ///
+  /// The types must match exactly apart from the field's nullability, which
+  /// presence handling adds.
+  bool _isFieldRuntimeType(DartType runtime, DartType fieldType) {
+    final typeSystem = library.element.typeSystem;
+    final produced = typeSystem.promoteToNonNull(runtime);
+    final expected = typeSystem.promoteToNonNull(fieldType);
+    return typeSystem.isSubtypeOf(produced, expected) &&
+        typeSystem.isSubtypeOf(expected, produced) &&
+        (!_isNullable(runtime) || _isNullable(fieldType));
   }
 
   Future<String> _schemaForType(DartType type, FieldElement field) =>

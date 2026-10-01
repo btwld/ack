@@ -323,6 +323,58 @@ final class User with _\$UserAck {
     );
   });
 
+  test(
+    'rejects an AckField schema whose runtime type is not the field type',
+    () async {
+      await _expectFailure(
+        '''
+AckSchema<int, int> countSchema() => Ack.integer();
+
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField(schema: countSchema)
+  final String name;
+}
+''',
+        [
+          'User.name @AckField schema function countSchema produces int, but '
+              'the field type is String.',
+        ],
+      );
+    },
+  );
+
+  test('rejects a generic AckField schema function', () async {
+    await _expectFailure(
+      '''
+final class Box<T> {
+  const Box(this.value);
+  final T value;
+}
+
+AckSchema<Object, Box<T>> boxSchema<T extends Object>() =>
+    Ack.any().codec<Box<T>>(
+      decode: (value) => Box(value as T),
+      encode: (box) => box.value,
+    );
+
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.box});
+
+  @AckField(schema: boxSchema<String>)
+  final Box<String> box;
+}
+''',
+      [
+        'User.box @AckField schema function boxSchema is generic, and the '
+            'generated call cannot keep its type arguments.',
+      ],
+    );
+  });
+
   test('rejects an AckField function that does not return AckSchema', () async {
     await _expectFailure(
       '''
