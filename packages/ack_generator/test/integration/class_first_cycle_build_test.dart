@@ -43,7 +43,6 @@ dependency_overrides:
 ''');
       File(p.join(temporary.path, 'lib', 'parent.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 import 'child.dart';
 
@@ -59,7 +58,6 @@ final class Parent with _$ParentAck {
 ''');
       File(p.join(temporary.path, 'lib', 'child.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 import 'parent.dart';
 
