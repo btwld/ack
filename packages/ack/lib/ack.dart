@@ -46,4 +46,4 @@ export 'src/validation/schema_error.dart';
 // Validation results
 export 'src/validation/schema_result.dart';
 // Code generation annotations
-export 'annotations.dart';
+export 'annotations.dart' hide Pattern;

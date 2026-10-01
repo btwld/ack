@@ -40,8 +40,8 @@ final class AckSchemaInference {
     annotations.MaxLength,
     inPackage: 'ack',
   );
-  static const _pattern = TypeChecker.typeNamed(
-    annotations.Pattern,
+  static const _matches = TypeChecker.typeNamed(
+    annotations.Matches,
     inPackage: 'ack',
   );
   static const _email = TypeChecker.typeNamed(
@@ -175,8 +175,8 @@ final class AckSchemaInference {
       } else if (_maxLength.isExactlyType(valueType)) {
         _require(declaration, type, '@MaxLength', isString, '@Max');
         output = '$output.maxLength(${value.getField('length')!.toIntValue()})';
-      } else if (_pattern.isExactlyType(valueType)) {
-        _require(declaration, type, '@Pattern', isString, 'String field');
+      } else if (_matches.isExactlyType(valueType)) {
+        _require(declaration, type, '@Matches', isString, 'String field');
         output =
             '$output.matches(${dartStringLiteral(value.getField('pattern')!.toStringValue()!)})';
       } else if (_email.isExactlyType(valueType)) {
