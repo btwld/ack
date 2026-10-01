@@ -10,11 +10,12 @@ There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 ## Packages
 
 1. `ack`: core runtime validation, codecs, and generated-model support
-2. `ack_annotations`: exposes `@AckInfer()` and `@AckModel()`
-3. `ack_generator`: generates models from schemas and schemas from models
-4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
-5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
-6. `ack_mcp_dart`: advertises MCP tool input schemas and validates typed arguments with `mcp_dart`
+2. `ack`: owns `@Schemable()`, `@AckInfer()`, and `@AckModel()` annotations
+3. `ack_annotations`: compatibility re-exports for the moved annotations
+4. `ack_generator`: generates models from schemas and schemas from models
+5. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
+6. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
+7. `ack_mcp_dart`: advertises MCP tool input schemas and validates typed arguments with `mcp_dart`
 
 ## Core runtime usage
 
@@ -55,7 +56,7 @@ Every annotated library declares both generated parts:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'user_schema.ack.dart';
 part 'user_schema.ack.g.dart';

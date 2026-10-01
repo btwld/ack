@@ -1,4 +1,4 @@
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'package:ack/ack.dart'
     show Ack, AckModelAdapter, AckSchema, AckSchemaModel, SchemaResult;
 import 'package:analyzer/dart/ast/ast.dart';
@@ -18,15 +18,15 @@ import 'models/schema_model_graph.dart';
 final class AckModelGenerator extends Generator {
   static const _ackInferChecker = TypeChecker.typeNamed(
     AckInfer,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
     AckModel,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _schemableChecker = TypeChecker.typeNamed(
     Schemable,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackChecker = TypeChecker.typeNamed(Ack, inPackage: 'ack');
   static const _ackModelAdapterChecker = TypeChecker.typeNamed(
@@ -284,7 +284,7 @@ final class AckModelGenerator extends Generator {
         'Generated @AckInfer.jsonSerializable requires a visible exact AckInfer '
         'import in this library.',
     todo:
-        'Import AckInfer from ack_annotations, using the same prefix as '
+        'Import AckInfer from package:ack, using the same prefix as '
         '@AckInfer() when one is present.',
   );
 

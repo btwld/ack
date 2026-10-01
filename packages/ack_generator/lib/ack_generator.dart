@@ -3,4 +3,4 @@ export 'src/builder.dart'
     show ackGenerator, ackModelBuilder, ackModelJsonBuilder;
 
 // Re-export AckType for convenience alongside the builder entrypoint.
-export 'package:ack_annotations/ack_annotations.dart';
+export 'package:ack/annotations.dart';

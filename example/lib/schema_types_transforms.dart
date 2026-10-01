@@ -1,5 +1,5 @@
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema_types_transforms.ack.dart';
 part 'schema_types_transforms.ack.g.dart';

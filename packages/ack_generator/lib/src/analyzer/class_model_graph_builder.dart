@@ -1,6 +1,6 @@
 import 'package:ack/ack.dart' show AckSchema;
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
-import 'package:ack_annotations/ack_generator_support.dart';
+import 'package:ack/annotations.dart' as annotations;
+import 'package:ack/ack_generator_support.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -143,24 +143,24 @@ final class ClassModelGraphBuilder {
 
   static const _ackModelChecker = TypeChecker.typeNamed(
     annotations.AckModel,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _schemableChecker = TypeChecker.typeNamed(
     annotations.Schemable,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackInferChecker = TypeChecker.typeNamed(
     annotations.AckInfer,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackTypeChecker = TypeChecker.typeNamed(
     // ignore: deprecated_member_use
     annotations.AckType,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackFieldChecker = TypeChecker.typeNamed(
     annotations.AckField,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
     AckSchema,
@@ -168,7 +168,7 @@ final class ClassModelGraphBuilder {
   );
   static const _generatedJsonChecker = TypeChecker.typeNamed(
     AckGeneratedJson,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _jsonSerializableChecker = TypeChecker.typeNamed(
     JsonSerializable,
@@ -181,15 +181,15 @@ final class ClassModelGraphBuilder {
 
   static const _optionalChecker = TypeChecker.typeNamed(
     annotations.Optional,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _requiredChecker = TypeChecker.typeNamed(
     annotations.Required,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _notNullChecker = TypeChecker.typeNamed(
     annotations.NotNull,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
 
   final LibraryReader library;

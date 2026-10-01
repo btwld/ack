@@ -12,12 +12,13 @@ and generate a Dart model, or start with a Dart model and generate its schema.
 
 There is no `@AckSchema()` annotation. `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
-The two code-generation annotations are `@AckInfer()` and `@AckModel()`.
+The canonical code-generation annotation is `@Schemable()`. `@AckInfer()` and
+`@AckModel()` remain supported compatibility spellings.
 
 ## Install the generator
 
 ```bash
-dart pub add ack ack_annotations
+dart pub add ack
 dart pub add --dev ack_generator build_runner
 ```
 
@@ -41,7 +42,7 @@ the same builders and generated parts.
 
 ```dart title="lib/models.dart"
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
@@ -518,7 +519,8 @@ Both entries must cover the same annotated libraries.
 
 ## Build checklist
 
-1. Add `ack` and `ack_annotations` to dependencies.
+1. Add `ack` to dependencies. Existing applications may keep the
+   `ack_annotations` compatibility package.
 2. Add `ack_generator` and `build_runner` to dev dependencies.
 3. Declare both generated parts in each annotated library.
 4. Choose `@AckInfer()` for schema-first or `@AckModel()` for class-first.

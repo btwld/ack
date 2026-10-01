@@ -10,7 +10,6 @@ environment:
 
 dependencies:
   ack: ^1.2.0
-  ack_annotations: ^1.2.0
 
 dev_dependencies:
   ack_generator: ^1.2.0

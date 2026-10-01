@@ -22,7 +22,7 @@ For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/ref
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
-- **[ack_annotations](./packages/ack_annotations)**: The `@AckInfer()`, `@AckModel()`, and deprecated legacy `@AckType()` annotations
+- **[ack_annotations](./packages/ack_annotations)**: Compatibility re-exports for annotations now owned by `ack`
 - **[ack_generator](./packages/ack_generator)**: Generates models from schemas and schemas from hand-written models
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
@@ -123,12 +123,12 @@ if (result.isOk) {
 ## Code generation
 
 Generate immutable models for hand-written schemas with `@AckInfer()`. Add
-`ack_annotations` to `dependencies` and `ack_generator` + `build_runner` to
+`ack` to `dependencies` and `ack_generator` + `build_runner` to
 `dev_dependencies`, then annotate a top-level schema:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
@@ -168,7 +168,7 @@ removed in Ack 2.0:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'legacy_user.g.dart';
 

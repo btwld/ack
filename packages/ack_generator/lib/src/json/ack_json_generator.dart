@@ -1,5 +1,5 @@
-import 'package:ack_annotations/ack_annotations.dart' show AckModel, Schemable;
-import 'package:ack_annotations/ack_generator_support.dart';
+import 'package:ack/annotations.dart' show AckModel, Schemable;
+import 'package:ack/ack_generator_support.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -23,16 +23,10 @@ final class AckJsonSerializableGenerator extends Generator {
 
   static const _marker = TypeChecker.typeNamed(
     AckGeneratedJson,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
-  static const _model = TypeChecker.typeNamed(
-    AckModel,
-    inPackage: 'ack_annotations',
-  );
-  static const _schemable = TypeChecker.typeNamed(
-    Schemable,
-    inPackage: 'ack_annotations',
-  );
+  static const _model = TypeChecker.typeNamed(AckModel, inPackage: 'ack');
+  static const _schemable = TypeChecker.typeNamed(Schemable, inPackage: 'ack');
 
   @override
   String generate(LibraryReader library, BuildStep buildStep) {

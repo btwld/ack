@@ -1,4 +1,4 @@
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
@@ -19,7 +19,7 @@ class AckSchemaGenerator extends Generator {
   static const _ackTypeChecker = TypeChecker.typeNamed(
     // ignore: deprecated_member_use
     AckType,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
 
   final _formatter = DartFormatter(

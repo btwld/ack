@@ -5,7 +5,7 @@
 //
 // A real class-first library adds the two part directives and the generated
 // `_$UserAck` mixin. See the ack_generator package for a complete setup.
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 /// Class-first: `@AckModel()` derives a schema from the constructor.
 ///
