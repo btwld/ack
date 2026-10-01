@@ -1,9 +1,45 @@
 ## Unreleased
 
-* Read annotations from `package:ack` while preserving compatibility imports
-  through `ack_annotations`.
-* Support `@Schemable()` for schema-first and class-first generation while
-  preserving `@AckInfer()` and `@AckModel()` compatibility.
+### Breaking
+
+* Annotations are read from `package:ack`; the `ack_annotations` package is
+  removed. Import `package:ack/ack.dart` in annotated libraries.
+* Generated schema-first models carry `@Schemable.generatedJson` instead of
+  `@AckInfer.jsonSerializable`. Regenerate after upgrading.
+* `@Pattern` is recognised under its new name `@Matches`; the deprecated
+  `@Pattern` alias still generates `.matches(...)`.
+
+### Added
+
+* `@Schemable()` drives both schema-first and class-first generation. The
+  deprecated `@AckInfer()` and `@AckModel()` spellings generate identical
+  output, and diagnostics name the annotation that was written.
+* A field whose type declares a static `schema` resolves to it with no
+  annotation, also per `List` / `Set` item and as a `Map` value. Extension
+  types are supported, and a generic type declares a static
+  `schema<A>()` method that is called with the field's type arguments
+  (`Command.schema<CompletionAction>()`). Schema-first objects may reference
+  the same members. A `@Schemable` class may expose its facade as
+  `static final schema = XSchema.schema;`. The schema must produce the field's
+  type.
+
+### Fixed
+
+* Generation fails with a clear message instead of emitting code that does not
+  compile when a field or codec type is not visible in the annotated library,
+  when a numeric constraint is not finite, or when the model phase failed (the
+  JSON part is no longer written).
+* `@Schemable` options set for the other target (`name` on a class, class
+  options on a top-level schema) are rejected instead of ignored.
+* `@AckField(schema:)` functions must produce the field's type; generic
+  functions, whose type arguments the generated call would drop, are rejected.
+* Collection constraints on a `Set<Set<T>>` field apply to the outer set.
+* An unresolved class-first field type is reported by its written name, with
+  a specific message for a model generated in the same build used as a `Map`
+  value.
+* A `@Schemable` union branch's own options apply in the JSON phase.
+* A redirecting factory model is rejected with a message that names the
+  supported form.
 
 ## 1.7.0-beta.2
 

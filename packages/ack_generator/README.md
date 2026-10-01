@@ -2,15 +2,15 @@
 
 `ack_generator` supports two modern directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
-codec schema from a hand-written class. `@AckInfer()` and `@AckModel()` remain
-compatibility spellings. It also retains the deprecated Ack 1.1 `@AckType()`
-generator unchanged.
+codec schema from a hand-written class. The annotations are exported from
+`package:ack/ack.dart`. `@AckInfer()` and `@AckModel()` are deprecated
+spellings of `@Schemable()` until 2.0.0. It also retains the deprecated Ack
+1.1 `@AckType()` generator unchanged.
 
 ## Schema-first usage
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'user_schema.ack.dart';
 part 'user_schema.ack.g.dart';
@@ -55,7 +55,7 @@ it. Generated models don't implement `Map`, and there are no `fromMap` or
 `toMap` aliases.
 
 Omit `name` when the inferred class name is right. Use
-`@AckInfer(name: 'Member')` only when you need an exact custom name. Custom
+`@Schemable(name: 'Member')` only when you need an exact custom name. Custom
 names must be unchanged UpperCamelCase identifiers.
 
 ## Class-first usage
@@ -65,7 +65,6 @@ mixin:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'account.ack.dart';
 part 'account.ack.g.dart';
@@ -92,7 +91,14 @@ void main() {
 }
 ```
 
-Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
+A field whose type declares a static `schema` resolves to it without an
+annotation, also as a `List` or `Set` item and as a `Map` value. A generic type
+declares `static AckSchema<B, T<A>> schema<A>()`, which is called with the
+field's type arguments, for example `Command.schema<CompletionAction>()`. The
+schema must produce the field's type. A class may also expose its own facade
+with `static final schema = AccountSchema.schema;`.
+
+Use `@Schemable(description: ...)` and `@AckField(description: ...)` for schema
 descriptions. A single-line `@description` tag in a `///` or `/** */` doc
 comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
 prose never becomes schema data. Duplicate or blank tags fail generation.
@@ -112,8 +118,8 @@ The generator supports objects, empty objects, scalar and collection roots,
 literals, enums, defaults, additional properties, built-in and custom
 bidirectional codecs, named nested models, aliases, named `Ack.lazy` recursion,
 and same-library discriminated unions. Lists, sets, and maps stored by a model
-generated with `@AckInfer()` are copied recursively into unmodifiable
-collections. `@AckModel()` parsing provides the same guarantee, including for
+generated from a `@Schemable()` schema are copied recursively into unmodifiable
+collections. Class-first parsing provides the same guarantee, including for
 captured extras. Hand-written constructors and collection replacements passed
 to `copyWith` remain responsible for their own defensive copies; use
 `deepUnmodifiableJsonMap` for dynamic JSON maps. Raw
@@ -132,7 +138,11 @@ Generation rejects shapes without a useful static, encodable model contract:
 - `Ack.any()` and `Ack.map()` roots (both are supported as fields),
   `Ack.anyOf()`, and bare `Ack.instance<T>()`;
 - anonymous inline object fields and unresolved dynamic schema factories;
-- invalid names, generated-member collisions, and cross-library union branches.
+- invalid names, generated-member collisions, and cross-library union branches;
+- types the annotated library cannot name, because a generated part cannot add
+  imports;
+- `@Schemable` options set for the other target, and redirecting factory
+  constructors on a class.
 
 Named model references work through direct imports, prefixes, and re-exports.
 Nested conversion uses each model's public `$ack` adapter so codec runtime
@@ -178,14 +188,17 @@ targets:
 
 ## Supported declarations
 
-`@AckInfer()` can annotate top-level schema variables and top-level schema
-getters. Classes, instance members, and local variables are rejected.
+On a schema, `@Schemable()` annotates top-level schema variables and top-level
+schema getters; instance members and local variables are rejected. Only its
+`name` option applies there.
 
-`@AckModel()` annotates public, constructable `final class` declarations whose
+On a class, `@Schemable()` annotates public, constructable `final class` declarations whose
 stored fields are final. Annotated sealed union bases remain supported, and
 their concrete branches must also be final. Use `@Optional()` or `@Required()`
 to override inferred key presence, `@NotNull()` to reject JSON `null` without
-requiring the key, and `@AckField(schema: ...)` for custom codecs. See the
+requiring the key, and `@AckField(schema: ...)` for a type you cannot give a
+static `schema`. Constraint annotations include `@Matches(pattern)` for
+`Ack.string().matches(pattern)`. See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
@@ -224,13 +237,13 @@ generation so schema validation and JSON mapping remain identical.
 
 An unchanged Ack 1.1 declaration still uses `part 'file.g.dart';` and generates
 the same `*Type`, `.args`, Map, `parse`, and `safeParse` APIs. `AckType` is frozen
-until its removal in Ack 2.0. New connected model graphs must use `AckInfer` or
-`AckModel`; nested references between legacy and modern graphs are rejected
+until its removal in Ack 2.0. New connected model graphs must use
+`@Schemable()`; nested references between legacy and modern graphs are rejected
 with a migration diagnostic.
 
 | Legacy | Modern opt-in |
 |---|---|
-| `@AckType()` | `@AckInfer()` |
+| `@AckType()` | `@Schemable()` |
 | `file.g.dart` | `file.ack.dart` + `file.ack.g.dart` |
 | `UserType.parse(...)` | `User.parse(...)` or `User.fromJson(...)` |
 | Map access and `.args` | Typed fields, `.additionalProperties`, and `toJson()` |

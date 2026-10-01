@@ -22,9 +22,10 @@ void main() {
         '../../docs/getting-started/installation.mdx',
       ).readAsString();
 
-      expect(content, contains('ack_annotations'));
-      expect(content, contains('@AckInfer()'));
-      expect(content, contains('@AckModel()'));
+      expect(content, isNot(contains('ack_annotations')));
+      expect(content, contains('@Schemable()'));
+      expect(content, isNot(contains('@AckInfer()')));
+      expect(content, isNot(contains('@AckModel()')));
       expect(content, contains('ack_generator'));
       expect(content, contains('build_runner'));
       expect(content, contains('There is no `@AckSchema()`'));

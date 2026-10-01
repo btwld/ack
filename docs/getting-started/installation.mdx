@@ -44,26 +44,25 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-The generator works in both directions. `@AckInfer()` marks a top-level schema
-and generates an immutable model. `@AckModel()` marks a hand-written class and
-generates a public `<ClassName>Schema` facade, a private Ack codec, and JSON
-helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
-schema type.
+The generator works in both directions with one annotation from
+`package:ack/ack.dart`. `@Schemable()` on a top-level schema generates an
+immutable model. `@Schemable()` on a hand-written class generates a public
+`<ClassName>Schema` facade, a private Ack codec, and JSON helpers. There is no
+`@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
 });
 
-@AckModel()
+@Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
   final String name;
@@ -90,5 +89,4 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 - Dart SDK: `>=3.9.0 <4.0.0` for core `ack`
 - Dart SDK: `>=3.9.0 <4.0.0` when using `ack` / `ack_generator`
 
-Existing applications may keep `ack_annotations`; it re-exports the annotation
-API for compatibility.
+The annotations ship in `ack`; there is no separate annotations package.

@@ -1,10 +1,28 @@
 ## Unreleased
 
+### Breaking
+
+* The `ack_annotations` package is removed. Its annotations now ship in `ack`
+  and are exported from `package:ack/ack.dart`. Remove `ack_annotations` from
+  `pubspec.yaml` and replace `package:ack_annotations/ack_annotations.dart`
+  imports with `package:ack/ack.dart`.
+* `@Pattern` is renamed `@Matches`, matching `Ack.string().matches(...)`.
+  `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only,
+  so importing `package:ack/ack.dart` keeps `dart:core`'s `Pattern` visible.
+* `package:ack/ack.dart` exports `@Required()`. A library that imports both
+  `package:ack/ack.dart` and `package:meta/meta.dart` and uses `Required` must
+  hide one of them.
+
 ### Added
 
-* Own the schema-generation annotations and export them from
-  `package:ack/annotations.dart`. `ack_annotations` remains a compatibility
-  re-export package.
+* `@Schemable()` is the single code-generation annotation: on a top-level
+  schema it generates a model, and on a class it generates a schema.
+  `Schemable.generatedJson` marks generated schema-first models.
+
+### Deprecated
+
+* `@AckInfer()` and `@AckModel()`; use `@Schemable()` with the same options.
+  They will be removed in 2.0.0.
 
 ## 1.7.0-beta.2
 

@@ -14,15 +14,14 @@ For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/ref
 - **Validate external payloads**: Guard API and user inputs by validating required fields, types, and constraints at boundaries
 - **Single source of truth**: Define data structures and rules in one place
 - **Less boilerplate**: Minimize repetitive validation and JSON conversion code
-- **Type safety**: Generate immutable models for hand-written Ack schemas with `@AckInfer()`
-- **Class-first generation**: Derive validated codec schemas from hand-written Dart classes with `@AckModel()`
+- **Type safety**: Generate immutable models for hand-written Ack schemas with `@Schemable()`
+- **Class-first generation**: Derive validated codec schemas from hand-written Dart classes with the same `@Schemable()` annotation
 
 ## Packages
 
 This repository is a monorepo containing:
 
-- **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
-- **[ack_annotations](./packages/ack_annotations)**: Compatibility re-exports for annotations now owned by `ack`
+- **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, JSON Schema export, and the code-generation annotations
 - **[ack_generator](./packages/ack_generator)**: Generates models from schemas and schemas from hand-written models
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
@@ -122,18 +121,18 @@ if (result.isOk) {
 
 ## Code generation
 
-Generate immutable models for hand-written schemas with `@AckInfer()`. Add
+Generate immutable models for hand-written schemas with `@Schemable()`. Add
 `ack` to `dependencies` and `ack_generator` + `build_runner` to
-`dev_dependencies`, then annotate a top-level schema:
+`dev_dependencies`, then annotate a top-level schema. The annotations come
+from `package:ack/ack.dart`:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string().minLength(2),
   'email': Ack.string().email(),
@@ -155,7 +154,7 @@ print(user.name);     // String
 print(user.toJson()); // {'name': 'Alice', 'email': 'alice@example.com'}
 ```
 
-`@AckInfer()` supports objects, primitives, lists, enums, bidirectional codecs,
+A `@Schemable()` schema supports objects, primitives, lists, enums, bidirectional codecs,
 named recursion, and discriminated unions. One-way transforms are rejected
 because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
@@ -168,7 +167,6 @@ removed in Ack 2.0:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'legacy_user.g.dart';
 
@@ -177,12 +175,11 @@ final userSchema = Ack.object({'name': Ack.string()});
 ```
 
 This still generates `UserType`, including its Map interface, typed getters,
-`parse` / `safeParse`, and `.args`. New code should use `@AckInfer()` or
-`@AckModel()`.
+`parse` / `safeParse`, and `.args`. New code should use `@Schemable()`.
 
 | Ack 1.1 source | Optional immutable-model migration |
 |---|---|
-| Keep `@AckType()` | Rename it to `@AckInfer()` |
+| Keep `@AckType()` | Rename it to `@Schemable()` |
 | Keep `part 'file.g.dart';` | Add `file.ack.dart` and `file.ack.g.dart` parts |
 | Use `*Type`, Map access, and `.args` | Use the generated class, typed fields, `parse`, `fromJson`, and `toJson` |
 
@@ -190,13 +187,13 @@ Legacy and modern declarations may coexist when they are unrelated. A nested
 reference graph cannot cross between them; migrate that connected graph
 together.
 
-Already own the model class? Use `@AckModel()` to derive a codec schema from
+Already own the model class? Put `@Schemable()` on it to derive a codec schema from
 constructor-backed fields while keeping the class hand-written. A class named
 `Account` receives an `AccountSchema` facade for parsing, encoding, schema
 export, and nested composition; the backing codec remains private:
 
 ```dart
-@AckModel()
+@Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
 
@@ -208,8 +205,16 @@ final class Account with _$AccountAck {
 ```
 
 `Account.fromJson({'name': 'Ada'})` validates and constructs the model, while
-`account.toJson()` validates and encodes it. See the
+`account.toJson()` validates and encodes it.
+
+A field whose type declares a static `schema` needs no annotation: a `Slot`
+field resolves to `Slot.schema`, a `List<Slot>` to `Ack.list(Slot.schema)`,
+and a generic `Command<Action>` to `Command.schema<Action>()`. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
+
+Upgrading from 1.7.0-beta.2: drop `ack_annotations` and import
+`package:ack/ack.dart`, rename `@Pattern` to `@Matches`, and replace the
+deprecated `@AckInfer()` / `@AckModel()` with `@Schemable()`.
 
 ## Codecs
 

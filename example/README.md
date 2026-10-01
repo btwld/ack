@@ -1,8 +1,8 @@
 # Ack Example Package
 
-This package demonstrates both code-generation directions: schemas converted
-to immutable models with `@AckInfer()`, and hand-written classes converted to
-codec schemas with `@AckModel()`. Annotated examples declare both `.ack.dart`
+This package demonstrates both code-generation directions with `@Schemable()`:
+schemas converted to immutable models, and hand-written classes converted to
+codec schemas. Annotated examples declare both `.ack.dart`
 and `.ack.g.dart` parts.
 
 ## Included examples

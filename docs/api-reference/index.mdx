@@ -305,16 +305,18 @@ Schema reference for recursive object graphs.
 ## Code generation annotations
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
-either direction: `@AckInfer()` generates a model from a schema, and
-`@AckModel()` generates a schema from a class. `AckSchema` is the runtime
-schema type; there is no `@AckSchema()` annotation. After adding matching
+either direction with one annotation, `@Schemable()`: on a top-level schema it
+generates a model, and on a class it generates a schema. All annotations are
+exported from `package:ack/ack.dart`. `@AckInfer()` and `@AckModel()` are
+deprecated spellings that keep working until 2.0.0. `AckSchema` is the
+runtime schema type; there is no `@AckSchema()` annotation. After adding matching
 `.ack.dart` and `.ack.g.dart` part directives, run:
 
 ```bash
 dart run build_runner build
 ```
 
-### `@AckInfer()`
+### `@Schemable()` on a top-level schema
 
 **Target**: Schema variables and getters
 
@@ -335,18 +337,18 @@ Annotate a top-level schema variable or getter. The schema stays in your source 
 `Ack.map()` roots, `Ack.anyOf()`, bare `Ack.instance<T>()`, and anonymous
 inline objects
 
-For `Ack.discriminated(...)` constraints with `@AckInfer`, see
+`name` sets the exact model class name; the class-only options are rejected
+here. For `Ack.discriminated(...)` constraints, see
 [Model Code Generation](../core-concepts/typesafe-schemas.mdx#schema-first-unions).
 
 **Example:**
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
@@ -363,7 +365,7 @@ print(user.email); // Type-safe String access
 print(user.toJson());
 ```
 
-### `@AckModel()`
+### `@Schemable()` on a class
 
 Concrete models and union branches must be `final class` declarations with
 final stored fields. Annotated sealed union bases remain supported. Parsed
@@ -392,12 +394,20 @@ so a wrongly typed argument is a compile-time error.
 **Constraint annotations:**
 
 - numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`
-- strings: `@MinLength`, `@MaxLength`, `@Pattern`, `@Email`, `@NotEmpty`
+- strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`
 - collections: `@MinItems`, `@MaxItems`, `@UniqueItems`
 
-Use `@AckField` to override `schema` and/or `AckFieldPresence`. A no-op
-`@AckField()` is rejected. A sealed base annotated with
-`@AckModel(discriminatorKey: ...)` generates a discriminated union from its
+`@Matches` replaces `@Pattern`, which remains a deprecated alias in
+`package:ack/annotations.dart` only.
+
+**Type-owned schemas:** a field whose type declares a static `schema` resolves
+to it with no annotation, also per `List` / `Set` item and as a `Map` value. A
+generic type declares `static AckSchema<B, T<A>> schema<A>()`, which is called
+with the field's type arguments. The schema must produce the field type.
+
+Use `@AckField(schema: ...)` for a type you cannot edit; the non-generic
+function must produce the field type. A no-op `@AckField()` is rejected. A
+sealed base annotated with `@Schemable(discriminatorKey: ...)` generates a discriminated union from its
 same-library concrete branches. Unknown properties use
 `unknownProperties: AckUnknownPropertyPolicy.<policy>` (`reject` by default).
 Raw `Ack.object(..., additionalProperties: true)` schemas preserve extras.
@@ -406,7 +416,7 @@ consumers, while models that round-trip unknown keys must use `capture` and may
 select the target map with `captureField`.
 
 ```dart
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
@@ -430,13 +440,14 @@ class name.
 
 Nested class-first fields compose through `AddressSchema.schema`. Imports with
 combinators must expose both names (`show Address, AddressSchema`). A
-schema-first `@AckInfer()` declaration may also compose the facade explicitly,
+schema-first `@Schemable()` declaration may also compose the facade explicitly,
 and class-first models can use schema-first generated model types on a clean
 build.
 
-`@AckModel()` cannot share a class with `@JsonSerializable()`. Class-first
-value roots, automatic recursive graphs, and undiscriminated `anyOf` shapes are
-unsupported; use schema-first `@AckInfer()` and named `Ack.lazy` for those
+A class-first `@Schemable()` cannot share a class with `@JsonSerializable()`,
+and `name` is rejected on a class. Class-first value roots, automatic recursive
+graphs, redirecting factory constructors, and undiscriminated `anyOf` shapes
+are unsupported; use a schema-first `@Schemable()` schema and named `Ack.lazy` for those
 cases. See
 [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for the complete
 tutorial and comparison.
