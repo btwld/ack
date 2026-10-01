@@ -158,7 +158,7 @@ part 'coexist.ack.g.dart';
 @AckType()
 final frozenSchema = Ack.object({'id': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
 
 @AckModel()
@@ -206,6 +206,13 @@ abstract class OpenDto with _$OpenDtoAck {
     required String name,
     required Map<String, Object?> additionalProperties,
   }) = _OpenDto;
+}
+
+@Schemable(description: 'A unified annotation model.')
+abstract class SchemableDto with _$SchemableDtoAck {
+  const SchemableDto._();
+
+  const factory SchemableDto({required String name}) = _SchemableDto;
 }
 ''',
         );
@@ -695,6 +702,14 @@ void main() {
       'name': 'Read',
       'color': 'blue',
     });
+  });
+
+  test('Schemable supports schema-first and class-first generation', () {
+    expect(Modern.parse({'name': 'Ada'}).name, 'Ada');
+    final model = SchemableDtoSchema.parse({'name': 'Ada'});
+    expect(model.name, 'Ada');
+    expect(SchemableDtoSchema.toJsonSchema()['description'],
+        'A unified annotation model.');
   });
 
   test('presence, defaults, collections, and escape hatches round-trip', () {

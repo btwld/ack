@@ -151,6 +151,10 @@ final class SchemaModelGraphBuilder {
     AckInfer,
     inPackage: 'ack_annotations',
   );
+  static const _schemableChecker = TypeChecker.typeNamed(
+    Schemable,
+    inPackage: 'ack_annotations',
+  );
   static const _legacyAckTypeChecker = TypeChecker.typeNamed(
     // ignore: deprecated_member_use
     AckType,
@@ -158,6 +162,10 @@ final class SchemaModelGraphBuilder {
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
     AckModel,
+    inPackage: 'ack_annotations',
+  );
+  static const _schemableModelChecker = TypeChecker.typeNamed(
+    Schemable,
     inPackage: 'ack_annotations',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
@@ -1135,7 +1143,9 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _classFirstFacadeName(ClassElement element) {
-    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    final annotation =
+        _ackModelChecker.firstAnnotationOfExact(element) ??
+        _schemableModelChecker.firstAnnotationOfExact(element);
     if (annotation != null) {
       final value = ConstantReader(annotation).read('schemaName');
       return ackClassSchemaFacadeName(
@@ -1148,7 +1158,8 @@ final class SchemaModelGraphBuilder {
       return base is ClassElement &&
           base.library == element.library &&
           base.isSealed &&
-          _ackModelChecker.hasAnnotationOfExact(base);
+          (_ackModelChecker.hasAnnotationOfExact(base) ||
+              _schemableModelChecker.hasAnnotationOfExact(base));
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
@@ -1377,7 +1388,9 @@ final class SchemaModelGraphBuilder {
   }
 
   bool _hasAckInfer(Element element) {
-    return _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element));
+    final declaration = _propertyDeclaration(element);
+    return _ackInferChecker.hasAnnotationOfExact(declaration) ||
+        _schemableChecker.hasAnnotationOfExact(declaration);
   }
 
   bool _hasLegacyAckType(Element element) {
@@ -1387,9 +1400,10 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _annotationName(Element element) {
-    final annotation = _ackInferChecker.firstAnnotationOfExact(
-      _propertyDeclaration(element),
-    );
+    final declaration = _propertyDeclaration(element);
+    final annotation =
+        _ackInferChecker.firstAnnotationOfExact(declaration) ??
+        _schemableChecker.firstAnnotationOfExact(declaration);
     final field = annotation == null
         ? null
         : ConstantReader(annotation).peek('name');

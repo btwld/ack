@@ -1,3 +1,8 @@
+## Unreleased
+
+* Add `@Schemable()` as the unified schema-first and class-first annotation.
+  Existing `@AckInfer()` and `@AckModel()` spellings remain supported.
+
 ## 1.7.0-beta.2
 
 ### Added

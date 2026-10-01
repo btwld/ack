@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Support `@Schemable()` for schema-first and class-first generation while
+  preserving `@AckInfer()` and `@AckModel()` compatibility.
 * Add `@AckModel()` support for abstract classes with an unnamed factory
   that redirects to a generated private implementation. Named factory
   parameters define the stored fields, including nested models and descriptions.
