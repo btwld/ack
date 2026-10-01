@@ -384,6 +384,24 @@ class User with _\$UserAck {
     );
   });
 
+  test('rejects a redirecting private-factory model', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+abstract class HabitDto with _\$HabitDtoAck {
+  const HabitDto._();
+  const factory HabitDto({required String name}) = _HabitDto;
+}
+''',
+      [
+        '@Schemable HabitDto redirects its unnamed constructor to _HabitDto. '
+            'Redirecting factory models are not supported; declare a final '
+            'class whose unnamed generative constructor initializes its '
+            'fields.',
+      ],
+    );
+  });
+
   test('requires final concrete union branches', () async {
     await _expectFailure(
       '''

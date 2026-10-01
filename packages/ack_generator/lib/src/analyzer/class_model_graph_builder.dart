@@ -319,6 +319,7 @@ final class ClassModelGraphBuilder {
         todo: 'Annotate a public class.',
       );
     }
+    _rejectRedirectingFactory(element);
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
@@ -350,6 +351,24 @@ final class ClassModelGraphBuilder {
         element: element,
       );
     }
+  }
+
+  void _rejectRedirectingFactory(ClassElement element) {
+    final constructor = element.unnamedConstructor;
+    if (constructor == null || !constructor.isFactory) return;
+    final node = _inputResolved
+        ?.getFragmentDeclaration(constructor.firstFragment)
+        ?.node;
+    if (node is! ConstructorDeclaration) return;
+    final target = node.redirectedConstructor;
+    if (target == null) return;
+    throw InvalidGenerationSource(
+      '${_annotationName(element)} ${element.name} redirects its unnamed '
+      'constructor to ${target.toSource()}. Redirecting factory models are '
+      'not supported; declare a final class whose unnamed generative '
+      'constructor initializes its fields.',
+      element: element,
+    );
   }
 
   Future<void> _buildUnion(ClassElement base) async {
