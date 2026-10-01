@@ -31,7 +31,13 @@ final class AckJsonSerializableGenerator extends Generator {
   static const _schemable = TypeChecker.typeNamed(Schemable, inPackage: 'ack');
 
   @override
-  String generate(LibraryReader library, BuildStep buildStep) {
+  Future<String> generate(LibraryReader library, BuildStep buildStep) async {
+    // A failed model phase leaves helpers this part would call undefined.
+    if (!await buildStep.canRead(
+      buildStep.inputId.changeExtension('.ack.dart'),
+    )) {
+      return '';
+    }
     final requests = <({Element element, ConstantReader config})>[];
     final claimed = <Element>{};
     for (final item in library.annotatedWith(_marker)) {

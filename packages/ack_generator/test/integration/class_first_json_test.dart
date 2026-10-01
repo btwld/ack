@@ -8,7 +8,10 @@ Future<void> _expectJsonOutput(String source, Matcher matcher) async {
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
     ackModelJsonBuilder(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': source},
+    {
+      'test_pkg|lib/model.dart': source,
+      'test_pkg|lib/model.ack.dart': "part of 'model.dart';",
+    },
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
     outputs: {'test_pkg|lib/model.ack.g.dart': decodedMatches(matcher)},
@@ -18,6 +21,7 @@ Future<void> _expectJsonOutput(String source, Matcher matcher) async {
 const _head = '''
 import 'package:ack/annotations.dart';
 
+part 'model.ack.dart';
 part 'model.ack.g.dart';
 ''';
 

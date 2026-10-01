@@ -16,6 +16,7 @@ void main() {
           'test_pkg|lib/pet.dart': r'''
 import 'package:ack/ack_generator_support.dart';
 
+part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
 sealed class Pet {
@@ -39,6 +40,7 @@ final class Cat extends Pet {
   static Object? _ackToRuntimeNickname(String? value) => value;
 }
 ''',
+          'test_pkg|lib/pet.ack.dart': "part of 'pet.dart';",
         },
         generateFor: const {'test_pkg|lib/pet.dart'},
         readerWriter: readerWriter,
