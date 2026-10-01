@@ -1,7 +1,0 @@
-# Development and IDE files
-melos_ack_annotations.iml
-
-# The shared lint config. Its `include: ../../analysis_options.yaml`
-# cannot resolve outside the workspace, so shipping it breaks
-# `dart format` and `dart analyze` in the published archive.
-analysis_options.yaml

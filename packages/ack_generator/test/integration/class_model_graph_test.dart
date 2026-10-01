@@ -56,7 +56,7 @@ Future<void> _expectWarning(String body, List<String> messages) async {
 
 const _head = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'model.ack.dart';
@@ -673,7 +673,7 @@ final class User with _\$UserAck {
       head: '''
 import 'package:ack/ack.dart'
     show Ack, AckSchema, AckSchemaModel, SchemaResult;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';
@@ -896,7 +896,7 @@ final class Parent with _\$ParentAck {
       ['Child.parent', 'recursive class-first', 'Ack.lazy', 'schema-first'],
       head: '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'child.dart';
 
 part 'model.ack.dart';
@@ -904,7 +904,7 @@ part 'model.ack.g.dart';
 ''',
       extraSources: {
         'child.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'model.dart';
 
 part 'child.ack.dart';
@@ -936,7 +936,7 @@ final class Order with _\$OrderAck {
         ['AddressSchema', 'hidden', 'show Address, AddressSchema'],
         head: '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 
 part 'model.ack.dart';
@@ -945,7 +945,7 @@ part 'model.ack.g.dart';
         extraSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
@@ -973,7 +973,7 @@ final class Address with _\$AddressAck {
       {
         'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 import 'address.dart' show AddressSchema;
 
@@ -989,7 +989,7 @@ final class Order with _\$OrderAck {
 ''',
         'test_pkg|lib/address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
@@ -1029,7 +1029,7 @@ final class Order with _\$OrderAck {
       ['AddressSchema', 'export combinator'],
       head: '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'exports.dart';
 
 part 'model.ack.dart';
@@ -1039,7 +1039,7 @@ part 'model.ack.g.dart';
         'exports.dart': "export 'address.dart' show Address;",
         'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';

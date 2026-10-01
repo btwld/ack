@@ -39,7 +39,7 @@ Future<void> _expectFailure(String source, List<String> messages) async {
 
 const _head = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';

@@ -108,7 +108,6 @@ Duplicate stable notes.
 
     const paths = [
       'packages/ack/CHANGELOG.md',
-      'packages/ack_annotations/CHANGELOG.md',
       'packages/ack_generator/CHANGELOG.md',
       'packages/ack_firebase_ai/CHANGELOG.md',
       'packages/ack_json_schema_builder/CHANGELOG.md',
@@ -116,7 +115,7 @@ Duplicate stable notes.
     ];
     final originals = <String, String>{};
     for (final path in paths) {
-      final content = path.contains('ack_annotations')
+      final content = path.contains('ack_mcp_dart')
           ? '## 0.9.0\n\nOlder notes.\n'
           : '## 1.0.0\n\nRelease notes.\n';
       originals[path] = content;

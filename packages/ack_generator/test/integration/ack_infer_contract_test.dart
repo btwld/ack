@@ -24,7 +24,7 @@ Future<TestBuilderResult> _generate(
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
@@ -230,7 +230,7 @@ final shapeSchema = Ack.discriminated(
     await _generate(
       '''
 import 'package:ack/ack.dart' as schema;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';

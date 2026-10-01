@@ -1,4 +1,4 @@
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
 Object _customSchema() => Object();

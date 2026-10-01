@@ -57,7 +57,7 @@ void main() {
       ),
       {
         'test_pkg|lib/widget.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({
   /// The item title.
@@ -85,7 +85,7 @@ void widget({
       ),
       {
         'test_pkg|lib/widget.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({
   @AckField(description: 'Explicit text.')
@@ -132,7 +132,7 @@ void widget({required List<Priority> priorities}) {}
       const _InferenceProbe(parameterName: 'tags'),
       {
         'test_pkg|lib/widget.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({@MinItems(2) required Set<String> tags}) {}
 ''',

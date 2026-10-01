@@ -28,7 +28,7 @@ void main() {
       await _build(
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
@@ -58,7 +58,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     await _build(
       '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckInfer()
 final userSchema = Ack.string();
@@ -79,7 +79,7 @@ final userSchema = Ack.string();
     var sawError = false;
     await _build(
       '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckModel()
 final class User with _\$UserAck {
@@ -107,7 +107,7 @@ final class User with _\$UserAck {
       await _build(
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 
@@ -131,7 +131,7 @@ final userSchema = Ack.string();
     await _build(
       '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part './schema.ack.dart';
 part './schema.ack.g.dart';
@@ -157,7 +157,7 @@ final userSchema = Ack.object({'name': Ack.string()});
       await _build(
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'sub/schema.ack.dart';
 part 'sub/schema.ack.g.dart';
@@ -183,7 +183,7 @@ final userSchema = Ack.string();
     await _build(
       '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'other.ack.g.dart';
@@ -206,7 +206,7 @@ final userSchema = Ack.string();
     var sawError = false;
     await _build(
       '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckInfer()
 class InvalidSchema {}

@@ -36,7 +36,7 @@ String _compact(String code) => code
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 ''';
 
 void main() {
@@ -249,7 +249,7 @@ final class Square extends Shape with _\$SquareAck {
         'formats.dart':
             '''
 $_imports
-import 'package:ack_annotations/format_annotations.dart' as formats;
+import 'package:ack/format_annotations.dart' as formats;
 part 'formats.ack.dart';
 part 'formats.ack.g.dart';
 
@@ -892,7 +892,7 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
 import 'package:ack/ack.dart' as ack
     show Ack, AckSchema, AckSchemaModel, AckSchemaModelExtension, SchemaResult,
         deepEquals, deepHashCode;
-import 'package:ack_annotations/ack_annotations.dart' as annotations
+import 'package:ack/annotations.dart' as annotations
     show AckModel;
 
 part 'account.ack.dart';

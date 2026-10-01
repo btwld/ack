@@ -55,8 +55,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -65,13 +63,10 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
@@ -97,7 +92,6 @@ final class AddressBook with _$AddressBookAck {
         File(p.join(temporary.path, 'lib', 'customer.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' show Address, PostalAddressSchema;
 
@@ -122,7 +116,6 @@ final class Customer with _$CustomerAck {
         File(p.join(temporary.path, 'lib', 'parcel.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'models.dart' as models;
 
@@ -139,7 +132,6 @@ final class Parcel with _$ParcelAck {
         );
         File(p.join(temporary.path, 'lib', 'north.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'north.ack.dart';
 part 'north.ack.g.dart';
@@ -153,7 +145,6 @@ final class Place with _$PlaceAck {
 ''');
         File(p.join(temporary.path, 'lib', 'south.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'south.ack.dart';
 part 'south.ack.g.dart';
@@ -168,7 +159,6 @@ final class Place with _$PlaceAck {
         File(p.join(temporary.path, 'lib', 'itinerary.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'north.dart' as north;
 import 'south.dart' as south;
@@ -187,7 +177,6 @@ final class Itinerary with _$ItineraryAck {
         );
         File(p.join(temporary.path, 'lib', 'pet.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
@@ -207,7 +196,6 @@ final class Cat extends Pet with _$CatAck {
 ''');
         File(p.join(temporary.path, 'lib', 'order.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as address;
 import 'pet.dart' as pets;
@@ -235,7 +223,6 @@ final class Order with _$OrderAck {
         File(p.join(temporary.path, 'lib', 'legacy.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'legacy.ack.dart';
 part 'legacy.ack.g.dart';
@@ -247,7 +234,6 @@ final legacyAddressContract = Ack.object({'city': Ack.string()});
         File(p.join(temporary.path, 'lib', 'holder.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'legacy.dart' as legacy;
 
@@ -276,7 +262,6 @@ final class Holder with _$HolderAck {
           p.join(temporary.path, 'lib', 'address_envelope.dart'),
         ).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as address;
 

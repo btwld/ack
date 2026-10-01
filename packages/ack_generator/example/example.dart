@@ -17,7 +17,6 @@
 // Add `ack` to `dependencies`, and `ack_generator` plus `build_runner` to
 // `dev_dependencies`.
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 /// Schema-first. `@AckInfer()` derives an immutable `User` class from this
 /// schema: final `name`, `email`, and `age` fields, `User.parse`,

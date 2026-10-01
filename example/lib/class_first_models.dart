@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'class_first_models.ack.dart';
 part 'class_first_models.ack.g.dart';

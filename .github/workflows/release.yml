@@ -78,7 +78,6 @@ jobs:
       packages_folder_path: "packages"
       packages: |
         ack
-        ack_annotations
 
   publish-generator:
     name: Publish generator package

@@ -1,10 +1,12 @@
-import 'package:ack_annotations/ack_annotations.dart';
-import 'package:ack_annotations/ack_generator_support.dart';
+// These tests intentionally cover the deprecated annotations.
+// ignore_for_file: deprecated_member_use_from_same_package
+
+import 'package:ack/annotations.dart';
+import 'package:ack/ack_generator_support.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('public barrel exposes legacy AckType and modern AckInfer', () {
-    // ignore: deprecated_member_use_from_same_package
     const legacy = AckType(name: 'User');
     const modern = AckInfer(name: 'User');
     expect(legacy.name, 'User');

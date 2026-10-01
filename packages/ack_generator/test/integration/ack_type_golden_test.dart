@@ -55,7 +55,7 @@ extension type UserType(Map<String, Object?> _data)
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final userSchema = Ack.object({

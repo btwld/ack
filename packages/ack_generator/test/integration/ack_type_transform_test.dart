@@ -18,7 +18,7 @@ void main() {
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -78,7 +78,7 @@ final validatedStringSchema = Ack.string().uri();
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -160,7 +160,7 @@ final profileSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -194,7 +194,7 @@ AckSchema<Color> get colorSchema =>
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final uniqueTagsSchema = Ack.list(Ack.string()).unique();
@@ -223,7 +223,7 @@ final describedTagsSchema = Ack.list(Ack.string()).describe('A list of tags');
           ...allAssets,
           'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -238,7 +238,7 @@ export 'palette_schemas.dart';
 ''',
           'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schema_exports.dart';
 
 @AckType()
@@ -274,7 +274,7 @@ final themeSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -301,7 +301,7 @@ final colorSchema = Ack.string().transform((value) => Color(value));
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final objectSchema = Ack.object({

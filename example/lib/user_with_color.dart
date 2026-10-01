@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 import 'pet.dart';
 

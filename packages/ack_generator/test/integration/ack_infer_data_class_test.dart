@@ -41,7 +41,7 @@ Future<void> _expectFailure(String body, List<String> messages) async {
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';

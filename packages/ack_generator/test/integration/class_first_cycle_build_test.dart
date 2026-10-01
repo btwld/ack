@@ -33,8 +33,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -42,12 +40,10 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
       File(p.join(temporary.path, 'lib', 'parent.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 import 'child.dart';
 
@@ -63,7 +59,7 @@ final class Parent with _$ParentAck {
 ''');
       File(p.join(temporary.path, 'lib', 'child.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 import 'parent.dart';
 

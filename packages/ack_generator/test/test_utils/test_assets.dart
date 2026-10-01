@@ -24,14 +24,6 @@ class Target {
 ''',
 };
 
-const ackAnnotationsAsset = {
-  'ack_annotations|lib/ack_annotations.dart': '''
-library ack_annotations;
-
-export 'package:ack/annotations.dart';
-''',
-};
-
 const ackPackageAnnotationsAsset = {
   'ack|lib/annotations.dart': '''
 library ack;
@@ -357,7 +349,6 @@ class SchemaFailure<T> extends SchemaResult<T> {
 /// Combine all assets for easy use in tests
 Map<String, String> get allAssets => {
   ...metaAssets,
-  ...ackAnnotationsAsset,
   ...ackPackageAnnotationsAsset,
   ...ackPackageAsset,
 };

@@ -54,8 +54,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -63,12 +61,9 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
@@ -131,8 +126,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
   json_annotation: ^4.12.0
 dev_dependencies:
   ack_generator:
@@ -143,8 +136,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
 targets:
@@ -161,7 +152,6 @@ targets:
 ''');
         File(p.join(temporary.path, 'lib', 'same.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'same.ack.dart';
@@ -257,8 +247,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -267,15 +255,13 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(
           p.join(temporary.path, 'lib', 'role.dart'),
         ).writeAsStringSync('enum Role { admin, member }\n');
         File(p.join(temporary.path, 'lib', 'support.dart')).writeAsStringSync(
           "export 'package:ack/ack.dart';\n"
-          "export 'package:ack_annotations/ack_annotations.dart';\n"
+          "export 'package:ack/annotations.dart';\n"
           "export 'role.dart';\n",
         );
         File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''

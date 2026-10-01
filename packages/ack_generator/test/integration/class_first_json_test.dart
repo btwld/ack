@@ -16,7 +16,7 @@ Future<void> _expectJsonOutput(String source, Matcher matcher) async {
 }
 
 const _head = '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'model.ack.g.dart';
 ''';

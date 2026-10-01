@@ -75,7 +75,7 @@ void main() {
         {
           'test_pkg|lib/widget.dart':
               '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({@Pattern(${example.literal}) required String value}) {}
 ''',

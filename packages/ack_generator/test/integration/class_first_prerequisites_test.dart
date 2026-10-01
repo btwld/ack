@@ -14,7 +14,7 @@ void main() {
         ackModelJsonBuilder(BuilderOptions.empty),
         {
           'test_pkg|lib/pet.dart': r'''
-import 'package:ack_annotations/ack_generator_support.dart';
+import 'package:ack/ack_generator_support.dart';
 
 part 'pet.ack.g.dart';
 

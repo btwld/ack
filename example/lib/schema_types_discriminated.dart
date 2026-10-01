@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'schema_types_discriminated.ack.dart';
 part 'schema_types_discriminated.ack.g.dart';

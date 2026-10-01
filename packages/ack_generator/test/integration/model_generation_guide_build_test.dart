@@ -60,8 +60,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -70,8 +68,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(
           p.join(temporary.path, 'lib', 'models.dart'),

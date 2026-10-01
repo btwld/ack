@@ -29,7 +29,7 @@ Future<void> _build(
 
 const _parts = """
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'models.g.dart';
 part 'models.ack.dart';
@@ -202,7 +202,7 @@ final class User with _\$UserAck {
         ackModelBuilder(BuilderOptions.empty),
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'exports.dart';
 
 part 'models.ack.dart';
@@ -218,7 +218,7 @@ final class User with _\$UserAck {
         supportingSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
@@ -249,7 +249,7 @@ final addressSchema = Ack.object({'city': Ack.string()});
         ackModelBuilder(BuilderOptions.empty),
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'exports.dart';
 
 part 'models.ack.dart';
@@ -265,7 +265,7 @@ final class User with _\$UserAck {
         supportingSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
@@ -576,7 +576,7 @@ final userSchema = Ack.object({'address': ${entry.value}});
       ackGenerator(BuilderOptions.empty),
       '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'address_models.dart';
 
 part 'models.g.dart';
@@ -589,7 +589,7 @@ final userSchema = Ack.object({'address': AddressSchema.schema});
       supportingSources: const {
         'address_models.dart': "export 'address.dart';\n",
         'address.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckModel()
 final class Address {

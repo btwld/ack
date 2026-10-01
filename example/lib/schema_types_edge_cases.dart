@@ -10,7 +10,6 @@
 library;
 
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'schema_types_edge_cases.ack.dart';
 part 'schema_types_edge_cases.ack.g.dart';

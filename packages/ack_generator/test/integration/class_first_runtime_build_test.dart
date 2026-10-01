@@ -104,8 +104,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
   json_annotation: ^4.11.0
 dev_dependencies:
   ack_generator:
@@ -116,8 +114,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
           '''
@@ -171,7 +167,6 @@ final class Handwritten with _$HandwrittenAck {
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
 import 'alpha.dart' as alpha;

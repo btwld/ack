@@ -86,8 +86,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -96,8 +94,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
           '''
@@ -110,7 +106,6 @@ linter:
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
@@ -269,7 +264,6 @@ final countedSchema = Ack.object({
         File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
@@ -284,7 +278,6 @@ final addressSchema = Ack.object({'city': Ack.string()});
         File(p.join(temporary.path, 'lib', 'person.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as direct;
 import 'exports.dart' as exported;

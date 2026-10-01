@@ -27,7 +27,7 @@ Future<void> _build(
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 ''';
 
 void main() {
@@ -639,7 +639,7 @@ final bagSchema = Ack.object({}).passthrough();
       {
         'schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
+import 'package:ack/annotations.dart' as annotations;
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
@@ -682,8 +682,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     () async {
       await _build(
         {
-          'annotations.dart':
-              "export 'package:ack_annotations/ack_annotations.dart';",
+          'annotations.dart': "export 'package:ack/annotations.dart';",
           'schema.dart': '''
 import 'package:ack/ack.dart';
 import 'annotations.dart';
@@ -711,8 +710,8 @@ final userSchema = Ack.object({'name': Ack.string()});
         {
           'schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
+import 'package:ack/annotations.dart';
+import 'package:ack/annotations.dart' as annotations;
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
@@ -735,8 +734,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     () async {
       await _build(
         {
-          'annotations.dart':
-              "export 'package:ack_annotations/ack_annotations.dart';",
+          'annotations.dart': "export 'package:ack/annotations.dart';",
           'schema.dart': '''
 import 'package:ack/ack.dart';
 import 'annotations.dart' as annotations show AckInfer;
@@ -762,7 +760,7 @@ final userSchema = Ack.object({'name': Ack.string()});
       {
         'support.dart': '''
 export 'package:ack/ack.dart';
-export 'package:ack_annotations/ack_annotations.dart';
+export 'package:ack/annotations.dart';
 ''',
         'schema.dart': '''
 import 'support.dart' as support;

@@ -18,7 +18,7 @@ void main() {
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -50,7 +50,7 @@ final userSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -82,7 +82,7 @@ final userSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -111,7 +111,7 @@ final userSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/empty.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final emptySchema = Ack.object({}, additionalProperties: true);
@@ -140,7 +140,7 @@ final emptySchema = Ack.object({}, additionalProperties: true);
           ...allAssets,
           'test_pkg|lib/single.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final singleFieldSchema = Ack.object({
@@ -170,7 +170,7 @@ final singleFieldSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/three.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final threeFieldsSchema = Ack.object({
