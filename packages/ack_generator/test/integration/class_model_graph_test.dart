@@ -64,6 +64,22 @@ part 'model.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects @Schemable(name:) on a class', () async {
+    await _expectFailure(
+      '''
+@Schemable(name: 'IgnoredName')
+final class Account with _\$AccountAck {
+  const Account({required this.id});
+  final String id;
+}
+''',
+      [
+        'Account sets @Schemable(name: ...), which applies only to top-level '
+            'schemas. Use schemaName to name the generated schema facade.',
+      ],
+    );
+  });
+
   test(
     'rejects a local declaration named like the copyWith implementation',
     () async {

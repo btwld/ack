@@ -8,8 +8,10 @@ import 'ack_model.dart';
 ///
 /// Use this annotation on a top-level schema variable or getter to generate a
 /// schema-first model. Use it on a class to generate a class-first schema.
-/// The target determines which options apply. The deprecated `@AckInfer` and
-/// `@AckModel` spellings remain supported until 2.0.0.
+/// [name] applies only to a top-level schema; every other option applies only
+/// to a class. `ack_generator` rejects an option set for the other target.
+/// The deprecated `@AckInfer` and `@AckModel` spellings remain supported until
+/// 2.0.0.
 @Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
 final class Schemable {
   /// Internal marker used on generated schema-first model classes.
@@ -59,7 +61,8 @@ final class Schemable {
   /// Exact generated schema facade name for a class declaration.
   final String? schemaName;
 
-  /// Description for a class schema. Top-level schemas should use `.describe()`.
+  /// Description for a class schema. This takes precedence over an
+  /// `@description` doc tag. A top-level schema uses `.describe(...)` instead.
   final String? description;
 
   /// JSON field-name style for a class declaration.

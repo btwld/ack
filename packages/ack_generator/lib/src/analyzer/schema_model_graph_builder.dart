@@ -208,6 +208,7 @@ final class SchemaModelGraphBuilder {
     _resolvedByUri[libraryElement.uri] = resolved;
 
     for (final element in annotatedElements) {
+      _rejectClassOnlyOptions(element);
       final expression = _declarationExpression(resolved, element);
       final declarationName = element.name;
       if (declarationName == null || expression == null) {
@@ -244,6 +245,33 @@ final class SchemaModelGraphBuilder {
     }
     _validateDelegatedHelperNames();
     return _graph;
+  }
+
+  void _rejectClassOnlyOptions(Element element) {
+    final annotation = _schemableChecker.firstAnnotationOfExact(
+      _propertyDeclaration(element),
+    );
+    if (annotation == null) return;
+    final reader = ConstantReader(annotation);
+    int index(String option) =>
+        reader.read(option).objectValue.getField('index')!.toIntValue()!;
+    final configured = [
+      if (!reader.read('schemaName').isNull) 'schemaName',
+      if (!reader.read('description').isNull) 'description',
+      if (index('caseStyle') != 0) 'caseStyle',
+      if (!reader.read('discriminatorKey').isNull) 'discriminatorKey',
+      if (!reader.read('discriminatorValue').isNull) 'discriminatorValue',
+      if (index('unknownProperties') != 0) 'unknownProperties',
+      if (reader.read('captureField').stringValue != 'additionalProperties')
+        'captureField',
+    ];
+    if (configured.isEmpty) return;
+    throw InvalidGenerationSource(
+      '${element.name} sets @Schemable options that apply only to classes: '
+      '${configured.join(', ')}. Configure a top-level schema in its Ack '
+      'expression; describe it with .describe(...).',
+      element: element,
+    );
   }
 
   void _registerElement(Element element, _Declaration declaration) {

@@ -319,6 +319,14 @@ final class ClassModelGraphBuilder {
         todo: 'Annotate a public class.',
       );
     }
+    final schemable = _schemableChecker.firstAnnotationOfExact(element);
+    if (schemable != null && !ConstantReader(schemable).read('name').isNull) {
+      throw InvalidGenerationSource(
+        '$name sets @Schemable(name: ...), which applies only to top-level '
+        'schemas. Use schemaName to name the generated schema facade.',
+        element: element,
+      );
+    }
     _rejectRedirectingFactory(element);
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {

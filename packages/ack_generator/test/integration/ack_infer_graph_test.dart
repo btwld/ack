@@ -46,6 +46,26 @@ part 'schema.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects @Schemable options that apply only to classes', () async {
+    await _expectFailure(
+      '''
+$_head
+@Schemable(
+  caseStyle: AckCaseStyle.snake,
+  description: 'A user.',
+  schemaName: 'UserWire',
+)
+final userSchema = Ack.object({'firstName': Ack.string()});
+''',
+      [
+        'userSchema sets @Schemable options that apply only to classes: '
+            'schemaName, description, caseStyle.',
+        'Configure a top-level schema in its Ack expression; describe it '
+            'with .describe(...).',
+      ],
+    );
+  });
+
   test('rejects dynamic additionalProperties expressions', () async {
     await _expectFailure(
       '''
