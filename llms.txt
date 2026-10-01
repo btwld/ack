@@ -5,7 +5,12 @@
 Ack validates untrusted boundary data with schemas built through the `Ack`
 factory. Annotate a top-level schema with `@Schemable()` to generate a model, or
 annotate a hand-written class with `@Schemable()` to generate its schema and
-JSON helpers. Every annotation is exported from `package:ack/ack.dart`.
+JSON helpers. `package:ack/ack.dart` exports `@Schemable` and the model
+annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`, `@JsonKey`).
+Constraint annotations such as `@MinLength` and `@Email` come from
+`package:ack/annotations.dart`; import it with a prefix (`as ack`, then
+`@ack.Email()`) where a name clashes with another type. `@Uri()` and
+`@DateTime()` come from `package:ack/format_annotations.dart`.
 `@AckInfer()` and `@AckModel()` are deprecated spellings of `@Schemable()`.
 There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 
@@ -96,6 +101,9 @@ Generated object models provide:
 For class-first generation:
 
 ```dart
+import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
+
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
@@ -274,9 +282,11 @@ validates through the union's effective branch.
 
 ## Migration from 1.7.0-beta.2
 
-- Remove `ack_annotations`; import `package:ack/ack.dart` instead, and replace
-  `package:ack_annotations/format_annotations.dart` with
-  `package:ack/format_annotations.dart`.
+- Remove `ack_annotations`. Import `package:ack/ack.dart` for the model
+  annotations, and replace `package:ack_annotations/ack_annotations.dart` with
+  `package:ack/annotations.dart` in files that use constraints or the
+  deprecated spellings. Replace `package:ack_annotations/format_annotations.dart`
+  with `package:ack/format_annotations.dart`.
 - Rename `@Pattern(...)` to `@Matches(...)`.
 - Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`. A library that
   keeps `@AckInfer()` must still have `Schemable` in scope, because generated

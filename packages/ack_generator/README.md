@@ -2,8 +2,9 @@
 
 `ack_generator` supports two modern directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
-codec schema from a hand-written class. The annotations are exported from
-`package:ack/ack.dart`. `@AckInfer()` and `@AckModel()` are deprecated
+codec schema from a hand-written class. `@Schemable()` and the model
+annotations are exported from `package:ack/ack.dart`; constraint annotations
+come from `package:ack/annotations.dart`. `@AckInfer()` and `@AckModel()` are deprecated
 spellings of `@Schemable()` until 2.0.0. It also retains the deprecated Ack
 1.1 `@AckType()` generator unchanged.
 
@@ -65,6 +66,7 @@ mixin:
 
 ```dart
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 
 part 'account.ack.dart';
 part 'account.ack.g.dart';

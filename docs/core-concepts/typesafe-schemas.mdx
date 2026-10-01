@@ -10,7 +10,20 @@ and generate a Dart model, or start with a Dart model and generate its schema.
 | A top-level Ack schema | `@Schemable()` | An immutable Dart model |
 | A Dart class | `@Schemable()` | An Ack codec schema and JSON helpers |
 
-`@Schemable()` and every field annotation come from `package:ack/ack.dart`.
+`@Schemable()` and the model annotations (`@AckField`, `@Optional`,
+`@Required`, `@NotNull`, `@JsonKey`) come from `package:ack/ack.dart`.
+Constraint annotations such as `@MinLength` and `@Email` come from
+`package:ack/annotations.dart`. Where a constraint name clashes with another
+type, such as `package:uuid`'s `Uuid` or your own `Email`, import it with a
+prefix and write `@ack.Email()`:
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart' as ack;
+```
+
+`@Uri()` and `@DateTime()` come from `package:ack/format_annotations.dart`,
+imported with a prefix because they share names with `dart:core` types.
 There is no `@AckSchema()` annotation. `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 `@AckInfer()` and `@AckModel()` are deprecated spellings of `@Schemable()` and
@@ -43,6 +56,7 @@ the same builders and generated parts.
 
 ```dart title="lib/models.dart"
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
@@ -625,21 +639,24 @@ Both entries must cover the same annotated libraries.
 
 ## Migrating from 1.7.0-beta.2
 
-- The `ack_annotations` package is gone. Remove it from `pubspec.yaml` and
-  replace `package:ack_annotations/ack_annotations.dart` imports with
-  `package:ack/ack.dart`, and `package:ack_annotations/format_annotations.dart`
-  with `package:ack/format_annotations.dart`.
+- The `ack_annotations` package is gone. Remove it from `pubspec.yaml`.
+  Import `package:ack/ack.dart` for `@Schemable()` and the model annotations,
+  and replace `package:ack_annotations/ack_annotations.dart` with
+  `package:ack/annotations.dart` in files that use constraint annotations or
+  the deprecated `@AckInfer()`, `@AckModel()` and `@AckType()`. Replace
+  `package:ack_annotations/format_annotations.dart` with
+  `package:ack/format_annotations.dart`.
 - Rename `@Pattern(...)` to `@Matches(...)`. The old name remains a deprecated
-  alias in `package:ack/annotations.dart` only, so `package:ack/ack.dart` keeps
-  `dart:core`'s `Pattern` visible.
+  alias in `package:ack/annotations.dart` only.
 - Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`; the options keep
   their names. The old spellings still generate the same code until 2.0.0,
   as long as `Schemable` is in scope: generated models carry
   `@Schemable.generatedJson`, so an import with `show AckInfer` must also show
   `Schemable`.
-- `@Required()` is exported from `package:ack/ack.dart`. A library that also
-  imports `package:meta/meta.dart` and uses `@Required()` must hide one of
-  them; `meta`'s `Required` class only backs its deprecated `@required`
-  annotation, which the `required` keyword replaced.
+- A name that `package:ack/ack.dart` or `package:ack/annotations.dart` exports
+  can clash with a same-named class from another library, such as
+  `package:uuid`'s `Uuid`, your own `Email` type, or `package:meta`'s
+  `Required`. Import `package:ack/annotations.dart` with a prefix
+  (`as ack`, then `@ack.Uuid()`), or `hide` the name from one import.
 - Regenerate: generated schema-first models now carry
   `@Schemable.generatedJson`.

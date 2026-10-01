@@ -306,8 +306,13 @@ Schema reference for recursive object graphs.
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction with one annotation, `@Schemable()`: on a top-level schema it
-generates a model, and on a class it generates a schema. All annotations are
-exported from `package:ack/ack.dart`. `@AckInfer()` and `@AckModel()` are
+generates a model, and on a class it generates a schema. `package:ack/ack.dart`
+exports `@Schemable` and the model annotations (`@AckField`, `@Optional`,
+`@Required`, `@NotNull`, `@JsonKey`). Constraint annotations come from
+`package:ack/annotations.dart`, imported with a prefix (`as ack`, then
+`@ack.Email()`) where a name clashes with another type, and `@Uri()` /
+`@DateTime()` from `package:ack/format_annotations.dart`. `@AckInfer()` and
+`@AckModel()` are
 deprecated spellings that keep working until 2.0.0. `AckSchema` is the
 runtime schema type; there is no `@AckSchema()` annotation. After adding matching
 `.ack.dart` and `.ack.g.dart` part directives, run:
@@ -419,6 +424,9 @@ consumers, while models that round-trip unknown keys must use `capture` and may
 select the target map with `captureField`.
 
 ```dart
+import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
+
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});

@@ -2,18 +2,23 @@
 
 ### Breaking
 
-* The `ack_annotations` package is removed. Its annotations now ship in `ack`
-  and are exported from `package:ack/ack.dart`. Remove `ack_annotations` from
-  `pubspec.yaml` and replace `package:ack_annotations/ack_annotations.dart`
-  imports with `package:ack/ack.dart`, and
+* The `ack_annotations` package is removed and its annotations ship in `ack`.
+  Remove `ack_annotations` from `pubspec.yaml`. `package:ack/ack.dart`
+  exports `@Schemable()` and the model annotations (`AckField`, `Optional`,
+  `Required`, `NotNull`, `JsonKey`, `AckCaseStyle`,
+  `AckUnknownPropertyPolicy`). Replace
+  `package:ack_annotations/ack_annotations.dart` with
+  `package:ack/annotations.dart`, which exports the model annotations, the
+  constraints and the deprecated spellings, and
   `package:ack_annotations/format_annotations.dart` with
   `package:ack/format_annotations.dart`.
 * `@Pattern` is renamed `@Matches`, matching `Ack.string().matches(...)`.
-  `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only,
-  so importing `package:ack/ack.dart` keeps `dart:core`'s `Pattern` visible.
-* `package:ack/ack.dart` exports `@Required()`. A library that imports both
-  `package:ack/ack.dart` and `package:meta/meta.dart` and uses `Required` must
-  hide one of them.
+  `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only.
+* Names exported from `package:ack/ack.dart` or `package:ack/annotations.dart`
+  can clash with same-named classes from other libraries, such as
+  `package:uuid`'s `Uuid` or `package:meta`'s `Required`. Import
+  `package:ack/annotations.dart` with a prefix (`as ack`, then `@ack.Uuid()`),
+  or `hide` the name from one import.
 
 ### Added
 

@@ -3,7 +3,8 @@
 ### Breaking
 
 * Annotations are read from `package:ack`; the `ack_annotations` package is
-  removed. Import `package:ack/ack.dart` in annotated libraries.
+  removed. Import `package:ack/ack.dart` in annotated libraries, and
+  `package:ack/annotations.dart` where they use constraint annotations.
 * Generated schema-first models carry `@Schemable.generatedJson` instead of
   `@AckInfer.jsonSerializable`. Regenerate after upgrading.
 

@@ -44,8 +44,9 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-The generator works in both directions with one annotation from
-`package:ack/ack.dart`. `@Schemable()` on a top-level schema generates an
+The generator works in both directions with one annotation, `@Schemable()`,
+from `package:ack/ack.dart`. Constraint annotations such as `@MinLength()` come
+from `package:ack/annotations.dart`. `@Schemable()` on a top-level schema generates an
 immutable model. `@Schemable()` on a hand-written class generates a public
 `<ClassName>Schema` facade, a private Ack codec, and JSON helpers.
 There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
