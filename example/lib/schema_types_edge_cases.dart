@@ -10,7 +10,6 @@
 library;
 
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema_types_edge_cases.ack.dart';
 part 'schema_types_edge_cases.ack.g.dart';
@@ -25,7 +24,7 @@ part 'schema_types_edge_cases.ack.g.dart';
 /// - tags field should be `List<String>`, not `List<dynamic>`
 /// - scores field should be `List<int>`, not `List<dynamic>`
 /// - flags field should be `List<bool>`, not `List<dynamic>`
-@AckInfer()
+@Schemable()
 final productSchema = Ack.object({
   'name': Ack.string(),
   'tags': Ack.list(Ack.string()), // Generates: final List<String> tags
@@ -37,7 +36,7 @@ final productSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - matrix field should be `List<List<int>>`
-@AckInfer()
+@Schemable()
 final gridSchema = Ack.object({
   'name': Ack.string(),
   'matrix': Ack.list(
@@ -50,7 +49,7 @@ final gridSchema = Ack.object({
 // ============================================================================
 
 /// Simple address schema for composition
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({
   'street': Ack.string(),
   'city': Ack.string(),
@@ -63,7 +62,7 @@ final addressSchema = Ack.object({
 /// EXPECTED BEHAVIOR:
 /// - address field should NOT be null/missing
 /// - Generates: `final Address address`
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string(),
@@ -75,7 +74,7 @@ final personSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - Both homeAddress and workAddress fields should be present
-@AckInfer()
+@Schemable()
 final employeeSchema = Ack.object({
   'name': Ack.string(),
   'employeeId': Ack.string(),
@@ -94,7 +93,7 @@ final employeeSchema = Ack.object({
 /// - nullableField: isRequired=true, isNullable=true
 /// - optionalNullable: isRequired=false, isNullable=true
 /// - requiredField: isRequired=true, isNullable=false
-@AckInfer()
+@Schemable()
 final modifierSchema = Ack.object({
   'requiredField': Ack.string(),
   'optionalField': Ack.string().optional(),
@@ -112,7 +111,7 @@ final modifierSchema = Ack.object({
 /// EXPECTED BEHAVIOR:
 /// - optionalTags: `List<String>?`, isRequired=false
 /// - requiredTags: `List<String>`, isRequired=true
-@AckInfer()
+@Schemable()
 final taggedItemSchema = Ack.object({
   'name': Ack.string(),
   'requiredTags': Ack.list(Ack.string()),
@@ -124,7 +123,7 @@ final taggedItemSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - addresses: `List<Address>` (eager list with typed elements)
-@AckInfer()
+@Schemable()
 final contactListSchema = Ack.object({
   'name': Ack.string(),
   'addresses': Ack.list(addressSchema),
@@ -139,11 +138,11 @@ final contactListSchema = Ack.object({
 /// EXPECTED BEHAVIOR:
 /// Generates an immutable model with no stored schema fields.
 /// - parse() should still work
-@AckInfer()
+@Schemable()
 final emptySchema = Ack.object({});
 
 /// Single field schema (minimal case)
-@AckInfer()
+@Schemable()
 final minimalSchema = Ack.object({'id': Ack.string()});
 
 // ============================================================================
@@ -151,13 +150,13 @@ final minimalSchema = Ack.object({'id': Ack.string()});
 // ============================================================================
 
 /// Schema with 'Schema' suffix (generates `NamedItem`)
-@AckInfer()
+@Schemable()
 final namedItemSchema = Ack.object({'name': Ack.string()});
 
 /// Schema without 'Schema' suffix (generates `Item`)
-@AckInfer()
+@Schemable()
 final item = Ack.object({'id': Ack.string()});
 
 /// Schema with unusual name (should handle gracefully)
-@AckInfer()
+@Schemable()
 final myCustomSchema123 = Ack.object({'value': Ack.string()});

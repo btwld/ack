@@ -6,11 +6,10 @@ publish_to: none
 resolution: workspace
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
 
 dependencies:
   ack: ^1.2.0
-  ack_annotations: ^1.2.0
 
 dev_dependencies:
   ack_generator: ^1.2.0

@@ -1,15 +1,17 @@
 # ack_annotations
 
-`ack_annotations` provides the `@AckInfer()` schema-first and `@AckModel()`
-class-first annotations used by `ack_generator`. Deprecated `@AckType()` is
-retained for Ack 1.1 extension-type compatibility.
+`ack_annotations` is a compatibility package. Ack now owns the annotations
+used by `ack_generator`, including `@Schemable()`, `@AckInfer()`,
+`@AckModel()`, and deprecated `@AckType()`.
+
+New code should depend on `ack` and import `package:ack/annotations.dart`.
+This package re-exports the same declarations for existing applications.
 
 ## Installation
 
 ```yaml
 dependencies:
   ack: ^1.7.0-beta.2
-  ack_annotations: ^1.7.0-beta.2
 
 dev_dependencies:
   ack_generator: ^1.7.0-beta.2
@@ -22,12 +24,12 @@ Annotate a top-level Ack schema variable or getter and run `build_runner`:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
@@ -51,7 +53,7 @@ For class-first generation, keep the class in source and apply its generated
 mixin:
 
 ```dart
-@AckModel()
+@Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
 
@@ -64,13 +66,28 @@ final class Account with _$AccountAck {
 
 This generates the public `AccountSchema` facade plus validated `toJson`,
 `safeToJson`, `copyWith`, equality, and `toString` implementations.
-Use `@AckModel(description: ...)` and `@AckField(description: ...)` for schema
-descriptions. A single-line `@description` documentation tag is a fallback.
+
+An abstract class can keep its implementation private with a redirecting
+factory. Declare a zero-argument private constructor, apply the generated
+mixin, and redirect the unnamed factory with named parameters to `_Class`:
+
+```dart
+@Schemable()
+abstract class HabitDto with _$HabitDtoAck {
+  const HabitDto._();
+  const factory HabitDto({required String name}) = _HabitDto;
+}
+```
+
+The generator emits `_HabitDto` and uses the factory parameters as its stored
+fields. Factory parameters must be named. Use schema `.describe(...)` calls or
+a single-line `@description` documentation tag for descriptions. `@AckField`
+remains available for custom codecs and presence overrides.
 Untagged prose does not become schema data. Explicit annotation text takes
 precedence over the tag. A field description applies to its property without
 changing a nested model's description. Format
 annotations such as `@Url()`, `@Uuid()`, and `@Date()` constrain string
-fields. Import `package:ack_annotations/format_annotations.dart` with a
+fields. Import `package:ack/format_annotations.dart` with a
 prefix for `@formats.Uri()` and `@formats.DateTime()`. The prefix preserves
 the Dart core `Uri` and `DateTime` type names.
 

@@ -5,13 +5,13 @@
 //
 // A real class-first library adds the two part directives and the generated
 // `_$UserAck` mixin. See the ack_generator package for a complete setup.
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
-/// Class-first: `@AckModel()` derives a schema from the constructor.
+/// Class-first: `@Schemable()` derives a schema from the constructor.
 ///
 /// `caseStyle` renames every JSON key, and the constraint annotations add
 /// validation that the generated schema enforces.
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class User {
   const User({required this.fullName, required this.email, this.age});
 
@@ -32,7 +32,7 @@ final class User {
 ///
 /// [AckUnknownPropertyPolicy.capture] stores them in [captureField] and writes
 /// them back when the model encodes.
-@AckModel(
+@Schemable(
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: 'extras',
 )
@@ -46,7 +46,7 @@ final class TolerantPayload {
 
 /// `@Required()` and `@Optional()` override what the constructor implies for one
 /// field. Keep `@AckField(schema: ...)` for custom field codecs.
-@AckModel()
+@Schemable()
 final class Article {
   const Article({required this.title, this.summary});
 
@@ -60,10 +60,10 @@ final class Article {
 
 void main() {
   // The annotations carry const data that the generator reads at build time.
-  const user = AckModel(caseStyle: AckCaseStyle.snake);
+  const user = Schemable(caseStyle: AckCaseStyle.snake);
   print('User keys use ${user.caseStyle.name} case.');
 
-  const tolerant = AckModel(
+  const tolerant = Schemable(
     unknownProperties: AckUnknownPropertyPolicy.capture,
     captureField: 'extras',
   );

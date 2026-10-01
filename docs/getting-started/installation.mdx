@@ -26,10 +26,10 @@ dependencies:
 ## Optional code generator
 
 To generate models from Ack schemas or Ack schemas from hand-written models,
-add the annotation and generator packages alongside `ack`:
+add `ack` and the generator package:
 
 ```bash
-dart pub add ack ack_annotations
+dart pub add ack
 dart pub add --dev ack_generator build_runner
 ```
 
@@ -38,37 +38,31 @@ Or add them to your `pubspec.yaml`:
 ```yaml
 dependencies:
   ack: ^1.6.2 # Replace with latest version
-  ack_annotations: ^1.6.2 # Replace with latest version
 
 dev_dependencies:
   ack_generator: ^1.6.2 # Replace with latest version
   build_runner: ^2.4.0
 ```
 
-The generator works in both directions. `@AckInfer()` marks a top-level schema
-and generates an immutable model. `@AckModel()` marks a hand-written class and
-generates a public `<ClassName>Schema` facade, a private Ack codec, and JSON
-helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
-schema type.
+The generator works in both directions. `@Schemable()` marks a top-level
+schema or a hand-written class. It generates an immutable model, or a public
+`<ClassName>Schema` facade with a private Ack codec and JSON helpers.
+`@AckInfer()` and `@AckModel()` remain deprecated spellings.
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
 });
 
-@AckModel()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-  final String name;
-
+@Schemable()
+final class Account({required final String name}) with _$AccountAck {
   static final fromJson = AccountSchema.fromJson;
 }
 ```
@@ -89,4 +83,7 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 ## Requirements
 
 - Dart SDK: `>=3.9.0 <4.0.0` for core `ack`
-- Dart SDK: `>=3.9.0 <4.0.0` when using `ack_annotations` / `ack_generator`
+- Dart SDK: `>=3.13.0 <4.0.0` for `ack_generator`, including primary constructors
+
+Existing applications may keep `ack_annotations`; it re-exports the annotation
+API for compatibility.

@@ -1,3 +1,6 @@
+// Compatibility tests intentionally use deprecated annotations.
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:ack_annotations/ack_generator_support.dart';
 import 'package:test/test.dart';

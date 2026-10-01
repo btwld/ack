@@ -1,0 +1,79 @@
+import 'package:json_annotation/json_annotation.dart';
+import 'package:meta/meta_meta.dart';
+
+import 'ack_model.dart';
+import 'ack_generated_json.dart';
+
+/// Marks an Ack schema declaration.
+///
+/// Use this annotation on a top-level schema variable or getter to generate a
+/// schema-first model. Use it on a class to generate a class-first schema.
+/// The target determines which options apply. [AckInfer] and [AckModel]
+/// remain supported as compatibility spellings.
+@Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
+final class Schemable {
+  /// Internal JSON marker for schema-first generated models.
+  static const Object generatedJson = AckGeneratedJson();
+
+  /// Creates a unified schema declaration annotation.
+  const Schemable({
+    this.name,
+    this.schemaName,
+    this.description,
+    this.caseStyle = AckCaseStyle.none,
+    this.discriminatorKey,
+    this.discriminatorValue,
+    this.unknownProperties = AckUnknownPropertyPolicy.reject,
+    this.captureField = 'additionalProperties',
+  }) : jsonSerializable = caseStyle == AckCaseStyle.snake
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.snake,
+             )
+           : caseStyle == AckCaseStyle.kebab
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.kebab,
+             )
+           : caseStyle == AckCaseStyle.pascal
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.pascal,
+             )
+           : caseStyle == AckCaseStyle.screamingSnake
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.screamingSnake,
+             )
+           : const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.none,
+             );
+
+  /// Exact generated model name for a top-level schema declaration.
+  final String? name;
+
+  /// Exact generated schema facade name for a class declaration.
+  final String? schemaName;
+
+  /// Description for a class schema. Top-level schemas should use `.describe()`.
+  final String? description;
+
+  /// JSON field-name style for a class declaration.
+  final AckCaseStyle caseStyle;
+
+  /// Discriminator key for a sealed class declaration.
+  final String? discriminatorKey;
+
+  /// Discriminator value for a concrete union branch.
+  final String? discriminatorValue;
+
+  /// Unknown-property policy for a class declaration.
+  final AckUnknownPropertyPolicy unknownProperties;
+
+  /// Dart field that stores captured unknown properties.
+  final String captureField;
+
+  /// Fixed JSON mapping configuration for a class declaration.
+  final JsonSerializable jsonSerializable;
+}

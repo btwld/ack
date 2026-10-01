@@ -36,9 +36,8 @@ void main() {
     'class-first facades compose across libraries from a clean build',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
@@ -68,15 +67,14 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
-          r'''
+        File(p.join(temporary.path, 'lib', 'address.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel(schemaName: 'PostalAddressSchema')
+@Schemable(schemaName: 'PostalAddressSchema')
 final class Address with _$AddressAck {
   const Address({required this.city});
 
@@ -85,26 +83,24 @@ final class Address with _$AddressAck {
   static final fromJson = PostalAddressSchema.fromJson;
 }
 
-@AckModel()
+@Schemable()
 final class AddressBook with _$AddressBookAck {
   const AddressBook({required this.primary, this.secondary});
 
   final Address primary;
   final Address? secondary;
 }
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'customer.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'customer.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' show Address, PostalAddressSchema;
 
 part 'customer.ack.dart';
 part 'customer.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Customer with _$CustomerAck {
   const Customer({
     this.primary = const Address(city: 'Default City'),
@@ -114,37 +110,32 @@ final class Customer with _$CustomerAck {
   final Address primary;
   final Address? secondary;
 }
-''',
-        );
-        File(
-          p.join(temporary.path, 'lib', 'models.dart'),
-        ).writeAsStringSync("export 'address.dart';\n");
-        File(p.join(temporary.path, 'lib', 'parcel.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'models.dart'))
+            .writeAsStringSync("export 'address.dart';\n");
+        File(p.join(temporary.path, 'lib', 'parcel.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'models.dart' as models;
 
 part 'parcel.ack.dart';
 part 'parcel.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Parcel with _$ParcelAck {
   const Parcel({required this.destination});
 
   final models.Address destination;
 }
-''',
-        );
+''');
         File(p.join(temporary.path, 'lib', 'north.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'north.ack.dart';
 part 'north.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Place with _$PlaceAck {
   const Place({required this.name});
 
@@ -153,22 +144,20 @@ final class Place with _$PlaceAck {
 ''');
         File(p.join(temporary.path, 'lib', 'south.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'south.ack.dart';
 part 'south.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Place with _$PlaceAck {
   const Place({required this.name});
 
   final String name;
 }
 ''');
-        File(p.join(temporary.path, 'lib', 'itinerary.dart')).writeAsStringSync(
-          r'''
+        File(p.join(temporary.path, 'lib', 'itinerary.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'north.dart' as north;
 import 'south.dart' as south;
@@ -176,23 +165,21 @@ import 'south.dart' as south;
 part 'itinerary.ack.dart';
 part 'itinerary.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Itinerary with _$ItineraryAck {
   const Itinerary({required this.start, required this.finish});
 
   final north.Place start;
   final south.Place finish;
 }
-''',
-        );
+''');
         File(p.join(temporary.path, 'lib', 'pet.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
 
@@ -207,7 +194,6 @@ final class Cat extends Pet with _$CatAck {
 ''');
         File(p.join(temporary.path, 'lib', 'order.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as address;
 import 'pet.dart' as pets;
@@ -215,7 +201,7 @@ import 'pet.dart' as pets;
 part 'order.ack.dart';
 part 'order.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Order with _$OrderAck {
   const Order({
     required this.shipping,
@@ -232,29 +218,26 @@ final class Order with _$OrderAck {
   final pets.Cat cat;
 }
 ''');
-        File(p.join(temporary.path, 'lib', 'legacy.dart')).writeAsStringSync(
-          r'''
+        File(p.join(temporary.path, 'lib', 'legacy.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'legacy.ack.dart';
 part 'legacy.ack.g.dart';
 
-@AckInfer(name: 'LegacyAddress')
+@Schemable(name: 'LegacyAddress')
 final legacyAddressContract = Ack.object({'city': Ack.string()});
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'holder.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'holder.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'legacy.dart' as legacy;
 
 part 'holder.ack.dart';
 part 'holder.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Holder with _$HolderAck {
   const Holder({
     required this.primary,
@@ -270,20 +253,17 @@ final class Holder with _$HolderAck {
   final List<List<legacy.LegacyAddress>> matrix;
   final Set<legacy.LegacyAddress> unique;
 }
-''',
-        );
-        File(
-          p.join(temporary.path, 'lib', 'address_envelope.dart'),
-        ).writeAsStringSync(r'''
+''');
+        File(p.join(temporary.path, 'lib', 'address_envelope.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as address;
 
 part 'address_envelope.ack.dart';
 part 'address_envelope.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressEnvelopeSchema = Ack.object({
   'primary': address.PostalAddressSchema.schema,
   'optional': address.PostalAddressSchema.schema.optional(),
@@ -295,9 +275,8 @@ final addressEnvelopeSchema = Ack.object({
   ),
 });
 ''');
-        File(
-          p.join(temporary.path, 'test', 'nested_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(temporary.path, 'test', 'nested_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_class_first_nested/address.dart';
 import 'package:ack_class_first_nested/address_envelope.dart';
 import 'package:ack_class_first_nested/customer.dart';

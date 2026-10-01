@@ -3,18 +3,18 @@
 > A schema validation library for Dart and Flutter with a fluent runtime API, bidirectional codecs, and two-way model/schema code generation.
 
 Ack validates untrusted boundary data with schemas built through the `Ack`
-factory. Annotate a schema with `@AckInfer()` to generate a model, or annotate a
-hand-written class with `@AckModel()` to generate its schema and JSON helpers.
+factory. Annotate a schema or hand-written class with `@Schemable()` to generate its model, schema, and JSON helpers.
 There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 
 ## Packages
 
 1. `ack`: core runtime validation, codecs, and generated-model support
-2. `ack_annotations`: exposes `@AckInfer()` and `@AckModel()`
-3. `ack_generator`: generates models from schemas and schemas from models
-4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
-5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
-6. `ack_mcp_dart`: advertises MCP tool input schemas and validates typed arguments with `mcp_dart`
+2. `ack`: owns `@Schemable()`, `@Schemable()`, and `@Schemable()` annotations
+3. `ack_annotations`: compatibility re-exports for the moved annotations
+4. `ack_generator`: generates models from schemas and schemas from models
+5. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
+6. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
+7. `ack_mcp_dart`: advertises MCP tool input schemas and validates typed arguments with `mcp_dart`
 
 ## Core runtime usage
 
@@ -48,25 +48,24 @@ Codecs decode a boundary value into a runtime value and encode it back.
 
 ## Model code generation
 
-Both directions use the same generated parts and build command. `@AckInfer()`
-is schema-first; `@AckModel()` is class-first.
+Both directions use `@Schemable()` and the same generated parts and build command.
+`@AckInfer()` and `@AckModel()` remain deprecated compatibility annotations.
 
 Every annotated library declares both generated parts:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user_schema.ack.dart';
 part 'user_schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({
   'street': Ack.string(),
   'city': Ack.string(),
 });
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'address': addressSchema,
@@ -74,7 +73,7 @@ final userSchema = Ack.object({
 ```
 
 Run `dart run build_runner build`. `addressSchema` and `userSchema` generate
-`Address` and `User`. A custom `@AckInfer(name: 'Member')` value is used exactly.
+`Address` and `User`. A custom `@Schemable(name: 'Member')` value is used exactly.
 
 Generated object models provide:
 
@@ -93,7 +92,7 @@ Generated object models provide:
 For class-first generation:
 
 ```dart
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
@@ -113,11 +112,11 @@ equality. The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`,
 `schemaName:` overrides the exact public UpperCamelCase facade name; no public
 lower-camel alias is emitted. Constructor parameters determine presence and
 defaults. Field types and constraint annotations determine the schema. Sealed
-classes use `@AckModel(discriminatorKey: ...)`; same-library concrete branches
+classes use `@Schemable(discriminatorKey: ...)`; same-library concrete branches
 are included automatically. Use `@Optional()` or `@Required()` to override
 inferred key presence, `@NotNull()` to reject an explicit JSON `null` without
 requiring the key, and `@AckField(schema: ...)` for custom field codecs.
-Use `@AckModel(description: ...)` and `@AckField(description: ...)` to export
+Use `@Schemable(description: ...)` and `@AckField(description: ...)` to export
 schema descriptions. A single-line `@description` doc tag is a fallback.
 Untagged prose does not export. A field description applies at its property
 without changing a nested model's own description.
@@ -162,7 +161,8 @@ Generation rejects nullable roots, one-way transforms, `Ack.any()` and
 object fields, non-string map keys, unresolved dynamic factories, name
 collisions, and cross-library discriminated branches.
 
-Class-first generation supports object models, inferred scalar and enum
+Class-first generation supports object models, redirecting private factory
+implementations, inferred scalar and enum
 fields, JSON-safe `Object` fields, nested lists, sets through list codecs,
 string-keyed maps, custom `@AckField` schemas, `@Optional()`, `@Required()`,
 `@NotNull()`, constructor defaults, case styles, `AckUnknownPropertyPolicy`,
@@ -186,23 +186,23 @@ maps), not an arbitrary Dart instance:
 
 ## Discriminated generated models
 
-`Ack.discriminated(...)` works with `@AckInfer()` when:
+`Ack.discriminated(...)` works with `@Schemable()` when:
 
 - `schemas` is a non-empty map literal;
-- each branch is a top-level `@AckInfer()` object schema in the same library;
+- each branch is a top-level `@Schemable()` object schema in the same library;
 - each branch is non-nullable;
 - branch schemas normally omit the discriminator field;
 - an included discriminator is an exact matching `Ack.literal(...)` or an
   `Ack.enumString(...)` containing the branch key.
 
 ```dart
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final dogSchema = Ack.object({'breed': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'cat': catSchema, 'dog': dogSchema},
@@ -215,7 +215,7 @@ validates through the union's effective branch.
 
 ## Migration from the previous generator
 
-- Rename `@AckType()` to `@AckInfer()` for each connected graph you opt in.
+- Rename `@AckType()` to `@Schemable()` for each connected graph you opt in.
 - Add both `.ack.dart` and `.ack.g.dart` part directives.
 - Rename generated `UserType` usages to `User` unless a custom name is set.
 - Replace map/list/scalar interface access with stored fields or `.value`.

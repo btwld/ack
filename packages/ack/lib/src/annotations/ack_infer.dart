@@ -31,6 +31,7 @@ import 'ack_generated_json.dart';
 /// - Classes
 /// - Instance members
 /// - Local variables
+@Deprecated('Use @Schemable() for schema-first generation.')
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 final class AckInfer {
   /// Internal marker used on generated model classes.

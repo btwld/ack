@@ -380,10 +380,12 @@ Map<String, Object?> $function(${node.className} model) {
     if (node.captureFieldName case final capture?) {
       final fromName = ackClassFromRuntimeBridgeName(node.className, capture);
       final toName = ackClassToRuntimeBridgeName(node.className, capture);
+      final hasDefault = parametersByField[capture]?.defaultExpression != null;
       output
         ..writeln(
-          'Map<String, Object?>? $fromName(Object? value) => '
-          'value == null ? null : '
+          'Map<String, Object?>${hasDefault ? '?' : ''} '
+          '$fromName(Object? value) => '
+          '${hasDefault ? 'value == null ? null : ' : ''}'
           '${_ack('deepUnmodifiableJsonMap')}('
           'value as Map<String, Object?>);',
         )

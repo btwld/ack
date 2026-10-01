@@ -1,3 +1,18 @@
+## Unreleased
+
+* Read annotations from `package:ack` while preserving compatibility imports
+  through `ack_annotations`.
+* Make `@Schemable()` the canonical annotation for schema-first and class-first
+  generation. `@AckInfer()` and `@AckModel()` remain deprecated spellings.
+  Class-first models use concrete constructor-backed fields, including Dart
+  primary constructors.
+* Upgrade the generator to Analyzer 13 and support its unified argument and
+  formal-parameter AST APIs.
+* Require Dart 3.13 for `ack_generator`. The core `ack` package keeps its
+  Dart 3.9 minimum.
+* Emit the non-deprecated `Schemable.generatedJson` marker and preserve
+  required capture-map types in generated JSON helpers.
+
 ## 1.7.0-beta.2
 
 ### Breaking

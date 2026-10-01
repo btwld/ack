@@ -14,9 +14,8 @@ void main() {
     'a clean build rejects a two-library class-first cycle with a field path',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(

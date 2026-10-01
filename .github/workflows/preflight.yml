@@ -45,12 +45,13 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      # The complete workspace cannot resolve on the minimum SDK, because
-      # flutter_test pins an older test_api than ack_generator's analyzer floor
-      # allows. The pure-Dart members still must resolve, so they get their own
-      # staged workspace.
+      # Runtime packages keep their Dart 3.9 minimum. The generator and its
+      # example require Dart 3.13 and use a separate staged workspace.
       - name: Stage the pure-Dart workspace
-        run: dart scripts/stage_min_sdk_workspace.dart "${{ runner.temp }}/min-dart"
+        run: dart scripts/stage_min_sdk_workspace.dart "${{ runner.temp }}/min-dart" --runtime-only
+
+      - name: Stage the generator workspace
+        run: dart scripts/stage_min_sdk_workspace.dart "${{ runner.temp }}/min-generator"
 
       - name: Set up the minimum Dart SDK
         uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1
@@ -89,6 +90,18 @@ jobs:
             fi
             echo "::endgroup::"
           done
+
+      - name: Set up the minimum generator SDK
+        uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1
+        with:
+          sdk: '3.13.0'
+
+      - name: Check the generator on its minimum SDK
+        working-directory: ${{ runner.temp }}/min-generator/packages/ack_generator
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart test
 
   minimum-flutter-sdk:
     name: Minimum Flutter SDK

@@ -95,6 +95,10 @@ final class _$CatCopyWith implements $CatCopyWith<Cat> {
 }
 
 mixin _$CatAck {
+  String get id;
+
+  int get lives;
+
   /// Creates a copy of this model with selected fields replaced.
   $CatCopyWith<Cat> get copyWith => _$CatCopyWith(this as Cat);
 
@@ -227,6 +231,10 @@ final class _$DogCopyWith implements $DogCopyWith<Dog> {
 }
 
 mixin _$DogAck {
+  String get id;
+
+  String get breed;
+
   /// Creates a copy of this model with selected fields replaced.
   $DogCopyWith<Dog> get copyWith => _$DogCopyWith(this as Dog);
 
@@ -454,6 +462,12 @@ final class _$AccountCopyWith implements $AccountCopyWith<Account> {
 }
 
 mixin _$AccountAck {
+  String get displayName;
+
+  Uri? get website;
+
+  String get role;
+
   /// Creates a copy of this model with selected fields replaced.
   $AccountCopyWith<Account> get copyWith => _$AccountCopyWith(this as Account);
 

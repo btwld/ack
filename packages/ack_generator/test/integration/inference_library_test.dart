@@ -52,8 +52,7 @@ void main() {
     await readerWriter.testing.loadIsolateSources();
     await testBuilder(
       const _InferenceProbe(
-        sourceComment:
-            '/// The item title.\r\n/// @description It appears on screen.\r\n/// More prose.',
+        sourceComment: '/// The item title.\r\n/// @description It appears on screen.\r\n/// More prose.',
       ),
       {
         'test_pkg|lib/widget.dart': '''

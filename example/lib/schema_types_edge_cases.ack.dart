@@ -11,7 +11,7 @@ part of 'schema_types_edge_cases.dart';
 // **************************************************************************
 
 /// Immutable model generated from `productSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Product {
   /// Creates a model without validating it.
   ///
@@ -163,7 +163,7 @@ final class _$ProductCopyWith implements $ProductCopyWith<Product> {
 }
 
 /// Immutable model generated from `gridSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Grid {
   /// Creates a model without validating it.
   ///
@@ -274,7 +274,7 @@ final class _$GridCopyWith implements $GridCopyWith<Grid> {
 }
 
 /// Immutable model generated from `addressSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Address {
   /// Creates a model without validating it.
   ///
@@ -418,7 +418,7 @@ final class _$AddressCopyWith implements $AddressCopyWith<Address> {
 }
 
 /// Immutable model generated from `personSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Person {
   /// Creates a model without validating it.
   ///
@@ -554,7 +554,7 @@ final class _$PersonCopyWith implements $PersonCopyWith<Person> {
 }
 
 /// Immutable model generated from `employeeSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Employee {
   /// Creates a model without validating it.
   ///
@@ -702,7 +702,7 @@ final class _$EmployeeCopyWith implements $EmployeeCopyWith<Employee> {
 }
 
 /// Immutable model generated from `modifierSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Modifier {
   /// Creates a model without validating it.
   ///
@@ -881,7 +881,7 @@ final class _$ModifierCopyWith implements $ModifierCopyWith<Modifier> {
 }
 
 /// Immutable model generated from `taggedItemSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class TaggedItem {
   /// Creates a model without validating it.
   ///
@@ -1076,7 +1076,7 @@ final class _$TaggedItemCopyWith implements $TaggedItemCopyWith<TaggedItem> {
 }
 
 /// Immutable model generated from `contactListSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class ContactList {
   /// Creates a model without validating it.
   ///
@@ -1191,7 +1191,7 @@ final class _$ContactListCopyWith implements $ContactListCopyWith<ContactList> {
 }
 
 /// Immutable model generated from `emptySchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Empty {
   /// Creates a model without validating it.
   ///
@@ -1276,7 +1276,7 @@ final class _$EmptyCopyWith implements $EmptyCopyWith<Empty> {
 }
 
 /// Immutable model generated from `minimalSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Minimal {
   /// Creates a model without validating it.
   ///
@@ -1372,7 +1372,7 @@ final class _$MinimalCopyWith implements $MinimalCopyWith<Minimal> {
 }
 
 /// Immutable model generated from `namedItemSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class NamedItem {
   /// Creates a model without validating it.
   ///
@@ -1468,7 +1468,7 @@ final class _$NamedItemCopyWith implements $NamedItemCopyWith<NamedItem> {
 }
 
 /// Immutable model generated from `item`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class Item {
   /// Creates a model without validating it.
   ///
@@ -1563,7 +1563,7 @@ final class _$ItemCopyWith implements $ItemCopyWith<Item> {
 }
 
 /// Immutable model generated from `myCustomSchema123`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class MyCustomSchema123 {
   /// Creates a model without validating it.
   ///

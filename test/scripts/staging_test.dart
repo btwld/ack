@@ -49,6 +49,28 @@ dependencies:
   });
 
   group('toPureDartWorkspace', () {
+    test('excludes generator members for the runtime SDK check', () {
+      final runtime =
+          loadYaml(
+                toPureDartWorkspace(
+                  '''
+name: ack_workspace
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+workspace:
+  - packages/ack
+  - packages/ack_generator
+  - example
+''',
+                  flutterMembers: const {},
+                  excludedMembers: const {'packages/ack_generator', 'example'},
+                ),
+              )
+              as Map;
+      expect(runtime['workspace'], ['packages/ack']);
+      expect((runtime['environment'] as Map)['sdk'], '>=3.9.0 <4.0.0');
+    });
+
     test('drops the Flutter members and the Flutter SDK constraint', () {
       const pubspec = '''
 name: ack_workspace

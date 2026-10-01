@@ -1,3 +1,16 @@
+## Unreleased
+
+### Changed
+
+* Use `@Schemable()` for schema-first and class-first generation. Deprecate
+  `@AckInfer()` and `@AckModel()` while retaining their behavior.
+
+### Added
+
+* Own the schema-generation annotations and export them from
+  `package:ack/annotations.dart`. `ack_annotations` remains a compatibility
+  re-export package.
+
 ## 1.7.0-beta.2
 
 ### Added

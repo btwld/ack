@@ -1,6 +1,10 @@
 {
   "description": "Flutter releases that this repository's workflows may install. Each entry pins the SHA-256 checksum of the official Linux archive and the Dart SDK that ships inside it. Copy both values from https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json before adding a version.",
   "releases": {
+    "3.47.5": {
+      "dart": "3.13.4",
+      "sha256": "2132e990f236f8d22e7c6314b29a191a95b10d7cbcfec9b4e2e303d996652cbb"
+    },
     "3.35.0": {
       "dart": "3.9.0",
       "sha256": "ff2d9474d768fdb61c1b8d6b76fd4eb98235c271e68b10abf41bd9fb41bc273d"

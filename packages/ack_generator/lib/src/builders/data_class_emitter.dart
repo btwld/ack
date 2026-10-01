@@ -71,6 +71,8 @@ final class AckDataClassEmitter {
         ),
     ];
     final members = [
+      for (final field in stored)
+        '${_type(field.runtimeRef)} get ${field.dartName};',
       if (includeValueMembers) ...[
         copyWithGetter(
           className: className,

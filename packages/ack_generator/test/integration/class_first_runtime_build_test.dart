@@ -48,9 +48,8 @@ Future<void> _expectConsumerSafeParts(
   for (final MapEntry(key: path, value: source) in modern.entries) {
     expect(source, contains(lintSuppression), reason: path);
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
-    File(
-      p.join(project.path, path),
-    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+    File(p.join(project.path, path))
+        .writeAsStringSync(source.replaceFirst(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -85,9 +84,8 @@ void main() {
     'class-first models compile and preserve the runtime contract',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
@@ -100,7 +98,7 @@ void main() {
 name: ack_class_first_runtime
 publish_to: none
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
@@ -119,14 +117,13 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
-          '''
+        File(p.join(temporary.path, 'analysis_options.yaml'))
+            .writeAsStringSync('''
 linter:
   rules:
     - avoid_redundant_argument_values
     - prefer_null_aware_operators
-''',
-        );
+''');
         File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
 targets:
   \$default:
@@ -134,6 +131,7 @@ targets:
       ack_generator:ack_generator:
         generate_for:
           - lib/coexist.dart
+          - lib/factories.dart
       source_gen:combining_builder:
         generate_for:
           - lib/models.dart
@@ -144,10 +142,9 @@ targets:
         File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final int value; }\n',
         );
-        File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
-          r'''
+        File(p.join(temporary.path, 'lib', 'coexist.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'coexist.g.dart';
 part 'coexist.ack.dart';
@@ -157,21 +154,52 @@ part 'coexist.ack.g.dart';
 @AckType()
 final frozenSchema = Ack.object({'id': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
 
+// ignore: deprecated_member_use
 @AckModel()
 final class Handwritten with _$HandwrittenAck {
   const Handwritten({required this.enabled});
 
   final bool enabled;
 }
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'factories.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+
+part 'factories.ack.dart';
+part 'factories.ack.g.dart';
+
+@Schemable(description: 'A habit date.')
+final class HabitDateDto({
+  @AckField(description: 'The calendar day.')
+  required final DateTime value,
+}) with _$HabitDateDtoAck;
+
+@Schemable(description: 'A habit entry.')
+final class HabitDto({
+  required final String name,
+  required final HabitDateDto date,
+  final String? note,
+}) with _$HabitDtoAck;
+
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
+final class OpenDto({
+  required final String name,
+  required final Map<String, Object?> additionalProperties,
+}) with _$OpenDtoAck;
+
+@Schemable(description: 'A unified annotation model.')
+final class const SchemableDto({
+  @MinLength(2) required final String name,
+  final String label = 'default',
+}) with _$SchemableDtoAck;
+''');
+        File(p.join(temporary.path, 'lib', 'models.dart'))
+            .writeAsStringSync(r'''
+import 'package:ack/ack.dart';
 import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
 import 'alpha.dart' as alpha;
@@ -212,7 +240,7 @@ AckSchema<Map<String, Object?>, Map<String, List<String>>> groupsSchema() =>
           encode: (value) => value,
         );
 
-@AckModel()
+@Schemable()
 final class Profile with _$ProfileAck {
   const Profile({
     required this.name,
@@ -235,7 +263,7 @@ final class Profile with _$ProfileAck {
   static final fromJson = ProfileSchema.fromJson;
 }
 
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
@@ -245,7 +273,7 @@ final class Account with _$AccountAck {
   static final fromJson = AccountSchema.fromJson;
 }
 
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _$ConfigAck {
   const Config({
     required this.name,
@@ -255,7 +283,7 @@ final class Config with _$ConfigAck {
   final Map<String, Object?> additionalProperties;
 }
 
-@AckModel(
+@Schemable(
   caseStyle: AckCaseStyle.snake,
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: 'extraValues',
@@ -269,13 +297,13 @@ final class CaseStyledExtras with _$CaseStyledExtrasAck {
   final Map<String, Object?> extraValues;
 }
 
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.discard)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.discard)
 final class Loose with _$LooseAck {
   const Loose({required this.name});
   final String name;
 }
 
-@AckModel()
+@Schemable()
 final class Normalized with _$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
@@ -283,21 +311,21 @@ final class Normalized with _$NormalizedAck {
   final String value;
 }
 
-@AckModel()
+@Schemable()
 final class NullableDefault with _$NullableDefaultAck {
   const NullableDefault({this.label = 'fallback'});
 
   final String? label;
 }
 
-@AckModel()
+@Schemable()
 final class NullDefault with _$NullDefaultAck {
   const NullDefault({this.label = null});
 
   final String? label;
 }
 
-@AckModel()
+@Schemable()
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   @AckField(schema: alphaItemSchema)
@@ -306,7 +334,7 @@ final class ImportedPair with _$ImportedPairAck {
   final beta.Item right;
 }
 
-@AckModel()
+@Schemable()
 final class ImmutableCollections with _$ImmutableCollectionsAck {
   const ImmutableCollections({
     required this.matrix,
@@ -321,7 +349,7 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   final Map<String, List<String>> groups;
 }
 
-@AckModel()
+@Schemable()
 final class Example with _$ExampleAck {
   const Example({this.label, this.title});
 
@@ -337,14 +365,14 @@ final class Example with _$ExampleAck {
   static final fromJson = ExampleSchema.fromJson;
 }
 
-@AckModel()
+@Schemable()
 final class ExampleHolder with _$ExampleHolderAck {
   const ExampleHolder({required this.example});
 
   final Example example;
 }
 
-@AckModel()
+@Schemable()
 final class OptionalNullable with _$OptionalNullableAck {
   const OptionalNullable({this.note});
 
@@ -352,7 +380,7 @@ final class OptionalNullable with _$OptionalNullableAck {
   final String? note;
 }
 
-@AckModel()
+@Schemable()
 final class InferredNotNull with _$InferredNotNullAck {
   const InferredNotNull({this.label});
 
@@ -362,7 +390,7 @@ final class InferredNotNull with _$InferredNotNullAck {
 
 AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
 
-@AckModel()
+@Schemable()
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
@@ -371,7 +399,7 @@ final class OverrideNotNull with _$OverrideNotNullAck {
   final String? name;
 }
 
-@AckModel()
+@Schemable()
 final class RequiredNotNull with _$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
@@ -397,7 +425,7 @@ parameterMapSchema() =>
       },
     );
 
-@AckModel()
+@Schemable()
 final class CapabilityBinding with _$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
@@ -416,7 +444,7 @@ final class CapabilityBinding with _$CapabilityBindingAck {
 AckSchema<Map<String, int?>, Map<String, int?>> scoresSchema() =>
     Ack.map(Ack.integer().min(0));
 
-@AckModel()
+@Schemable()
 final class Envelope with _$EnvelopeAck {
   const Envelope({
     required this.kind,
@@ -443,12 +471,12 @@ final class Envelope with _$EnvelopeAck {
   final Map<String, int> scores;
 }
 
-@AckModel()
+@Schemable()
 final class Declined with _$DeclinedAck {
   const Declined();
 }
 
-@AckModel()
+@Schemable()
 final class OptionalCollections with _$OptionalCollectionsAck {
   const OptionalCollections({this.headers, this.aliases, this.tags});
 
@@ -457,13 +485,13 @@ final class OptionalCollections with _$OptionalCollectionsAck {
   final Set<String>? tags;
 }
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
-@AckModel(discriminatorValue: 'cat')
+@Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
   final int lives;
@@ -475,7 +503,7 @@ final class Dog extends Pet with _$DogAck {
   String get type => 'Dog';
 }
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Animal with _$AnimalAck {
   const Animal({required this.id});
   final String id;
@@ -491,19 +519,19 @@ final class BabyRabbit extends Rabbit with _$BabyRabbitAck {
   final String? note;
 }
 
-@AckModel()
+@Schemable()
 final class Parent with _$ParentAck {
   const Parent({required this.id});
   final String id;
 }
 
-@AckModel()
+@Schemable()
 final class Child extends Parent with _$ChildAck {
   const Child({required super.id, this.note});
   final String? note;
 }
 
-@AckModel()
+@Schemable()
 final class ImplementingChild with _$ImplementingChildAck implements Parent {
   const ImplementingChild({required this.id, this.note});
   final String id;
@@ -512,7 +540,7 @@ final class ImplementingChild with _$ImplementingChildAck implements Parent {
 
 /// A task the person can complete.
 /// @description This tag has lower priority.
-@AckModel(description: 'A task the person can complete.')
+@Schemable(description: 'A task the person can complete.')
 final class Task with _$TaskAck {
   const Task({required this.id, required this.title});
 
@@ -528,7 +556,7 @@ final class Task with _$TaskAck {
  * related tasks.
  * @description A board that groups related tasks.
  */
-@AckModel()
+@Schemable()
 final class Board with _$BoardAck {
   const Board({required this.focus, required this.backlog, this.pinned});
 
@@ -540,7 +568,7 @@ final class Board with _$BoardAck {
   final Task? pinned;
 }
 
-@AckModel()
+@Schemable()
 final class Undocumented with _$UndocumentedAck {
   const Undocumented({required this.value});
 
@@ -550,13 +578,13 @@ final class Undocumented with _$UndocumentedAck {
 
 /// A shape to draw.
 /// @description A shape to draw.
-@AckModel(discriminatorKey: 'kind')
+@Schemable(discriminatorKey: 'kind')
 sealed class Shape with _$ShapeAck {
   const Shape();
 }
 
 /// A circle, sized by its radius.
-@AckModel(
+@Schemable(
   discriminatorValue: 'circle',
   description: 'A circle, sized by its radius.',
 )
@@ -572,7 +600,7 @@ final class Square extends Shape with _$SquareAck {
   final double side;
 }
 
-@AckInfer()
+@Schemable()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
 @JsonSerializable()
@@ -583,16 +611,15 @@ final class PlainJson {
   final String value;
   Map<String, dynamic> toJson() => _$PlainJsonToJson(this);
 }
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+        File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+            .writeAsStringSync(r'''
 import 'dart:convert';
 
 import 'package:ack_class_first_runtime/alpha.dart' as alpha;
 import 'package:ack_class_first_runtime/beta.dart' as beta;
 import 'package:ack_class_first_runtime/coexist.dart';
+import 'package:ack_class_first_runtime/factories.dart';
 import 'package:ack_class_first_runtime/models.dart';
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
@@ -621,6 +648,52 @@ final envelopeJson = <String, Object?>{
 };
 
 void main() {
+  test('class-first models generate from constructor-backed fields', () {
+    final habit = HabitDtoSchema.parse({
+      'name': 'Read',
+      'date': {'value': '2026-09-30T00:00:00.000Z'},
+    });
+    expect(habit, isA<HabitDto>());
+    expect(habit.name, 'Read');
+    expect(habit.date, isA<HabitDateDto>());
+    expect(habit.date.value, DateTime.parse('2026-09-30T00:00:00.000Z'));
+    expect(habit.toJson(), {
+      'name': 'Read',
+      'date': {'value': '2026-09-30T00:00:00.000Z'},
+    });
+    expect(habit.copyWith(name: 'Write').name, 'Write');
+    expect(habit.copyWith(note: 'keep').copyWith(note: null).note, isNull);
+    expect(HabitDtoSchema.toJsonSchema()['description'], 'A habit entry.');
+    final properties =
+        HabitDateDtoSchema.toJsonSchema()['properties']! as Map<Object?, Object?>;
+    expect((properties['value']! as Map<Object?, Object?>)['description'],
+        'The calendar day.');
+  });
+
+  test('class-first models capture unknown properties', () {
+    final model = OpenDtoSchema.parse({
+      'name': 'Read',
+      'color': 'blue',
+    });
+    expect(model.additionalProperties, {'color': 'blue'});
+    expect(model.toJson(), {
+      'name': 'Read',
+      'color': 'blue',
+    });
+  });
+
+  test('Schemable supports schema-first and class-first generation', () {
+    expect(Modern.parse({'name': 'Ada'}).name, 'Ada');
+    final model = SchemableDtoSchema.parse({'name': 'Ada'});
+    expect(model.name, 'Ada');
+    expect(model.label, 'default');
+    expect(model.toJson(), {'name': 'Ada', 'label': 'default'});
+    expect(model.copyWith(label: 'changed').label, 'changed');
+    expect(() => SchemableDtoSchema.parse({'name': 'A'}), throwsA(isA<AckException>()));
+    expect(SchemableDtoSchema.toJsonSchema()['description'],
+        'A unified annotation model.');
+  });
+
   test('presence, defaults, collections, and escape hatches round-trip', () {
     final profile = Profile.fromJson({
       'name': 'Ada',
@@ -1244,6 +1317,10 @@ import 'models.dart';
 Profile misuse(Profile profile) => profile.copyWith(nickname: const Object());
 ''');
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
+        final factories = File(p.join(temporary.path, 'lib', 'factories.dart'));
+        factories.writeAsStringSync(
+          '${factories.readAsStringSync()}\n// Rebuild.\n',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'outputs-present build_runner build',

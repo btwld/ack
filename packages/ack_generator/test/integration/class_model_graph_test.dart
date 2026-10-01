@@ -64,6 +64,16 @@ part 'model.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects mutable primary-constructor fields', () async {
+    await _expectFailure(
+      r'''
+@Schemable()
+final class User({required var String name}) with _$UserAck;
+''',
+      ['User.name must be final'],
+    );
+  });
+
   test(
     'rejects a local declaration named like the copyWith implementation',
     () async {

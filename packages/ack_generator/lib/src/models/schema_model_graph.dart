@@ -41,6 +41,7 @@ final class AckConstructorParameter {
     required this.fieldName,
     required this.typeRef,
     this.isSuper = false,
+    this.isRequired = false,
     this.defaultExpression,
   });
 
@@ -49,6 +50,7 @@ final class AckConstructorParameter {
   final String fieldName;
   final AckInferRef typeRef;
   final bool isSuper;
+  final bool isRequired;
   final String? defaultExpression;
 }
 
@@ -187,6 +189,7 @@ final class AckClassModelMetadata {
   final String backingName;
   final String caseStyle;
   final bool hasExplicitAnnotation;
+
   final List<String> copyWithSupertypes;
 }
 

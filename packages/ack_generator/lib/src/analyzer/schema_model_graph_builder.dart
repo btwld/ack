@@ -1,7 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack/ack.dart'
     show AckSchema, AnyOfSchema, AnySchema, InstanceSchema, MapSchema;
-import 'package:ack_annotations/ack_annotations.dart'
-    hide AckUnknownPropertyPolicy;
+import 'package:ack/annotations.dart' hide AckUnknownPropertyPolicy;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -149,16 +150,23 @@ final class SchemaModelGraphBuilder {
 
   static const _ackInferChecker = TypeChecker.typeNamed(
     AckInfer,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
+  );
+  static const _schemableChecker = TypeChecker.typeNamed(
+    Schemable,
+    inPackage: 'ack',
   );
   static const _legacyAckTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
     AckType,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
     AckModel,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
+  );
+  static const _schemableModelChecker = TypeChecker.typeNamed(
+    Schemable,
+    inPackage: 'ack',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
     AckSchema,
@@ -1135,7 +1143,9 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _classFirstFacadeName(ClassElement element) {
-    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    final annotation =
+        _ackModelChecker.firstAnnotationOfExact(element) ??
+        _schemableModelChecker.firstAnnotationOfExact(element);
     if (annotation != null) {
       final value = ConstantReader(annotation).read('schemaName');
       return ackClassSchemaFacadeName(
@@ -1148,7 +1158,8 @@ final class SchemaModelGraphBuilder {
       return base is ClassElement &&
           base.library == element.library &&
           base.isSealed &&
-          _ackModelChecker.hasAnnotationOfExact(base);
+          (_ackModelChecker.hasAnnotationOfExact(base) ||
+              _schemableModelChecker.hasAnnotationOfExact(base));
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
@@ -1377,7 +1388,9 @@ final class SchemaModelGraphBuilder {
   }
 
   bool _hasAckInfer(Element element) {
-    return _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element));
+    final declaration = _propertyDeclaration(element);
+    return _ackInferChecker.hasAnnotationOfExact(declaration) ||
+        _schemableChecker.hasAnnotationOfExact(declaration);
   }
 
   bool _hasLegacyAckType(Element element) {
@@ -1387,9 +1400,10 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _annotationName(Element element) {
-    final annotation = _ackInferChecker.firstAnnotationOfExact(
-      _propertyDeclaration(element),
-    );
+    final declaration = _propertyDeclaration(element);
+    final annotation =
+        _ackInferChecker.firstAnnotationOfExact(declaration) ??
+        _schemableChecker.firstAnnotationOfExact(declaration);
     final field = annotation == null
         ? null
         : ConstantReader(annotation).peek('name');
@@ -1792,18 +1806,14 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
-  /// Normalizes Analyzer 10 argument nodes into the expression API used by the
-  /// graph.
+  /// Reads the value expressions from Analyzer argument nodes.
   List<Expression> _argumentExpressions(ArgumentList argumentList) =>
       argumentList.arguments
-          .map((argument) => _argumentExpression(argument))
+          .map((argument) => argument.argumentExpression)
           .toList(growable: false);
 
-  Expression _argumentExpression(Expression argument) =>
-      argument is NamedExpression ? argument.expression : argument;
-
-  ({String name, Expression expression})? _namedArgument(Expression argument) =>
-      argument is NamedExpression
-      ? (name: argument.name.label.name, expression: argument.expression)
+  ({String name, Expression expression})? _namedArgument(Argument argument) =>
+      argument is NamedArgument
+      ? (name: argument.name.lexeme, expression: argument.argumentExpression)
       : null;
 }
