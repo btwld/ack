@@ -143,6 +143,7 @@ targets:
         File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 
 part 'coexist.g.dart';
 part 'coexist.ack.dart';
@@ -166,6 +167,7 @@ final class Handwritten with _$HandwrittenAck {
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
 import 'alpha.dart' as alpha;

@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 
 const _head = '''
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';

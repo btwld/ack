@@ -54,6 +54,7 @@ dependency_overrides:
         File(p.join(temporary.path, 'lib', 'legacy.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 
 part 'legacy.g.dart';
 

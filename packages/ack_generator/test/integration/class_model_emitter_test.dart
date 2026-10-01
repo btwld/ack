@@ -40,6 +40,47 @@ import 'package:ack/annotations.dart';
 ''';
 
 void main() {
+  test(
+    'prefixed constraint annotations sit beside same-named app types',
+    () async {
+      await _build(
+        {
+          'contact.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart' as ack;
+
+part 'contact.ack.dart';
+part 'contact.ack.g.dart';
+
+final class Email {
+  const Email(this.address);
+  final String address;
+}
+
+@Schemable()
+final class Contact with _\$ContactAck {
+  const Contact({required this.address, required this.id});
+
+  @ack.Email()
+  final String address;
+
+  @ack.Uuid()
+  final String id;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/contact.ack.dart': decodedMatches(
+            _containsCode(
+              "Ack.object({'address': Ack.string().email(), "
+              "'id': Ack.string().uuid()})",
+            ),
+          ),
+        },
+      );
+    },
+  );
+
   test('an Ack.map schema function backs a Map field', () async {
     await _build(
       {
