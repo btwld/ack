@@ -80,6 +80,16 @@ extension type const WidgetId(String value) implements Object {
 
 enum CompletionAction { complete, skip }
 
+final class Box<A extends Object> {
+  const Box(this.value);
+
+  final A value;
+
+  static AckSchema<Object, Box<A>> schema<A extends Object>(
+    AckSchema<Object, A> value,
+  ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
+}
+
 final class Trigger<A> {
   const Trigger(this.name);
 
@@ -157,6 +167,23 @@ final class Toolbar with _$ToolbarAck {
 }
 
 @Schemable()
+final class Shelf with _$ShelfAck {
+  const Shelf({
+    required this.habit,
+    required this.title,
+    required this.habits,
+    required this.boxes,
+    required this.nested,
+  });
+
+  final Box<Habit> habit;
+  final Box<String> title;
+  final Box<List<Habit>> habits;
+  final List<Box<Habit>> boxes;
+  final Box<Box<int>> nested;
+}
+
+@Schemable()
 final panelSchema = Ack.object({
   'header': Slot.schema,
   'commands': Ack.list(Command.schema<CompletionAction>()),
@@ -218,6 +245,33 @@ void main() {
     });
   });
 
+  test('generic schemas receive the schemas of their type arguments', () {
+    final json = {
+      'habit': {'name': 'read'},
+      'title': 'Today',
+      'habits': [
+        {'name': 'walk'},
+      ],
+      'boxes': [
+        {'name': 'run'},
+      ],
+      'nested': 3,
+    };
+
+    final shelf = ShelfSchema.parse(json);
+
+    expect(shelf.habit.value, const Habit(name: 'read'));
+    expect(shelf.title.value, 'Today');
+    expect(shelf.habits.value.single.name, 'walk');
+    expect(shelf.boxes.single.value.name, 'run');
+    expect(shelf.nested.value.value, 3);
+    expect(shelf.toJson(), json);
+    expect(
+      ShelfSchema.safeParse({...json, 'habit': {'name': 1}}).isOk,
+      isFalse,
+    );
+  });
+
   test('schema-first models type fields from type-owned schemas', () {
     final panel = Panel.parse({
       'header': 'h',
@@ -242,6 +296,7 @@ void main() {
         ).readAsStringSync();
         expect(generated, contains('Command.schema<CompletionAction>()'));
         expect(generated, contains('Trigger.schema<void>()'));
+        expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));
         expect(generated, contains('Ack.map(Slot.schema)'));
         _expectSuccess(
           await _run(temporary, ['analyze', '--fatal-infos']),

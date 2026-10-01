@@ -64,6 +64,25 @@ final class Trigger<A> {
       );
 }
 
+final class Box<A extends Object> {
+  const Box(this.value);
+  final A value;
+
+  static AckSchema<Object, Box<A>> schema<A extends Object>(
+    AckSchema<Object, A> value,
+  ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
+}
+
+final class Pair<A extends Object, B extends Object> {
+  const Pair(this.first, this.second);
+  final A first;
+  final B second;
+
+  static AckSchema<Object, Pair<A, B>> schema<A extends Object, B extends Object>(
+    AckSchema<Object, A> first,
+  ) => throw UnimplementedError();
+}
+
 final class Command<A extends Object> {
   const Command(this.name);
   final String name;
@@ -325,7 +344,70 @@ final class Box<T extends Object> {
     );
   });
 
-  test('a static schema method that takes parameters is rejected', () async {
+  test('a generic schema method receives the type argument schemas', () async {
+    await _expectOutput(
+      r'''
+@Schemable()
+final class Row with _$RowAck {
+  const Row({required this.name});
+
+  final String name;
+}
+
+@Schemable()
+final class Screen with _$ScreenAck {
+  const Screen({
+    required this.row,
+    required this.title,
+    required this.rows,
+    required this.boxes,
+    required this.nested,
+  });
+
+  final Box<Row> row;
+  final Box<String> title;
+  final Box<List<Row>> rows;
+  final List<Box<Row>> boxes;
+  final Box<Box<String>> nested;
+}
+''',
+      allOf(
+        _containsCode("'row': Box.schema<Row>(RowSchema.schema),"),
+        _containsCode("'title': Box.schema<String>(Ack.string()),"),
+        _containsCode(
+          "'rows': Box.schema<List<Row>>(Ack.list(RowSchema.schema)),",
+        ),
+        _containsCode("'boxes': Ack.list(Box.schema<Row>(RowSchema.schema)),"),
+        _containsCode(
+          "'nested': Box.schema<Box<String>>(Box.schema<String>(Ack.string()))",
+        ),
+      ),
+    );
+  });
+
+  test('a schema method with too few schema parameters is rejected', () async {
+    final errors = await _errors(r'''
+@Schemable()
+final class Section with _$SectionAck {
+  const Section({required this.pair});
+
+  final Pair<String, int> pair;
+}
+''');
+
+    expect(
+      errors,
+      contains(
+        contains(
+          'Section.pair resolves to Pair.schema, which must take no parameters '
+          'or one positional AckSchema parameter per type parameter; it takes '
+          '1 for 2 type parameters.',
+        ),
+      ),
+    );
+  });
+
+  test('a wrongly typed schema parameter is rejected', () async {
     final errors = await _errors(r'''
 @Schemable()
 final class Section with _$SectionAck {
@@ -339,12 +421,43 @@ final class Section with _$SectionAck {
       errors,
       contains(
         contains(
-          'Section.run resolves to Invoke.schema, which must take no '
-          'parameters and one type parameter per type argument of '
-          'Invoke<CompletionAction>.',
+          'Section.run resolves to Invoke.schema, whose parameter actions must '
+          'be an AckSchema of CompletionAction; it is List<CompletionAction>.',
         ),
       ),
     );
+  });
+
+  test('a type argument without a schema is reported by name', () async {
+    final errors = await _errors(
+      r'''
+@Schemable()
+final class Section with _$SectionAck {
+  const Section({required this.color});
+
+  final Box<Color> color;
+}
+''',
+      types: '''
+import 'package:ack/ack.dart';
+
+final class Color {
+  const Color(this.value);
+  final int value;
+}
+
+final class Box<A extends Object> {
+  const Box(this.value);
+  final A value;
+
+  static AckSchema<Object, Box<A>> schema<A extends Object>(
+    AckSchema<Object, A> value,
+  ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
+}
+''',
+    );
+
+    expect(errors, contains(contains('Section.color uses unsupported Color.')));
   });
 
   test('a type without a schema explains how to provide one', () async {
@@ -443,6 +556,7 @@ final sectionSchema = Ack.object({
   'children': Ack.list(Slot.schema),
   'open': Command.schema<CompletionAction>().optional(),
   'habit': Habit.schema,
+  'title': Box.schema<String>(Ack.string()),
 });
 ''',
       allOf(
@@ -450,6 +564,7 @@ final sectionSchema = Ack.object({
         contains('final List<Slot> children;'),
         contains('final Command<CompletionAction>? open;'),
         contains('final Habit habit;'),
+        contains('final Box<String> title;'),
       ),
     );
   });

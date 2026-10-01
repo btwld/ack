@@ -1336,15 +1336,20 @@ final class ClassModelGraphBuilder {
     if (_generatedJsonChecker.hasAnnotationOfExact(target)) {
       return '${_visibleTypeName(interfaceType, field)}.\$ack.schema';
     }
-    return _typeOwnedSchema(interfaceType, field);
+    return await _typeOwnedSchema(interfaceType, field);
   }
 
   /// Resolves [type] through a static `schema` that the type declares.
   ///
   /// A non-generic type declares a static field or getter. A generic type
   /// declares a static method with one type parameter per type argument,
-  /// which is called with the field's type arguments.
-  String? _typeOwnedSchema(InterfaceType type, FieldElement field) {
+  /// which is called with the field's type arguments. The method may also take
+  /// one schema parameter per type parameter; it then receives the schema
+  /// inferred for each type argument.
+  Future<String?> _typeOwnedSchema(
+    InterfaceType type,
+    FieldElement field,
+  ) async {
     final target = type.element;
     final getter = target.getGetter('schema');
     final method = target.getMethod('schema');
@@ -1357,13 +1362,42 @@ final class ClassModelGraphBuilder {
       expression = '${_visibleTypeName(type, field)}.schema';
       returnType = getter.returnType;
     } else if (method != null && method.isStatic) {
-      if (method.formalParameters.isNotEmpty ||
-          method.typeParameters.length != type.typeArguments.length) {
+      if (method.typeParameters.length != type.typeArguments.length) {
         throw InvalidGenerationSource(
-          '$path resolves to ${target.name}.schema, which must take no '
-          'parameters and one type parameter per type argument of $display.',
+          '$path resolves to ${target.name}.schema, which must declare one '
+          'type parameter per type argument of $display.',
           element: field,
         );
+      }
+      final parameters = method.formalParameters;
+      if (parameters.isNotEmpty &&
+          (parameters.length != type.typeArguments.length ||
+              parameters.any((parameter) => !parameter.isRequiredPositional))) {
+        throw InvalidGenerationSource(
+          '$path resolves to ${target.name}.schema, which must take no '
+          'parameters or one positional AckSchema parameter per type '
+          'parameter; it takes ${parameters.length} for '
+          '${type.typeArguments.length} type parameters.',
+          element: field,
+        );
+      }
+      final instantiated = method.type.instantiate(type.typeArguments);
+      final schemas = <String>[];
+      for (var i = 0; i < parameters.length; i++) {
+        final argument = type.typeArguments[i];
+        final parameterType = instantiated.formalParameters[i].type;
+        final expected = _ackSchemaRuntimeType(parameterType);
+        if (expected == null ||
+            !_sameTypeIgnoringNullability(expected, argument)) {
+          throw InvalidGenerationSource(
+            '$path resolves to ${target.name}.schema, whose parameter '
+            '${parameters[i].name} must be an AckSchema of '
+            '${argument.getDisplayString()}; it is '
+            '${parameterType.getDisplayString()}.',
+            element: field,
+          );
+        }
+        schemas.add(await _schemaForType(argument, field));
       }
       final arguments = [
         for (final argument in type.typeArguments)
@@ -1371,9 +1405,9 @@ final class ClassModelGraphBuilder {
       ];
       final name = _visibleTypeName(type, field);
       expression = arguments.isEmpty
-          ? '$name.schema()'
-          : '$name.schema<${arguments.join(', ')}>()';
-      returnType = method.type.instantiate(type.typeArguments).returnType;
+          ? '$name.schema(${schemas.join(', ')})'
+          : '$name.schema<${arguments.join(', ')}>(${schemas.join(', ')})';
+      returnType = instantiated.returnType;
     } else {
       return null;
     }
