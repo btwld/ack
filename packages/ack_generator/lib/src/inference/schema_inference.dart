@@ -158,13 +158,14 @@ final class AckSchemaInference {
       if (value == null || valueType == null) continue;
       if (_min.isExactlyType(valueType)) {
         _require(declaration, type, '@Min', isNumeric, '@MinLength');
-        output = '$output.min(${_number(value, 'value')})';
+        output = '$output.min(${_number(declaration, '@Min', value)})';
       } else if (_max.isExactlyType(valueType)) {
         _require(declaration, type, '@Max', isNumeric, '@MaxLength');
-        output = '$output.max(${_number(value, 'value')})';
+        output = '$output.max(${_number(declaration, '@Max', value)})';
       } else if (_multipleOf.isExactlyType(valueType)) {
         _require(declaration, type, '@MultipleOf', isNumeric, 'numeric field');
-        output = '$output.multipleOf(${_number(value, 'value')})';
+        output =
+            '$output.multipleOf(${_number(declaration, '@MultipleOf', value)})';
       } else if (_positive.isExactlyType(valueType)) {
         _require(declaration, type, '@Positive', isNumeric, 'numeric field');
         output = '$output.positive()';
@@ -344,9 +345,17 @@ final class AckSchemaInference {
     return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
   }
 
-  String _number(DartObject value, String name) {
-    final number = value.getField(name)!;
-    return (number.toIntValue() ?? number.toDoubleValue())!.toString();
+  String _number(Element declaration, String annotation, DartObject value) {
+    final field = value.getField('value')!;
+    final number = (field.toIntValue() ?? field.toDoubleValue())!;
+    if (!number.isFinite) {
+      throw InvalidGenerationSource(
+        '${declaration.enclosingElement?.name}.${declaration.name} has '
+        '$annotation($number); the value must be a finite number.',
+        element: declaration,
+      );
+    }
+    return number.toString();
   }
 
   void _require(

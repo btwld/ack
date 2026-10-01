@@ -72,6 +72,36 @@ part 'model.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects non-finite numeric constraint values', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+final class Range with _\$RangeAck {
+  const Range({required this.limit, required this.step});
+
+  @Max(double.infinity)
+  final double limit;
+
+  @MultipleOf(double.nan)
+  final double step;
+}
+''',
+      ['Range.limit has @Max(Infinity); the value must be a finite number.'],
+    );
+    await _expectFailure(
+      '''
+@Schemable()
+final class Range with _\$RangeAck {
+  const Range({required this.step});
+
+  @MultipleOf(double.nan)
+  final double step;
+}
+''',
+      ['Range.step has @MultipleOf(NaN); the value must be a finite number.'],
+    );
+  });
+
   test('rejects a field type that is visible only through a typedef', () async {
     await _expectFailure(
       '''
