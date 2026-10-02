@@ -19,10 +19,9 @@ void main() {
       Required(),
       Optional(),
       NotNull(),
-      JsonKey(name: 'id'),
     ];
 
-    expect(values, hasLength(6));
+    expect(values, hasLength(5));
     expect(AckUnknownPropertyPolicy.values, hasLength(3));
   });
 

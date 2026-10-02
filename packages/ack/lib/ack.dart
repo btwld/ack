@@ -46,7 +46,6 @@ export 'src/validation/schema_error.dart';
 // Validation results
 export 'src/validation/schema_result.dart';
 // Model annotations. Constraint annotations live in annotations.dart.
-export 'package:json_annotation/json_annotation.dart' show JsonKey;
 export 'src/annotations/ack_field.dart';
 export 'src/annotations/ack_model.dart'
     show AckCaseStyle, AckUnknownPropertyPolicy;

@@ -168,7 +168,8 @@ final class Handwritten with _$HandwrittenAck {
           r'''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
-import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
+import 'package:json_annotation/json_annotation.dart'
+    show JsonKey, JsonSerializable;
 
 import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;

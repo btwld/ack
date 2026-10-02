@@ -87,6 +87,14 @@ final class AddressBook with _$AddressBookAck {
   final Address primary;
   final Address? secondary;
 }
+
+@Schemable(caseStyle: AckCaseStyle.kebab)
+final class Label with _$LabelAck {
+  const Label({required this.postCode, this.lineCount = 1});
+
+  final String postCode;
+  final int lineCount;
+}
 ''',
         );
         File(p.join(temporary.path, 'lib', 'customer.dart')).writeAsStringSync(
@@ -354,6 +362,13 @@ void main() {
     expect(itinerary.finish.name, 'South');
   });
 
+  test('a case style renames keys without json_annotation', () {
+    final label = LabelSchema.parse({'post-code': '1012'});
+
+    expect(label.postCode, '1012');
+    expect(label.toJson(), {'post-code': '1012', 'line-count': 1});
+  });
+
   test('schema-first and class-first models reuse each other', () {
     final holder = HolderSchema.parse({
       'primary': {'city': 'Rome'},
@@ -435,6 +450,14 @@ void main() {
 ''');
 
         _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        final runtimeDependencies = await _run(temporary, [
+          'pub',
+          'deps',
+          '--no-dev',
+          '--style=list',
+        ]);
+        _expectSuccess(runtimeDependencies, 'dart pub deps --no-dev');
+        expect(runtimeDependencies.stdout, isNot(contains('json_annotation')));
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'clean build_runner build',

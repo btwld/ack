@@ -1,11 +1,9 @@
-import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta_meta.dart';
 
 /// JSON field-name styles supported by class-first Ack generation.
 ///
-/// This enum is deliberately closed because Ack's second generation phase
-/// delegates field mapping to json_serializable's closed `FieldRename` enum.
-/// Supporting an open-ended transform would require redesigning that phase.
+/// This enum is deliberately closed: `ack_generator` maps each style onto a
+/// fixed field-rename rule when it generates the JSON part.
 enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
 
 /// How a class-first object treats properties that are not declared fields.
@@ -38,31 +36,7 @@ final class AckModel {
     this.discriminatorValue,
     this.unknownProperties = AckUnknownPropertyPolicy.reject,
     this.captureField = 'additionalProperties',
-  }) : // A switch expression is not const-evaluable in a const constructor.
-       jsonSerializable = caseStyle == AckCaseStyle.snake
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.snake,
-             )
-           : caseStyle == AckCaseStyle.kebab
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.kebab,
-             )
-           : caseStyle == AckCaseStyle.pascal
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.pascal,
-             )
-           : caseStyle == AckCaseStyle.screamingSnake
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.screamingSnake,
-             )
-           : const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.none,
-             );
+  });
 
   /// Exact public schema facade class name.
   ///
@@ -94,10 +68,4 @@ final class AckModel {
   /// [AckUnknownPropertyPolicy.capture]. Defaults to
   /// `additionalProperties` and may be `args`.
   final String captureField;
-
-  /// Fixed phase-2 configuration consumed by `ack_generator`.
-  ///
-  /// This remains derived from [caseStyle], so users cannot independently
-  /// configure schema keys and JSON mapping.
-  final JsonSerializable jsonSerializable;
 }

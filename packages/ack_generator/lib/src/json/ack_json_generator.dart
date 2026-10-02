@@ -1,5 +1,5 @@
 // ignore: deprecated_member_use
-import 'package:ack/annotations.dart' show AckModel, Schemable;
+import 'package:ack/annotations.dart' show AckCaseStyle, AckModel, Schemable;
 import 'package:ack/ack_generator_support.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
@@ -11,9 +11,10 @@ import 'ack_runtime_type_helper.dart';
 
 /// Delegates Ack-marked model classes to json_serializable.
 ///
-/// Consumer builder options are ignored. The class configuration comes from
-/// the Ack-owned marker (`includeIfNull: false`) plus the same fixed
-/// generator default.
+/// Consumer builder options are ignored. Ack owns the configuration: each
+/// class gets the `JsonSerializable` constant from `json_configs.dart` that
+/// matches its `caseStyle`, and generated schema-first models use `none`. The
+/// Ack annotations carry no json_annotation types.
 final class AckJsonSerializableGenerator extends Generator {
   AckJsonSerializableGenerator()
     : _delegate = JsonSerializableGenerator.withDefaultHelpers(const [
@@ -21,6 +22,11 @@ final class AckJsonSerializableGenerator extends Generator {
       ], config: const JsonSerializable(includeIfNull: false));
 
   final JsonSerializableGenerator _delegate;
+
+  static final _configs = AssetId(
+    'ack_generator',
+    'lib/src/json/json_configs.dart',
+  );
 
   static const _marker = TypeChecker.typeNamed(
     AckGeneratedJson,
@@ -38,13 +44,10 @@ final class AckJsonSerializableGenerator extends Generator {
     )) {
       return '';
     }
-    final requests = <({Element element, ConstantReader config})>[];
+    final requests = <({Element element, AckCaseStyle caseStyle})>[];
     final claimed = <Element>{};
     for (final item in library.annotatedWith(_marker)) {
-      requests.add((
-        element: item.element,
-        config: item.annotation.read('config'),
-      ));
+      requests.add((element: item.element, caseStyle: AckCaseStyle.none));
       claimed.add(item.element.baseElement);
     }
 
@@ -80,12 +83,16 @@ final class AckJsonSerializableGenerator extends Generator {
 
     if (requests.isEmpty) return '';
 
+    final configs = await buildStep.resolver.libraryFor(_configs);
     final output = <String>[];
     for (final request in requests) {
+      final config = configs
+          .getTopLevelVariable(request.caseStyle.name)!
+          .computeConstantValue();
       output.addAll(
         _delegate.generateForAnnotatedElement(
           request.element,
-          request.config,
+          ConstantReader(config),
           buildStep,
         ),
       );
@@ -94,15 +101,17 @@ final class AckJsonSerializableGenerator extends Generator {
   }
 
   void _addModelRequest(
-    List<({Element element, ConstantReader config})> requests,
+    List<({Element element, AckCaseStyle caseStyle})> requests,
     Set<Element> claimed,
     ClassElement element,
     ConstantReader annotation,
   ) {
     if (!claimed.add(element.baseElement)) return;
-    requests.add((
-      element: element,
-      config: annotation.read('jsonSerializable'),
-    ));
+    final index = annotation
+        .read('caseStyle')
+        .objectValue
+        .getField('index')!
+        .toIntValue()!;
+    requests.add((element: element, caseStyle: AckCaseStyle.values[index]));
   }
 }

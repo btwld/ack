@@ -18,8 +18,6 @@ void main() {
       expect(defaults.discriminatorValue, isNull);
       expect(defaults.unknownProperties, AckUnknownPropertyPolicy.reject);
       expect(defaults.captureField, 'additionalProperties');
-      expect(defaults.jsonSerializable.includeIfNull, isFalse);
-      expect(defaults.jsonSerializable.fieldRename!.name, 'none');
 
       const configured = Schemable(
         schemaName: 'WireUserSchema',
@@ -35,8 +33,6 @@ void main() {
       expect(configured.discriminatorValue, 'user');
       expect(configured.unknownProperties, AckUnknownPropertyPolicy.capture);
       expect(configured.captureField, 'args');
-      expect(configured.jsonSerializable.includeIfNull, isFalse);
-      expect(configured.jsonSerializable.fieldRename!.name, 'snake');
       expect(AckCaseStyle.values, const [
         AckCaseStyle.none,
         AckCaseStyle.snake,
@@ -52,41 +48,9 @@ void main() {
     },
   );
 
-  test('every case style maps to the pinned JSON phase configuration', () {
-    const models = [
-      Schemable(),
-      Schemable(caseStyle: AckCaseStyle.snake),
-      Schemable(caseStyle: AckCaseStyle.kebab),
-      Schemable(caseStyle: AckCaseStyle.pascal),
-      Schemable(caseStyle: AckCaseStyle.screamingSnake),
-    ];
-    final configs = {
-      for (final model in models) model.caseStyle: model.jsonSerializable,
-    };
-
-    expect(
-      configs.map((style, config) => MapEntry(style, config.fieldRename!.name)),
-      const {
-        AckCaseStyle.none: 'none',
-        AckCaseStyle.snake: 'snake',
-        AckCaseStyle.kebab: 'kebab',
-        AckCaseStyle.pascal: 'pascal',
-        AckCaseStyle.screamingSnake: 'screamingSnake',
-      },
-    );
-    expect(configs.values.every((config) => !config.includeIfNull!), isTrue);
-  });
-
-  test('deprecated AckModel derives the same JSON configuration', () {
+  test('deprecated AckModel keeps the case style it is given', () {
     const model = AckModel(caseStyle: AckCaseStyle.kebab);
-    const schemable = Schemable(caseStyle: AckCaseStyle.kebab);
-
-    expect(model.jsonSerializable.fieldRename!.name, 'kebab');
-    expect(
-      model.jsonSerializable.fieldRename,
-      schemable.jsonSerializable.fieldRename,
-    );
-    expect(model.jsonSerializable.includeIfNull, isFalse);
+    expect(model.caseStyle, AckCaseStyle.kebab);
   });
 
   test('AckField accepts a schema tear-off and a presence override', () {
@@ -138,10 +102,5 @@ void main() {
     expect((annotations[7] as Pattern).pattern, r'^[a-z]+$');
     expect((annotations[10] as MinItems).count, 1);
     expect((annotations[11] as MaxItems).count, 10);
-  });
-
-  test('JsonKey is re-exported without importing json_annotation', () {
-    const key = JsonKey(name: 'wire_name');
-    expect(key.name, 'wire_name');
   });
 }

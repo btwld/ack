@@ -662,6 +662,7 @@ final class Record with _\$RecordAck {
         'account.dart':
             '''
 $_imports
+import 'package:json_annotation/json_annotation.dart' show JsonKey;
 part 'account.ack.dart';
 part 'account.ack.g.dart';
 

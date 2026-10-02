@@ -1,4 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta_meta.dart';
 
 import 'ack_generated_json.dart';
@@ -30,30 +29,7 @@ final class Schemable {
     this.discriminatorValue,
     this.unknownProperties = AckUnknownPropertyPolicy.reject,
     this.captureField = 'additionalProperties',
-  }) : jsonSerializable = caseStyle == AckCaseStyle.snake
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.snake,
-             )
-           : caseStyle == AckCaseStyle.kebab
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.kebab,
-             )
-           : caseStyle == AckCaseStyle.pascal
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.pascal,
-             )
-           : caseStyle == AckCaseStyle.screamingSnake
-           ? const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.screamingSnake,
-             )
-           : const JsonSerializable(
-               includeIfNull: false,
-               fieldRename: FieldRename.none,
-             );
+  });
 
   /// Exact generated model name for a top-level schema declaration.
   final String? name;
@@ -79,7 +55,4 @@ final class Schemable {
 
   /// Dart field that stores captured unknown properties.
   final String captureField;
-
-  /// Fixed JSON mapping configuration for a class declaration.
-  final JsonSerializable jsonSerializable;
 }
